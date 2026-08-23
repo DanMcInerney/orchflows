@@ -63,6 +63,7 @@ SCOPE_CONTRADICTION = "scope-contradiction"
 SCOPE_OPEN = "undeclared-scope-edge"
 SCOPE_COLLISION = "scope-collision"
 STAGED_INVALIDATION = "staged-invalidation"
+SHARED_TEST_MODULE = "shared-test-module"
 ORPHAN_CRITERION = "orphan-criterion"
 ORPHAN_ITEM = "orphan-item"
 COVERAGE_MAP_ABSENT = "coverage-map-absent"
@@ -104,6 +105,13 @@ FAMILY_OF = {
     SCOPE_OPEN: FAMILY_3,
     SCOPE_COLLISION: FAMILY_4,
     STAGED_INVALIDATION: FAMILY_4,
+    # Family 4 because it is the pairwise question asked of the evidence
+    # rather than of the path: two scopes may share no file and still be
+    # graded by one shard, so whichever result lands first decides what the
+    # other's regression run was reading. Advisory in this generation --
+    # the over-approximating resolver names more shards than a pair really
+    # collides on, and a status resting on that would fail honest cuts.
+    SHARED_TEST_MODULE: FAMILY_4,
     ORPHAN_CRITERION: FAMILY_5,
     ORPHAN_ITEM: FAMILY_5,
     COVERAGE_MAP_ABSENT: FAMILY_5,
@@ -129,6 +137,9 @@ FAMILY_OF = {
 # not there is a fact about the run, not a defect of the cut; a committed
 # symlink is a fact about the repository, and confinement does not rest on
 # reporting it -- the clone flag holds whether or not anyone reads this line.
+# A same-run dependency Result is necessarily non-terminal before frontier;
+# admission still rejects consuming it, while cutcheck reports that readiness
+# state without treating the unstarted graph as a defective cut.
 ADVISORY = frozenset(
     {
         EXTRACTION_GAP,
@@ -137,7 +148,9 @@ ADVISORY = frozenset(
         SYMLINK_IN_TREE,
         BYTECODE_WRITTEN,
         SCOPE_OPEN,
+        SHARED_TEST_MODULE,
         UNREAD_HALF,
+        "ticket-result-not-terminal",
     }
 )
 # The shape reading's classes, which are in neither set. An advisory is a
@@ -421,7 +434,7 @@ __all__ = (
     'UNCONFINED_ORACLE', 'EXTRACTION_GAP', 'VERDICT_IN_OUTPUT', 'UNRUNNABLE_ORACLE',
     'WHOLE_SUITE_ORACLE', 'MISSING_PATH', 'UNRESOLVED_CITATION', 'QUOTE_NOT_AT_CITATION',
     'UNSCOPED_WRITE', 'SCOPE_CONTRADICTION', 'SCOPE_OPEN', 'SCOPE_COLLISION',
-    'STAGED_INVALIDATION', 'ORPHAN_CRITERION', 'ORPHAN_ITEM', 'COVERAGE_MAP_ABSENT',
+    'STAGED_INVALIDATION', 'SHARED_TEST_MODULE', 'ORPHAN_CRITERION', 'ORPHAN_ITEM', 'COVERAGE_MAP_ABSENT',
     'ILLEGAL_EXECUTOR', 'MULTIPLE_ROOTS', 'MULTIPLE_GATE_SYSTEMS', 'MIXED_INDEPENDENCE',
     'MALFORMED_GATE', 'UNCOVERED_GATE_CRITERION', 'SYMLINK_IN_TREE', 'BYTECODE_WRITTEN',
     'UNREAD_HALF', 'CRITICAL_PATH', 'LEVEL_WIDTH', 'FAMILY_OF',

@@ -143,10 +143,18 @@ _HOST_BLOCK_DEMANDS = {
         # be cut without taking it.
         "untrusted",
     ),
-    "one command per Bash call in an isolated session": (
+    "one command per Bash call in an isolated session, globs and ticket "
+    "text passed by flag": (
         "worktree-isolated",
         "Bash",
         "`&&`",
+        # The two spellings the demand's second half turns on: the tool
+        # whose glob is mis-passed as a path, the flag that passes it, and
+        # the flag multi-line ticket text goes in through. Each is a
+        # backticked identifier, and each is this clause's alone.
+        "`rg`",
+        "`--glob`",
+        "`--file`",
     ),
     "the library resolves by name; installer output is read, never edited": (
         # The by-name path is the one anchor this clause alone carries. The

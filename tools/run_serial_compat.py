@@ -306,19 +306,15 @@ class _MutationVisitor(ast.NodeVisitor):
     def visit_Assign(self, node):
         self._record(node)
         self.generic_visit(node)
-
     def visit_AnnAssign(self, node):
         self._record(node)
         self.generic_visit(node)
-
     def visit_AugAssign(self, node):
         self._record(node)
         self.generic_visit(node)
-
     def visit_Delete(self, node):
         self._record(node)
         self.generic_visit(node)
-
 def scan_mutation_owners(tests_dir: Path) -> list[dict]:
     """Return the deterministic review surface the committed manifest pins."""
     tests_dir = Path(tests_dir).resolve()
@@ -339,7 +335,6 @@ def scan_mutation_owners(tests_dir: Path) -> list[dict]:
             for owner, seams in visitor.owners.items()
         )
     return sorted(records, key=lambda record: (record["module"], record["owner"]))
-
 def revision(root: Path = ROOT):
     try:
         completed = subprocess.run(
@@ -353,7 +348,6 @@ def revision(root: Path = ROOT):
     if completed.returncode:
         return None
     return completed.stdout.decode("ascii", "replace").strip() or None
-
 def worktree_clean(root: Path = ROOT) -> bool:
     try:
         completed = subprocess.run(
@@ -363,7 +357,6 @@ def worktree_clean(root: Path = ROOT) -> bool:
     except OSError:
         return False
     return completed.returncode == 0 and not completed.stdout.strip()
-
 def _summary(results):
     return {
         "tests": sum(result.testsRun for result in results),
@@ -373,7 +366,6 @@ def _summary(results):
         "expected_failures": sum(len(result.expectedFailures) for result in results),
         "unexpected_successes": sum(len(result.unexpectedSuccesses) for result in results),
     }
-
 def _require_discovery(cases, manifest):
     identities = sorted(case.id() for case in cases)
     identity_hash = hashlib.sha256("\n".join(identities).encode("utf-8")).hexdigest()
@@ -388,7 +380,6 @@ def _require_discovery(cases, manifest):
             % (expected.get("count"), expected.get("sha256"), len(identities), identity_hash)
         )
     return identities, identity_hash
-
 def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
     """Discover all cases, then run only committed sentinels in this process."""
     started = time.monotonic()
@@ -459,7 +450,6 @@ def run_selected(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 
         "wall_time_seconds": round(time.monotonic() - started, 6),
         "ok": ok,
     }
-
 def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int = 1) -> dict:
     """Run every discovered case sequentially as the compatibility oracle."""
     started = time.monotonic()
@@ -483,7 +473,6 @@ def run_exhaustive(tests_dir: Path, manifest: dict, stream=None, verbosity: int 
         "wall_time_seconds": round(time.monotonic() - started, 6),
         "ok": result.wasSuccessful(),
     }
-
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("selected", "exhaustive"), default="selected")
@@ -491,10 +480,16 @@ def build_parser():
     parser.add_argument("--tests-dir", default=str(TESTS_DIR))
     parser.add_argument("--record", default=str(RECORD_PATH))
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--write-manifest", action="store_true")
     return parser
-
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    if args.write_manifest:
+        sys.path.insert(0, str(ROOT))
+        from tools import serial_manifest  # noqa: E402
+        return serial_manifest.write_manifest(
+            Path(args.manifest), Path(args.tests_dir), discover_cases,
+            scan_mutation_owners)
     runner = run_selected if args.mode == "selected" else run_exhaustive
     record = runner(
         Path(args.tests_dir),

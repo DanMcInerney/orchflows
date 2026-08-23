@@ -250,6 +250,103 @@ class DeclaredClosureTests(unittest.TestCase):
         self.assertNotEqual(first["fingerprint"], second["fingerprint"])
 
 
+class CohortCompanionOwnerTests(unittest.TestCase):
+    """Who owns a scope-edge companion inside a decomposed cohort.
+
+    A root's write scope is its whole subtree's, and a gate stub repairs
+    anywhere the cut writes; both therefore cover every companion the cut
+    plans. Counting them as owners convicts the lawful shape -- one unit
+    owning the companion -- of `scope-owner-multiple`, so companion ownership
+    is read among the units alone whenever the cohort holds one. A root
+    graded on its own is still the only member there is, and still owns the
+    companions it plans.
+    """
+
+    OWNERSHIP = edge("create:scripts/*.py", "change:ARCHITECTURE.md", "script ownership")
+    COHORT = "v1:root:00-root"
+
+    def member(self, ticket_id, **kwargs):
+        kwargs.setdefault("cohort", self.COHORT)
+        return ticket(ticket_id, **kwargs)
+
+    def companion(self, ticket_id, **kwargs):
+        return self.member(
+            ticket_id, mutations=("change:ARCHITECTURE.md",),
+            scope=("ARCHITECTURE.md",), **kwargs
+        )
+
+    def subtree(self, ticket_id):
+        """A root and its gate stub plan the whole cut, trigger included.
+
+        Reading a cohort whose root plans only the companion would leave the
+        trigger half of the filter unexercised -- the owners `required_by`
+        records, which is the half that grades ordering.
+        """
+        return self.member(
+            ticket_id,
+            mutations=("create:scripts/tool.py", "change:ARCHITECTURE.md"),
+            scope=("scripts/tool.py", "ARCHITECTURE.md"),
+        )
+
+    def cohort(self, *units):
+        siblings = {
+            "00-root": self.subtree("00-root"),
+            "00-root.gate.repair": self.subtree("00-root.gate.repair"),
+            "00-root.01": self.member(
+                "00-root.01", mutations=("create:scripts/tool.py",),
+                scope=("scripts/tool.py",),
+            ),
+        }
+        siblings.update(units)
+        return siblings
+
+    def test_one_unit_owner_closes_the_edge_beside_the_root_and_its_gate(self):
+        siblings = self.cohort(
+            ("00-root.02", self.companion("00-root.02", depends=("00-root.01",))),
+        )
+        self.assertEqual(
+            [], grade("00-root.01", siblings, manifest(self.OWNERSHIP))["findings"]
+        )
+
+    def test_two_unit_owners_collide_and_naming_only_units(self):
+        siblings = self.cohort(
+            ("00-root.02", self.companion("00-root.02", depends=("00-root.01",))),
+            ("00-root.03", self.companion("00-root.03", depends=("00-root.01",))),
+        )
+        findings = grade("00-root.01", siblings, manifest(self.OWNERSHIP))["findings"]
+        self.assertEqual(["scope-owner-multiple"], [item["code"] for item in findings])
+        self.assertEqual(
+            "change:ARCHITECTURE.md owned by 00-root.02, 00-root.03",
+            findings[0]["detail"],
+        )
+
+    def test_no_unit_owner_is_missing_rather_than_owned_by_root_and_gate(self):
+        self.assertEqual(
+            ["scope-owner-missing"],
+            codes(grade("00-root.01", self.cohort(), manifest(self.OWNERSHIP))),
+        )
+
+    def test_ordering_is_graded_against_the_unit_trigger_owner_alone(self):
+        siblings = self.cohort(("00-root.02", self.companion("00-root.02")))
+        findings = grade("00-root.01", siblings, manifest(self.OWNERSHIP))["findings"]
+        self.assertEqual(["scope-owner-unordered"], [item["code"] for item in findings])
+        self.assertEqual(
+            "change:ARCHITECTURE.md requires 00-root.01", findings[0]["detail"]
+        )
+
+    def test_a_root_graded_alone_still_owns_its_own_companions(self):
+        alone = {
+            "00-root": self.member(
+                "00-root",
+                mutations=("create:scripts/tool.py", "change:ARCHITECTURE.md"),
+                scope=("scripts/tool.py", "ARCHITECTURE.md"),
+            )
+        }
+        self.assertEqual(
+            [], grade("00-root", alone, manifest(self.OWNERSHIP))["findings"]
+        )
+
+
 class DeclaredObservationFixtureTests(unittest.TestCase):
     def test_all_twelve_observations_need_ownership_only_when_declared(self):
         paths = sorted(FIXTURES.glob("*.json"))

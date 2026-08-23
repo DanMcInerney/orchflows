@@ -360,6 +360,99 @@ class NestedRootTest(unittest.TestCase):
         self.assertEqual([], cutcheck._executor_legality(siblings, ROOT))
 
 
+class RootArtifactParsingTest(unittest.TestCase):
+    """A root's acceptance prose is policy input, not a unit artifact."""
+
+    @staticmethod
+    def _ticket(ticket_id):
+        return """---
+id: {ticket_id}
+executor: orch-decompose
+depends_on: []
+write_scope: []
+---
+
+## Objective
+
+Freeze the read-only acceptance without changing the checkout.
+
+## Fixed inputs
+
+## Completion test
+
+- the read-only HTTP surface accepts only GET/HEAD requests | oracle: `rg -n read-only scripts/ui.py` | oracle_class: deterministic | provenance: pre-existing
+- the read-only fixture export creates no derived files beneath codex/ | oracle: `rg -n malformed tests/fixtures/README.md` | oracle_class: deterministic | provenance: pre-existing
+- the untracked HANDOFF.md invariant remains absent | oracle: `git status --porcelain -- HANDOFF.md` | oracle_class: deterministic | provenance: pre-existing
+""".format(ticket_id=ticket_id)
+
+    def test_only_a_top_level_root_skips_unit_artifact_extraction(self):
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+            "00-root.01": {
+                "id": "00-root.01", "executor": cutcheck.ROOT_EXECUTOR
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            ticket_dir = Path(tmp)
+            root = ticket_dir / "00-root.md"
+            nested = ticket_dir / "00-root.01.md"
+            root.write_text(self._ticket("00-root"), encoding="utf-8")
+            nested.write_text(self._ticket("00-root.01"), encoding="utf-8")
+            root_findings = cutcheck._check_ticket(root, ROOT, None, siblings)
+            nested_findings = cutcheck._check_ticket(nested, ROOT, None, siblings)
+
+        root_classes = [finding[2] for finding in root_findings]
+        self.assertNotIn(cutcheck.MISSING_PATH, root_classes)
+        self.assertNotIn(cutcheck.UNSCOPED_WRITE, root_classes)
+        self.assertIn(cutcheck.MISSING_PATH, [finding[2] for finding in nested_findings])
+        self.assertIn(cutcheck.UNSCOPED_WRITE, [finding[2] for finding in nested_findings])
+
+    def test_a_top_level_root_keeps_acceptance_and_authority_diagnostics(self):
+        ticket_text = """---
+id: 00-root
+executor: orch-decompose
+depends_on: []
+write_scope: [scripts/allowed.py]
+excluded_actions: [never write scripts/allowed.py]
+---
+
+## Objective
+
+Create one composite code gate at artifacts/gate.json; preserve caller
+HANDOFF.md exactly invariant and the contract cited at docs/absent-proof.md:1.
+
+## Fixed inputs
+
+## Completion test
+
+- the cumulative result writes scripts/outside_scope.py | oracle: `git diff baseline..HEAD -- scripts/tool.py` | oracle_class: deterministic | provenance: pre-existing
+"""
+        siblings = {
+            "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            ticket = Path(tmp) / "00-root.md"
+            ticket.write_text(ticket_text, encoding="utf-8")
+            findings = cutcheck._check_ticket(ticket, ROOT, None, siblings)
+
+        classes = [finding[2] for finding in findings]
+        unscoped = {
+            finding[3]
+            for finding in findings
+            if finding[2] == cutcheck.UNSCOPED_WRITE
+        }
+        self.assertIn(cutcheck.CUMULATIVE_RANGE, classes)
+        self.assertIn(cutcheck.UNRESOLVED_CITATION, classes)
+        self.assertIn(cutcheck.UNSCOPED_WRITE, classes)
+        self.assertIn(cutcheck.SCOPE_CONTRADICTION, classes)
+        self.assertIn("artifacts/gate.json", unscoped)
+        # The root's own Objective still commits it; its acceptance describes
+        # what the units write and commits it to nothing -- see
+        # `FrozenAuthorityProseTest`.
+        self.assertNotIn("scripts/outside_scope.py", unscoped)
+        self.assertNotIn("HANDOFF.md", unscoped)
+
+
 class ExecutorLegalityTest(unittest.TestCase):
     def setUp(self):
         self.result = run_cutcheck("cutcheck-f6-executor")

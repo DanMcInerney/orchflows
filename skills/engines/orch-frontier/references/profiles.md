@@ -43,7 +43,9 @@ lane's durable run state at dispatch — through the host's scheduler
 where it has one, at a stated cadence never coarser than the lane's
 bound read as a duration; else the caller's own re-check on each
 notification and at its next turn, never a wait loop, which the host
-block bars in a worktree-isolated session. Each reading is judged by
+block bars in a worktree-isolated session. Each re-check reads
+`tickets.py bound-check <run>`, whose exit status alone says whether any
+live claim is past its bound. Each reading is judged by
 [rules/delegation.md](../../../../rules/delegation.md) §11: an idle
 notification or an unanswered nudge decides nothing. A launched
 external process is delegation.md §11's: hold the turn until its

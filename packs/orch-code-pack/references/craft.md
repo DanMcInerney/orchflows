@@ -44,4 +44,7 @@ The shape principles every domain shares are
   citable violation class.
 
 Weigh in this order — a shape finding never outranks a correctness
-finding.
+finding. A finding is `blocking: true` when it shows a frozen
+completion criterion false, or is a correctness finding at the fixed
+identity; contract fidelity with no criterion failing, scope and shape
+are `blocking: false` — reported, never repaired in the same run.

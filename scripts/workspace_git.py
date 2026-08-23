@@ -10,6 +10,28 @@ import tickets
 
 
 EXIT_ERROR = 1
+# What ``start`` records for a workspace that is on no branch. ``rev-parse
+# --abbrev-ref HEAD`` answers the literal word ``HEAD`` there, which names no
+# ref at the join: the item graded isolation-missing however clean its work
+# was. The sha under this prefix is a ref every git call can resolve.
+DETACHED_PREFIX = "detached:"
+# A frontmatter scalar carries the dirty set as one comma-joined line, so a
+# path holding either character cannot be written unambiguously.
+AMBIGUOUS = (",", '"', "'")
+# A detached record names a revision, not a ref that follows the item. Only a
+# standing worktree past that revision says where the work went, so a record
+# no single standing worktree carries is ungradable -- never a pass over
+# whatever the recorded revision alone happens to hold.
+
+
+def _no_workspace(branch: str) -> str:
+    """Why a recorded revision alone is not a workspace to grade."""
+
+    return (
+        f"{branch!r} names a revision no single standing worktree carries: "
+        "nothing here can say where that workspace's work went, and the "
+        "recorded revision alone grades work this item never did"
+    )
 
 
 class Refused(Exception):
@@ -54,6 +76,111 @@ def _dirty_paths(cwd, git=_git) -> list:
                 found.append(fields[index])
                 index += 1
     return found
+
+
+def _current_branch(git_out) -> str:
+    """This checkout's branch, named so that it resolves in either state.
+
+    The sha is read only when there is no branch to read instead: ``check``
+    calls this once per grade, and a caller that has stubbed git for the
+    calls a grade makes should not have to answer a call a grade never
+    needed.
+    """
+
+    branch = git_out("rev-parse", "--abbrev-ref", "HEAD")
+    if branch != "HEAD":
+        return branch
+    return f"{DETACHED_PREFIX}{git_out('rev-parse', 'HEAD')}"
+
+
+def _head_and_branch(git_out):
+    """This workspace's branch and the revision it derives from."""
+
+    return _current_branch(git_out), git_out("rev-parse", "HEAD")
+
+
+def _checkouts(git_out) -> list:
+    """Every directory this repository is checked out in."""
+
+    return [
+        Path(entry["worktree"]).resolve()
+        for entry in _worktrees(git_out)
+        if entry.get("worktree")
+    ]
+
+
+def _worktrees(git_out) -> list:
+    """Every record ``git worktree list --porcelain`` reports, as read."""
+
+    found, current = [], {}
+    for line in git_out("worktree", "list", "--porcelain").splitlines() + [""]:
+        if line:
+            key, _, value = line.partition(" ")
+            current[key] = value
+            continue
+        if current:
+            found.append(current)
+        current = {}
+    return found
+
+
+def _tip_ref(branch: str) -> str:
+    """The revision a recorded ``workspace_branch`` names."""
+
+    return branch[len(DETACHED_PREFIX):] if branch.startswith(DETACHED_PREFIX) else branch
+
+
+def _detached_tip(git_out, is_ancestor, sha):
+    """Where a detached workspace stands now, or ``None`` if nothing says.
+
+    A branch name resolves to whatever the item committed onto it; a bare sha
+    is frozen at the moment ``start`` read it, so grading it directly sees
+    none of the item's commits. The standing detached worktree past that sha
+    is the same item's workspace, and its HEAD is the ref a branch would have
+    been -- but only when exactly one such worktree stands. None of them and
+    the workspace is gone, taking the only record of where its work went;
+    two of them and the recorded revision, which is all either workspace
+    recorded, cannot say which is this item's. Both answers are ``None``,
+    because both grade some other work as this item's if answered.
+    """
+
+    found = {
+        entry["HEAD"]
+        for entry in _worktrees(git_out)
+        if "detached" in entry and entry.get("HEAD") and is_ancestor(sha, entry["HEAD"])
+    }
+    return found.pop() if len(found) == 1 else None
+
+
+def _ticket_worktree(git_out, branch: str, tip: str):
+    """The still-present linked worktree carrying this item's work, if any."""
+
+    for entry in _worktrees(git_out):
+        if entry.get("branch") == f"refs/heads/{branch}" or (
+            "detached" in entry and entry.get("HEAD") == tip
+        ):
+            return Path(entry["worktree"]).resolve()
+    return None
+
+
+def _baseline(head: str, dirty) -> str:
+    """The revision this workspace derives from, plus what was dirty at start.
+
+    ``orch-workspace`` forbids proceeding without recording, not proceeding:
+    a dirty tree is stamped, never refused. A path carrying one of the
+    characters below is refused, because the stamp is one comma-joined
+    frontmatter scalar and no reader could tell such a path's ends apart.
+    """
+
+    for entry in dirty:
+        for character in AMBIGUOUS:
+            if character in entry:
+                raise Refused(
+                    f"dirty path {entry!r} contains {character!r}, which a comma-joined "
+                    "frontmatter value cannot carry unambiguously: commit, "
+                    "remove or rename it, then run start again"
+                )
+    return f"{head} clean" if not dirty else f"{head} dirty: {', '.join(dirty)}"
 
 
 def _graded(payload, what: str) -> dict:

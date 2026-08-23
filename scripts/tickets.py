@@ -82,6 +82,7 @@ if _SIBLING_DIR not in _bootstrap_sys.path:
     _bootstrap_sys.path.append(_SIBLING_DIR)
 
 if __package__:
+    from . import tickets_bound as _tickets_bound_module
     from . import tickets_format as _tickets_format_module
     from . import tickets_store as _tickets_store_module
     from . import tickets_issue as _tickets_issue_module
@@ -89,9 +90,15 @@ if __package__:
     from . import tickets_packet as _tickets_packet_module
     from . import tickets_result as _tickets_result_module
     from . import tickets_worklog as _tickets_worklog_module
+    from . import tickets_commands as _tickets_commands_module
+    from . import tickets_lint as _tickets_lint_module
+    from . import tickets_reissue as _tickets_reissue_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
 else:
+    # By name, as `tickets_generations` is reached: the family's
+    # module-level import census is pinned, and this module joined after it.
+    _tickets_bound_module = __import__('tickets_bound')
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
     import tickets_issue as _tickets_issue_module
@@ -99,9 +106,19 @@ else:
     import tickets_packet as _tickets_packet_module
     import tickets_result as _tickets_result_module
     import tickets_worklog as _tickets_worklog_module
+    import tickets_commands as _tickets_commands_module
+    import tickets_lint as _tickets_lint_module
+    _tickets_reissue_module = __import__('tickets_reissue')
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
 
+BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
+OTHER_BOUND_KIND = _tickets_bound_module.OTHER_BOUND_KIND
+TOOL_CALL_MINUTES = _tickets_bound_module.TOOL_CALL_MINUTES
+parse_bound = _tickets_bound_module.parse_bound
+should_park = _tickets_bound_module.should_park
+_cmd_bound_check = _tickets_bound_module._cmd_bound_check
+BOUND_CHECK_USAGE = _tickets_commands_module.BOUND_CHECK_USAGE
 CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
 CUT_SECTIONS_BY_KEY = _tickets_format_module.CUT_SECTIONS_BY_KEY
@@ -377,13 +394,21 @@ _template_order = _tickets_worklog_module._template_order
 _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
 template_defects = _tickets_worklog_module.template_defects
-GATE_USAGE = _tickets_dispatch_module.GATE_USAGE
-HELP_COMMANDS = _tickets_dispatch_module.HELP_COMMANDS
-HELP_FLAGS = _tickets_dispatch_module.HELP_FLAGS
-INSTANTIATE_USAGE = _tickets_dispatch_module.INSTANTIATE_USAGE
-SUBCOMMAND_SUMMARY = _tickets_dispatch_module.SUBCOMMAND_SUMMARY
-SUBCOMMAND_USAGE = _tickets_dispatch_module.SUBCOMMAND_USAGE
-VALUE_FLAGS = _tickets_dispatch_module.VALUE_FLAGS
+GATE_USAGE = _tickets_commands_module.GATE_USAGE
+HELP_COMMANDS = _tickets_commands_module.HELP_COMMANDS
+HELP_FLAGS = _tickets_commands_module.HELP_FLAGS
+INSTANTIATE_USAGE = _tickets_commands_module.INSTANTIATE_USAGE
+SUBCOMMAND_SUMMARY = _tickets_commands_module.SUBCOMMAND_SUMMARY
+SUBCOMMAND_USAGE = _tickets_commands_module.SUBCOMMAND_USAGE
+VALUE_FLAGS = _tickets_commands_module.VALUE_FLAGS
+read_payload = _tickets_commands_module.read_payload
+resolve_payload_flags = _tickets_commands_module.resolve_payload_flags
+LINT_USAGE = _tickets_lint_module.LINT_USAGE
+apply_fixes = _tickets_lint_module.apply_fixes
+lint_findings = _tickets_lint_module.lint_findings
+_cmd_lint = _tickets_lint_module._cmd_lint
+REISSUE_USAGE = _tickets_commands_module.REISSUE_USAGE
+_cmd_reissue = _tickets_reissue_module._cmd_reissue
 _cmd_gate = _tickets_dispatch_module._cmd_gate
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
@@ -448,6 +473,10 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
+    _tickets_dispatch_module._cmd_lint = _cmd_lint
+    _tickets_dispatch_module._cmd_bound_check = _cmd_bound_check
+    _tickets_dispatch_module._cmd_reissue = _cmd_reissue
+    _tickets_lint_module._write_text_atomically = _write_text_atomically
 
 if __name__ == "__main__":
     raise SystemExit(main())

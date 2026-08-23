@@ -48,7 +48,36 @@ def _refuse_ungradable_scope(declared, root=None) -> None:
             )
 
 
-def _normalized_scope(declared, root: Path) -> tuple:
+def _relative_to_any(entry: str, resolved: Path, roots) -> str:
+    """An absolute entry as a POSIX path under the first root holding it.
+
+    More than one root because the same repository is more than one
+    directory: an item's grant may be written against the workspace it was
+    cut for or against the checkout the join grades it in, and an entry
+    refused for naming the wrong one of those would be refusing the host.
+    """
+
+    # deepest root first, never declaration order: a workspace of this
+    # repository is a directory inside it, so the same entry is under both
+    # the workspace and the checkout holding it, and the outer one answers
+    # with a path naming the workspace rather than the grant it was written
+    # for -- ``start`` and the join would canonicalise one entry two ways
+    for root in sorted(roots, key=lambda entry: len(entry.parts), reverse=True):
+        try:
+            return resolved.relative_to(root).as_posix()
+        except ValueError:
+            continue
+    raise Refused(
+        # quoted plainly, never {!r}: a Windows entry carries backslashes,
+        # and repr doubles every one of them, so the refusal named a path
+        # the caller never wrote and could not grep its own ticket for
+        f"{WRITE_SCOPE_KEY} entry '{entry}' is an absolute path outside the main "
+        f"repository root {roots[0]}: nothing in this repository can match "
+        "it"
+    )
+
+
+def _normalized_scope(declared, *roots) -> tuple:
     """``write_scope`` as repository-relative POSIX paths."""
 
     if isinstance(declared, str):
@@ -60,18 +89,7 @@ def _normalized_scope(declared, root: Path) -> tuple:
             continue
         candidate = Path(entry)
         if candidate.is_absolute() or (len(entry) > 1 and entry[1] == ":"):
-            try:
-                entry = candidate.resolve().relative_to(root).as_posix()
-            except ValueError:
-                raise Refused(
-                    # quoted plainly, never {!r}: a Windows entry carries
-                    # backslashes, and repr doubles every one of them, so the
-                    # refusal named a path the caller never wrote and could
-                    # not grep its own ticket for
-                    f"{WRITE_SCOPE_KEY} entry '{entry}' is an absolute path outside the main "
-                    f"repository root {root}: nothing in this repository can match "
-                    "it"
-                )
+            entry = _relative_to_any(entry, candidate.resolve(), roots)
         parts = [part for part in entry.replace("\\", "/").split("/") if part not in ("", ".")]
         if ".." in parts:
             raise Refused(

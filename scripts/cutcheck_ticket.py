@@ -64,6 +64,13 @@ except ImportError:  # installed flat script directory
     import cutcheck_search as _search
 _verdict_in_output = _search._verdict_in_output
 _whole_suite = _search._whole_suite
+_indirect_whole_suite = _search._indirect_whole_suite
+_input_literals = _search._input_literals
+
+try:  # repository checkout
+    from scripts.cutcheck_graph import _root_ids
+except ImportError:  # installed flat script directory
+    from cutcheck_graph import _root_ids
 
 
 def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
@@ -101,6 +108,21 @@ def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
             rendered.append((ticket_id, 0, code, f'{field}: {detail}'))
     return rendered
 
+GATE_VERIFY_SUFFIX = '.gate.verify'
+
+
+def _frozen_authority(ticket_id, is_root):
+    """Is this item's write authority its frontmatter's alone?
+
+    A root freezes the cumulative acceptance its units deliver, and its
+    ``gate.verify`` stub re-runs that same acceptance.  Neither writes what
+    those criteria describe -- the units do -- so a criterion such as
+    "records required-check-run/v1" names a unit's artifact and commits the
+    frozen item to nothing.  Their own Objective and frontmatter authority
+    stay graded, and a unit's Completion test still commits the unit.
+    """
+    return is_root or ticket_id.endswith(GATE_VERIFY_SUFFIX)
+
 def _check_ticket(path, baseline_tree, head_tree, siblings):
     text = path.read_text(encoding="utf-8")
     frontmatter = _parse_frontmatter(text)
@@ -113,6 +135,19 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         sibling_data = _parse_frontmatter(sibling_text)
         sibling_texts[str(sibling_data.get('id') or sibling_path.stem)] = sibling_text
     findings = _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree)
+    # A top-level root freezes acceptance; commands in that acceptance observe
+    # the unit result and can therefore name paths absent from the baseline.
+    # That positional exemption covers only command-argument path existence;
+    # write-looking Completion-test prose is `_frozen_authority`'s, which
+    # reads the root and its gate.verify stub alike.  Command shape,
+    # citations, and each item's own Objective/frontmatter authority remain
+    # graded.  A nested decomposer is not a root and receives no exemption.
+    is_root = ticket_id in _root_ids(siblings)
+    # Resolved once for the item: the same section answers every criterion, and
+    # a frozen item's completion test is the acceptance itself, so naming the
+    # gate's row there is what it is for rather than a defect of it.
+    frozen = _frozen_authority(ticket_id, is_root)
+    literals = {} if frozen else _input_literals(sections.get(INPUTS_SECTION, ""))
     for number, criterion in _criteria(sections.get(COMPLETION_SECTION, "")):
         prose = _prose(criterion)
         findings.extend(
@@ -120,7 +155,17 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
             for klass, detail in _path_reality(prose, baseline_tree)
         )
         commands = _commands(criterion)
+        # An oracle naming the fixed input that holds its command states that
+        # command through a name. Read before the gap below, because the gap
+        # says no extractor recognized the oracle and this one recognized it.
+        indirect = _indirect_whole_suite(criterion, literals, baseline_tree)
+        if indirect is not None:
+            findings.append(
+                (ticket_id, number, WHOLE_SUITE_ORACLE, "{}: {}".format(*indirect))
+            )
         if not commands:
+            if indirect is not None:
+                continue
             # The stated class travels with the gap: a judged criterion states
             # no command by design, and one that names a class this tool can
             # run is under-coverage. The decomposer reads which it has.
@@ -144,7 +189,7 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
                 for arg in _path_args(command)
                 if not (baseline_tree / arg).exists() and not _covered(arg, granted)
             ]
-            if missing:
+            if missing and not is_root:
                 # A command reaching for a path nothing has is not discriminating.
                 findings.extend(
                     (ticket_id, number, MISSING_PATH, "{}: {}".format(arg, command))
@@ -198,9 +243,10 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         (ticket_id, 0, klass, detail)
         for klass, detail in _path_reality(_prose(header), baseline_tree)
     )
-    body = "\n".join(
-        sections.get(name, "") for name in (OBJECTIVE_SECTION, COMPLETION_SECTION)
-    )
+    completion = sections.get(COMPLETION_SECTION, "")
+    if frozen:
+        completion = ""
+    body = "\n".join((sections.get(OBJECTIVE_SECTION, ""), completion))
     findings.extend(
         (ticket_id, 0, klass, detail)
         for klass, detail in _scope_closure(frontmatter, _prose(body))
@@ -218,5 +264,5 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
 # six families are the module docstring's to describe; this names none of them.
 
 __all__ = (
-    '_check_ticket', '_policy_findings',
+    '_check_ticket', '_policy_findings', '_frozen_authority',
 )

@@ -427,12 +427,13 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
     if count <= INSTRUCTION_BUDGET:
         return None
     return {'error': f'{subject} has a {count}-word instruction, over the {INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md, section 11): the objective, completion test, excluded actions and return fields a child loads every dispatch, never its fixed inputs. A compound objective is two items, not one longer ticket'}
-def _issue_defects(text: str) -> list:
+def _issue_defects(text: str, *, issued: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 
-    Existing tickets may legitimately carry the immutable checker identity
-    written by ``tickets.py check``. An unissued ticket cannot: admitting it
-    would let a caller suppress the checker before dispatch.
+    Existing tickets may carry the immutable identity ``tickets.py check``
+    wrote; an unissued one cannot -- admitting it would suppress the checker
+    before dispatch. ``issued`` lifts that one rule, and no other, once the
+    dispatch it guards has happened.
     """
     defects = ticket_defects(text)
     data = _parse_frontmatter(text)
@@ -448,15 +449,9 @@ def _issue_defects(text: str) -> list:
     checked_by = str(data.get('checked_by') or '').strip()
     if checked_by:
         if independence == 'gate' and _executor_of(data) != ROOT_EXECUTOR:
-            defects.append(
-                "non-root independence 'gate' cannot carry 'checked_by' "
-                "(contracts/work-item.md)"
-            )
-        else:
-            defects.append(
-                "an unissued ticket cannot carry 'checked_by': only "
-                "`tickets.py check` sets it after checker dispatch"
-            )
+            defects.append("non-root independence 'gate' cannot carry 'checked_by' (contracts/work-item.md)")
+        elif not issued:
+            defects.append("an unissued ticket cannot carry 'checked_by': only `tickets.py check` sets it after checker dispatch")
     return defects
 def _issue_ticket(run: str, ticket_id: str, text: str):
     """Grade one rendered ticket, then write it — in that order.

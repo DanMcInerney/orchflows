@@ -11,9 +11,10 @@ write_scope:
 ---
 ## Objective
 
-Every accepted finding against `00-root` is repaired inside this ticket's own
-write scope, or declined with a stated reason; nothing outside that scope
-changes.
+Every accepted blocking finding against `00-root` is repaired inside this
+ticket's own write scope, or declined with a stated reason; every accepted
+non-blocking finding is queued as candidate scope per verification §9, and
+nothing outside that scope changes.
 
 ## Fixed inputs
 
@@ -23,7 +24,7 @@ changes.
 
 ## Completion test
 
-- every accepted finding is repaired or declined with a stated reason | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: authored-here
+- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: pre-existing
 - nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing
 
 ## Result

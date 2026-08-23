@@ -77,10 +77,16 @@ _DYNAMIC_FIELDS = frozenset({
     "granted_at",
 })
 _TERMINAL = frozenset({"complete", "blocked", "stalled", "limited", "failed"})
+_TAKEN_UP = frozenset({"claimed", "suspended", *_TERMINAL})
+def _taken_up(data: dict) -> bool:
+    """Claimed, suspended, terminal, or carrying a released lease's claim."""
+    return (str(data.get("status") or "") in _TAKEN_UP
+            or bool(str(data.get("claimed_at") or "").strip()))
+_ROOT_COHORT_PREFIX = "v1:root:"
 def ticket_cohort(ticket_id: str) -> str:
     return f"v1:ticket:{ticket_id}"
 def root_cohort(root_id: str) -> str:
-    return f"v1:root:{root_id}"
+    return f"{_ROOT_COHORT_PREFIX}{root_id}"
 def batch_cohort(ticket_ids) -> str:
     joined = "\0".join(sorted(str(value) for value in ticket_ids)).encode("utf-8")
     return f"v1:batch:{hashlib.sha256(joined).hexdigest()[:12]}"
@@ -264,18 +270,26 @@ def relevant_snapshot_ids(ticket_id: str, text: str, siblings: dict) -> list:
 
 
 def cohort_sealed(ticket_id: str, text: str, siblings: dict) -> bool:
+    """Whether this ticket's cut is frozen by the cohort it belongs to.
+
+    A `v1:root:` cohort is judged on the graded member alone: its members
+    run on a rolling frontier while the decomposer is still cutting, and a
+    member nobody has taken up is reachable by nobody, since a running
+    sibling never depends on one -- an incomplete dependency is refused
+    admission. Its own state seals it, a lease's leftover claim included;
+    `v1:ticket:` and `v1:batch:` still seal on any other member.
+    """
     data = _parse_frontmatter(text)
     cohort = str(data.get("cohort") or "")
     if not cohort:
         return False
+    if cohort.startswith(_ROOT_COHORT_PREFIX):
+        return _taken_up(data)
     for sibling_id, sibling_text in siblings.items():
         if sibling_id == ticket_id:
             continue
         sibling = _parse_frontmatter(sibling_text)
-        if str(sibling.get("cohort") or "") != cohort:
-            continue
-        status = str(sibling.get("status") or "")
-        if status in {"claimed", "suspended", *_TERMINAL} or str(sibling.get("claimed_at") or "").strip():
+        if str(sibling.get("cohort") or "") == cohort and _taken_up(sibling):
             return True
     return False
 

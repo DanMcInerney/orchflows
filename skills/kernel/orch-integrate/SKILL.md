@@ -31,7 +31,8 @@ unresolved, or oversized results are `reject(child)`. Record blame with
 `tickets.py run-state --note`; only this join calls `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here by filing the empty result and
-status, without dispatch.
+status, without dispatch. Accepted non-blocking findings go to the run's
+improvement or successor candidates, never that repair.
 
 For v2, validate exactly one
 `- amendment-request: <canonical JSON record>` in a parked worker's Handoff,

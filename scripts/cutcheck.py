@@ -325,7 +325,9 @@ def main(argv=None):
         findings = []
         for path in issued:
             findings.extend(_check_ticket(path, baseline_tree, head_tree, siblings))
-        findings.extend(_pairwise(siblings, reads))
+        # The baseline tree, because a shard the reading names is that
+        # revision's shard and the resolver that names it is too.
+        findings.extend(_pairwise(siblings, reads, tree=baseline_tree))
         # The sink first: a run's coverage map lives there now, and a report
         # line naming it absolutely would be machine-specific again.
         roots = (state_root.state_root(), worktree_root,

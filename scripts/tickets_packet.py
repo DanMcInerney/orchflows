@@ -11,9 +11,9 @@ try:
 except ImportError:
     import state_root
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
+    from .tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, PROVENANCE_RE, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
 else:
-    from tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
+    from tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, PROVENANCE_RE, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
 if __package__:
     from .tickets_issue import AMENDABLE_STATUSES
 else:
@@ -37,6 +37,9 @@ CHECKER_EXECUTOR = 'orch-critique'
 REVERIFIER_EXECUTOR = 'orch-verify'
 CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
 CHECKABLE_STATUSES = frozenset({'claimed', 'suspended'})
+CHECKER_INDEPENDENCE = 'checker'
+PRE_EXISTING_PROVENANCE = 'pre-existing'
+CHECKER_NOT_REQUIRED = 'checker not required: every criterion carries provenance: pre-existing'
 _SHELL_SAFE_TOKEN = re.compile(r'^[A-Za-z0-9_./:\\=-]+$')
 
 
@@ -219,6 +222,30 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         head.append(f"This is the rules/verification.md §10 re-verification of a checked result, never a re-execution of the item: run the ticket's `## Completion test` at {at_identity}, reusing prior `## Verification` entries whose `covers` are unchanged there.")
         head.append("Your authority grants no write: the item's workspace and its `## Result` are another context's, and `## Verification` is the one section you file.")
     return head
+def _all_pre_existing(completion: str) -> bool:
+    """Every criterion of ``completion`` declares `provenance: pre-existing`.
+
+    One of the rules/verification.md §10 ordinary independence paths, read
+    off the ticket -- and the whole of what orch-frontier already calls a
+    "pre-existing-only" item. Read off what the section carries and never
+    off what it omits: `provenance` is optional (contracts/work-item.md)
+    and an undeclared oracle makes no claim to predate the item, so a
+    section holding one is not on that path. Nor is an empty section:
+    ``criterion_defects`` has refused the packet long before this, and
+    "every one of no criteria" is not an exemption anything earned.
+
+    Criteria come from ``_criteria``, criterion parsing's one owner, so the
+    section reads the same way to this exemption as it does to the packet
+    refusal that grades it.
+    """
+    criteria = _criteria(completion)
+    if not criteria:
+        return False
+    for text in criteria:
+        declared = PROVENANCE_RE.search(text)
+        if declared is None or declared.group(1).strip().lower() != PRE_EXISTING_PROVENANCE:
+            return False
+    return True
 def _cmd_packet(rest):
     probe = list(rest)
     for flag in ('--reply-to', '--workspace', '--executor'):
@@ -319,6 +346,8 @@ def _packet_under_run_lock(rest):
         prior_checker = str(loaded.get(CHECKED_BY_KEY) or '').strip().strip('`')
         if further == CHECKER_EXECUTOR and prior_checker:
             return {'error': f"ticket {run}/{ticket_id} is already checked by '{prior_checker}': no second checker packet is emitted. Use a distinctly named root-gate lens for another review"}
+        if further == CHECKER_EXECUTOR and independence == CHECKER_INDEPENDENCE and _all_pre_existing(completion):
+            return {'error': f"ticket {run}/{ticket_id}: {CHECKER_NOT_REQUIRED} (rules/verification.md §10). An all-pre-existing completion test is itself that section's independence path and exactly one path enters an item, so there is no checker to dispatch here: issue the item's own executor packet, this call without --executor, and re-verify at the result identity. ticket: {ticket_path}"}
         if further == CHECKER_EXECUTOR and _executor_of(loaded) == ROOT_EXECUTOR:
             root_id = loaded['id']
             subtree = _cut_subtree(loaded.get('run') or run, root_id)

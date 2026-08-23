@@ -2,15 +2,13 @@
 
 try:  # repository checkout
     from scripts import cutcheck_contract as _contract
+    from scripts import tickets_format as _syntax
 except ImportError:  # installed flat script directory
     import cutcheck_contract as _contract
+    import tickets_format as _syntax
 COUNT_FLAG_RE = _contract.COUNT_FLAG_RE
-DISCOVER = _contract.DISCOVER
-FILTER_MATCHES_ALL = _contract.FILTER_MATCHES_ALL
 GIT_COUNT_FLAG = _contract.GIT_COUNT_FLAG
 GIT_HEAD = _contract.GIT_HEAD
-NODE_FILTER = _contract.NODE_FILTER
-NODE_SEP = _contract.NODE_SEP
 NO_MATCH = _contract.NO_MATCH
 Path = _contract.Path
 SEARCH_ERROR = _contract.SEARCH_ERROR
@@ -18,10 +16,21 @@ SEARCH_FLAGS = _contract.SEARCH_FLAGS
 SEARCH_HEADS = _contract.SEARCH_HEADS
 SEARCH_LONG_FLAGS = _contract.SEARCH_LONG_FLAGS
 SEARCH_PATTERN_FLAG = _contract.SEARCH_PATTERN_FLAG
-TEST_RUNNERS = _contract.TEST_RUNNERS
 os = _contract.os
 re = _contract.re
 shlex = _contract.shlex
+# The oracle-shape vocabulary and the whole-suite detector belong to the
+# syntax owner, `scripts/tickets_format.py`: a criterion's oracle is ticket
+# syntax, and `tickets.py lint` grades it without cutcheck in the room.
+# Read here rather than restated, so one reading decides both callers.
+DISCOVER = _syntax.DISCOVER
+FILTER_MATCHES_ALL = _syntax.FILTER_MATCHES_ALL
+NODE_FILTER = _syntax.NODE_FILTER
+NODE_SEP = _syntax.NODE_SEP
+TEST_RUNNERS = _syntax.TEST_RUNNERS
+_filter_narrows = _syntax._filter_narrows
+_whole_suite = _syntax._whole_suite
+_whole_target = _syntax._whole_target
 
 def _search_span(argv):
     """A search span as ``(letters, pattern, operands)``, or None where a token
@@ -263,87 +272,148 @@ def _verdict_in_output(command):
     return any(COUNT_FLAG_RE.match(token) for token in argv[1:])
 
 
-def _whole_target(target, tree):
-    """Does this target name a whole module or directory, not a node inside one?
 
-    Decided against the tree, because only the tree knows where the module
-    stops. ``tests.test_cutcheck`` is a file and
-    ``tests.test_cutcheck.CleanSetTest`` is a class inside that file, and no
-    reading of the two strings tells them apart. A unittest target spells the
-    way down with dots and a pytest target spells it with slashes; both are one
-    question about where the path stops resolving.
+# The gate's row, read as the tokens that identify each of the five checks
+# `AGENTS.md` requires. An oracle naming a fixed input whose value holds one of
+# them is stating the gate's row through a name, which is the one spelling the
+# command-shaped reading above cannot see.
+REQUIRED_SCRIPTS = frozenset({"validate.py", "run_serial_compat.py"})
+SHARD_RUNNER = "run_tests.py"
+DRY_RUN = ("install.py", "--dry-run")
+DIFF_CHECK = ("git", "diff", "--check")
+# `tools/run_tests.py` is the one required check that also spells a unit's own
+# focused oracle, so the name alone decides nothing about it: a run naming what
+# it runs -- through `--scope` or through a positional module -- is the oracle
+# the unit policy asks for, and convicting it would convict every honest unit.
+SELECTION_FLAG = "--scope"
+# A value states several commands and each is read where it stands: a shard
+# runner in one clause and a `--scope` in the next are two commands, not one
+# selected run.
+SEGMENT_RE = re.compile(r"[;,\n]")
+INPUT_PREFIX = "- input: "
+# A name is named, never merely spelled inside a longer one: `focused` must not
+# be found in `focused-regression`, and the separator these names carry is a
+# word character to no regular expression that does not say so.
+NAME_EDGE = r"(?<![0-9A-Za-z_-]){}(?![0-9A-Za-z_-])"
+
+
+def _value_tokens(segment):
+    """One segment's argv-ish tokens, punctuation and path separators evened out."""
+
+    return [token.strip("`\"'.()").replace("\\", "/") for token in segment.split()]
+
+
+def _selects_its_shards(tokens, index):
+    """Does this shard-runner invocation name which shards it runs?"""
+
+    return any(
+        token == SELECTION_FLAG or not token.startswith("-")
+        for token in tokens[index + 1:]
+    )
+
+
+def _required_check(segment):
+    """Is this segment one of the five checks the standards owner requires?
+
+    Read on what stands in the segment rather than on an exact spelling: the
+    interpreter in front differs by host, `python`, `python3` and `uv run
+    --no-project python` all being the same check, and the value is prose that
+    happens to hold a command rather than a command line.
     """
 
-    if NODE_SEP in target:
-        return False
-    here = tree / (target if "/" in target else target.replace(".", "/"))
-    return here.is_dir() or here.with_suffix(".py").is_file()
-
-
-def _filter_narrows(argv):
-    """Does this command's node filter actually exclude any node?
-
-    The token's presence was the whole test once, and that read `-k test` --
-    which matches every method in the suite -- as a narrowed oracle. The
-    pattern is read instead: anything `test_` starts with matches all of them
-    and narrows nothing, and everything else is taken at its word, because
-    which nodes a pattern selects is a question for the runner and not for
-    this.
-    """
-
-    if NODE_FILTER not in argv:
-        return False
-    index = argv.index(NODE_FILTER)
-    pattern = argv[index + 1].strip("\"'") if index + 1 < len(argv) else ""
-    return not FILTER_MATCHES_ALL.startswith(pattern)
-
-
-def _whole_suite(command, tree):
-    """Is this a test invocation naming no node id?
-
-    ``_commands`` refuses a bare head for this reason already: a tool's name
-    with nothing after it decides nothing. A whole-module or whole-suite
-    invocation is that same defect with more typing -- it runs the identical
-    tests under every item it is stated under, so it discriminates none of
-    them, and the honest report of it is the gap.
-
-    Reported rather than run, which is what makes the class worth having: this
-    repository's own mandated ``discover`` outgrows ``COMMAND_TIMEOUT`` in the
-    cleanest store there is, so executing it returned ``unrunnable-oracle`` --
-    a true class reached by reading the clock instead of the cut.
-
-    A target resolving to no module at all is some flag's value rather than a
-    thing to grade, and one such token is enough to withhold the finding: this
-    convicts what it can read whole, and stays quiet over what it cannot.
-
-    A runner carrying flags and no target at all is the widest spelling there
-    is -- ``pytest -q``, or the bare ``python3 -m unittest`` that is documented
-    as equivalent to ``discover``. Naming nothing is not the same as naming
-    something unreadable, so the two are separated here: the finding is
-    withheld over a quoted target, which names a node this cannot parse, and
-    made over an empty one, which names none.
-    """
-
-    argv = command.split()
-    runner = next((i for i, token in enumerate(argv) if token in TEST_RUNNERS), None)
-    if runner is None or _filter_narrows(argv):
-        return False
-    rest = argv[runner + 1:]
-    if DISCOVER in rest:
+    tokens = _value_tokens(segment)
+    names = [token.rsplit("/", 1)[-1] for token in tokens]
+    present = set(tokens) | set(names)
+    if present & REQUIRED_SCRIPTS:
         return True
-    if NODE_FILTER in rest:
-        # Reaching here means the pattern matched every node, so it is a flag's
-        # value and not a target. Left in, it resolves to no module and
-        # withholds the finding over the very filter that earned it.
-        at = rest.index(NODE_FILTER)
-        rest = rest[:at] + rest[at + 2:]
-    targets = [token for token in rest if token[:1] not in ("-", '"', "'")]
-    if not targets:
-        return not any(token[:1] in ('"', "'") for token in rest)
-    return all(_whole_target(token, tree) for token in targets)
+    if all(part in present for part in DRY_RUN):
+        return True
+    if all(part in present for part in DIFF_CHECK):
+        return True
+    if SHARD_RUNNER in names:
+        return not _selects_its_shards(tokens, names.index(SHARD_RUNNER))
+    return False
+
+
+def _whole_suite_value(value, tree):
+    """The segment of this literal value that names a whole-suite run, or None.
+
+    The same question `_whole_suite` asks of a command, asked of the text a
+    fixed input holds: is, or contains, one of the five required checks, a
+    shard-runner invocation naming no shard, or a test invocation naming no
+    node id. The segment is returned rather than a bare yes so the report can
+    name which half of the value earned the finding.
+    """
+
+    if not isinstance(value, str):
+        return None
+    for segment in SEGMENT_RE.split(value):
+        segment = segment.strip()
+        if segment and (_required_check(segment) or _whole_suite(segment, tree)):
+            return segment
+    return None
+
+
+def _input_literals(section):
+    """``{name: value}`` for every literal record this Fixed-inputs section holds.
+
+    Read leniently: whether a record is canonical, complete or unique is the
+    admission layer's finding and is reported there. What is asked here is
+    narrower -- which name stands for which literal text -- and a record that
+    would fail admission still answers it.
+    """
+
+    literals = {}
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith(INPUT_PREFIX):
+            continue
+        try:
+            record = _syntax.parse_canonical_json(line[len(INPUT_PREFIX):])
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(record, dict) or record.get("type") != "literal":
+            continue
+        name, value = record.get("name"), record.get("value")
+        if isinstance(name, str) and isinstance(value, str):
+            literals[name] = value
+    return literals
+
+
+def _indirect_whole_suite(criterion, literals, tree):
+    """``(name, segment)`` where this criterion's oracle names its acceptance.
+
+    An oracle may state its command or name the fixed input holding it, and the
+    second spelling ran unread: "run the `acceptance-as-runnable-checks` fixed
+    input" carries no command head, so it left the report as an extraction gap
+    while naming the whole gate's row. The record is resolved by name and its
+    value read with the same detector, so both spellings reach one verdict.
+
+    The oracle field alone, never the prose beside it. A criterion cites the
+    policy it works under and states its own focused check, and policy prose
+    holds commands: this run's `unit-oracle-policy` states `git diff --check`
+    inside its value. Reading the whole criterion convicted the citation, and
+    this class sets the exit status, so the cost of that reading is an honest
+    cut refused.
+    """
+
+    stated = _syntax.ORACLE_RE.search(criterion)
+    if stated is None:
+        return None
+    oracle = stated.group(1)
+    for name in sorted(literals):
+        if not re.search(NAME_EDGE.format(re.escape(name)), oracle):
+            continue
+        segment = _whole_suite_value(literals[name], tree)
+        if segment is not None:
+            return name, segment
+    return None
+
 
 __all__ = (
     '_search_span', '_search_matcher', '_selected', '_files_under',
     '_inside_the_copy', '_search_exit', '_unreadable_search', '_verdict_in_output',
-    '_whole_target', '_filter_narrows', '_whole_suite',
+    '_whole_target', '_filter_narrows', '_whole_suite', '_value_tokens',
+    '_selects_its_shards', '_required_check', '_whole_suite_value',
+    '_input_literals', '_indirect_whole_suite',
 )
