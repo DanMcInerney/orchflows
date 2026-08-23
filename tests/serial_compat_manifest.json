@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2552,
+  "count": 2582,
   "identities": [
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
@@ -345,6 +345,8 @@
    "test_run_required.TestCacheService.test_no_cache_runs_again_and_stores_nothing_new",
    "test_run_required.TestCacheService.test_the_runners_own_memo_never_counts_as_a_change",
    "test_run_required.TestCacheService.test_touching_one_tracked_file_invalidates_the_entry",
+   "test_run_required.TestConsoleCodec.test_a_json_record_survives_the_same_console",
+   "test_run_required.TestConsoleCodec.test_a_text_report_survives_a_console_that_cannot_spell_it",
    "test_run_required.TestExitMapping.test_a_red_cheap_check_does_not_cancel_the_long_ones",
    "test_run_required.TestExitMapping.test_all_five_green_is_zero",
    "test_run_required.TestExitMapping.test_one_red_check_is_one",
@@ -458,6 +460,27 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
+   "test_tickets_lint.CommandTableTest.test_every_routed_subcommand_states_a_usage_and_a_summary",
+   "test_tickets_lint.CommandTableTest.test_tables_are_owned_by_the_commands_module",
+   "test_tickets_lint.CommandTableTest.test_the_new_payload_flags_are_value_flags",
+   "test_tickets_lint.LintDraftTest.test_a_clean_draft_exits_zero_with_no_finding",
+   "test_tickets_lint.LintDraftTest.test_a_root_and_a_gate_stub_stay_exempt_from_the_ceiling",
+   "test_tickets_lint.LintDraftTest.test_a_whole_suite_oracle_is_reported_as_a_warning",
+   "test_tickets_lint.LintDraftTest.test_an_executor_named_on_the_command_line_is_graded",
+   "test_tickets_lint.LintDraftTest.test_an_unreadable_draft_is_exit_two",
+   "test_tickets_lint.LintDraftTest.test_five_defects_are_reported_in_one_call",
+   "test_tickets_lint.LintDraftTest.test_the_ceiling_finding_names_its_count_and_its_overage",
+   "test_tickets_lint.LintFixTest.test_fix_clears_the_three_syntactic_findings_and_leaves_the_two",
+   "test_tickets_lint.LintFixTest.test_fix_never_rewrites_the_semantic_half",
+   "test_tickets_lint.LintFixTest.test_fix_on_a_claimed_ticket_refuses_and_writes_nothing",
+   "test_tickets_lint.LintFixTest.test_fix_refuses_a_sealed_cohort",
+   "test_tickets_lint.LintFixTest.test_fix_refuses_every_cut_time_freeze_amend_refuses",
+   "test_tickets_lint.LintFixTest.test_fix_rewrites_an_unclaimed_ticket_in_the_sink",
+   "test_tickets_lint.LintFixTest.test_prose_naming_no_single_token_is_semantic_and_stays_written",
+   "test_tickets_lint.LintTicketTest.test_a_clean_issued_ticket_exits_zero",
+   "test_tickets_lint.LintTicketTest.test_a_dependency_that_is_not_complete_is_semantic",
+   "test_tickets_lint.LintTicketTest.test_a_missing_ticket_is_exit_two",
+   "test_tickets_lint.LintTicketTest.test_the_process_exit_status_carries_the_verdict",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_a_criterion_declaring_no_provenance_still_issues_it",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_a_gate_root_still_reaches_its_cut_reader",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_an_all_pre_existing_ticket_is_refused_the_checker_packet",
@@ -1412,6 +1435,13 @@
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_a_module_added_beside_the_facade_joins_the_family",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_facade_is_not_one_of_its_own_support_modules",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_support_names_are_the_sorted_siblings_of_the_facade",
+   "tests.test_tickets_cases.file_payloads.AmendmentRecordFilePayloadTest.test_a_record_file_naming_no_path_is_one_refusal",
+   "tests.test_tickets_cases.file_payloads.AmendmentRecordFilePayloadTest.test_a_record_read_from_a_file_round_trips_byte_exactly",
+   "tests.test_tickets_cases.file_payloads.AmendmentRecordFilePayloadTest.test_a_record_read_from_stdin_round_trips_byte_exactly",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_missing_note_file_is_one_refusal_and_no_write",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_given_inline_still_reaches_the_sink",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_read_from_a_file_lands_byte_exactly",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_read_from_stdin_lands_byte_exactly",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_reachable_and_documented_like_every_other_verb",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_refused_on_a_ticket_that_is_not_claimed",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_refuses_a_ticket_that_is_not_there",
@@ -2555,7 +2585,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "8fdb4400899758c216748caad7d084fd984d3343e8bc70f4ca80cde63c27df22"
+  "sha256": "c6aa900ea9f083bf46067485adf3d4842ebdfa94e5ec811ab4e755520ab77339"
  },
  "mutation_owners": [
   {
@@ -4621,6 +4651,56 @@
    ]
   },
   {
+   "module": "tests.test_tickets_cases.file_payloads",
+   "owner": "AmendmentRecordFilePayloadTest.test_a_record_read_from_a_file_round_trips_byte_exactly",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.file_payloads",
+   "owner": "AmendmentRecordFilePayloadTest.test_a_record_read_from_stdin_round_trips_byte_exactly",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.file_payloads",
+   "owner": "NoteFilePayloadTest.test_a_missing_note_file_is_one_refusal_and_no_write",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.file_payloads",
+   "owner": "NoteFilePayloadTest.test_a_note_given_inline_still_reaches_the_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.file_payloads",
+   "owner": "NoteFilePayloadTest.test_a_note_read_from_a_file_lands_byte_exactly",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.file_payloads",
+   "owner": "NoteFilePayloadTest.test_a_note_read_from_stdin_lands_byte_exactly",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_tickets_cases.identity_core",
    "owner": "TestRunIdentity.test_a_failed_first_payload_does_not_freeze_an_opening_identity",
    "restoration": "sharded-module-guard",
@@ -4847,6 +4927,30 @@
   {
    "module": "tests.test_tickets_issue_cases.generation_lifecycle",
    "owner": "DraftValidateSealLifecycleTest.test_reverting_an_old_assignment_still_allocates_a_successor",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_lint",
+   "owner": "LintFixture.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_lint",
+   "owner": "LintFixture.tearDown",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_lint",
+   "owner": "LintTicketTest.test_the_process_exit_status_carries_the_verdict",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
