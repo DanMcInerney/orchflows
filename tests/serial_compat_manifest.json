@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2649,
+  "count": 2653,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -501,9 +501,12 @@
    "test_tickets_lint.LintFixTest.test_fix_refuses_every_cut_time_freeze_amend_refuses",
    "test_tickets_lint.LintFixTest.test_fix_rewrites_an_unclaimed_ticket_in_the_sink",
    "test_tickets_lint.LintFixTest.test_prose_naming_no_single_token_is_semantic_and_stays_written",
+   "test_tickets_lint.LintTicketTest.test_a_checked_ticket_lints_clean",
    "test_tickets_lint.LintTicketTest.test_a_clean_issued_ticket_exits_zero",
    "test_tickets_lint.LintTicketTest.test_a_dependency_that_is_not_complete_is_semantic",
+   "test_tickets_lint.LintTicketTest.test_a_draft_carrying_checked_by_is_still_a_defect",
    "test_tickets_lint.LintTicketTest.test_a_missing_ticket_is_exit_two",
+   "test_tickets_lint.LintTicketTest.test_a_non_root_gate_ticket_carrying_checked_by_stays_a_defect",
    "test_tickets_lint.LintTicketTest.test_the_process_exit_status_carries_the_verdict",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_a_criterion_declaring_no_provenance_still_issues_it",
    "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_a_gate_root_still_reaches_its_cut_reader",
@@ -1509,6 +1512,7 @@
    "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_objective_repairs_the_accepted_blocking_findings",
    "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_stub_cites_no_file_section_it_does_not_quote_from",
    "tests.test_tickets_cases.gate_blocking.GateRepairConsumesBlockingFindingsTest.test_the_stub_still_states_exactly_its_two_criteria",
+   "tests.test_tickets_cases.gate_blocking.PinnedStubMatchesTheGeneratorTest.test_the_fixture_carries_the_generated_objective_and_criteria",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_reachable_and_documented_like_every_other_verb",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_refused_on_a_ticket_that_is_not_claimed",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_refuses_a_ticket_that_is_not_there",
@@ -2652,7 +2656,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a8ee17f294f7237540c716d46f189922dc9b52f05d81a1baeef3b655513aba50"
+  "sha256": "8f109be4aff2de130c39ccf47410f6e50be06bee166b3173ceb7922967554b04"
  },
  "mutation_owners": [
   {
