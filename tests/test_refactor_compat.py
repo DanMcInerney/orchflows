@@ -45,6 +45,7 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
         "grant",
         "improvement",
         "instantiate",
+        "lint",
         "list",
         "new",
         "packet",
