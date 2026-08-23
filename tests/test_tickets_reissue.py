@@ -37,10 +37,12 @@ LIFECYCLE = {
     "workspace_baseline": "0123456789abcdef0123456789abcdef01234567 clean",
     "root_generation": "root:00-root:1:sha256:" + "0" * 64,
     "cut_generation": "cut:00-root:1:sha256:" + "1" * 64,
+    "ownership_regions": "[]",
     "assignment_seal": "sha256:" + "2" * 64,
 }
 DROPPED = ("checked_by", "workspace_branch", "workspace_baseline",
-           "root_generation", "cut_generation", "assignment_seal")
+           "root_generation", "cut_generation", "ownership_regions",
+           "assignment_seal")
 
 
 class ReissueFixture(unittest.TestCase):
@@ -234,6 +236,27 @@ class ReissueRefusalTest(ReissueFixture):
             self.reissue("--run", "newrun", "--set", "isolation"),
             fragment="is not <key>=<value>",
         )
+
+    def test_a_successor_new_refuses_is_refused_by_the_same_admission(self):
+        """Placement is `new --file`'s, so `new`'s refusals are reissue's.
+
+        The mechanism the objective names carries the weight: a successor
+        written straight into the sink satisfies every other case here.
+        What separates the two is a refusal only admission makes -- an id
+        the target run has already issued -- with the file holding that id
+        left byte-for-byte as it was.
+        """
+        self.source_path = self.place_source(
+            tid="01-unit", executor="orch-tdd", cohort="v1:ticket:01-unit",
+        )
+        occupied = self.sink / "tickets" / "newrun"
+        occupied.mkdir(parents=True)
+        holder = occupied / "01-unit.md"
+        holder.write_bytes(b"held\n")
+        payload = run_cmd("reissue", "oldrun", "01-unit", "--run", "newrun")
+        self.assertIn("already issued in run 'newrun'", payload["error"])
+        self.assertEqual(2, payload["exit_code"])
+        self.assertEqual(b"held\n", holder.read_bytes())
 
     def test_a_source_that_is_not_there_is_refused_before_anything_is_written(self):
         self.assert_refused(

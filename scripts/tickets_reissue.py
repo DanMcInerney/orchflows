@@ -285,7 +285,10 @@ def _cmd_reissue(rest) -> dict:
         return _refusal(f'{run}/{ticket_id} cannot be rewritten: {error}')
     placed = _place(new_run, new_id, cohort, successor)
     if 'error' in placed:
-        return placed
+        # Admission grades before it creates anything, so a successor `new`
+        # refuses is a successor nobody wrote: it exits where the refusals
+        # do, and not where a placed-but-imperfect one does.
+        return {**placed, 'exit_code': 2}
     report = _cmd_lint([new_run, new_id])
     exit_code = report.pop('exit_code', 0)
     return {
