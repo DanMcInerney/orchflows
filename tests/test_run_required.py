@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import re
 import sys
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from tests.test_run_required_cases.harness import (
@@ -392,6 +394,56 @@ class TestTextReport(RunRequiredCase):
         self.assertEqual(0, status)
         self.assertEqual(5, text.count("(cached)"))
         self.assertNotIn("stub-out", text)
+
+
+class TestConsoleCodec(unittest.TestCase):
+    """A report is bytes, not a favour the console's codec may grant."""
+
+    # A glyph cp1252 has no room for, and the replacement character a
+    # faithful decode leaves behind: neither may cost a reader the report.
+    GLYPHS = chr(0x2605) + " and " + chr(0xFFFD) + chr(10)
+
+    def render(self, form: str, raw: bytes):
+        """Render one report into a cp1252 console; return what landed."""
+
+        from tools import run_required
+
+        record = {
+            "argv": ["git", "diff", "--check"],
+            "started_at": "2026-08-23T00:00:00Z",
+            "ended_at": "2026-08-23T00:00:01Z",
+            "exit_status": 0,
+            "stdout_sha256": "0" * 64,
+            "stderr_sha256": "1" * 64,
+            "cached": False,
+        }
+        payload = {
+            "kind": "required-check-run/v1",
+            "repository_identity": "a" * 40,
+            "tree_identity": "b" * 40,
+            "dirty": False,
+            "commands": [record],
+            "exit": 0,
+        }
+        out, err = io.BytesIO(), io.BytesIO()
+        console = io.TextIOWrapper(out, encoding="cp1252")
+        console_err = io.TextIOWrapper(err, encoding="cp1252")
+        with redirect_stdout(console), redirect_stderr(console_err):
+            run_required.report([("whitespace", record, raw, b"")], payload, form)
+        console.flush()
+        console_err.flush()
+        return out.getvalue(), err.getvalue()
+
+    def test_a_text_report_survives_a_console_that_cannot_spell_it(self):
+        landed, _ = self.render("text", self.GLYPHS.encode("utf-8"))
+        self.assertIn(self.GLYPHS.encode("utf-8"), landed)
+        self.assertIn(b"exit 0", landed)
+        self.assertIn(b"git diff --check", landed)
+
+    def test_a_json_record_survives_the_same_console(self):
+        landed, echoed = self.render("json", self.GLYPHS.encode("utf-8"))
+        self.assertIn(b'"required-check-run/v1"', landed)
+        self.assertIn(self.GLYPHS.encode("utf-8"), echoed)
 
 
 class TestTheSurfaceNamesTheRunner(unittest.TestCase):

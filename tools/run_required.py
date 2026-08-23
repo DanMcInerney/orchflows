@@ -99,18 +99,40 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
+def emit(stream, text: str) -> None:
+    """Write one string without asking the console's codec for permission.
+
+    A report is evidence, and evidence a cp1252 console refuses to spell is
+    evidence nobody reads: five green checks were lost once to a crash while
+    printing their own output. Bytes go straight past the text layer
+    whenever the stream has one; a stream with no buffer -- a test's
+    ``StringIO`` -- takes the same text through its own codec's
+    replacements, which is a mangled glyph rather than a lost run.
+    """
+
+    buffer = getattr(stream, "buffer", None)
+    if buffer is not None:
+        stream.flush()  # keep whatever the text layer holds in front of this
+        buffer.write(text.encode("utf-8"))
+        buffer.flush()
+        return
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    stream.write(text.encode(encoding, "replace").decode(encoding, "replace"))
+
+
 def main(argv=None) -> int:
     args = parse_args(argv)
     try:
         return _run(args)
     except (Refusal, identity.NotAGitCheckout) as error:
-        sys.stderr.write("run_required: {0}\n".format(error))
+        emit(sys.stderr, "run_required: {0}\n".format(error))
         if args.format == "json":
-            sys.stdout.write(
+            emit(
+                sys.stdout,
                 json.dumps(
                     {"kind": REFUSAL_KIND, "reason": str(error)},
                     indent=1, sort_keys=True,
-                ) + "\n"
+                ) + "\n",
             )
         return 2
 
@@ -161,26 +183,28 @@ def report(outcomes, payload, form: str) -> None:
 
     stream = sys.stdout if form == "text" else sys.stderr
     for _, record, out, err in outcomes:
-        stream.write("--- {0}\n".format(display(record["argv"])))
+        emit(stream, "--- {0}\n".format(display(record["argv"])))
         for raw in (out, err):
             if raw:
-                stream.write(raw.decode("utf-8", "replace"))
+                emit(stream, raw.decode("utf-8", "replace"))
     if form == "json":
-        sys.stdout.write(json.dumps(payload, indent=1, sort_keys=True) + "\n")
+        emit(sys.stdout, json.dumps(payload, indent=1, sort_keys=True) + "\n")
         return
     for record in payload["commands"]:
-        stream.write(
+        emit(
+            stream,
             "{0:>4}  {1}{2}\n".format(
                 record["exit_status"],
                 display(record["argv"]),
                 "  (cached)" if record["cached"] else "",
-            )
+            ),
         )
-    stream.write(
+    emit(
+        stream,
         "exit {0}  tree {1}{2}\n".format(
             payload["exit"], payload["tree_identity"][:12],
             "  (dirty)" if payload["dirty"] else "",
-        )
+        ),
     )
 
 
