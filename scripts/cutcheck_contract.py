@@ -14,11 +14,19 @@ try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
     from scripts.tickets_format import (
         CHECKED_BY_KEY,
+        DISCOVER,
+        FILTER_MATCHES_ALL,
         GATE_EXECUTORS,
         GATE_ID_MARKER,
+        NODE_FILTER,
+        NODE_SEP,
         ORACLE_CLASS_RE,
         PROVENANCE_RE,
         ROOT_EXECUTOR,
+        TEST_RUNNERS,
+        _filter_narrows,
+        _whole_suite,
+        _whole_target,
         _criteria as _ticket_criteria,
         _parse_frontmatter,
         _sections,
@@ -27,11 +35,19 @@ except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
     from tickets_format import (
         CHECKED_BY_KEY,
+        DISCOVER,
+        FILTER_MATCHES_ALL,
         GATE_EXECUTORS,
         GATE_ID_MARKER,
+        NODE_FILTER,
+        NODE_SEP,
         ORACLE_CLASS_RE,
         PROVENANCE_RE,
         ROOT_EXECUTOR,
+        TEST_RUNNERS,
+        _filter_narrows,
+        _whole_suite,
+        _whole_target,
         _criteria as _ticket_criteria,
         _parse_frontmatter,
         _sections,
@@ -288,18 +304,6 @@ GIT_CONFINED_SUBCOMMANDS = frozenset(
 # evaluate -- `grep -c` counts and `grep -e` names a pattern.
 EVAL_HEADS = ("node", "npm", "python", "python3")
 EVAL_ARGS = frozenset({"-c", "-e", "--eval", "--exec", "-"})
-# A test invocation says which node it grades, or it grades whatever it finds.
-# `discover` names no node by construction; `-k` names one whatever it is
-# pointed at; `::` opens the node half of a pytest target.
-TEST_RUNNERS = ("unittest", "pytest")
-DISCOVER = "discover"
-NODE_FILTER = "-k"
-NODE_SEP = "::"
-# A filter narrows only if some node id fails it. Every test node here is a
-# method named `test_...`, so a pattern that is a prefix of that matches all of
-# them: `-k test` is the whole suite with a flag on, and the token's presence
-# is no evidence on its own.
-FILTER_MATCHES_ALL = "test_"
 # A criterion states the provenance of its own oracle; an oracle stated
 # pre-existing is an invariant, and holding still is what it is for. The field
 # itself is `scripts/tickets.py`'s -- `PROVENANCE_RE` there is the one spelling,
@@ -440,7 +444,7 @@ __all__ = (
     'SEARCH_PATTERN_FLAG', 'SEARCH_LONG_FLAGS', 'SEARCH_ERROR', 'GIT_HEAD',
     'SYMLINK_MODE', 'GIT_CONFINED_SUBCOMMANDS', 'EVAL_HEADS', 'EVAL_ARGS',
     'TEST_RUNNERS', 'DISCOVER', 'NODE_FILTER', 'NODE_SEP',
-    'FILTER_MATCHES_ALL', 'PRE_EXISTING', 'STAMP_OPENS_RE', 'STAMP_CONTINUES_RE',
+    'FILTER_MATCHES_ALL', '_filter_narrows', '_whole_suite', '_whole_target', 'PRE_EXISTING', 'STAMP_OPENS_RE', 'STAMP_CONTINUES_RE',
     'COUNT_FLAG_RE', 'GIT_COUNT_FLAG', 'CITATION_RE', 'SECTION_CITATION_RE',
     'QUOTE_RE', 'WRITE_RE', 'REMOVAL_RE', 'REMOVAL_WINDOW',
     'LITERAL_RE', 'LITERAL_MARKS', 'PIN_ROOTS', 'PIN_SIZE_LIMIT',

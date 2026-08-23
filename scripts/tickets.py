@@ -89,6 +89,8 @@ if __package__:
     from . import tickets_packet as _tickets_packet_module
     from . import tickets_result as _tickets_result_module
     from . import tickets_worklog as _tickets_worklog_module
+    from . import tickets_commands as _tickets_commands_module
+    from . import tickets_lint as _tickets_lint_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
 else:
@@ -99,6 +101,8 @@ else:
     import tickets_packet as _tickets_packet_module
     import tickets_result as _tickets_result_module
     import tickets_worklog as _tickets_worklog_module
+    import tickets_commands as _tickets_commands_module
+    import tickets_lint as _tickets_lint_module
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
 
@@ -377,13 +381,19 @@ _template_order = _tickets_worklog_module._template_order
 _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
 template_defects = _tickets_worklog_module.template_defects
-GATE_USAGE = _tickets_dispatch_module.GATE_USAGE
-HELP_COMMANDS = _tickets_dispatch_module.HELP_COMMANDS
-HELP_FLAGS = _tickets_dispatch_module.HELP_FLAGS
-INSTANTIATE_USAGE = _tickets_dispatch_module.INSTANTIATE_USAGE
-SUBCOMMAND_SUMMARY = _tickets_dispatch_module.SUBCOMMAND_SUMMARY
-SUBCOMMAND_USAGE = _tickets_dispatch_module.SUBCOMMAND_USAGE
-VALUE_FLAGS = _tickets_dispatch_module.VALUE_FLAGS
+GATE_USAGE = _tickets_commands_module.GATE_USAGE
+HELP_COMMANDS = _tickets_commands_module.HELP_COMMANDS
+HELP_FLAGS = _tickets_commands_module.HELP_FLAGS
+INSTANTIATE_USAGE = _tickets_commands_module.INSTANTIATE_USAGE
+SUBCOMMAND_SUMMARY = _tickets_commands_module.SUBCOMMAND_SUMMARY
+SUBCOMMAND_USAGE = _tickets_commands_module.SUBCOMMAND_USAGE
+VALUE_FLAGS = _tickets_commands_module.VALUE_FLAGS
+read_payload = _tickets_commands_module.read_payload
+resolve_payload_flags = _tickets_commands_module.resolve_payload_flags
+LINT_USAGE = _tickets_lint_module.LINT_USAGE
+apply_fixes = _tickets_lint_module.apply_fixes
+lint_findings = _tickets_lint_module.lint_findings
+_cmd_lint = _tickets_lint_module._cmd_lint
 _cmd_gate = _tickets_dispatch_module._cmd_gate
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
@@ -448,6 +458,8 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
+    _tickets_dispatch_module._cmd_lint = _cmd_lint
+    _tickets_lint_module._write_text_atomically = _write_text_atomically
 
 if __name__ == "__main__":
     raise SystemExit(main())

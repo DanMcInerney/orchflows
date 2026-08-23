@@ -34,22 +34,13 @@ if __package__:
 else:
     from tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
+    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from .tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint
     from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS; from .tickets_gate_mutations import _canonical_gate_mutation_plan
 else:
-    from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort
+    from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
     from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
-INSTANTIATE_USAGE = 'instantiate <template-dir> --run <run> [--set k=v ...]'
-GATE_USAGE = 'gate <run> <root-id> [--lens <name>[,<name>]] [--write-scope <path>[,<path>]] [--acceptance-from <id>]'
-SUBCOMMAND_USAGE = {'new': NEW_USAGE, 'amend': AMEND_USAGE, 'instantiate': INSTANTIATE_USAGE, 'gate': GATE_USAGE, 'list': 'list [--run R]', 'ready': 'ready [--run R]', 'claim': 'claim <run> <id> --by <name>', 'grant': GRANT_USAGE, 'check': CHECK_USAGE, 'set-status': 'set-status <run> <id> <status>', 'result-grade': RESULT_GRADE_USAGE, 'packet': f"packet <run> <id> --reply-to <name> [--workspace <path>] [--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]", 'result': RESULT_USAGE, 'worklog': WORKLOG_USAGE, 'run-state': RUN_STATE_USAGE, 'improvement': IMPROVEMENT_USAGE, **{name: values[0] for name, values in GENERATION_SUBCOMMANDS.items()}}
-SUBCOMMAND_SUMMARY = {'new': 'Issue one ticket into the run, refusing any shape `ticket_defects` reports before anything is written; --file places one already written.', 'amend': f'Repair one cut-time section {list(CUT_SECTIONS)} of an issued ticket, through the same refusal `new` applies; refused once the ticket is claimed or has left {sorted(AMENDABLE_STATUSES)}, and never a section the executor writes (that is `result`).', 'instantiate': "Instantiate one template directory into a run's tickets: placeholders filled, every stub graded, the graph checked for edges, cycles and its single terminal, then written all or none.", 'gate': "Write one root ticket's gate stubs: a read-only critique per lens (--lens; absent, the stamped pack's domain) over the root's whole cut subtree, one repair holding the scope (the root's own, unless --write-scope names one) behind them all, and one verify carrying the acceptance verbatim. Refused if the root has no subtree yet, or if a stub already exists.", 'list': 'Every ticket in the tracker, or in one run, as summaries.', 'ready': 'The tickets whose dependencies are complete and whose claim is free or stale; promotes an eligible `pending` to `ready`.', 'claim': 'Take one ready or stale ticket, losing the race rather than overwriting a live claim.', 'grant': f"Record one caller-side widening of a claimed item's write scope — the paths, the granting caller and the time — as frontmatter bookkeeping every reader of the item's authority then honours. Refused on a ticket that is not {sorted(GRANTABLE_STATUSES)}: before a claim the cut owns the scope.", 'check': f"Record the rules/verification.md §10 checker's pass on one claimed item — `checked_by`, the name the join reads that item's `authored-here` acceptance from. Refused on a ticket that is not {sorted(CHECKABLE_STATUSES)}.", 'set-status': f"Set one ticket's status; complete repeats result-grade before writing. One of {sorted(VALID_STATUSES)}.", 'result-grade': 'Read-only grade of the optional return-size constraint against the resolved result identity.', 'packet': f"The by-reference dispatch packet for one ticket: path, parts, and the commands the child runs from its own workspace. --executor ({' | '.join(CHECKER_PATH_EXECUTORS)}) emits it for one further rules/verification.md §10 child on the same claimed item instead — the checker, which corrects inside the ticket's write scope and records its pass through `check`, or the re-verifier, which is granted no write.", 'result': f"Write one of the executor's own sections {list(EXECUTOR_SECTIONS)}; a section already carrying content is refused without --append or --replace.", 'worklog': "Render this run's worklog view from its tickets — goal, iterations, failed approaches, queued scope, terminal — as markdown on the payload; --write also puts it at the run's worklog path, replacing a view rendered here and never a worklog written by anything else.", 'run-state': f"Write this run's state under the one user-scope sink, in one of {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}); an artifact that already exists is refused without --replace. --terminal closes the run's notes, one of {list(TERMINAL_STATES)}, after which no note is written.", 'improvement': 'Write one improvement evidence record under the sink: a named proposal file, or one appended line of the coverage record.', **{name: values[1] for name, values in GENERATION_SUBCOMMANDS.items()}}
-SUBCOMMAND_USAGE['recut'] = RECUT_USAGE
-SUBCOMMAND_SUMMARY['recut'] = 'Replace one pending or ready cut from a candidate file, preserving executor-owned sections and invalidating its unsealed cohorts.'
-HELP_FLAGS = frozenset({'--help', '-h'})
-HELP_COMMANDS = HELP_FLAGS | {'help'}
-VALUE_FLAGS = frozenset({'--run', '--by', '--executor', '--objective', '--criterion', '--depends-on', '--write-scope', '--lens', '--acceptance-from', '--bound', '--pack', '--input', '--excluded', '--profile', '--independence', '--isolation', '--cohort', '--return-fields', '--set', '--section', '--file', '--text', '--note', '--artifact', '--terminal', '--tree', '--reply-to', '--workspace', '--proposal', '--covered', '--cut-generation', '--correction-bound', '--record'})
 def _template_stubs(directory: Path, values: dict):
     """``(stubs, error)`` — every stub in the template, substituted and graded.
     ``stubs`` maps a stub id to its text and its dependency ids, in file
@@ -457,12 +448,15 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | amend | recut | instantiate | gate | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | amend | recut | lint | instantiate | gate | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
     if command in SUBCOMMAND_USAGE and _help_requested(rest):
         return _cmd_help(command)
+    rest, refusal = resolve_payload_flags(command, rest)
+    if refusal is not None: return refusal
+    if command == 'lint': return _cmd_lint(rest)
     if command == 'new': return _cmd_new(rest)
     if command == 'amend': return _cmd_amend(rest)
     if command == 'recut': return _cmd_recut(rest)
@@ -506,5 +500,6 @@ def main(argv=None):
         result = _dispatch(arguments)
     except Exception as error:
         result = {'error': str(error)}
+    exit_code = result.pop('exit_code', None) if isinstance(result, dict) else None
     print(json.dumps(result, ensure_ascii=False))
-    return 1 if 'error' in result else 0
+    return (1 if 'error' in result else 0) if exit_code is None else int(exit_code)

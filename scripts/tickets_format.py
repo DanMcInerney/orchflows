@@ -391,6 +391,17 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         defects.extend(criterion_defects(completion))
     defects.extend(format_policy_defects(text, data, sections))
     return defects
+# A test invocation says which node it grades, or it grades whatever it finds.
+# `discover` names no node by construction; `-k` names one whatever it is
+# pointed at; `::` opens the node half of a pytest target. A filter narrows
+# only if some node id fails it, and every test node here is a method named
+# `test_...`: `-k test` is the whole suite with a flag on, so the token's
+# presence is no evidence on its own.
+TEST_RUNNERS = ("unittest", "pytest")
+DISCOVER = "discover"
+NODE_FILTER = "-k"
+NODE_SEP = "::"
+FILTER_MATCHES_ALL = "test_"
 REQUIRED_FIELDS_CELL = 'required_spec_fields'
 FIELD_GLOSS_RE = re.compile('\\s+[—-]{1,2}\\s+')
 FIELD_WORD_RE = re.compile('[a-z]{4,}')
@@ -438,3 +449,62 @@ def _split_commas(value) -> list:
     return [part.strip() for part in str(value or '').split(',') if part.strip()]
 def _executor_of(item: dict) -> str:
     return str(item.get('executor') or '').strip().strip('`').strip()
+def _whole_target(target, tree):
+    """Does this target name a whole module or directory, not a node inside one?
+    Decided against the tree, because only the tree knows where the module
+    stops: ``tests.test_cutcheck`` is a file and its ``.CleanSetTest`` is a
+    class inside that file, and no reading of the two strings tells them
+    apart. A unittest target spells the way down with dots and a pytest target
+    with slashes; both are one question about where the path stops resolving.
+    """
+    if NODE_SEP in target:
+        return False
+    here = tree / (target if "/" in target else target.replace(".", "/"))
+    return here.is_dir() or here.with_suffix(".py").is_file()
+def _filter_narrows(argv):
+    """Does this command's node filter actually exclude any node?
+    The token's presence was the whole test once, and that read `-k test` --
+    which matches every method in the suite -- as a narrowed oracle. The
+    pattern is read instead: anything `test_` starts with matches all of them
+    and narrows nothing, and everything else is taken at its word, because
+    which nodes a pattern selects is the runner's question and not this one's.
+    """
+    if NODE_FILTER not in argv:
+        return False
+    index = argv.index(NODE_FILTER)
+    pattern = argv[index + 1].strip("\"'") if index + 1 < len(argv) else ""
+    return not FILTER_MATCHES_ALL.startswith(pattern)
+def _whole_suite(command, tree):
+    """Is this a test invocation naming no node id?
+    A whole-module or whole-suite invocation is a bare head with more typing:
+    it runs the identical tests under every item it is stated under, so it
+    discriminates none of them, and the honest report of it is the gap.
+    Reported rather than run, which is what makes the class worth having: this
+    repository's own mandated ``discover`` outgrows any command timeout in the
+    cleanest store there is, so executing it returned ``unrunnable-oracle``.
+    A target resolving to no module at all is some flag's value rather than a
+    thing to grade, and one such token is enough to withhold the finding: this
+    convicts what it can read whole, and stays quiet over what it cannot. A
+    runner carrying flags and no target at all is the widest spelling there is
+    -- ``pytest -q``, or the bare ``python3 -m unittest`` documented as
+    equivalent to ``discover``. Naming nothing is not naming something
+    unreadable, so the finding is withheld over a quoted target, which names a
+    node this cannot parse, and made over an empty one, which names none.
+    """
+    argv = command.split()
+    runner = next((i for i, token in enumerate(argv) if token in TEST_RUNNERS), None)
+    if runner is None or _filter_narrows(argv):
+        return False
+    rest = argv[runner + 1:]
+    if DISCOVER in rest:
+        return True
+    if NODE_FILTER in rest:
+        # Reaching here means the pattern matched every node, so it is a flag's
+        # value and not a target. Left in, it resolves to no module and
+        # withholds the finding over the very filter that earned it.
+        at = rest.index(NODE_FILTER)
+        rest = rest[:at] + rest[at + 2:]
+    targets = [token for token in rest if token[:1] not in ("-", '"', "'")]
+    if not targets:
+        return not any(token[:1] in ('"', "'") for token in rest)
+    return all(_whole_target(token, tree) for token in targets)
