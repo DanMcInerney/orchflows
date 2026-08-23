@@ -100,3 +100,16 @@ class RunTableTest(unittest.TestCase):
         self.assertEqual(len(report["friction"]["clusters"]), 11)
         self.assertEqual(len(report["tickets"]["by_executor"]), 2)
         self.assertEqual(report["totals"], report_of(self.sink)["totals"])
+
+    def test_a_top_of_zero_bounds_the_friction_groupings_like_every_other_table(self):
+        # One flag, one meaning: `--top 0` may not empty the runs, family
+        # and longest tables while the four friction groupings print whole
+        # under a heading that says "top 0".
+        report = report_of(self.sink, top=0)
+        self.assertEqual(
+            [report["runs"], report["families"], report["tickets"]["longest"],
+             report["friction"]["by_category"], report["friction"]["by_run"]],
+            [[], [], [], [], []],
+        )
+        self.assertEqual(len(report["friction"]["clusters"]), 11)
+        self.assertEqual(report["totals"]["runs"], 3)
