@@ -82,6 +82,7 @@ if _SIBLING_DIR not in _bootstrap_sys.path:
     _bootstrap_sys.path.append(_SIBLING_DIR)
 
 if __package__:
+    from . import tickets_bound as _tickets_bound_module
     from . import tickets_format as _tickets_format_module
     from . import tickets_store as _tickets_store_module
     from . import tickets_issue as _tickets_issue_module
@@ -94,6 +95,9 @@ if __package__:
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
 else:
+    # By name, as `tickets_generations` is reached: the family's
+    # module-level import census is pinned, and this module joined after it.
+    _tickets_bound_module = __import__('tickets_bound')
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
     import tickets_issue as _tickets_issue_module
@@ -106,6 +110,10 @@ else:
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
 
+BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
+OTHER_BOUND_KIND = _tickets_bound_module.OTHER_BOUND_KIND
+TOOL_CALL_MINUTES = _tickets_bound_module.TOOL_CALL_MINUTES
+parse_bound = _tickets_bound_module.parse_bound
 CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
 CUT_SECTIONS_BY_KEY = _tickets_format_module.CUT_SECTIONS_BY_KEY

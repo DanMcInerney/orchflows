@@ -27,9 +27,10 @@ if _SIBLING_DIR not in sys.path:
 
 import state_root  # noqa: E402
 from tickets import (  # noqa: E402
-    DURATION_RE,
+    OTHER_BOUND_KIND,
     _parse_frontmatter,
     _parse_iso,
+    parse_bound,
 )
 
 LOOPBACK_HOST = "127.0.0.1"
@@ -386,19 +387,18 @@ def read_ticket(path: Path) -> dict:
 
 
 def bound_minutes(bound):
-    """Minutes, or ``None`` when ``bound`` is not a duration.
+    """Minutes, or ``None`` when ``bound`` states no measurable bound.
 
-    Deliberately unlike ``scripts/tickets.py``'s ``_parse_bound_minutes``,
-    which substitutes ``DEFAULT_BOUND_MINUTES`` so a claim can still be
-    aged: a lease needs some number, but a viewer does not. The observed
-    real value is ``one session``, and a meter drawn against an invented
-    60-minute denominator would report progress no ticket ever stated.
+    One parser with the lease's, and one disagreement with it kept: where
+    ``_parse_bound_minutes`` substitutes ``DEFAULT_BOUND_MINUTES`` for the
+    kind it cannot read so a claim can still be aged, a viewer draws
+    nothing. The observed real value is ``one session``, and a meter
+    against an invented 60-minute denominator would report progress no
+    ticket ever stated. Every other kind carries a stated conversion.
     """
 
-    match = DURATION_RE.match(bound.strip()) if isinstance(bound, str) else None
-    if match is None:
-        return None
-    return int(match.group(1)) * (60 if match.group(2) == "h" else 1)
+    minutes, kind = parse_bound(bound)
+    return None if kind == OTHER_BOUND_KIND else minutes
 
 
 def _now() -> datetime:

@@ -24,6 +24,15 @@ else:
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section,
     )
+# The bound grammar is `tickets_bound`'s, read here so every holder of
+# `_parse_bound_minutes` gets the widened one without moving. Reached by
+# name in the sibling branch, as `tickets_generations` is: the family's
+# module-level import census is pinned, and this module joined after it.
+if __package__:
+    from .tickets_bound import DEFAULT_BOUND_MINUTES, _parse_bound_minutes
+else:
+    _bound_module = __import__('tickets_bound')
+    DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
 VALID_STATUSES = {'pending', 'ready', 'claimed', 'suspended', 'complete', 'blocked', 'stalled', 'failed', 'limited'}
 LOOP_EXECUTOR = 'orch-loop'
 DISPATCHING_EXECUTORS = ('orch-frontier', LOOP_EXECUTOR)
@@ -39,7 +48,6 @@ PROVENANCE_RE = re.compile('provenance:\\s*([A-Za-z_-]*)', re.IGNORECASE)
 DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'
-DEFAULT_BOUND_MINUTES = 60
 INSTRUCTION_BUDGET = 300
 INSTRUCTION_SECTIONS = ('Objective', 'Completion test', 'Return fields')
 LINK_TARGET_RE = re.compile('\\]\\([^)]*\\)')
@@ -405,14 +413,6 @@ FILTER_MATCHES_ALL = "test_"
 REQUIRED_FIELDS_CELL = 'required_spec_fields'
 FIELD_GLOSS_RE = re.compile('\\s+[—-]{1,2}\\s+')
 FIELD_WORD_RE = re.compile('[a-z]{4,}')
-def _parse_bound_minutes(bound) -> int:
-    if isinstance(bound, str):
-        match = DURATION_RE.match(bound.strip())
-        if match:
-            value = int(match.group(1))
-            unit = match.group(2)
-            return value * 60 if unit == 'h' else value
-    return DEFAULT_BOUND_MINUTES
 def _parse_iso(value):
     if not isinstance(value, str) or not value.strip():
         return None
