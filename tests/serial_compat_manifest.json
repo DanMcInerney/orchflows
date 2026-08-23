@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2395,
+  "count": 2411,
   "identities": [
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
@@ -421,6 +421,15 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_a_criterion_declaring_no_provenance_still_issues_it",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_a_gate_root_still_reaches_its_cut_reader",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_an_all_pre_existing_ticket_is_refused_the_checker_packet",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_an_explicit_independence_checker_is_refused_the_same_way",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_gate_deferred_behaviour_is_unchanged",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_one_authored_here_criterion_still_issues_the_checker_packet",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_the_re_verifier_packet_is_unchanged",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_the_refusal_is_a_non_zero_exit_across_the_process_boundary",
+   "test_tickets_packet_checker.TestCheckerNotDispatchedWhenSectionTenExempts.test_the_same_ticket_still_gets_its_own_executor_packet",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_fix_template_renders_every_section",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_process_prints_one_json_document_carrying_the_view",
    "test_tickets_view.WorklogViewTest.test_a_failed_ticket_contributes_its_result_and_its_feedback",
@@ -1273,6 +1282,13 @@
    "tests.test_tickets_cases.cli_help.TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets.test_a_scope_a_grant_widened_earns_the_packet_establishment_step_back",
    "tests.test_tickets_cases.cli_help.TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets.test_an_empty_scope_omits_the_packet_establishment_step_entirely",
    "tests.test_tickets_cases.cli_help.TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets.test_isolation_none_omits_the_packet_establishment_step",
+   "tests.test_tickets_cases.cohort_seal.RootCohortAmendTest.test_amend_reaches_a_pending_unit_of_a_claimed_root",
+   "tests.test_tickets_cases.cohort_seal.RootCohortAmendTest.test_amend_still_refuses_once_a_unit_of_that_root_is_claimed",
+   "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_a_claimed_root_does_not_seal_its_own_pending_cut",
+   "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_a_claimed_root_is_itself_still_sealed_by_a_claimed_unit",
+   "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_a_root_carrying_only_claimed_at_does_not_seal_either",
+   "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_any_non_root_member_still_seals_the_root_cohort",
+   "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_ticket_and_batch_cohorts_seal_on_every_member_as_before",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_reachable_and_documented_like_every_other_verb",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_refused_on_a_ticket_that_is_not_claimed",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_refuses_a_ticket_that_is_not_there",
@@ -2398,7 +2414,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "c48f1ec8fdacfa123a173ca327e2fd2d5942d0bebf06ebc9258fb70c315da519"
+  "sha256": "37167ff45ce2aaf238f58d26781f125f9bd9694248b4d8a0bb61012699f164e3"
  },
  "mutation_owners": [
   {
