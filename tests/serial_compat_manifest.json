@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2653,
+  "count": 2656,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -1491,6 +1491,9 @@
    "tests.test_tickets_cases.cohort_seal.MemberSealTest.test_a_ready_member_is_as_open_as_a_pending_one",
    "tests.test_tickets_cases.cohort_seal.MemberSealTest.test_the_graded_member_seals_its_own_cut_once_it_is_taken_up",
    "tests.test_tickets_cases.cohort_seal.MemberSealTest.test_ticket_and_batch_cohorts_seal_on_every_member_as_before",
+   "tests.test_tickets_cases.cohort_seal.ReceiptCohortScopeTest.test_a_batch_cohort_receipt_still_reads_every_member",
+   "tests.test_tickets_cases.cohort_seal.ReceiptCohortScopeTest.test_a_root_cohort_receipt_survives_a_pending_sibling_correction",
+   "tests.test_tickets_cases.cohort_seal.RunningFrontierCorrectionTest.test_a_lawful_amend_leaves_a_claimed_siblings_further_packet_current",
    "tests.test_tickets_cases.cohort_seal.RunningFrontierCorrectionTest.test_amend_reaches_a_pending_member_while_its_siblings_run",
    "tests.test_tickets_cases.cohort_seal.RunningFrontierCorrectionTest.test_both_callers_still_refuse_a_member_the_seal_holds",
    "tests.test_tickets_cases.cohort_seal.RunningFrontierCorrectionTest.test_recut_reaches_the_pending_gate_stub_while_its_siblings_run",
@@ -2656,7 +2659,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "8f109be4aff2de130c39ccf47410f6e50be06bee166b3173ceb7922967554b04"
+  "sha256": "9a54ef2aa0e039113dc1d6a9d396aac3aaa000a6bc9856d76fc5f3ff69887f42"
  },
  "mutation_owners": [
   {
