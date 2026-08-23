@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2531,
+  "count": 2552,
   "identities": [
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
@@ -1409,6 +1409,9 @@
    "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_a_root_carrying_only_claimed_at_does_not_seal_either",
    "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_any_non_root_member_still_seals_the_root_cohort",
    "tests.test_tickets_cases.cohort_seal.RootCohortSealTest.test_ticket_and_batch_cohorts_seal_on_every_member_as_before",
+   "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_a_module_added_beside_the_facade_joins_the_family",
+   "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_facade_is_not_one_of_its_own_support_modules",
+   "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_support_names_are_the_sorted_siblings_of_the_facade",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_reachable_and_documented_like_every_other_verb",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_is_refused_on_a_ticket_that_is_not_claimed",
    "tests.test_tickets_cases.grant.TestCheckedByVerb.test_check_refuses_a_ticket_that_is_not_there",
@@ -2515,6 +2518,24 @@
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_still_present_isolated_worktree_must_have_no_dirty_oracle_bytes",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_v0_ticket_keeps_path_only_join_grading",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_write_prefix_covers_every_actual_operation_below_it",
+   "tests.test_workspace_cases.prepare.TestAbsoluteScopeEntriesAreCanonicalised.test_a_nested_workspace_is_the_same_grant_from_either_side",
+   "tests.test_workspace_cases.prepare.TestAbsoluteScopeEntriesAreCanonicalised.test_an_absolute_in_tree_entry_is_recorded_relative_and_graded",
+   "tests.test_workspace_cases.prepare.TestAbsoluteScopeEntriesAreCanonicalised.test_an_absolute_out_of_tree_entry_is_refused_at_start",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_a_removed_workspace_is_refused_rather_than_graded_at_its_revision",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_check_grades_a_scoped_commit_made_after_start",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_check_reports_a_breach_from_a_detached_workspace_too",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_one_detached_workspace_is_never_graded_through_another",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_start_records_the_full_sha_under_the_detached_prefix",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_failing_install_is_reported_with_its_exit_and_start_still_records",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_lockfile_and_a_pnpm_on_path_install_from_the_frozen_lockfile",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_tree_declaring_no_frontend_is_skipped_and_pnpm_is_never_called",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_it_never_installs_a_browser",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_without_pnpm_on_path_it_is_skipped_by_name",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_does_not_resolve_falls_through_to_the_cache",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_resolves_is_present",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_playwright_that_does_not_answer_is_unknown_not_missing",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_an_empty_cache_is_missing",
+   "tests.test_workspace_cases.prepare.TestTheInstallCeilingIsReal.test_the_ceiling_is_ten_minutes_and_a_timeout_is_a_failure",
    "tests.test_workspace_cases.start_cases.TestCheckDisambiguatesItsRevisionRanges.test_every_range_is_terminated_before_the_pathspec",
    "tests.test_workspace_cases.start_cases.TestStartFailureBehavior.test_a_bare_path_scope_is_recorded_as_before",
    "tests.test_workspace_cases.start_cases.TestStartFailureBehavior.test_a_dirty_path_with_a_comma_is_refused_by_name",
@@ -2534,7 +2555,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "6621f1b3715c9ea5229cc49cd4220ffd8c1152d272a70362872bfad726075290"
+  "sha256": "8fdb4400899758c216748caad7d084fd984d3343e8bc70f4ca80cde63c27df22"
  },
  "mutation_owners": [
   {
@@ -5464,6 +5485,22 @@
   {
    "module": "tests.test_workspace_cases.grade_cases",
    "owner": "RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment.run_in_caller",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.prepare",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.prepare",
+   "owner": "path_holding",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
