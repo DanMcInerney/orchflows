@@ -94,11 +94,19 @@ class MemberSealTest(unittest.TestCase):
         self.assertFalse(sealed(members(states), UNIT_ID))
 
     def test_the_graded_member_seals_its_own_cut_once_it_is_taken_up(self):
+        # The status alone, with the `claimed_at` beside it cleared: a
+        # member the tracker stamps carries both, so leaving the claim
+        # time on would let the lease case below satisfy this one and
+        # `_taken_up`'s status half would be pinned by nothing.
         for status in ("claimed", "suspended", "complete", "blocked",
                        "stalled", "limited", "failed"):
             with self.subTest(status=status):
-                states = {ROOT_ID: "claimed", UNIT_ID: status, GATE_ID: "pending"}
-                self.assertTrue(sealed(members(states), UNIT_ID))
+                texts = members({ROOT_ID: "claimed", UNIT_ID: "pending",
+                                 GATE_ID: "pending"})
+                texts[UNIT_ID] = tickets_mod._set_frontmatter_field(
+                    texts[UNIT_ID], "status", status
+                )
+                self.assertTrue(sealed(texts, UNIT_ID))
 
     def test_a_claim_time_the_lease_left_behind_still_seals_the_member(self):
         # `claimed_at` outlives a released claim, and it is the field the
