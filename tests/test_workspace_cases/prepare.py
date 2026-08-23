@@ -167,6 +167,63 @@ class TestDetachedWorkspaceIsRecordedAndGraded(unittest.TestCase):
         self.assertEqual(4, done.returncode, done.stdout + done.stderr)
         self.assertEqual(["docs/leak.md"], payload_of(done)["breaches"])
 
+    def test_a_removed_workspace_is_refused_rather_than_graded_at_its_revision(self):
+        """The record names where the workspace began. A workspace that is
+        gone left nothing saying where it ended, so grading the recorded
+        revision reports on commits the item never made -- here the side
+        revision it was materialized at, while its own commit is invisible."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            base = git(main, "rev-parse", "HEAD").strip()
+            make_ticket(run_dir, "T1", extra=((workspace.ISOLATION_KEY, "required"),))
+            git(main, "checkout", "--quiet", "-b", "side")
+            commit_in(main, {"scratch/pre.txt": "not the item's\n"}, "side work")
+            git(main, "checkout", "--quiet", "main")
+            worktree = tmp / "wt"
+            git(main, "worktree", "add", "--quiet", "--detach", str(worktree), "side")
+            started = run_workspace(worktree, "start", "testrun", "T1")
+            self.assertEqual(0, started.returncode, started.stderr)
+            commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
+            commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
+            git(main, "worktree", "remove", "--force", str(worktree))
+
+            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
+
+            self.assertEqual(2, done.returncode, done.stdout + done.stderr)
+            self.assertIn(
+                "no single standing worktree carries", payload_of(done)["error"]
+            )
+
+    def test_one_detached_workspace_is_never_graded_through_another(self):
+        """Two workspaces materialized at the same revision record the same
+        identity, and nothing in either record says which worktree is whose.
+        Resolved through the first one git happens to list, the second
+        item's out-of-scope commit was reported as the first one's pass."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            base = git(main, "rev-parse", "HEAD").strip()
+            for tid, files in (
+                ("T1", {"scratch/a.txt": "one\n"}),
+                ("T2", {"docs/leak.md": "leak\n"}),
+            ):
+                make_ticket(run_dir, tid, extra=((workspace.ISOLATION_KEY, "required"),))
+                worktree = detached_worktree(main, tmp / f"wt-{tid}")
+                started = run_workspace(worktree, "start", "testrun", tid)
+                self.assertEqual(0, started.returncode, started.stderr)
+                commit_in(worktree, files, f"{tid} work")
+            commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
+
+            done = run_workspace(main, "check", "testrun", "T2", "--base", base)
+
+            self.assertEqual(2, done.returncode, done.stdout + done.stderr)
+            self.assertIn(
+                "no single standing worktree carries", payload_of(done)["error"]
+            )
+
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestAbsoluteScopeEntriesAreCanonicalised(unittest.TestCase):
@@ -181,6 +238,39 @@ class TestAbsoluteScopeEntriesAreCanonicalised(unittest.TestCase):
             main, run_dir = make_repo(tmp)
             base = git(main, "rev-parse", "HEAD").strip()
             worktree = add_worktree(main, "wt-branch", tmp / "wt")
+            make_ticket(run_dir, "T1", scope=(str(worktree / "scratch"),),
+                        extra=((workspace.ISOLATION_KEY, "required"),))
+
+            started = run_workspace(worktree, "start", "testrun", "T1")
+
+            self.assertEqual(0, started.returncode, started.stderr)
+            self.assertEqual(
+                ["scratch"], payload_of(started)["start"][workspace.WRITE_SCOPE_KEY]
+            )
+            commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
+            commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
+
+            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            body = payload_of(done)["check"]
+            self.assertEqual(["scratch"], body[workspace.WRITE_SCOPE_KEY])
+            self.assertEqual("pass", body["verdict"])
+
+    def test_a_nested_workspace_is_the_same_grant_from_either_side(self):
+        """A workspace of this repository is a directory inside it -- the
+        layout this repository's own runs use. The same absolute entry is
+        then under both the workspace and the checkout holding it, and
+        answered by the outer one it names the workspace's own path: the
+        item's in-scope commit graded as a breach of the grant it was
+        written for."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            commit_in(main, {".gitignore": ".orch/\nnested/\n"}, "ignore these")
+            base = git(main, "rev-parse", "HEAD").strip()
+            worktree = add_worktree(main, "wt-branch", main / "nested" / "wt")
             make_ticket(run_dir, "T1", scope=(str(worktree / "scratch"),),
                         extra=((workspace.ISOLATION_KEY, "required"),))
 

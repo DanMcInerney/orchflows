@@ -57,7 +57,12 @@ def _relative_to_any(entry: str, resolved: Path, roots) -> str:
     refused for naming the wrong one of those would be refusing the host.
     """
 
-    for root in roots:
+    # deepest root first, never declaration order: a workspace of this
+    # repository is a directory inside it, so the same entry is under both
+    # the workspace and the checkout holding it, and the outer one answers
+    # with a path naming the workspace rather than the grant it was written
+    # for -- ``start`` and the join would canonicalise one entry two ways
+    for root in sorted(roots, key=lambda entry: len(entry.parts), reverse=True):
         try:
             return resolved.relative_to(root).as_posix()
         except ValueError:

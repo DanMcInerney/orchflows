@@ -18,6 +18,20 @@ DETACHED_PREFIX = "detached:"
 # A frontmatter scalar carries the dirty set as one comma-joined line, so a
 # path holding either character cannot be written unambiguously.
 AMBIGUOUS = (",", '"', "'")
+# A detached record names a revision, not a ref that follows the item. Only a
+# standing worktree past that revision says where the work went, so a record
+# no single standing worktree carries is ungradable -- never a pass over
+# whatever the recorded revision alone happens to hold.
+
+
+def _no_workspace(branch: str) -> str:
+    """Why a recorded revision alone is not a workspace to grade."""
+
+    return (
+        f"{branch!r} names a revision no single standing worktree carries: "
+        "nothing here can say where that workspace's work went, and the "
+        "recorded revision alone grades work this item never did"
+    )
 
 
 class Refused(Exception):
@@ -116,21 +130,26 @@ def _tip_ref(branch: str) -> str:
     return branch[len(DETACHED_PREFIX):] if branch.startswith(DETACHED_PREFIX) else branch
 
 
-def _detached_tip(git_out, is_ancestor, sha: str) -> str:
-    """Where a detached workspace stands now, not where it stood at ``start``.
+def _detached_tip(git_out, is_ancestor, sha):
+    """Where a detached workspace stands now, or ``None`` if nothing says.
 
     A branch name resolves to whatever the item committed onto it; a bare sha
-    is frozen at the moment ``start`` read it, so grading it directly would
-    see none of the item's commits and report a pass over an empty diff. The
-    still-present detached worktree standing past that sha is the same item's
-    workspace, and its HEAD is the ref a branch would have been.
+    is frozen at the moment ``start`` read it, so grading it directly sees
+    none of the item's commits. The standing detached worktree past that sha
+    is the same item's workspace, and its HEAD is the ref a branch would have
+    been -- but only when exactly one such worktree stands. None of them and
+    the workspace is gone, taking the only record of where its work went;
+    two of them and the recorded revision, which is all either workspace
+    recorded, cannot say which is this item's. Both answers are ``None``,
+    because both grade some other work as this item's if answered.
     """
 
-    for entry in _worktrees(git_out):
-        head = entry.get("HEAD", "")
-        if "detached" in entry and head and head != sha and is_ancestor(sha, head):
-            return head
-    return sha
+    found = {
+        entry["HEAD"]
+        for entry in _worktrees(git_out)
+        if "detached" in entry and entry.get("HEAD") and is_ancestor(sha, entry["HEAD"])
+    }
+    return found.pop() if len(found) == 1 else None
 
 
 def _ticket_worktree(git_out, branch: str, tip: str):

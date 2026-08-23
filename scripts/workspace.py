@@ -325,17 +325,19 @@ def _cmd_check(rest):
 
     ref = workspace_git._tip_ref(branch)
     code, tip, _ = _git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+    unresolved = f"branch {branch!r} does not resolve in this repository"
+    if code == 0 and ref != branch:
+        # a resolving revision is not yet a gradable workspace: only the
+        # worktree standing past it carries the item's commits
+        moved = workspace_git._detached_tip(_git_out, _is_ancestor, tip.strip())
+        code, tip = (0, moved) if moved else (1, tip)
+        unresolved = workspace_git._no_workspace(branch)
     if code != 0:
         if empty:
             reported.update({BRANCH_KEY: branch, "verdict": "not required"})
             return {"check": reported}, EXIT_OK
-        raise Refused(
-            f"branch {branch!r} does not resolve in this repository",
-            EXIT_ISOLATION_MISSING,
-        )
+        raise Refused(unresolved, EXIT_ISOLATION_MISSING)
     tip = tip.strip()
-    if ref != branch:
-        tip = workspace_git._detached_tip(_git_out, _is_ancestor, tip)
     own = workspace_git._current_branch(_git_out)
     if branch == own:
         # Git checks a branch out in at most one tree, so standing on this
