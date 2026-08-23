@@ -226,7 +226,9 @@ def _canonical_cut(ticket_id: str, text: str, siblings: dict, adapter: str,
         })
     cohort = str(data.get("cohort") or "")
     members = []
-    for sibling_id in sorted(siblings):
+    # Root-cohort sibling cuts stay lawfully correctable while this member
+    # runs (`cohort_sealed`), so they never enter its receipt: only ticket and batch cohorts, which freeze together, hash together.
+    for sibling_id in () if cohort.startswith(_ROOT_COHORT_PREFIX) else sorted(siblings):
         sibling_text = siblings[sibling_id]
         sibling_data = _parse_frontmatter(sibling_text)
         if str(sibling_data.get("cohort") or "") != cohort:

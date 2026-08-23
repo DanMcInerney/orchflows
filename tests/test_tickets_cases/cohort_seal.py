@@ -6,8 +6,10 @@ stays correctable however far its siblings have run: under rolling
 dispatch the decomposer is still cutting while units complete, and no
 running sibling can depend on a pending one -- an incomplete dependency
 is refused admission -- so a correction that touches only pending members
-cannot reach anything in flight. A stale cohort-member receipt on a
-claimed sibling is the receipt layer's concern, not the seal's.
+cannot reach anything in flight. The receipt layer reads the cohort the
+same way: a root-cohort receipt hashes no sibling cuts, so a claimed
+member's receipt survives those lawful corrections
+(`ReceiptCohortScopeTest`, and the packet case below).
 
 The member's own state is what still seals it: claimed, suspended,
 terminal, or carrying a `claimed_at` a lease left behind.
@@ -137,6 +139,43 @@ class MemberSealTest(unittest.TestCase):
         self.assertTrue(sealed(batch, "B"))
 
 
+class ReceiptCohortScopeTest(unittest.TestCase):
+    """The receipt hashes exactly what the seal freezes."""
+
+    def test_a_root_cohort_receipt_survives_a_pending_sibling_correction(self):
+        cohort = tickets_mod.root_cohort(ROOT_ID)
+        claimed = taken_up(
+            v1_ticket(RUNNING_ID, cohort=cohort, baseline=repository_head())
+        )
+        sibling = v1_ticket(UNIT_ID, cohort=cohort, baseline=repository_head())
+        before = tickets_mod.grade_admission(
+            RUNNING_ID, claimed, {RUNNING_ID: claimed, UNIT_ID: sibling}
+        )
+        self.assertEqual([], before["findings"])
+        corrected = sibling.replace(
+            "Change one observable artifact.",
+            "Change one observable artifact, corrected mid-run.",
+        )
+        after = tickets_mod.grade_admission(
+            RUNNING_ID, claimed, {RUNNING_ID: claimed, UNIT_ID: corrected}
+        )
+        self.assertEqual(before["receipt"], after["receipt"])
+
+    def test_a_batch_cohort_receipt_still_reads_every_member(self):
+        # Batch cohorts freeze together (`cohort_sealed`), so there a
+        # sibling's cut is part of what the receipt sealed.
+        cohort = tickets_mod.batch_cohort(["A", "B"])
+        first = v1_ticket("A", cohort=cohort, baseline=repository_head())
+        second = v1_ticket("B", cohort=cohort, baseline=repository_head())
+        before = tickets_mod.grade_admission("A", first, {"A": first, "B": second})
+        self.assertEqual([], before["findings"])
+        changed = second.replace(
+            "Change one observable artifact.", "Change another observable artifact."
+        )
+        after = tickets_mod.grade_admission("A", first, {"A": first, "B": changed})
+        self.assertNotEqual(before["receipt"], after["receipt"])
+
+
 class RunningFrontierCorrectionTest(unittest.TestCase):
     """The two callers, in the state the reproduction reports."""
 
@@ -196,6 +235,40 @@ class RunningFrontierCorrectionTest(unittest.TestCase):
                 (run_dir / f"{GATE_ID}.md").read_text(encoding="utf-8"),
             )
             self.untouched(run_dir, before)
+
+    def test_a_lawful_amend_leaves_a_claimed_siblings_further_packet_current(self):
+        # The wedge the receipt used to build: the §10 checker or
+        # re-verifier packet is requested only after the executor has been
+        # working under its claim, exactly the window a sibling correction
+        # lands in. The claimed member's own cut is untouched, so the
+        # packet must still find its stored receipt current.
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            baseline = initialize_git_fixture(tmp)
+            run_dir = use_sink(tmp) / "tickets" / "testrun"
+            run_dir.mkdir(parents=True)
+            cohort = tickets_mod.root_cohort(ROOT_ID)
+            running = v1_ticket(RUNNING_ID, cohort=cohort, baseline=baseline)
+            running = running.replace("independence: gate", "independence: checker")
+            (run_dir / f"{RUNNING_ID}.md").write_text(running, encoding="utf-8")
+            (run_dir / f"{UNIT_ID}.md").write_text(
+                v1_ticket(UNIT_ID, cohort=cohort, baseline=baseline), encoding="utf-8"
+            )
+            claim = run_cmd(tmp, "claim", "testrun", RUNNING_ID, "--by", "agent-a")
+            self.assertNotIn("error", claim)
+            amended = run_cmd(
+                tmp, "amend", "testrun", UNIT_ID, "--section", "Objective",
+                "--text", "Change one observable artifact, corrected mid-run.",
+            )
+            self.assertNotIn("error", amended)
+            packet = run_cmd(
+                tmp, "packet", "testrun", RUNNING_ID, "--reply-to", "main",
+                "--executor", "orch-verify",
+            )
+            self.assertNotIn("error", packet)
+            self.assertRegex(
+                packet["packet"]["admission"], r"^v1:git:sha256:[0-9a-f]{64}$"
+            )
 
     def test_both_callers_still_refuse_a_member_the_seal_holds(self):
         # A pending member carrying a claim time reaches `cohort_sealed`
