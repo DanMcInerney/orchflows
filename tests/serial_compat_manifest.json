@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2411,
+  "count": 2446,
   "identities": [
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_a_font_suffix_is_declared_binary_rather_than_unreadable",
    "test_benchmaker.TestVendoredTreesAreNotSurfaces.test_the_live_scan_prunes_a_vendored_tree_holding_binaries",
@@ -494,6 +494,41 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_a_no_match_scope_prints_a_no_tests_line_and_exits_zero",
+   "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_an_unreadable_test_file_is_named_on_the_error_stream",
+   "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_the_argv_format_prints_the_runner_module_list_on_one_line",
+   "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_the_default_format_prints_one_module_per_line",
+   "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_the_json_format_carries_the_modules_scope_and_residue",
+   "tests.test_affected_tests_cases.fixture_tree.TestDirectoryAndTestScopes.test_a_case_package_scope_path_is_its_shard_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestDirectoryAndTestScopes.test_a_directory_scope_reaches_every_module_reading_under_it",
+   "tests.test_affected_tests_cases.fixture_tree.TestDirectoryAndTestScopes.test_a_dot_directory_scope_keeps_its_leading_dot",
+   "tests.test_affected_tests_cases.fixture_tree.TestDirectoryAndTestScopes.test_a_dot_directory_scope_takes_only_what_is_under_it",
+   "tests.test_affected_tests_cases.fixture_tree.TestDirectoryAndTestScopes.test_a_scope_path_already_under_tests_is_its_own_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestImportEdges.test_a_case_package_edge_is_attributed_to_its_shard_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestImportEdges.test_a_dotted_import_and_a_from_import_both_reach_their_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestImportEdges.test_a_module_named_only_by_its_stem_reaches_its_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestImportEdges.test_a_spec_from_file_location_path_reaches_its_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestImportEdges.test_a_whole_string_literal_path_reaches_its_module",
+   "tests.test_affected_tests_cases.fixture_tree.TestImportEdges.test_several_scope_paths_resolve_to_the_union_of_their_modules",
+   "tests.test_affected_tests_cases.fixture_tree.TestPathAcceptance.test_a_windows_separated_scope_path_resolves_the_same_way",
+   "tests.test_affected_tests_cases.fixture_tree.TestPathAcceptance.test_an_absolute_scope_path_resolves_as_its_repository_relative_one",
+   "tests.test_affected_tests_cases.fixture_tree.TestRefusalsAndResidue.test_a_scope_path_matching_no_module_is_named_and_yields_nothing",
+   "tests.test_affected_tests_cases.fixture_tree.TestRefusalsAndResidue.test_an_unreadable_test_file_is_reported_and_skipped",
+   "tests.test_affected_tests_cases.fixture_tree.TestRefusalsAndResidue.test_nothing_under_the_scanned_tree_is_imported",
+   "tests.test_affected_tests_cases.live_repo.TestLiveDiscrimination.test_a_narrow_scope_selects_strictly_fewer_shards_than_the_suite",
+   "tests.test_affected_tests_cases.live_repo.TestLiveDiscrimination.test_a_scope_path_no_test_names_reaches_no_shard",
+   "tests.test_affected_tests_cases.live_repo.TestLiveEdges.test_a_file_location_import_reaches_its_shard",
+   "tests.test_affected_tests_cases.live_repo.TestLiveEdges.test_a_shared_ticket_module_reaches_the_shards_that_read_it",
+   "tests.test_affected_tests_cases.live_repo.TestLiveEdges.test_the_resolver_dogfoods_its_own_scope",
+   "tests.test_affected_tests_cases.live_repo.TestLiveResidue.test_every_shard_file_in_this_checkout_parses",
+   "tests.test_affected_tests_cases.runner_scope.TestScopeIsDocumented.test_the_runner_help_names_the_scope_option",
+   "tests.test_affected_tests_cases.runner_scope.TestScopeIsDocumented.test_the_runner_usage_names_the_scope_option",
+   "tests.test_affected_tests_cases.runner_scope.TestScopeSelection.test_a_comma_separated_scope_runs_the_union",
+   "tests.test_affected_tests_cases.runner_scope.TestScopeSelection.test_a_scope_no_shard_reaches_runs_nothing_and_exits_zero",
+   "tests.test_affected_tests_cases.runner_scope.TestScopeSelection.test_a_scope_runs_exactly_the_shards_it_reaches",
+   "tests.test_affected_tests_cases.runner_scope.TestSelectRefusals.test_a_module_outside_the_discovered_set_is_dropped",
+   "tests.test_affected_tests_cases.runner_scope.TestSelectRefusals.test_a_scope_of_only_separators_is_refused_by_name",
+   "tests.test_affected_tests_cases.runner_scope.TestSelectRefusals.test_a_scope_reaching_nothing_exits_zero_rather_than_the_whole_suite",
    "tests.test_benchmaker_cases.fixture.TestBenchmarkFixture.test_manifest_references_are_complete_and_locator_addressed",
    "tests.test_benchmaker_cases.fixture.TestBenchmarkFixture.test_qualification_recomputes_every_required_check",
    "tests.test_benchmaker_cases.fixture.TestBenchmarkFixture.test_runner_accepts_good_rejects_bad_and_replays_evidence",
@@ -2414,7 +2449,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "37167ff45ce2aaf238f58d26781f125f9bd9694248b4d8a0bb61012699f164e3"
+  "sha256": "2311503cfb0e11e4859df8c53d39f5d6f39fae86d0b6ccc39e4e3f750becca1a"
  },
  "mutation_owners": [
   {
@@ -2473,6 +2508,14 @@
    "seams": [
     "cwd",
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_affected_tests_cases.common",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
    ]
   },
   {
