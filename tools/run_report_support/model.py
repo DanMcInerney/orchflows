@@ -26,6 +26,8 @@ for _import_root in (_REPORT_ROOT, _REPORT_ROOT / "scripts"):
 import scripts.ui_discovery as ui_discovery  # noqa: E402
 import scripts.ui_model as ui_model  # noqa: E402
 
+from tools.run_report_support import friction as friction_support  # noqa: E402
+
 DEFAULT_TOP = 40
 LONGEST_TICKETS = 40
 DECOMPOSE_EXECUTOR = "orch-decompose"
@@ -371,6 +373,9 @@ def build_report(root, since=None, until=None, top: int = DEFAULT_TOP) -> dict:
         ],
         "families": family_section(windowed),
         "tickets": ticket_section(tickets, now, top),
+        "friction": friction_support.friction_section(
+            log, lambda stamp: in_window(parse_instant(stamp), since_at, until_at)
+        ),
         "totals": {
             "runs": len(windowed),
             "runs_terminal": sum(1 for row in windowed if row["terminal_status"] in TERMINAL_STATUSES),
