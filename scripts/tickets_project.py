@@ -34,7 +34,7 @@ except ImportError:
 if __package__:
     from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
     from .tickets_inputs import parse_input_records
-    from .tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _write_text_atomically, _writer_identity
+    from .tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
     from .tickets_admission import is_v1, is_v2
     from .tickets_context import graded_admission
     from .tickets_packet import _claim_is_stale
@@ -42,7 +42,7 @@ if __package__:
 else:
     from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
     from tickets_inputs import parse_input_records
-    from tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _write_text_atomically, _writer_identity
+    from tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
     from tickets_admission import is_v1, is_v2
     from tickets_context import graded_admission
     from tickets_packet import _claim_is_stale
@@ -52,20 +52,28 @@ TARGET_REPOSITORY_INPUT = 'target-repository'
 CLAIM_REMEDY = 'Claim it from a workspace of {theirs}'
 TERMINAL_REMEDY = 'Record it from a workspace of {theirs}'
 CREATE_REMEDY = 'Use a different run id, or write from a workspace of {theirs}'
-def _snapshots():
-    """The run-snapshot pair, resolved on the lifecycle module at call time.
+def _lifecycle():
+    """The lifecycle module, resolved at call time rather than bound at import.
 
-    ``_run_snapshot`` and ``_snapshot_matches`` stayed where ``ready``
-    also reads them, and are reached through the module rather than bound
-    at import so a caller that swaps one is swapping the one both paths
-    use.  Local because the import runs the other way at load: lifecycle
+    Three names are reached through it: the two run-snapshot readers, which
+    stayed where ``ready`` also reads them so a caller that swaps one swaps
+    the one both paths use, and the atomic writer, which ``tickets.py``'s
+    seam sync re-points on that module whenever the facade's is replaced.
+    A claim holding import-time copies would write through bindings the
+    sync cannot reach, and an injected write failure would land on nothing.
+
+    The import is local because it runs the other way at load: lifecycle
     imports this module for the claim seam.
     """
     if __package__:
         from . import tickets_lifecycle
     else:
         import tickets_lifecycle
-    return tickets_lifecycle._run_snapshot, tickets_lifecycle._snapshot_matches
+    return tickets_lifecycle
+def _snapshots():
+    """The run-snapshot pair, as ``ready`` currently sees them."""
+    lifecycle = _lifecycle()
+    return lifecycle._run_snapshot, lifecycle._snapshot_matches
 def _project_at(location):
     """The project a directory belongs to, or ``None`` when it names none.
 
@@ -203,7 +211,7 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     updated = _set_frontmatter_field(updated, 'status', 'claimed')
     updated = _set_frontmatter_field(updated, 'claimed_by', claimed_by)
     updated = _set_frontmatter_field(updated, 'claimed_at', timestamp)
-    _write_text_atomically(ticket_path, updated)
+    _lifecycle()._write_text_atomically(ticket_path, updated)
     claimed = {'id': ticket_path.stem, 'claimed_by': claimed_by, 'claimed_at': timestamp}
     return {'claimed': claimed, 'skipped': skipped} if skipped else {'claimed': claimed}
 def _cmd_claim(rest):
