@@ -229,6 +229,53 @@ def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
     }
 
 
+def _sharers(ticket_path, ticket_id: str, branch: str) -> list:
+    """Every other claimed ticket of this run that recorded this same tree.
+
+    ``start`` cannot see a workspace from the outside: from inside any linked
+    worktree the tree looks the caller's own, which is why ``top != root``
+    answered true for a whole cut dispatched into one shared directory. What
+    can be seen is what the siblings recorded. ``_record`` stamps
+    ``workspace_branch`` into each item's ticket, the run's tickets are this
+    one's own neighbours in the sink, and git checks a branch out in at most
+    one tree -- so a sibling carrying this branch is standing where this item
+    stands.
+
+    Only ``claimed`` siblings count. A finished item has left the tree, and
+    counting it would flag a long run's last item for every workspace its
+    predecessors have already released, which is a flag nobody could act on.
+    The item's own ticket is skipped so that a re-established workspace never
+    reports itself as its own sharer -- by then its own stamp is in the sink.
+
+    The read goes through the same ``tickets`` loader the caller grades its own
+    ticket with, never a second resolver. A sibling that will not parse is no
+    evidence of sharing, so it is passed over rather than raised: this is a
+    report about the caller's tree, and it must not be the thing that stops an
+    item over some other item's malformed file.
+
+    A detached record is where the branch proxy stops, and it stops here
+    rather than reporting past its evidence. ``DETACHED_PREFIX`` names the
+    revision ``start`` read, not a ref, so two workspaces materialized at one
+    revision record the identical string from different directories -- the
+    same ambiguity ``_detached_tip`` refuses to resolve for the same reason.
+    Equality of two such records is no evidence of a shared tree, and reading
+    it as evidence flags two genuinely isolated workspaces.
+    """
+
+    if branch.startswith(DETACHED_PREFIX):
+        return []
+    found = []
+    for path in sorted(ticket_path.parent.glob("*.md")):
+        if path == ticket_path:
+            continue
+        data = tickets._load_ticket(path)
+        if "error" in data or data.get("status") != "claimed":
+            continue
+        if str(data.get("workspace_branch") or "").strip() == branch:
+            found.append(str(data.get("id") or path.stem))
+    return sorted(found)
+
+
 def _is_ancestor(git, ancestor: str, descendant: str) -> bool:
     code, _, err = git("merge-base", "--is-ancestor", ancestor, descendant)
     if code in (0, 1):

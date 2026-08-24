@@ -35,6 +35,9 @@ Exit codes:
        says the item failed, 6 says the question was asked from the wrong
        place, and an integrator that reads one as the other rejects intact
        work.
+    7  shared-workspace: another claimed item of the run recorded this same
+       tree, so it is not this item's alone. ``start`` records before it
+       flags: the join must still read what the item was executed in.
 
 Subcommands:
     start <run> <id>
@@ -104,6 +107,7 @@ EXIT_WRONG_BRANCH_POINT = 3
 EXIT_SCOPE_BREACH = 4
 EXIT_NO_RECORD = 5
 EXIT_WRONG_VANTAGE = 6
+EXIT_SHARED_WORKSPACE = 7
 VERDICTS = {
     EXIT_OK: "pass",
     EXIT_ERROR: "error",
@@ -112,6 +116,7 @@ VERDICTS = {
     EXIT_SCOPE_BREACH: "scope-breach",
     EXIT_NO_RECORD: "no-record",
     EXIT_WRONG_VANTAGE: "wrong-vantage",
+    EXIT_SHARED_WORKSPACE: "shared-workspace",
 }
 AMBIGUOUS = workspace_git.AMBIGUOUS
 # ``contracts/work-item.md``: ``write_scope`` is exactly what the item may
@@ -227,6 +232,8 @@ def _cmd_start(rest):
     # a workspace whose branch and baseline the join has to be able to read,
     # and the preparation's own verdict is reported rather than raised
     prepared = workspace_prepare.prepare(top)
+    # after recording: this item's own stamp is in the sink, skipped by id
+    sharing = _sharers(path, ticket_id, branch)
     return {
         "start": {
             "run": run,
@@ -236,12 +243,14 @@ def _cmd_start(rest):
             BASELINE_KEY: baseline,
             "workspace_root": str(top),
             "main_root": str(root),
-            "isolated": top != root,
+            # a linked tree is necessary, and no longer sufficient
+            "isolated": top != root and not sharing,
+            "shared_with": sharing,
             "dirty": dirty,
             WRITE_SCOPE_KEY: list(scope),
             **prepared,
         }
-    }, EXIT_OK
+    }, EXIT_SHARED_WORKSPACE if sharing else EXIT_OK
 
 
 def _extract_flag(args: list, flag: str):
@@ -258,6 +267,7 @@ def _extract_flag(args: list, flag: str):
 _normalized_scope = workspace_scope._normalized_scope
 _in_scope = workspace_scope._in_scope
 _actual_mutations = workspace_scope._actual_mutations
+_sharers = workspace_git._sharers
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
     return workspace_git._is_ancestor(_git, ancestor, descendant)
