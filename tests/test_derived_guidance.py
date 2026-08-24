@@ -280,12 +280,17 @@ class SentinelIsNotContentTest(unittest.TestCase):
         The generators are not this module's to change, so nothing but this
         stops `new` from prefilling a marker the filing law would go back to
         reading as content -- which is the trap, rebuilt from the other end.
+
+        The executor is stated with the pack and isolation its admission
+        requires, so the case fails on the prefill it grades rather than on
+        an emission `new` declined for an unrelated reason.
         """
 
         with tempfile.TemporaryDirectory() as directory:
             with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
                 self.assertNotIn("error", _dispatch([
                     "new", "run", "T1", "--executor", "orch-tdd",
+                    "--pack", "orch-code-pack", "--isolation", "required",
                     "--objective", "deliver", "--criterion", CRITERION,
                 ]))
                 sections = tickets_format._sections(
