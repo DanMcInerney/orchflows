@@ -1662,8 +1662,8 @@
    "tests.test_tickets_cases.cli_help.HelpTest.test_the_subcommand_list_is_not_empty_and_excludes_help_flags",
    "tests.test_tickets_cases.cli_help.HelpTest.test_the_usage_table_covers_exactly_the_dispatched_subcommands",
    "tests.test_tickets_cases.cli_help.TestPacketNamesTheChildsOwnName.test_a_packet_for_a_dispatching_executor_states_the_name_it_was_claimed_under",
-   "tests.test_tickets_cases.cli_help.TestPacketNamesTheChildsOwnName.test_a_packet_for_an_executor_that_dispatches_nothing_states_no_name",
    "tests.test_tickets_cases.cli_help.TestPacketNamesTheChildsOwnName.test_an_unclaimed_packet_is_refused_before_dispatch",
+   "tests.test_tickets_cases.cli_help.TestPacketNamesTheChildsOwnName.test_only_a_dispatching_executor_is_told_the_name_becomes_a_reply_to",
    "tests.test_tickets_cases.cli_help.TestPacketNamesTheFilingCommand.test_a_packet_for_a_read_only_lane_still_names_it",
    "tests.test_tickets_cases.cli_help.TestPacketNamesTheFilingCommand.test_a_packet_names_both_filing_forms",
    "tests.test_tickets_cases.cli_help.TestPacketNamesTheFilingCommand.test_the_packet_filing_line_is_absolute_one_token_per_argument_and_shell_free",
@@ -2863,7 +2863,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b20140b11e6582351407c05a083057d0feebfad4889d004fd4de8db85320940e"
+  "sha256": "baffce72e2c788db55aa19a661c0e1f59e5f41488921add97e7ea2333e2aa93e"
  },
  "mutation_owners": [
   {
@@ -5181,6 +5181,7 @@
   {
    "module": "tests.test_tickets_issue_cases.admission_producers",
    "owner": "ProducerStampingTest.test_the_flag_form_takes_its_sentinel_from_the_table",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -5236,6 +5237,7 @@
   {
    "module": "tests.test_tickets_lint",
    "owner": "GraderContextTest.test_all_four_sites_reach_the_grader_through_the_one_factory",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -5259,6 +5261,7 @@
   {
    "module": "tests.test_tickets_lint",
    "owner": "LintTicketTest.lint_process",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -5774,6 +5777,7 @@
   {
    "module": "tests.test_verify_at",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment",
     "import-path"
@@ -5782,6 +5786,7 @@
   {
    "module": "tests.test_verify_at",
    "owner": "clean_env",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
