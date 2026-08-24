@@ -67,6 +67,19 @@ PACKET_BUILDS = {
 }
 
 
+#: The three parts every emitted packet carries, keyed by the fact and
+#: valued by the pattern that finds it in `scripts/tickets_packet.py`.
+#: Each is a fact about the *dispatch*, not about the item, so the packet
+#: generator is its only lawful owner: a skill body stating one of them
+#: reaches only the forks that read that skill, and the forks this exists
+#: for are the ones that arrived holding a skill body and nothing else.
+PACKET_DISPATCH_PARTS = {
+    "assigned name": r"assigned name is `\{",
+    "state-sink resolution": r"state_root\.py[^\n]*\.orch/",
+    "refusal channel": r"without this packet[^\n]*self-invented name",
+}
+
+
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
 
@@ -437,6 +450,70 @@ class KernelSkillsSpellOutNoPacketCarriedCLI(unittest.TestCase):
             "invocation: contracts/result.md's crossing is the join's own, and "
             "the sweep above must not have taken it",
         )
+
+
+class TheDispatchPartsHaveOneOwner(unittest.TestCase):
+    """`scripts/tickets_packet.py` states them, and nothing else does.
+
+    Three facts a child needs before it can act lawfully -- the name it
+    records under, where the ticket store resolves, and what a fork does
+    when it arrives without a packet -- were carried by nobody, and five
+    friction entries in one session came of it. Placing them in the
+    generator puts them on every shape at once; placing a second copy in a
+    skill body would put a stale one on the shapes that read that skill.
+    """
+
+    def test_the_generator_states_every_dispatch_part(self):
+        generator = read(PACKET)
+        for fact, pattern in sorted(PACKET_DISPATCH_PARTS.items()):
+            with self.subTest(fact=fact):
+                self.assertIsNotNone(
+                    re.search(pattern, generator),
+                    f"scripts/tickets_packet.py no longer states the {fact} "
+                    f"part ({pattern!r} matches nothing); the dispatch that "
+                    "carried it to every child is the only place it was said",
+                )
+
+    def test_the_assigned_name_is_interpolated_rather_than_a_placeholder(self):
+        """`checker-fable-01` was invented to fill a literal `NAME`.
+
+        A generator that emits the *word* satisfies the pattern above while
+        handing the child the same blank it filled in, so the check that a
+        name is stated is worth nothing without this one: the sentence's
+        name comes from a value, and the recording invocation spends that
+        value rather than the placeholder.
+        """
+        generator = read(PACKET)
+        self.assertIsNotNone(
+            re.search(r"assigned name is `\{assigned_name\}`", generator),
+            "the assigned-name sentence no longer interpolates the resolved "
+            "name; a child handed a placeholder invents a filling for it",
+        )
+        self.assertIsNotNone(
+            re.search(r"_command_text\([^\n]*'check'[^\n]*'--by', assigned_name",
+                      generator),
+            "the recording invocation no longer spends the assigned name, so "
+            "the name the packet states and the name the child records under "
+            "can differ again",
+        )
+
+    def test_no_kernel_skill_restates_a_dispatch_part(self):
+        """Same sweep as the packet-carried CLI above, same premise: the
+        absence costs a reader nothing only while the generator emits it."""
+        for relative in KERNEL_SKILLS:
+            text = read(relative)
+            for fact, token in (
+                ("state-sink resolution", ".orch/"),
+                ("state-sink resolution", "state_root"),
+                ("refusal channel", "self-invented"),
+            ):
+                with self.subTest(skill=relative, fact=fact, token=token):
+                    self.assertNotIn(
+                        token, text,
+                        f"{relative} states the {fact} part itself, which "
+                        "scripts/tickets_packet.py writes into every packet; "
+                        "a second copy reaches fewer children and goes stale",
+                    )
 
 
 if __name__ == "__main__":

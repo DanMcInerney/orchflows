@@ -31,7 +31,7 @@ if __package__:
 else:
     from tickets_admission import grade_admission, is_v1, is_v2
 
-PACKET_USAGE = "packet <run> <id> --reply-to <name> [--workspace <path>] [--executor orch-critique | orch-verify]"
+PACKET_USAGE = "packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--executor orch-critique | orch-verify]"
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
 CHECKER_EXECUTOR = 'orch-critique'
 REVERIFIER_EXECUTOR = 'orch-verify'
@@ -170,7 +170,7 @@ def _cut_lens_path():
         if lens.is_file():
             return str(lens)
     return '/'.join(CUT_LENS_PARTS)
-def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, script):
+def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, script, assigned_name=None):
     """The head of a packet for one further rules/verification.md §10 child.
 
     Two shapes, because the two children have opposite authority. The
@@ -208,7 +208,7 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         head.append(f'Your repair is accepted on the cut check re-run to exit 0 (rules/verification.md §11){unresolved}:')
         head.append(cut_check)
         head.append("Append your findings and the changes you made to the root's `## Result`, and record the pass with:")
-        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', 'NAME'))
+        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', assigned_name or 'NAME'))
     elif is_root:
         head.append(f'This is the rules/verification.md §10 re-verification of a checked cut, never a second decomposition: the completion test at the checked set is the cut check, read on the host that produced it{unresolved}:')
         head.append(cut_check)
@@ -217,7 +217,7 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         scope = effective_write_scope(loaded)
         head.append(f"This is the rules/verification.md §10 checker's pass on a result {claimed_by} produced under its claim, never a re-execution of the item: the lens is the ticket's own `## Completion test`, at {at_identity}.")
         head.append(f"Your authority is the ticket's own write scope, {scope} — correct inside it, and append your findings, changes and the verification entries they invalidate to `## Result`. Record the pass, after correcting, with:")
-        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', 'NAME'))
+        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', assigned_name or 'NAME'))
         head.append("Your pass is the one outside execution of the completion test: run each oracle once at the identity you confirmed, and reuse any entry whose covers are unchanged — re-running it buys nothing (rules/verification.md §7, §10). Spend the bound on what execution cannot buy: weakened or vacuous checks, scope, and correction.")
     else:
         head.append(f"This is the rules/verification.md §10 re-verification of a checked result, never a re-execution of the item: run the ticket's `## Completion test` at {at_identity}, reusing prior `## Verification` entries whose `covers` are unchanged there.")
@@ -249,7 +249,7 @@ def _all_pre_existing(completion: str) -> bool:
     return True
 def _cmd_packet(rest):
     probe = list(rest)
-    for flag in ('--reply-to', '--workspace', '--executor'):
+    for flag in ('--reply-to', '--by', '--workspace', '--executor'):
         _extract_flag(probe, flag)
     if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
         return _packet_under_run_lock(rest)
@@ -272,6 +272,7 @@ def _packet_under_run_lock(rest):
     """
     args = list(rest)
     reply_to = _extract_flag(args, '--reply-to')
+    dispatched_name = _extract_flag(args, '--by')
     workspace = _extract_flag(args, '--workspace')
     further = _extract_flag(args, '--executor')
     if len(args) != 2:
@@ -361,14 +362,26 @@ def _packet_under_run_lock(rest):
     run_id = loaded.get('run') or run
     script = Path(__file__).with_name('tickets.py').resolve()
     executor_script = _executor_script(executor)
+    # The name the child records under. `--by` is the dispatcher's, and the
+    # only source for a further §10 child: the ticket's `claimed_by` is the
+    # *executor* whose result that child reviews, so falling back to it
+    # would hand a checker the name of the context it is checking. Absent
+    # both, the packet states no name and forbids inventing one.
+    assigned_name = str(dispatched_name or '').strip().strip('`').strip() or None
+    if assigned_name is None and further is None:
+        assigned_name = str(loaded.get('claimed_by') or '').strip() or None
     if further is not None:
         executor_script = None
         executor = further
-        prompt = _further_child_prompt(further, loaded, ticket_path, run_id, script)
+        prompt = _further_child_prompt(further, loaded, ticket_path, run_id, script, assigned_name)
     elif executor_script is not None:
         prompt = [f'Run the script {executor_script} with the ticket path as its one argument, from your own workspace: {executor_script} {ticket_path}', f"No skill is applied. File the script's stdout verbatim as the ticket's `## Result`, and its exit code and the criterion it decides as `## Verification`. Change nothing else."]
     else:
         prompt = [f'Apply skill {executor} to ticket {ticket_path}.', 'Read the ticket; it is your complete delegation packet — objective, fixed inputs, authority (write_scope, excluded_actions), bounds, return fields. Gather nothing outside its fixed inputs.']
+    # Where the store is, said beside the path that came out of it: a fork
+    # that lost its packet went looking in a checkout's `.orch/`, found
+    # nothing, and could not tell an empty tracker from the wrong one.
+    prompt.append(f"Tickets are user-scope state: they live in the sink `scripts/state_root.py` resolves, {tickets_root}, and never under a checkout's `.orch/` — the absolute path above is the one every worktree agrees on.")
     if executor == LOOP_EXECUTOR:
         prompt.append(f"This is a loop ticket: the body of each fresh-context pass is `## Objective`, the done-check every pass is graded against is `## Completion test`, and the bound on the iterations is {loaded.get('bound')}. Stop at the done-check or at the bound, whichever comes first, and record which.")
     if workspace:
@@ -392,9 +405,17 @@ def _packet_under_run_lock(rest):
     prompt.append(f"Filing channel (contracts/work-item.md's filing law), from your own workspace, with SECTION one of {list(EXECUTOR_SECTIONS)}, PATH a file in your own workspace and TEXT one line; add --append to write after content already there:")
     prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--file', 'PATH'))
     prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--text', 'TEXT'))
-    assigned_name = str(loaded.get('claimed_by') or '').strip() or None if executor in DISPATCHING_EXECUTORS else None
+    # A name a child was never told is a name it fills in: one checker fork
+    # recorded `check --by checker-fable-01` against a dispatched
+    # checker-opus-01, and `checked_by`'s immutability then left the run
+    # carrying two names for one pass with no sanctioned way back.
     if assigned_name is not None:
-        prompt.append(f"Your own assigned name is `{assigned_name}` (the ticket's `claimed_by`): every packet you dispatch carries it as that child's `reply_to`.")
+        prompt.append(f"Your own assigned name is `{assigned_name}`: record under exactly that name wherever a command takes `--by`, and under no name you invent.")
+    else:
+        prompt.append("Your own assigned name is the one your dispatch spawned you under; this packet was emitted without `--by`, so record wherever a command takes `--by` under exactly that name, and under no name you invent — unable to name it, refuse rather than choose one.")
+    if executor in DISPATCHING_EXECUTORS and assigned_name is not None:
+        prompt.append(f"Every packet you dispatch carries `{assigned_name}` as that child's `reply_to`.")
+    prompt.append('If you are a skill fork that arrived without this packet — a contract body and no ticket — refuse to the parent that forked you, by your own return and never to the coordinator by address, and record nothing under a self-invented name.')
     prompt.append(f'reply_to: {reply_to} — address your closing message to `{reply_to}`.')
     profile = None if further is not None else loaded.get('profile')
     return {'packet': {'run': loaded.get('run') or run, 'id': loaded['id'], 'path': str(ticket_path), 'executor': executor, 'script': executor_script, 'pack': loaded.get('pack'), 'profile': profile, 'independence': loaded.get('independence') or 'checker', 'isolation': isolation, 'admission': admission, 'assigned_name': assigned_name, 'reply_to': reply_to, 'workspace': workspace, 'prompt': '\n'.join(prompt)}}

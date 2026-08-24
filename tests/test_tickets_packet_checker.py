@@ -80,6 +80,178 @@ def make_repo(tmp: Path, body: str) -> Path:
     return path
 
 
+SUBTREE_TICKET = """---
+id: T1.01
+run: testrun
+status: pending
+executor: orch-tdd
+pack: orch-code-pack
+depends_on: []
+isolation: required
+write_scope: scratch/t101.txt
+bound: 30m
+---
+
+## Objective
+
+One unit of the cut, so a root's cut reader has an issued set to read.
+"""
+
+SCRIPT_TICKET = PRE_EXISTING_TICKET.replace(
+    "executor: orch-tdd", "executor: script:tools/measure.py"
+)
+
+#: Every shape `packet` emits, as (label, ticket body, extra argv). A part
+#: this ticket adds "to every packet" is worth exactly the shapes it
+#: actually reaches, so the shapes are enumerated once and every case below
+#: walks all of them rather than sampling the one it was written for.
+PACKET_SHAPES = (
+    ("primary skill executor", PRE_EXISTING_TICKET, ()),
+    ("primary script executor", SCRIPT_TICKET, ()),
+    ("checker", AUTHORED_HERE_TICKET, ("--executor", "orch-critique")),
+    ("re-verifier", PRE_EXISTING_TICKET, ("--executor", "orch-verify")),
+    ("root cut reader", GATE_ROOT_TICKET, ("--executor", "orch-critique")),
+    ("root re-verifier", GATE_ROOT_TICKET, ("--executor", "orch-verify")),
+)
+
+
+def make_shape_repo(tmp: Path, body: str) -> Path:
+    """``make_repo`` plus one pending subtree item.
+
+    A root's cut reader is refused a packet until the run holds a `T1.`
+    item, so the subtree ticket is written for every shape rather than for
+    the two that need it: the fixtures here carry no admission receipt, so
+    the sibling snapshot is never graded, and `_cut_subtree` is the only
+    other reader of the run directory.
+    """
+
+    path = make_repo(tmp, body)
+    (path.parent / "T1.01.md").write_text(SUBTREE_TICKET, encoding="utf-8")
+    return path
+
+
+class TestEveryEmittedPacketCarriesTheThreeDispatchParts(unittest.TestCase):
+    """A fork holding a skill contract and nothing else has three questions.
+
+    Five entries in one session, from the proposal this class delivers
+    (`2026-08-24-skill-forks-arrive-without-packet-or-name`): three skill
+    forks arrived with contract text and no packet, one checker fork
+    recorded `check --by` under a name nobody dispatched
+    (`checker-fable-01` against the dispatched `checker-opus-01`), which
+    `checked_by`'s immutability then made uncorrectable, and one join
+    re-armed a fork from notification memory. The packet is the one
+    surface all three cross, so it answers all three questions on every
+    shape it emits: what am I called, where does the ticket store live,
+    and what do I do when I arrive holding none of this.
+    """
+
+    def emitted(self, tmp: Path, body: str, extra, *name):
+        make_shape_repo(tmp, body)
+        argv = ["packet", "testrun", "T1", "--reply-to", "main"]
+        if name:
+            argv += ["--by", name[0]]
+        payload = run_cmd(tmp, *argv, *extra)
+        self.assertNotIn("error", payload, payload)
+        return payload["packet"]
+
+    def test_every_shape_states_the_name_the_dispatch_assigned_the_child(self):
+        """The `checker-fable-01` incident, at its one correctable point.
+
+        `assigned_name` reached dispatching executors only, so the two §10
+        children -- the ones that run `check --by` at all -- were handed
+        the literal `NAME` and invented a filling for it.
+        """
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                packet = self.emitted(
+                    Path(tmp), body, extra, "checker-opus-01",
+                )
+                self.assertEqual("checker-opus-01", packet["assigned_name"])
+                # backticked: the fixture paths carry names as substrings
+                self.assertIn("assigned name is `checker-opus-01`", packet["prompt"])
+
+    def test_a_checker_is_told_to_record_under_that_name_not_under_NAME(self):
+        """The assigned name reaches the invocation that spends it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.emitted(
+                Path(tmp), AUTHORED_HERE_TICKET,
+                ("--executor", "orch-critique"), "checker-opus-01",
+            )
+            check = [
+                line for line in packet["prompt"].splitlines()
+                if " check " in line and "--by" in line
+            ]
+            self.assertEqual(1, len(check), packet["prompt"])
+            self.assertTrue(check[0].endswith("--by checker-opus-01"), check[0])
+
+    def test_every_shape_resolves_the_ticket_store_to_the_sink(self):
+        """The 01:08:09Z fork searched a checkout's `.orch/` and found
+        nothing; the sink it should have read is a resolved absolute path,
+        so the packet prints that path rather than the rule alone."""
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                make_shape_repo(tmp, body)
+                argv = ["packet", "testrun", "T1", "--reply-to", "main"]
+                packet = run_cmd(tmp, *argv, *extra)["packet"]
+                prompt = packet["prompt"]
+                self.assertIn("state_root.py", prompt)
+                self.assertIn(".orch/", prompt)
+                self.assertIn(str((tmp / "state-sink").resolve() / "tickets"), prompt)
+
+    def test_every_shape_carries_the_refusal_channel_sentence(self):
+        """A fork that arrives without the packet has one lawful move, and
+        the packet it did not get is where the move is written -- so the
+        sentence is what a *re-armed* fork reads before it acts."""
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                packet = self.emitted(Path(tmp), body, extra)
+                for token in (
+                    "without this packet",
+                    "never to the coordinator",
+                    "self-invented name",
+                ):
+                    self.assertIn(token, packet["prompt"], label)
+
+    def test_a_primary_packet_with_no_name_falls_back_to_the_claim(self):
+        """A claim is taken under a name, so an executor's is on the ticket."""
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.emitted(Path(tmp), PRE_EXISTING_TICKET, ())
+            self.assertEqual("agent-a", packet["assigned_name"])
+            self.assertIn("assigned name is `agent-a`", packet["prompt"])
+
+    def test_a_further_child_with_no_name_is_forbidden_to_invent_one(self):
+        """A checker's name is the dispatcher's, never the ticket's: the
+        ticket's `claimed_by` is the *executor* whose result is under
+        review. With no `--by` there is no name to state, and the one
+        thing the packet must still rule out is the filling-in that
+        produced `checker-fable-01`."""
+        for executor in ("orch-critique", "orch-verify"):
+            with self.subTest(executor=executor), tempfile.TemporaryDirectory() as tmp:
+                packet = self.emitted(
+                    Path(tmp), AUTHORED_HERE_TICKET, ("--executor", executor),
+                )
+                self.assertIsNone(packet["assigned_name"])
+                self.assertNotIn("agent-a`", packet["prompt"])
+                self.assertIn("assigned name", packet["prompt"])
+                self.assertIn("under no name you invent", packet["prompt"])
+
+    def test_the_usage_line_names_the_flag_that_supplies_the_name(self):
+        """A channel a dispatcher cannot find is a channel nobody uses.
+
+        `--by` rather than a new spelling: it is the flag `claim` and
+        `check` already take for *the name an agent acts under*, it is
+        already in `tickets_commands.VALUE_FLAGS`, and the name this
+        supplies is the one the child spends on `check --by`.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_shape_repo(tmp, PRE_EXISTING_TICKET)
+            payload = run_cmd(tmp, "packet", "testrun")
+            self.assertIn("usage:", payload.get("error", ""), payload)
+            self.assertIn("--by", payload["error"])
+
+
 class TestCheckerNotDispatchedWhenSectionTenExempts(unittest.TestCase):
     """The refusal, and each direction it must not reach."""
 
