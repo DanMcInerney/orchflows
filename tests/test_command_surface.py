@@ -12,8 +12,10 @@ tests pin that the names stay.
 The second is the converse, and it is the one that rots silently: no skill
 may name a command `tickets.py` does not route. A deleted or renamed
 subcommand leaves the prose behind as an instruction to run something that
-refuses, so the routed set is read from the dispatcher itself rather than
-restated here.
+refuses, so the set compared against is never restated here -- it is read
+back out of `tickets.py` at run time. See `_routed_commands` for exactly
+which surface that read lands on, and for the separate pin that makes it
+equal to the dispatcher's own comparisons.
 """
 
 import io
@@ -76,7 +78,22 @@ def _names(text: str, command: str) -> bool:
 
 
 def _routed_commands() -> set:
-    """Every subcommand `tickets.py` actually routes, read from the router."""
+    """The subcommands `tickets.py --help` publishes.
+
+    Stated precisely, because the distinction is load-bearing: `--help`
+    builds its table from `SUBCOMMAND_USAGE`
+    (`scripts/tickets_dispatch.py:382`), a hand-maintained dict -- not from
+    `_dispatch`'s own `command == ...` chain. Reading it is nonetheless a
+    sound proxy for "what the dispatcher routes", but only because
+    `tests/test_tickets_cases/cli_help.py`'s
+    `test_the_usage_table_covers_exactly_the_dispatched_subcommands` pins
+    `SUBCOMMAND_USAGE` equal to the names read off `_dispatch`'s AST.
+
+    That pin lives in another module and is this one's silent dependency:
+    weaken it and the honesty check below degrades from "no skill names a
+    command the dispatcher does not route" to the far weaker "no skill names
+    a command the usage table does not list", with nothing here failing.
+    """
 
     stdout, stderr = io.StringIO(), io.StringIO()
     with redirect_stdout(stdout), redirect_stderr(stderr):
