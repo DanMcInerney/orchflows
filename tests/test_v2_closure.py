@@ -55,12 +55,19 @@ def _body(ticket_id, header, *, mutations, scope, depends, status):
     return "\n".join(lines)
 
 
-def v1_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending", cohort="v1:root:R"):
-    """A v1 ticket, or -- with ``cohort=None`` -- one that stamps none."""
+def v1_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending", cohort="v1:root:R", cut_generation=None):
+    """A v1 ticket, or -- with ``cohort=None`` -- one that stamps none.
+
+    ``cut_generation`` builds the mixed shape: a ticket carrying both a
+    stamped cohort and a cut identity, which is what this repository's own
+    root carries.
+    """
 
     header = ["admission: v1:pending"]
     if cohort is not None:
         header.append(f"cohort: {cohort}")
+    if cut_generation is not None:
+        header.append(f"cut_generation: {cut_generation}")
     return _body(ticket_id, header, mutations=mutations, scope=scope, depends=depends, status=status)
 
 
@@ -225,6 +232,26 @@ class V1GroupingUnchangedTest(unittest.TestCase):
 
     def test_members_of_one_cohort_are_one_closure(self):
         members = lawful_and_defective(v1_ticket)
+        result = grade("00-root.01", members)
+        self.assertIn("00-root.02.mutations", fields(result))
+
+    def test_a_stamped_cohort_still_groups_a_ticket_that_also_carries_a_cut(self):
+        """Cohort before version, which is the ordering the ruling turns on.
+
+        A ticket can carry both -- this repository's own ``00-root`` carries
+        ``cohort: v1:root:00-root`` and a ``cut_generation`` -- and the cohort
+        has to keep deciding, or the ticket is split out of the closure it
+        stamps.  Testing the version first fails silently rather than loudly:
+        the orphaned ticket grades alone, finds nothing because there is
+        nothing left to find, and reports a clean grade.  No assertion about
+        what a grade *reports* can see that, so the case is pinned here.
+        """
+
+        members = lawful_and_defective(v1_ticket)
+        members["00-root.01"] = v1_ticket(
+            "00-root.01", mutations=["change:scripts/one.py"], scope=["scripts/one.py"],
+            cut_generation=CUT_ONE,
+        )
         result = grade("00-root.01", members)
         self.assertIn("00-root.02.mutations", fields(result))
 
