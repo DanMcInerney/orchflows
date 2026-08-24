@@ -130,6 +130,160 @@ def make_shape_repo(tmp: Path, body: str) -> Path:
     return path
 
 
+#: The shapes whose packet grants the ticket's own write scope, and so the
+#: ones a ceiling measurement is about. The re-verifiers are granted no
+#: write at all, and a root's cut reader is granted `amend`/`new` over the
+#: subtree rather than the root's workspace -- measuring a scope the child
+#: may not touch would be a line it can only ignore.
+SCOPE_BEARING_SHAPES = frozenset(
+    {"primary skill executor", "primary script executor", "checker"}
+)
+
+CEILING_TOOL = "check_source_sizes.py"
+
+
+def filing_lines(prompt: str) -> list:
+    """Every emitted `result --section` line, found by its own tokens.
+
+    By the tokens rather than by position: the same reading a child does,
+    and the one `tests/test_tickets_cases/cli_help.py` does for the single
+    shape it covers. Here it walks all six.
+    """
+
+    found = []
+    for line in prompt.splitlines():
+        tokens = line.split()
+        if len(tokens) > 2 and Path(tokens[1]).name == "tickets.py" and tokens[2] == "result":
+            found.append(line)
+    return found
+
+
+def measurement_lines(prompt: str) -> list:
+    """Every emitted source-ceiling measurement line."""
+
+    found = []
+    for line in prompt.splitlines():
+        tokens = line.split()
+        if len(tokens) > 1 and Path(tokens[1]).name == CEILING_TOOL:
+            found.append(line)
+    return found
+
+
+class TestEveryEmittedPacketFilesAndMeasuresByRunnableCommand(unittest.TestCase):
+    """Proposal `2026-08-25-packets-carry-runnable-commands-not-command-prose`.
+
+    The largest cluster in the harvest, ~25 entries: hand-composed commands
+    losing a fight with this host's shell. Two faces survive the
+    perfect-model test and are this class's subject.
+
+    First, the filing line the packet already emits omitted `--append`,
+    while the prose beside it said to add one -- so every write after a
+    section's first was refused, and the refusal arrived a round trip later
+    (T10:41:03Z, T19:09:33Z). `--append` is lawful on an empty section
+    (`tickets_result` refuses only a *non*-append write onto content that is
+    already there), so the flag is correct on the first write too and the
+    template can simply carry it. The `--text` form keeps none: it is the
+    one-line form, and a section's opening line is where it belongs.
+
+    Second, a measurement relayed into a packet is a measurement that goes
+    stale between the cut and the tip the child works at -- one coordinator
+    relayed a line count as fact (T09:42:11Z) and this run's own cut relayed
+    "398 of 510, headroom 112". The generator already parses the scope, so
+    it emits the command that measures it instead, to be run at the child's
+    own tip.
+    """
+
+    def emitted(self, tmp: Path, body: str, extra, *name):
+        make_shape_repo(tmp, body)
+        argv = ["packet", "testrun", "T1", "--reply-to", "main"]
+        if name:
+            argv += ["--by", name[0]]
+        payload = run_cmd(tmp, *argv, *extra)
+        self.assertNotIn("error", payload, payload)
+        return payload["packet"]
+
+    def test_the_file_filing_form_carries_append_on_every_shape(self):
+        """The flag whose absence cost a round trip per section, on all six.
+
+        Still exactly two filing forms: this adds a flag to one of them
+        rather than a third line, so a reader still has one file form and
+        one one-line form to choose between.
+        """
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                packet = self.emitted(Path(tmp), body, extra)
+                lines = filing_lines(packet["prompt"])
+                self.assertEqual(2, len(lines), packet["prompt"])
+                file_line, text_line = lines
+                self.assertEqual(
+                    ["--section", "SECTION", "--file", "PATH", "--append"],
+                    file_line.split()[5:],
+                    file_line,
+                )
+                self.assertEqual(
+                    ["--section", "SECTION", "--text", "TEXT"],
+                    text_line.split()[5:],
+                    text_line,
+                )
+
+    def test_the_file_form_is_named_the_primary_channel_and_multiline_is_refused(self):
+        """The prose the child reads before choosing a form.
+
+        The executor that lost five consecutive attempts did not know a
+        file form existed until it found `--help`; naming it primary is
+        what the proposal asks the CLI and the packet to agree on.
+        """
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                prompt = self.emitted(Path(tmp), body, extra)["prompt"]
+                self.assertIn("--append", prompt)
+                self.assertIn("primary", prompt)
+                self.assertIn("multiline", prompt)
+
+    def test_a_scope_bearing_shape_carries_the_ceiling_measurement_command(self):
+        """The command stands where the number would have been, and names
+        the scope the ticket actually granted."""
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                packet = self.emitted(Path(tmp), body, extra)
+                lines = measurement_lines(packet["prompt"])
+                if label not in SCOPE_BEARING_SHAPES:
+                    self.assertEqual([], lines, packet["prompt"])
+                    continue
+                self.assertEqual(1, len(lines), packet["prompt"])
+                self.assertEqual("scratch/t1.txt", lines[0].split()[-1], lines[0])
+
+    def test_a_shape_with_no_write_scope_measures_nothing(self):
+        """A read-only lane has no scope to price, so no line is emitted --
+        an empty measurement is a line that teaches the reader to skip."""
+        with tempfile.TemporaryDirectory() as tmp:
+            packet = self.emitted(
+                Path(tmp),
+                PRE_EXISTING_TICKET.replace(
+                    "write_scope: scratch/t1.txt", "write_scope: []"
+                ),
+                (),
+            )
+            self.assertEqual([], measurement_lines(packet["prompt"]))
+            # the filing channel is not scope-conditional: it still files
+            self.assertEqual(2, len(filing_lines(packet["prompt"])))
+
+    def test_every_filing_and_measurement_line_is_argv_safe_on_every_shape(self):
+        """One token per argument, no shell metacharacter, both programs
+        absolute: the line is pasted, never composed."""
+        for label, body, extra in PACKET_SHAPES:
+            with self.subTest(shape=label), tempfile.TemporaryDirectory() as tmp:
+                prompt = self.emitted(Path(tmp), body, extra)["prompt"]
+                lines = filing_lines(prompt) + measurement_lines(prompt)
+                self.assertTrue(lines, prompt)
+                for line in lines:
+                    for forbidden in ("|", ">", "<", "&&", "$(", '"', "'", "`"):
+                        self.assertNotIn(forbidden, line, line)
+                    tokens = line.split()
+                    self.assertTrue(Path(tokens[0]).is_absolute(), tokens[0])
+                    self.assertTrue(Path(tokens[1]).is_absolute(), tokens[1])
+
+
 class TestEveryEmittedPacketCarriesTheThreeDispatchParts(unittest.TestCase):
     """A fork holding a skill contract and nothing else has three questions.
 

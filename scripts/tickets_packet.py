@@ -61,6 +61,23 @@ def _command_text(*arguments) -> str:
         return '& ' + ' '.join(quote(value) for value in values)
     return shlex.join(values)
 CUT_LENS_PARTS = ('skills', 'kernel', 'orch-decompose', 'references', 'cut-lens.md')
+SOURCE_SIZE_PARTS = ('tools', 'check_source_sizes.py')
+
+
+def _source_size_checker():
+    """The source-ceiling measurer as this host holds it, or ``None``.
+
+    ``_cut_lens_path``'s question with the opposite answer where it does
+    not resolve. That one falls back to the repo-relative name, because a
+    lens is a thing to go and find; this is a line the child is told to
+    run, and a command naming a program that is not on the host is exactly
+    the hand-composed-and-refused shape this item exists to remove. So an
+    unresolved measurer emits no line at all -- ``tools/`` ships with the
+    checkout and not with the installed ``bin/``, and a packet emitted from
+    an install states no measurement rather than an unrunnable one.
+    """
+    measurer = Path(__file__).resolve().parent.parent.joinpath(*SOURCE_SIZE_PARTS)
+    return str(measurer) if measurer.is_file() else None
 GATE_CRITIQUE_ID = '{root}.gate.critique.{lens}'
 GATE_REPAIR_ID = '{root}.gate.repair'
 GATE_VERIFY_ID = '{root}.gate.verify'
@@ -401,11 +418,32 @@ def _packet_under_run_lock(rest):
     if has_own_workspace:
         prompt.append('Workspace establishment (isolation: required), your first act, run from inside your own workspace:')
         prompt.append(_command_text(sys.executable, script.with_name('workspace.py'), 'start', run_id, loaded['id']))
+    # A measurement relayed into a packet is a measurement taken at the cut
+    # and read at a tip several commits later: one dispatch relayed a line
+    # count as fact, and this run's own cut relayed a headroom that its
+    # siblings were already spending. The generator parses the scope
+    # anyway, so it emits the command over that scope instead of a number.
+    # Only where the shape is granted the scope: a re-verifier writes
+    # nothing, and a root's cut reader is handed `amend`/`new` over the
+    # subtree rather than the root's workspace, so for those a ceiling
+    # reading is a line whose only lawful use is to be ignored.
+    corrects_in_scope = further is None or (further == CHECKER_EXECUTOR and _executor_of(loaded) != ROOT_EXECUTOR)
+    measured = effective_write_scope(loaded) if corrects_in_scope else []
+    measurer = _source_size_checker() if measured else None
+    if measurer is not None:
+        prompt.append('Measurement channel: any line count, headroom or ceiling arithmetic this packet or your ticket states was measured when the cut was made, and your siblings have been spending it since. Measure at your own tip rather than relaying it:')
+        prompt.append(_command_text(sys.executable, measurer, *measured))
     prompt.append('Run-state channel (rules/visibility.md §6), from your own workspace, with TEXT and NAME replaced:')
     prompt.append(_command_text(sys.executable, script, 'run-state', run_id, '--note', 'TEXT'))
     prompt.append(_command_text(sys.executable, script, 'run-state', run_id, '--artifact', 'NAME', '--text', 'TEXT'))
-    prompt.append(f"Filing channel (contracts/work-item.md's filing law), from your own workspace, with SECTION one of {list(EXECUTOR_SECTIONS)}, PATH a file in your own workspace and TEXT one line; add --append to write after content already there:")
-    prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--file', 'PATH'))
+    # `--append` on the template rather than in the prose beside it. The
+    # prose said to add one and the line did not carry one, so every write
+    # after a section's first was refused and the refusal cost a round
+    # trip. It is lawful on an empty section -- `result` refuses only a
+    # *non*-append write onto content already there -- so the first write
+    # wants it too, and the form a child pastes is correct unedited.
+    prompt.append(f"Filing channel (contracts/work-item.md's filing law), from your own workspace, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH a file in your own workspace. The file form is this host's primary channel: it carries --append, lawful on an empty section and required once one holds content, and a file is the one payload a multiline body survives. Never inline a multiline payload through --text, which takes TEXT as a single line:")
+    prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--file', 'PATH', '--append'))
     prompt.append(_command_text(sys.executable, script, 'result', run_id, loaded['id'], '--section', 'SECTION', '--text', 'TEXT'))
     # A name a child was never told is a name it fills in: one checker fork
     # recorded `check --by checker-fable-01` against a dispatched

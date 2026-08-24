@@ -34,6 +34,17 @@ Subcommands:
     packet <run> <id> --reply-to <name> [--workspace <path>]
     result <run> <id> --section <name> (--file <path> | --text <string>)
            [--append | --replace]
+
+``--file`` is the primary filing channel on this host, and ``--text`` the
+one-line convenience beside it. A section body is markdown, and a markdown
+body that is worth filing has newlines, backticks and quotes in it; every
+one of those is a character some shell claims before this script sees it,
+and a multiline argument several hosts refuse outright. So write the body
+to a file and name the file -- or pass ``-`` and pipe it in. Pair it with
+``--append``, which is lawful on an empty section and is what a section
+already carrying content requires: filing as the work is produced is the
+law (``contracts/work-item.md``), and every write after the first is an
+append.
     worklog <run> [--write]
     run-state <run> [--tree <name>] (--note <line> |
              (--artifact <name> [--replace] | --terminal <state>)
