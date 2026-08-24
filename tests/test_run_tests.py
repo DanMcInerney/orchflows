@@ -33,15 +33,7 @@ def run_fixture(source: str):
         env = dict(os.environ)
         env["PYTHONPATH"] = str(REPO_ROOT)
         return subprocess.run(
-            [
-                sys.executable,
-                str(RUN_TESTS_PY),
-                "--tests-dir",
-                tmp,
-                "--no-cache",
-                "-j",
-                "1",
-            ],
+            [sys.executable, str(RUN_TESTS_PY), "--tests-dir", tmp, "--no-cache", "-j", "1"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=env,
@@ -120,6 +112,27 @@ class TestGuardedSeams(unittest.TestCase):
             mock.patch.object(run_tests.os.path, "exists", return_value=False),
         ):
             self.assertEqual((), run_tests.meaningful_sys_path((expired,)))
+
+    def test_a_dead_path_inside_the_checkout_is_residue_wherever_it_sits(self):
+        """A checkout under the system temp root is still a checkout, so its
+        own dead import paths are residue exactly as they are anywhere else.
+        The verification law sends detached worktrees there; a runner that
+        read the location would emit a different verdict for the same tree."""
+
+        scratch = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
+        verdicts = []
+        for checkout in (str(REPO_ROOT), os.path.join(scratch, "detached-worktree")):
+            dead = os.path.join(checkout, "expired_import_path")
+            with mock.patch.object(run_tests, "ROOT", Path(checkout)), \
+                    mock.patch.object(run_tests.os.path, "exists", return_value=False):
+                verdicts.append(run_tests.meaningful_sys_path((dead,)) == (dead,))
+        self.assertEqual([True, True], verdicts)
+
+    def test_a_dead_scratch_path_outside_the_checkout_is_still_dropped(self):
+        scratch = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
+        dead = os.path.join(scratch, "expired-scratch-root")
+        with mock.patch.object(run_tests.os.path, "exists", return_value=False):
+            self.assertEqual((), run_tests.meaningful_sys_path((dead,)))
 
     def test_each_whole_interpreter_leak_is_rejected_and_named(self):
         for seam, statement in self.LEAKS.items():
@@ -370,32 +383,18 @@ class TestSchedule(unittest.TestCase):
             "tests.test_tickets",
         ]
         self.assertEqual(
-            [
-                "tests.test_installer_planning",
-                "tests.test_installer_shared",
-                "tests.test_cutcheck",
-                "tests.test_tickets",
-                "tests.test_alpha",
-            ],
+            ["tests.test_installer_planning", "tests.test_installer_shared",
+             "tests.test_cutcheck", "tests.test_tickets", "tests.test_alpha"],
             run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR),
         )
 
     def test_a_cold_custom_directory_remains_alphabetical(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(
-                [
-                    "tests.test_alpha",
-                    "tests.test_cutcheck",
-                    "tests.test_tickets",
-                ],
+                ["tests.test_alpha", "tests.test_cutcheck", "tests.test_tickets"],
                 run_tests.schedule(
-                    [
-                        "tests.test_cutcheck",
-                        "tests.test_alpha",
-                        "tests.test_tickets",
-                    ],
-                    {},
-                    Path(tmp),
+                    ["tests.test_cutcheck", "tests.test_alpha", "tests.test_tickets"],
+                    {}, Path(tmp),
                 ),
             )
 
