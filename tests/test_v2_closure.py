@@ -187,6 +187,21 @@ class TerminalMembershipTest(unittest.TestCase):
             [item["detail"] for item in result["findings"]],
         )
 
+    def test_a_companion_whose_only_owner_is_spent_is_reported_unowned(self):
+        """The other face of the ruling, so the join is not surprised by it.
+
+        Excluding a terminal member does not quietly authorize the node it
+        used to own.  Where the cut planned exactly one owner and that unit
+        has gone terminal, the companion the live member still triggers has
+        no owner left in the closure, and the grade says so.
+        """
+
+        members = self.companions("complete")
+        del members["00-root.11"]
+        result = grade("00-root.05", members, self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-multiple", codes(result))
+
     def test_a_terminal_ticket_being_graded_is_a_member_of_its_own_closure(self):
         members = {
             "00-root.07": v1_ticket(
