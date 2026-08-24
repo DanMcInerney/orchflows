@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
 
 from tests.test_workspace_cases.cli_cases import *  # noqa: E402,F401,F403
 from tests.test_workspace_cases.contract_cases import *  # noqa: E402,F401,F403
+from tests.test_workspace_cases.emission_cases import *  # noqa: E402,F401,F403
 from tests.test_workspace_cases.grade_cases import *  # noqa: E402,F401,F403
 from tests.test_workspace_cases.operation_cases import *  # noqa: E402,F401,F403
 from tests.test_workspace_cases.prepare import *  # noqa: E402,F401,F403

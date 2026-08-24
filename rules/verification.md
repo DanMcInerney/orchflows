@@ -31,6 +31,16 @@
    record, never rebuilds it. Building that copy faithfully where the
    tree is a repository is
    [cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)'s.
+   A panel of existence and output mutants leaves the silent failures
+   untested, in three shapes. Membership: where a grader aggregates over
+   a set, one mutant changes that set's cardinality, which shrinking to
+   one member otherwise passes silently. Placement: where code sits
+   deliberately outside an adjacent guard, one mutant moves it inside,
+   which every deletion mutant survives. Carriers: before a surviving
+   mutant is read as vacuity, census them — a fact two carriers hold
+   survives losing one, and the pin is intact. A fixture that can
+   express the failure under no mutation is itself the defect found:
+   harden the fixture, not the panel.
 9. A correction consumes causes, not findings: one fix per shared
    cause, the smallest set that closes the validated findings,
    preferring the fix that simplifies. A cause whose coherent fix
@@ -64,3 +74,13 @@
     the set was cut from; what its exit status means, and why a verdict is
     read only on the host that produced it, are
     `scripts/cutcheck.py --help`'s.
+12. A byte identity names the domain it was taken in — `git-blob` or
+    `filesystem` — and states the normalization applied. One file hashes
+    to two values across those domains, because git converts line endings
+    on the way in and out, so an identity naming neither is decided by
+    host accident rather than by content. A cleanliness oracle names its
+    domain the same way and classifies bytes an oracle itself emitted —
+    the bytecode CPython writes beside what it imports — as emission,
+    never as the item's uncommitted work: an item that ran its own
+    acceptance is not thereby in breach. `scripts/workspace.py check` is
+    that classification's mechanical arm.
