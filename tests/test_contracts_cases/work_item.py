@@ -7,6 +7,7 @@ from pathlib import Path
 
 from tests.test_contracts_cases.support import (
     read,
+    read_at_flat,
     read_bullet_flat,
     read_flat,
 )
@@ -105,13 +106,15 @@ class TestWorkItemContract(unittest.TestCase):
             )
 
     def test_verify_gate_inputs_pin_the_canonical_mutation_plan_contract(self):
-        text = read("work-item.md")
+        text = read_flat("work-item.md")
         for token in (
             "`mutation-plan-paths`",
             "sorted unique repository-relative POSIX paths",
             "canonical UTF-8 JSON",
-            "`sha256:<64 lowercase hex>`",
-            "refuses gate creation",
+            # The record shape itself, not a loose `sha256:...` token: the
+            # identity's form is only pinned where the field carrying it is.
+            '`{"identity":"sha256:<64 lowercase hex>","paths":["<path>"]}`',
+            "refusing gate creation",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text)
@@ -134,16 +137,35 @@ class TestWorkItemContract(unittest.TestCase):
             "work-item.md does not admit the `script:` executor form",
         )
 
-    def test_the_lease_runs_on_artifact_motion_not_wall_clock(self):
-        text = read_flat("work-item.md")
-        self.assertEqual(
-            text.count("wall clock"), 1,
-            "work-item.md names wall clock outside the one negating clause",
-        )
+    def test_the_lease_timer_belongs_to_the_script_that_implements_it(self):
+        """Shape here, the timer at its code owner -- and only there.
+
+        The contract used to state the 60-minute substitution and the
+        artifact-motion rule itself. `scripts/tickets_bound.py` is what
+        substitutes and what measures motion, so the contract now names it
+        and states neither number nor rule.
+        """
+        contract = read_flat("work-item.md")
         self.assertIn(
-            "60 minutes", text,
-            "work-item.md's lease drops its default duration",
+            "`scripts/tickets_bound.py`", contract,
+            "work-item.md's lease does not name the owner of its timer",
         )
+        for token in ("wall clock", "60 minutes", "staleness"):
+            with self.subTest(token=token):
+                self.assertNotIn(
+                    token, contract,
+                    f"work-item.md still states the timer's {token!r}",
+                )
+        owner = (ROOT / "scripts" / "tickets_bound.py").read_text(
+            encoding="utf-8"
+        )
+        for token in ("60 minutes", "wall clock", "`## Result`"):
+            with self.subTest(owner_token=token):
+                self.assertIn(
+                    token, owner,
+                    f"scripts/tickets_bound.py does not carry {token!r}, so "
+                    "the relocated lease rule reached no owner",
+                )
 
     def test_carries_no_compatibility_floor(self):
         self.assertNotIn(
@@ -329,60 +351,59 @@ class WorkItemV2ContractTest(unittest.TestCase):
             with self.subTest(field=field):
                 self.assertIn(f"`{field}`", text)
 
-    def test_generation_identities_pin_their_digest_boundaries(self):
+    def test_the_contract_states_the_v2_shapes_and_defers_their_law(self):
+        """Shape here, law at rules/topology.md §8-§11.
+
+        The contract used to restate topology's digest boundaries, selector
+        list, seal timing and migration clauses almost verbatim -- the
+        near-duplicates `tools/validate.py` reports at 0.96 and 1.00. What
+        it owns is the form each field takes; the rest is cited.
+        """
         text = read("work-item.md")
         for token in (
             "`v2:root:<root-id>:<ordinal>:sha256:<digest>`",
             "`v2:cut:<root-id>:<ordinal>:sha256:<digest>`",
-            "frozen root assignment fields",
-            "referenced root generation",
-            "unit and gate assignment digests",
-            "coverage-map digest",
-            "ownership-region declarations",
-            "merge-oracle identities",
-            "executor-owned sections",
-            "self-referential generation fields",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token, text)
-
-    def test_ownership_region_shape_pins_stable_selectors_and_merge_oracle(self):
-        text = read("work-item.md")
-        for token in (
             '"artifact"',
             '"owner"',
             '"selector"',
             '"kind"',
             '"value"',
             '"merge_oracle"',
-            "`symbol`",
-            "`heading`",
-            "`json-pointer`",
-            "`adapter-equivalent`",
-            "line-number",
-            "string inequality",
-            "dependency-order work",
-            "one sole owner",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token, text)
-
-    def test_assignment_seal_pins_assignment_fields_and_executor_append_only_sections(self):
-        text = read("work-item.md")
-        for token in (
+            "`sha256:<digest>`",
             "`objective`",
             "`inputs`",
             "`authority`",
             "`dependencies`",
             "`acceptance`",
             "`executor`",
-            "`sha256:<digest>`",
-            "exact validated assignment digest",
-            "post-seal assignment change",
-            "new generation",
-            "worker ready",
-            "claim",
-            "packet",
+            "[rules/topology.md](../rules/topology.md) §8–§11",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        for restated in (
+            "coverage-map digest",
+            "self-referential generation fields",
+            "`json-pointer`",
+            "string inequality",
+        ):
+            with self.subTest(restated=restated):
+                self.assertNotIn(
+                    restated, text,
+                    f"work-item.md restates topology's {restated!r}",
+                )
+        topology = (ROOT / "rules" / "topology.md").read_text(encoding="utf-8")
+        for token in (
+            "coverage-map digest",
+            "self-referential generation fields",
+            "JSON Pointer",
+            "string inequality",
+        ):
+            with self.subTest(owner_token=token):
+                self.assertIn(token, topology)
+
+    def test_executor_owned_sections_stay_append_only_under_v2(self):
+        text = read("work-item.md")
+        for token in (
             "`## Result`",
             "`## Verification`",
             "`## Feedback`",
@@ -399,12 +420,17 @@ class WorkItemV2ContractTest(unittest.TestCase):
             "absence of all four v2 fields",
             "v1",
             "no v1 value is reinterpreted",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        topology = read_at_flat("rules/topology.md")
+        for token in (
             "claimed or terminal v1",
             "pending or ready v1",
             "successor or new v2 root",
         ):
-            with self.subTest(token=token):
-                self.assertIn(token, text)
+            with self.subTest(owner_token=token):
+                self.assertIn(token, topology)
 
     def test_t0_supersession_is_explicit_and_contract_bytes_are_pinned(self):
         work_item = read("work-item.md")

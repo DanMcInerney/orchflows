@@ -6,15 +6,15 @@ procedure — the claim grader, the scheduler, the verification law, the
 spec workflow. This module pins the ceiling that keeps the contract
 shape-only, and pins each relocated passage to exactly one owner.
 
-Half the table is still pending. Deleting the staleness timer, the
-cut-reader staffing rule, or the successors prose from the contract
-breaks assertions that live in tests/test_contracts_cases/work_item.py,
+The table is complete. Half of it landed with the item that authored
+this module; the other half — the staleness timer, the cut-reader
+staffing rule, the successors prose, and the line ceiling itself —
+landed with 00-root.11, which also amended the assertions in
+tests/test_contracts_cases/work_item.py,
 tests/test_contracts_cases/rules.py, and
-tests/test_carriage_cases/verification_flow.py — files outside the write
-scope of the item that authored this module. Those checks carry
-``expectedFailure`` and name the successor that owns them, so the day the
-successor lands the deletions they turn into unexpected successes and
-this module fails until the markers come off.
+tests/test_carriage_cases/verification_flow.py that pinned those
+passages where they were. No check here is ``expectedFailure``: every
+one of them fails if the contract takes a relocated passage back.
 """
 
 import re
@@ -29,9 +29,7 @@ VERIFICATION = ROOT / "rules" / "verification.md"
 FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
 SPEC = ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md"
 LIFECYCLE = ROOT / "scripts" / "tickets_lifecycle.py"
-
-#: The successor item that owns the still-pending half of the diet.
-SUCCESSOR = "00-root.11"
+BOUND = ROOT / "scripts" / "tickets_bound.py"
 
 #: contracts/work-item.md is shape, not procedure; the ceiling is what
 #: makes a procedural passage cost something to leave here.
@@ -50,29 +48,47 @@ RELOCATIONS = {
         "owner": SPEC,
         "owner_carries": ("`successors.md`", "sole writer"),
     },
+    # The cut named skills/engines/orch-frontier as this passage's owner;
+    # orch-frontier states no default and no artifact-motion rule, and sits
+    # at its word budget. `scripts/tickets_bound.py` is where the 60-minute
+    # substitution and the motion measurement are implemented, so it is the
+    # owner that can carry the sentence truthfully.
     "staleness timer": {
         "gone_from_contract": ("staleness", "wall clock", "60 minutes"),
-        "owner": FRONTIER,
+        "owner": BOUND,
         "owner_carries": ("wall clock", "60 minutes", "`## Result`"),
     },
+    # The contract keeps a pointer at rules/verification.md §10, which owns
+    # the root cut reader as §10's distinct exception; the threshold that
+    # staffs one is orch-frontier's and stays there.
     "cut-reader staffing": {
         "gone_from_contract": ("three or more", "cut checker", "advisory"),
-        "owner": VERIFICATION,
-        "owner_carries": ("three or more", "cut checker", "advisory"),
+        "owner": FRONTIER,
+        "owner_carries": ("three or more", "cut reader", "advisory"),
     },
 }
 
-#: The passages whose contract-side deletion has landed.
-ABSENT_FROM_CONTRACT = ("claim compare-and-swap",)
+#: Every passage's contract-side deletion has landed.
+ABSENT_FROM_CONTRACT = tuple(RELOCATIONS)
 
-#: The passages whose owner already carries them.
-OWNED_ELSEWHERE = ("claim compare-and-swap", "successors ownership")
+#: Every passage's owner carries it.
+OWNED_ELSEWHERE = tuple(RELOCATIONS)
 
 #: Markers no second prose surface may carry once the passage has moved.
+#: The staleness timer's owner is a script, so its sole-owner check is the
+#: one below rather than a row here: `prose_surfaces()` reads markdown.
 SOLE_PROSE_OWNER = {
-    "staleness": FRONTIER,
-    "wall clock alone": FRONTIER,
-    "cut checker": VERIFICATION,
+    "after a cutcheck advisory": FRONTIER,
+    "three or more": FRONTIER,
+    "is that artifact's sole writer": SPEC,
+}
+
+#: The timer's markers, which no prose surface may carry at all now that
+#: `scripts/tickets_bound.py` states them.
+CODE_OWNED_MARKERS = {
+    "staleness": BOUND,
+    "wall clock": BOUND,
+    "60 minutes": BOUND,
 }
 
 #: The sentence the signature used to copy; the contract alone states it.
@@ -272,12 +288,10 @@ class OneOutsideExecutionLawTest(unittest.TestCase):
                 )
 
 
-class PendingDietTest(unittest.TestCase):
-    """The half the successor owns; each check flips when it lands."""
+class CompletedDietTest(unittest.TestCase):
+    """The whole table, live: the ceiling and one owner per passage."""
 
-    @unittest.expectedFailure
     def test_the_contract_holds_at_most_the_ceiling_in_non_empty_lines(self):
-        """Pending 00-root.11: the ceiling needs the blocked deletions."""
         count = contract_line_count()
         self.assertLessEqual(
             count,
@@ -286,31 +300,37 @@ class PendingDietTest(unittest.TestCase):
             f"{LINE_CEILING}-line ceiling that keeps it pure shape",
         )
 
-    @unittest.expectedFailure
-    def test_the_contract_no_longer_states_the_blocked_passages(self):
-        """Pending 00-root.11: deleting these breaks pins it also owns."""
-        pending = [
-            name for name in RELOCATIONS if name not in ABSENT_FROM_CONTRACT
-        ]
-        left = passages_left_in_contract(pending)
+    def test_the_contract_states_none_of_the_relocated_passages(self):
+        left = passages_left_in_contract(RELOCATIONS)
         self.assertEqual({}, left, f"still stated in the contract: {left}")
 
-    @unittest.expectedFailure
-    def test_the_blocked_passages_reach_their_named_owners(self):
-        """Pending 00-root.11: orch-frontier and §10 must gain the text."""
-        pending = [name for name in RELOCATIONS if name not in OWNED_ELSEWHERE]
-        gaps = owners_missing_passage(pending)
+    def test_every_passage_reaches_its_named_owner(self):
+        gaps = owners_missing_passage(RELOCATIONS)
         self.assertEqual({}, gaps, f"owner does not carry the passage: {gaps}")
 
-    @unittest.expectedFailure
     def test_no_second_prose_surface_carries_a_relocated_marker(self):
-        """Pending 00-root.11: the contract is still the second carrier."""
         drift = {
             marker: surfaces_carrying(marker)
             for marker, owner in SOLE_PROSE_OWNER.items()
             if surfaces_carrying(marker) != [owner.relative_to(ROOT).as_posix()]
         }
         self.assertEqual({}, drift, f"more than one prose owner: {drift}")
+
+    def test_no_prose_surface_carries_a_marker_a_script_now_owns(self):
+        """The lease timer left the library's prose entirely."""
+        drift = {
+            marker: surfaces_carrying(marker)
+            for marker in CODE_OWNED_MARKERS
+            if surfaces_carrying(marker)
+        }
+        self.assertEqual({}, drift, f"prose still states the timer: {drift}")
+        for marker, owner in CODE_OWNED_MARKERS.items():
+            with self.subTest(marker=marker):
+                self.assertIn(
+                    marker,
+                    flat(owner.read_text(encoding="utf-8")),
+                    f"{owner.name} does not state {marker!r}",
+                )
 
 
 if __name__ == "__main__":
