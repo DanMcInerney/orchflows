@@ -28,6 +28,19 @@ else:  # installed flat beside tickets.py
 
 NAME_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+ADMITTED_PREFIXES = ("v1:", "v2:")
+
+
+def is_admitted(data: dict) -> bool:
+    """Whether this ticket was written on either side of the boundary.
+
+    Both graded versions are graded alike: the prefix names which admission
+    grammar produced the ticket, never how much of it is worth grading.  Only
+    the shape that predates the boundary -- no ``admission`` field at all --
+    is read as legacy, and that shape no CLI write path can still produce.
+    """
+
+    return str(data.get("admission") or "").startswith(ADMITTED_PREFIXES)
 OBJECT_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 TERMINAL = frozenset({"complete", "blocked", "stalled", "limited", "failed"})
 COMMON_KINDS = frozenset({"artifact", "ticket-section"})
@@ -434,7 +447,7 @@ def grade_inputs(*, ticket_id, text, siblings, adapter_id, context=None) -> dict
     """Grade all records and return ordered portable codes plus fingerprint."""
 
     data = _parse_frontmatter(text)
-    if not str(data.get("admission") or "").startswith("v1:"):
+    if not is_admitted(data):
         return {"findings": [], "fingerprint": "inputs:legacy-unadmitted"}
     parsed = parse_input_records(text)
     findings = list(parsed["findings"])
@@ -482,4 +495,4 @@ def grade_inputs(*, ticket_id, text, siblings, adapter_id, context=None) -> dict
     }
 
 
-__all__ = ("grade_inputs", "parse_input_records", "resolve_identity_payload", "section_body")
+__all__ = ("grade_inputs", "is_admitted", "parse_input_records", "resolve_identity_payload", "section_body")

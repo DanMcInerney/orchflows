@@ -17,11 +17,11 @@ from pathlib import Path
 if __package__:
     from . import tickets_store as _store
     from .tickets_format import _parse_frontmatter, _scope_entries, parse_mutations
-    from .tickets_inputs import parse_input_records
+    from .tickets_inputs import is_admitted, parse_input_records
 else:  # flat installed script family
     import tickets_store as _store
     from tickets_format import _parse_frontmatter, _scope_entries, parse_mutations
-    from tickets_inputs import parse_input_records
+    from tickets_inputs import is_admitted, parse_input_records
 
 
 MANIFEST_PATH = ".orchflows/scope-edges.json"
@@ -160,14 +160,14 @@ def _plan_covers(plan, required):
 
 
 def unplanned_mutations(data, actual):
-    """Actual ``(operation, path)`` rows outside one v1 plan.
+    """Actual ``(operation, path)`` rows outside one admitted plan.
 
     V0 retains its path-only grant at the join.  Admission owns malformed or
-    absent v1 plans; if one nevertheless reaches the join, no actual mutation
-    is silently authorized.
+    absent plans in either graded version; if one nevertheless reaches the
+    join, no actual mutation is silently authorized.
     """
 
-    if not str(data.get("admission") or "").startswith("v1:"):
+    if not is_admitted(data):
         return []
     parsed, defects = parse_mutations(data)
     plans = [(item["operation"], item["path"]) for item in parsed]
@@ -441,7 +441,7 @@ def grade_scope(*, ticket_id, text, siblings, adapter_id, context=None):
         "findings": [], "fingerprint": f"scope:direct-only:{adapter_id}",
         "mode": "direct-only", "authorized_scope": _scope_entries(data.get("write_scope")),
     }
-    if not str(data.get("admission") or "").startswith("v1:"):
+    if not is_admitted(data):
         return direct
     if adapter_id not in GIT_ADAPTERS:
         return direct
