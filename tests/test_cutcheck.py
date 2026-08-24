@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
 
 import install  # noqa: E402
 import scripts.cutcheck as cutcheck  # noqa: E402
+import scripts.cutcheck_ticket as cutcheck_ticket  # noqa: E402  the screens' owner
 import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402
 from tests.baseline_pin import (  # noqa: E402  the invocation's one owner
@@ -250,6 +251,195 @@ def span_requirements(command):
     return needs
 
 
+class CutScopeScreenTest(unittest.TestCase):
+    """The four cut-time screens family 3 gained, each refusing and each silent.
+
+    Graded through `_check_ticket`, which is what the report calls, rather than
+    through the judgment alone: a screen wired nowhere reports nothing, and the
+    friction each of these repairs was a cut that passed.
+    """
+
+    SIBLINGS = {
+        "00-root": {"id": "00-root", "executor": cutcheck.ROOT_EXECUTOR},
+        "00-root.01": {"id": "00-root.01", "executor": "orch-tdd"},
+    }
+    JUDGED = "1. **A reviewer reads it.** oracle_class: judged. provenance: authored-here."
+
+    def _ticket(self, inputs="", objective="Change one module.", completion=None,
+                scope="scripts/allowed.py"):
+        return (
+            "---\nid: 00-root.01\nexecutor: orch-tdd\ndepends_on: []\n"
+            "write_scope: [{}]\n---\n\n## Objective\n\n{}\n\n"
+            "## Fixed inputs\n\n{}\n\n## Completion test\n\n{}\n"
+        ).format(scope, objective, inputs, completion or self.JUDGED)
+
+    def _findings(self, tree=None, **kwargs):
+        """Grade one built ticket and return its (class, detail) pairs."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "00-root.01.md"
+            path.write_text(self._ticket(**kwargs), encoding="utf-8")
+            found = cutcheck._check_ticket(
+                path, tree if tree is not None else ROOT, None, self.SIBLINGS)
+        return [(klass, detail) for _, _, klass, detail in found]
+
+    def _classes(self, **kwargs):
+        return [klass for klass, _ in self._findings(**kwargs)]
+
+    # Screen 1: a fixed-input policy ordering a write the grant does not cover.
+
+    MANIFEST_POLICY = (
+        '- input: {"name":"manifest-policy","type":"literal","value":"Every unit'
+        " that adds or removes a test module regenerates the serial-compat"
+        ' manifest with tools/run_serial_compat.py --write-manifest."}'
+    )
+
+    def test_a_policy_input_ordering_a_write_outside_the_grant_is_reported(self):
+        """`00-root.04` carried this policy while its grant forbade the write.
+
+        Nothing in family 3 read the Fixed inputs, so the cut graded clean and
+        the contradiction was resolved by hand, once per unit that carried it.
+        """
+
+        self.assertIn(cutcheck_ticket.POLICY_OUTSIDE_SCOPE,
+                      self._classes(inputs=self.MANIFEST_POLICY))
+
+    def test_the_same_policy_is_silent_where_the_grant_carries_the_artifact(self):
+        self.assertNotIn(cutcheck_ticket.POLICY_OUTSIDE_SCOPE,
+                         self._classes(inputs=self.MANIFEST_POLICY, scope="tools"))
+
+    def test_a_policy_write_another_actor_performs_commits_this_item_to_nothing(self):
+        """"The join appends" and "no unit appends" name somebody else.
+
+        Reading every write verb in a Fixed inputs section as this item's would
+        report nine of this run's own units for the covered-line policy alone.
+        """
+
+        for policy in (
+            '- input: {"name":"covered","type":"literal","value":"The join'
+            ' appends one line through scripts/tickets.py improvement."}',
+            '- input: {"name":"covered","type":"literal","value":"No unit'
+            ' appends to the sink covered.jsonl."}',
+        ):
+            with self.subTest(policy=policy):
+                self.assertNotIn(cutcheck_ticket.POLICY_OUTSIDE_SCOPE,
+                                 self._classes(inputs=policy))
+
+    # Screen 2: the consumers of a phrase the objective orders deleted.
+
+    PHRASE = "the staleness timer stops at the first claim"
+
+    def _tree_pinning(self, phrase):
+        tmp = Path(tempfile.mkdtemp(prefix="cutcheck-census-"))
+        self.addCleanup(shutil.rmtree, str(tmp), True)
+        (tmp / "tests").mkdir()
+        (tmp / "tests" / "test_pin.py").write_text(
+            'def test_it():\n    assert "{}" in text\n'.format(phrase), encoding="utf-8")
+        (tmp / "tests" / "test_quiet.py").write_text(
+            "def test_other():\n    assert True\n", encoding="utf-8")
+        return tmp
+
+    def test_a_deleted_phrase_a_test_asserts_verbatim_names_that_test(self):
+        """`00-root.07` was ordered to delete prose three ungranted tests held.
+
+        It could not land without breaking them and could not repair them.
+        """
+
+        found = self._findings(
+            tree=self._tree_pinning(self.PHRASE),
+            objective='The item deletes the passage "{}" from it.'.format(self.PHRASE))
+        census = [d for k, d in found if k == cutcheck_ticket.UNGRANTED_CONSUMER]
+        self.assertEqual(len(census), 1, found)
+        self.assertIn("tests/test_pin.py", census[0])
+        self.assertNotIn("test_quiet.py", census[0])
+
+    def test_the_census_is_silent_where_nothing_ungranted_holds_the_phrase(self):
+        """Both can-fail directions: the grant carries it, or nothing deletes it."""
+
+        for scope, objective in (
+            ("tests/test_pin.py", 'The item deletes the passage "{}".'),
+            ("scripts/allowed.py", 'The item documents the passage "{}".'),
+        ):
+            with self.subTest(scope=scope):
+                self.assertNotIn(cutcheck_ticket.UNGRANTED_CONSUMER, self._classes(
+                    tree=self._tree_pinning(self.PHRASE), scope=scope,
+                    objective=objective.format(self.PHRASE)))
+
+    # Screen 3: a removal argued from reachability, with no probe behind it.
+
+    UNREACHABLE = ("No v0-legacy branch survives in scripts/legacy.py: the lines"
+                   " unreachable from every CLI write path are gone.")
+
+    def test_a_removal_argued_from_reachability_needs_a_probe(self):
+        """Plan item 10's premise, which the executor's own probes refuted.
+
+        Write-path-unreachable is not dead: the branches the plan called dead
+        were the live read path, and 12/9/9/2 hits said so once somebody looked.
+        """
+
+        self.assertIn(cutcheck_ticket.UNPROBED_REMOVAL,
+                      self._classes(objective=self.UNREACHABLE))
+
+    def test_a_recorded_probe_discharges_the_removal(self):
+        self.assertNotIn(cutcheck_ticket.UNPROBED_REMOVAL, self._classes(
+            objective=self.UNREACHABLE,
+            inputs='- input: {"name":"reachability-probe","type":"literal",'
+                   '"value":"12/9/9/2 hits over the suite."}'))
+
+    def test_a_removal_claiming_no_reachability_is_asked_for_no_probe(self):
+        """The screen grades the argument, never the deletion.
+
+        Asking every removal for a probe would report both `cutcheck-scope-open`
+        fixtures, whose objectives make no reachability claim at all.
+        """
+
+        self.assertNotIn(cutcheck_ticket.UNPROBED_REMOVAL, self._classes(
+            objective="The item deletes the skill `skills/engines/orch-compose`."))
+
+    # Screen 4: a relocation graded by substring markers alone.
+
+    MARKERS = ('1. **The passage arrived.** `grep -n "claim-CAS" scripts/target.py`'
+               " returns a line. oracle_class: deterministic. provenance: authored-here.")
+    MOVED = "The item moves the claim-CAS protocol to scripts/target.py."
+
+    def test_a_relocation_graded_by_markers_alone_is_flagged(self):
+        """Markers cannot see the right words arriving with the wrong meaning.
+
+        The relocated claim-CAS docstring asserted a call relationship that does
+        not exist, cut to fit under a line cap precisely to green the marker.
+        """
+
+        self.assertTrue(cutcheck_ticket._marker_only_relocation(self.MOVED, self.MARKERS))
+
+    def test_a_relocation_asserting_meaning_or_relocating_nothing_is_not_flagged(self):
+        self.assertFalse(cutcheck_ticket._marker_only_relocation(
+            self.MOVED, "1. **The described call happens.** A reviewer confirms the"
+            " function behaves as the moved text describes. oracle_class: judged."))
+        self.assertFalse(
+            cutcheck_ticket._marker_only_relocation("The item adds a screen.", self.MARKERS))
+
+
+class CutScopeScreenRegistrationTest(unittest.TestCase):
+    """Each new class is family 3's, three move the status, none reads as a summary."""
+
+    SCREENS = ("POLICY_OUTSIDE_SCOPE", "UNGRANTED_CONSUMER", "UNPROBED_REMOVAL")
+
+    def test_the_three_refusing_screens_lie_outside_the_advisory_set(self):
+        for name in self.SCREENS:
+            klass = getattr(cutcheck_ticket, name)
+            with self.subTest(klass=klass):
+                self.assertEqual(cutcheck.FAMILY_OF[klass], cutcheck.FAMILY_3)
+                self.assertNotIn(klass, cutcheck.ADVISORY)
+
+    def test_no_screen_name_can_be_read_off_a_summary_line(self):
+        """The rule every finding class answers to, asked of the new four."""
+
+        for name in self.SCREENS + ("MARKER_ONLY_RELOCATION",):
+            for line in (cutcheck.ADVISORY_HEADING, cutcheck.GRAPH_HEADING,
+                         cutcheck.NO_FINDING_OUTSIDE):
+                self.assertNotIn(getattr(cutcheck_ticket, name), line)
+
+
 CASE_MODULES = (
     "summary",
     "discrimination",
@@ -289,6 +479,14 @@ def load_tests(loader, standard_tests, pattern):
     for name in CASE_MODULES:
         module = importlib.import_module("tests.test_cutcheck_cases." + name)
         suite.addTests(loader.loadTestsFromModule(module))
+    # This module's own cases, named rather than inherited: `standard_tests` is
+    # what the loader built before asking, and returning a suite built from
+    # `CASE_MODULES` alone discards it. A class defined here therefore runs only
+    # where something names it -- until now that was one case module importing
+    # `RuntimeInterpreterBoundaryTests` by hand from outside, which puts this
+    # module's collection in a file this module does not own.
+    for case in (CutScopeScreenTest, CutScopeScreenRegistrationTest):
+        suite.addTests(loader.loadTestsFromTestCase(case))
     return suite
 
 

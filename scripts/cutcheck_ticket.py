@@ -1,4 +1,28 @@
-"""Assemble all findings for one issued ticket."""
+"""Assemble all findings for one issued ticket, and own the four cut screens.
+
+The screens are family 3's, and they live here rather than beside the closure
+readings because that module stands at its own size ceiling; the assembly this
+module already does is what calls them, so nothing crosses a module boundary to
+reach them. Each is one sentence:
+
+1. ``_policy_scope`` -- a fixed-input policy ordering a write the grant does
+   not cover. Family 3 graded the Objective and the Completion test, which
+   commit the item, and never the Fixed inputs, which order it.
+2. ``_consumer_census`` -- the checks under ``tests/`` that assert, word for
+   word, a phrase the objective is ordered to delete. ``_scope_open`` reads the
+   single token a removal names; this reads the sentence, and refuses where
+   that one is advisory, because a check holding the deleted text fails the
+   moment the item lands and the item may not repair it.
+3. ``_removal_evidence`` -- a removal argued from reachability with no probe
+   among the fixed inputs. Write-path-unreachable is not dead.
+4. ``_marker_only_relocation`` -- a relocation graded by substring markers
+   alone, which see the words arrive and cannot see what they mean. Advisory,
+   and reported by nobody yet: the advisory set is a frozen contract constant
+   whose membership one ungranted suite pins exactly, so this judgment is
+   decided here and wired at the repair that may widen that set.
+
+The first three report outside the advisory set and move the exit status.
+"""
 
 import importlib
 
@@ -107,6 +131,158 @@ def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
             detail = str(item.get('detail') or '')
             rendered.append((ticket_id, 0, code, f'{field}: {detail}'))
     return rendered
+
+POLICY_OUTSIDE_SCOPE = "policy-outside-scope"
+UNGRANTED_CONSUMER = "ungranted-consumer"
+UNPROBED_REMOVAL = "unprobed-removal"
+MARKER_ONLY_RELOCATION = "marker-only-relocation"
+for _screen in (POLICY_OUTSIDE_SCOPE, UNGRANTED_CONSUMER, UNPROBED_REMOVAL,
+                MARKER_ONLY_RELOCATION):
+    # Registered from the judgment's own module, the way `_policy_findings`
+    # registers a validator's classes. `setdefault`, so a contract that adopts
+    # one of these names later owns it and this line decides nothing.
+    FAMILY_OF.setdefault(_screen, FAMILY_3)
+
+_re = _contract.re
+# A policy states its write in verbs `WRITE_RE` does not carry: the manifest
+# policy four units carried spelled it `regenerates`, so no family read it.
+POLICY_WRITE_RE = _re.compile(
+    r"\b(?:write|writes|create|creates|emit|emits|append|appends|record|records"
+    r"|regenerate|regenerates|rewrite|rewrites|update|updates)\b", _re.IGNORECASE)
+# Whose write it is. A Fixed inputs section states the run's law, and most of
+# that law is somebody else's act -- the join appends the covered line, the
+# integrator regenerates the manifest. Read as this item's, those sentences
+# report every unit of a run for a write none of them makes.
+OTHER_ACTOR_RE = _re.compile(
+    r"\b(?:join|integrator|gate|engine|decomposer|frontier|checker|orchestrator"
+    r"|reviewer|caller|host)\s+(?:\w+\s+){0,2}$", _re.IGNORECASE)
+# `DENIAL_RE` with one noun allowed through: a policy denies in the plural --
+# "no unit appends to the sink's covered.jsonl".
+POLICY_DENIAL_RE = _re.compile(
+    r"\b(?:not|never|no|without|rather than)\s+(?:\w+\s+)?$", _re.IGNORECASE)
+ACTOR_WINDOW = 48
+DELETION_RE = _re.compile(
+    r"\b(?:delete|deletes|deleting|deleted|remove|removes|removing|removed"
+    r"|drop|drops|dropping|dropped|strike|strikes|striking)\b", _re.IGNORECASE)
+RELOCATION_RE = _re.compile(
+    r"\b(?:move|moves|moving|moved|relocate|relocates|relocating|relocated"
+    r"|rename|renames|renaming|renamed)\b", _re.IGNORECASE)
+# The argument evidence has to stand behind, and the evidence that stands
+# behind it. One plan called the live read path unreachable and was believed.
+REACHABILITY_RE = _re.compile(
+    r"\b(?:unreachable|unreached|never reached|nothing reaches|no callers?"
+    r"|no consumers?|dead code)\b", _re.IGNORECASE)
+PROBE_RE = _re.compile(
+    r"\b(?:probe|probes|probed|ablation|census|reachability)\b", _re.IGNORECASE)
+
+
+def _policy_scope(frontmatter, inputs):
+    """Screen 1: a fixed-input policy ordering a write outside the grant.
+
+    Attribution is the whole difficulty: this reads a wider verb set than
+    family 3's other half and a narrower subject, because only a policy
+    sentence naming this item commits it.
+    """
+
+    scope = _scope._listed(frontmatter, "write_scope")
+    flat = _scope._flat(inputs)
+    findings, seen = [], set()
+    for match in POLICY_WRITE_RE.finditer(flat):
+        if _contract.SCOPE_WORD_RE.match(flat[match.end():]):
+            continue
+        before = flat[max(0, match.start() - ACTOR_WINDOW):match.start()]
+        if POLICY_DENIAL_RE.search(before) or OTHER_ACTOR_RE.search(before):
+            continue
+        end = match.end() + _contract.WRITE_WINDOW
+        window = flat[match.end():end]
+        if len(flat) > end and not flat[end].isspace():
+            window = window.rpartition(" ")[0]
+        for target in _scope._paths_in(window.partition(";")[0]):
+            if target in seen or _scope._covered(target, scope):
+                continue
+            seen.add(target)
+            findings.append((POLICY_OUTSIDE_SCOPE, target))
+    return findings
+
+
+def _deleted_phrases(objective):
+    """Every multi-word span this objective says it deletes.
+
+    A phrase, not a literal: `_literals` reads the single token a removal
+    names, and cannot see a sentence of prose taken out of a document -- which
+    is what a test asserts word for word.
+    """
+
+    flat = _scope._flat(objective)
+    found = []
+    for match in DELETION_RE.finditer(flat):
+        before = flat[max(0, match.start() - _contract.DENIAL_WINDOW):match.start()]
+        if _contract.DENIAL_RE.search(before):
+            continue
+        window = flat[match.end():match.end() + _contract.REMOVAL_WINDOW]
+        for quote in _contract.QUOTE_RE.finditer(window):
+            phrase = _scope._flat(quote.group(1) or quote.group(2) or "")
+            if " " in phrase and phrase not in found:
+                found.append(phrase)
+    return found
+
+
+def _consumer_census(frontmatter, objective, tree):
+    """Screen 2: the checks asserting a phrase this item is ordered to delete.
+
+    Over ``tests/`` alone, because that is where a pin is a failing check
+    rather than a mention -- which is also why this refuses where the reverse
+    scan beside it is advisory.
+    """
+
+    phrases = _deleted_phrases(objective)
+    if not phrases or tree is None:
+        return []
+    scope = _scope._listed(frontmatter, "write_scope")
+    findings = []
+    for rel, text in _scope._pin_index(tree):
+        if not rel.startswith("tests/") or _scope._covered(rel, scope):
+            continue
+        hits = [phrase for phrase in phrases if phrase in text]
+        if hits:
+            findings.append(
+                (UNGRANTED_CONSUMER, '{} asserts "{}"'.format(rel, max(hits, key=len))))
+    return findings
+
+
+def _removal_evidence(frontmatter, objective, inputs):
+    """Screen 3: a removal argued from reachability with no probe behind it.
+
+    Graded on the argument rather than on the deletion, so a cut that removes
+    a directory and claims nothing about who reaches it is asked for nothing;
+    and on the Fixed inputs rather than the Completion test, because a
+    criterion promising a new test will prove unreachability is the claim
+    again with a date on it, not evidence the cut was made from.
+    """
+
+    claim = REACHABILITY_RE.search(_scope._flat(objective))
+    if claim is None or PROBE_RE.search(_scope._flat(inputs)):
+        return []
+    return [(UNPROBED_REMOVAL, "reachability claimed at {!r}, no probe among the "
+             "fixed inputs".format(claim.group(0)))]
+
+
+def _marker_only_relocation(objective, completion):
+    """Screen 4: a relocation whose completion test is substring markers alone.
+
+    Advisory by class: a marker is weak evidence of meaning, never proof of
+    its absence.
+    """
+
+    if not RELOCATION_RE.search(_scope._flat(objective)):
+        return False
+    heads = [
+        span.strip().split()[0]
+        for span in _contract.BACKTICK_RE.findall(completion)
+        if span.strip().split()[:1]
+    ]
+    return bool(heads) and all(head in _contract.SEARCH_HEADS for head in heads)
+
 
 GATE_VERIFY_SUFFIX = '.gate.verify'
 
@@ -251,11 +427,29 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         (ticket_id, 0, klass, detail)
         for klass, detail in _scope_closure(frontmatter, _prose(body))
     )
+    objective = _prose(sections.get(OBJECTIVE_SECTION, ""))
     findings.extend(
         (ticket_id, 0, klass, detail)
-        for klass, detail in _scope_open(
-            frontmatter, _prose(sections.get(OBJECTIVE_SECTION, "")), baseline_tree
+        for klass, detail in _scope_open(frontmatter, objective, baseline_tree)
+    )
+    inputs = sections.get(INPUTS_SECTION, "")
+    if not frozen:
+        # `_frozen_authority`'s exemption, for the same reason it exists: a
+        # root's Fixed inputs state the run's law, and the root writes none of
+        # what that law describes.
+        findings.extend(
+            (ticket_id, 0, klass, detail)
+            for klass, detail in _policy_scope(frontmatter, _prose(inputs))
         )
+    findings.extend(
+        (ticket_id, 0, klass, detail)
+        for klass, detail in _consumer_census(frontmatter, objective, baseline_tree)
+    )
+    # Evidence, not authority, so no frozen item is exempt: a root arguing
+    # unreachability without a probe is the same defect at its source.
+    findings.extend(
+        (ticket_id, 0, klass, detail)
+        for klass, detail in _removal_evidence(frontmatter, objective, inputs)
     )
     return findings
 
@@ -265,4 +459,8 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
 
 __all__ = (
     '_check_ticket', '_policy_findings', '_frozen_authority',
+    '_policy_scope', '_deleted_phrases', '_consumer_census',
+    '_removal_evidence', '_marker_only_relocation',
+    'POLICY_OUTSIDE_SCOPE', 'UNGRANTED_CONSUMER', 'UNPROBED_REMOVAL',
+    'MARKER_ONLY_RELOCATION',
 )
