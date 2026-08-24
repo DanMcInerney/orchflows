@@ -64,9 +64,15 @@ GIT_FIXTURE_SOURCES = {
         '"""Fixture: a second shard consuming another shard\'s fixture."""\n'
         "from tests.test_owner_cases.common import *  # noqa: F401,F403\n"
     ),
+    # ``inner`` names ``scripts/deep/inner.py``, which reaches
+    # ``scripts/hidden_deep.py``. As a *literal* it is a fact about the file
+    # that spells it and selects nothing. Admitted as a *graph edge* -- the
+    # rejected design variant -- it drags this shard in behind ``inner``, and
+    # the control below fails. That is the only thing separating the two
+    # designs on this tree, so without it the control cannot fail at all.
     "tests/test_stranger.py": (
         '"""Fixture: a shard that reaches none of the targets."""\n'
-        'NOTE = "unrelated"\n'
+        'NOTE = "inner"\n'
     ),
     # ``mypkgdir_notes`` contains ``pkgdir`` as a substring but sits under no
     # such directory. Whether the scope ``pkgdir`` is a directory therefore
@@ -257,7 +263,12 @@ class TestLiveFacadeMappings(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.root = Path(affected_tests.ROOT)
-        cls.shards = affected_tests.shard_files(cls.root / "tests")[1]
+        # The denominator is read out of the commit, not off disk.
+        # ``shard_files`` globs the working tree, so an untracked
+        # ``tests/test_*.py`` would inflate it and make the bound below
+        # *easier* to clear -- working-tree state weakening a check, in the
+        # suite whose whole subject is that selection does not read it.
+        cls.shards = affected_tests.discover(cls.root, cls.root / "tests")["shards"]
         cls.for_lint = affected_tests.affected(["scripts/tickets_lint.py"])
         cls.for_issue = affected_tests.affected(["scripts/tickets_issue.py"])
 
@@ -269,9 +280,47 @@ class TestLiveFacadeMappings(unittest.TestCase):
 
     def test_neither_owner_selects_the_whole_suite(self):
         # Both reach the ticket facade, so both are wide; "wide" is not "all",
-        # and a resolver that answered "all" would pass the two above.
+        # and a resolver that answered "all" would pass the two above. This
+        # bound decides that one claim and no more. Measured: it does *not*
+        # discriminate against admitting literals as graph edges -- that
+        # variant selects 70 of 71 here and clears ``< 71`` comfortably. The
+        # check that does fail against it is
+        # ``TestMeasuredImportEdges.test_a_shard_reaching_none_of_the_targets_is_never_selected``.
         for resolved in (self.for_lint, self.for_issue):
             self.assertLess(len(resolved["modules"]), len(self.shards))
+
+
+class TestPublicSurfaceAnotherModuleBindsTo(unittest.TestCase):
+    """The names another file in this repository reaches into this one for."""
+
+    def test_read_facts_survives_the_rebinding_cutcheck_graph_performs(self):
+        # ``scripts/cutcheck_graph.py`` loads this resolver by path and then
+        # does ``module.read_facts = lru_cache(...)(module.read_facts)``
+        # *outside* any ``try``. Nothing inside this module calls
+        # ``read_facts``, so nothing else keeps the name alive: were it
+        # dropped as dead code, that line would raise ``AttributeError``
+        # through ``_affected_tool``, whose caller does not guard it -- a
+        # crash for every cut reading, not a degraded one. This is the only
+        # check standing between that and a tidy-up.
+        import functools
+        import importlib.util
+
+        path = Path(affected_tests.__file__)
+        spec = importlib.util.spec_from_file_location("checker_affected", str(path))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.read_facts = functools.lru_cache(maxsize=None)(module.read_facts)
+
+        with tempfile.TemporaryDirectory() as scratch:
+            source = Path(scratch) / "sample.py"
+            source.write_text(
+                "from . import sibling\nNOTE = 'a literal'\n", encoding="utf-8"
+            )
+            imports, literals = module.read_facts(source, "pkg/sample.py")
+        # Still reads a file, still resolves the relative import against the
+        # ``rel`` it is handed, and is still hashable enough to be memoised.
+        self.assertIn("pkg.sibling", imports)
+        self.assertIn("a literal", literals)
 
 
 if __name__ == "__main__":
