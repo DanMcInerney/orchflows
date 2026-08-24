@@ -7,7 +7,7 @@ Stdlib only, Python 3.9+, POSIX and Windows.
 
 Usage:
     python tools/run_tests.py [-j N] [-v] [--tests-dir DIR]
-        [--scope PATH[,PATH]] [MODULE ...]
+        [--scope PATH[,PATH] | MODULE ...]
 """
 
 from __future__ import annotations
@@ -424,6 +424,7 @@ def main(argv=None) -> int:
         return run_child(args.child, args.import_root, args.result_file, args.child_verbosity)
     if args.jobs < 1:
         raise SystemExit("run_tests: -j must be at least 1")
+    run_tests_scope.refuse_positional(args.scope, args.modules)
 
     tests_dir = Path(args.tests_dir).resolve()
     if not tests_dir.is_dir():
@@ -431,9 +432,15 @@ def main(argv=None) -> int:
     import_root, prefix, discovered = discover(tests_dir)
     if not discovered:
         raise SystemExit("run_tests: no test_*.py under " + str(tests_dir))
-    if tests_dir == DEFAULT_TESTS_DIR.resolve() and not args.modules:
+    if args.scope:
+        args.modules = run_tests_scope.select(args.scope, tests_dir, discovered)
+    # After the scope is applied, never before it: the admission a run owes
+    # is the one over the sources it actually named.
+    admitted = run_tests_scope.admission_paths(
+        args.scope, args.modules, tests_dir == DEFAULT_TESTS_DIR.resolve())
+    if admitted is not None:
         size_check = subprocess.run(
-            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")],
+            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")] + admitted,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=child_env(),
@@ -442,8 +449,6 @@ def main(argv=None) -> int:
             emit(size_check.stdout.decode("utf-8", "replace"))
             print("FAILED: tracked source-size admission")
             return 1
-    if args.scope:
-        args.modules = run_tests_scope.select(args.scope, tests_dir, discovered)
     selected = (
         [resolve(name, discovered, prefix) for name in args.modules] if args.modules else discovered
     )
