@@ -14,6 +14,10 @@ if __package__:
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section,
     )
+    from .tickets_ceiling import (
+        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
+        instruction_breakdown, instruction_words,
+    )
 else:
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
@@ -23,6 +27,10 @@ else:
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section,
+    )
+    from tickets_ceiling import (
+        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
+        instruction_breakdown, instruction_words,
     )
 # The bound grammar is `tickets_bound`'s, read here so every holder of
 # `_parse_bound_minutes` gets the widened one without moving. Reached by
@@ -48,9 +56,9 @@ PROVENANCE_RE = re.compile('provenance:\\s*([A-Za-z_-]*)', re.IGNORECASE)
 DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'
-INSTRUCTION_BUDGET = 300
-INSTRUCTION_SECTIONS = ('Objective', 'Completion test', 'Return fields')
-LINK_TARGET_RE = re.compile('\\]\\([^)]*\\)')
+# The instruction ceiling is `tickets_ceiling`'s: one counter, so the lint
+# twin and the issue refusal cannot drift apart. Re-exported here because
+# this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
 # Each pack's `workspace` cell names its mechanism. This literal mirrors
 # packs/ because an installed copy has no library tree to read; the matching
@@ -232,16 +240,6 @@ def format_policy_defects(text, data, sections):
                 defects.append('bounded ticket carries another numeric word/line constraint outside return-size')
     defects.extend(parse_mutations(data)[1])
     return defects
-def instruction_words(text: str) -> int:
-    """One ticket's instruction in words, markdown link targets stripped.
-    The objective, the completion test, the return fields and the
-    frontmatter `excluded_actions` -- what a child loads on every dispatch.
-    Never `## Fixed inputs`: those are identities, and counting them would
-    charge a cutter for supplying evidence (rules/token-economy.md §11).
-    """
-    sections = _sections(text)
-    parts = [str(item) for item in _parse_frontmatter(text).get('excluded_actions') or []] + [sections.get(name, '') for name in INSTRUCTION_SECTIONS]
-    return sum((len(LINK_TARGET_RE.sub(']', part).split()) for part in parts))
 def _read_utf8(path, subject: str='ticket', encoding: str='utf-8'):
     """One file's text as ``(text, None)``, or ``(None, {"error": ...})``.
     Both exceptions in one place because they are one failure to a caller --

@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, instruction_words, ticket_defects
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_transitions import pending_admission
 else:
-    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, instruction_words, ticket_defects
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
@@ -421,15 +421,16 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
     `.gate.` stub carries the root's `## Completion test` verbatim -- `gate`
     renders them from it -- so grading either against the unit ceiling would
     refuse what this script itself writes.
+    Who is exempt is decided here; what the words come to is
+    `tickets_ceiling`'s, sentence included, so the refusal prints the
+    per-part arithmetic it had to compute to refuse at all.
     """
     if GATE_ID_MARKER in str(ticket_id or ''):
         return None
     if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
         return None
-    count = instruction_words(text)
-    if count <= INSTRUCTION_BUDGET:
-        return None
-    return {'error': f'{subject} has a {count}-word instruction, over the {INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md, section 11): the objective, completion test, excluded actions and return fields a child loads every dispatch, never its fixed inputs. A compound objective is two items, not one longer ticket'}
+    sentence = ceiling_sentence(subject, text)
+    return None if sentence is None else {'error': sentence}
 def _issue_defects(text: str, *, issued: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 
