@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2861,
+  "count": 2865,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -736,6 +736,9 @@
    "test_verification_owners.TheDispatchPartsHaveOneOwner.test_the_assigned_name_is_interpolated_rather_than_a_placeholder",
    "test_verification_owners.TheDispatchPartsHaveOneOwner.test_the_generator_states_every_dispatch_part",
    "test_verify_at.CallerEnvironmentTest.test_no_git_seam_a_caller_set_reaches_the_command",
+   "test_verify_at.CleanupReportHonestyTest.test_a_checkout_that_went_away_is_reported_as_observed_gone",
+   "test_verify_at.CleanupReportHonestyTest.test_a_kept_checkout_says_kept_and_claims_no_removal",
+   "test_verify_at.CleanupReportHonestyTest.test_a_removal_that_did_not_happen_is_not_reported_as_removed",
    "test_verify_at.CleanupTest.test_a_green_run_leaves_nothing_behind",
    "test_verify_at.CleanupTest.test_a_kept_worktree_is_what_the_cleanup_check_would_catch",
    "test_verify_at.CleanupTest.test_a_red_run_that_dirtied_the_checkout_leaves_nothing_behind",
@@ -1671,6 +1674,7 @@
    "tests.test_tickets_cases.cli_help.TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets.test_a_scope_a_grant_widened_earns_the_packet_establishment_step_back",
    "tests.test_tickets_cases.cli_help.TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets.test_an_empty_scope_omits_the_packet_establishment_step_entirely",
    "tests.test_tickets_cases.cli_help.TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets.test_isolation_none_omits_the_packet_establishment_step",
+   "tests.test_tickets_cases.cli_help.TestPacketUsageHasOneOwner.test_the_help_table_takes_the_packet_usage_by_reference",
    "tests.test_tickets_cases.cohort_seal.MemberSealTest.test_a_claim_time_the_lease_left_behind_still_seals_the_member",
    "tests.test_tickets_cases.cohort_seal.MemberSealTest.test_a_claimed_root_does_not_seal_the_cut_it_is_still_writing",
    "tests.test_tickets_cases.cohort_seal.MemberSealTest.test_a_pending_member_is_open_however_far_its_siblings_have_run",
@@ -2864,7 +2868,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e261373fb4c1c2cd2c97afe75db676391a9b8a371dcbc311ad6b14fc49977a07"
+  "sha256": "b6c6a59bd74eb76ecc1e4fc786877fc5fdf58965d330b4a28f4d0404ac154d86"
  },
  "mutation_owners": [
   {
@@ -5782,6 +5786,22 @@
    "seams": [
     "environment",
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_verify_at",
+   "owner": "CleanupReportHonestyTest.record_for",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_verify_at",
+   "owner": "CleanupReportHonestyTest.test_a_removal_that_did_not_happen_is_not_reported_as_removed",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

@@ -191,6 +191,11 @@ def run_at(repo, revision, command, root=None, keep=False,
         "revision": commit,
         "worktree": os.fspath(path),
         "kept": bool(keep),
+        # Observed, never inferred from the flag. `remove` falls back to
+        # `rmtree(ignore_errors=True)`, which swallows its own failure, so a
+        # report reading `keep` alone can announce a clean vantage the run
+        # never reached. `None` where no removal was attempted at all.
+        "removed": None if keep else not path.exists(),
         "repository": os.fspath(repo),
         "command": list(command),
     }
@@ -272,6 +277,19 @@ def emit(stream, text: str) -> None:
     stream.write(text.encode(encoding, "replace").decode(encoding, "replace"))
 
 
+def disposition(record: dict) -> str:
+    """What became of the checkout, as observed rather than as requested.
+
+    Three states, not two: asked to stay, gone, and still there after a
+    removal that was meant to take it. The third is the one a word derived
+    from `--keep` cannot say, and the one a reader most needs.
+    """
+
+    if record["kept"]:
+        return "kept"
+    return "removed" if record.get("removed") else "not removed"
+
+
 def summary(record: dict) -> str:
     """The one line a reader needs to know what answered, and from where."""
 
@@ -279,7 +297,7 @@ def summary(record: dict) -> str:
         record["exit"],
         record["revision"][:12],
         record["worktree"],
-        "kept" if record["kept"] else "removed",
+        disposition(record),
     )
 
 

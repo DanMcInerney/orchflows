@@ -6,7 +6,9 @@ verdict reported as the command gave it, and nothing left behind either way.
 Roughly eight contexts hand-rolled that choreography across two runs, and
 the hand-rolled versions disagreed -- on where the checkout may sit, on
 whether a red run still cleans up, on whether the two output streams may be
-merged. Five facts are graded here, one per disagreement.
+merged. Five facts are graded here, one per disagreement, and a sixth the
+run that made this the standard vantage found: the report says what became
+of the checkout, never what the caller asked for.
 
 The repository under test is built from nothing in a scratch directory, so
 no assertion here depends on this checkout's own history. The child's system
@@ -27,6 +29,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+from unittest import mock
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -432,6 +435,57 @@ class UsageTest(VerifyAtCase):
         self.assertEqual(verify_at.REFUSAL_STATUS, done.returncode)
         self.assertIn("verify_at:", self.text(done.stderr))
         self.assertEqual([], admin_entries(self.repo))
+
+
+class CleanupReportHonestyTest(VerifyAtCase):
+    """The report says what became of the checkout, never what was asked for.
+
+    `remove` falls back to `shutil.rmtree(..., ignore_errors=True)`, which
+    swallows its own failure, so a word derived from the `--keep` flag can
+    announce a clean vantage the run never reached. Every checker in the run
+    that made this tool the standard vantage read that word.
+    """
+
+    COMMAND = (sys.executable, "-c", "pass")
+
+    def record_for(self, **kwargs):
+        """One in-process run, because the record itself is the subject here.
+
+        The temp-root boundary is stood down for the call and for it only: it
+        is graded by its own test above, and in this process the scratch root
+        necessarily sits inside the system temp root that the child processes
+        elsewhere are handed a declared replacement for.
+        """
+
+        with mock.patch.object(verify_at, "inside_temp_root", lambda root: False):
+            return verify_at.run_at(
+                self.repo, self.commits["first"], list(self.COMMAND),
+                root=self.root, **kwargs
+            )
+
+    def test_a_checkout_that_went_away_is_reported_as_observed_gone(self):
+        record = self.record_for()
+        self.assertIn("(removed)", verify_at.summary(record))
+        self.assertFalse(Path(record["worktree"]).exists())
+        self.assertTrue(record["removed"])
+
+    def test_a_kept_checkout_says_kept_and_claims_no_removal(self):
+        record = self.record_for(keep=True)
+        self.assertIn("(kept)", verify_at.summary(record))
+        self.assertTrue(Path(record["worktree"]).exists())
+        # Nothing was attempted, which is neither a removal nor a failed one.
+        self.assertIsNone(record["removed"])
+        verify_at.remove(self.repo, Path(record["worktree"]))
+
+    def test_a_removal_that_did_not_happen_is_not_reported_as_removed(self):
+        """The one the flag cannot answer: cleanup ran and left the tree there."""
+
+        with mock.patch.object(verify_at, "remove", lambda repo, path: None):
+            record = self.record_for()
+        self.assertTrue(Path(record["worktree"]).exists())
+        self.assertIn("(not removed)", verify_at.summary(record))
+        self.assertFalse(record["removed"])
+        verify_at.remove(self.repo, Path(record["worktree"]))
 
 
 if __name__ == "__main__":
