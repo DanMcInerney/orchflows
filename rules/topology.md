@@ -40,7 +40,7 @@
    item would write is given to exactly one item — one on the first
    frontier the rest depend on, or a closing item depending on them —
    never shared; the recurring ones are `ARCHITECTURE.md`, a `SKILL.md`
-   roster, a fixture copying a source, tests/pins.json, and a test
+   roster, a fixture copying a source, `tests/pins.json`, and a test
    module pinning several owners. Observing is not naming: an
    artifact a test only observes — asserting that it is unchanged
    included — stays outside the write scope, which covers only what the

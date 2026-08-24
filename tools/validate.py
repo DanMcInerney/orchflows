@@ -137,6 +137,15 @@ SOURCE_ONLY_DIRS = ("tools", "tests", "installer")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
 # and `orch-tdd` are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
+# One site, named rather than hidden. topology.md §3's shared-surface rule
+# lists the artifacts two cut items would both write -- ARCHITECTURE.md, a
+# SKILL.md roster, the pin file -- as repository artifacts under
+# decomposition, not as pointers into the installed library, and
+# tests/test_contracts_cases/topology.py pins that exact spelling. Naming
+# a write surface is not sending a reader anywhere, so the token stays and
+# the exemption is a pair, never a bare filename: the same token in a
+# sentence that does point somewhere is still an error.
+DOC_PATH_EXEMPT_SITES = frozenset({("rules/topology.md", "tests/pins.json")})
 
 
 def _documented_path_finding(token: str, source: Path, root: Path):
@@ -219,6 +228,8 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
             text = _read_source(source)
             for token in sorted(set(DOCUMENTED_PATH_RE.findall(text))):
                 if token.split("/", 1)[0] not in known_heads:
+                    continue
+                if (rel(source), token) in DOC_PATH_EXEMPT_SITES:
                     continue
                 finding = _documented_path_finding(token, source, root)
                 if finding is not None:

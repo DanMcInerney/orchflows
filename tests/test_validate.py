@@ -119,6 +119,21 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertFalse(diag.has_errors)
         self.assertTrue(any(line.startswith("WARN") for line in diag.lines()))
 
+    def test_the_exemption_is_one_live_site_and_not_a_blanket(self):
+        """An exemption that outlives its sentence is a hole. Each pair names
+        a file that still carries that token, and `tests/pins.json` erroring
+        in the fixture above is the proof the pass is per-site, not per-name.
+        """
+
+        for where, token in validate.DOC_PATH_EXEMPT_SITES:
+            source = _ROOT / where
+            self.assertTrue(source.is_file(), f"exempt site {where} is gone")
+            self.assertIn(
+                f"`{token}`",
+                source.read_text(encoding="utf-8"),
+                f"{where} no longer carries `{token}`; drop the exemption",
+            )
+
     def test_the_real_library_tree_carries_no_dead_documented_path(self):
         diag = validate.Diagnostics()
         saved = validate.ROOT
