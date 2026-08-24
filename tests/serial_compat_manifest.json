@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2656,
+  "count": 2676,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -25,6 +25,16 @@
    "test_commit_authority.CommitAuthorityReplayTest.test_failing_slice_produces_no_commit",
    "test_commit_authority.CommitAuthorityReplayTest.test_three_historical_integration_only_authorities_commit_and_join",
    "test_commit_authority.SkillBoundaryTest.test_skill_names_ticket_local_commit_and_join_boundary",
+   "test_constitution.AmendedPrinciplesTest.test_dropping_any_scaffolding_fact_fails_the_check",
+   "test_constitution.AmendedPrinciplesTest.test_principle_8_naming_the_mechanism_fails_the_check",
+   "test_constitution.AmendedPrinciplesTest.test_the_constitution_carries_every_amended_fact",
+   "test_constitution.AmendedPrinciplesTest.test_the_trimmed_clause_returning_fails_the_check",
+   "test_constitution.NetLinesTest.test_every_principle_is_numbered_without_a_gap",
+   "test_constitution.NetLinesTest.test_padding_a_copy_past_the_budget_fails_the_check",
+   "test_constitution.NetLinesTest.test_the_block_stays_inside_the_near_zero_budget",
+   "test_constitution.WriteTimePointerTest.test_a_copy_without_either_pointer_fails_the_check",
+   "test_constitution.WriteTimePointerTest.test_agents_md_points_at_the_constitution",
+   "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cut_lens.DelegationStatedTest.test_a_lens_stating_no_division_is_reported",
    "test_cut_lens.DelegationStatedTest.test_the_delegated_half_names_the_tool_and_the_families",
    "test_cut_lens.DelegationStatedTest.test_the_kept_half_names_the_judgments_it_keeps",
@@ -35,6 +45,9 @@
    "test_cut_lens.GraphJudgmentsTest.test_a_false_edge_with_no_block_behind_it_is_reported",
    "test_cut_lens.GraphJudgmentsTest.test_a_judgment_the_lens_drops_is_reported",
    "test_cut_lens.GraphJudgmentsTest.test_the_kept_half_names_the_false_edge_and_the_compound_item",
+   "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
+   "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
+   "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_doclint.CommandLineTest.test_a_clean_root_exits_zero",
    "test_doclint.CommandLineTest.test_the_run_prints_the_findings_and_exits_nonzero",
    "test_doclint.CommandLineTest.test_the_threshold_flag_reaches_the_report",
@@ -326,6 +339,8 @@
    "test_refactor_compat.UiFacadeCompatibilityTest.test_help_keeps_the_public_flags_and_argparse_exit_contract",
    "test_refactor_compat.V2ProducerMigrationTest.test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract",
    "test_refactor_compat.WorkspaceFacadeCompatibilityTest.test_help_keeps_commands_verdicts_and_direct_return_contract",
+   "test_regions_ruling.RegionMachineryRulingTest.test_region_machinery_ships_only_with_an_admit_branch_production_reaches",
+   "test_regions_ruling.UnprovenParallelismTest.test_same_artifact_parallelism_refuses_in_one_voice_and_orders_or_sole_owns",
    "test_return_size.ActualResultGradeTest.test_actual_result_refuses_duplicate_unresolved_and_non_text_targets",
    "test_return_size.ActualResultGradeTest.test_non_success_terminal_statuses_do_not_trust_the_target",
    "test_return_size.ActualResultGradeTest.test_result_grade_and_complete_share_findings_and_accept_the_boundary",
@@ -581,6 +596,11 @@
    "test_trace.TestTraceV2.test_system_reminder_text_is_never_a_request",
    "test_trace.TestTraceV2.test_text_clip_sets_truncated_flag",
    "test_trace.TestTraceV2.test_thinking_blocks_are_not_narration",
+   "test_v0_removal.GradeParityTest.test_v1_and_v2_grades_match_the_baseline_admission_module_exactly",
+   "test_v0_removal.PacketV0BranchTest.test_a_never_claimed_v0_ticket_is_refused_and_a_live_one_still_dispatches",
+   "test_v0_removal.PacketV0BranchTest.test_no_version_keyed_status_refusal_survives",
+   "test_v0_removal.SingleGradeSiteTest.test_the_module_shrank_and_stays_inside_the_source_size_cap",
+   "test_v0_removal.SingleGradeSiteTest.test_the_shared_grade_block_is_written_once",
    "test_windows_semantics.CurrentCITopologyDocumentationTest.test_scoped_docstrings_name_ci_s_one_windows_leg",
    "test_windows_semantics.TestInstallation.test_importing_the_package_installed_it",
    "test_windows_semantics.TestInstallation.test_installing_twice_does_not_wrap_twice",
@@ -2659,7 +2679,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "9a54ef2aa0e039113dc1d6a9d396aac3aaa000a6bc9856d76fc5f3ff69887f42"
+  "sha256": "3c423d3c0bde13bee7e325af96b7c2a60f76fa8eee1ca67b019d235ad8509de4"
  },
  "mutation_owners": [
   {
@@ -5414,6 +5434,27 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_v0_removal",
+   "owner": "<module>",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_v0_removal",
+   "owner": "GradeParityTest.test_v1_and_v2_grades_match_the_baseline_admission_module_exactly",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_v0_removal",
+   "owner": "PacketV0BranchTest.test_a_never_claimed_v0_ticket_is_refused_and_a_live_one_still_dispatches",
+   "seams": [
+    "environment"
    ]
   },
   {
