@@ -113,6 +113,19 @@ def is_receipt(value) -> bool:
 
 
 def valid_cohort(value) -> bool:
+    """Whether ``value`` is a well-formed cohort identity.
+
+    A cohort is v1's freezing mechanism: `cohort_sealed` reads it, and a v1
+    receipt hashes its ticket- and batch-cohort siblings into itself.  A v2
+    ticket carries none.  It freezes a cut by its sealed generation instead
+    -- `assignment_payload` names no cohort among the sealed assignment
+    facets, and `_grade_v2_admission`'s `snapshot_ids` carry dependencies
+    only -- so a cohort stamped onto one would be a required-looking field
+    graded by nothing.  The ruling is enforced where the field is written,
+    at `tickets_issue.py`'s issuing sites; grading is unchanged in both
+    versions, and `tests/test_v2_cohort.py` holds both halves.
+    """
+
     return bool(_COHORT_RE.fullmatch(str(value or "").strip()))
 
 
