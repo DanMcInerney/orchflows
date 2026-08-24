@@ -232,8 +232,8 @@ def _cmd_start(rest):
     # a workspace whose branch and baseline the join has to be able to read,
     # and the preparation's own verdict is reported rather than raised
     prepared = workspace_prepare.prepare(top)
-    # after recording: this item's own stamp is in the sink, skipped by id
-    sharing = _sharers(path, ticket_id, branch)
+    # after recording: this item's own stamp is in the sink, and skipped
+    sharing = _sharers(path, _git_out, _is_ancestor, branch)
     return {
         "start": {
             "run": run,

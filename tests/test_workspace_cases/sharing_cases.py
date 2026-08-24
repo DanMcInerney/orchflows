@@ -159,6 +159,41 @@ class TestStartSeesWhoElseRecordedThisTree(unittest.TestCase):
                 self.assertTrue(body["isolated"], body)
                 self.assertEqual([], body["shared_with"])
 
+    def test_two_claimed_items_in_one_shared_detached_worktree_are_flagged(self):
+        """The other side of that limit, which is not a limit.
+
+        A detached record is ambiguous only where more than one worktree could
+        have written it. One shared detached tree is this run's own situation
+        with the branch left off -- two claimed items standing in one
+        directory -- and git names that directory outright: a single standing
+        detached worktree at or past the recorded revision is the only place
+        the record can have come from. Going silent here reports `isolated`
+        for the very shape `isolated` was made to see.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            shared = tmp / "wt-shared"
+            git(main, "worktree", "add", "--quiet", "--detach", str(shared), "HEAD")
+            for tid in ("T-first", "T-second"):
+                make_ticket(run_dir, tid)
+            first = run_workspace(shared, "start", "testrun", "T-first")
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+
+            done = run_workspace(shared, "start", "testrun", "T-second")
+
+            body = payload_of(done)["start"]
+            self.assertFalse(
+                body["isolated"],
+                "a claimed sibling recorded this very directory; a detached "
+                "HEAD does not make the tree this item's alone",
+            )
+            self.assertEqual(["T-first"], body["shared_with"])
+            self.assertEqual(
+                workspace.EXIT_SHARED_WORKSPACE, done.returncode, done.stdout
+            )
+
     def test_starting_the_same_item_twice_never_flags_it_against_itself(self):
         """``start`` records this item's own branch, so the second run reads a
         sink already carrying it. The item's own id is skipped, or every
@@ -180,8 +215,8 @@ class TestStartSeesWhoElseRecordedThisTree(unittest.TestCase):
     def test_the_main_checkout_stays_unisolated_and_still_exits_zero(self):
         """The second position, unchanged. ``isolated`` is a conjunction now,
         and the main checkout fails the first half of it for the reason it
-        always did -- which is not the shared-tree flag and must not earn its
-        exit code."""
+        always did -- standing where the repository is checked out, which is
+        not news and must not earn the new code by itself."""
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -192,6 +227,32 @@ class TestStartSeesWhoElseRecordedThisTree(unittest.TestCase):
 
             self.assertEqual(0, done.returncode, done.stdout + done.stderr)
             self.assertFalse(payload_of(done)["start"]["isolated"])
+
+    def test_the_main_checkout_that_shares_is_flagged_like_any_other(self):
+        """The pair to the case above, and what tells the two apart.
+
+        ``isolated`` is false in the main checkout either way, so nothing in
+        that field distinguishes standing where the repository is checked out
+        from standing where a claimed sibling is also working. Only the code
+        and ``shared_with`` can, which is why the flag is decided on the
+        sharing alone and not under the linked-tree half of the conjunction.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            here = git(main, "rev-parse", "--abbrev-ref", "HEAD").strip()
+            make_ticket(run_dir, "T-sibling", extra=((workspace.BRANCH_KEY, here),))
+            make_ticket(run_dir, "T-self")
+
+            done = run_workspace(main, "start", "testrun", "T-self")
+
+            body = payload_of(done)["start"]
+            self.assertFalse(body["isolated"])
+            self.assertEqual(["T-sibling"], body["shared_with"])
+            self.assertEqual(
+                workspace.EXIT_SHARED_WORKSPACE, done.returncode, done.stdout
+            )
 
 
 class TestTheSharedTreeCodeIsItsOwnAndDocumented(unittest.TestCase):

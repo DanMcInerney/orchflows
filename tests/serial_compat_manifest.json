@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2768,
+  "count": 2770,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -2749,6 +2749,8 @@
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_every_claimed_sharer_is_named_not_only_the_first",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_starting_the_same_item_twice_never_flags_it_against_itself",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_the_main_checkout_stays_unisolated_and_still_exits_zero",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_the_main_checkout_that_shares_is_flagged_like_any_other",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_two_claimed_items_in_one_shared_detached_worktree_are_flagged",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_two_detached_workspaces_at_one_revision_are_not_sharing_a_tree",
    "tests.test_workspace_cases.sharing_cases.TestTheSharedTreeCodeIsItsOwnAndDocumented.test_the_code_collides_with_no_existing_meaning",
    "tests.test_workspace_cases.sharing_cases.TestTheSharedTreeCodeIsItsOwnAndDocumented.test_the_docstring_exit_code_table_carries_the_new_code",
@@ -2771,7 +2773,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4dcdeb469bd26268699d654bebf092aa3989f866ded017149e0bc76dc99380a1"
+  "sha256": "e70d7f874fa1353b1cad5f089e4b5df602f31c5bf6852b050ab368fbf3d6ed60"
  },
  "mutation_owners": [
   {

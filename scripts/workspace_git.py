@@ -229,7 +229,24 @@ def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
     }
 
 
-def _sharers(ticket_path, ticket_id: str, branch: str) -> list:
+def _detached_trees(git_out, is_ancestor, sha) -> int:
+    """How many standing worktrees a ``detached:`` record could name.
+
+    Those at or past the revision it names: a worktree that has committed
+    since has moved past it, so equality of tips would miss the very tree the
+    record was written from. The same set ``_detached_tip`` resolves a tip
+    out of, counted by directory rather than by tip -- two worktrees at one
+    revision are one tip and two answers.
+    """
+
+    return len([
+        entry for entry in _worktrees(git_out)
+        if "detached" in entry and entry.get("HEAD")
+        and is_ancestor(sha, entry["HEAD"])
+    ])
+
+
+def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
     """Every other claimed ticket of this run that recorded this same tree.
 
     ``start`` cannot see a workspace from the outside: from inside any linked
@@ -253,19 +270,25 @@ def _sharers(ticket_path, ticket_id: str, branch: str) -> list:
     report about the caller's tree, and it must not be the thing that stops an
     item over some other item's malformed file.
 
-    A detached record is where the branch proxy stops, and it stops here
-    rather than reporting past its evidence. ``DETACHED_PREFIX`` names the
-    revision ``start`` read, not a ref, so two workspaces materialized at one
-    revision record the identical string from different directories -- the
-    same ambiguity ``_detached_tip`` refuses to resolve for the same reason.
-    Equality of two such records is no evidence of a shared tree, and reading
-    it as evidence flags two genuinely isolated workspaces.
+    A detached record names the revision ``start`` read rather than a ref, so
+    it identifies a directory only where one directory could have written it:
+    two workspaces materialized at one revision record the identical string.
+    Which directories could have is a question git answers and no frontmatter
+    stamp is needed for -- the standing detached worktrees at or past that
+    revision. Exactly one of them and the record names it, which is the
+    shared-tree case with the branch left off; more and equality is no
+    evidence at all, and reading it as evidence flags two genuinely isolated
+    workspaces, the same ambiguity ``_detached_tip`` refuses to resolve.
     """
 
-    if branch.startswith(DETACHED_PREFIX):
+    if branch.startswith(DETACHED_PREFIX) and _detached_trees(
+        git_out, is_ancestor, _tip_ref(branch)
+    ) != 1:
         return []
     found = []
     for path in sorted(ticket_path.parent.glob("*.md")):
+        # by path, which is the id the caller was dispatched under: ``_locate``
+        # builds this one from the run and id it was given
         if path == ticket_path:
             continue
         data = tickets._load_ticket(path)
