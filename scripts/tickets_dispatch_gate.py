@@ -49,11 +49,23 @@ def _pack_domain(pack) -> str:
     if name.endswith(PACK_NAME_SUFFIX):
         name = name[:-len(PACK_NAME_SUFFIX)]
     return name
+def _is_record(group: list) -> bool:
+    """Whether ``group`` opens on a canonical ``- input:`` record line.
+    Judged on the opening line alone, never on the group's length. A
+    canonical record is one line, but `input_groups` hands back every later
+    non-blank line attached to the group the last `- ` opened -- so a root
+    that ends `## Fixed inputs` with a line of prose delivers its final
+    record inside a two-line group. Reading the length there would drop a
+    record the root plainly states, silently, and 16 of this host's 90 root
+    tickets carry exactly that shape. A record wrapped across lines is
+    still skipped: its opening line is partial JSON and fails to parse.
+    """
+    return bool(group) and group[0].startswith('- input: ')
 def _record_names(body: str) -> set:
     """The ``name`` of every canonical input record stated in ``body``."""
     names = set()
     for group in input_groups(body or ''):
-        if len(group) != 1 or not group[0].startswith('- input: '):
+        if not _is_record(group):
             continue
         try:
             record = parse_canonical_json(group[0][len('- input: '):])
@@ -75,7 +87,7 @@ def _inherited_input_lines(own: str, inherited: str) -> list:
     names = _record_names(own)
     lines = []
     for group in input_groups(inherited or ''):
-        if len(group) != 1 or not group[0].startswith('- input: '):
+        if not _is_record(group):
             continue
         try:
             record = parse_canonical_json(group[0][len('- input: '):])
@@ -290,5 +302,6 @@ def _gate_under_run_lock(rest, head_probe=None):
 __all__ = (
     '_cmd_gate', '_gate_body', '_gate_input', '_gate_sections', '_gate_stub',
     '_gate_under_run_lock', '_inherited_input_lines', '_input_name',
-    '_listed_items', '_pack_domain', '_record_names', '_with_inherited_inputs',
+    '_is_record', '_listed_items', '_pack_domain', '_record_names',
+    '_with_inherited_inputs',
 )

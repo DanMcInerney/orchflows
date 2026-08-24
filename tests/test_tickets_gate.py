@@ -251,6 +251,31 @@ class GateInheritsRootAuthorityTest(unittest.TestCase):
                     for record in ROOT_INPUTS:
                         self.assertIn(record, carried)
 
+    def test_a_note_under_the_records_costs_the_root_no_record(self):
+        """A root may end `## Fixed inputs` with prose, and 16 of this
+        host's 90 root tickets do. Nothing refuses that shape: the ticket
+        contract passes it and `gate` writes the whole family without
+        complaint.
+
+        `input_groups` appends every later non-blank line to the group the
+        last `- ` opened, so the final record and that prose arrive as one
+        two-line group. Skipping the group whole would drop a record the
+        root plainly states -- and drop it silently, which is the half that
+        matters for a gate: the stub would grade a delivery holding less
+        authority than the root granted, and nothing would say so.
+        """
+
+        note = "  (a note the author left under the records)"
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = make_run(
+                use_sink(Path(tmp)), root_text(inputs=ROOT_INPUTS + [note])
+            )
+            for stub_id, text in self.stubs(run_dir, gate()).items():
+                with self.subTest(stub=stub_id):
+                    carried = input_lines(text)
+                    for record in ROOT_INPUTS:
+                        self.assertIn(record, carried)
+
     def test_a_root_that_holds_no_authority_lends_the_stubs_none(self):
         """Inheritance copies; it never invents what the root never held."""
 
