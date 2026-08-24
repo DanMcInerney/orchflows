@@ -18,8 +18,8 @@ longer written by hand at all.
 `tests/test_tickets_issue_cases/admission_producers.py` the live cases
 for the three sites now stamping through them -- so the entries and their
 consumers are graded together here without a second copy of either.
-`DraftValidateTest` grades its entry alone: `tickets_generations.py`'s
-draft validator is rewired by its own item.
+`DraftValidateTest` grades that entry and, its own item having rewired
+`tickets_generations.py`, the draft validator now reading it.
 """
 
 from __future__ import annotations
