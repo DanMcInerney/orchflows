@@ -153,11 +153,21 @@ class CutPricingScreenTest(unittest.TestCase):
         return tmp
 
     def test_an_output_change_names_the_ungranted_test_that_pins_the_output(self):
-        """Run 20260824T222500Z's own cut: `00-root.06` changes the filing
-        shapes `scripts/tickets_packet.py` emits, and those shapes are pinned
-        in `tests/test_tickets_cases/cli_help.py`, which no unit's grant
-        covers. cutcheck exited 0 on that cut because this screen did not
-        exist; the same wedge had been paid one run earlier.
+        """The class modelled once, and named where it was measured.
+
+        Run 20260824T222500Z's own cut carried it at three of twelve units,
+        one mechanism each time -- the source granted, the check pinning what
+        that source emits left outside every grant:
+
+        - `00-root.06` changes the filing shapes `scripts/tickets_packet.py`
+          emits, pinned at `tests/test_tickets_cases/cli_help.py:140`;
+        - `00-root.01`'s doc-paths change trips a topology pin in
+          `tests/test_contracts_cases/topology.py`;
+        - `00-root.08`'s `tickets_transitions` edit trips the import census in
+          `tests/test_tickets_cases/run_state_resolution.py` -- the same
+          census file that caught the preceding run twice.
+
+        cutcheck exited 0 on all three because this screen did not exist.
         """
 
         found = self._findings(tree=self._tree_pinning_output(), objective=self.EMITS)

@@ -20,7 +20,9 @@ Each is one sentence:
    moves the measuring onto the unit.
 4. ``_unpinned_output`` -- an objective changing what a granted module emits,
    while the checks pinning that output lie outside the grant. The item cannot
-   land without breaking them and is not licensed to repair them.
+   land without breaking them and is not licensed to repair them. This is the
+   most frequent of the six: one run carried it at three of twelve units at
+   once, and the run before that paid it twice against a single census file.
 5. ``_pack_admissible`` -- a pack-stamped root whose own workspace cell forbids
    the isolation the root fixes. The executor the pack binds cannot be admitted
    under it, and the contradiction surfaces one respec cycle at a time.
