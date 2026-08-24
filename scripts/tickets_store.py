@@ -335,13 +335,20 @@ def _read_identity(path: Path):
             return (data, None)
         reason = 'the document is not an object'
     return (None, {'error': f"run identity {path} is unreadable ({reason}); repair or remove it. Refusing to overwrite a run's identity with a guess"})
-def _identity_document(run: str, path: Path, project: dict, workspace: str, now):
-    """``(document_to_write, error)`` — create, extend, or refuse.
+def _identity_document(run: str, path: Path, project: dict, workspace: str, now, *, authoritative: bool = False):
+    """``(document_to_write, error)`` — create, extend, correct, or refuse.
 
-    ``project`` and ``opened_at`` are the first writer's and are never
-    rewritten; a later workspace of the same project only appends itself.
-    ``None`` for both means the identity is already correct and no write is
-    owed, so an ordinary note does not rewrite this file every time.
+    ``opened_at`` is the first writer's and is never rewritten; a later
+    workspace of the same project only appends itself. ``None`` for both
+    means the identity is already correct and no write is owed, so an
+    ordinary note does not rewrite this file every time.
+
+    ``project`` is the first writer's *only* while nothing better is
+    known. ``authoritative`` says it came from the run's root ticket
+    instead, and then it corrects a disagreeing record rather than being
+    refused by it: whoever wrote to the sink first does not thereby own
+    which project a run belongs to, which is exactly how a run came to be
+    attributed to the checkout a session happened to be standing in.
     """
     existing, error = _read_identity(path)
     if error is not None:
@@ -354,8 +361,13 @@ def _identity_document(run: str, path: Path, project: dict, workspace: str, now)
     recorded = existing.get('project')
     if isinstance(recorded, dict) and (recorded.get('root') or recorded.get('origin')):
         if not _same_project(recorded, project):
-            theirs, mine = (_project_key(recorded), _project_key(project))
-            return (None, {'error': f"run '{run}' is held by project {theirs}; this write comes from project {mine}. One run id is one project's, so nothing was written. Use a different run id, or write from a workspace of {theirs}"})
+            if not authoritative:
+                if __package__:
+                    from .tickets_project import CREATE_REMEDY, held_by
+                else:
+                    from tickets_project import CREATE_REMEDY, held_by
+                return (None, {'error': held_by(run, recorded, project, CREATE_REMEDY)})
+            updated['project'] = project
     else:
         updated['project'] = project
         updated.setdefault('run', run)
@@ -416,7 +428,16 @@ def _identity_update(run: str, now, runs_root=None):
         return (None, None, {'error': NO_SINK_ERROR})
     run_dir = runs_root / run
     project, workspace = _writer_identity()
-    document, refusal = _identity_document(run, run_dir / RUN_IDENTITY_NAME, project, workspace, now)
+    # The run belongs to the project its root ticket's workspace names; the
+    # caller's own directory decides only when the cut has named none. The
+    # workspace entry stays the caller's either way -- `workspaces[]` answers
+    # where a run has been written from, which is not the same question.
+    if __package__:
+        from .tickets_project import root_ticket_project
+    else:
+        from tickets_project import root_ticket_project
+    named = root_ticket_project(run)
+    document, refusal = _identity_document(run, run_dir / RUN_IDENTITY_NAME, named or project, workspace, now, authoritative=named is not None)
     return (run_dir, document, refusal)
 def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
     """Prepare the one timing write for a worklog-terminal transition.
