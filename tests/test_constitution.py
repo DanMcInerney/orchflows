@@ -50,6 +50,13 @@ REMOVED = {
 # and the test that separates them.
 SCAFFOLDING = ("scaffolding", "expire", "incentive", "permanent", "perfect executor")
 
+# Those five phrases are all present in the principle's exact inversion,
+# so presence alone pins nothing: which guard is the scaffolding one is
+# the whole content. Each pair must be stated by one clause of the
+# principle -- read as a pairing, never as a sentence fragment, so a
+# lawful rewording inside either clause still passes.
+PAIRED = (("model limitation", "scaffolding"), ("incentive", "permanent"))
+
 # The principle block was 20 lines at the baseline this run amended
 # (808a038). The amendment is licensed as net near-zero, so the block
 # is held to that count plus the drift a three-line principle costs;
@@ -115,6 +122,20 @@ def scaffolding_principle(text):
     return None
 
 
+def misplaced_pairings(text):
+    """Every scaffolding pairing no single clause of the principle states."""
+
+    body = scaffolding_principle(text)
+    if body is None:
+        return []
+    clauses = [clause for clause in re.split(r"[;.]", body) if clause.strip()]
+    return [
+        "{0} -> {1}".format(subject, verdict)
+        for subject, verdict in PAIRED
+        if not any(subject in clause and verdict in clause for clause in clauses)
+    ]
+
+
 def missing_facts(text):
     """Every amended principle's fact the Constitution no longer carries."""
 
@@ -143,6 +164,10 @@ def missing_facts(text):
             for phrase in SCAFFOLDING
             if phrase not in scaffolding
         )
+    missing.extend(
+        "scaffolding pairing: {0}".format(pairing)
+        for pairing in misplaced_pairings(text)
+    )
     return missing
 
 
@@ -232,6 +257,38 @@ class AmendedPrinciplesTest(unittest.TestCase):
                 # whole principle, which is the same fact lost.
                 expected = "absent" if phrase == "scaffolding" else phrase
                 self.assertIn("scaffolding: " + expected, missing_facts(without))
+
+        # The sixth fact is not a word but the pairing of two: which guard
+        # expires and which stays. A copy carrying all five phrases in the
+        # opposite arrangement says the reverse of the amendment and drops
+        # that fact whole, so it belongs to this check. It is a subtest
+        # rather than its own method because the module's ten identities
+        # are pinned in `tests/serial_compat_manifest.json`.
+        with self.subTest(phrase="the pairing"):
+            number = next(
+                (
+                    n
+                    for n, body in principles(self.text).items()
+                    if "scaffolding" in body.lower()
+                ),
+                None,
+            )
+            self.assertIsNotNone(number, "no scaffolding principle to invert")
+            inverted = self.text.replace(
+                principle_lines(self.text, number),
+                "{0}. A guard against a model limitation is permanent; a\n"
+                "    guard against incentives is scaffolding and expires\n"
+                "    with the limitation. The test is whether a perfect\n"
+                "    executor would still need it.".format(number),
+            )
+            self.assertIn("limitation is permanent", principles(inverted)[number])
+            self.assertEqual(
+                [
+                    "scaffolding pairing: model limitation -> scaffolding",
+                    "scaffolding pairing: incentive -> permanent",
+                ],
+                missing_facts(inverted),
+            )
 
 
 class NetLinesTest(unittest.TestCase):
