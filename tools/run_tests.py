@@ -432,10 +432,9 @@ def main(argv=None) -> int:
     import_root, prefix, discovered = discover(tests_dir)
     if not discovered:
         raise SystemExit("run_tests: no test_*.py under " + str(tests_dir))
-    if args.scope:
-        args.modules = run_tests_scope.select(args.scope, tests_dir, discovered)
-    # After the scope is applied, never before it: the admission a run owes
-    # is the one over the sources it actually named.
+    # Over the sources this run named rather than the whole tree, and ahead of
+    # the selection: a scope reaching no module exits 0 in there, which would
+    # carry the admission the run still owes away with it.
     admitted = run_tests_scope.admission_paths(
         args.scope, args.modules, tests_dir == DEFAULT_TESTS_DIR.resolve())
     if admitted is not None:
@@ -449,6 +448,8 @@ def main(argv=None) -> int:
             emit(size_check.stdout.decode("utf-8", "replace"))
             print("FAILED: tracked source-size admission")
             return 1
+    if args.scope:
+        args.modules = run_tests_scope.select(args.scope, tests_dir, discovered)
     selected = (
         [resolve(name, discovered, prefix) for name in args.modules] if args.modules else discovered
     )

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -205,6 +206,50 @@ class TestSelectionIsAnAnswerNotASample(unittest.TestCase):
         with contextlib.redirect_stdout(stream):
             self.select(answer(["tests.test_alpha"]))
         self.assertNotIn("running", stream.getvalue())
+
+
+class TestNothingSelectedStillOwesItsAdmission(unittest.TestCase):
+    """A scope that reaches no module still owes the admission it named.
+
+    Measured at 5f51e54: ``--scope`` over one committed 603-line source no
+    test covers printed "no affected module" and exited 0, never reaching
+    the size check -- which the whole-tree admission this branch replaced
+    had run. An admission a run skips is this module's own defect class, a
+    narrower question than the caller asked wearing a success status.
+    """
+
+    def main_over(self, status):
+        """``main`` on a scope reaching nothing, its size check recorded."""
+
+        self.calls = []
+
+        def size_check(command, **kwargs):
+            self.calls.append(list(command))
+            return subprocess.CompletedProcess(list(command), status, b"over cap\n")
+
+        with mock.patch.object(
+            run_tests_scope.affected_tests, "affected",
+            return_value=answer(no_tests=["scripts/over_cap.py"]),
+        ), mock.patch.object(
+            run_tests_scope.affected_tests, "git", return_value="scripts/over_cap.py\n"
+        ), mock.patch.object(run_tests.subprocess, "run", side_effect=size_check):
+            with contextlib.redirect_stdout(io.StringIO()):
+                return run_tests.main(["--scope", "scripts/over_cap.py"])
+
+    def test_an_empty_selection_still_admits_the_paths_it_named(self):
+        self.assertEqual(1, self.main_over(1))
+        self.assertEqual(1, len(self.calls))
+        self.assertIn("check_source_sizes.py", self.calls[0][1])
+        self.assertIn("scripts/over_cap.py", self.calls[0])
+
+    def test_the_admission_precedes_the_selections_own_exit(self):
+        """``select`` exits 0 the moment a scope reaches no module, so an
+        admission sequenced after it does not run late -- it never runs."""
+
+        with self.assertRaises(SystemExit) as raised:
+            self.main_over(0)
+        self.assertEqual(0, raised.exception.code)
+        self.assertEqual(1, len(self.calls))
 
 
 if __name__ == "__main__":
