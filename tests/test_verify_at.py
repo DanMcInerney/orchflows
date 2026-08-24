@@ -303,9 +303,14 @@ class ExitStatusTest(VerifyAtCase):
         Reserving it buys a great deal and cannot buy this: a command is free
         to exit 125 too, and then the status alone says nothing. Pretending
         otherwise is how a refusal gets read as a verdict. What does separate
-        them is the report -- a run names the worktree it stood in, a refusal
-        names why it never got one -- so that difference is pinned here rather
+        them is the report -- a run reports a status it is carrying, a refusal
+        reports why there is none -- so that difference is pinned here rather
         than left as prose.
+
+        The anchor is `verify_at: exit`, and deliberately not the word
+        "worktree": this case's root directory is itself named `worktrees`, so
+        an assertion on that word passes on the path alone and would survive
+        the report being reworded out from under it.
         """
 
         ran = self.verify_at(
@@ -315,8 +320,8 @@ class ExitStatusTest(VerifyAtCase):
         refused = self.verify_at("no-such-revision", [sys.executable, "emitter.py"])
         self.assertEqual(verify_at.REFUSAL_STATUS, ran.returncode)
         self.assertEqual(verify_at.REFUSAL_STATUS, refused.returncode)
-        self.assertIn("worktree", self.text(ran.stderr))
-        self.assertNotIn("worktree", self.text(refused.stderr))
+        self.assertIn("verify_at: exit", self.text(ran.stderr))
+        self.assertNotIn("verify_at: exit", self.text(refused.stderr))
         self.assertIn(OUT_TOKEN, self.text(ran.stdout))
         self.assertNotIn(OUT_TOKEN, self.text(refused.stdout))
 
