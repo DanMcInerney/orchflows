@@ -4,20 +4,19 @@ import json
 from datetime import datetime, timezone
 if __package__:
     from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, instruction_words, ticket_defects
+    from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
+    from .tickets_input_producers import render_ticket_inputs
+    from .tickets_transitions import pending_admission
 else:
     from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, instruction_words, ticket_defects
-if __package__:
-    from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
-else:
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
-if __package__:
-    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2, ticket_cohort, valid_cohort
-    from .tickets_input_producers import render_ticket_inputs
-else:
-    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2, ticket_cohort, valid_cohort
+    from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
+    from tickets_transitions import pending_admission
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
-def _invalidate_assignment(text): v2 = is_v2(_parse_frontmatter(text)); text = _set_frontmatter_field(text, 'admission', ADMISSION_V2_PENDING if v2 else ADMISSION_PENDING); return _remove_frontmatter_field(text, 'assignment_seal') if v2 else text
+def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
+def _invalidate_assignment(text): data = _parse_frontmatter(text); text = _set_frontmatter_field(text, 'admission', _pending_admission(data)); return _remove_frontmatter_field(text, 'assignment_seal') if is_v2(data) else text
 def _cohort_field(text, cohort): return _set_frontmatter_field(text, 'cohort', cohort) if cohort else _remove_frontmatter_field(text, 'cohort')
 NEW_USAGE = 'new <run> <id> --executor E --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
 NEW_DEFAULT_BOUND = f'{DEFAULT_BOUND_MINUTES}m'
@@ -158,7 +157,8 @@ def _cmd_new(rest):
     if not valid_cohort(cohort):
         return {'error': f"--cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     dependencies = _split_commas(depends_on)
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort, 'executor': executor, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'cohort': cohort, 'executor': executor, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
+    fields['admission'] = _pending_admission(fields)
     sections = [('Objective', objective), ('Fixed inputs', '\n'.join((_input_record(item, position) for position, item in enumerate(inputs, start=1))) or NEW_DEFAULT_INPUTS), ('Completion test', '\n'.join((f'- {item}' for item in criteria))), ('Return fields', return_fields or NEW_DEFAULT_RETURN_FIELDS), ('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
     text, input_error = render_ticket_inputs(_render_ticket(fields, sections), run)
     if input_error is not None:
@@ -196,7 +196,7 @@ def _place_ticket(run: str, source: str, declared_id=None, cohort=None):
     if cohort and not valid_cohort(cohort):
         return {'error': f"--cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     text = _set_frontmatter_field(text, 'status', 'pending')
-    text = _set_frontmatter_field(text, 'admission', ADMISSION_PENDING)
+    text = _set_frontmatter_field(text, 'admission', _pending_admission(data))
     text = _cohort_field(text, cohort)
     text = _set_frontmatter_field(text, 'claimed_by', '')
     text = _set_frontmatter_field(text, 'claimed_at', '')
@@ -389,7 +389,7 @@ def _recut_under_run_lock(rest):
     for key in ('checked_by', 'workspace_branch', 'workspace_baseline', 'granted_scope', 'granted_by', 'granted_at'):
         candidate = _remove_frontmatter_field(candidate, key)
     candidate = _set_frontmatter_field(candidate, 'status', 'pending')
-    candidate = _set_frontmatter_field(candidate, 'admission', ADMISSION_PENDING)
+    candidate = _set_frontmatter_field(candidate, 'admission', _pending_admission(candidate_data))
     candidate = _cohort_field(candidate, new_cohort)
     candidate = _set_frontmatter_field(candidate, 'claimed_by', '')
     candidate = _set_frontmatter_field(candidate, 'claimed_at', '')
@@ -409,7 +409,7 @@ def _recut_under_run_lock(rest):
     failure = _replace_and_invalidate(target.parent, snapshot, ticket_id, candidate, {value for value in (old_cohort, new_cohort) if value})
     if failure is not None:
         return failure
-    return {'recut': {'run': run, 'id': ticket_id, 'path': str(target), 'cohort': new_cohort or None, 'status': 'pending', 'admission': ADMISSION_PENDING}}
+    return {'recut': {'run': run, 'id': ticket_id, 'path': str(target), 'cohort': new_cohort or None, 'status': 'pending', 'admission': _pending_admission(candidate_data)}}
 def _ceiling_error(subject: str, ticket_id: str, text: str):
     """The refusal a ticket over the instruction ceiling gets, or ``None``.
 

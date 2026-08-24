@@ -14,10 +14,12 @@ recut`. The fix is the blanking; the guard is that the sentences are no
 longer written by hand at all.
 
 `TransitionTableTest` and `LifecycleCommandsTest` are this item's.
-`StampingTest` and `DraftValidateTest` grade the version-aware entries
-their own owners consume -- `scripts/tickets_issue.py`'s stamping sites
-and `scripts/tickets_generations.py`'s draft validator -- which are
-rewired by their own items; here the entries are asserted, not the sites.
+`StampingTest` grades the version-aware entries, and inherits from
+`tests/test_tickets_issue_cases/admission_producers.py` the live cases
+for the three sites now stamping through them -- so the entries and their
+consumers are graded together here without a second copy of either.
+`DraftValidateTest` grades its entry alone: `tickets_generations.py`'s
+draft validator is rewired by its own item.
 """
 
 from __future__ import annotations
@@ -28,6 +30,7 @@ import unittest
 from pathlib import Path
 
 from scripts import tickets_admission, tickets_format, tickets_transitions
+from tests.test_tickets_issue_cases import admission_producers
 from tests.test_tickets_cases.admission_v1 import initialize_git_fixture, v1_ticket
 from tests.test_tickets_cases.common import backdate, make_tickets, run_cmd, use_sink
 
@@ -259,8 +262,9 @@ class TransitionTableTest(unittest.TestCase):
         self.assertIn("ticket: /tmp/T1.md", text)
 
 
-class StampingTest(unittest.TestCase):
-    """The version-aware entry `scripts/tickets_issue.py` stamps with."""
+class StampingTest(admission_producers.ProducerStampingTest):
+    """The version-aware entry `scripts/tickets_issue.py` stamps with, and
+    -- inherited -- every producer path that stamps through it live."""
 
     def test_each_version_stamps_its_own_pending_sentinel(self):
         self.assertEqual(
