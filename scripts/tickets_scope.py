@@ -17,11 +17,11 @@ from pathlib import Path
 if __package__:
     from . import tickets_store as _store
     from .tickets_format import _parse_frontmatter, _scope_entries, parse_mutations
-    from .tickets_inputs import is_admitted, parse_input_records
+    from .tickets_inputs import TERMINAL, is_admitted, parse_input_records
 else:  # flat installed script family
     import tickets_store as _store
     from tickets_format import _parse_frontmatter, _scope_entries, parse_mutations
-    from tickets_inputs import is_admitted, parse_input_records
+    from tickets_inputs import TERMINAL, is_admitted, parse_input_records
 
 
 MANIFEST_PATH = ".orchflows/scope-edges.json"
@@ -242,6 +242,29 @@ def _cycle_nodes(graph):
 
 ROOT_COHORT_PREFIX = "v1:root:"
 GATE_INFIX = ".gate."
+V2_FIELDS = ("root_generation", "cut_generation", "ownership_regions", "assignment_seal")
+
+
+def _closure_key(ticket_id, data):
+    """The cut whose mutation plans this ticket is graded against.
+
+    A stamped cohort names that cut and keeps naming it, so every grouping a
+    cohort ever decided is exactly what it was.  A v2 ticket stamps none --
+    v2 freezes a cut by its sealed generation, not by a cohort string -- and
+    reading the absent field as ``""`` made every cohortless v2 ticket in a
+    run one closure, so a lawful ticket inherited its siblings' mutation
+    findings and was refused admission for another ticket's defect.  A sealed
+    v2 ticket is therefore grouped by ``cut_generation``; one not yet sealed
+    names no cut at all, so its closure is itself.  The version test repeats
+    ``tickets_admission.is_v2`` rather than importing it because admission
+    composes this module, and the dependency runs one way.
+    """
+
+    cohort = str(data.get("cohort") or "")
+    if cohort or not any(key in data for key in V2_FIELDS):
+        return f"cohort:{cohort}"
+    generation = str(data.get("cut_generation") or "")
+    return f"cut:{generation}" if generation else f"unsealed:{ticket_id}"
 
 
 def _companion_owners(cohort, members):
@@ -268,16 +291,29 @@ def _companion_owners(cohort, members):
 
 
 def grade_closure(ticket_id, text, siblings, edges):
-    """Grade every explicit mutation in this ticket's cohort."""
+    """Grade every explicit mutation in this ticket's cut.
+
+    Membership is the live members of one cut.  A terminal member's plan was
+    already spent under the authority it was worked with, so counting it here
+    reports a finished unit and a pending one as two owners of the one
+    companion the pending unit still has to write.  The ticket being graded is
+    always a member: its own plan is the authority under grade.
+    """
 
     current = _parse_frontmatter(text)
     cohort = str(current.get("cohort") or "")
     member_texts = dict(siblings)
     member_texts[ticket_id] = text
-    members = {
+    parsed = {
         member_id: _parse_frontmatter(member_text)
         for member_id, member_text in member_texts.items()
-        if str(_parse_frontmatter(member_text).get("cohort") or "") == cohort
+    }
+    key = _closure_key(ticket_id, parsed[ticket_id])
+    members = {
+        member_id: data
+        for member_id, data in parsed.items()
+        if _closure_key(member_id, data) == key
+        and (member_id == ticket_id or str(data.get("status") or "") not in TERMINAL)
     }
     findings, plans, authorized = [], {}, {}
     for member_id in sorted(members):
