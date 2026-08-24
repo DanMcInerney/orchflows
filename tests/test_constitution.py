@@ -152,6 +152,42 @@ def section(text, heading):
     return re.sub(r"\s+", " ", text.split(heading, 1)[-1].split("\n## ", 1)[0])
 
 
+def preamble(text):
+    """AGENTS.md's write-time path: what precedes its first heading."""
+
+    return text.split("\n## ", 1)[0]
+
+
+def missing_pointers(agents_text, documentation_text):
+    """Every anchor a write-time surface no longer carries.
+
+    Both pointer checks and their can-fail mutant read through this one
+    reader, so a surface mutated beside the tree is answered by exactly
+    the code the green checks trust.
+    """
+
+    surfaces = (
+        (
+            "AGENTS.md",
+            preamble(agents_text),
+            ("docs/library-review.md", "constitution"),
+        ),
+        (
+            "docs/documentation.md 6",
+            section(documentation_text, BOOTSTRAP),
+            ("library-review.md", "constitution"),
+        ),
+    )
+    missing = []
+    for label, body, anchors in surfaces:
+        missing.extend(
+            "{0}: {1}".format(label, anchor)
+            for anchor in anchors
+            if anchor not in body.lower()
+        )
+    return missing
+
+
 class AmendedPrinciplesTest(unittest.TestCase):
     """The Constitution carries the three amended principles."""
 
@@ -225,25 +261,55 @@ class NetLinesTest(unittest.TestCase):
 class WriteTimePointerTest(unittest.TestCase):
     """Both write-time surfaces name the Constitution."""
 
+    def setUp(self):
+        self.agents = AGENTS.read_text(encoding="utf-8")
+        self.documentation = DOCUMENTATION.read_text(encoding="utf-8")
+
+    def missing_for(self, label):
+        """One surface's missing anchors, off the shared reader."""
+
+        return [
+            entry
+            for entry in missing_pointers(self.agents, self.documentation)
+            if entry.startswith(label + ":")
+        ]
+
     def test_agents_md_points_at_the_constitution(self):
         """The standards owner an agent loads before writing names it."""
 
-        preamble = AGENTS.read_text(encoding="utf-8").split("\n## ", 1)[0]
-        self.assertIn("docs/library-review.md", preamble)
-        self.assertIn("Constitution", preamble)
+        self.assertEqual([], self.missing_for("AGENTS.md"))
 
     def test_documentation_lists_it_among_the_day_zero_artifacts(self):
-        body = section(DOCUMENTATION.read_text(encoding="utf-8"), BOOTSTRAP)
-        self.assertIn("constitution", body.lower())
-        self.assertIn("library-review.md", body)
+        self.assertEqual([], self.missing_for("docs/documentation.md 6"))
 
     def test_a_copy_without_either_pointer_fails_the_check(self):
-        """The can-fail direction drops the path from each surface."""
+        """The can-fail direction drops the path from each surface.
 
-        blinded = AGENTS.read_text(encoding="utf-8").replace("docs/library-review.md", "")
-        self.assertNotIn("docs/library-review.md", blinded.split("\n## ", 1)[0])
-        dropped = DOCUMENTATION.read_text(encoding="utf-8").replace("library-review.md", "")
-        self.assertNotIn("library-review.md", section(dropped, BOOTSTRAP))
+        Asserting only that a deleted substring is gone would hold
+        against any text at all -- this repository included, before
+        either pointer existed. The mutant is answered by
+        `missing_pointers`, the same reader both checks above assert
+        through, so a reader that stopped seeing a surface fails here.
+        """
+
+        self.assertEqual([], missing_pointers(self.agents, self.documentation))
+        blinded = self.agents.replace("docs/library-review.md", "")
+        self.assertEqual(
+            ["AGENTS.md: docs/library-review.md"],
+            missing_pointers(blinded, self.documentation),
+        )
+        dropped = self.documentation.replace("library-review.md", "")
+        self.assertEqual(
+            ["docs/documentation.md 6: library-review.md"],
+            missing_pointers(self.agents, dropped),
+        )
+        self.assertEqual(
+            [
+                "AGENTS.md: docs/library-review.md",
+                "docs/documentation.md 6: library-review.md",
+            ],
+            missing_pointers(blinded, dropped),
+        )
 
 
 if __name__ == "__main__":
