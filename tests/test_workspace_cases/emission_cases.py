@@ -139,9 +139,34 @@ class TestBytecodeIsEmissionNotBreach(unittest.TestCase):
             body = payload_of(done)
             self.assertEqual(0, done.returncode, f"{done.stdout}{done.stderr}")
             self.assertEqual("pass", body["check"]["verdict"])
-            # reported, never silently dropped
-            self.assertTrue(body["check"]["emission"],
-                            "the emitted bytes were classified but not reported")
+            # Membership, not existence: a truthy check passes just as well on
+            # a report that named the wrong path or swept in a real breach.
+            # The value pins git's own granularity too -- a wholly untracked
+            # directory is one porcelain entry, so the report names the
+            # directory and not the bytes inside it.
+            self.assertEqual(["scratch/__pycache__/"], body["check"]["emission"],
+                             "the emitted bytes were classified but not reported")
+
+    def test_bytecode_outside_a_pycache_directory_is_still_emission(self):
+        """Carrier census: every other case here is caught by the
+        ``__pycache__`` segment *and* by the extension, so deleting the
+        extension arm survives all of them and the arm reads as dead. It is
+        not: ``compileall -b`` and legacy layouts write ``a.pyc`` beside
+        ``a.py`` with no cache directory at all, and only this case fails
+        when that arm is dropped."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir, base, worktree = _isolated(tmp)
+            self._ticket(run_dir, "T1")
+            (worktree / "scratch" / "a.pyc").write_bytes(b"\x00\x01")
+
+            done = _graded_check(main, base)
+
+            body = payload_of(done)
+            self.assertEqual(0, done.returncode, f"{done.stdout}{done.stderr}")
+            self.assertEqual("pass", body["check"]["verdict"])
+            self.assertEqual(["scratch/a.pyc"], body["check"]["emission"])
 
     def test_bytecode_the_baseline_itself_tracks_is_still_emission(self):
         """The wild instance: the pinned verifier failed on bytecode the
