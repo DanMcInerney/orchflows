@@ -62,6 +62,15 @@ VCS_PROSE_TOKENS = (
 GLOB_CHARS_RE = re.compile(r'[*?\[\]]')
 PLACEHOLDER_CHARS_RE = re.compile(r'[<>]')
 EXTENSION_RE = re.compile(r'\.[A-Za-z0-9]{1,5}$')
+# The other half of that reading: which clause of an exclusion the path sits in.
+# A prohibition names the path it forbids; a proviso names one the item must
+# re-pin or wait on *in order to* act -- "with tests/pins.json re-pinned" grants
+# pins.json rather than reserving it. Adjacency is the whole rule, as
+# cutcheck's is: a marker anywhere in the sentence would drop live
+# contradictions. Restated, never imported: the architecture map forbids this
+# family importing cutcheck, so the agreement pin is what holds the two equal.
+PERMISSION_RE = re.compile(r'\b(?:with|once|after|provided|unless|except)\s+$', re.I)
+PERMISSION_WINDOW = 24
 # The admission codes whose repair is exactly one mechanical rewrite.
 FIXABLE_ADMISSION = {
     'input-json-noncanonical': 're-emit the record as canonical JSON',
@@ -108,6 +117,31 @@ def _ceiling_finding(ticket_id: str, text: str, data: dict):
     )
 
 
+def _plain(path: str) -> str:
+    """One path's plain spelling: ``./x`` and ``x`` name the same file."""
+    text = str(path).strip()
+    while text[:2] == './':
+        text = text[2:]
+    return text
+
+
+def _prohibits(action: str, target: str) -> bool:
+    """Is ``target`` what this exclusion forbids, or a proviso attached to it?
+
+    Named once outside a permitting clause, the path is forbidden: an exclusion
+    that forbids a path in one clause and permits it in another is still
+    forbidding it, so the reading keeps the prohibition.
+    """
+    start = 0
+    while True:
+        at = action.find(target, start)
+        if at < 0:
+            return False
+        if not PERMISSION_RE.search(action[max(0, at - PERMISSION_WINDOW):at]):
+            return True
+        start = at + 1
+
+
 def _path_tokens(entry: str) -> list:
     """The tokens in one prose action that name a path."""
     found = []
@@ -117,8 +151,9 @@ def _path_tokens(entry: str) -> list:
             continue
         if PLACEHOLDER_CHARS_RE.search(token):
             continue
-        if '/' in token or EXTENSION_RE.search(token):
-            found.append(token)
+        plain = _plain(token)
+        if plain and ('/' in token or EXTENSION_RE.search(token)):
+            found.append(plain)
     return found
 
 
@@ -132,13 +167,19 @@ def _contradiction_findings(data: dict) -> list:
     it may make reaches exit 0. Reported here, the producer sees it while the
     draft is still a draft. Semantic on purpose: which of the two the author
     meant is a decision, so `--fix` may not pick one.
+
+    The path has to be the one the exclusion *forbids*: named under a proviso
+    it is granted, not reserved, and `./x` and `x` are one path on both sides.
     """
     scope = _scope_entries(data.get('write_scope'))
     findings = []
     for action in _scope_entries(data.get('excluded_actions')):
         for target in _path_tokens(action):
+            if not _prohibits(action, target):
+                continue
             for entry in scope:
-                if path_covers(target, entry) or path_covers(entry, target):
+                plain = _plain(entry)
+                if path_covers(target, plain) or path_covers(plain, target):
                     findings.append(_finding(
                         'scope-contradiction', f'excluded_actions: {action} | {entry}',
                     ))

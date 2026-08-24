@@ -1,8 +1,8 @@
 """`tickets.py lint`: every grader at once, and `--fix` on the syntactic half.
 
-One module rather than a case package: this shard's cases are all one
-subject, and the tables case is here because the tables and the subcommand
-that extends them land together.
+Mostly one module: this shard's cases are one subject, and the tables case
+is here because the tables and the subcommand that extends them land
+together. Family 3's two-reader law is the exception, in a case module.
 """
 
 import json
@@ -15,6 +15,7 @@ from scripts.tickets_format import _parse_frontmatter, _sections
 from tests.test_tickets_cases.admission_v1 import initialize_git_fixture
 from scripts.tickets_store import _runs_root
 from tests.test_tickets_issue_cases.generation_lifecycle import ticket as v2_ticket
+from tests.test_tickets_lint_cases.family3 import *  # noqa: F401,F403  family 3's two-reader law
 
 # Two readings of one frozen ticket used to disagree; both halves land in the
 # three classes at the foot of this module. Lint graded with no context, so the
@@ -438,10 +439,10 @@ class ScopeContradictionLintTest(LintFixture):
     def test_lint_and_cutcheck_report_the_same_contradictions(self):
         """One judgment, two readers: the finding sets must not drift apart."""
         for excluded in (CONTRADICTED, "vcs.integrate, vcs.push, vcs.open-pr",
-                         "vcs.push, never write docs/other.md",
+                         "vcs.push, never write docs/other.md", "vcs.push, with scratch/T1.txt re-pinned", "vcs.push, once scratch/T1.txt is sealed",
                          "vcs.push, never write scratch/T1.txt, and never write scratch/T1.txt",
                          "vcs.push, never write scratch/T1.txt., never write `scratch/T1.txt`, never write scratch\\T1.txt, never write scratch/",
-                         "vcs.push, never write ./scratch/T1.txt, never write scratch/*.txt, never write <ws>/scratch/T1.txt, never write SCRATCH/T1.TXT, never write scratch/T1.txt.bak, never write scratch/sub/T1.txt"):
+                         "vcs.push, never write ./scratch/T1.txt, never write ././scratch/T1.txt, never write scratch/*.txt, never write <ws>/scratch/T1.txt, never write SCRATCH/T1.TXT, never write scratch/T1.txt.bak, never write scratch/sub/T1.txt"):
             text = draft(self.baseline, excluded=excluded)
             path = self.write_draft(text, "case.md")
             mine = {item["message"].split(": ", 1)[1]
