@@ -122,7 +122,11 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
     def test_the_exemption_is_one_live_site_and_not_a_blanket(self):
         """An exemption that outlives its sentence is a hole. Each pair names
         a file that still carries that token, and `tests/pins.json` erroring
-        in the fixture above is the proof the pass is per-site, not per-name.
+        in the fixture above is the proof the pass is per-file, not per-name.
+
+        Per-file is the honest word: the key is (file, token), so this guard
+        catches the exemption outliving its sentence entirely, and does not
+        catch a second sentence in the same file reusing the token.
         """
 
         for where, token in validate.DOC_PATH_EXEMPT_SITES:
