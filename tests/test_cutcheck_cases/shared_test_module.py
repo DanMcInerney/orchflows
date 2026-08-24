@@ -22,7 +22,15 @@ NO_RESOLVER = "tests"
 # module names. The one case that asks for two disjoint sets has to keep out of
 # its own answer -- and the split falls before the suffix, because a bare base
 # name is one of the literal forms a scope path is recognized by.
-UNSHARED = "docs/vocabulary" + ".md"
+#
+# Both halves of that pair are assembled for that reason. The pair itself is
+# chosen against the resolver as it actually reads: the earlier pair was picked
+# when the resolver under-selected, and once it read honestly both halves
+# reached `tests.test_contracts` -- one through an import chain, one through a
+# literal carried by an own file of that shard. These two meet nowhere, and the
+# case proves that rather than trusting it.
+DISJOINT_LEFT = "scripts/hidden_lint" + ".py"
+DISJOINT_RIGHT = "tools/preflight" + ".py"
 
 
 def item(*scope, depends_on=()):
@@ -68,12 +76,23 @@ class SharedTestModuleTest(unittest.TestCase):
     def test_siblings_reaching_different_modules_share_nothing(self):
         """The can-fail direction: scopes whose shard sets do not meet."""
 
+        # Disjointness is measured here, not assumed, because both ways this
+        # case can rot are silent. A pair that starts meeting reports a finding
+        # and fails loudly -- that is the failure that retired the last pair.
+        # A pair that stops selecting anything shares nothing vacuously and
+        # passes, which is the one this module must not sit on: the emptiness
+        # below would then be the resolver's silence, not the scopes' answer.
+        left = cutcheck_graph._affected_modules(ROOT, [DISJOINT_LEFT])
+        right = cutcheck_graph._affected_modules(ROOT, [DISJOINT_RIGHT])
+        self.assertTrue(left, DISJOINT_LEFT)
+        self.assertTrue(right, DISJOINT_RIGHT)
+        self.assertEqual(set(), set(left) & set(right), (left, right))
         self.assertEqual(
             {},
             shared(
                 {
-                    "01-left": item("scripts/cutcheck_graph.py"),
-                    "02-right": item(UNSHARED),
+                    "01-left": item(DISJOINT_LEFT),
+                    "02-right": item(DISJOINT_RIGHT),
                 },
                 tree=ROOT,
             ),
