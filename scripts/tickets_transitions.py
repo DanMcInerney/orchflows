@@ -77,6 +77,11 @@ SEAL_REFUSED = ('recut', 'amend')
 # which is what both sites' notes forbid. So no chain ends at them: the
 # note carries the remedy, and the table declines to invent a rewrite.
 NOT_A_REMEDY = ('grant', 'check')
+# The cut-time note that holds whichever way the chain resolves: the change
+# is admissible as its own scope, sealed or not. Kept beside the rows and
+# not inside them because it names no command -- a `refusal` note is the
+# caller's half, which is exactly where `NOT_A_REMEDY`'s real remedy lives.
+CUT_QUEUE_NOTE = 'Or queue the change as its own scope.'
 # The one command that moves a status without the admission boundary, so
 # the only first step a remedy chain can take.
 _HOPS = tuple(row for row in _ROWS if row.command.startswith('set-status '))
@@ -155,6 +160,29 @@ def remedy_path(status: str, command: str, sealed: bool = False) -> tuple:
         return (hop.remedy, row.remedy)
     suspend = transition(status, set_status_command(SUSPENDED))
     return () if suspend is None else (suspend.remedy,)
+def cut_refusal(subject: str, command: str, status: str, ticket_id: str,
+                text: str, siblings: dict, note: str = None) -> str:
+    """One cut-time refusal, with the seal asked the way a remedy needs it.
+
+    `amend` and `recut` are the two commands a cohort seal gates on top of
+    the status rows, so a refusal for either has two questions to answer
+    and only looks like one: whether the status runs the command, and
+    whether the seal would still refuse it after the release the chain is
+    about to recommend. Asking the seal about the item as it stands answers
+    about the lease instead -- `sealed_after_release` is the question --
+    and a caller that asked the first question alone is how the two
+    hand-written sentences named a recut the seal refused.
+
+    Which state that really is, since one wording claimed a seal no
+    execution could find: a `v1:root:` cohort is judged on the graded
+    member alone, so releasing this item's own lease lifts it however many
+    siblings hold leases of their own. A `v1:ticket:` or `v1:batch:`
+    cohort seals on any other member, and there no release of this item's
+    lease can lift it -- that, and only that, is where the chain drops to
+    the successor path.
+    """
+    return refusal(subject, command, status, note=note,
+                   sealed=sealed_after_release(ticket_id, text, siblings))
 def refusal(subject: str, command: str, status: str, note: str = None,
             sealed: bool = False) -> str:
     """One refusal naming only what the table runs, in the order it runs.

@@ -7,13 +7,13 @@ if __package__:
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
-    from .tickets_transitions import pending_admission
+    from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal
 else:
     from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
-    from tickets_transitions import pending_admission
+    from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
 def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
 def _invalidate_assignment(text): data = _parse_frontmatter(text); text = _set_frontmatter_field(text, 'admission', _pending_admission(data)); return _remove_frontmatter_field(text, 'assignment_seal') if is_v2(data) else text
@@ -262,19 +262,18 @@ def _amend_under_run_lock(rest):
     if failure is not None:
         return failure
     frontmatter = _parse_frontmatter(text)
-    claimed_by = str(frontmatter.get('claimed_by') or '').strip()
-    if claimed_by:
-        return {'error': f"ticket {run}/{ticket_id} is claimed by '{claimed_by}': its cut-time sections are frozen once an executor is working against them (rules/verification.md §3). Queue the change as its own scope, or take the claim back first"}
-    status = str(frontmatter.get('status') or '').strip()
-    if status not in AMENDABLE_STATUSES:
-        return {'error': f"ticket {run}/{ticket_id} is '{status}': its cut-time sections are frozen outside {sorted(AMENDABLE_STATUSES)} (rules/verification.md §3). Queue the change as its own scope"}
     snapshot, failure = _exact_run_snapshot(ticket_path.parent)
     if failure is not None:
         return failure
+    status = str(frontmatter.get('status') or '').strip()
+    claimed_by = str(frontmatter.get('claimed_by') or '').strip()
+    if claimed_by or status not in AMENDABLE_STATUSES:
+        held = f"is claimed by '{claimed_by}'" if claimed_by else f"is '{status}'"
+        return {'error': cut_refusal(f'ticket {run}/{ticket_id} {held}: its cut-time sections are frozen while an executor works against them (rules/verification.md §3)', 'amend', status, ticket_id, text, snapshot, note=CUT_QUEUE_NOTE)}
     if str(frontmatter.get('checked_by') or '').strip():
         return {'error': f"ticket {run}/{ticket_id} has an immutable checked_by cut reader: further cut-time amendment is refused"}
     if cohort_sealed(ticket_id, text, snapshot):
-        return {'error': f"ticket {run}/{ticket_id} belongs to a sealed cohort: cut-time amendment is refused"}
+        return {'error': refusal(f'ticket {run}/{ticket_id} belongs to a sealed cohort', 'amend', status, note=CUT_QUEUE_NOTE, sealed=True)}
     try:
         rendered = _write_section(text, canonical, body)
     except TicketFormatError as error:
@@ -367,15 +366,15 @@ def _recut_under_run_lock(rest):
         return failure
     current_data = _parse_frontmatter(current)
     status = str(current_data.get('status') or '')
-    if status not in AMENDABLE_STATUSES:
-        return {'error': f"ticket {run}/{ticket_id} is '{status}': recut accepts only pending or ready tickets"}
     snapshot, failure = _exact_run_snapshot(target.parent)
     if failure is not None:
         return failure
+    if status not in AMENDABLE_STATUSES:
+        return {'error': cut_refusal(f"ticket {run}/{ticket_id} is '{status}'", 'recut', status, ticket_id, current, snapshot)}
     if str(current_data.get('checked_by') or '').strip():
         return {'error': f"ticket {run}/{ticket_id} has an immutable checked_by cut reader: recut is refused"}
     if cohort_sealed(ticket_id, current, snapshot):
-        return {'error': f"ticket {run}/{ticket_id} belongs to a sealed cohort: recut is refused"}
+        return {'error': refusal(f'ticket {run}/{ticket_id} belongs to a sealed cohort', 'recut', status, sealed=True)}
     candidate, failure = _read_utf8(candidate_path, 'recut candidate')
     if failure is not None:
         return failure

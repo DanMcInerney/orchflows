@@ -16,11 +16,17 @@ learned that the ticket was too long and not which section was long. The
 measured cost was two blind recut round-trips per over-ceiling ticket.
 """
 
+import tempfile
 import unittest
+from pathlib import Path
 
 from scripts import tickets as tickets_mod
-from scripts import tickets_ceiling, tickets_format
+from scripts import tickets_ceiling, tickets_format, tickets_transitions
+from tests.test_lifecycle_table import chain_commands, commands_named, v1_repo
+from tests.test_tickets_cases.common import run_cmd
 from tests.test_tickets_issue_cases.common import ceiling_ticket
+
+AMEND = ("amend", "testrun", "T1", "--section", "Objective", "--text", "A new objective.")
 
 
 class InstructionBreakdownTest(unittest.TestCase):
@@ -97,6 +103,98 @@ class CeilingArithmeticTest(unittest.TestCase):
     def test_an_instruction_at_the_ceiling_draws_no_sentence(self):
         at = tickets_ceiling.INSTRUCTION_BUDGET
         self.assertIsNone(tickets_ceiling.ceiling_sentence("the ticket", ceiling_ticket(at)))
+
+
+class CutTimeRemedyTest(unittest.TestCase):
+    """`amend` and `recut` refusals, and whether the chain they name runs.
+
+    Both were written by hand while `grant` and `claim` next door rendered
+    theirs, so both restated the table from memory -- including, at a
+    claimed ticket, the untabled `take the claim back first`.
+    """
+
+    def test_the_claimed_amend_chain_runs_under_sibling_held_leases(self):
+        """A root cohort is judged on the graded member alone.
+
+        Observed live: a member of `v1:root:00-root` was refused with the
+        release-then-recut chain while six sibling leases were held, and
+        running the chain succeeded. The seal is per-member, so sibling
+        leases are not the caller's problem and the chain is honest --
+        which this pins by executing it, not by reading it.
+        """
+
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            v1_repo(tmp, ids=("T1", "T2", "T3"), cohort="v1:root:R")
+            for tid in ("T1", "T2", "T3"):
+                self.assertNotIn(
+                    "error", run_cmd(tmp, "claim", "testrun", tid, "--by", f"agent-{tid}")
+                )
+            refused = run_cmd(tmp, *AMEND)["error"]
+            self.assertEqual(chain_commands("claimed", "amend"), commands_named(refused))
+            for step in ("set-status", "testrun", "T1", "pending"), AMEND:
+                with self.subTest(step[0]):
+                    self.assertNotIn("error", run_cmd(tmp, *step))
+
+    def test_the_sealed_amend_refusal_declines_the_chain_the_seal_refuses(self):
+        """The narrower state the old wording really described.
+
+        A `v1:batch:` cohort seals on any other member, so releasing this
+        item's own lease cannot lift it -- and the release-then-amend chain
+        that is honest one fixture over is forbidden here. The refusal must
+        name the successor path instead, and the proof that it must is the
+        second half: the chain, run anyway, is still refused.
+        """
+
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            v1_repo(tmp, ids=("T1", "T2"), cohort="v1:batch:shared")
+            for tid, agent in (("T1", "agent-a"), ("T2", "agent-b")):
+                self.assertNotIn(
+                    "error", run_cmd(tmp, "claim", "testrun", tid, "--by", agent)
+                )
+            refused = run_cmd(tmp, *AMEND)["error"]
+            self.assertEqual({"set-status suspended"}, commands_named(refused))
+            self.assertIn("successor", refused)
+            self.assertNotIn(
+                "error", run_cmd(tmp, "set-status", "testrun", "T1", "pending")
+            )
+            self.assertIn("error", run_cmd(tmp, *AMEND))
+
+    def test_the_claimed_recut_refusal_names_the_chain_the_table_runs(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            v1_repo(tmp, ids=("T1",), cohort="v1:root:T1")
+            self.assertNotIn(
+                "error", run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            )
+            candidate = tmp / "candidate.md"
+            candidate.write_text("---\nid: T1\nrun: testrun\n---\n", encoding="utf-8")
+            refused = run_cmd(
+                tmp, "recut", "testrun", "T1", "--file", str(candidate)
+            )["error"]
+            self.assertEqual(chain_commands("claimed", "recut"), commands_named(refused))
+
+
+class NotARemedyTest(unittest.TestCase):
+    """The correction that must not come back (95175a7).
+
+    `grant` and `check` act on an item a child is executing; reaching either
+    by rewriting a status reopens an item rather than repairing one, and at
+    a terminal status it reopens a verdict the join has already read.
+    """
+
+    def test_no_status_write_is_offered_as_a_route_to_grant_or_check(self):
+        for command in tickets_transitions.NOT_A_REMEDY:
+            for status in tickets_transitions.STATUSES:
+                with self.subTest(command=command, status=status):
+                    self.assertEqual(
+                        (), tickets_transitions.remedy_path(status, command)
+                    )
+                    self.assertNotIn(
+                        "set-status",
+                        tickets_transitions.refusal("subject", command, status),
+                    )
 
 
 if __name__ == "__main__":
