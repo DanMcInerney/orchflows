@@ -21,6 +21,7 @@ nothing to check is not the same answer as finding nothing wrong.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -114,6 +115,116 @@ def validate_markdown_links(diag: Diagnostics) -> None:
     finally:
         _restore_support(state)
 
+# --- documented paths resolve in the installed tree --------------------
+# install.py owns the installed layout, so its directory roster is imported
+# rather than restated: every file under one of those directories lands at
+# lib/<relative path>, and scripts/<name>.py lands flat at bin/<name>.py.
+# What ships nowhere -- tools/, tests/, installer/ -- is exactly what the
+# friction record caught executors walking into under lib/.
+try:
+    from installer.foundation import CANONICAL_DIRS as _INSTALLED_LIB_DIRS
+except ImportError:  # pragma: no cover - a checkout without the installer
+    _INSTALLED_LIB_DIRS = None
+
+# contracts/ is shipped too and is graded the same way, but it still names
+# two uninstalled paths at this tip and is not this unit's to edit; the
+# handoff carries the four sites and this tuple is where they join.
+DOC_PATH_CHECKED_TREES = ("rules", "docs", "skills", "packs", "compositions", "templates")
+# The repository's own build machinery. Present in the checkout, absent from
+# every installed tree, so a backticked mention of one is a dead path for the
+# only reader who matters here -- the one running out of ~/.orchflows/lib.
+SOURCE_ONLY_DIRS = ("tools", "tests", "installer")
+# A path, not a command: no spaces, at least one separator. `tickets.py new`
+# and `orch-tdd` are not paths and never reach the resolver.
+DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
+
+
+def _documented_path_finding(token: str, source: Path, root: Path):
+    """The reason `token` names nothing installed, or None if it resolves."""
+
+    head = token.split("/", 1)[0]
+    remainder = token[len(head) + 1:].rstrip("/")
+    # A path spelled relative to the file that names it -- a skill's own
+    # scripts/ or references/ -- travels with that file into the install.
+    if remainder and (source.parent / token.rstrip("/")).exists():
+        return None
+    if head in SOURCE_ONLY_DIRS:
+        return (
+            f"`{token}` is a checkout path that install.py never produces: "
+            f"there is no {head}/ under the installed library, so a reader "
+            "following this lands nowhere. Name it in plain text to mention "
+            "it without pointing at it"
+        )
+    if head == "scripts":
+        # Scripts install flat, so only a top-level script name survives.
+        if remainder and "/" not in remainder and (root / "scripts" / remainder).is_file():
+            return None
+        return (
+            f"`{token}` names no installed script: scripts/ installs flat as "
+            f"bin/<name>.py, and there is no scripts/{remainder or '<name>.py'} "
+            "in this tree to install"
+        )
+    if (root / token.rstrip("/")).exists():
+        return None
+    return (
+        f"`{token}` names no shipped file: nothing at {token.rstrip('/')} in "
+        "this tree, so nothing lands at that path under the installed library"
+    )
+
+
+def validate_documented_paths(diag: Diagnostics) -> None:
+    """Grade the root currently exposed by this compatibility facade."""
+
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        _validate_documented_paths_impl(diag)
+    finally:
+        _restore_support(state)
+
+
+def _validate_documented_paths_impl(diag: Diagnostics) -> None:
+    """Every backticked library-internal path in shipped prose resolves in
+    the tree install.py produces.
+
+    This is validate_names' law one namespace over. There, a backticked
+    `orch-*` is a call edge that has to resolve and plain text is how prose
+    mentions a name without calling it; here, a backticked path is a pointer
+    that has to resolve and plain text is how prose mentions a file without
+    sending anyone to it. Six friction entries across three sessions record
+    executors walking from shipped prose into ~/.orchflows/lib/scripts and
+    lib/tests -- paths the prose named and the installed tree never carried.
+    The reader was not wrong; the doc was.
+
+    Skipped where the tree is not the library, the same guard validate_names
+    uses: a fixture with no ARCHITECTURE.md has no installed tree to model.
+    """
+
+    root = ROOT
+    marker = root / "ARCHITECTURE.md"
+    if not marker.is_file():
+        diag.warn(rel(marker), SKIPPED)
+        return
+    if _INSTALLED_LIB_DIRS is None:
+        diag.warn("installer", SKIPPED)
+        return
+    known_heads = set(_INSTALLED_LIB_DIRS) | set(SOURCE_ONLY_DIRS) | {"scripts"}
+    for tree in DOC_PATH_CHECKED_TREES:
+        node = root / tree
+        if not node.is_dir():
+            continue
+        for source in sorted(node.rglob("*.md")):
+            if not source.is_file():
+                continue
+            text = _read_source(source)
+            for token in sorted(set(DOCUMENTED_PATH_RE.findall(text))):
+                if token.split("/", 1)[0] not in known_heads:
+                    continue
+                finding = _documented_path_finding(token, source, root)
+                if finding is not None:
+                    diag.error(rel(source), finding)
+
+
 def _run_validation_impl() -> Diagnostics:
     _bind_root(ROOT)
     diag = Diagnostics()
@@ -148,6 +259,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
     validate_markdown_links(diag)
+    validate_documented_paths(diag)
     validate_surface_budgets(diag)
     validate_pins(diag)
     validate_friction_locations(diag)

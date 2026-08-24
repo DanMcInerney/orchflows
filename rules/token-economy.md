@@ -59,7 +59,7 @@
     stripped: the stub's instruction by `scripts/tickets.py`, which
     also enforces it — `new` and `amend` refuse an issued unit over the
     ceiling, a root ticket and a `.gate.` stub exempt — and every other
-    surface here by `tools/validate.py`, template stubs included,
+    surface here by tools/validate.py, template stubs included,
     through that same counter. What degrades adherence is the count of
     standing demands and tension between them, not length at a fixed
     count — so a surface earns each demand by §1 and carries no two in

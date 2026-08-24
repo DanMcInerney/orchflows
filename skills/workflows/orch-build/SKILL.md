@@ -16,7 +16,7 @@ Apply [rules/composition.md](../../../rules/composition.md) §6 and
 [rules/token-economy.md](../../../rules/token-economy.md) §6 before
 writing; a custom workflow starts per
 [references/scopes.md](references/scopes.md). Admission is
-`tools/validate.py` and the tests, and for a template also
+tools/validate.py and the tests, and for a template also
 `tickets.py instantiate`.
 
 Gate the result's artifact identity through `orch-critique` with
