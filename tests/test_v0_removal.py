@@ -114,6 +114,17 @@ def _corpus() -> list:
         "status; result; changed_artifacts\n- return-size: not-a-canonical-object",
     )
     cases.append({"id": "T1", "text": unparsable, "siblings": {"T1": unparsable}})
+    # The other two `_optional_probe` findings the shared block carries.  Their
+    # fingerprints are compared for every case, so the probe calls are covered
+    # either way -- but a fingerprint says nothing about whether the findings
+    # beside it were extended onto the list, and nothing else in the corpus
+    # makes either validator speak.  One case each, so deleting either extend
+    # cannot pass the parity comparison in silence.
+    duplicate_input = clean.replace('"name":"question"', '"name":"baseline"')
+    cases.append({"id": "T1", "text": duplicate_input,
+                  "siblings": {"T1": duplicate_input}})
+    unplanned = clean.replace("mutations: [change:scratch/T1.txt]\n", "")
+    cases.append({"id": "T1", "text": unplanned, "siblings": {"T1": unplanned}})
     current = snapshot()
     cases.append({"id": "00-root.01", "text": current["00-root.01"], "siblings": current})
     draft = generations.draft_snapshot("00-root", current)
@@ -202,9 +213,13 @@ class GradeParityTest(unittest.TestCase):
         receipts = {row["receipt"].split(":")[0] for row in graded if "sha256" in row["receipt"]}
         codes = {item["code"] for row in graded for item in row["findings"]}
         self.assertEqual({"v1", "v2"}, receipts, "both receipt constructions must be exercised")
+        # One code per source the shared block draws from: the inline
+        # dependency loop, `authority_findings`, and each of the three
+        # `_optional_probe` calls whose findings it extends on.
         for code in ("cohort-invalid", "dependency-dangling", "dependency-incomplete",
                      "return-size-invalid", "vcs-isolation-required",
-                     "executor-pack-mismatch"):
+                     "executor-pack-mismatch", "input-name-duplicate",
+                     "mutation-plan-missing"):
             with self.subTest(code=code):
                 self.assertIn(code, codes)
         # And the other half of the dependency predicate: one case whose
