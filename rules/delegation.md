@@ -3,7 +3,9 @@
 1. Every dispatch carries a complete
    [delegation packet](../contracts/work-item.md#dispatch), which owns
    what a missing part costs; a dispatch naming an identity that does
-   not resolve where it says it is is refused, not repaired.
+   not resolve where it says it is is refused, not repaired. A packet's
+   `bounds` cover reading the `inputs` it names, in whichever currency
+   binds first.
 2. Root and `role: none` are glue-only: routing, dispatch mechanics,
    joins, verbatim user interaction, and answers decided by evidence
    already in context. Neither executes a role-bearing skill body nor
@@ -36,8 +38,7 @@
    action, never a separate watchdog.
    Suspension and escalation cross the ticket's `## Handoff`
    ([work-item.md](../contracts/work-item.md)), never as a failure,
-   under a once-per-dispatch bound. A packet's `bounds` cover reading the
-   `inputs` it names, in whichever currency binds first.
+   under a once-per-dispatch bound.
 10. Artifact primacy: a return's payload lives in the dispatch's durable
     artifact (a work item's ticket, or an artifact the packet names),
     never solely in a transport message, and reaches it as it is

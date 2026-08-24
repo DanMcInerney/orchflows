@@ -36,6 +36,7 @@ DELEGATION = "rules/delegation.md"
 VERIFY = "skills/kernel/orch-verify/SKILL.md"
 CRITIQUE = "skills/kernel/orch-critique/SKILL.md"
 INTEGRATE = "skills/kernel/orch-integrate/SKILL.md"
+PACKET = "scripts/tickets_packet.py"
 
 KERNEL_SKILLS = (VERIFY, CRITIQUE, INTEGRATE)
 
@@ -52,6 +53,18 @@ PACKET_CARRIED_CLI = (
     r"tickets\.py run-state",
     r"workspace\.py start",
 )
+
+#: What makes each absence above safe: `scripts/tickets_packet.py` still
+#: builds that invocation into a child's prompt. Keyed by the sweep pattern
+#: it licenses, so a swept form can never lose its premise silently.
+PACKET_BUILDS = {
+    r"tickets\.py amend": r"_command_text\([^\n]*'amend'",
+    r"tickets\.py new\b": r"_command_text\([^\n]*'new'",
+    r"tickets\.py result(?!-)": r"_command_text\([^\n]*'result'",
+    r"tickets\.py check\b": r"_command_text\([^\n]*'check'",
+    r"tickets\.py run-state": r"_command_text\([^\n]*'run-state'",
+    r"workspace\.py start": r"_command_text\([^\n]*'workspace\.py'\)[^\n]*'start'",
+}
 
 
 def read(relative: str) -> str:
@@ -293,15 +306,31 @@ class DelegationOwnsTheThreeRestoredFacts(unittest.TestCase):
                 )
 
     def test_the_bounds_currency_clause_is_back(self):
-        rule = clause(DELEGATION, 9)
+        """§1, the packet-parts rule -- not §9, whose bound is another one.
+
+        §9's bound is the once-per-dispatch count on suspension. A
+        currency clause placed after it reads as qualifying it, which is
+        the misreading this placement avoids: §1 already governs the
+        packet's parts and the identities its `inputs` name.
+        """
+        rule = clause(DELEGATION, 1)
         for token in ("`bounds`", "`inputs`", "currency binds first"):
             with self.subTest(token=token):
                 self.assertIn(
                     token, rule,
-                    f"rules/delegation.md §9 omits {token!r}, so nothing states "
+                    f"rules/delegation.md §1 omits {token!r}, so nothing states "
                     "that a budget covers reading the evidence its packet "
                     "names, in whichever currency binds first",
                 )
+
+    def test_the_suspension_bound_is_not_re_read_as_a_currency(self):
+        """The clause the sentence was moved out of must stay clear of it."""
+        self.assertNotIn(
+            "currency", clause(DELEGATION, 9),
+            "rules/delegation.md §9 carries a currency clause again; its own "
+            "bound is the once-per-dispatch count on suspension, and a "
+            "currency sentence beside it reads as qualifying that count",
+        )
 
     def test_each_restored_fact_is_stated_exactly_once(self):
         """Restoring a fact twice recreates the defect it was restored for."""
@@ -342,6 +371,30 @@ class KernelSkillsSpellOutNoPacketCarriedCLI(unittest.TestCase):
                         "scripts/tickets_packet.py already writes into the "
                         "prompt of every child that needs it",
                     )
+
+    def test_the_packet_generator_still_carries_every_swept_invocation(self):
+        """The sweep above is a de-duplication only while this stays true.
+
+        Dropping a skill's copy of an invocation costs a reader nothing
+        while the dispatch hands the child the same string. If the
+        generator stops emitting one, the library spells it out nowhere
+        and the absence sweep goes on passing -- so the premise is pinned
+        here, beside the sweep that rests on it.
+        """
+        self.assertEqual(
+            sorted(PACKET_CARRIED_CLI), sorted(PACKET_BUILDS),
+            "the swept forms and the premises licensing them have drifted "
+            "apart; each absence needs the invocation it rests on",
+        )
+        generator = read(PACKET)
+        for swept, builder in sorted(PACKET_BUILDS.items()):
+            with self.subTest(cli=swept):
+                self.assertIsNotNone(
+                    re.search(builder, generator),
+                    f"scripts/tickets_packet.py no longer builds {swept!r} "
+                    f"({builder!r} matches nothing), so the kernel skills' "
+                    "silence about it is a gap, not a de-duplication",
+                )
 
     def test_the_joins_own_verb_is_not_caught_by_that_sweep(self):
         """`result-grade` is the join's, carried by no packet, and stays."""
