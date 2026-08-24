@@ -8,19 +8,11 @@ the refusal exists -- but a skill that states a contract's rule without
 naming the contract becomes a second owner, and the two drift apart
 silently. The form pinned here is link-not-restate: wherever a kernel
 skill carries one of those facts, the sentence carrying it names the
-owner.
-
-The absences pinned here are the other half. rules/verification.md §10
-listed two ordinary independence paths no ticket, engine or script ever
-selected -- a bare judged verdict, and an unnamed remainder "covered per
-§7" -- and each cost every reader of the section a branch to rule out.
-The incentive guards in the same clause are asserted present, because
-"shorter" is not the goal and deleting them would also make the module
-green.
-
-Three facts left ownerless by contracts/work-item.md's diet are asserted
-back at rules/delegation.md, each once: the join's scope rejection, the
-child's read boundary, and the bounds currency clause.
+owner; the packet-carried CLI and the dispatch parts are swept the same
+way, and the absences at rules/verification.md §10 and the facts restored
+at rules/delegation.md are the other half, each class stating the premise
+it rests on. The incentive guards are asserted present: "shorter" is not
+the goal, and deleting one would also make this module green.
 """
 
 import re
@@ -43,8 +35,7 @@ KERNEL_SKILLS = (VERIFY, CRITIQUE, INTEGRATE)
 #: Every CLI form `scripts/tickets_packet.py` already spells out in the
 #: prompt a child receives. A skill body repeating one of them pays every
 #: dispatch for a string the dispatch already carried, and goes stale the
-#: moment the packet's flags change. `tickets.py result-grade` is not one
-#: of them: it is the join's own verb, carried by no packet.
+#: moment the packet's flags change.
 PACKET_CARRIED_CLI = (
     r"tickets\.py amend\b",
     r"tickets\.py new\b",
@@ -64,6 +55,18 @@ PACKET_BUILDS = {
     r"tickets\.py check\b": r"_command_text\([^\n]*'check'",
     r"tickets\.py run-state": r"_command_text\([^\n]*'run-state'",
     r"workspace\.py start": r"_command_text\([^\n]*'workspace\.py'\)[^\n]*'start'",
+}
+
+#: The three parts every emitted packet carries, keyed by the fact and
+#: valued by the pattern that finds it in `scripts/tickets_packet.py`.
+#: Each is a fact about the *dispatch*, not about the item, so the packet
+#: generator is its only lawful owner: a skill body stating one of them
+#: reaches only the forks that read that skill, and the forks this exists
+#: for are the ones that arrived holding a skill body and nothing else.
+PACKET_DISPATCH_PARTS = {
+    "assigned name": r"assigned name is `\{",
+    "state-sink resolution": r"state_root\.py[^\n]*\.orch/",
+    "refusal channel": r"without this packet[^\n]*self-invented name",
 }
 
 
@@ -437,6 +440,69 @@ class KernelSkillsSpellOutNoPacketCarriedCLI(unittest.TestCase):
             "invocation: contracts/result.md's crossing is the join's own, and "
             "the sweep above must not have taken it",
         )
+
+
+class TheDispatchPartsHaveOneOwner(unittest.TestCase):
+    """`scripts/tickets_packet.py` states them, and nothing else does.
+
+    Three facts a child needs before it can act lawfully -- the name it
+    records under, where the ticket store resolves, and what a fork does
+    when it arrives without a packet -- were carried by nobody, and five
+    friction entries in one session came of it; `PACKET_DISPATCH_PARTS`
+    above owns why the generator is their only lawful place.
+    """
+
+    def test_the_generator_states_every_dispatch_part(self):
+        generator = read(PACKET)
+        for fact, pattern in sorted(PACKET_DISPATCH_PARTS.items()):
+            with self.subTest(fact=fact):
+                self.assertIsNotNone(
+                    re.search(pattern, generator),
+                    f"scripts/tickets_packet.py no longer states the {fact} "
+                    f"part ({pattern!r} matches nothing); the dispatch that "
+                    "carried it to every child is the only place it was said",
+                )
+
+    def test_the_assigned_name_is_interpolated_rather_than_a_placeholder(self):
+        """`checker-fable-01` was invented to fill a literal `NAME`.
+
+        A generator that emits the *word* satisfies the pattern above while
+        handing the child the same blank it filled in, so the check that a
+        name is stated is worth nothing without this one: the sentence's
+        name comes from a value, and the recording invocation spends that
+        value rather than the placeholder.
+        """
+        generator = read(PACKET)
+        self.assertIsNotNone(
+            re.search(r"assigned name is `\{assigned_name\}`", generator),
+            "the assigned-name sentence no longer interpolates the resolved "
+            "name; a child handed a placeholder invents a filling for it",
+        )
+        self.assertIsNotNone(
+            re.search(r"_command_text\([^\n]*'check'[^\n]*'--by', assigned_name",
+                      generator),
+            "the recording invocation no longer spends the assigned name, so "
+            "the name the packet states and the name the child records under "
+            "can differ again",
+        )
+
+    def test_no_kernel_skill_restates_a_dispatch_part(self):
+        """Same sweep as the packet-carried CLI above, same premise: the
+        absence costs a reader nothing only while the generator emits it."""
+        for relative in KERNEL_SKILLS:
+            text = read(relative)
+            for fact, token in (
+                ("state-sink resolution", ".orch/"),
+                ("state-sink resolution", "state_root"),
+                ("refusal channel", "self-invented"),
+            ):
+                with self.subTest(skill=relative, fact=fact, token=token):
+                    self.assertNotIn(
+                        token, text,
+                        f"{relative} states the {fact} part itself, which "
+                        "scripts/tickets_packet.py writes into every packet; "
+                        "a second copy reaches fewer children and goes stale",
+                    )
 
 
 if __name__ == "__main__":

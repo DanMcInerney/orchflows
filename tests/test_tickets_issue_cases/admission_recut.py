@@ -1,6 +1,16 @@
-"""Recut and cohort invalidation cases for v1 admission."""
+"""Recut and cohort invalidation cases for v1 admission.
+
+Both paths re-stamp what they rewrite, and every ticket here is a v1 one,
+so v1's sentinel is the version-correct value -- taken from the table that
+owns it. A v2 candidate's stamp is `StampingTest`'s, in
+`tests/test_lifecycle_table.py`.
+"""
 
 from .common import *  # noqa: F401,F403
+from scripts.tickets_transitions import pending_admission
+
+#: What a v1 ticket's producer stamps, from the table that owns the value.
+V1_PENDING = f"admission: {pending_admission(1)}"
 
 
 def issue_v1(ticket_id: str, cohort: str):
@@ -36,7 +46,7 @@ class RecutAndCohortTest(unittest.TestCase):
         for ticket_id in ("A", "B"):
             text = (self.run_dir / f"{ticket_id}.md").read_text(encoding="utf-8")
             self.assertIn("status: pending", text)
-            self.assertIn("admission: v1:pending", text)
+            self.assertIn(V1_PENDING, text)
 
     def test_amend_refuses_a_checked_or_sealed_cohort_without_changing_bytes(self):
         cohort = "v1:batch:abcdef123456"
@@ -61,7 +71,7 @@ class RecutAndCohortTest(unittest.TestCase):
         self.assertNotIn("error", payload)
         text = target.read_text(encoding="utf-8")
         self.assertIn("status: pending", text)
-        self.assertIn("admission: v1:pending", text)
+        self.assertIn(V1_PENDING, text)
         self.assertIn("cohort: v1:ticket:T1", text)
         self.assertIn("Corrected cut.", text)
         self.assertIn("old result", tickets_mod._sections(text)["Result"])

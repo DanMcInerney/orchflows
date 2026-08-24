@@ -20,16 +20,20 @@ from __future__ import annotations
 import re
 from pathlib import Path
 if __package__:
-    from .tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_admission, grade_result
+    from .tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
     from .tickets_commands import LINT_USAGE
+    from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, instruction_words, parse_canonical_json
     from .tickets_issue import AMENDABLE_STATUSES, NEW_DEFAULT_BOUND, _issue_defects
+    from .tickets_scope import path_covers
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
 else:
-    from tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_admission, grade_result
+    from tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
     from tickets_commands import LINT_USAGE
+    from tickets_context import graded_admission, run_snapshot
     from tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, instruction_words, parse_canonical_json
     from tickets_issue import AMENDABLE_STATUSES, NEW_DEFAULT_BOUND, _issue_defects
+    from tickets_scope import path_covers
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
 
 SYNTACTIC = 'syntactic'
@@ -51,6 +55,13 @@ VCS_PROSE_TOKENS = (
     ('commit', 'vcs.commit'),
     ('worktree', 'vcs.isolate'),
 )
+# Family 3's reading of a path in prose, restated where the ticket family can
+# use it: a token holding a glob is a pattern rather than a path, one holding
+# an angle bracket is a placeholder for wherever the run puts its state, and a
+# short final extension names a file even with no directory in front of it.
+GLOB_CHARS_RE = re.compile(r'[*?\[\]]')
+PLACEHOLDER_CHARS_RE = re.compile(r'[<>]')
+EXTENSION_RE = re.compile(r'\.[A-Za-z0-9]{1,5}$')
 # The admission codes whose repair is exactly one mechanical rewrite.
 FIXABLE_ADMISSION = {
     'input-json-noncanonical': 're-emit the record as canonical JSON',
@@ -97,6 +108,44 @@ def _ceiling_finding(ticket_id: str, text: str, data: dict):
     )
 
 
+def _path_tokens(entry: str) -> list:
+    """The tokens in one prose action that name a path."""
+    found = []
+    for token in entry.replace('`', ' ').split():
+        token = token.lstrip('(<["\'').rstrip(')>],;:."\'')
+        if not token or token[:1] == '-' or GLOB_CHARS_RE.search(token):
+            continue
+        if PLACEHOLDER_CHARS_RE.search(token):
+            continue
+        if '/' in token or EXTENSION_RE.search(token):
+            found.append(token)
+    return found
+
+
+def _contradiction_findings(data: dict) -> list:
+    """Cutcheck family 3's judgment, reported while the text can still change.
+
+    An exclusion naming a path the write scope grants states two things about
+    one path: the item may write it, and the item may not. `cutcheck` reports
+    it, but only on the cut -- and by then the root is sealed, so the exclusion
+    lives in a statement the decomposer holds no authority to edit and no cut
+    it may make reaches exit 0. Reported here, the producer sees it while the
+    draft is still a draft. Semantic on purpose: which of the two the author
+    meant is a decision, so `--fix` may not pick one.
+    """
+    scope = _scope_entries(data.get('write_scope'))
+    findings = []
+    for action in _scope_entries(data.get('excluded_actions')):
+        for target in _path_tokens(action):
+            for entry in scope:
+                if path_covers(target, entry) or path_covers(entry, target):
+                    findings.append(_finding(
+                        'scope-contradiction', f'excluded_actions: {action} | {entry}',
+                    ))
+                    break
+    return findings
+
+
 def _oracle_findings(text: str, tree: Path) -> list:
     """One finding per criterion whose oracle runs the suite it is stated under."""
     findings = []
@@ -139,7 +188,8 @@ def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued
     ceiling = _ceiling_finding(ticket_id, text, data)
     if ceiling is not None:
         findings.append(ceiling)
-    graded = grade_admission(ticket_id, text, dict(siblings or {}))
+    findings.extend(_contradiction_findings(data))
+    graded = graded_admission(ticket_id, text, siblings, data.get('run'))
     for item in graded['findings']:
         code = str(item.get('code') or '')
         fix = FIXABLE_ADMISSION.get(code)
@@ -247,11 +297,9 @@ def _ticket_target(run: str, ticket_id: str):
     text, failure = _read_utf8(path, f'ticket {run}/{ticket_id}')
     if failure is not None:
         return (None, {**failure, 'exit_code': 2})
-    siblings = {}
-    for sibling in sorted(run_dir.glob('*.md')):
-        body, failure = _read_utf8(sibling, f'ticket {run}/{sibling.stem}')
-        if failure is None:
-            siblings[sibling.stem] = body
+    # Every member this reader could read: lint reports on what is there, and
+    # an unreadable sibling is the finding its own `lint` call will carry.
+    siblings, _unreadable = run_snapshot(run_dir)
     return ((path, ticket_id, text, siblings), None)
 
 

@@ -1,4 +1,4 @@
-"""ARCHITECTURE.md names this run's three new repository tools.
+"""ARCHITECTURE.md names each repository tool these runs added.
 
 A tool nobody can find is a tool the next agent rebuilds. The cold
 ownership map is where an executing agent looks for who owns what, so each
@@ -28,14 +28,17 @@ OWNERSHIP_CLAUSE = re.compile(r"`tools/([^`]+\.py)`\]? owns ([^;.]+)")
 # number a reader is held to is the number the file carries.
 CEILING_RE = re.compile(r"Ceiling: (\d+) whitespace-delimited words")
 
-# The three tools this run added, and the words each sentence must carry.
+# The tools these runs added, and the words each sentence must carry.
 # The responsibility, not the wording: what is pinned is that the map says
 # what the program is for, and each phrase below is the fact a reader who
-# has never opened the file needs in order to route to it.
+# has never opened the file needs in order to route to it. `verify_at.py`
+# carries two: where it runs the command and which revision it runs it at
+# are the whole reason to reach for it rather than run the command here.
 NEW_TOOLS = {
     "run_required.py": ("required-check run", "verdict cache"),
     "affected_tests.py": ("write-scope-to-test-module derivation",),
     "run_report.py": ("retrospective speed report",),
+    "verify_at.py": ("detached worktree", "exact revision"),
 }
 
 

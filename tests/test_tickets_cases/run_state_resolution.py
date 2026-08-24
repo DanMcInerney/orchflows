@@ -47,11 +47,15 @@ class TestRunStateRootResolution(unittest.TestCase):
             # one lock _append_one_line takes; it reaches no subprocess.
             # `time` is the retry budget `_replace_atomically` waits out a
             # Windows refusal against, and it too starts nothing.
-            # the census of the discovered family, not a list kept by hand:
-            # `TICKETS_MODULES` is `scripts/tickets_*.py` read at call time, so
-            # a module added there updates this set rather than ages it.
+            # `TICKETS_MODULES` is the discovered family — `scripts/tickets.py`
+            # plus `scripts/tickets_*.py`, globbed at call time — so the side
+            # being censused never ages. The expected set below is kept BY HAND
+            # and does age: a new sibling module, or a new import inside any
+            # existing one, lands here as a failure naming the token to add.
+            # That failure is the point; do not widen this to a subset check.
             self.assertEqual(
-                {"__future__", "contextlib", "datetime", "fcntl", "fnmatch", "hashlib",
+                {"__future__", "collections", "contextlib", "datetime", "fcntl",
+                 "fnmatch", "hashlib",
                  "importlib", "json",
                  "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
@@ -59,7 +63,8 @@ class TestRunStateRootResolution(unittest.TestCase):
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
                  "tickets_gate_mutations", "tickets_admission", "tickets_inputs",
-                 "tickets_input_producers", "tickets"},
+                 "tickets_input_producers", "tickets_context", "tickets_scope",
+                 "tickets_transitions", "tickets"},
                 imported,
             )
 

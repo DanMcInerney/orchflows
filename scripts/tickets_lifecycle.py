@@ -8,30 +8,34 @@ if __package__:
 else:
     from tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _runs_root, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
-    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _runs_root, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
     from tickets_worklog import _run_goal, _run_tickets
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1, is_v2
+    from .tickets_admission import ADMISSION_PENDING, grade_result, is_receipt, is_v1, is_v2
+    from .tickets_context import graded_admission, run_snapshot
 else:
-    from tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1, is_v2
+    from tickets_admission import ADMISSION_PENDING, grade_result, is_receipt, is_v1, is_v2
+    from tickets_context import graded_admission, run_snapshot
 if __package__:
     from .tickets_packet import _claim_is_stale
 else:
     from tickets_packet import _claim_is_stale
+if __package__:
+    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, sealed_after_release, set_status_blanks
+else:
+    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, sealed_after_release, set_status_blanks
 CLAIM_USAGE = 'claim <run> <id> --by <name>'
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 RESULT_GRADE_USAGE = 'result-grade <run> <id>'
 GRANT_USAGE = 'grant <run> <id> --write-scope <path>[,<path>] --by <name>'
 GRANTED_BY_KEY = 'granted_by'
 GRANTED_AT_KEY = 'granted_at'
-GRANTABLE_STATUSES = frozenset({'claimed', 'suspended'})
 CHECK_USAGE = 'check <run> <id> --by <name>'
-CHECKABLE_STATUSES = GRANTABLE_STATUSES
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
     dangling = [value for value in dependencies if value not in tickets]
@@ -47,15 +51,9 @@ def readiness_facts(ticket: dict, tickets: dict) -> dict:
         'dependencies_complete': not dangling and not incomplete,
     }
 def _run_snapshot(run_dir: Path):
-    texts = {}
-    failures = []
-    for ticket_path in sorted(run_dir.glob('*.md')):
-        text, failure = _read_utf8(ticket_path)
-        if failure is not None:
-            failures.append({'id': ticket_path.stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']})
-        else:
-            texts[ticket_path.stem] = text
-    return texts, failures
+    """The shared run snapshot, with each unreadable member phrased as a skip."""
+    texts, failures = run_snapshot(run_dir)
+    return texts, [{'id': stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']} for stem, failure in failures]
 def _snapshot_matches(run_dir: Path, snapshot: dict, _ids=None) -> bool:
     current, failures = _run_snapshot(run_dir)
     return not failures and current == snapshot
@@ -130,7 +128,7 @@ def _cmd_ready(rest):
                 if read_failures:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused: run snapshot is not closed', 'failures': read_failures})
                     continue
-                grade = grade_admission(ticket_id, text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run_dir.name})
+                grade = graded_admission(ticket_id, text, snapshot, run_dir.name)
                 if grade['findings']:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused', 'findings': grade['findings']})
                     continue
@@ -146,7 +144,7 @@ def _cmd_ready(rest):
             elif versioned and status == 'claimed':
                 stale, unreadable = _claim_is_stale(data['path'], text, data, now)
                 if stale:
-                    skipped.append({'id': ticket_id, 'reason': 'stale v1 claim requires the join to set-status pending, then recut, before reclaim'})
+                    skipped.append({'id': ticket_id, 'reason': refusal('stale v1 claim', 'claim', 'claimed')})
                 elif unreadable:
                     skipped.append({'id': ticket_id, 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
             elif status == 'ready':
@@ -154,7 +152,7 @@ def _cmd_ready(rest):
                 # the admission boundary and refuses this v0 item until recut.
                 eligible = True
             elif status == 'pending':
-                skipped.append({'id': ticket_id, 'reason': 'pending legacy ticket requires `recut` before v1 admission'})
+                skipped.append({'id': ticket_id, 'reason': refusal('pending legacy ticket requires `recut` before v1 admission', 'recut', 'pending')})
             elif status == 'claimed':
                 text, failure = _read_utf8(data['path'])
                 if failure is not None:
@@ -164,7 +162,7 @@ def _cmd_ready(rest):
                 if unreadable:
                     skipped.append({'id': data['id'], 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
                 elif stale:
-                    skipped.append({'id': ticket_id, 'reason': 'stale legacy claim requires `recut` before reclaim'})
+                    skipped.append({'id': ticket_id, 'reason': refusal('stale legacy claim', 'recut', 'claimed')})
             if eligible:
                 ready_items.append(data['summary'])
     return {'ready': ready_items, 'skipped': skipped}
@@ -218,7 +216,7 @@ def _cmd_claim(rest):
         data = _parse_frontmatter(prior_text)
         status = str(data.get('status') or '')
         if (is_v1(data) or is_v2(data)) and status in ('pending', 'ready'):
-            grade = grade_admission(ticket_id, prior_text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run})
+            grade = graded_admission(ticket_id, prior_text, snapshot, run)
             if grade['findings']:
                 return {'error': 'admission refused', 'findings': grade['findings']}
     try:
@@ -230,7 +228,7 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
     """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
     live claim, landing only while that exact snapshot still matches, so a moved ticket,
     dependency, or cohort loses the race instead of claiming on a stale receipt. `ready`
-    grades on the same `grade_admission` and swaps the same way in `_admit_ready_cas`."""
+    grades on the same `graded_admission` and swaps the same way in `_admit_ready_cas`."""
     args = list(rest)
     claimed_by = _extract_flag(args, '--by')
     if claimed_by is None:
@@ -259,17 +257,17 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
             if failures:
                 return {'error': 'run snapshot is not closed', 'failures': failures}
         if grade is None:
-            grade = grade_admission(ticket_id, prior_text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run})
+            grade = graded_admission(ticket_id, prior_text, snapshot, run)
         if grade['findings']:
             return {'error': 'admission refused', 'findings': grade['findings']}
         if not _snapshot_matches(ticket_path.parent, snapshot, grade.get('snapshot_ids') or [ticket_id]):
             return {'error': 'ticket, dependencies, or cohort changed since admission grade; lost the claim race'}
     elif status == 'pending':
-        return {'error': 'pending legacy ticket requires `recut` before v1 admission'}
+        return {'error': refusal('pending legacy ticket requires `recut` before v1 admission', 'recut', 'pending')}
     elif (is_v1(data) or is_v2(data)) and status == 'claimed':
-        return {'error': 'stale v1 claim requires the join to set-status pending, then recut, before reclaim'}
+        return {'error': refusal('a v1 claim is live on this ticket', 'claim', 'claimed')}
     elif not (is_v1(data) or is_v2(data)) and status in ('ready', 'claimed'):
-        return {'error': f"{status} legacy ticket requires `recut` before v1 admission or reclaim"}
+        return {'error': refusal(f'{status} legacy ticket requires `recut` before v1 admission or reclaim', 'recut', status)}
     now = datetime.now(timezone.utc)
     result = _do_claim(ticket_path, prior_text, claimed_by, now, grade['receipt'] if grade is not None else None)
     if 'error' in result:
@@ -315,7 +313,7 @@ def _grant_under_run_lock(rest):
     data = _parse_frontmatter(text)
     status = str(data.get('status') or '').strip().strip('`').strip()
     if status not in GRANTABLE_STATUSES:
-        return {'error': f"ticket is not claimed (status '{status}'): a grant widens the authority of an item already being worked. Before a claim the cut owns the scope — re-place the ticket through `new --file` — and after a terminal status the verdict was already read against the authority the work was done under. ticket: {ticket_path}"}
+        return {'error': refusal(f"ticket is not claimed (status '{status}')", 'grant', status, note=f"A grant widens the authority of an item already being worked. Before a claim the cut owns the scope — re-place the ticket through `new --file` — and after a terminal status the verdict was already read against the authority the work was done under. ticket: {ticket_path}")}
     if is_v2(data):
         return {'error': 'a sealed v2 assignment cannot widen authority in place: suspend it and create a newly validated generation'}
     original_scope = _scope_entries(data.get('write_scope'))
@@ -328,11 +326,8 @@ def _grant_under_run_lock(rest):
         )
     ]
     if is_v1(data) and 'mutations' in data and new_paths:
-        return {
-            'error': 'a planned v1 ticket cannot widen operation authority from path-only grant input: '
-                     + ', '.join(new_paths)
-                     + '. Suspend the item and let the join open a successor ticket, or let the join set-status pending and recut it with explicit mutations before reclaim',
-        }
+        sealed = sealed_after_release(data.get('id') or ticket_id, text, _run_snapshot(ticket_path.parent)[0])
+        return {'error': refusal('a v1 ticket carrying a planned mutation vector cannot widen operation authority from path-only grant input: ' + ', '.join(new_paths) + '; the widened operation needs an explicit mutation vector written at cut time', 'recut', status, note='Or suspend the item and let the join open a successor ticket.', sealed=sealed)}
     granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
     for entry in entries:
         if entry not in granted:
@@ -376,7 +371,7 @@ def _check_under_run_lock(rest):
     data = _parse_frontmatter(text)
     status = str(data.get('status') or '').strip().strip('`').strip()
     if status not in CHECKABLE_STATUSES:
-        return {'error': f"ticket is not claimed (status '{status}'): the §10 checker passes over a result an executor has produced under a claim. Before a claim there is nothing to check, and after a terminal status the join has already read the acceptance this field feeds. ticket: {ticket_path}"}
+        return {'error': refusal(f"ticket is not claimed (status '{status}')", 'check', status, note=f"The §10 checker passes over a result an executor has produced under a claim. Before a claim there is nothing to check, and after a terminal status the join has already read the acceptance this field feeds. ticket: {ticket_path}")}
     independence = str(data.get('independence') or 'checker').strip().strip('`')
     if independence == 'gate' and _executor_of(data) != ROOT_EXECUTOR:
         return {'error': f'ticket {run}/{ticket_id} defers independence to its downstream gate: a non-root gate-deferred ticket has no checker path and cannot carry checked_by'}
@@ -408,8 +403,6 @@ def _result_snapshot(run_dir):
             return (None, failure)
         snapshot[path.stem] = text
     return (snapshot, None)
-
-
 def _result_grade_snapshot(ticket_path):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
@@ -444,7 +437,7 @@ def _set_status_under_run_lock(rest):
     run, ticket_id, status = args
     if status not in VALID_STATUSES:
         return {'error': f"invalid status '{status}'; must be one of {sorted(VALID_STATUSES)}"}
-    if status in ('ready', 'claimed'):
+    if status in ADMISSION_OWNED_TARGETS:
         return {'error': f"set-status cannot create '{status}': ready and claim transitions require the admission boundary"}
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -496,6 +489,8 @@ def _set_status_under_run_lock(rest):
         if refusal is not None:
             return refusal
     updated = _set_frontmatter_field(text, 'status', status)
+    for field in set_status_blanks(status):
+        updated = _set_frontmatter_field(updated, field, '')
     try:
         _write_text_atomically(ticket_path, updated)
         if identity is not None:

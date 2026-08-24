@@ -14,15 +14,11 @@ import re
 from pathlib import Path
 
 if __package__:
-    from .tickets_format import (
-        _executor_of, _parse_frontmatter, _scope_entries, _sections,
-        _set_frontmatter_field, _write_section, canonical_json,
-    )
+    from .tickets_format import (_executor_of, _parse_frontmatter, _scope_entries, _sections, _set_frontmatter_field, _write_section, canonical_json)
+    from .tickets_transitions import CLAIMED, stamp
 else:
-    from tickets_format import (
-        _executor_of, _parse_frontmatter, _scope_entries, _sections,
-        _set_frontmatter_field, _write_section, canonical_json,
-    )
+    from tickets_format import (_executor_of, _parse_frontmatter, _scope_entries, _sections, _set_frontmatter_field, _write_section, canonical_json)
+    from tickets_transitions import CLAIMED, stamp
 
 
 GENERATION_RE = re.compile(r"^v2:(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
@@ -338,6 +334,11 @@ def _next_draft(run: str, root_id: str, snapshot: dict, coverage_map="") -> dict
 
 
 def _v2_draft_findings(root_id: str, snapshot: dict) -> list:
+    # A draft is graded from its root, so a claimed root is an allowed
+    # vantage while a claimed member stays refused -- an execution the draft
+    # would rewrite underneath. Both sets are the table's: `draft-validate`'s
+    # own entry, plus, for the root alone, the claimed status by name.
+    positions = frozenset(stamp("draft-validate", 2).draft_statuses)
     findings = []
     for ticket_id in [root_id, *_cut_members(root_id, snapshot)]:
         data = _parse_frontmatter(snapshot[ticket_id])
@@ -347,7 +348,7 @@ def _v2_draft_findings(root_id: str, snapshot: dict) -> list:
         )
         if not explicit:
             findings.append({"code": "v2-opt-in-missing", "field": "admission", "ticket": ticket_id})
-        if status not in {"pending", "ready", "suspended"}:
+        if status not in (positions | {CLAIMED} if ticket_id == root_id else positions):
             findings.append({"code": "v2-draft-status", "field": "status", "ticket": ticket_id})
     return findings
 

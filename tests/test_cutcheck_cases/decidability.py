@@ -41,7 +41,8 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
         # `symlink-in-tree` and `unread-half` joined later and are additions,
         # not survivals: the claim this pins is still that GIT_NO_HISTORY left
         # and that no member standing beside it left with it. `shared-test-module`
-        # joined later still, on those same terms.
+        # joined later still, on those same terms, and `marker-only-relocation`
+        # later again -- a joiner, never a survival.
         self.assertEqual(
             cutcheck.ADVISORY,
             frozenset(
@@ -54,6 +55,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.SCOPE_OPEN,
                     cutcheck.UNREAD_HALF,
                     cutcheck.SHARED_TEST_MODULE,
+                    cutcheck.MARKER_ONLY_RELOCATION,
                     "ticket-result-not-terminal",
                 }
             ),

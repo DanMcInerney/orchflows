@@ -238,7 +238,9 @@ class PacketV0BranchTest(unittest.TestCase):
     The refusal itself is not what went: a ticket nobody has claimed still
     gets no packet.  What went is the second spelling of it, reachable only
     for a ticket carrying no admission field at all -- which no CLI write
-    path can produce, every one of them stamping ``v1:pending``.
+    path can produce, every one of them stamping the pending sentinel the
+    ticket's own admission version names: ``v1:pending``, or ``v2:pending``
+    for a ticket carrying one of the four public v2 fields.
     """
 
     def test_no_version_keyed_status_refusal_survives(self):
