@@ -295,10 +295,12 @@ def _packet_under_run_lock(rest):
     if str(loaded.get('id') or '') != ticket_id or str(loaded.get('run') or '') != run:
         return {'error': f'packet path {ticket_path} does not carry the requested run/id {run}/{ticket_id}'}
     status = str(loaded.get('status') or '').strip().strip('`').strip()
+    if status not in CHECKABLE_STATUSES:
+        return {'error': f"ticket is not claimed (status '{status}'): packet emission requires an admitted claim"}
+    # A claim taken up before the admission boundary existed carries no
+    # receipt to name, and its dispatch says exactly that.
     admission = 'legacy-unadmitted'
     if is_v1(loaded) or is_v2(loaded):
-        if status not in CHECKABLE_STATUSES:
-            return {'error': f"ticket is not claimed (status '{status}'): v1 packet emission requires an admitted claim"}
         snapshot = {}
         for sibling_path in sorted(ticket_path.parent.glob('*.md')):
             sibling_text, sibling_failure = _read_utf8(sibling_path)
@@ -312,8 +314,6 @@ def _packet_under_run_lock(rest):
         if stored != grade['receipt']:
             return {'error': f'ticket has no current admission receipt: stored {stored or "<missing>"}, current {grade["receipt"]}'}
         admission = stored
-    elif status not in CHECKABLE_STATUSES:
-        return {'error': f"legacy ticket is not claimed (status '{status}'), so it is not an already-live v0 claim: re-cut it before packet emission"}
     sections = _sections(text)
     executor = (loaded.get('executor') or '').strip().strip('`')
     missing = []

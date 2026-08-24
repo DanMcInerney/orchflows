@@ -343,7 +343,11 @@ class PacketAdmissionBoundaryTest(unittest.TestCase):
             legacy = legacy.replace("admission: v1:pending\n", "").replace("cohort: v1:ticket:T1\n", "")
             (run_dir / "T1.md").write_text(legacy, encoding="utf-8")
             refused = run_cmd(tmp, "packet", "testrun", "T1", "--reply-to", "main")
-            self.assertIn("re-cut", refused["error"])
+            # One status guard above both versions now, so a ticket nobody
+            # claimed is refused for that and not for its admission version:
+            # nothing here is told to re-cut, only that it is not claimed.
+            self.assertIn("not claimed", refused["error"])
+            self.assertNotIn("re-cut", refused["error"])
             text = (run_dir / "T1.md").read_text(encoding="utf-8")
             text = tickets_mod._set_frontmatter_field(text, "status", "claimed")
             text = tickets_mod._set_frontmatter_field(text, "claimed_by", "legacy-agent")

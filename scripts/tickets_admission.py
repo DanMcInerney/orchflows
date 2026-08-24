@@ -296,6 +296,36 @@ def cohort_sealed(ticket_id: str, text: str, siblings: dict) -> bool:
     return False
 
 
+def _shared_grade(ticket_id: str, text: str, siblings: dict, context: dict,
+                  data: dict, findings: list) -> tuple:
+    """The dependency, authority and lower-validator grade both versions run.
+
+    ``findings`` carries the version's own prefix in and is extended in
+    place, so a version keeps its findings without keeping a second copy of
+    this block.  Order never matters to a caller: ``_ordered`` sorts.  The
+    return is ``(adapter, dependencies, ordered, input_fp, scope_fp)``.
+    """
+
+    dependencies = [str(value) for value in (data.get("depends_on") or [])]
+    for dependency in dependencies:
+        if dependency not in siblings:
+            findings.append(finding("dependency-dangling", "depends_on", dependency))
+            continue
+        status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
+        if status != "complete":
+            findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
+    findings.extend(authority_findings(ticket_id, data))
+    adapter = adapter_id(data.get("pack"))
+    common = {"ticket_id": ticket_id, "text": text, "siblings": siblings, "adapter_id": adapter, "context": context}
+    input_findings, input_fingerprint = _optional_probe("tickets_inputs", "grade_inputs", **common)
+    scope_findings, scope_fingerprint = _optional_probe("tickets_scope", "grade_scope", **common)
+    return_findings, _ = _optional_probe("tickets_result", "grade_return_fixture", **common)
+    findings.extend(input_findings)
+    findings.extend(scope_findings)
+    findings.extend(return_findings)
+    return (adapter, dependencies, _ordered(findings), input_fingerprint, scope_fingerprint)
+
+
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
     """Grade one exact snapshot and return ordered findings plus its receipt."""
 
@@ -307,41 +337,15 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     cohort = str(data.get("cohort") or "").strip()
     if not _COHORT_RE.fullmatch(cohort):
         findings.append(finding("cohort-invalid", "cohort", "expected v1:<ticket|root|batch>:<id-segment>"))
-    dependencies = [str(value) for value in (data.get("depends_on") or [])]
-    for dependency in dependencies:
-        if dependency not in siblings:
-            findings.append(finding("dependency-dangling", "depends_on", dependency))
-            continue
-        status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
-        if status != "complete":
-            findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
-    findings.extend(authority_findings(ticket_id, data))
-    adapter = adapter_id(data.get("pack"))
-    common = {
-        "ticket_id": ticket_id,
-        "text": text,
-        "siblings": siblings,
-        "adapter_id": adapter,
-        "context": context,
-    }
-    input_findings, input_fingerprint = _optional_probe("tickets_inputs", "grade_inputs", **common)
-    scope_findings, scope_fingerprint = _optional_probe("tickets_scope", "grade_scope", **common)
-    return_findings, _ = _optional_probe("tickets_result", "grade_return_fixture", **common)
-    findings.extend(input_findings)
-    findings.extend(scope_findings)
-    findings.extend(return_findings)
-    ordered = _ordered(findings)
+    adapter, _, ordered, input_fingerprint, scope_fingerprint = _shared_grade(ticket_id, text, siblings, context, data, findings)
     receipt = ADMISSION_PENDING
     if not ordered:
         payload = _canonical_cut(ticket_id, text, siblings, adapter, input_fingerprint, scope_fingerprint)
         receipt = f"v1:{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
     return {
-        "adapter": adapter,
-        "findings": ordered,
-        "receipt": receipt,
+        "adapter": adapter, "findings": ordered, "receipt": receipt,
         "snapshot_ids": relevant_snapshot_ids(ticket_id, text, siblings),
-        "input_fingerprint": input_fingerprint,
-        "scope_fingerprint": scope_fingerprint,
+        "input_fingerprint": input_fingerprint, "scope_fingerprint": scope_fingerprint,
     }
 
 
@@ -391,35 +395,15 @@ def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict
             seals = sealed_record.get("assignment_seals") or {}
             if seals.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed run state does not bind this assignment digest"))
-    dependencies = [str(value) for value in (data.get("depends_on") or [])]
-    for dependency in dependencies:
-        if dependency not in siblings:
-            findings.append(finding("dependency-dangling", "depends_on", dependency))
-            continue
-        status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
-        if status != "complete":
-            findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
-    findings.extend(authority_findings(ticket_id, data))
-    adapter = adapter_id(data.get("pack"))
-    common = {"ticket_id": ticket_id, "text": text, "siblings": siblings, "adapter_id": adapter, "context": context}
-    input_findings, input_fingerprint = _optional_probe("tickets_inputs", "grade_inputs", **common)
-    scope_findings, scope_fingerprint = _optional_probe("tickets_scope", "grade_scope", **common)
-    return_findings, _ = _optional_probe("tickets_result", "grade_return_fixture", **common)
-    findings.extend(input_findings)
-    findings.extend(scope_findings)
-    findings.extend(return_findings)
-    ordered = _ordered(findings)
+    adapter, dependencies, ordered, input_fingerprint, scope_fingerprint = _shared_grade(ticket_id, text, siblings, context, data, findings)
     receipt = ADMISSION_V2_PENDING
     if not ordered:
         payload = {"assignment": assignment_digest(ticket_id, text), "sealed_state": sealed_record}
         receipt = f"v2:{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
     return {
-        "adapter": adapter,
-        "findings": ordered,
-        "receipt": receipt,
+        "adapter": adapter, "findings": ordered, "receipt": receipt,
         "snapshot_ids": sorted({ticket_id, *dependencies}),
-        "input_fingerprint": input_fingerprint,
-        "scope_fingerprint": scope_fingerprint,
+        "input_fingerprint": input_fingerprint, "scope_fingerprint": scope_fingerprint,
     }
 
 
