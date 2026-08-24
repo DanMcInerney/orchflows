@@ -41,8 +41,8 @@ whitespace-delimited words. Terms are
   `tickets_inputs.py` owns typed identity resolution, `tickets_scope.py` owns
   mutation/edge closure, and `tickets_admission.py` composes those lower
   graders into receipts. Lifecycle and packet modules consume admission.
-  Gate mutation-plan derivation belongs to one ticket-family helper;
-  dispatch consumes its canonical result.
+  One ticket-family helper derives the gate mutation plan; dispatch
+  consumes it.
   Cutcheck imports those lower owners directly, never the tickets facade;
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
@@ -53,7 +53,9 @@ whitespace-delimited words. Terms are
   [`tools/affected_tests.py`](tools/affected_tests.py) owns
   write-scope-to-test-module derivation.
   [`tools/run_report.py`](tools/run_report.py) owns the retrospective speed
-  report. [`tests/`](tests/) owns regression evidence and pinned canonical
+  report. [`tools/verify_at.py`](tools/verify_at.py) owns running one command
+  in a detached worktree at an exact revision.
+  [`tests/`](tests/) owns regression evidence and pinned canonical
   bytes. [`AGENTS.md`](AGENTS.md) owns required checks and local-versus-CI
   guidance.
 - [`templates/`](templates/) owns host-block source. [`install.py`](install.py)
@@ -89,7 +91,7 @@ whitespace-delimited words. Terms are
 ## Runtime routing pins
 
 Helper membership is derived from code, not inventoried here. Two
-non-derivable facts stay pinned: `scripts/cutcheck.py` owns cut-defect
+non-derivable facts: `scripts/cutcheck.py` owns cut-defect
 detection over issued ticket sets; `scripts/tickets.py` owns
 the public ticket facade, the one root/gate
 family, immutable run identity (`opened_at`, installed version, source commit),
@@ -105,11 +107,10 @@ Domain projections belong to `scripts/ui_artifacts_projection.py`,
 `scripts/ui_now_projection.py`,
 `scripts/ui_runs_projection.py`, `scripts/ui_workflows_projection.py`,
 `scripts/ui_sessions_projection.py`, and `scripts/ui_friction_projection.py`.
-The Workflows projector owns `GET /api/v1/workflows`,
+The Workflows projector owns `/api/v1/workflows`,
 `/api/v1/workflows/{workflow_id}` and
 `/api/v1/workflows/{workflow_id}/sources/{source_id}`; the typed catalog
-owns their browser counterparts under `/workflows`. `/runs/{run}` and
-`/runs/{run}/tickets/{ticket}` remain nav-hidden Workflows children.
+owns their browser counterparts under `/workflows`.
 `scripts/ui_experience.py` owns only the `orchflows.experience.v1`
 compatibility projection: closed feature slices, navigation contract,
 SPA-path recognition. `scripts/ui_assets.py` owns contained immutable-asset
