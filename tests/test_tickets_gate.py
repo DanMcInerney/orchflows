@@ -297,8 +297,17 @@ class GateAddsOnlyItsOwnRecordsTest(unittest.TestCase):
             self.assertIn("mutation-plan-paths", verify)
 
     def test_no_stub_states_one_input_name_twice(self):
+        """The root here names `lens`, `acceptance` and `baseline` -- every
+        name the generated stubs also reach for. `render_inputs` refuses a
+        duplicate name outright, so an inheritance that copied blindly
+        would not merely double a record: it would refuse the whole gate.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
-            run_dir = make_run(use_sink(Path(tmp)), root_text())
+            make_run(use_sink(Path(tmp)), root_text(inputs=ROOT_INPUTS + [
+                '- input: {"name":"lens","type":"literal","value":"the-roots-idea"}',
+                '- input: {"name":"acceptance","type":"literal","value":"the-roots-idea"}',
+            ]))
             payload = gate()
             self.assertNotIn("error", payload)
             for path in payload["gate"]["paths"]:
@@ -326,18 +335,31 @@ class GateAddsOnlyItsOwnRecordsTest(unittest.TestCase):
             self.assertEqual(1, len(lenses))
             self.assertEqual("code", lenses[0]["value"])
 
-    def test_one_baseline_survives_inheriting_the_roots_own(self):
-        """The root already names `baseline`; the stub must not gain a
-        second one from the git-pack producer."""
+    def test_the_one_surviving_baseline_is_the_roots_own(self):
+        """The root names a `baseline`, and the git-pack producer would
+        insert one of its own from the live HEAD if none were there.
+
+        Exactly one must survive, and it must be the root's: a gate decides
+        a delivery at the revision the root was cut against, so a stub that
+        quietly carried the HEAD of the moment would grade the same work at
+        a different identity than the units did.
+        """
 
         with tempfile.TemporaryDirectory() as tmp:
-            run_dir = make_run(use_sink(Path(tmp)), root_text())
+            make_run(use_sink(Path(tmp)), root_text())
             payload = gate()
             self.assertNotIn("error", payload)
             for path in payload["gate"]["paths"]:
-                names = record_names(Path(path).read_text(encoding="utf-8"))
+                records = [
+                    json.loads(line[len("- input: "):])
+                    for line in input_lines(Path(path).read_text(encoding="utf-8"))
+                ]
+                baselines = [r for r in records if r["name"] == "baseline"]
                 with self.subTest(stub=Path(path).stem):
-                    self.assertEqual(1, names.count("baseline"))
+                    self.assertEqual(1, len(baselines))
+                    self.assertEqual(
+                        "a" * 40, baselines[0]["identity"]["revision"]
+                    )
 
 
 class GateStubsIssueInTheirOwnCohortTest(unittest.TestCase):
