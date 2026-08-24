@@ -82,6 +82,12 @@ CLAUSE_PROPERTIES = {
     "without a packet": "names the arrival the clause governs",
     "before reading anything": "refusal at the packet boundary, not after a look around",
     "your refusal is your return": "the return channel is the refusal channel",
+    "reaching your invoker through the invocation itself": (
+        "names the channel, which is the half the seventeenth firing got "
+        "wrong: it accepted that the return is the refusal and still looked "
+        "for an address to send it to. Unpinned, this span is the one part "
+        "of the clause a shortening edit can remove silently"
+    ),
     "never the coordinator": "forecloses the seventeenth firing's fallback address",
     "Acquire nothing": "the scavenging half, structural rather than one judgment deep",
     "claim no name": "no invented identity",
@@ -339,7 +345,10 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
         for token, why in (
             ("one executor", "the condition the lane turns on"),
             ("orch-integrate", "the join that owns the outcome's other half"),
-            ("orch-decompose", "what the direct root is emitted instead of"),
+            # The bare name appears twice more in this body, so a bare-token
+            # assertion passes with the whole lane deleted. Only the lane
+            # says it this way, which is what makes the case able to fail.
+            ("rather than `orch-decompose`", "what the direct root is emitted instead of"),
             ("write scope", "what the directly bound executor is given"),
         ):
             with self.subTest(token=token):
