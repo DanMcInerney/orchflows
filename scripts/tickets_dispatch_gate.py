@@ -5,26 +5,34 @@ the gate family inside it. The family is one subject -- the three stubs a
 root's gate issues -- so it moves whole: the stub's frontmatter, the four
 cut-time sections each kind states, and the two command halves that read the
 run and write the family all-or-none.
+
+The law this module owns beyond assembly is inheritance. A gate is the last
+door before terminal, so a stub that lost the root's authority would grade
+with less authority than the work it judges: a stub copies the root's
+isolation, excluded_actions and fixed-input records byte-for-byte and adds
+only the records its own job needs. Each stub issues in its own ticket
+cohort -- a gate's broad write grant and the root's collide under
+same-cohort sole-owner closure, and the escape used to be a hand edit.
 """
 from __future__ import annotations
 import json
 import re
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, root_cohort
+    from .tickets_admission import ADMISSION_PENDING, ticket_cohort
     from .tickets_commands import GATE_USAGE
-    from .tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from .tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
     from .tickets_gate_mutations import _canonical_gate_mutation_plan
-    from .tickets_input_producers import git_head, render_ticket_inputs
+    from .tickets_input_producers import git_head, input_groups, render_ticket_inputs
     from .tickets_issue import GATE_ID_MARKER, NEW_DEFAULT_BOUND, _distinct_gate_lenses, _render_ticket
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_EXECUTORS, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _run_lock, _segment_error, _tickets_root
     from .tickets_worklog import _run_tickets
 else:
-    from tickets_admission import ADMISSION_PENDING, root_cohort
+    from tickets_admission import ADMISSION_PENDING, ticket_cohort
     from tickets_commands import GATE_USAGE
-    from tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
     from tickets_gate_mutations import _canonical_gate_mutation_plan
-    from tickets_input_producers import git_head, render_ticket_inputs
+    from tickets_input_producers import git_head, input_groups, render_ticket_inputs
     from tickets_issue import GATE_ID_MARKER, NEW_DEFAULT_BOUND, _distinct_gate_lenses, _render_ticket
     from tickets_packet import GATE_CRITIQUE_ID, GATE_EXECUTORS, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _run_lock, _segment_error, _tickets_root
@@ -41,11 +49,71 @@ def _pack_domain(pack) -> str:
     if name.endswith(PACK_NAME_SUFFIX):
         name = name[:-len(PACK_NAME_SUFFIX)]
     return name
-def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None) -> str:
+def _record_names(body: str) -> set:
+    """The ``name`` of every canonical input record stated in ``body``."""
+    names = set()
+    for group in input_groups(body or ''):
+        if len(group) != 1 or not group[0].startswith('- input: '):
+            continue
+        try:
+            record = parse_canonical_json(group[0][len('- input: '):])
+        except ValueError:
+            continue
+        name = record.get('name') if isinstance(record, dict) else None
+        if isinstance(name, str):
+            names.add(name)
+    return names
+def _inherited_input_lines(own: str, inherited: str) -> list:
+    """The root's fixed-input records the gate does not already state.
+    Each is carried as the exact line the root states it on. A gate grades a
+    delivery against the root's authority, so what it reads is the root's
+    own bytes and not a paraphrase reassembled here.
+    A record whose name the gate already uses stays the gate's: the gate's
+    record is the one that names its own job, and `render_inputs` refuses a
+    duplicate name outright, so one of the two has to yield.
+    """
+    names = _record_names(own)
+    lines = []
+    for group in input_groups(inherited or ''):
+        if len(group) != 1 or not group[0].startswith('- input: '):
+            continue
+        try:
+            record = parse_canonical_json(group[0][len('- input: '):])
+        except ValueError:
+            continue
+        name = record.get('name') if isinstance(record, dict) else None
+        if not isinstance(name, str) or name in names:
+            continue
+        names.add(name)
+        lines.append(group[0])
+    return lines
+def _with_inherited_inputs(sections: list, inherited: str) -> list:
+    """``sections``, with the root's records appended to its Fixed inputs."""
+    extended = []
+    for heading, content in sections:
+        if heading == 'Fixed inputs':
+            lines = _inherited_input_lines(content, inherited)
+            if lines:
+                content = '\n'.join(([content] if content.strip() else []) + lines)
+        extended.append((heading, content))
+    return extended
+def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None, isolation=None, excluded_actions=None) -> str:
+    """One gate stub: its own cohort, the root's authority, its own records.
+    ``isolation`` and ``excluded_actions`` are the root's, passed in rather
+    than defaulted, so a root that holds neither lends neither: what is
+    copied is what was granted, never a safe-looking value invented here.
+    The cohort is the stub's own. A gate stub holds a broad write grant and
+    so does its root, and under same-cohort sole-owner closure those two
+    collide; issuing each stub in `v1:ticket:<its id>` keeps the collision
+    from forming instead of leaving a hand edit to undo it.
+    """
     normalized_scope = [str(path).replace('\\', '/') for path in write_scope]
     mutations = [f"{'write' if path.endswith('/') else 'change'}:{path}" for path in normalized_scope]
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort or root_cohort(ticket_id.split('.gate.', 1)[0]), 'executor': executor, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
-    text, error = render_ticket_inputs(_render_ticket(fields, sections), run, inherited_inputs, baseline=baseline)
+    exclusions = [str(entry) for entry in (excluded_actions or [])]
+    isolation = str(isolation).strip() if isolation else ''
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort or ticket_cohort(ticket_id), 'executor': executor, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'excluded_actions': exclusions or None, 'isolation': isolation or None, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
+    body = _render_ticket(fields, _with_inherited_inputs(sections, inherited_inputs))
+    text, error = render_ticket_inputs(body, run, inherited_inputs, baseline=baseline)
     if error is not None:
         raise ValueError(error)
     return text
@@ -174,11 +242,16 @@ def _gate_under_run_lock(rest, head_probe=None):
         return {'error': f"ticket '{acceptance_id}' states no `## Completion test`, so the verify stub would carry no acceptance"}
     pack = root.get('pack')
     inherited_inputs = (root.get('sections') or {}).get('Fixed inputs', '')
+    isolation = root.get('isolation')
+    exclusions = list(root.get('excluded_actions') or [])
     gate_baseline = (head_probe or git_head)()
     if pack in ('orch-code-pack', 'orch-design-pack') and gate_baseline is None:
         return {'error': f'{pack} gate input rendering cannot resolve the run-project HEAD. Nothing was written'}
     rendered = []
     critique_ids = []
+    def stub(stub_id, executor, depends, stub_scope, stub_sections):
+        """One stub of this family, on this root's authority."""
+        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions)
     try:
         for lens in lenses:
             invalid = _segment_error('lens', lens)
@@ -186,11 +259,11 @@ def _gate_under_run_lock(rest, head_probe=None):
                 return invalid
             stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
             critique_ids.append(stub_id)
-            rendered.append((stub_id, _gate_stub(run, stub_id, GATE_EXECUTORS['critique'], units, [], _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, [], _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run))))
         repair_id = GATE_REPAIR_ID.format(root=root_id)
-        rendered.append((repair_id, _gate_stub(run, repair_id, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, critique_ids, run), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+        rendered.append((repair_id, stub(repair_id, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, critique_ids, run))))
         verify_id = GATE_VERIFY_ID.format(root=root_id)
-        rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run, mutation_plan), pack, inherited_inputs=inherited_inputs, baseline=gate_baseline)))
+        rendered.append((verify_id, stub(verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run, mutation_plan))))
     except ValueError as error:
         return {'error': str(error) + '. Nothing was written'}
     tickets_root = _tickets_root()
@@ -216,5 +289,6 @@ def _gate_under_run_lock(rest, head_probe=None):
     return {'gate': {'run': run, 'root': root_id, 'lenses': lenses, 'acceptance_from': acceptance_id, 'ids': [stub_id for stub_id, _ in rendered], 'paths': [str(path) for path in written]}}
 __all__ = (
     '_cmd_gate', '_gate_body', '_gate_input', '_gate_sections', '_gate_stub',
-    '_gate_under_run_lock', '_input_name', '_listed_items', '_pack_domain',
+    '_gate_under_run_lock', '_inherited_input_lines', '_input_name',
+    '_listed_items', '_pack_domain', '_record_names', '_with_inherited_inputs',
 )
