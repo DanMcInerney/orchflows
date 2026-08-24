@@ -343,6 +343,33 @@ class TestTheSeamMoved(unittest.TestCase):
             self.assertTrue(hasattr(tickets_lifecycle, name), name)
             self.assertTrue(hasattr(tickets, name), name)
 
+    def test_no_stale_copy_of_the_seam_survives_where_it_left(self):
+        """A re-export, not a second definition.
+
+        The two cases above pin that `tickets_project` owns the seam and
+        that the lifecycle module and the facade still reach *a* name --
+        and a copy left behind in `tickets_lifecycle.py` satisfies both,
+        because ownership is read off the project module and the export
+        check only asks whether an attribute exists.  The facade binds
+        the lifecycle module's name (`scripts/tickets.py`,
+        `_do_claim = _tickets_lifecycle_module._do_claim`), so a stale
+        definition there is precisely what every caller through the
+        facade would get.  What must hold is one definition reached by
+        every door, which is what makes the extraction a move rather
+        than a copy.
+        """
+
+        from scripts import tickets, tickets_lifecycle
+
+        for name in self.SEAM:
+            for module, where in ((tickets_lifecycle, "scripts/tickets_lifecycle.py"),
+                                  (tickets, "scripts/tickets.py")):
+                self.assertEqual(
+                    "scripts.tickets_project",
+                    getattr(module, name).__module__,
+                    f"{name} reached through {where} is not the project module's",
+                )
+
     def test_the_project_module_owns_the_binding_law(self):
         from scripts import tickets_project
 
