@@ -69,6 +69,11 @@ EXTENSION_RE = re.compile(r'\.[A-Za-z0-9]{1,5}$')
 # cutcheck's is: a marker anywhere in the sentence would drop live
 # contradictions. Restated, never imported: the architecture map forbids this
 # family importing cutcheck, so the agreement pin is what holds the two equal.
+# The window is a floor, not a tuning: the pattern is anchored to the path's
+# own edge, so every width that holds the longest marker reads alike, and only
+# too short a one is felt -- it slices a word open and reads "herewith" as
+# "with". Spelled a literal here and an alias of `DENIAL_WINDOW` there, so the
+# two are pinned equal by name rather than by either one being the source.
 PERMISSION_RE = re.compile(r'\b(?:with|once|after|provided|unless|except)\s+$', re.I)
 PERMISSION_WINDOW = 24
 # The admission codes whose repair is exactly one mechanical rewrite.
@@ -137,7 +142,14 @@ def _prohibits(action: str, target: str) -> bool:
         at = action.find(target, start)
         if at < 0:
             return False
-        if not PERMISSION_RE.search(action[max(0, at - PERMISSION_WINDOW):at]):
+        before = action[:at]
+        # ``target`` is the plain spelling and the clause is not: a proviso
+        # written ``with ./x re-pinned`` is found past its own ``./``, which
+        # ends the window in punctuation and hides the marker standing in
+        # front of it. The two halves of this reading have to compose.
+        while before[-2:] == './':
+            before = before[:-2]
+        if not PERMISSION_RE.search(before[max(0, len(before) - PERMISSION_WINDOW):]):
             return True
         start = at + 1
 

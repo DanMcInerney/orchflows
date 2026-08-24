@@ -36,6 +36,16 @@ def _readings(scope, excluded):
 PROVISO = "Editing a proposal file in the sink with tests/pins.json re-pinned"
 OWNED = "The manifest is the join's act once tests/pins.json is re-pinned"
 BOTH_WAYS = "never write scratch/T1.txt, even with scratch/T1.txt re-pinned"
+# The two corrections have to compose. The token reader hands `_prohibits` the
+# *plain* spelling while the action keeps its own, so a proviso written `./x`
+# is looked up at an index past the `./` and the clause in front of it reads
+# `with ./` -- no marker, and the false positive this unit removed comes back
+# for exactly the paths the other half of the unit taught it to fold.
+DOT_PROVISO = "Editing a proposal file in the sink with ./tests/pins.json re-pinned"
+# Permitted first and forbidden second: the ordering that makes the scan walk
+# past an occurrence rather than answer on it. `BOTH_WAYS` forbids first and so
+# answers on the first occurrence, leaving the walk itself unasked-for.
+PERMIT_FIRST = "with scratch/T1.txt re-pinned, never write scratch/T1.txt"
 # (write_scope, excluded_actions, the contradictions this pair states)
 FAMILY_3_CASES = (
     # A proviso names a path the item *may* write in order to act. Read as a
@@ -46,8 +56,12 @@ FAMILY_3_CASES = (
     # The path in front of the proviso is still the prohibited one.
     (["scratch/T1.txt"], ["never write scratch/T1.txt with approval recorded"],
      {"never write scratch/T1.txt with approval recorded | scratch/T1.txt"}),
-    # Forbidden in one clause and permitted in another is still forbidden.
+    # Forbidden in one clause and permitted in another is still forbidden --
+    # in either order. Forbidden-second is the one that has to walk.
     (["scratch/T1.txt"], [BOTH_WAYS], {BOTH_WAYS + " | scratch/T1.txt"}),
+    (["scratch/T1.txt"], [PERMIT_FIRST], {PERMIT_FIRST + " | scratch/T1.txt"}),
+    # A proviso is a proviso in either spelling of its path.
+    (["tests/pins.json"], [DOT_PROVISO], set()),
     # `./x` and `x` are one path, from either side of the comparison. Both of
     # these were silently clean: a real contradiction neither reader could see.
     (["scratch/T1.txt"], ["never write ./scratch/T1.txt"],
@@ -110,3 +124,49 @@ class Family3OneLawTest(unittest.TestCase):
             self.assertEqual("scratch/T1.txt", reader._plain("scratch/T1.txt"))
             self.assertEqual("a/./b.txt", reader._plain("a/./b.txt"))
             self.assertEqual("../outside.txt", reader._plain("../outside.txt"))
+
+    def test_every_permitting_marker_is_read_by_both_readers(self):
+        """The vocabulary case by case, not just the two the cases happen to use.
+
+        Cut to `with|once` in both readers, every other case here stays green:
+        four of the six words were carried by no oracle at all.
+        """
+        for word in ("with", "once", "after", "provided", "unless", "except"):
+            action = "The join acts %s tests/pins.json is re-pinned" % word
+            for reader in (cutcheck_scope, tickets_lint):
+                self.assertFalse(reader._prohibits(action, "tests/pins.json"),
+                                 f"{reader.__name__}: {word!r} is a proviso marker")
+        plain = "The join acts before tests/pins.json is re-pinned"
+        for reader in (cutcheck_scope, tickets_lint):
+            self.assertTrue(reader._prohibits(plain, "tests/pins.json"),
+                            f"{reader.__name__}: a non-marker permits nothing")
+
+    def test_a_marker_inside_a_longer_word_is_not_a_marker(self):
+        """`\\b` and the window at once: the window may not slice a word open.
+
+        `herewith` carries `with` and permits nothing. Read through a window
+        too short to reach the `here`, it becomes one -- which is the only
+        direction in which `PERMISSION_WINDOW`'s value is load-bearing, the
+        pattern being anchored to the path's own edge.
+        """
+        action = "The join acts herewith tests/pins.json unresolved"
+        for reader in (cutcheck_scope, tickets_lint):
+            self.assertTrue(reader._prohibits(action, "tests/pins.json"),
+                            f"{reader.__name__}: 'herewith' is not 'with'")
+
+    def test_the_two_readers_state_one_vocabulary_and_one_window(self):
+        """The law is written twice, so its two spellings are pinned equal.
+
+        The agreement cases compare what the readers *say*; they cannot see a
+        word one reader knows and the other does not, because no case names
+        it. Divergence here is the drift the whole family is against, and
+        cutcheck spells the window as an alias of a constant this file does
+        not own while lint spells it as a literal -- so the two can part
+        without either being edited.
+        """
+        self.assertEqual(cutcheck_scope.PERMISSION_RE.pattern,
+                         tickets_lint.PERMISSION_RE.pattern)
+        self.assertEqual(cutcheck_scope.PERMISSION_RE.flags,
+                         tickets_lint.PERMISSION_RE.flags)
+        self.assertEqual(cutcheck_scope.PERMISSION_WINDOW,
+                         tickets_lint.PERMISSION_WINDOW)

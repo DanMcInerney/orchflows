@@ -53,6 +53,11 @@ except ImportError:  # installed flat script directory
 # ``DENIAL_RE``'s is: the permitting clauses this corpus states put the marker
 # immediately in front of the path, and a window merely scanned for the word
 # would drop live contradictions that say "after" earlier in the same sentence.
+# The window is a floor, not a tuning: the pattern is anchored to the path's
+# own edge, so every width that holds the longest marker reads alike, and only
+# too short a one is felt -- it slices a word open and reads "herewith" as
+# "with". Both the words and the width are restated in ``tickets_lint`` and
+# pinned equal there; neither may be moved on one side alone.
 PERMISSION_RE = re.compile(r"\b(?:with|once|after|provided|unless|except)\s+$", re.I)
 PERMISSION_WINDOW = DENIAL_WINDOW
 
@@ -129,7 +134,14 @@ def _prohibits(action, target):
         at = action.find(target, start)
         if at < 0:
             return False
-        if not PERMISSION_RE.search(action[max(0, at - PERMISSION_WINDOW):at]):
+        before = action[:at]
+        # ``target`` is the plain spelling and the clause is not: a proviso
+        # written ``with ./x re-pinned`` is found past its own ``./``, which
+        # ends the window in punctuation and hides the marker standing in
+        # front of it. The two halves of this reading have to compose.
+        while before[-2:] == "./":
+            before = before[:-2]
+        if not PERMISSION_RE.search(before[max(0, len(before) - PERMISSION_WINDOW):]):
             return True
         start = at + 1
 
