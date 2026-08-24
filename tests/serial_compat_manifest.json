@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2676,
+  "count": 2678,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -1675,6 +1675,8 @@
    "tests.test_tickets_cases.packet_close.TestPacketCarriesTheCloseLaw.test_a_script_executors_packet_does_not",
    "tests.test_tickets_cases.packet_close.TestPacketCarriesTheCloseLaw.test_a_skill_executors_packet_carries_it",
    "tests.test_tickets_cases.packet_close.TestPacketCarriesTheCloseLaw.test_neither_further_child_is_told_to_close_the_item",
+   "tests.test_tickets_cases.packet_close.TestPacketCarriesTheCloseLaw.test_the_checker_is_bounded_to_one_outside_execution",
+   "tests.test_tickets_cases.packet_close.TestPacketCarriesTheCloseLaw.test_the_close_orders_no_verify_fork",
    "tests.test_tickets_cases.packet_close.TestPacketCarriesWhatTwoLanesSpentBoundLearning.test_a_script_node_is_told_neither",
    "tests.test_tickets_cases.packet_close.TestPacketCarriesWhatTwoLanesSpentBoundLearning.test_a_ticket_with_a_workspace_of_its_own_is_told_its_branch_is_not_the_revision",
    "tests.test_tickets_cases.packet_close.TestPacketCarriesWhatTwoLanesSpentBoundLearning.test_a_ticket_with_no_workspace_of_its_own_is_not",
@@ -2679,7 +2681,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "3c423d3c0bde13bee7e325af96b7c2a60f76fa8eee1ca67b019d235ad8509de4"
+  "sha256": "ca8165b27b41e648371ffab40da592d5c1f7e918ca34dcd2b4c1997e745b9720"
  },
  "mutation_owners": [
   {
@@ -5439,6 +5441,7 @@
   {
    "module": "tests.test_v0_removal",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -5446,6 +5449,7 @@
   {
    "module": "tests.test_v0_removal",
    "owner": "GradeParityTest.test_v1_and_v2_grades_match_the_baseline_admission_module_exactly",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -5453,6 +5457,7 @@
   {
    "module": "tests.test_v0_removal",
    "owner": "PacketV0BranchTest.test_a_never_claimed_v0_ticket_is_refused_and_a_live_one_still_dispatches",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
