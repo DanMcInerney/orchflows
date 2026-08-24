@@ -8,19 +8,11 @@ the refusal exists -- but a skill that states a contract's rule without
 naming the contract becomes a second owner, and the two drift apart
 silently. The form pinned here is link-not-restate: wherever a kernel
 skill carries one of those facts, the sentence carrying it names the
-owner.
-
-The absences pinned here are the other half. rules/verification.md §10
-listed two ordinary independence paths no ticket, engine or script ever
-selected -- a bare judged verdict, and an unnamed remainder "covered per
-§7" -- and each cost every reader of the section a branch to rule out.
-The incentive guards in the same clause are asserted present, because
-"shorter" is not the goal and deleting them would also make the module
-green.
-
-Three facts left ownerless by contracts/work-item.md's diet are asserted
-back at rules/delegation.md, each once: the join's scope rejection, the
-child's read boundary, and the bounds currency clause.
+owner; the packet-carried CLI and the dispatch parts are swept the same
+way, and the absences at rules/verification.md §10 and the facts restored
+at rules/delegation.md are the other half, each class stating the premise
+it rests on. The incentive guards are asserted present: "shorter" is not
+the goal, and deleting one would also make this module green.
 """
 
 import re
@@ -43,8 +35,7 @@ KERNEL_SKILLS = (VERIFY, CRITIQUE, INTEGRATE)
 #: Every CLI form `scripts/tickets_packet.py` already spells out in the
 #: prompt a child receives. A skill body repeating one of them pays every
 #: dispatch for a string the dispatch already carried, and goes stale the
-#: moment the packet's flags change. `tickets.py result-grade` is not one
-#: of them: it is the join's own verb, carried by no packet.
+#: moment the packet's flags change.
 PACKET_CARRIED_CLI = (
     r"tickets\.py amend\b",
     r"tickets\.py new\b",
@@ -65,7 +56,6 @@ PACKET_BUILDS = {
     r"tickets\.py run-state": r"_command_text\([^\n]*'run-state'",
     r"workspace\.py start": r"_command_text\([^\n]*'workspace\.py'\)[^\n]*'start'",
 }
-
 
 #: The three parts every emitted packet carries, keyed by the fact and
 #: valued by the pattern that finds it in `scripts/tickets_packet.py`.
@@ -458,9 +448,8 @@ class TheDispatchPartsHaveOneOwner(unittest.TestCase):
     Three facts a child needs before it can act lawfully -- the name it
     records under, where the ticket store resolves, and what a fork does
     when it arrives without a packet -- were carried by nobody, and five
-    friction entries in one session came of it. Placing them in the
-    generator puts them on every shape at once; placing a second copy in a
-    skill body would put a stale one on the shapes that read that skill.
+    friction entries in one session came of it; `PACKET_DISPATCH_PARTS`
+    above owns why the generator is their only lawful place.
     """
 
     def test_the_generator_states_every_dispatch_part(self):
