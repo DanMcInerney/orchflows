@@ -451,6 +451,13 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         (ticket_id, 0, klass, detail)
         for klass, detail in _removal_evidence(frontmatter, objective, inputs)
     )
+    # Screen 4, and advisory rather than refusing: a marker is weak evidence of
+    # meaning, never proof of its absence. Read off the section rather than the
+    # `completion` local above, which a frozen root blanks -- the question here
+    # is what the completion test spells, not whose law it states.
+    if _marker_only_relocation(objective, sections.get(COMPLETION_SECTION, "")):
+        findings.append((ticket_id, 0, MARKER_ONLY_RELOCATION,
+                         "relocation graded by substring markers alone"))
     return findings
 
 

@@ -405,18 +405,19 @@ class CutScopeScreenTest(unittest.TestCase):
     def test_a_relocation_graded_by_markers_alone_is_flagged(self):
         """Markers cannot see the right words arriving with the wrong meaning.
 
-        The relocated claim-CAS docstring asserted a call relationship that does
-        not exist, cut to fit under a line cap precisely to green the marker.
+        Graded through `_check_ticket`, never the judgment alone: this screen
+        answered correctly for a whole run while nothing called it.
         """
 
-        self.assertTrue(cutcheck_ticket._marker_only_relocation(self.MOVED, self.MARKERS))
+        self.assertIn(cutcheck_ticket.MARKER_ONLY_RELOCATION,
+                      self._classes(objective=self.MOVED, completion=self.MARKERS))
 
     def test_a_relocation_asserting_meaning_or_relocating_nothing_is_not_flagged(self):
-        self.assertFalse(cutcheck_ticket._marker_only_relocation(
-            self.MOVED, "1. **The described call happens.** A reviewer confirms the"
-            " function behaves as the moved text describes. oracle_class: judged."))
-        self.assertFalse(
-            cutcheck_ticket._marker_only_relocation("The item adds a screen.", self.MARKERS))
+        self.assertNotIn(cutcheck_ticket.MARKER_ONLY_RELOCATION, self._classes(
+            objective=self.MOVED, completion="1. **The described call happens.** A"
+            " reviewer confirms the moved text's meaning. oracle_class: judged."))
+        self.assertNotIn(cutcheck_ticket.MARKER_ONLY_RELOCATION, self._classes(
+            objective="The item adds a screen.", completion=self.MARKERS))
 
 
 class CutScopeScreenRegistrationTest(unittest.TestCase):
