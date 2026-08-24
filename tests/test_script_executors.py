@@ -1,0 +1,136 @@
+"""A `script:<path>` executor is admissible on a stamped ticket.
+
+`contracts/work-item.md` (Executor form) and `rules/token-economy.md` §4
+both say a repeated deterministic step becomes `executor: script:<path>`
+-- a tested script as a graph node, so the step costs no agent.
+`authority_findings` refused every executor outside the stamped pack's
+skill-binding registry, and a script is not a skill, so the form graded
+`executor-pack-mismatch` on any ticket carrying a pack.  Because
+`tickets_packet.py` refuses to emit a packet for a ticket with any
+admission finding, the law was reachable only on a pack-less or
+legacy-unadmitted ticket -- which is why the tree carried no real usage.
+
+The refusal a script executor still owes is its own: a path that names
+no file in the tree is not a tested script, and admission says so.
+"""
+from __future__ import annotations
+
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts import tickets_admission as admission  # noqa: E402
+from scripts import tickets as ticket_facade  # noqa: E402,F401  binds pack registries
+
+RESOLVING_SCRIPT = "tools/validate.py"
+ABSENT_SCRIPT = "scripts/no-such-script.py"
+
+
+def ticket_text(executor: str, *, pack: str = "orch-code-pack") -> str:
+    """One stamped, otherwise-clean ticket carrying the given executor."""
+
+    return f"""---
+id: T1
+run: script-executor-fixture
+status: pending
+admission: v1:pending
+cohort: v1:ticket:T1
+executor: {executor}
+pack: {pack}
+independence: checker
+depends_on: []
+write_scope:
+  - scripts/a.py
+mutations: [change:scripts/a.py]
+excluded_actions:
+  - vcs.push
+isolation: required
+bound: 10m
+---
+
+## Objective
+
+Run one repeated deterministic step as a graph node.
+
+## Fixed inputs
+
+- input: {{"name":"expected","type":"literal","value":"green"}}
+
+## Completion test
+
+- the step reports green | oracle: `python verify.py` | oracle_class: deterministic | provenance: pre-existing
+
+## Return fields
+
+status; result; changed_artifacts; verification; feedback; risks
+
+## Result
+
+## Verification
+
+## Feedback
+
+[]
+
+## Risks
+
+[]
+"""
+
+
+def finding_codes(executor: str, **kwargs) -> set:
+    text = ticket_text(executor, **kwargs)
+    graded = admission.grade_admission("T1", text, {"T1": text})
+    return {item["code"] for item in graded["findings"]}
+
+
+class ScriptExecutorAdmissionTest(unittest.TestCase):
+    """The stamped ticket is the case the registry check made unreachable."""
+
+    def test_a_script_executor_resolving_in_the_tree_is_admitted(self):
+        codes = finding_codes(f"script:{RESOLVING_SCRIPT}")
+        self.assertNotIn("executor-pack-mismatch", codes)
+        self.assertNotIn("script-executor-unresolved", codes)
+
+    def test_a_script_executor_naming_no_file_in_the_tree_is_refused(self):
+        codes = finding_codes(f"script:{ABSENT_SCRIPT}")
+        self.assertIn("script-executor-unresolved", codes)
+
+    def test_a_bare_script_prefix_names_no_path_and_is_refused(self):
+        self.assertIn("script-executor-unresolved", finding_codes("script:"))
+
+    def test_the_refusal_names_the_path_that_did_not_resolve(self):
+        text = ticket_text(f"script:{ABSENT_SCRIPT}")
+        graded = admission.grade_admission("T1", text, {"T1": text})
+        detail = "".join(
+            item["detail"] for item in graded["findings"]
+            if item["code"] == "script-executor-unresolved"
+        )
+        self.assertIn(ABSENT_SCRIPT, detail)
+
+    def test_a_directory_is_not_a_tested_script(self):
+        """`is_file`, not `exists`: a directory resolves and runs nothing."""
+
+        self.assertIn("script-executor-unresolved", finding_codes("script:tools"))
+
+
+class SkillExecutorStaysBoundTest(unittest.TestCase):
+    """Admitting the script form must not open the registry to skills.
+
+    Without this the change is indistinguishable from deleting the
+    binding check outright.
+    """
+
+    def test_a_skill_outside_the_packs_registry_is_still_refused(self):
+        self.assertIn("executor-pack-mismatch", finding_codes("orch-draft"))
+
+    def test_a_skill_the_pack_does_bind_is_still_admitted(self):
+        self.assertNotIn("executor-pack-mismatch", finding_codes("orch-tdd"))
+
+
+if __name__ == "__main__":
+    unittest.main()

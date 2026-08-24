@@ -17,6 +17,7 @@ if __package__:
         PACK_EXECUTOR_BINDINGS,
         PLAIN_ADAPTER,
         ROOT_EXECUTOR,
+        SCRIPT_EXECUTOR_PREFIX,
         adapter_id,
         canonical_json,
         count_return_text,
@@ -35,6 +36,7 @@ else:
         PACK_EXECUTOR_BINDINGS,
         PLAIN_ADAPTER,
         ROOT_EXECUTOR,
+        SCRIPT_EXECUTOR_PREFIX,
         adapter_id,
         canonical_json,
         count_return_text,
@@ -141,24 +143,24 @@ def _ordered(findings) -> list:
     return [finding(*row) for row in sorted(unique)]
 
 
-def _pack_bindings(pack: str) -> set:
-    """Executor/assembly skills in the flat-family admission registry."""
-    return executor_bindings(pack)
-
-
 def authority_findings(ticket_id: str, data: dict) -> list:
     """Portable pack/executor and TDD workspace-policy findings."""
 
     findings = []
     executor = _executor_of(data)
     pack = str(data.get("pack") or "").strip()
-    structural = executor == ROOT_EXECUTOR or ".gate." in ticket_id
-    bindings = _pack_bindings(pack) if pack and not structural else set()
-    if pack and not structural and executor not in bindings:
+    unbound = executor.startswith(SCRIPT_EXECUTOR_PREFIX) or executor == ROOT_EXECUTOR or ".gate." in ticket_id
+    bindings = executor_bindings(pack) if pack and not unbound else set()
+    if pack and not unbound and executor not in bindings:
         findings.append(finding(
             "executor-pack-mismatch", "executor",
             f"{executor or '<missing>'} is not bound by {pack}'s stable executor/assembly registry",
         ))
+    if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
+        target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
+        if not (Path(__file__).resolve().parents[1] / target).is_file():
+            findings.append(finding("script-executor-unresolved", "executor",
+                                    f"executor names script '{target or '<missing>'}', which does not resolve in the tree"))
     if executor != "orch-tdd":
         return findings
     adapter = adapter_id(pack)
