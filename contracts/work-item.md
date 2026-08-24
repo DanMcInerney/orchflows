@@ -230,8 +230,9 @@ remain v1; existing v0 behavior is unchanged.
 A named-field or enum change to this contract or
 [pack-signature.md](pack-signature.md) lands as an explicit T0 supersession.
 The change updates its focused contract checks and re-pins the superseded
-canonical bytes in `tests/pins.json`; it never reinterprets claimed or
-terminal history. This one note governs both T0 shapes.
+canonical bytes in `tests/pins.json`; old admission versions retain their
+existing meaning and it never reinterprets claimed or terminal history. This
+one note governs both T0 shapes.
 
 This T0 supersession adds only verify-gate mutation-plan carriage. Every
 `<id>.gate.verify` `## Fixed inputs` carries `mutation-plan-paths`, shaped

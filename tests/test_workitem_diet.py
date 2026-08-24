@@ -220,22 +220,55 @@ class SharedT0NoteTest(unittest.TestCase):
                 self.assertIn(token, flat(raw))
 
 
+#: The close law's tokens, which must sit inside the bullet that owns it.
+CLOSE_LAW_TOKENS = (
+    "running each criterion's oracle once",
+    "UNVERIFIED alone",
+    "the one outside execution arrives per §10",
+)
+
+
+def completion_test_bullet(text):
+    """The `## Completion test` bullet alone, not the whole contract.
+
+    The close law is that bullet's. Counting its tokens file-wide would
+    stay green if they migrated to any other bullet, so the guard slices
+    the bullet out first and counts only inside it.
+    """
+    start = text.index("- `## Completion test`")
+    tail = text[start + 1 :]
+    end = tail.find("\n- `")
+    return flat(tail if end == -1 else tail[:end])
+
+
 class OneOutsideExecutionLawTest(unittest.TestCase):
     """The diet never costs the close law the contract owns."""
 
+    def test_the_bullet_slice_stops_at_the_next_bullet(self):
+        """Can-fail: the slice must exclude a token placed outside it."""
+        sliced = completion_test_bullet(
+            "- `## Completion test` — UNVERIFIED alone\n"
+            "- `## Return fields` — UNVERIFIED alone\n"
+        )
+        self.assertEqual(1, sliced.count("UNVERIFIED alone"))
+
     def test_the_completion_test_bullet_keeps_the_one_outside_execution_law(self):
-        text = flat(WORK_ITEM.read_text(encoding="utf-8"))
-        for token in (
-            "running each criterion's oracle once",
-            "UNVERIFIED alone",
-            "the one outside execution arrives per §10",
-        ):
+        raw = WORK_ITEM.read_text(encoding="utf-8")
+        bullet = completion_test_bullet(raw)
+        whole = flat(raw)
+        for token in CLOSE_LAW_TOKENS:
             with self.subTest(token=token):
                 self.assertEqual(
                     1,
-                    text.count(token),
+                    bullet.count(token),
                     "contracts/work-item.md's `## Completion test` bullet must "
                     f"state the close law's {token!r} exactly once",
+                )
+                self.assertEqual(
+                    1,
+                    whole.count(token),
+                    f"the close law's {token!r} is stated outside its bullet "
+                    "as well; the bullet is its one owner",
                 )
 
 
