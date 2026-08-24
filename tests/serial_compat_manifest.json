@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2770,
+  "count": 2774,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -2741,6 +2741,10 @@
    "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_playwright_that_does_not_answer_is_unknown_not_missing",
    "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_an_empty_cache_is_missing",
    "tests.test_workspace_cases.prepare.TestTheInstallCeilingIsReal.test_the_ceiling_is_ten_minutes_and_a_timeout_is_a_failure",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_branch_record_is_never_resolved_as_a_revision",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_commit_between_two_starts_does_not_silence_that_shared_tree",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_record_naming_some_other_standing_tree_is_not_this_one",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_record_two_standing_trees_could_carry_stays_silent",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_sibling_no_longer_claimed_has_left_the_tree",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_sibling_on_another_branch_is_not_sharing_this_tree",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_sibling_that_recorded_nothing_is_not_sharing_this_tree",
@@ -2773,7 +2777,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e70d7f874fa1353b1cad5f089e4b5df602f31c5bf6852b050ab368fbf3d6ed60"
+  "sha256": "4f2b3244c7b48116bc62f5a238b0b9c15bcc2ab23b776763abc49197d2af0853"
  },
  "mutation_owners": [
   {

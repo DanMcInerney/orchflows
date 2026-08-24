@@ -246,6 +246,31 @@ def _detached_trees(git_out, is_ancestor, sha) -> int:
     ])
 
 
+def _records_this_tree(git_out, is_ancestor, recorded: str, branch: str) -> bool:
+    """Whether a sibling's recorded workspace is the tree ``branch`` stands in.
+
+    A branch name follows the item: it reads the same after every commit, so
+    equality of two branch records is the whole test. A ``detached:`` record
+    names the revision ``start`` read instead, and the tree it was written
+    from leaves that revision behind on the item's first commit -- so equality
+    answers no for the sharer that has done exactly what a claimed item is
+    dispatched to do. Where such a record still names a directory,
+    ``_detached_tip`` says which, on the reasoning it already applies at the
+    join -- the standing detached worktree at or past that revision, and only
+    where its answer is a single one. So the record is resolved to a tip, and
+    that tip has to be where this caller stands. Neither half alone is the
+    test: without the first a sharer disappears the moment it commits, and
+    without the second any resolvable record reads as this tree, flagging two
+    workspaces that share nothing but a repository against each other.
+    """
+
+    if recorded == branch:
+        return True
+    if not (recorded.startswith(DETACHED_PREFIX) and branch.startswith(DETACHED_PREFIX)):
+        return False
+    return _detached_tip(git_out, is_ancestor, _tip_ref(recorded)) == _tip_ref(branch)
+
+
 def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
     """Every other claimed ticket of this run that recorded this same tree.
 
@@ -270,15 +295,12 @@ def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
     report about the caller's tree, and it must not be the thing that stops an
     item over some other item's malformed file.
 
-    A detached record names the revision ``start`` read rather than a ref, so
-    it identifies a directory only where one directory could have written it:
-    two workspaces materialized at one revision record the identical string.
-    Which directories could have is a question git answers and no frontmatter
-    stamp is needed for -- the standing detached worktrees at or past that
-    revision. Exactly one of them and the record names it, which is the
-    shared-tree case with the branch left off; more and equality is no
-    evidence at all, and reading it as evidence flags two genuinely isolated
-    workspaces, the same ambiguity ``_detached_tip`` refuses to resolve.
+    A detached workspace records no ref, so which tree a record names is
+    decided by ``_records_this_tree`` rather than by the record string --
+    including this caller's own, checked first: where more than one standing
+    detached worktree could have written the caller's revision, the caller
+    cannot say which tree it is reporting about, and a sibling that recorded
+    that identical revision is no evidence of sharing.
     """
 
     if branch.startswith(DETACHED_PREFIX) and _detached_trees(
@@ -294,7 +316,8 @@ def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
         data = tickets._load_ticket(path)
         if "error" in data or data.get("status") != "claimed":
             continue
-        if str(data.get("workspace_branch") or "").strip() == branch:
+        recorded = str(data.get("workspace_branch") or "").strip()
+        if _records_this_tree(git_out, is_ancestor, recorded, branch):
             found.append(str(data.get("id") or path.stem))
     return sorted(found)
 

@@ -194,6 +194,136 @@ class TestStartSeesWhoElseRecordedThisTree(unittest.TestCase):
                 workspace.EXIT_SHARED_WORKSPACE, done.returncode, done.stdout
             )
 
+    def test_a_commit_between_two_starts_does_not_silence_that_shared_tree(self):
+        """The case above after the ordinary act of working in the tree.
+
+        A ``detached:`` record names the revision ``start`` read, not a ref
+        that follows the item, so the first commit moves the tree off its own
+        record and equality of record strings stops seeing the sharer the case
+        above pins. Git still names the directory outright -- a single
+        standing detached worktree at or past the recorded revision -- so
+        whether a sharer has committed since cannot be what decides isolation.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            shared = tmp / "wt-shared"
+            git(main, "worktree", "add", "--quiet", "--detach", str(shared), "HEAD")
+            for tid in ("T-first", "T-second"):
+                make_ticket(run_dir, tid)
+            first = run_workspace(shared, "start", "testrun", "T-first")
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+            commit_in(shared, {"scratch/a.txt": "first item work\n"}, "T-first works")
+
+            done = run_workspace(shared, "start", "testrun", "T-second")
+
+            body = payload_of(done)["start"]
+            # or the fixture pins the case above a second time rather than this one
+            self.assertNotEqual(
+                payload_of(first)["start"][workspace.BRANCH_KEY],
+                body[workspace.BRANCH_KEY],
+                "the intervening commit must move the recorded identity",
+            )
+            self.assertEqual(["T-first"], body["shared_with"])
+            self.assertFalse(
+                body["isolated"],
+                "a claimed sibling recorded this very directory; its having "
+                "committed since does not make the tree this item's alone",
+            )
+            self.assertEqual(
+                workspace.EXIT_SHARED_WORKSPACE, done.returncode, done.stdout
+            )
+
+    def test_a_record_two_standing_trees_could_carry_stays_silent(self):
+        """Where that directory-naming reasoning stops, pinned as a limit.
+
+        The sharer's record is read against the standing detached worktrees at
+        or past it, and it names a directory only where they answer with one
+        tip. Park a second detached worktree at the recorded revision and two
+        directories could have written it, so this reports nothing -- a sharer
+        missed, never two isolated workspaces flagged against each other. The
+        resolution runs over the revision the sibling recorded, not over the
+        caller's own: the caller's has moved on and is unambiguous here, so a
+        resolution moved onto it would answer for a record it cannot speak to.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            shared = tmp / "wt-shared"
+            git(main, "worktree", "add", "--quiet", "--detach", str(shared), "HEAD")
+            git(main, "worktree", "add", "--quiet", "--detach", str(tmp / "wt-other"), "HEAD")
+            for tid in ("T-first", "T-second"):
+                make_ticket(run_dir, tid)
+            first = run_workspace(shared, "start", "testrun", "T-first")
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+            commit_in(shared, {"scratch/a.txt": "first item work\n"}, "T-first works")
+
+            done = run_workspace(shared, "start", "testrun", "T-second")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            body = payload_of(done)["start"]
+            self.assertEqual([], body["shared_with"])
+            self.assertTrue(body["isolated"], body)
+
+    def test_a_record_naming_some_other_standing_tree_is_not_this_one(self):
+        """The other half of reading a record as a directory.
+
+        Two detached workspaces that have each committed name one standing
+        tree apiece, unambiguously -- and they are different trees. Resolving
+        a record to a single directory is therefore only half the test; the
+        directory has to be the one this caller stands in, or the reasoning
+        that catches the shared tree above flags two workspaces that share
+        nothing but a repository.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            for tid, content in (("T-first", "a\n"), ("T-second", "b\n")):
+                make_ticket(run_dir, tid)
+                tree = tmp / f"wt-{tid}"
+                git(main, "worktree", "add", "--quiet", "--detach", str(tree), "HEAD")
+                # each tree off the shared base onto its own commit, so each
+                # record resolves to exactly one standing worktree
+                commit_in(tree, {"scratch/a.txt": content}, f"{tid} works")
+            first = run_workspace(tmp / "wt-T-first", "start", "testrun", "T-first")
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+
+            done = run_workspace(tmp / "wt-T-second", "start", "testrun", "T-second")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            body = payload_of(done)["start"]
+            self.assertEqual([], body["shared_with"])
+            self.assertTrue(body["isolated"], body)
+
+    def test_a_branch_record_is_never_resolved_as_a_revision(self):
+        """Only a ``detached:`` record is read as a revision.
+
+        A branch a detached caller stands at or past is the ordinary case --
+        the tree was cut from it. Were a branch record resolved the way a
+        revision record is, that ancestry alone would name this caller's tip
+        and every sibling working on the branch the tree was cut from would be
+        reported as standing in it.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            here = git(main, "rev-parse", "--abbrev-ref", "HEAD").strip()
+            make_ticket(run_dir, "T-on-branch", extra=((workspace.BRANCH_KEY, here),))
+            make_ticket(run_dir, "T-self")
+            detached = tmp / "wt-detached"
+            git(main, "worktree", "add", "--quiet", "--detach", str(detached), "HEAD")
+
+            done = run_workspace(detached, "start", "testrun", "T-self")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            body = payload_of(done)["start"]
+            self.assertEqual([], body["shared_with"])
+            self.assertTrue(body["isolated"], body)
+
     def test_starting_the_same_item_twice_never_flags_it_against_itself(self):
         """``start`` records this item's own branch, so the second run reads a
         sink already carrying it. The item's own id is skipped, or every
