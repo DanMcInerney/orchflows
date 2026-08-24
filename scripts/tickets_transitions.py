@@ -18,11 +18,11 @@ sentinel differs; `scripts/tickets_issue.py` and
 from __future__ import annotations
 from collections import namedtuple
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING
-    from .tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed
+    from .tickets_format import TERMINAL_STATES, VALID_STATUSES, _set_frontmatter_field
 else:
-    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING
-    from tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed
+    from tickets_format import TERMINAL_STATES, VALID_STATUSES, _set_frontmatter_field
 PENDING, READY, CLAIMED, SUSPENDED = 'pending', 'ready', 'claimed', 'suspended'
 STATUSES = tuple(sorted(VALID_STATUSES))
 # The lease: what a claim writes and what putting an item back on offer
@@ -43,8 +43,10 @@ def set_status_command(target: str) -> str:
 _ROWS = (
     Row('claim', (PENDING, READY), CLAIMED, ('admission', 'status') + LEASE_FIELDS, (),
         '`claim` it'),
+    # No seal caveat in the phrase: `remedy_path` drops this row outright
+    # when the cohort is sealed, so naming it at all means it runs.
     Row('recut', (PENDING, READY), PENDING, ('admission', 'status', 'cohort'), LEASE_FIELDS,
-        '`recut` it, which the cohort seal refuses while a member is taken up'),
+        '`recut` it'),
     Row('amend', (PENDING, READY), None, ('<cut section>',), (),
         '`amend` one cut-time section'),
     Row('grant', tuple(sorted(GRANTABLE_STATUSES)), None,
@@ -63,6 +65,12 @@ _ROWS = (
     for state in TERMINAL_STATES
 )
 COMMANDS = tuple(sorted({row.command for row in _ROWS}))
+# The two commands the cohort seal gates on top of the status rows
+# (scripts/tickets_issue.py's `_cmd_amend` and `_recut_under_run_lock`).
+# A row is necessary for them, never sufficient: under a seal the status
+# is right and the command still refuses, so a chain that named one would
+# be the very sentence this module exists to stop.
+SEAL_REFUSED = ('recut', 'amend')
 # The one command that moves a status without the admission boundary, so
 # the only first step a remedy chain can take.
 _HOPS = tuple(row for row in _ROWS if row.command.startswith('set-status '))
@@ -103,34 +111,50 @@ def set_status_blanks(target: str) -> tuple:
 def remedies(status: str) -> tuple:
     """Every command the table runs at this status, as remedy phrases."""
     return tuple(row.remedy for row in _ROWS if status in row.sources)
-def remedy_path(status: str, command: str) -> tuple:
+def sealed_after_release(ticket_id: str, text: str, siblings: dict) -> bool:
+    """Whether the cohort still refuses `recut` once the lease is released.
+
+    The seal reads a leftover `claimed_at` as a ticket somebody has taken
+    up, so asking it about the item as it stands answers about the lease
+    rather than about the cohort -- and a refusal that asked it that way
+    would refuse to name `recut` for every claimed item, sealed or not.
+    The question a refusal needs is the one after the release it is about
+    to recommend, which is what this asks.
+    """
+    released = _set_frontmatter_field(text, 'status', PENDING)
+    for field in LEASE_FIELDS:
+        released = _set_frontmatter_field(released, field, '')
+    return cohort_sealed(ticket_id, released, siblings)
+def remedy_path(status: str, command: str, sealed: bool = False) -> tuple:
     """The chain from `status` to one that runs `command`, or empty.
 
     One hop is enough for this table: `set-status` is the only command
     that moves a status without going through admission, so a refused
     command is reached, if at all, by one status write and then itself.
+    Under a seal the seal-gated commands drop out of the chain, and what
+    is left is the successor path -- suspend, and let the join open one.
     """
-    if allows(status, command):
+    if allows(status, command) and not (sealed and command in SEAL_REFUSED):
         return ()
     for hop in _HOPS:
         if status not in hop.sources or hop.target is None:
             continue
         row = transition(hop.target, command)
-        if row is not None:
-            return (hop.remedy, row.remedy)
-    return ()
-def refusal(subject: str, command: str, status: str, note: str = None) -> str:
+        if row is None or (sealed and row.command in SEAL_REFUSED):
+            continue
+        return (hop.remedy, row.remedy)
+    suspend = transition(status, set_status_command(SUSPENDED))
+    return () if suspend is None else (suspend.remedy,)
+def refusal(subject: str, command: str, status: str, note: str = None,
+            sealed: bool = False) -> str:
     """One refusal naming only what the table runs, in the order it runs.
 
     The whole point of rendering rather than writing: the remedy is the
-    row's own phrase, so a command the table refuses at `status` cannot
-    appear in the sentence that sends a caller to it.
+    row's own phrase, so a command the table refuses at `status` -- or one
+    the cohort seal refuses there -- cannot appear in the sentence that
+    sends a caller to it.
     """
-    row = transition(status, command)
-    if row is not None:
-        remedy = row.remedy
-    else:
-        steps = remedy_path(status, command)
-        # A command with no row anywhere; the table grew past its chains.
-        remedy = ', then '.join(steps) if steps else f'no chain reaches `{command}`'
-    return f'{subject}: {remedy}.' + (f' {note}' if note else '')
+    steps = remedy_path(status, command, sealed)
+    if not steps:
+        return f'{subject}: {transition(status, command).remedy}.' + (f' {note}' if note else '')
+    return f'{subject}: ' + ', then '.join(steps) + '.' + (f' {note}' if note else '')

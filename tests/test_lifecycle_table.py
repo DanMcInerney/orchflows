@@ -86,20 +86,23 @@ def v0_repo(tmp: Path, status: str, **fields) -> Path:
     return run_dir
 
 
-def v1_repo(tmp: Path, **kwargs) -> Path:
-    """A real git fixture and one admissible v1 ticket in a root cohort.
+def v1_repo(tmp: Path, ids=("T1",), cohort="v1:root:T1", **kwargs) -> Path:
+    """A real git fixture and one admissible v1 ticket per id.
 
-    The cohort is `v1:root:`, whose seal is read off the graded member
-    alone -- so a lease this fixture leaves behind is a seal this fixture
-    can observe, which a `v1:ticket:` cohort with no siblings could not.
+    The default cohort is `v1:root:`, whose seal is read off the graded
+    member alone -- so a lease this fixture leaves behind is a seal this
+    fixture can observe, which a `v1:ticket:` cohort with no siblings
+    could not. Pass a shared cohort and two ids for the other direction:
+    a seal a sibling holds, which no lease of T1's own can lift.
     """
 
     baseline = initialize_git_fixture(tmp)
     run_dir = use_sink(tmp) / "tickets" / "testrun"
     run_dir.mkdir(parents=True)
-    (run_dir / "T1.md").write_text(
-        v1_ticket(cohort="v1:root:T1", baseline=baseline, **kwargs), encoding="utf-8"
-    )
+    for tid in ids:
+        (run_dir / f"{tid}.md").write_text(
+            v1_ticket(tid, cohort=cohort, baseline=baseline, **kwargs), encoding="utf-8"
+        )
     return run_dir
 
 
@@ -199,6 +202,27 @@ class TransitionTableTest(unittest.TestCase):
         )
         self.assertNotEqual(expected, commands_named(forged))
         self.assertEqual(set(), commands_named("subject: `git rebase` it"))
+
+    def test_a_seal_drops_the_gated_commands_out_of_the_chain(self):
+        """The seal is evaluated, not narrated. Under one, `recut` and
+        `amend` leave the chain entirely and the successor path is what
+        remains -- a caveat in the sentence would still be a caveat the
+        caller has to adjudicate, which is how the original text failed."""
+
+        for command in tickets_transitions.SEAL_REFUSED:
+            with self.subTest(command=command):
+                live = tickets_transitions.remedy_path("claimed", command)
+                sealed = tickets_transitions.remedy_path("claimed", command, sealed=True)
+                self.assertIn(f"`{command}`", " ".join(live))
+                self.assertNotIn(f"`{command}`", " ".join(sealed))
+                self.assertEqual(
+                    {"set-status suspended"}, commands_named(" ".join(sealed))
+                )
+        self.assertEqual(
+            tickets_transitions.remedy_path("claimed", "claim"),
+            tickets_transitions.remedy_path("claimed", "claim", sealed=True),
+            "the seal gates recut and amend, and nothing else",
+        )
 
     def test_a_refusal_carries_its_subject_and_its_callers_note(self):
         text = tickets_transitions.refusal(
@@ -349,6 +373,43 @@ class LifecycleCommandsTest(unittest.TestCase):
             ready = run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-b")["error"]
             self.assertEqual(chain_commands("ready", "recut"), commands_named(ready))
             self.assertIn("requires `recut`", ready)
+
+    def test_a_sealed_cohort_member_is_never_sent_through_recut(self):
+        """The join's own counterexample, live.
+
+        `grant` was refused on this very run's 00-root.02 while its cohort
+        was sealed, and the refusal still named `recut`. The two halves
+        below are one fixture apart: the seal is held by a sibling, which
+        no release of T1's own lease can lift, and the control is the same
+        cohort with that sibling left unclaimed.
+        """
+
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            v1_repo(tmp, ids=("T1", "T2"), cohort="v1:batch:shared")
+            for tid, agent in (("T1", "agent-a"), ("T2", "agent-b")):
+                self.assertNotIn(
+                    "error", run_cmd(tmp, "claim", "testrun", tid, "--by", agent)
+                )
+            sealed = run_cmd(
+                tmp, "grant", "testrun", "T1",
+                "--write-scope", "scripts/new.py", "--by", "main",
+            )["error"]
+            self.assertNotIn("recut", commands_named(sealed))
+            self.assertEqual({"set-status suspended"}, commands_named(sealed))
+            self.assertIn("successor", sealed)
+
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            v1_repo(tmp, ids=("T1", "T2"), cohort="v1:batch:shared")
+            self.assertNotIn(
+                "error", run_cmd(tmp, "claim", "testrun", "T1", "--by", "agent-a")
+            )
+            live = run_cmd(
+                tmp, "grant", "testrun", "T1",
+                "--write-scope", "scripts/new.py", "--by", "main",
+            )["error"]
+            self.assertEqual(chain_commands("claimed", "recut"), commands_named(live))
 
     def test_the_grant_widening_refusal_names_a_sequence_the_seal_allows(self):
         """`grant` refuses to invent an operation on a planned v1 item. The

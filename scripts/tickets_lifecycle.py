@@ -24,9 +24,9 @@ if __package__:
 else:
     from tickets_packet import _claim_is_stale
 if __package__:
-    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, set_status_blanks
+    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, sealed_after_release, set_status_blanks
 else:
-    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, set_status_blanks
+    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, sealed_after_release, set_status_blanks
 CLAIM_USAGE = 'claim <run> <id> --by <name>'
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 RESULT_GRADE_USAGE = 'result-grade <run> <id>'
@@ -330,7 +330,8 @@ def _grant_under_run_lock(rest):
         )
     ]
     if is_v1(data) and 'mutations' in data and new_paths:
-        return {'error': refusal('a planned v1 ticket cannot widen operation authority from path-only grant input: ' + ', '.join(new_paths) + '; the widened operation needs an explicit mutation vector written at cut time', 'recut', status, note='Or suspend the item and let the join open a successor ticket.')}
+        sealed = sealed_after_release(data.get('id') or ticket_id, text, _run_snapshot(ticket_path.parent)[0])
+        return {'error': refusal('a v1 ticket carrying a planned mutation vector cannot widen operation authority from path-only grant input: ' + ', '.join(new_paths) + '; the widened operation needs an explicit mutation vector written at cut time', 'recut', status, note='Or suspend the item and let the join open a successor ticket.', sealed=sealed)}
     granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
     for entry in entries:
         if entry not in granted:
