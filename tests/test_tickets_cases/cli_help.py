@@ -172,9 +172,10 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
     for its own return but never its own name, which is the `reply_to` of
     every packet it in turn emits; it recovered the name by reading the
     host's subagent files. contracts/work-item.md#dispatch: a child never
-    infers `reply_to`, so a child that will itself dispatch is told the one
-    identifier its own children must address — the name it was claimed
-    under."""
+    infers `reply_to`, so every child is told the name it was claimed under —
+    it may have to record under it — and a child that will itself dispatch is
+    told the further fact that the same name is its own children's
+    `reply_to`."""
 
     def packet_for(self, tmp: Path, body: str):
         make_packet_repo(tmp, body)
@@ -209,11 +210,16 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
                 # one is what this child answers to, one is who it answers
                 self.assertIn("reply_to: main", packet["prompt"])
 
-    def test_a_packet_for_an_executor_that_dispatches_nothing_states_no_name(self):
+    def test_only_a_dispatching_executor_is_told_the_name_becomes_a_reply_to(self):
+        # The fixture's executor is `orch-tdd`, which dispatches nothing. It is
+        # still told its own name — every child may have to record under it —
+        # so what separates it from the case above is the second sentence, not
+        # the first: it is not told the name becomes its children's `reply_to`.
         with tempfile.TemporaryDirectory() as tmp:
             packet = self.packet_for(Path(tmp), CLAIMED_TICKET)
-            self.assertIsNone(packet["assigned_name"])
-            self.assertNotIn("assigned name", packet["prompt"])
+            self.assertEqual("agent-a", packet["assigned_name"])
+            self.assertIn("assigned name is `agent-a`", packet["prompt"])
+            self.assertNotIn("as that child's `reply_to`", packet["prompt"])
 
     def test_an_unclaimed_packet_is_refused_before_dispatch(self):
 
