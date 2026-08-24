@@ -8,17 +8,19 @@ if __package__:
 else:
     from tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _runs_root, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
-    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _runs_root, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
     from tickets_worklog import _run_goal, _run_tickets
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1, is_v2
+    from .tickets_admission import ADMISSION_PENDING, grade_result, is_receipt, is_v1, is_v2
+    from .tickets_context import graded_admission, run_snapshot
 else:
-    from tickets_admission import ADMISSION_PENDING, grade_admission, grade_result, is_receipt, is_v1, is_v2
+    from tickets_admission import ADMISSION_PENDING, grade_result, is_receipt, is_v1, is_v2
+    from tickets_context import graded_admission, run_snapshot
 if __package__:
     from .tickets_packet import _claim_is_stale
 else:
@@ -49,15 +51,9 @@ def readiness_facts(ticket: dict, tickets: dict) -> dict:
         'dependencies_complete': not dangling and not incomplete,
     }
 def _run_snapshot(run_dir: Path):
-    texts = {}
-    failures = []
-    for ticket_path in sorted(run_dir.glob('*.md')):
-        text, failure = _read_utf8(ticket_path)
-        if failure is not None:
-            failures.append({'id': ticket_path.stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']})
-        else:
-            texts[ticket_path.stem] = text
-    return texts, failures
+    """The shared run snapshot, with each unreadable member phrased as a skip."""
+    texts, failures = run_snapshot(run_dir)
+    return texts, [{'id': stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']} for stem, failure in failures]
 def _snapshot_matches(run_dir: Path, snapshot: dict, _ids=None) -> bool:
     current, failures = _run_snapshot(run_dir)
     return not failures and current == snapshot
@@ -132,7 +128,7 @@ def _cmd_ready(rest):
                 if read_failures:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused: run snapshot is not closed', 'failures': read_failures})
                     continue
-                grade = grade_admission(ticket_id, text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run_dir.name})
+                grade = graded_admission(ticket_id, text, snapshot, run_dir.name)
                 if grade['findings']:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused', 'findings': grade['findings']})
                     continue
@@ -220,7 +216,7 @@ def _cmd_claim(rest):
         data = _parse_frontmatter(prior_text)
         status = str(data.get('status') or '')
         if (is_v1(data) or is_v2(data)) and status in ('pending', 'ready'):
-            grade = grade_admission(ticket_id, prior_text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run})
+            grade = graded_admission(ticket_id, prior_text, snapshot, run)
             if grade['findings']:
                 return {'error': 'admission refused', 'findings': grade['findings']}
     try:
@@ -232,7 +228,7 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
     """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
     live claim, landing only while that exact snapshot still matches, so a moved ticket,
     dependency, or cohort loses the race instead of claiming on a stale receipt. `ready`
-    grades on the same `grade_admission` and swaps the same way in `_admit_ready_cas`."""
+    grades on the same `graded_admission` and swaps the same way in `_admit_ready_cas`."""
     args = list(rest)
     claimed_by = _extract_flag(args, '--by')
     if claimed_by is None:
@@ -261,7 +257,7 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
             if failures:
                 return {'error': 'run snapshot is not closed', 'failures': failures}
         if grade is None:
-            grade = grade_admission(ticket_id, prior_text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run})
+            grade = graded_admission(ticket_id, prior_text, snapshot, run)
         if grade['findings']:
             return {'error': 'admission refused', 'findings': grade['findings']}
         if not _snapshot_matches(ticket_path.parent, snapshot, grade.get('snapshot_ids') or [ticket_id]):

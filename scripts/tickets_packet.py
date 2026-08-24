@@ -19,17 +19,19 @@ if __package__:
 else:
     from tickets_issue import AMENDABLE_STATUSES
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _runs_root, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
+    from .tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
 else:
-    from tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _runs_root, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
+    from tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
 if __package__:
     from .tickets_worklog import _run_tickets
 else:
     from tickets_worklog import _run_tickets
 if __package__:
-    from .tickets_admission import grade_admission, is_v1, is_v2
+    from .tickets_admission import is_v1, is_v2
+    from .tickets_context import graded_admission, run_snapshot
 else:
-    from tickets_admission import grade_admission, is_v1, is_v2
+    from tickets_admission import is_v1, is_v2
+    from tickets_context import graded_admission, run_snapshot
 
 PACKET_USAGE = "packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--executor orch-critique | orch-verify]"
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
@@ -303,13 +305,10 @@ def _packet_under_run_lock(rest):
     # receipt to name, and its dispatch says exactly that.
     admission = 'legacy-unadmitted'
     if is_v1(loaded) or is_v2(loaded):
-        snapshot = {}
-        for sibling_path in sorted(ticket_path.parent.glob('*.md')):
-            sibling_text, sibling_failure = _read_utf8(sibling_path)
-            if sibling_failure is not None:
-                return sibling_failure
-            snapshot[sibling_path.stem] = sibling_text
-        grade = grade_admission(ticket_id, text, snapshot, context={'runs_root': str(_runs_root() or ''), 'run': run})
+        snapshot, sibling_failures = run_snapshot(ticket_path.parent)
+        if sibling_failures:
+            return sibling_failures[0][1]
+        grade = graded_admission(ticket_id, text, snapshot, run)
         if grade['findings']:
             return {'error': 'packet admission grade failed', 'findings': grade['findings']}
         stored = str(loaded.get('admission') or '')
