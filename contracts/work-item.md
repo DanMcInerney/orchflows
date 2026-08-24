@@ -148,8 +148,12 @@ parts:
   specified before the unit's work) or `authored-here` (the executing
   context creates it); absent reads `authored-here`. Independence law:
   [rules/verification.md](../rules/verification.md) §10. An executor
-  closes its item by running this test through `orch-verify` at the
-  result's fixed identity, over every identity the criteria cover.
+  closes its item by running each criterion's oracle once at the
+  result's fixed identity and recording the entries; its own entries
+  are UNVERIFIED alone, the one outside execution arrives per §10, and
+  a later reader reuses an entry whose covers are unchanged
+  ([verdict.md](verdict.md)'s invalidation clause) rather than
+  re-running it.
 - `## Return fields` — packet `return_contract`: the named fields the
   executor's result must carry. A `status` in this list is the result
   envelope's ([result.md](result.md)), never the ticket frontmatter key

@@ -5,13 +5,19 @@ from .packet_checker import *  # noqa: F401,F403
 class TestPacketCarriesTheCloseLaw(unittest.TestCase):
     """The packet already carried contracts/work-item.md's filing law; the
     close was the half only the body's link to that 1,690-word file reached
-    (S3 F1) — the completion test run through `orch-verify` at the result
-    identity, `[]` for an empty section, and suspension through `## Handoff`."""
+    (S3 F1). The close is a recording act, never a further execution layer:
+    the 20260823T210000Z-trunk-slimming run paid every unit's deterministic
+    oracles three times (executor, a close-verify fork, the §10 checker)
+    because the old close ordered a full `orch-verify` fork the independence
+    law never named — the one outside execution is the §10 path's."""
 
     CLOSE = (
-        "Close by running `## Completion test` through `orch-verify` at the "
-        "result identity; `[]` fills an empty Feedback or Risks; an excluded "
-        "action suspends through `## Handoff`."
+        "Close by running each criterion's oracle once at the frozen result "
+        "identity and recording its summary and exit in `## Verification`; "
+        "your own entries are UNVERIFIED alone — independence arrives per "
+        "rules/verification.md §10, and later readers reuse entries whose "
+        "covers are unchanged; `[]` fills an empty Feedback or Risks; an "
+        "excluded action suspends through `## Handoff`."
     )
 
     def prompt_for(self, tmp: Path, body: str = FULL_TICKET, *extra):
@@ -23,6 +29,12 @@ class TestPacketCarriesTheCloseLaw(unittest.TestCase):
     def test_a_skill_executors_packet_carries_it(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIn(self.CLOSE, " ".join(self.prompt_for(Path(tmp)).split()))
+
+    def test_the_close_orders_no_verify_fork(self):
+        """The executor's close spawns nothing: `orch-verify` enters a unit
+        only on the §10 re-verifier path, dispatched by the caller."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertNotIn("through `orch-verify`", self.prompt_for(Path(tmp)))
 
     def test_a_script_executors_packet_does_not(self):
         """A script node runs no completion test and files no Feedback: its
@@ -46,6 +58,27 @@ class TestPacketCarriesTheCloseLaw(unittest.TestCase):
                     "--executor", executor,
                 )["packet"]["prompt"]
                 self.assertNotIn("Close by running", prompt)
+
+    def test_the_checker_is_bounded_to_one_outside_execution(self):
+        """The §10 checker's re-run is THE outside execution, run once; an
+        entry whose covers are unchanged is reused, never re-run. Without
+        this sentence a diligent checker's cheapest safe move is to re-run
+        everything, which the trunk-slimming run paid live."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_packet_repo(tmp, CLAIMED_ISOLATED_TICKET)
+            prompt = run_cmd(
+                tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                "--executor", "orch-critique",
+            )["packet"]["prompt"]
+            joined = " ".join(prompt.split())
+            self.assertIn("one outside execution", joined)
+            self.assertIn("covers are unchanged", joined)
+            reverifier = run_cmd(
+                tmp, "packet", "testrun", "T1", "--reply-to", "main",
+                "--executor", "orch-verify",
+            )["packet"]["prompt"]
+            self.assertIn("covers` are unchanged", reverifier)
 
 
 class TestPacketCarriesWhatTwoLanesSpentBoundLearning(unittest.TestCase):
