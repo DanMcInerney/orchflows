@@ -53,13 +53,19 @@ class TestRunStateRootResolution(unittest.TestCase):
             # and does age: a new sibling module, or a new import inside any
             # existing one, lands here as a failure naming the token to add.
             # That failure is the point; do not widen this to a subset check.
+            # What it censuses is import TOKENS, which is narrower than the
+            # family: `not node.level` skips a relative import, and a
+            # `__import__(...)` call is not an import node at all. A sibling
+            # reached only those two ways is on disk and absent from this set
+            # without ever failing here, so a token missing from this list is
+            # evidence and a token present is not a guarantee of coverage.
             self.assertEqual(
                 {"__future__", "collections", "contextlib", "datetime", "fcntl",
                  "fnmatch", "hashlib",
                  "importlib", "json",
                  "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
-                 "tickets_commands", "tickets_lint",
+                 "tickets_ceiling", "tickets_commands", "tickets_lint", "tickets_project",
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
                  "tickets_gate_mutations", "tickets_admission", "tickets_inputs",
