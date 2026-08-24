@@ -104,6 +104,31 @@ class CeilingArithmeticTest(unittest.TestCase):
         at = tickets_ceiling.INSTRUCTION_BUDGET
         self.assertIsNone(tickets_ceiling.ceiling_sentence("the ticket", ceiling_ticket(at)))
 
+    def test_the_rendered_order_is_the_breakdowns_order(self):
+        """Largest-first survives rendering, which is where it is read.
+
+        `instruction_breakdown` sorting largest-first is pinned next door,
+        but a caller never sees the tuple -- it sees this string, and a
+        renderer that re-ordered while re-summing correctly would still
+        send "cut the part named first" at the smallest part. The two
+        assertions next door cannot see that: one checks membership per
+        part, and the other compares the sentence against this same
+        renderer, so a re-ordering moves both sides together.
+        """
+
+        for total in (312, 322, 460):
+            text = ceiling_ticket(total)
+            with self.subTest(total):
+                head, _, printed = tickets_ceiling.ceiling_arithmetic(text).rpartition(" = ")
+                rendered = []
+                for term in head.split(" + "):
+                    name, _, count = term.rpartition(" ")
+                    rendered.append((name, int(count)))
+                counts = [count for _, count in rendered]
+                self.assertEqual(sorted(counts, reverse=True), counts)
+                self.assertEqual(list(tickets_ceiling.instruction_breakdown(text)), rendered)
+                self.assertEqual(tickets_ceiling.instruction_words(text), int(printed))
+
 
 class CutTimeRemedyTest(unittest.TestCase):
     """`amend` and `recut` refusals, and whether the chain they name runs.
