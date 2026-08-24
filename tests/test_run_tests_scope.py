@@ -116,9 +116,19 @@ class TestSelectionIsAnAnswerNotASample(unittest.TestCase):
         self.root = Path(self._scratch.name)
         (self.root / "tests").mkdir()
 
-    def select(self, record, scope="scripts/thing.py", discovered=("tests.test_alpha",)):
+    def select(self, record, scope="scripts/thing.py", discovered=("tests.test_alpha",),
+               carried=None):
+        """Select, with the revision's answer about a path's existence fixed.
+
+        ``carried`` is what ``git ls-tree`` returns for a scope path: None
+        where git cannot be asked at all, "" where the revision answers that
+        it has no such path, and a listing where it carries one.
+        """
+
         with mock.patch.object(
             run_tests_scope.affected_tests, "affected", return_value=record
+        ), mock.patch.object(
+            run_tests_scope.affected_tests, "git", return_value=carried
         ):
             return run_tests_scope.select(scope, self.root / "tests", list(discovered))
 
@@ -153,11 +163,33 @@ class TestSelectionIsAnAnswerNotASample(unittest.TestCase):
         self.assertIn("tests/test_new.py", message)
         self.assertIn("commit", message)
 
-    def test_a_scope_path_no_shard_reaches_stays_a_note(self):
+    def test_a_scope_path_the_revision_does_not_carry_is_refused(self):
+        """Reproduced by a sibling unit: --scope over two files that unit had
+        just created printed "no affected module" for both and exited 0. The
+        resolver had never read either file, which is a different answer from
+        "no test covers this path" and must not be reported as that one."""
+
+        with self.assertRaises(SystemExit) as raised:
+            self.select(answer(["tests.test_alpha"], no_tests=["scripts/new.py"]),
+                        scope="scripts/new.py", carried="")
+        message = str(raised.exception.code)
+        self.assertIn("scripts/new.py", message)
+        self.assertIn("commit", message)
+
+    def test_a_scope_path_the_revision_carries_stays_a_note(self):
         self.assertEqual(
             ["tests.test_alpha"],
             self.select(answer(["tests.test_alpha"], no_tests=["docs/thing.md"]),
-                        scope="docs/thing.md"))
+                        scope="docs/thing.md", carried="docs/thing.md\n"))
+
+    def test_a_path_git_cannot_be_asked_about_stays_a_note(self):
+        """Absence of an answer is not an answer of absence: where git cannot
+        be asked, the resolver's own reading stands."""
+
+        self.assertEqual(
+            ["tests.test_alpha"],
+            self.select(answer(["tests.test_alpha"], no_tests=["docs/thing.md"]),
+                        scope="docs/thing.md", carried=None))
 
     def test_the_selection_names_the_revision_it_decided_over(self):
         """Two runs that disagree are then attributable rather than

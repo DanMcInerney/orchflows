@@ -80,6 +80,24 @@ def named_shard(rel, discovered):
     return None
 
 
+def carries(root, discovery, path) -> bool:
+    """Whether the revision a selection came from carries one scope path.
+
+    ``None`` from git is "cannot be asked", which is not evidence of absence
+    and leaves the resolver's own reading standing. An empty listing is the
+    revision answering that it holds no such path, and then "no affected
+    module" is a fact about a file nothing ever read rather than about the
+    tests -- the shape a sibling measured over two files it had just
+    created, one of them its own test module, at exit 0.
+    """
+
+    tree = discovery.get("tree")
+    if discovery.get("source") != "git" or not tree:
+        return True
+    listed = affected_tests.git(root, "ls-tree", "--name-only", tree, "--", str(path))
+    return listed is None or bool(listed.strip())
+
+
 def select(scope: str, tests_dir, discovered) -> list:
     """Return the discovered modules a comma-separated scope reaches.
 
@@ -110,12 +128,15 @@ def select(scope: str, tests_dir, discovered) -> list:
           % (len(scoped), discovery["source"], discovery["tree"] or "-"))
     for entry in resolved["unreadable"]:
         print("run_tests: unreadable test file %s (%s)" % (entry["path"], entry["reason"]))
-    unseen = [path for path in resolved["no_tests"] if named_shard(path, discovered)]
+    unseen = [path for path in resolved["no_tests"]
+              if named_shard(path, discovered) or not carries(root, discovery, path)]
     if unseen:
         raise SystemExit(
-            "run_tests: %s names a test module this revision does not carry, "
-            "so no selection can speak for it and a green would have run "
-            "none of it; commit the file before scoping it" % ", ".join(unseen))
+            "run_tests: this revision does not carry %s, so the selection "
+            "never read it and \"no affected module\" would be an answer "
+            "about the resolver rather than about the tests -- for a test "
+            "module, a green having run none of it; commit before scoping it"
+            % ", ".join(unseen))
     for path in resolved["no_tests"]:
         print("run_tests: no affected module for " + path)
     selected = [name for name in resolved["modules"] if name in discovered]
