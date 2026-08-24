@@ -117,6 +117,23 @@ class ScriptExecutorAdmissionTest(unittest.TestCase):
 
         self.assertIn("script-executor-unresolved", finding_codes("script:tools"))
 
+    def test_the_refusal_does_not_depend_on_the_ticket_carrying_a_pack(self):
+        """A pack-less ticket is the case the form was already reachable on.
+
+        The registry check one line above is pack-gated, so folding this
+        refusal into that same branch is a natural tidy -- and it passes
+        every other test in the tree.  Without this the refusal that pays
+        for the unbinding is unpinned exactly where the form already ran.
+        """
+
+        packless = "\n".join(
+            line for line in ticket_text(f"script:{ABSENT_SCRIPT}").splitlines()
+            if not line.startswith("pack:")
+        )
+        graded = admission.grade_admission("T1", packless, {"T1": packless})
+        self.assertIn("script-executor-unresolved",
+                      {item["code"] for item in graded["findings"]})
+
 
 class SkillExecutorStaysBoundTest(unittest.TestCase):
     """Admitting the script form must not open the registry to skills.
