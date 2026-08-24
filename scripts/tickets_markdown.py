@@ -9,6 +9,15 @@ SECTION_ORDER = CUT_SECTIONS + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 OPTIONAL_SECTION = 'Handoff'
 REQUIRED_SECTIONS = tuple(name for name in SECTION_ORDER if name != OPTIONAL_SECTION)
+SECTION_SENTINEL = '[]'
+"""The empty collection a cut prefills an executor-owned section with.
+
+Stated here, with the section grammar, because two readers have to agree on
+it byte for byte: the generators that write it into `## Feedback` and
+`## Risks`, and the filing law that decides whether a section holds a
+writer's work. While each spelled its own literal they disagreed, and the
+executor's first real write paid for the disagreement.
+"""
 
 
 def _unquote(value: str) -> str:
