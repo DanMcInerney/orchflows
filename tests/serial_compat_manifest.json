@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2678,
+  "count": 2706,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -601,6 +601,22 @@
    "test_v0_removal.PacketV0BranchTest.test_no_version_keyed_status_refusal_survives",
    "test_v0_removal.SingleGradeSiteTest.test_the_module_shrank_and_stays_inside_the_source_size_cap",
    "test_v0_removal.SingleGradeSiteTest.test_the_shared_grade_block_is_written_once",
+   "test_v2_cohort.V1CohortUnchangedTest.test_v1_amend_and_recut_keep_stamping_the_cohort",
+   "test_v2_cohort.V1CohortUnchangedTest.test_v1_placement_defaults_states_and_refuses_a_cohort_as_before",
+   "test_v2_cohort.V2CohortRulingTest.test_a_cohort_the_v2_file_carries_is_normalized_away",
+   "test_v2_cohort.V2CohortRulingTest.test_amend_leaves_a_v2_ticket_without_a_cohort",
+   "test_v2_cohort.V2CohortRulingTest.test_an_explicit_cohort_on_a_v2_ticket_is_refused_and_nothing_is_written",
+   "test_v2_cohort.V2CohortRulingTest.test_placing_a_v2_ticket_stamps_no_cohort",
+   "test_v2_cohort.V2CohortRulingTest.test_recut_leaves_a_v2_ticket_without_a_cohort",
+   "test_v2_regrade.AdmissionVersionGateTest.test_a_ticket_with_no_admission_field_is_still_the_legacy_one",
+   "test_v2_regrade.AdmissionVersionGateTest.test_a_v2_ticket_declared_edge_is_actually_closed",
+   "test_v2_regrade.AdmissionVersionGateTest.test_a_v2_ticket_plan_still_bounds_its_actual_mutations",
+   "test_v2_regrade.AdmissionVersionGateTest.test_inputs_are_graded_under_every_admitted_version",
+   "test_v2_regrade.AdmissionVersionGateTest.test_inputs_grading_of_a_v2_ticket_can_fail",
+   "test_v2_regrade.AdmissionVersionGateTest.test_scope_is_graded_at_full_strength_under_every_admitted_version",
+   "test_v2_regrade.LifecycleRegradeTest.test_ready_claim_and_packet_each_grade_the_v2_ticket_in_full",
+   "test_v2_regrade.V1AndV0ParityTest.test_no_v1_or_v0_grade_moves_off_the_pinned_baseline",
+   "test_v2_regrade.V1AndV0ParityTest.test_the_corpus_reaches_the_grading_it_claims_to_hold_still",
    "test_windows_semantics.CurrentCITopologyDocumentationTest.test_scoped_docstrings_name_ci_s_one_windows_leg",
    "test_windows_semantics.TestInstallation.test_importing_the_package_installed_it",
    "test_windows_semantics.TestInstallation.test_installing_twice_does_not_wrap_twice",
@@ -614,6 +630,18 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "test_workitem_diet.DietReaderTest.test_the_line_counter_separates_over_from_under",
+   "test_workitem_diet.DietReaderTest.test_the_marker_readers_separate_a_stated_passage_from_a_moved_one",
+   "test_workitem_diet.LandedRelocationTest.test_the_contract_no_longer_states_them",
+   "test_workitem_diet.LandedRelocationTest.test_their_named_owners_carry_them",
+   "test_workitem_diet.OneOutsideExecutionLawTest.test_the_bullet_slice_stops_at_the_next_bullet",
+   "test_workitem_diet.OneOutsideExecutionLawTest.test_the_completion_test_bullet_keeps_the_one_outside_execution_law",
+   "test_workitem_diet.PendingDietTest.test_no_second_prose_surface_carries_a_relocated_marker",
+   "test_workitem_diet.PendingDietTest.test_the_blocked_passages_reach_their_named_owners",
+   "test_workitem_diet.PendingDietTest.test_the_contract_holds_at_most_the_ceiling_in_non_empty_lines",
+   "test_workitem_diet.PendingDietTest.test_the_contract_no_longer_states_the_blocked_passages",
+   "test_workitem_diet.SharedT0NoteTest.test_the_contract_still_owns_the_shared_note",
+   "test_workitem_diet.SharedT0NoteTest.test_the_signature_cites_the_contract_note_instead_of_copying_it",
    "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_a_no_match_scope_prints_a_no_tests_line_and_exits_zero",
    "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_an_unreadable_test_file_is_named_on_the_error_stream",
    "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_the_argv_format_prints_the_runner_module_list_on_one_line",
@@ -2681,7 +2709,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "ca8165b27b41e648371ffab40da592d5c1f7e918ca34dcd2b4c1997e745b9720"
+  "sha256": "e56f3e606a19a04a4a9a97ff639035090a06eac400bb160c07ede0c7b9d6ee6e"
  },
  "mutation_owners": [
   {
@@ -5457,6 +5485,30 @@
   {
    "module": "tests.test_v0_removal",
    "owner": "PacketV0BranchTest.test_a_never_claimed_v0_ticket_is_refused_and_a_live_one_still_dispatches",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_v2_cohort",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_v2_regrade",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_v2_regrade",
+   "owner": "LifecycleRegradeTest.test_ready_claim_and_packet_each_grade_the_v2_ticket_in_full",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
