@@ -47,7 +47,16 @@ READER = 'print(open("marker.txt", encoding="utf-8").read().strip())\n'
 
 CWD = "import os\nprint(os.getcwd())\n"
 
-ENV_PROBE = 'import os\nprint(os.environ.get("GIT_DIR", "<unset>"))\n'
+# Spelled out here rather than read from `verify_at.GIT_SEAMS`: an expectation
+# derived from the tuple under test shrinks whenever that tuple does, and would
+# stay green through the deletion it exists to catch.
+SEAMS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR")
+
+ENV_PROBE = (
+    "import os\n"
+    "for name in {0!r}:\n"
+    '    print("{{0}}={{1}}".format(name, os.environ.get(name, "<unset>")))\n'
+).format(SEAMS)
 
 EMITTER = textwrap.dedent(
     '''\
@@ -66,7 +75,7 @@ def clean_env() -> dict:
     """The caller's environment with every git seam that aims a command."""
 
     env = dict(os.environ)
-    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"):
+    for name in SEAMS:
         env.pop(name, None)
     return env
 
@@ -190,6 +199,24 @@ class VerifyAtCase(unittest.TestCase):
             argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=child
         )
 
+    def run_tool(self, *argv):
+        """The tool with exactly this argv: what a caller's first try looks like.
+
+        `verify_at` above always supplies a well-formed line. Some questions --
+        whether the usage is reachable, what a mistyped flag returns -- can only
+        be asked by handing the tool the argv a caller actually typed.
+        """
+
+        child = clean_env()
+        child["TMPDIR"] = child["TEMP"] = child["TMP"] = os.fspath(self.temp_root)
+        child["PYTHONPATH"] = os.fspath(REPO_ROOT)
+        return subprocess.run(
+            [sys.executable, os.fspath(VERIFY_AT_PY), *argv],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=child,
+        )
+
     def assertNothingLeftBehind(self):
         """No checkout under the root, and no record of one in the repo."""
 
@@ -270,6 +297,29 @@ class ExitStatusTest(VerifyAtCase):
                 )
                 self.assertEqual(status, done.returncode)
 
+    def test_the_reserved_status_is_carried_and_stays_tellable_apart(self):
+        """125 is the one status a command shares with this runner's refusals.
+
+        Reserving it buys a great deal and cannot buy this: a command is free
+        to exit 125 too, and then the status alone says nothing. Pretending
+        otherwise is how a refusal gets read as a verdict. What does separate
+        them is the report -- a run names the worktree it stood in, a refusal
+        names why it never got one -- so that difference is pinned here rather
+        than left as prose.
+        """
+
+        ran = self.verify_at(
+            self.commits["first"],
+            [sys.executable, "emitter.py", str(verify_at.REFUSAL_STATUS)],
+        )
+        refused = self.verify_at("no-such-revision", [sys.executable, "emitter.py"])
+        self.assertEqual(verify_at.REFUSAL_STATUS, ran.returncode)
+        self.assertEqual(verify_at.REFUSAL_STATUS, refused.returncode)
+        self.assertIn("worktree", self.text(ran.stderr))
+        self.assertNotIn("worktree", self.text(refused.stderr))
+        self.assertIn(OUT_TOKEN, self.text(ran.stdout))
+        self.assertNotIn(OUT_TOKEN, self.text(refused.stdout))
+
     def test_a_command_that_cannot_run_is_a_refusal_not_a_verdict(self):
         done = self.verify_at(self.commits["first"], ["no-such-command-here"])
         self.assertEqual(verify_at.REFUSAL_STATUS, done.returncode)
@@ -328,16 +378,55 @@ class CleanupTest(VerifyAtCase):
 class CallerEnvironmentTest(VerifyAtCase):
     """A caller's git seams do not follow the command into the worktree."""
 
-    def test_a_pointed_git_dir_neither_stops_the_run_nor_reaches_the_command(self):
+    def test_no_git_seam_a_caller_set_reaches_the_command(self):
+        """Every seam is planted, and every seam is observed in the child.
+
+        Planting one and reading one leaves the other three held by nothing
+        but the tuple that names them, where a deletion costs no test.
+        """
+
         poisoned = clean_env()
         poisoned["GIT_DIR"] = os.fspath(self.repo / ".git")
+        poisoned["GIT_COMMON_DIR"] = os.fspath(self.repo / ".git")
+        poisoned["GIT_WORK_TREE"] = os.fspath(self.repo)
         poisoned["GIT_INDEX_FILE"] = os.fspath(self.scratch / "stolen.index")
         done = self.verify_at(
             self.commits["first"], [sys.executable, "env_probe.py"], env=poisoned
         )
         self.assertEqual(0, done.returncode, self.text(done.stderr))
-        self.assertEqual("<unset>", self.text(done.stdout).strip())
+        self.assertEqual(
+            ["{0}=<unset>".format(name) for name in SEAMS],
+            self.text(done.stdout).split(),
+        )
         self.assertNothingLeftBehind()
+
+
+class UsageTest(VerifyAtCase):
+    """What the tool says to a caller who has not read it yet."""
+
+    def test_the_usage_is_reachable_by_the_flag_a_caller_types(self):
+        """`--help` alone, with no command and no separator, prints the usage.
+
+        The separator is the tool's own rule, and a caller reaching for the
+        usage is exactly the caller who does not know it yet.
+        """
+
+        for flag in ("--help", "-h"):
+            with self.subTest(flag=flag):
+                done = self.run_tool(flag)
+                self.assertEqual(0, done.returncode, self.text(done.stderr))
+                self.assertIn("usage: verify_at.py", self.text(done.stdout))
+                self.assertIn("--root", self.text(done.stdout))
+
+    def test_a_usage_error_is_a_refusal_not_a_status_a_command_could_return(self):
+        """argparse would exit 2 here, and 2 is a verdict a command can give."""
+
+        done = self.run_tool(
+            "HEAD", "--no-such-flag", "--", sys.executable, "-c", "pass"
+        )
+        self.assertEqual(verify_at.REFUSAL_STATUS, done.returncode)
+        self.assertIn("verify_at:", self.text(done.stderr))
+        self.assertEqual([], admin_entries(self.repo))
 
 
 if __name__ == "__main__":

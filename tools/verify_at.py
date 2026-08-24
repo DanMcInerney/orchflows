@@ -17,8 +17,13 @@ only "you ran me in the temp root" is indistinguishable from a real one.
 
 What comes back. The command's own exit status is this tool's own, so a
 caller reads a verdict rather than a translation of one. `125` -- git's
-"could not run it" status -- is reserved for this runner's refusals, so a
-refusal is never mistaken for the command's answer.
+"could not run it" status -- is what this runner returns when it refuses,
+every refusal included, a usage error among them: argparse would spend `2`
+there, and `2` is a status a command could have returned. One ambiguity
+survives and is worth naming rather than glossing: a command may itself exit
+`125`. The report line is what separates the two -- a run names the worktree
+it stood in, a refusal names why it never got one -- so a caller who must
+tell them apart reads that line and not the status.
 
 Which stream. The two streams are never merged. The command inherits this
 process's stdout and stderr, so its output stays live and stays sorted; this
@@ -32,6 +37,7 @@ Usage:
                               -- COMMAND [ARG ...]
 
 Exit: the command's status, or 125 when this runner refuses.
+    `--help` prints this usage without a command or a `--` separator.
 """
 
 from __future__ import annotations
@@ -208,8 +214,20 @@ def split_command(argv):
     return argv[:index], command
 
 
-def parse_args(argv):
-    parser = argparse.ArgumentParser(
+class _Parser(argparse.ArgumentParser):
+    """argparse's usage errors, spoken as this runner's refusals.
+
+    The base class exits `2` on a mistyped flag, and `2` is a status the
+    command could have returned. A refusal a caller cannot tell from a
+    verdict is the one thing REFUSAL_STATUS exists to prevent.
+    """
+
+    def error(self, message):
+        raise Refusal(message)
+
+
+def build_parser():
+    parser = _Parser(
         prog="verify_at.py",
         description="Run one command in a detached worktree at one revision.",
     )
@@ -228,7 +246,23 @@ def parse_args(argv):
         "--keep", action="store_true",
         help="leave the worktree in place for a reader to inspect",
     )
-    return parser.parse_args(argv)
+    return parser
+
+
+def parse_args(argv):
+    return build_parser().parse_args(argv)
+
+
+def wants_usage(argv) -> bool:
+    """Whether the caller asked what this tool is, before the `--` rule bites.
+
+    The separator is this tool's own convention, and the caller reaching for
+    the usage is precisely the one who has not learned it yet; making them
+    satisfy it first is asking them to read the page they are asking for.
+    """
+
+    own = argv[:argv.index("--")] if "--" in argv else argv
+    return any(item in ("-h", "--help") for item in own)
 
 
 def emit(stream, text: str) -> None:
@@ -251,6 +285,10 @@ def summary(record: dict) -> str:
 
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else list(argv)
+    if wants_usage(argv):
+        # No command ran, so stdout is nobody's but ours to write on here.
+        build_parser().print_help(sys.stdout)
+        return 0
     try:
         own, command = split_command(argv)
         args = parse_args(own)
