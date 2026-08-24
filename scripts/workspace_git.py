@@ -229,6 +229,99 @@ def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
     }
 
 
+def _detached_trees(git_out, is_ancestor, sha) -> int:
+    """How many standing worktrees a ``detached:`` record could name.
+
+    Those at or past the revision it names: a worktree that has committed
+    since has moved past it, so equality of tips would miss the very tree the
+    record was written from. The same set ``_detached_tip`` resolves a tip
+    out of, counted by directory rather than by tip -- two worktrees at one
+    revision are one tip and two answers.
+    """
+
+    return len([
+        entry for entry in _worktrees(git_out)
+        if "detached" in entry and entry.get("HEAD")
+        and is_ancestor(sha, entry["HEAD"])
+    ])
+
+
+def _records_this_tree(git_out, is_ancestor, recorded: str, branch: str) -> bool:
+    """Whether a sibling's recorded workspace is the tree ``branch`` stands in.
+
+    A branch name follows the item: it reads the same after every commit, so
+    equality of two branch records is the whole test. A ``detached:`` record
+    names the revision ``start`` read instead, and the tree it was written
+    from leaves that revision behind on the item's first commit -- so equality
+    answers no for the sharer that has done exactly what a claimed item is
+    dispatched to do. Where such a record still names a directory,
+    ``_detached_tip`` says which, on the reasoning it already applies at the
+    join -- the standing detached worktree at or past that revision, and only
+    where its answer is a single one. So the record is resolved to a tip, and
+    that tip has to be where this caller stands. Neither half alone is the
+    test: without the first a sharer disappears the moment it commits, and
+    without the second any resolvable record reads as this tree, flagging two
+    workspaces that share nothing but a repository against each other.
+    """
+
+    if recorded == branch:
+        return True
+    if not (recorded.startswith(DETACHED_PREFIX) and branch.startswith(DETACHED_PREFIX)):
+        return False
+    return _detached_tip(git_out, is_ancestor, _tip_ref(recorded)) == _tip_ref(branch)
+
+
+def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
+    """Every other claimed ticket of this run that recorded this same tree.
+
+    ``start`` cannot see a workspace from the outside: from inside any linked
+    worktree the tree looks the caller's own, which is why ``top != root``
+    answered true for a whole cut dispatched into one shared directory. What
+    can be seen is what the siblings recorded. ``_record`` stamps
+    ``workspace_branch`` into each item's ticket, the run's tickets are this
+    one's own neighbours in the sink, and git checks a branch out in at most
+    one tree -- so a sibling carrying this branch is standing where this item
+    stands.
+
+    Only ``claimed`` siblings count. A finished item has left the tree, and
+    counting it would flag a long run's last item for every workspace its
+    predecessors have already released, which is a flag nobody could act on.
+    The item's own ticket is skipped so that a re-established workspace never
+    reports itself as its own sharer -- by then its own stamp is in the sink.
+
+    The read goes through the same ``tickets`` loader the caller grades its own
+    ticket with, never a second resolver. A sibling that will not parse is no
+    evidence of sharing, so it is passed over rather than raised: this is a
+    report about the caller's tree, and it must not be the thing that stops an
+    item over some other item's malformed file.
+
+    A detached workspace records no ref, so which tree a record names is
+    decided by ``_records_this_tree`` rather than by the record string --
+    including this caller's own, checked first: where more than one standing
+    detached worktree could have written the caller's revision, the caller
+    cannot say which tree it is reporting about, and a sibling that recorded
+    that identical revision is no evidence of sharing.
+    """
+
+    if branch.startswith(DETACHED_PREFIX) and _detached_trees(
+        git_out, is_ancestor, _tip_ref(branch)
+    ) != 1:
+        return []
+    found = []
+    for path in sorted(ticket_path.parent.glob("*.md")):
+        # by path, which is the id the caller was dispatched under: ``_locate``
+        # builds this one from the run and id it was given
+        if path == ticket_path:
+            continue
+        data = tickets._load_ticket(path)
+        if "error" in data or data.get("status") != "claimed":
+            continue
+        recorded = str(data.get("workspace_branch") or "").strip()
+        if _records_this_tree(git_out, is_ancestor, recorded, branch):
+            found.append(str(data.get("id") or path.stem))
+    return sorted(found)
+
+
 def _is_ancestor(git, ancestor: str, descendant: str) -> bool:
     code, _, err = git("merge-base", "--is-ancestor", ancestor, descendant)
     if code in (0, 1):
