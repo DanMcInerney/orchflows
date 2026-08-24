@@ -71,6 +71,12 @@ COMMANDS = tuple(sorted({row.command for row in _ROWS}))
 # is right and the command still refuses, so a chain that named one would
 # be the very sentence this module exists to stop.
 SEAL_REFUSED = ('recut', 'amend')
+# `grant` and `check` act on an item a child is already executing. Reaching
+# either by rewriting a status is reopening an item, never repairing one --
+# at a terminal status it would reopen a verdict the join has already read,
+# which is what both sites' notes forbid. So no chain ends at them: the
+# note carries the remedy, and the table declines to invent a rewrite.
+NOT_A_REMEDY = ('grant', 'check')
 # The one command that moves a status without the admission boundary, so
 # the only first step a remedy chain can take.
 _HOPS = tuple(row for row in _ROWS if row.command.startswith('set-status '))
@@ -133,8 +139,12 @@ def remedy_path(status: str, command: str, sealed: bool = False) -> tuple:
     command is reached, if at all, by one status write and then itself.
     Under a seal the seal-gated commands drop out of the chain, and what
     is left is the successor path -- suspend, and let the join open one.
+    A `NOT_A_REMEDY` command has no chain at all: no status write is the
+    right answer to being asked for one where the command does not run.
     """
     if allows(status, command) and not (sealed and command in SEAL_REFUSED):
+        return ()
+    if command in NOT_A_REMEDY:
         return ()
     for hop in _HOPS:
         if status not in hop.sources or hop.target is None:
@@ -156,5 +166,9 @@ def refusal(subject: str, command: str, status: str, note: str = None,
     """
     steps = remedy_path(status, command, sealed)
     if not steps:
-        return f'{subject}: {transition(status, command).remedy}.' + (f' {note}' if note else '')
-    return f'{subject}: ' + ', then '.join(steps) + '.' + (f' {note}' if note else '')
+        row = transition(status, command)
+        steps = () if row is None else (row.remedy,)
+    tail = f' {note}' if note else ''
+    if not steps:
+        return f'{subject}.{tail}'
+    return f'{subject}: ' + ', then '.join(steps) + '.' + tail

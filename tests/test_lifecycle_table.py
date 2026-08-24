@@ -47,10 +47,18 @@ def commands_named(text: str) -> set:
 
 
 def chain_commands(status: str, command: str) -> set:
-    """The commands the table's own chain for this pair names."""
+    """The commands the table's own chain for this pair names.
 
-    named = commands_named(" ".join(tickets_transitions.remedy_path(status, command)))
-    return named | {command}
+    The refused command itself joins the set only when the refusal actually
+    reaches it -- by a chain, or because the table already runs it there and
+    the refusal was raised for some other reason. Where the table declines
+    to name a remedy at all, a refusal that named one would be the defect.
+    """
+
+    path = tickets_transitions.remedy_path(status, command)
+    if not path and not tickets_transitions.allows(status, command):
+        return set()
+    return commands_named(" ".join(path)) | {command}
 
 
 def age(path: Path) -> None:
@@ -223,6 +231,24 @@ class TransitionTableTest(unittest.TestCase):
             tickets_transitions.remedy_path("claimed", "claim", sealed=True),
             "the seal gates recut and amend, and nothing else",
         )
+
+    def test_no_remedy_reopens_an_item_to_grant_or_check_it(self):
+        """`grant` and `check` act on an item a child is already executing.
+        A chain reaching either by rewriting a status would tell a caller to
+        reopen an item to widen it -- and at a terminal status, to reopen a
+        verdict the join has already read -- which is what the notes at both
+        sites forbid in the same breath. The table names no such remedy."""
+
+        for command in tickets_transitions.NOT_A_REMEDY:
+            for status in tickets_transitions.STATUSES:
+                if status in tickets_transitions.GRANTABLE_STATUSES:
+                    continue
+                with self.subTest(status=status, command=command):
+                    text = tickets_transitions.refusal("subject", command, status)
+                    self.assertEqual((), tickets_transitions.remedy_path(status, command))
+                    self.assertEqual(set(), commands_named(text), text)
+                    self.assertNotIn("set-status", text)
+                    self.assertEqual("subject.", text)
 
     def test_a_refusal_carries_its_subject_and_its_callers_note(self):
         text = tickets_transitions.refusal(
@@ -410,6 +436,34 @@ class LifecycleCommandsTest(unittest.TestCase):
                 "--write-scope", "scripts/new.py", "--by", "main",
             )["error"]
             self.assertEqual(chain_commands("claimed", "recut"), commands_named(live))
+
+    def test_the_not_claimed_refusals_never_offer_to_reopen_the_item(self):
+        """Live, at a terminal status: the verdict has been read, so neither
+        refusal may offer a status rewrite that puts the item back in flight.
+        Each carries its own note instead, which is the real remedy."""
+
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            run_dir = self.claimed(tmp)
+            self.assertNotIn(
+                "error", run_cmd(tmp, "set-status", "testrun", "T1", "complete")
+            )
+            for command, extra in (("grant", ("--write-scope", "scripts/new.py")),
+                                   ("check", ())):
+                with self.subTest(command=command):
+                    text = run_cmd(
+                        tmp, command, "testrun", "T1", *extra, "--by", "main",
+                    )["error"]
+                    self.assertIn("not claimed", text)
+                    self.assertEqual(set(), commands_named(text), text)
+                    self.assertNotIn("set-status", text)
+            # And the third live half of the blanking rule: `pending` releases
+            # the lease, `suspended` keeps it, and a terminal status keeps it
+            # too -- the worklog orders a run by `claimed_at`.
+            closed = (run_dir / "T1.md").read_text(encoding="utf-8")
+            self.assertIn("status: complete", closed)
+            self.assertIn("claimed_by: agent-a", closed)
+            self.assertRegex(closed, r"(?m)^claimed_at: \S")
 
     def test_the_grant_widening_refusal_names_a_sequence_the_seal_allows(self):
         """`grant` refuses to invent an operation on a planned v1 item. The
