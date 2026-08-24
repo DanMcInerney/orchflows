@@ -12,23 +12,24 @@ caller write scope.
 Grade tickets against every frozen criterion and identity through one
 outside-independence path per
 [verification.md](../../../rules/verification.md) §10. `independence: gate`
-defers authored checks; `checker` requires `checked_by`; uncovered criteria
-yield needs-verify. Grade bare returns by their contract. Suspension resumes
+defers authored checks; `checker` requires
+[work-item.md](../../../contracts/work-item.md)'s `checked_by`; uncovered
+criteria yield needs-verify. Grade bare returns by their contract. Suspension resumes
 from `## Handoff`.
 
 The returning name must match `claimed_by`, `checked_by`, or the re-verifier
 named by `tickets.py packet --executor`; reject mismatches and expired claims.
-Reject a non-root carrying both `independence: gate` and `checked_by`. By
-contrast, on a root, `checked_by` is cut reader bookkeeping and never final checker acceptance
-because the composite gate decides authored acceptance. Confirm `changed_artifacts`,
+Reject a non-root carrying both `independence: gate` and `checked_by`. But
+on a root, `checked_by` is cut reader bookkeeping, never final checker
+acceptance: the composite gate decides authored acceptance. Confirm `changed_artifacts`,
 unchanged evidence, and, for required isolation, run `workspace.py check` from
 the integrating checkout (exit 6 is caller-vantage failure).
 
 Apply [result.md](../../../contracts/result.md)'s `return-size` crossing once:
 `tickets.py result-grade <run> <id>`. Caller-authored malformed clauses or
 missing resolver inputs are `reject(caller)`; executor-authored invalid,
-unresolved, or oversized results are `reject(child)`. Record blame with
-`tickets.py run-state --note`; only this join calls `tickets.py set-status`.
+unresolved, or oversized results are `reject(child)`. Record blame on the
+run-state channel; only this join calls `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here by filing the empty result and
 status, without dispatch. Accepted non-blocking findings go to the run's

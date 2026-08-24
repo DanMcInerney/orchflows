@@ -17,20 +17,21 @@ Refuse a packet whose objective is repair but whose `authority` grants
 no write.
 
 Refuse a §10 checker packet for a non-root gate-deferred ticket or a
-ticket that is already checked: `checked_by` records one single immutable
-checker identity. An additional reviewer is instead a unique named
+ticket that is already checked: `checked_by` records the one single
+immutable checker identity
+[contracts/work-item.md](../../../contracts/work-item.md) defines. An
+additional reviewer is instead a unique named
 root-gate critique lens; it is a read-only phase of the existing composite
 gate and never sets `checked_by`.
 
 As the §10 checker ([rules/verification.md](../../../rules/verification.md)
 §10) the lens is the ticket's own completion test — on a root ticket,
-the cut lens its packet names, corrected through `tickets.py amend` and
-`new`: hunt tautological or weakened checks and results that satisfy a
-check without meeting its criterion; correct within the granted
-`authority`, per §9; file per
-[contracts/work-item.md](../../../contracts/work-item.md) `## Result`
-through `tickets.py result --append`, and set `checked_by` through
-`tickets.py check <run> <id> --by <name>`.
+the cut lens its packet names, corrected in the cut-time sections that
+packet grants: hunt tautological or weakened checks and results that
+satisfy a check without meeting its criterion; correct within the granted
+`authority`, per §9; append to
+[contracts/work-item.md](../../../contracts/work-item.md) `## Result`,
+and record `checked_by`, through the verbs your packet spells out.
 
 Never: soften a finding because fixing it is costly; report a finding
 without the evidence that shows it; rewrite another context's entries;
