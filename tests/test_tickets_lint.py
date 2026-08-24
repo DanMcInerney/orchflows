@@ -439,7 +439,9 @@ class ScopeContradictionLintTest(LintFixture):
         """One judgment, two readers: the finding sets must not drift apart."""
         for excluded in (CONTRADICTED, "vcs.integrate, vcs.push, vcs.open-pr",
                          "vcs.push, never write docs/other.md",
-                         "vcs.push, never write scratch/T1.txt, and never write scratch/T1.txt"):
+                         "vcs.push, never write scratch/T1.txt, and never write scratch/T1.txt",
+                         "vcs.push, never write scratch/T1.txt., never write `scratch/T1.txt`, never write scratch\\T1.txt, never write scratch/",
+                         "vcs.push, never write ./scratch/T1.txt, never write scratch/*.txt, never write <ws>/scratch/T1.txt, never write SCRATCH/T1.TXT, never write scratch/T1.txt.bak, never write scratch/sub/T1.txt"):
             text = draft(self.baseline, excluded=excluded)
             path = self.write_draft(text, "case.md")
             mine = {item["message"].split(": ", 1)[1]
