@@ -40,6 +40,10 @@ Stamp routing — exactly one pack per
 stamp> --independence gate …`; the root's `checked_by` is its cut-reader
 bookkeeping, never its final acceptance path.
 
+When one executor plus the mandatory orch-integrate join owns the whole
+outcome, bind that executor in the root itself rather than orch-decompose,
+with its own completion test and write scope.
+
 For every new root this producer opens, opt into v2 explicitly. Finish its
 frozen assignment as a `draft`, derive `root_generation` as
 `v2:root:<root-id>:<ordinal>:sha256:<digest>`, validate that exact snapshot,
