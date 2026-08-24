@@ -4,7 +4,8 @@ The canonical `orchflows` source: a four-tier library for orchestrator >
 subagent work. `ARCHITECTURE.md` maps boundaries, ownership, dependency
 direction; `docs/vocabulary.md` owns every library term and a pack's
 craft cell its domain's; `rules/` owns cross-cutting law, under
-`rules/visibility.md` §3.
+`rules/visibility.md` §3. The Constitution in `docs/library-review.md`
+requires every sentence here.
 
 Routing, the state sink and the friction law are the host block's —
 `templates/host-block.md`, installed at `~/.orchflows/host-block.md`.

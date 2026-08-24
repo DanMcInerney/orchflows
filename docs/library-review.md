@@ -25,16 +25,18 @@ sentence in the library must be required by one of them.
    attenuates downward.
 5. One owner per fact; everything else links.
 6. Coordination is bought only when parallelism, isolation, or
-   durability forces it — the value
-   [rules/topology.md](../rules/topology.md) rule 2's intake serves.
+   durability forces it.
 7. Fixes consume causes, not findings, bounded by the frozen spec's
    license.
-8. Generic bodies are domain-blind; domain deviations live in pack
-   cells.
+8. Machinery is domain-blind; a domain enters as data, never as
+   control flow.
 9. Determinism over inference: a repeated deterministic step becomes
    a script.
 10. The library learns by deletion as much as by addition; every
     sentence must be load-bearing.
+11. A guard against a model limitation is scaffolding and expires with
+    the limitation; a guard against incentives is permanent. The test
+    is whether a perfect executor would still need it.
 
 ## Report contract (anti-accretion)
 
