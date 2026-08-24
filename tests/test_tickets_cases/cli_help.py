@@ -232,6 +232,23 @@ class TestPacketNamesTheChildsOwnName(unittest.TestCase):
             self.assertIn("not claimed", payload["error"])
 
 
+class TestPacketUsageHasOneOwner(unittest.TestCase):
+    """`tickets.py help` and the `packet` error path advertise one flag set.
+
+    They diverged by `[--by <name>]` for a whole run: the error path took the
+    new flag and the help table, a hand-built copy of the same sentence, did
+    not. Nothing failed, because nothing compared them.
+    """
+
+    def test_the_help_table_takes_the_packet_usage_by_reference(self):
+        from scripts import tickets_commands, tickets_packet
+
+        self.assertIn("[--by <name>]", tickets_packet.PACKET_USAGE)
+        self.assertEqual(
+            tickets_packet.PACKET_USAGE, tickets_commands.SUBCOMMAND_USAGE["packet"]
+        )
+
+
 class TestPacketOmitsTheWorkspaceStepForATicketThatWritesOnlyTickets(unittest.TestCase):
     """Friction 2026-08-16T09:40: a packet told a read-only lane to run
     `workspace.py start` as its first act, so a worktree was created that

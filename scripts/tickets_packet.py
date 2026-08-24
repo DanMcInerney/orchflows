@@ -33,11 +33,14 @@ else:
     from tickets_admission import is_v1, is_v2
     from tickets_context import graded_admission, run_snapshot
 
-PACKET_USAGE = "packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--executor orch-critique | orch-verify]"
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
 CHECKER_EXECUTOR = 'orch-critique'
 REVERIFIER_EXECUTOR = 'orch-verify'
 CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
+# Below the constant it names, and interpolating it rather than spelling it:
+# this one sentence is what the error path prints and what `tickets.py help`
+# publishes, and the two were hand-built copies that drifted by one flag.
+PACKET_USAGE = f"packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]"
 CHECKABLE_STATUSES = frozenset({'claimed', 'suspended'})
 CHECKER_INDEPENDENCE = 'checker'
 PRE_EXISTING_PROVENANCE = 'pre-existing'
