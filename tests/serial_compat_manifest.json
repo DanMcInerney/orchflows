@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2860,
+  "count": 2861,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -70,6 +70,7 @@
    "test_cut_lens.GraphJudgmentsTest.test_a_judgment_the_lens_drops_is_reported",
    "test_cut_lens.GraphJudgmentsTest.test_the_kept_half_names_the_false_edge_and_the_compound_item",
    "test_cutcheck.CutScopeScreenRegistrationTest.test_no_screen_name_can_be_read_off_a_summary_line",
+   "test_cutcheck.CutScopeScreenRegistrationTest.test_screen_four_is_family_three_and_advisory",
    "test_cutcheck.CutScopeScreenRegistrationTest.test_the_three_refusing_screens_lie_outside_the_advisory_set",
    "test_cutcheck.CutScopeScreenTest.test_a_deleted_phrase_a_test_asserts_verbatim_names_that_test",
    "test_cutcheck.CutScopeScreenTest.test_a_policy_input_ordering_a_write_outside_the_grant_is_reported",
@@ -2863,7 +2864,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "baffce72e2c788db55aa19a661c0e1f59e5f41488921add97e7ea2333e2aa93e"
+  "sha256": "e261373fb4c1c2cd2c97afe75db676391a9b8a371dcbc311ad6b14fc49977a07"
  },
  "mutation_owners": [
   {

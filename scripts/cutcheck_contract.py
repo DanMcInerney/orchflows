@@ -151,6 +151,12 @@ ADVISORY = frozenset(
         SHARED_TEST_MODULE,
         UNREAD_HALF,
         "ticket-result-not-terminal",
+        # Screen 4's class, spelled rather than imported for the reason the
+        # line above is: the judgment owns it in `cutcheck_ticket`, which reads
+        # this module and is not read back by it. A marker is weak evidence of
+        # meaning and never proof of its absence, so the screen reports and
+        # leaves the status alone.
+        "marker-only-relocation",
     }
 )
 # The shape reading's classes, which are in neither set. An advisory is a

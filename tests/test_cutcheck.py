@@ -431,6 +431,16 @@ class CutScopeScreenRegistrationTest(unittest.TestCase):
                 self.assertEqual(cutcheck.FAMILY_OF[klass], cutcheck.FAMILY_3)
                 self.assertNotIn(klass, cutcheck.ADVISORY)
 
+    def test_screen_four_is_family_three_and_advisory(self):
+        """The complement of the case above, and the objective's own
+        requirement: wired while outside `ADVISORY`, screen 4 would refuse
+        cuts, because family 3 is what `main` partitions on to set the status.
+        """
+
+        klass = cutcheck_ticket.MARKER_ONLY_RELOCATION
+        self.assertEqual(cutcheck.FAMILY_3, cutcheck.FAMILY_OF[klass])
+        self.assertIn(klass, cutcheck.ADVISORY)
+
     def test_no_screen_name_can_be_read_off_a_summary_line(self):
         """The rule every finding class answers to, asked of the new four."""
 
