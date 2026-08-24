@@ -25,10 +25,13 @@ _FRONTIER_CUT_CHECK = {
     "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
 }
 
-#: The contract keeps only the pointer: the staffing law is
-#: rules/verification.md §10's and its threshold orch-frontier's, so the
-#: Root ticket section is asserted to name its reader and defer, never to
-#: restate the clause. The clause itself is checked at its one owner above.
+#: The contract keeps only the pointer, and the two halves it points at are
+#: different surfaces: rules/verification.md §10 owns the law (a checker
+#: identity is single and immutable, the root cut reader its one exception)
+#: and orch-frontier owns when one is staffed (three or more `<id>.NN`, or
+#: after a cutcheck advisory). §10 states no threshold, so a contract that
+#: sent a reader there for staffing would be pointing at prose that does not
+#: carry it; both halves are asserted so neither pointer can go wrong alone.
 _CONTRACT_CUT_POINTER = {
     "the field that records the root's cut reader": (
         "`checked_by`", "cut reader",
@@ -36,6 +39,7 @@ _CONTRACT_CUT_POINTER = {
     "the law the contract defers to instead of restating": (
         "rules/verification.md", "§10",
     ),
+    "the surface that decides when one is staffed": ("`orch-frontier`",),
 }
 
 _FRONTIER_CLAUSE_RE = re.compile(

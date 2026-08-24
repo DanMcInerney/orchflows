@@ -178,10 +178,10 @@ loop ticket's iterations are `<id>.iter.NN`, discovered scope a ticket that
 sorted unique repository-relative POSIX paths of the admitted root
 `mutations`, bound by SHA-256 over their canonical UTF-8 JSON array, a
 malformed mutation refusing gate creation. The root carries
-`independence: gate`, its `checked_by` recording only its cut reader —
-staffing is [rules/verification.md](../rules/verification.md) §10's — which
-never satisfies the root result's outside-independence path, the run's one
-composite gate.
+`independence: gate`, its `checked_by` recording only its cut reader — the
+law [rules/verification.md](../rules/verification.md) §10's, when one is
+staffed `orch-frontier`'s — which never satisfies the root result's
+outside-independence path, the run's one composite gate.
 
 ## Template and stub
 

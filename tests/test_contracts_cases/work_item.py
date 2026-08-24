@@ -167,6 +167,34 @@ class TestWorkItemContract(unittest.TestCase):
                     "the relocated lease rule reached no owner",
                 )
 
+    def test_the_relocated_timer_prose_says_what_its_module_computes(self):
+        """Markers are not meaning: bind the sentence to the substitution.
+
+        The marker check above passed a docstring that said the default is
+        substituted "when the bound is not [a duration]" -- the pre-widening
+        behavior `parse_bound` exists to end. Three assertions over the code
+        the prose describes, so the same false sentence cannot return: the
+        number the prose names is the constant, the constant is reached only
+        by a bound the grammar cannot read, and a countable non-duration
+        bound is aged at its own conversion rather than at the default.
+        """
+        from scripts import tickets_bound as bound
+
+        self.assertEqual(
+            60, bound.DEFAULT_BOUND_MINUTES,
+            "the docstring's '60 minutes' is no longer the constant it names",
+        )
+        self.assertEqual(
+            (60, "other"), bound.parse_bound("banana"),
+            "an unreadable bound no longer reaches the stated default",
+        )
+        self.assertNotEqual(
+            bound.DEFAULT_BOUND_MINUTES, bound.parse_bound("40 tool calls")[0],
+            "a tool-call bound ages at the default again, so any prose "
+            "saying the default covers every non-duration bound is true "
+            "only because the grammar regressed",
+        )
+
     def test_carries_no_compatibility_floor(self):
         self.assertNotIn(
             "Compatibility floor", read("work-item.md"),
