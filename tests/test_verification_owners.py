@@ -46,7 +46,7 @@ KERNEL_SKILLS = (VERIFY, CRITIQUE, INTEGRATE)
 #: moment the packet's flags change. `tickets.py result-grade` is not one
 #: of them: it is the join's own verb, carried by no packet.
 PACKET_CARRIED_CLI = (
-    r"tickets\.py amend",
+    r"tickets\.py amend\b",
     r"tickets\.py new\b",
     r"tickets\.py result(?!-)",
     r"tickets\.py check\b",
@@ -58,7 +58,7 @@ PACKET_CARRIED_CLI = (
 #: builds that invocation into a child's prompt. Keyed by the sweep pattern
 #: it licenses, so a swept form can never lose its premise silently.
 PACKET_BUILDS = {
-    r"tickets\.py amend": r"_command_text\([^\n]*'amend'",
+    r"tickets\.py amend\b": r"_command_text\([^\n]*'amend'",
     r"tickets\.py new\b": r"_command_text\([^\n]*'new'",
     r"tickets\.py result(?!-)": r"_command_text\([^\n]*'result'",
     r"tickets\.py check\b": r"_command_text\([^\n]*'check'",
@@ -394,6 +394,39 @@ class KernelSkillsSpellOutNoPacketCarriedCLI(unittest.TestCase):
                     f"scripts/tickets_packet.py no longer builds {swept!r} "
                     f"({builder!r} matches nothing), so the kernel skills' "
                     "silence about it is a gap, not a de-duplication",
+                )
+
+    def test_no_swept_pattern_reaches_past_the_command_it_licenses(self):
+        """Each pattern bans one invocation, not every name sharing its prefix.
+
+        The premise above licenses a pattern by the one command the
+        generator builds, but never checks that the pattern stops there. A
+        pattern missing its boundary also silences the CLI's *other*
+        commands that start with the same letters, and the absence sweep
+        cannot see that: a skill that never spelled the longer name out
+        passes either way. `tickets.py amend` banned `amendment-request`
+        from all three kernel skills on exactly that hole, and the sweep
+        stayed green while it did.
+        """
+        from scripts import tickets_commands, workspace
+
+        surfaces = {
+            "tickets.py": sorted(tickets_commands.SUBCOMMAND_USAGE),
+            "workspace.py": sorted(workspace.COMMAND_USAGE),
+        }
+        for swept, builder in sorted(PACKET_BUILDS.items()):
+            script = next(s for s in surfaces if swept.startswith(s.replace(".", r"\.")))
+            licensed = re.findall(r"'([^']+)'", builder)[-1]
+            reached = [
+                name for name in surfaces[script]
+                if re.search(swept, f"{script} {name} <run> <id>")
+            ]
+            with self.subTest(cli=swept):
+                self.assertEqual(
+                    [licensed], reached,
+                    f"{swept!r} is licensed by {licensed!r} alone but matches "
+                    f"{reached} of {script}'s commands; a swept form without a "
+                    "boundary bans commands no packet ever carries",
                 )
 
     def test_the_joins_own_verb_is_not_caught_by_that_sweep(self):

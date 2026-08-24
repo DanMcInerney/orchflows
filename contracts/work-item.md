@@ -139,7 +139,7 @@ and never inferred: the dispatcher's own assigned name, or `main` at the
 top level. `profile` is a seventh, optional part (rules/roles.md §4–§5);
 only a missing part among the six refuses a dispatch. A packet says what to
 do; only `inputs` says what is true. What each part then obliges is
-[rules/delegation.md](../rules/delegation.md) §4, §9 and §10 with
+[rules/delegation.md](../rules/delegation.md) §4, §5, §9 and §10 with
 [rules/composition.md](../rules/composition.md) rule 8.
 
 Blame rule, recorded at every join: work the child had to do because a

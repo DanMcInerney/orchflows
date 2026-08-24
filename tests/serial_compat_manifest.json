@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2756,
+  "count": 2757,
   "identities": [
    "test_architecture_owners.NewToolOwnershipTest.test_dropping_any_one_sentence_fails_the_check",
    "test_architecture_owners.NewToolOwnershipTest.test_the_section_names_each_new_tool_with_its_responsibility",
@@ -658,6 +658,7 @@
    "test_verification_owners.DelegationOwnsTheThreeRestoredFacts.test_the_join_rejects_a_result_that_exceeded_its_scope",
    "test_verification_owners.DelegationOwnsTheThreeRestoredFacts.test_the_suspension_bound_is_not_re_read_as_a_currency",
    "test_verification_owners.KernelSkillsSpellOutNoPacketCarriedCLI.test_no_kernel_skill_repeats_a_packet_carried_invocation",
+   "test_verification_owners.KernelSkillsSpellOutNoPacketCarriedCLI.test_no_swept_pattern_reaches_past_the_command_it_licenses",
    "test_verification_owners.KernelSkillsSpellOutNoPacketCarriedCLI.test_the_joins_own_verb_is_not_caught_by_that_sweep",
    "test_verification_owners.KernelSkillsSpellOutNoPacketCarriedCLI.test_the_packet_generator_still_carries_every_swept_invocation",
    "test_verification_owners.SectionTenKeepsOnlyThePathsWithConsumers.test_the_bare_judged_verdict_path_is_gone",
@@ -2759,7 +2760,7 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5bff71ca8f6b1b1fb037e93e9e624a1e475dc15ae509f1c3e2dea88e0997fb36"
+  "sha256": "f0c3b4ad5a2d6c027b0a3fd300a0055ffe817c895583a6ab2f501c9afa64c849"
  },
  "mutation_owners": [
   {
