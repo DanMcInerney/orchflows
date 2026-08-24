@@ -467,6 +467,7 @@ CASE_MODULES = (
     "scope",
     "fixed_input_oracle",
     "shared_test_module",
+    "pricing",
 )
 
 # Case modules deliberately share this facade's helpers through ``import *``.
