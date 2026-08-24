@@ -227,10 +227,10 @@ def _cmd_claim(rest):
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
 def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
-    """Grade one exact snapshot, then compare-and-swap it into a claim:
-    `ready` and `claim` share this grader and swap only while that snapshot still
-    matches, so a moved ticket, dependency, or cohort loses the race instead of
-    claiming on a stale receipt -- the receipt packet emission quotes, against a live claim."""
+    """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
+    live claim, landing only while that exact snapshot still matches, so a moved ticket,
+    dependency, or cohort loses the race instead of claiming on a stale receipt. `ready`
+    grades on the same `grade_admission` and swaps the same way in `_admit_ready_cas`."""
     args = list(rest)
     claimed_by = _extract_flag(args, '--by')
     if claimed_by is None:
