@@ -29,8 +29,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts import tickets_admission, tickets_format, tickets_transitions
-from tests.test_tickets_issue_cases import admission_producers
+from scripts import tickets_admission, tickets_format, tickets_generations, tickets_transitions
+from tests.test_tickets_issue_cases import admission_producers, generation_lifecycle
 from tests.test_tickets_cases.admission_v1 import initialize_git_fixture, v1_ticket
 from tests.test_tickets_cases.common import backdate, make_tickets, run_cmd, use_sink
 
@@ -121,9 +121,7 @@ class TransitionTableTest(unittest.TestCase):
     """The table itself: rows, the fields they write, and what they allow."""
 
     def test_the_status_vocabulary_is_the_librarys_own(self):
-        self.assertEqual(
-            tuple(sorted(tickets_format.VALID_STATUSES)), tickets_transitions.STATUSES
-        )
+        self.assertEqual(tuple(sorted(tickets_format.VALID_STATUSES)), tickets_transitions.STATUSES)
         for command in ("claim", "grant", "check", "recut", "set-status pending"):
             with self.subTest(command=command):
                 self.assertIn(command, tickets_transitions.COMMANDS)
@@ -131,34 +129,20 @@ class TransitionTableTest(unittest.TestCase):
     def test_claim_runs_only_at_the_admission_boundarys_two_statuses(self):
         for status in tickets_transitions.STATUSES:
             with self.subTest(status=status):
-                self.assertEqual(
-                    status in ("pending", "ready"),
-                    tickets_transitions.allows(status, "claim"),
-                )
+                self.assertEqual(status in ("pending", "ready"), tickets_transitions.allows(status, "claim"))
 
     def test_grant_and_check_run_only_on_an_item_someone_is_working(self):
-        self.assertEqual(
-            frozenset({"claimed", "suspended"}), tickets_transitions.GRANTABLE_STATUSES
-        )
-        self.assertEqual(
-            tickets_transitions.GRANTABLE_STATUSES,
-            tickets_transitions.CHECKABLE_STATUSES,
-        )
+        self.assertEqual(frozenset({"claimed", "suspended"}), tickets_transitions.GRANTABLE_STATUSES)
+        self.assertEqual(tickets_transitions.GRANTABLE_STATUSES, tickets_transitions.CHECKABLE_STATUSES)
         for status in tickets_transitions.STATUSES:
             for command in ("grant", "check"):
                 with self.subTest(status=status, command=command):
-                    self.assertEqual(
-                        status in tickets_transitions.GRANTABLE_STATUSES,
-                        tickets_transitions.allows(status, command),
-                    )
+                    self.assertEqual(status in tickets_transitions.GRANTABLE_STATUSES, tickets_transitions.allows(status, command))
 
     def test_set_status_cannot_reach_the_two_statuses_admission_owns(self):
         for target in tickets_transitions.ADMISSION_OWNED_TARGETS:
             with self.subTest(target=target):
-                self.assertNotIn(
-                    tickets_transitions.set_status_command(target),
-                    tickets_transitions.COMMANDS,
-                )
+                self.assertNotIn(tickets_transitions.set_status_command(target), tickets_transitions.COMMANDS)
 
     def test_only_the_pending_target_releases_the_lease(self):
         """The blanking this whole item turns on, and its two exceptions.
@@ -169,10 +153,7 @@ class TransitionTableTest(unittest.TestCase):
         """
 
         self.assertEqual(("claimed_by", "claimed_at"), tickets_transitions.LEASE_FIELDS)
-        self.assertEqual(
-            tickets_transitions.LEASE_FIELDS,
-            tickets_transitions.set_status_blanks("pending"),
-        )
+        self.assertEqual(tickets_transitions.LEASE_FIELDS, tickets_transitions.set_status_blanks("pending"))
         for target in ("suspended", *tickets_format.TERMINAL_STATES):
             with self.subTest(target=target):
                 self.assertEqual((), tickets_transitions.set_status_blanks(target))
@@ -196,9 +177,7 @@ class TransitionTableTest(unittest.TestCase):
             for command in tickets_transitions.COMMANDS:
                 with self.subTest(status=status, command=command):
                     text = tickets_transitions.refusal("subject", command, status)
-                    self.assertEqual(
-                        chain_commands(status, command), commands_named(text), text
-                    )
+                    self.assertEqual(chain_commands(status, command), commands_named(text), text)
 
     def test_the_reader_separates_a_rendered_remedy_from_a_hand_written_one(self):
         """Can-fail: the check above has to react to the sentence that
@@ -226,9 +205,7 @@ class TransitionTableTest(unittest.TestCase):
                 sealed = tickets_transitions.remedy_path("claimed", command, sealed=True)
                 self.assertIn(f"`{command}`", " ".join(live))
                 self.assertNotIn(f"`{command}`", " ".join(sealed))
-                self.assertEqual(
-                    {"set-status suspended"}, commands_named(" ".join(sealed))
-                )
+                self.assertEqual({"set-status suspended"}, commands_named(" ".join(sealed)))
         self.assertEqual(
             tickets_transitions.remedy_path("claimed", "claim"),
             tickets_transitions.remedy_path("claimed", "claim", sealed=True),
@@ -267,13 +244,8 @@ class StampingTest(admission_producers.ProducerStampingTest):
     -- inherited -- every producer path that stamps through it live."""
 
     def test_each_version_stamps_its_own_pending_sentinel(self):
-        self.assertEqual(
-            tickets_admission.ADMISSION_PENDING, tickets_transitions.pending_admission(1)
-        )
-        self.assertEqual(
-            tickets_admission.ADMISSION_V2_PENDING,
-            tickets_transitions.pending_admission(2),
-        )
+        self.assertEqual(tickets_admission.ADMISSION_PENDING, tickets_transitions.pending_admission(1))
+        self.assertEqual(tickets_admission.ADMISSION_V2_PENDING, tickets_transitions.pending_admission(2))
         self.assertNotEqual(
             tickets_transitions.pending_admission(1),
             tickets_transitions.pending_admission(2),
@@ -308,6 +280,35 @@ class DraftValidateTest(unittest.TestCase):
             with self.subTest(status=status):
                 self.assertIn(status, tickets_format.VALID_STATUSES)
                 self.assertNotIn(status, tickets_format.TERMINAL_STATES)
+
+    def test_a_claimed_root_is_a_vantage_and_a_claimed_member_is_not(self):
+        """Both directions, against the table and against the live command.
+
+        A draft is graded from its root, so a claimed root is the position
+        the snapshot is read from -- the route this run's own root took --
+        while a claimed member is an execution the draft would be rewriting
+        underneath it. The member set stays the entry's own; the root adds
+        exactly `claimed` to it, which is why the entry must not carry it.
+        """
+
+        self.assertNotIn(
+            tickets_transitions.CLAIMED,
+            tickets_transitions.stamp("draft-validate", 2).draft_statuses,
+        )
+        for ticket_id, codes in (("00-root", []), ("00-root.01", ["v2-draft-status"])):
+            with self.subTest(ticket=ticket_id), tempfile.TemporaryDirectory() as raw:
+                current = dict(generation_lifecycle.snapshot())
+                current[ticket_id] = tickets_format._set_frontmatter_field(
+                    current[ticket_id], "status", tickets_transitions.CLAIMED)
+                findings = tickets_generations._v2_draft_findings("00-root", current)
+                self.assertEqual(codes, [item["code"] for item in findings])
+                run_dir = use_sink(Path(raw)) / "tickets" / "run"
+                run_dir.mkdir(parents=True)
+                for tid, text in current.items():
+                    (run_dir / f"{tid}.md").write_text(text, encoding="utf-8")
+                live = run_cmd(Path(raw), "draft-validate", "run", "00-root")
+                self.assertEqual(codes, [item["code"] for item in live.get("findings", [])])
+                self.assertEqual(not codes, "draft_validation" in live)
 
 
 class LifecycleCommandsTest(unittest.TestCase):
