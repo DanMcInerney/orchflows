@@ -309,6 +309,9 @@ class DraftValidateTest(unittest.TestCase):
                 live = run_cmd(Path(raw), "draft-validate", "run", "00-root")
                 self.assertEqual(codes, [item["code"] for item in live.get("findings", [])])
                 self.assertEqual(not codes, "draft_validation" in live)
+                if not codes:  # the route's second half: `seal` shares this grader
+                    self.assertIn("assignment_seal", run_cmd(Path(raw), "seal", "run", "00-root",
+                        "--cut-generation", live["draft_validation"]["cut_generation"]))
 
 
 class LifecycleCommandsTest(unittest.TestCase):
