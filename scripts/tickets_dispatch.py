@@ -39,7 +39,7 @@ if __package__:
 else:
     from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
     from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan
-    _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check  # by name: the family's import census is pinned; _cmd_reissue = __import__('tickets_reissue')._cmd_reissue
+    _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check; _cmd_reissue = __import__('tickets_reissue')._cmd_reissue  # by name: the family's import census is pinned
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
 def _template_stubs(directory: Path, values: dict):

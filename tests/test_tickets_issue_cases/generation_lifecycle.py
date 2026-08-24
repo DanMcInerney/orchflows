@@ -24,6 +24,7 @@ def ticket(ticket_id, *, executor="orch-tdd", objective="deliver", result="", re
     fields.append("ownership_regions: " + generations.canonical_json(regions or []))
     return "\n".join(fields + [
         "---", "", "## Objective", "", objective, "", "## Fixed inputs", "",
+        '- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"02621f7005b0b4d37fa59b0d450ff742d9c1bfbd"},"name":"baseline","type":"identity"}',
         '- input: {"name":"fixture","type":"literal","value":1}', "",
         "## Completion test", "", "- works | oracle: `fixture` | oracle_class: deterministic | provenance: authored-here",
         "", "## Return fields", "", "status; result", "", "## Result", "", result,

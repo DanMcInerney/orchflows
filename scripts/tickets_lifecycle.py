@@ -98,8 +98,7 @@ def _cmd_ready(rest):
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
     now = datetime.now(timezone.utc)
-    ready_items = []
-    skipped = []
+    ready_items, skipped = [], []
     for run_dir in _iter_run_dirs(tickets_root, run_filter):
         snapshot, read_failures = _run_snapshot(run_dir)
         skipped.extend(read_failures)
@@ -115,9 +114,7 @@ def _cmd_ready(rest):
             dangling = facts['dangling']
             ticket_id = str(data.get('id') or '')
             text = snapshot.get(ticket_id)
-            v1 = text is not None and is_v1(_parse_frontmatter(text))
-            v2 = text is not None and is_v2(_parse_frontmatter(text))
-            versioned = v1 or v2
+            versioned = text is not None and (is_v1(_parse_frontmatter(text)) or is_v2(_parse_frontmatter(text)))
             status = data.get('status')
             if dangling and not (versioned and status in ('pending', 'ready')):
                 skipped.append({'id': data['id'], 'reason': 'depends_on names no ticket in this run: ' + ', '.join((str(dep) for dep in dangling))})
@@ -230,6 +227,10 @@ def _cmd_claim(rest):
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
 def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
+    """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
+    live claim, landing only while that exact snapshot still matches, so a moved ticket,
+    dependency, or cohort loses the race instead of claiming on a stale receipt. `ready`
+    grades on the same `grade_admission` and swaps the same way in `_admit_ready_cas`."""
     args = list(rest)
     claimed_by = _extract_flag(args, '--by')
     if claimed_by is None:

@@ -46,10 +46,9 @@
     executor) reviewing the result and its authored checks and
     correcting per §9, the completion test then re-verified, over the
     entries the checker invalidated, by a context that rendered no part
-    of the result, the rest covered per §7 — where every invalidated
-    oracle is deterministic that context is the join, which re-runs
-    them, and where any is judged one fresh child re-verifies them all;
-    a judged verdict per §6; or the downstream gate the ticket's
+    of the result — where every invalidated oracle is deterministic that
+    context is the join, which re-runs them, and where any is judged one
+    fresh child re-verifies them all; or the downstream gate the ticket's
     `independence` field names. A non-root gate-deferred ticket cannot
     carry `checked_by`, and a checker identity is single and immutable;
     the root cut reader is the distinct exception. Additional adversarial

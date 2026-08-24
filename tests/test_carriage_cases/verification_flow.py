@@ -25,19 +25,29 @@ _FRONTIER_CUT_CHECK = {
     "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
 }
 
-_CONTRACT_CUT_CHECK = {
-    "a root's cut is checked before its first unit": ("cut is checked", "first unit"),
-    "the field that records the cut checker": ("`checked_by`", "cut checker"),
-    "what the cut checker corrects, and what it does not": (
-        "`tickets.py amend`", "run's workspace",
+#: The contract keeps only the pointer, and the two halves it points at are
+#: different surfaces: rules/verification.md §10 owns the law (a checker
+#: identity is single and immutable, the root cut reader its one exception)
+#: and orch-frontier owns when one is staffed (three or more `<id>.NN`, or
+#: after a cutcheck advisory). §10 states no threshold, so a contract that
+#: sent a reader there for staffing would be pointing at prose that does not
+#: carry it; both halves are asserted so neither pointer can go wrong alone.
+_CONTRACT_CUT_POINTER = {
+    "the field that records the root's cut reader": (
+        "`checked_by`", "cut reader",
     ),
-    "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
+    "the law the contract defers to instead of restating": (
+        "rules/verification.md", "§10",
+    ),
+    "the surface that decides when one is staffed": ("`orch-frontier`",),
 }
 
 _FRONTIER_CLAUSE_RE = re.compile(
     r"A\s+root\s+cut\s+reader.*?cut\s+alone\.\s*", re.S
 )
-_CONTRACT_CLAUSE_RE = re.compile(r"A root's cut is checked.*?cut checker\.\s*", re.S)
+_CONTRACT_POINTER_RE = re.compile(
+    r"its\s+`checked_by`\s+recording.*?composite\s+gate\.\s*", re.S
+)
 
 
 class CutCheckOrderingTest(unittest.TestCase):
@@ -52,23 +62,35 @@ class CutCheckOrderingTest(unittest.TestCase):
             f"{', '.join(gaps)}",
         )
 
-    def test_the_contract_gives_a_root_ticket_its_cut_checker(self):
+    def test_the_contract_points_a_root_ticket_at_its_cut_reader(self):
         gaps = clause_gaps(
             section(WORK_ITEM.read_text(encoding="utf-8"), "Root ticket"),
-            _CONTRACT_CUT_CHECK,
+            _CONTRACT_CUT_POINTER,
         )
         self.assertEqual(
             [],
             gaps,
             "contracts/work-item.md's Root ticket section states no "
-            f"cut-checker clause covering: {', '.join(gaps)}",
+            f"cut-reader pointer covering: {', '.join(gaps)}",
         )
+
+    def test_the_contract_does_not_restate_the_staffing_threshold(self):
+        """The threshold has one prose owner, and it is not the contract."""
+        contract = WORK_ITEM.read_text(encoding="utf-8")
+        for token in ("three or more", "cutcheck advisory", "cut checker"):
+            with self.subTest(token=token):
+                self.assertNotIn(
+                    token,
+                    contract,
+                    "contracts/work-item.md restates the cut-reader staffing "
+                    f"threshold ({token!r}); orch-frontier owns it",
+                )
 
     def test_an_engine_and_a_contract_without_the_clause_fail_the_check(self):
         """The can-fail direction excises each clause from a copy."""
         for path, required, pattern, reader in (
             (FRONTIER, _FRONTIER_CUT_CHECK, _FRONTIER_CLAUSE_RE, lambda t: t),
-            (WORK_ITEM, _CONTRACT_CUT_CHECK, _CONTRACT_CLAUSE_RE,
+            (WORK_ITEM, _CONTRACT_CUT_POINTER, _CONTRACT_POINTER_RE,
              lambda t: section(t, "Root ticket")),
         ):
             real = path.read_text(encoding="utf-8")

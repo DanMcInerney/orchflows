@@ -101,12 +101,14 @@ candidate by default.
 
 A new project creates on day zero exactly: the router file (routing
 plus the friction law), an empty vocabulary, an ownership map, the
-state sink, and this file by reference. The user install supplies the shared
-library and runtime; it never writes repository artifacts. Project artifacts
-are created explicitly through repository work or `orch-build`. Everything
-else is earned by a failure — a section is added when agents repeatedly get
-the thing wrong, and removed when the convention it guarded changes.
-Start near thirty lines of router; grow only on evidence.
+state sink, its constitution ([library-review.md](library-review.md)
+carries this library's), and this file by reference. The user install
+supplies the shared library and runtime; it never writes repository
+artifacts. Project artifacts are created explicitly through repository
+work or `orch-build`. Everything else is earned by a failure — a
+section is added when agents repeatedly get the thing wrong, and
+removed when the convention it guarded changes. Start near thirty
+lines of router; grow only on evidence.
 
 ## 7. Factories
 

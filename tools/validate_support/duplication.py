@@ -210,6 +210,15 @@ SAME_TIER_COMPARED = frozenset({"skills"})
 # provenance. The signature mandates that table, and a pack cannot state
 # an oracle policy without naming the criterion it decides.
 #
+# docs/library-review.md's Constitution principle 8 owns the value that
+# machinery is domain-blind and a domain enters as data, never as control
+# flow; contracts/pack-signature.md states the same fact as its own purity
+# consequence -- the thing the signature exists to enforce. Reporting the
+# pair asks the contract to stop stating what it enforces. The DESIGN.md,
+# ARCHITECTURE.md and README.md restatements sit outside this corpus by
+# design: rationale, map, and human surfaces, with the fact owned in law
+# (join ruling, 20260823T210000Z-trunk-slimming, checker finding F9).
+#
 # orch-edit and orch-synthesize both forbid an assembly step inventing a
 # claim its inputs did not carry -- sections for one, evidence packets
 # for the other. It is one law with two subjects and no owner: rules/
@@ -236,6 +245,11 @@ LICENSED_COPIES = (
         "skills/instances/orch-synthesize/SKILL.md",
         "skills/instances/orch-edit/SKILL.md",
         "Never: introduce",
+    ),
+    (
+        "docs/library-review.md",
+        "contracts/pack-signature.md",
+        "control flow",
     ),
 )
 

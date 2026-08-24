@@ -218,6 +218,7 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         head.append(f"This is the rules/verification.md §10 checker's pass on a result {claimed_by} produced under its claim, never a re-execution of the item: the lens is the ticket's own `## Completion test`, at {at_identity}.")
         head.append(f"Your authority is the ticket's own write scope, {scope} — correct inside it, and append your findings, changes and the verification entries they invalidate to `## Result`. Record the pass, after correcting, with:")
         head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', 'NAME'))
+        head.append("Your pass is the one outside execution of the completion test: run each oracle once at the identity you confirmed, and reuse any entry whose covers are unchanged — re-running it buys nothing (rules/verification.md §7, §10). Spend the bound on what execution cannot buy: weakened or vacuous checks, scope, and correction.")
     else:
         head.append(f"This is the rules/verification.md §10 re-verification of a checked result, never a re-execution of the item: run the ticket's `## Completion test` at {at_identity}, reusing prior `## Verification` entries whose `covers` are unchanged there.")
         head.append("Your authority grants no write: the item's workspace and its `## Result` are another context's, and `## Verification` is the one section you file.")
@@ -295,10 +296,12 @@ def _packet_under_run_lock(rest):
     if str(loaded.get('id') or '') != ticket_id or str(loaded.get('run') or '') != run:
         return {'error': f'packet path {ticket_path} does not carry the requested run/id {run}/{ticket_id}'}
     status = str(loaded.get('status') or '').strip().strip('`').strip()
+    if status not in CHECKABLE_STATUSES:
+        return {'error': f"ticket is not claimed (status '{status}'): packet emission requires an admitted claim"}
+    # A claim taken up before the admission boundary existed carries no
+    # receipt to name, and its dispatch says exactly that.
     admission = 'legacy-unadmitted'
     if is_v1(loaded) or is_v2(loaded):
-        if status not in CHECKABLE_STATUSES:
-            return {'error': f"ticket is not claimed (status '{status}'): v1 packet emission requires an admitted claim"}
         snapshot = {}
         for sibling_path in sorted(ticket_path.parent.glob('*.md')):
             sibling_text, sibling_failure = _read_utf8(sibling_path)
@@ -312,8 +315,6 @@ def _packet_under_run_lock(rest):
         if stored != grade['receipt']:
             return {'error': f'ticket has no current admission receipt: stored {stored or "<missing>"}, current {grade["receipt"]}'}
         admission = stored
-    elif status not in CHECKABLE_STATUSES:
-        return {'error': f"legacy ticket is not claimed (status '{status}'), so it is not an already-live v0 claim: re-cut it before packet emission"}
     sections = _sections(text)
     executor = (loaded.get('executor') or '').strip().strip('`')
     missing = []
@@ -377,7 +378,7 @@ def _packet_under_run_lock(rest):
     writes_workspace_content = bool(loaded.get('write_scope'))
     has_own_workspace = further is None and isolation == REQUIRED_ISOLATION and writes_workspace_content and establishes_a_git_workspace(loaded.get('pack'))
     if executor_script is None and further is None:
-        prompt.append('Close by running `## Completion test` through `orch-verify` at the result identity; `[]` fills an empty Feedback or Risks; an excluded action suspends through `## Handoff`.')
+        prompt.append('Close by running each criterion\'s oracle once at the frozen result identity and recording its summary and exit in `## Verification`; your own entries are UNVERIFIED alone — independence arrives per rules/verification.md §10, and later readers reuse entries whose covers are unchanged; `[]` fills an empty Feedback or Risks; an excluded action suspends through `## Handoff`.')
         prompt.append("A check's own summary line is its evidence: never pipe a test command through `tail` or any other filter — the runner writes that summary to stderr, and dropping it leaves exit status alone.")
         prompt.append("Run the oracles your own `## Completion test` names, nothing wider: a repository-level check the standards owner requires and your ticket does not name is the engine's, run on the integrated tip after each merge batch.")
         if has_own_workspace:

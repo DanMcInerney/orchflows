@@ -40,11 +40,6 @@ _listed = _scope._listed
 _overlaps = _scope._overlaps
 _path_args = _scope._path_args
 
-try:  # repository checkout
-    from scripts.tickets_regions import parallel_admission as _region_parallel_admission
-except ImportError:  # installed flat script directory
-    from tickets_regions import parallel_admission as _region_parallel_admission
-
 
 def _issued_under(siblings, root):
     """Defer the graph-to-coverage edge until coverage is loaded."""
@@ -358,6 +353,17 @@ def _pairwise(siblings, reads, region_prover=None, tree=None):
     sharing no file may still be graded by one shard, so whichever lands first
     decides what the other's regression read. Never counted: the resolver
     over-approximates on purpose.
+
+    ``region_prover`` is accepted and ignored. `ownership_regions` once
+    bought an exemption from the collision above, behind a prover this
+    function's only production caller never passed and no adapter ever
+    supplied -- so a flawless region pair could draw one verdict,
+    `region-proof-failed`. A refusal dressed as a proof is worse than the
+    refusal, and a prover that admitted on selector shape alone would be
+    worse than both, so the exemption is gone: sharing an artifact is
+    collision again, and same-artifact work orders its dependencies or
+    takes a sole owner. Restoring it means a resolver that reads the
+    artifact at the pinned identity, and this caller handing one over.
     """
 
     findings = []
@@ -372,26 +378,9 @@ def _pairwise(siblings, reads, region_prover=None, tree=None):
                 item: _listed(siblings[item], "write_scope") for item in (left, right)
             }
             for shared in _shared_artifacts(scopes[left], scopes[right]):
-                region_keys = {"ownership_regions"}
-                uses_regions = any(
-                    region_keys & set(siblings[item]) for item in (left, right)
+                findings.append(
+                    (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
                 )
-                if uses_regions:
-                    region_grade = _region_parallel_admission(
-                        left, siblings[left], right, siblings[right], shared,
-                        prover=region_prover,
-                    )
-                    if not region_grade["admitted"]:
-                        codes = ",".join(item["code"] for item in region_grade["findings"])
-                        findings.append(
-                            (left, 0, SCOPE_COLLISION, "with {}: {}; {}; fallback {}".format(
-                                right, shared, codes, region_grade["fallback"]
-                            ))
-                        )
-                else:
-                    findings.append(
-                        (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
-                    )
             for reader, writer in ((left, right), (right, left)):
                 path = _first_overlap(reads.get(reader) or [], scopes[writer])
                 if path is not None:

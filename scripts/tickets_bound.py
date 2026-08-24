@@ -13,6 +13,19 @@ of it, kept apart on purpose: `overdue` is about the bound alone, and
 ticket that is over its bound and still moving is a report; one that is
 over its bound and still is a decision for its caller.
 
+It therefore owns when a claim goes stale, which contracts/work-item.md
+states only as a field: a claim is stale when no write to the ticket file,
+nor to an artifact its `## Result` names that falls inside the item's
+`write_scope`, has landed for longer than the minutes `parse_bound` reads
+off that item's bound -- a stated duration as itself, a tool-call or
+iteration count at its stated conversion, and 60 minutes,
+`DEFAULT_BOUND_MINUTES`, only for a bound this grammar cannot read at all.
+Substituting the default for every non-duration bound is the defect the
+paragraph above names, not the rule. Staleness never rests on wall clock
+alone, and `should_park` is the reading of that rule: `_last_motion`
+supplies the motion, and a claim still writing past its deadline is
+reported, not taken.
+
 Imported at module scope by nothing here: `_cmd_bound_check`'s siblings are
 reached inside the call, because `tickets_format` imports this module for
 the parser and the pair would otherwise close a cycle at import time.

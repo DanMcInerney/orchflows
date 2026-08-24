@@ -22,8 +22,8 @@ assembly when named.
 
 Run `cutcheck.py` on the cut revision; amend defects and re-run to 0. The
 [cut lens](references/cut-lens.md) judges advisories and undecidable matters.
-Then write one composite gate: one critique per unique lens, all feeding one
-repair and one verification over run scope.
+Then write one composite gate through `tickets.py gate`: one critique per
+unique lens, all feeding one repair and one verification over run scope.
 
 Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
@@ -32,8 +32,9 @@ For v2, complete one `draft` before eligibility: all assignments, edges,
 coverage, `ownership_regions`, and merge-oracle identities. Every assignment
 names one `root_generation`; the cut names its content-addressed
 `cut_generation` and `assignment_seal` over exact validated worker fields.
-Grade one exact snapshot, persist its validation receipt, then compare-and-swap
-only that digest to sealed after cutcheck and lens pass. Post-seal assignment
+Grade one exact snapshot and persist its validation receipt through
+`tickets.py draft-validate`, then compare-and-swap only that digest to sealed
+with `tickets.py seal` after cutcheck and lens pass. Post-seal assignment
 changes create and validate a new generation; repeated normalized validation
 failure suspends at the correction bound. The absence of v2 fields means v1;
 never reinterpret legacy membership, receipts, cohorts, readiness, claims, or

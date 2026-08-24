@@ -3,7 +3,9 @@
 1. Every dispatch carries a complete
    [delegation packet](../contracts/work-item.md#dispatch), which owns
    what a missing part costs; a dispatch naming an identity that does
-   not resolve where it says it is is refused, not repaired.
+   not resolve where it says it is is refused, not repaired. A packet's
+   `bounds` cover reading the `inputs` it names, in whichever currency
+   binds first.
 2. Root and `role: none` are glue-only: routing, dispatch mechanics,
    joins, verbatim user interaction, and answers decided by evidence
    already in context. Neither executes a role-bearing skill body nor
@@ -14,10 +16,15 @@
    sideways handoff of control — only call/return and suspension.
 4. Authority attenuates: a child's write scope is a subset of its
    caller's at every depth. It executes its exact named skill directly
-   and never re-dispatches that primary work.
+   and never re-dispatches that primary work, and it gathers nothing
+   outside the `inputs` its packet names — an objective that is itself
+   investigation the one exception.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
-   it; no caller states a parallel prose join.
+   it; no caller states a parallel prose join. A dispatch granting a
+   non-empty write scope contracts for `changed_artifacts` among its
+   return fields, and the join rejects a result whose `changed_artifacts`
+   exceed the granted scope regardless of its verdicts.
 6. Every join records its blame class per
    [work-item.md](../contracts/work-item.md)'s blame rule.
 7. Fan out only independent breadth-first work; dependent work runs

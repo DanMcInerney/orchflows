@@ -64,8 +64,6 @@ already carries that content.
 
 ## T0 supersession
 
-A named-field or enum change to this signature or
-[work-item.md](work-item.md) is an explicit T0 supersession. The change
-updates its focused contract checks and re-pins the superseded canonical
-bytes in `tests/pins.json`; old admission versions and claimed or terminal
-history retain their existing meaning.
+One note governs both T0 shapes, and [work-item.md](work-item.md) states
+it. A named-field or enum change to this signature is that note's, down to
+the `tests/pins.json` re-pin it requires; nothing here restates it.
