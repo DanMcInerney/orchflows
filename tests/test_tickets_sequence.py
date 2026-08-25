@@ -1,11 +1,13 @@
 """`sequence`: one child, several exact named skills, one witness.
 
 rules/delegation.md 4's chain: a ticket may state an ordered `sequence`
-of same-role skills whose head is its `executor`; one fresh child
-executes each in that order in one context. The chain never buys its
-own acceptance -- verification.md 11 voids a verdict the chain renders
-on work it changed -- so the prompt prices that, and the seal binds the
-chain (delegation 15): an edited `sequence` is a new generation.
+of skills whose head is its `executor`; one fresh child executes each
+in that order in one context, at the one role rules/roles.md 4 resolves
+there -- so a continuation declaring another role is work to run, not a
+mismatch to refuse. The chain never buys its own acceptance --
+verification.md 11 voids a verdict the chain renders on work it changed
+-- so the prompt prices that, and the seal binds the chain
+(delegation 15): an edited `sequence` is a new generation.
 
 Self-contained by write scope, like `tests/test_tickets_carry.py`:
 fixtures from `tests.test_tickets_cases.common`'s primitives.
@@ -131,9 +133,26 @@ class TestTheChainRidesThePacket(unittest.TestCase):
                 "executor sequence: apply orch-critique, then orch-repair", lines[2]
             )
             self.assertIn("never re-dispatch any of them", lines[2])
+            self.assertIn("This chain runs at one role", prompt)
             self.assertIn("The chain is one witness", prompt)
             self.assertIn("rules/verification.md §11", prompt)
             self.assertIn("forks a packet-less child that must refuse", prompt)
+
+    def test_the_chain_packet_binds_its_continuation_to_the_head_role(self):
+        """The one place the child meets `orch-repair`'s `role: worker`.
+
+        Without this line the role agent's "refuse a missing or
+        mismatched role" and that declaration agree on refusing the
+        second half of the child's own ticket.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            make_repo(tmp, ("G1", CHAIN_TICKET))
+            prompt = packet_prompt(tmp)
+            self.assertIn("its head's — the role that established you", prompt)
+            self.assertIn("rules/roles.md §4", prompt)
+            self.assertIn("is not a mismatch here", prompt)
 
     def test_a_plain_packet_carries_no_chain_lines(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -141,6 +160,7 @@ class TestTheChainRidesThePacket(unittest.TestCase):
             make_repo(tmp, ("G1", PLAIN_TICKET))
             prompt = packet_prompt(tmp)
             self.assertNotIn("executor sequence", prompt)
+            self.assertNotIn("This chain runs at one role", prompt)
             self.assertNotIn("The chain is one witness", prompt)
 
     def test_a_further_child_packet_never_continues_the_chain(self):

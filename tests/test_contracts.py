@@ -13,10 +13,12 @@ from tests.test_contracts_cases.register import (  # noqa: F401
     TestWorklogContract,
 )
 from tests.test_contracts_cases.rules import (  # noqa: F401
+    ChainRoleLawTest,
     TestSkillDescriptions,
     TestVerificationHomelessLaws,
     TestVisibilityChannelLaw,
     TestVocabularyDefinesShapeChange,
+    V2LifecycleRuleContractTest,
     VocabularyCutTermsTest,
 )
 from tests.test_contracts_cases.topology import TopologyAtomTest  # noqa: F401

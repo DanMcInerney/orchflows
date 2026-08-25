@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3107,
+  "count": 3117,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -788,6 +788,7 @@
    "test_tickets_sequence.TestTheChainRidesThePacket.test_a_chain_packet_states_order_price_and_read_path",
    "test_tickets_sequence.TestTheChainRidesThePacket.test_a_further_child_packet_never_continues_the_chain",
    "test_tickets_sequence.TestTheChainRidesThePacket.test_a_plain_packet_carries_no_chain_lines",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_the_chain_packet_binds_its_continuation_to_the_head_role",
    "test_tickets_sequence.TestTheSealBindsTheChain.test_the_assignment_digest_moves_with_the_sequence",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_fix_template_renders_every_section",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_process_prints_one_json_document_carrying_the_view",
@@ -1103,6 +1104,11 @@
    "tests.test_contracts_cases.register.TestWorklogContract.test_is_the_view_the_ticket_directory_renders",
    "tests.test_contracts_cases.register.TestWorklogContract.test_names_the_five_view_fields",
    "tests.test_contracts_cases.register.TestWorklogContract.test_terminal_carries_the_run_level_enum",
+   "tests.test_contracts_cases.rules.ChainRoleLawTest.test_a_chained_skill_declaration_is_not_a_mismatch",
+   "tests.test_contracts_cases.rules.ChainRoleLawTest.test_delegation_admits_the_chain_and_defers_its_role",
+   "tests.test_contracts_cases.rules.ChainRoleLawTest.test_roles_resolves_a_chain_once_at_its_head",
+   "tests.test_contracts_cases.rules.ChainRoleLawTest.test_the_shipped_gate_chain_crosses_roles",
+   "tests.test_contracts_cases.rules.ChainRoleLawTest.test_the_work_item_field_states_the_head_role",
    "tests.test_contracts_cases.rules.TestSkillDescriptions.test_every_skill_description_is_at_most_140_chars",
    "tests.test_contracts_cases.rules.TestVerificationHomelessLaws.test_a_gate_returning_findings_moves_the_result_identity",
    "tests.test_contracts_cases.rules.TestVerificationHomelessLaws.test_one_independence_path_unique_lenses_and_one_root_gate",
@@ -1112,6 +1118,10 @@
    "tests.test_contracts_cases.rules.TestVocabularyDefinesShapeChange.test_defines_the_term",
    "tests.test_contracts_cases.rules.TestVocabularyDefinesShapeChange.test_lands_beside_contract_under_structure",
    "tests.test_contracts_cases.rules.TestVocabularyDefinesShapeChange.test_states_the_converse_a_prose_only_edit_needs",
+   "tests.test_contracts_cases.rules.V2LifecycleRuleContractTest.test_delegation_owns_sealed_assignment_immutability",
+   "tests.test_contracts_cases.rules.V2LifecycleRuleContractTest.test_delegation_owns_semantic_authority_and_bounded_correction",
+   "tests.test_contracts_cases.rules.V2LifecycleRuleContractTest.test_delegation_owns_worker_amendment_and_caller_dispositions",
+   "tests.test_contracts_cases.rules.V2LifecycleRuleContractTest.test_vocabulary_owns_the_v2_lifecycle_terms",
    "tests.test_contracts_cases.rules.VocabularyCutTermsTest.test_atom_and_critical_path_are_defined_once",
    "tests.test_contracts_cases.topology.TopologyAtomTest.test_section_3_bounds_the_cut_below_and_binds_an_ad_hoc_set",
    "tests.test_contracts_cases.topology.TopologyAtomTest.test_section_3_family_cites_answer_to_the_checker",
@@ -3110,7 +3120,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "3451a04bd87d3f2aba16cb2d82c9f8fdebae42d9e031f7c28fafe0388f15b07e"
+  "sha256": "84df78f88e0c0fe83fe343ee96341374cd271594f19c19484094c8c020853479"
  },
  "mutation_owners": [
   {

@@ -12,15 +12,17 @@
    [profiles.md](../skills/engines/orch-frontier/references/profiles.md).
 4. Resolve role at each dispatch, against the active host's profile
    bindings (clause 3), in order: an explicit packet profile wins; else
-   the applied skill's declared role; a `none` declaration or a
-   dispatch naming no applied skill takes only a caller-named profile
-   (name `orch-planner` for a dispatched template stub unless
+   the applied skill's declared role — for a stated `sequence`, its head
+   `executor`'s, binding every skill in the chain; a `none` declaration
+   or a dispatch naming no applied skill takes only a caller-named
+   profile (name `orch-planner` for a dispatched template stub unless
    judgment says otherwise); absent a caller-named profile the dispatch
    is refused, never substituted silently.
 5. An override binds only the dispatch naming it; it never propagates to
    a descendant dispatch.
 6. A role-bearing skill runs only in an established child of the
-   matching role. That child executes the exact named skill directly;
+   matching role — clause 4's resolved role, never a chained skill's own
+   declaration. That child executes the exact named skill directly;
    root, `role: none`, and a mismatched child refuse it.
 7. A child needing a user-only decision returns a `kind: user-only`
    question and resume state. Root asks its text verbatim and returns
