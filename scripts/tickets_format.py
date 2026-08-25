@@ -32,15 +32,16 @@ else:
         INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
         instruction_breakdown, instruction_words,
     )
-# The bound grammar is `tickets_bound`'s, read here so every holder of
-# `_parse_bound_minutes` gets the widened one without moving. Reached by
-# name in the sibling branch, as `tickets_generations` is: the family's
-# module-level import census is pinned, and this module joined after it.
+# The bound grammar is `tickets_bound`'s and the chain grammar is
+# `tickets_sequence`'s, read here so every holder gets the one spelling.
+# Reached by name in the sibling branch: the import census is pinned.
 if __package__:
     from .tickets_bound import DEFAULT_BOUND_MINUTES, _parse_bound_minutes
+    from .tickets_sequence import sequence_defects
 else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
+    from tickets_sequence import sequence_defects
 VALID_STATUSES = {'pending', 'ready', 'claimed', 'suspended', 'complete', 'blocked', 'stalled', 'failed', 'limited'}
 LOOP_EXECUTOR = 'orch-loop'
 DISPATCHING_EXECUTORS = ('orch-frontier', LOOP_EXECUTOR)
@@ -396,6 +397,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if completion is not None:
         defects.extend(criterion_defects(completion))
     defects.extend(format_policy_defects(text, data, sections))
+    defects.extend(sequence_defects(data.get('sequence'), _executor_of(data)))
     return defects
 # A test invocation says which node it grades, or it grades whatever it finds.
 # `discover` names no node by construction; `-k` names one whatever it is

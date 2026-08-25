@@ -221,7 +221,15 @@ def _staged_template_roots(roots, siblings):
 
 
 def _gate_shape(root, siblings):
-    """One detail when ``root`` does not own the canonical composite gate."""
+    """One detail when ``root`` does not own the canonical composite gate.
+
+    Two lawful families, read off the actual stub set: critiques, one repair
+    behind them all, one verify -- or the single-lens collapse ``tickets.py
+    gate`` writes: one critique whose ``sequence`` chains the repair executor,
+    verify behind it. One critique with neither repair stub nor stated chain
+    leaves findings nothing repairs, so it stays malformed; the three-stub
+    single-lens set already on disk stays lawful.
+    """
 
     prefix = root + GATE_INFIX
     ids = sorted(ticket_id for ticket_id in siblings if ticket_id.startswith(prefix))
@@ -233,10 +241,12 @@ def _gate_shape(root, siblings):
     verify = root + ".gate.verify"
     expected = set(critiques + [repair, verify])
     unknown = sorted(set(ids) - expected)
-    if not critiques or repair not in siblings or verify not in siblings or unknown:
-        return "expected one or more critiques, exactly one repair and one verify; got {}".format(
-            ", ".join(ids) or "none"
-        )
+    chained = repair not in siblings and len(critiques) == 1 and GATE_EXECUTORS["repair"] in _listed(siblings[critiques[0]], "sequence")
+    if not critiques or verify not in siblings or unknown or (
+            repair not in siblings and not chained):
+        return ("expected one or more critiques, exactly one repair and one verify"
+                " -- or one critique chaining {} (sequence) and one verify; got {}"
+                .format(GATE_EXECUTORS["repair"], ", ".join(ids) or "none"))
     units = _issued_under(siblings, root)
     wrong = []
     for ticket_id in critiques:
@@ -245,15 +255,16 @@ def _gate_shape(root, siblings):
             wrong.append("{} executor".format(ticket_id))
         if sorted(_listed(item, "depends_on")) != sorted(units):
             wrong.append("{} dependencies".format(ticket_id))
-    repair_item = siblings[repair]
-    if str(repair_item.get("executor") or "").strip() != GATE_EXECUTORS["repair"]:
-        wrong.append("{} executor".format(repair))
-    if sorted(_listed(repair_item, "depends_on")) != critiques:
-        wrong.append("{} dependencies".format(repair))
+    if not chained:
+        repair_item = siblings[repair]
+        if str(repair_item.get("executor") or "").strip() != GATE_EXECUTORS["repair"]:
+            wrong.append("{} executor".format(repair))
+        if sorted(_listed(repair_item, "depends_on")) != critiques:
+            wrong.append("{} dependencies".format(repair))
     verify_item = siblings[verify]
     if str(verify_item.get("executor") or "").strip() != GATE_EXECUTORS["verify"]:
         wrong.append("{} executor".format(verify))
-    if _listed(verify_item, "depends_on") != [repair]:
+    if _listed(verify_item, "depends_on") != [critiques[0] if chained else repair]:
         wrong.append("{} dependencies".format(verify))
     return ", ".join(wrong) if wrong else None
 

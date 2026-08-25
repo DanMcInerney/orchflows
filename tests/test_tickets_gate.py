@@ -186,7 +186,15 @@ def make_run(sink: Path, root: str, units=("R.01", "R.02")) -> Path:
 
 
 def gate(*extra):
-    return run_cmd("gate", "testrun", "R", "--lens", "code", *extra)
+    """A multi-lens gate: the full three-kind family under grade.
+
+    Two lenses on purpose: a single lens collapses the family to the
+    critique-repair chain (no separate repair stub), and these cases pin
+    the repair stub's inheritance alongside its siblings'. The chained
+    shape has its own pins in `tests/test_tickets_gate_chain.py`.
+    """
+
+    return run_cmd("gate", "testrun", "R", "--lens", "code,style", *extra)
 
 
 def sections_of(text: str) -> dict:
@@ -475,20 +483,22 @@ class GateGradesWhatItIsAboutToWriteTest(unittest.TestCase):
             {"adapter-kind-unsupported"},
             {finding.get("code") for finding in payload.get("findings") or []})
         self.assertEqual(
-            ["R.gate.critique.code", "R.gate.repair", "R.gate.verify"],
+            ["R.gate.critique.code", "R.gate.critique.style",
+             "R.gate.repair", "R.gate.verify"],
             sorted({finding.get("ticket") for finding in payload["findings"]}),
             "the refusal names every stub it would have written")
         self.assertEqual([], written, "a refused gate writes no stub")
 
     def test_a_root_whose_stubs_grade_clean_still_gates(self):
         """The refusal is the grade's, not a blanket one: the same door on
-        the same fixture emits all three stubs when the emission is clean."""
+        the same fixture emits the whole family when the emission is clean."""
 
         payload, written = self._run(root_text())
 
         self.assertNotIn("error", payload)
         self.assertEqual(
-            ["R.gate.critique.code.md", "R.gate.repair.md", "R.gate.verify.md"],
+            ["R.gate.critique.code.md", "R.gate.critique.style.md",
+             "R.gate.repair.md", "R.gate.verify.md"],
             written)
 
 if __name__ == "__main__":
