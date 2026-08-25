@@ -423,19 +423,15 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   await skillNode.click();
   await expect(page).toHaveURL(new RegExp(`/runs/run-gamma/tickets/${skillTicket}$`));
   await expect(page.locator('.run-map[data-view="run-map"]'), "the run map yields to the ticket route").toHaveCount(0);
+
+  // The ticket detail the drill-down lands on, asserted at the live URL the
+  // click above already reached — no `?fixture=`, so the reader's own payload
+  // renders it.
+  await expect(page.locator(".ticket-inspector"), "the live ticket detail renders").toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: skillTicket })).toBeVisible();
+
   await page.goBack();
   await expect(page.locator('.run-map[data-view="run-map"]')).toBeVisible();
-
-  // The ticket detail the drill-down lands on. Held at a covered fixture
-  // identity because the live inspector payload is rejected by its own schema:
-  // the reader emits `judgment.rationale = {identity, state}` and
-  // web/src/features/inspector/data/schema.ts requires flat
-  // `rationale_identity` / `rationale_state`. Both spellings landed together in
-  // 9fc1a91, so no live ticket has ever rendered; that repair is not this
-  // suite's, and this assertion goes live with it.
-  await page.goto(`${origin}/runs/run-gamma/tickets/G4?fixture=running-overview`);
-  await expect(page.locator(".ticket-inspector")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "G4" })).toBeVisible();
 
   await page.goto(`${origin}/friction`);
   await expect(page.locator(".friction-record")).toHaveCount(50);

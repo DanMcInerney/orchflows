@@ -208,9 +208,7 @@ describe("TicketInspector", () => {
         risks: "[\"compact viewport\"]"
       },
       judgment: {
-        rationale_identity: "",
-        rationale_state: "unavailable",
-        rationale_reason: "No canonical rationale identity was recorded."
+        rationale: { state: "unavailable", identity: null }
       }
     });
     window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=proof");

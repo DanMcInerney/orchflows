@@ -177,9 +177,9 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
               <div className="judgment-heading"><p className="eyebrow">Canonical fields only</p><h3 id="judgment-title">Judgment explanation</h3></div>
               <dl className="fact-rows">
                 {["result", "feedback", "risks"].map((name) => <div key={name}><dt>{name}</dt><dd>{ticket.sections[name] || "Unavailable"}</dd></div>)}
-                <div><dt>Rationale</dt><dd>{ticket.judgment?.rationale_state === "available" && ticket.judgment.rationale_identity
-                  ? <code>{ticket.judgment.rationale_identity}</code>
-                  : <><strong>Rationale unavailable</strong><span>{ticket.judgment?.rationale_reason || "No canonical rationale identity was recorded."}</span></>}</dd></div>
+                <div><dt>Rationale</dt><dd>{ticket.judgment?.rationale.state === "available" && ticket.judgment.rationale.identity
+                  ? <code>{ticket.judgment.rationale.identity.id}</code>
+                  : <><strong>Rationale unavailable</strong><span>No canonical rationale identity was recorded.</span></>}</dd></div>
               </dl>
             </section>
             {rows.some((row) => row.verdict.toLowerCase() === "fail") && <div className="proof-alert" role="status"><AlertTriangle aria-hidden="true" /><div><strong>Criterion {rows.find((row) => row.verdict.toLowerCase() === "fail")?.criterion} failed</strong><p>{rows.find((row) => row.verdict.toLowerCase() === "fail")?.oracle}: {rows.find((row) => row.verdict.toLowerCase() === "fail")?.evidence}</p></div></div>}

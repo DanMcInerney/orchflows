@@ -154,7 +154,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-B0bKbtsS.js",
+    "file": "assets/index-BNC7-bWv.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -202,7 +202,7 @@
     ]
   },
   "src/features/inspector/Inspector.tsx": {
-    "file": "assets/Inspector-D6jGZibK.js",
+    "file": "assets/Inspector-CfCkkbQw.js",
     "name": "Inspector",
     "src": "src/features/inspector/Inspector.tsx",
     "isDynamicEntry": true,
@@ -221,7 +221,7 @@
     ]
   },
   "src/features/now/NowView.tsx": {
-    "file": "assets/NowView-D76arCNE.js",
+    "file": "assets/NowView-Bvg9mEVe.js",
     "name": "NowView",
     "src": "src/features/now/NowView.tsx",
     "isDynamicEntry": true,
@@ -259,7 +259,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-C-_be7dQ.js",
+    "file": "assets/SessionGraphView-EFiBIusU.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -279,7 +279,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-BOHfa7Mq.js",
+    "file": "assets/SessionsView-P69TUCZ0.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
@@ -297,7 +297,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowCatalogView.tsx": {
-    "file": "assets/WorkflowCatalogView-_RohZ0y_.js",
+    "file": "assets/WorkflowCatalogView-CL2t4iDi.js",
     "name": "WorkflowCatalogView",
     "src": "src/features/workflows/view/WorkflowCatalogView.tsx",
     "isDynamicEntry": true,
@@ -313,7 +313,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowDetailView.tsx": {
-    "file": "assets/WorkflowDetailView-bRfTtmVN.js",
+    "file": "assets/WorkflowDetailView-cq8julCv.js",
     "name": "WorkflowDetailView",
     "src": "src/features/workflows/view/WorkflowDetailView.tsx",
     "isDynamicEntry": true,
@@ -332,7 +332,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowSourceView.tsx": {
-    "file": "assets/WorkflowSourceView-BlLzhjHu.js",
+    "file": "assets/WorkflowSourceView-D3USLGq0.js",
     "name": "WorkflowSourceView",
     "src": "src/features/workflows/view/WorkflowSourceView.tsx",
     "isDynamicEntry": true,

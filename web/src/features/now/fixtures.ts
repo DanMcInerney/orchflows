@@ -99,6 +99,7 @@ function earlierRun(): NowRun {
 }
 
 export function nowFixture(state: string): { runs: NowRun[]; paused: boolean; diagnostic: string } {
+  if (state === "empty") return { runs: [], paused: false, diagnostic: "" };
   if (state === "no-active-runs") return { runs: [completedRun(), earlierRun()], paused: false, diagnostic: "" };
   if (state === "unreadable-data") return {
     runs: [attentionRun(true), completedRun()], paused: false,

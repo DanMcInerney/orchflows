@@ -57,10 +57,16 @@ export interface ArtifactInventory {
   reason?: string;
 }
 
+export interface RationaleIdentity {
+  kind: string;
+  id: string;
+}
+
 export interface JudgmentProjection {
-  rationale_identity: string;
-  rationale_state: "available" | "unavailable";
-  rationale_reason?: string;
+  rationale: {
+    state: "available" | "unavailable";
+    identity: RationaleIdentity | null;
+  };
 }
 
 export interface InspectorModel {
