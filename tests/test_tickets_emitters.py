@@ -387,8 +387,8 @@ class TheSealedBatchWedge(unittest.TestCase):
                 "a live cohort is sealed, as the contract says")
 
             deliver = (run_dir_of() / "01-deliver.md").read_text(encoding="utf-8")
-            self.assertIn('"ticket":"00-mine"', deliver.replace(" ", ""),
-                          "the predecessor's finding is an identity, not a hole")
+            self.assertIn('"ticket":"00-mine"},"name":"ranked-proposals"', deliver.replace(" ", ""),
+                          "the predecessor's finding is the template's own identity, not a hole")
             self.assertNotIn("{{", deliver, "no placeholder survives instantiation")
 
     def test_the_second_stub_carries_only_findings_time_repairs(self):
@@ -426,7 +426,7 @@ class GateGradesItsEmission(unittest.TestCase):
             self.assertNotIn("error", sealed)
 
             payload = run_cmd(repo, "gate", "testrun", "00-root")
-            self.assertIn("error", payload)
+            self.assertIn("v2 sealed assignment", str(payload.get("error")))
             self.assertEqual([], sorted(run_dir.glob("*.gate.*.md")),
                              "a refused gate writes no stub")
 
