@@ -441,3 +441,47 @@ class NoLibraryTreeReadTest(unittest.TestCase):
                 self.assertEqual(
                     expected, len(establishment_lines(prompt)), (pack, prompt)
                 )
+
+
+class UnboundWorkspaceTableTest(unittest.TestCase):
+    """`PACK_WORKSPACE_MECHANISMS` is `None` in `tickets_format` until the
+    public `scripts/tickets.py` facade binds it, and `tickets_store` takes its
+    copy by `from`-import at module load. So any importer that reaches
+    `establishes_a_git_workspace` without the facade imported first -- and
+    `scripts/tickets_packet.py` imports the function straight from
+    `tickets_store` and calls it -- used to get
+
+        AttributeError: 'NoneType' object has no attribute 'get'
+
+    which names neither the constant, nor the facade that owns the table, nor
+    the import order that fixes it. The function's own docstring documents a
+    deliberate "a pack absent from the table answers yes" fallback, and the
+    unbound case bypassed that rather than degrading into it.
+
+    Run in a child interpreter because the facade is imported process-wide by
+    the time any of these suites reach here; the unbound state is only
+    reachable from a fresh one.
+    """
+
+    SOURCE = (
+        "import sys\n"
+        "sys.path.insert(0, {scripts!r})\n"
+        "import tickets_packet\n"
+        "try:\n"
+        "    tickets_packet.establishes_a_git_workspace('orch-code-pack')\n"
+        "except Exception as error:\n"
+        "    print(type(error).__name__)\n"
+        "    print(error)\n"
+    )
+
+    def test_reaching_the_table_unbound_names_the_facade_that_binds_it(self):
+        done = subprocess.run(
+            [sys.executable, "-B", "-c",
+             self.SOURCE.format(scripts=str(SCRIPTS))],
+            capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+        self.assertEqual(0, done.returncode, done.stderr)
+        kind, _, message = done.stdout.partition("\n")
+        self.assertNotEqual("AttributeError", kind.strip(), done.stdout)
+        self.assertIn("PACK_WORKSPACE_MECHANISMS", message)
+        self.assertIn("scripts/tickets.py", message)

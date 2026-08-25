@@ -84,6 +84,16 @@ def establishes_a_git_workspace(pack) -> bool:
     that work at the join with nothing to see.
     """
     name = str(pack or '').strip().strip('`').strip()
+    if PACK_WORKSPACE_MECHANISMS is None:
+        # The table is `None` in `tickets_format` until `scripts/tickets.py`
+        # binds it, and this module took its copy by `from`-import at load, so
+        # an importer that never touches the facade reaches here unbound. Not
+        # degraded into the absent-pack fallback below: that answers yes for
+        # every pack, which is the safe answer to a question the table could
+        # not answer and the wrong answer to one nobody asked it.
+        raise RuntimeError(
+            'PACK_WORKSPACE_MECHANISMS is unbound: import scripts/tickets.py, '
+            'which owns the table, before reaching establishes_a_git_workspace')
     mechanism = PACK_WORKSPACE_MECHANISMS.get(name)
     return mechanism is None or mechanism in GIT_WORKSPACE_MECHANISMS
 _main_checkout_root = state_root.main_checkout_root
