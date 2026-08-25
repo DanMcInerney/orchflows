@@ -23,7 +23,7 @@ if __package__:
     from .tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
     from .tickets_commands import LINT_USAGE
     from .tickets_context import graded_admission, run_snapshot
-    from .tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, instruction_words, parse_canonical_json
+    from .tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, effective_write_scope, instruction_words, parse_canonical_json
     from .tickets_issue import AMENDABLE_STATUSES, NEW_DEFAULT_BOUND, _issue_defects
     from .tickets_scope import path_covers
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
@@ -31,7 +31,7 @@ else:
     from tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
     from tickets_commands import LINT_USAGE
     from tickets_context import graded_admission, run_snapshot
-    from tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, instruction_words, parse_canonical_json
+    from tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, effective_write_scope, instruction_words, parse_canonical_json
     from tickets_issue import AMENDABLE_STATUSES, NEW_DEFAULT_BOUND, _issue_defects
     from tickets_scope import path_covers
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
@@ -199,13 +199,42 @@ def _contradiction_findings(data: dict) -> list:
     return findings
 
 
-def _oracle_findings(text: str, tree: Path) -> list:
+def _own_modules(command: str, tree: Path, scope: list) -> bool:
+    """Does every module this oracle names sit inside this item's own scope?
+
+    `_whole_suite` owns the shape question -- whether a command names a node
+    or a whole module -- and this owns a different one, so it reads the scope
+    rather than re-asking that. A whole module discriminates nothing *between
+    siblings*, which is the finding's whole subject; but a module the item
+    itself was granted is the item's own artifact, and no sibling runs it
+    because no sibling may write it. Naming it whole names exactly this
+    item's work, so the finding over it is a false one -- the shape it
+    convicts is the shape a unit that authors its own test module has.
+
+    Every resolvable module must be covered, not merely one: an oracle
+    naming its own module beside the whole suite still runs the suite.
+    """
+    named = []
+    for token in command.split():
+        if token[:1] in ('-', '"', "'"):
+            continue
+        path = token if '/' in token else token.replace('.', '/')
+        path = path if path.endswith('.py') else path + '.py'
+        if (tree / path).is_file():
+            named.append(path)
+    if not named:
+        return False
+    return all(any(path_covers(entry, path) for entry in scope) for path in named)
+
+
+def _oracle_findings(text: str, tree: Path, scope=None) -> list:
     """One finding per criterion whose oracle runs the suite it is stated under."""
+    scope = list(scope or [])
     findings = []
     for number, criterion in enumerate(_criteria(_sections(text).get('Completion test', '')), start=1):
         match = ORACLE_RE.search(criterion)
         command = match.group(1).strip(' `.,;*') if match else ''
-        if command and _whole_suite(command, tree):
+        if command and _whole_suite(command, tree) and not _own_modules(command, tree, scope):
             findings.append(_finding(
                 'whole-suite-oracle',
                 f'criterion {number} names `{command}`, which runs the identical tests under every item '
@@ -256,7 +285,7 @@ def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued
     if _sections(text).get('Result', '').strip():
         for item in grade_result(ticket_id, text, dict(siblings or {}))['findings']:
             findings.append(_finding(str(item.get('code') or ''), f"{item.get('field')}: {item.get('detail')}"))
-    findings.extend(_oracle_findings(text, tree or _repo_tree()))
+    findings.extend(_oracle_findings(text, tree or _repo_tree(), effective_write_scope(data)))
     seen, ordered = set(), []
     for item in sorted(findings, key=lambda row: (row['code'], row['message'])):
         key = (item['code'], item['message'])

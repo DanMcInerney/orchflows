@@ -31,19 +31,19 @@ whitespace-delimited words. Terms are
 - [`docs/`](docs/) owns on-demand reference. `vocabulary.md` owns
   library terms; `documentation.md` owns documentation design and the
   reading order; each remaining file owns its named subject.
-- [`scripts/`](scripts/) owns repository automation. Its programs use
-  Python 3.9+ on Windows and POSIX, with no network at run time. An
-  unprefixed family module is the public command and import facade;
-  same-family helpers own internal concerns. In the ticket family,
-  `tickets_format.py` owns syntax, closed parsers, and the installed pack
-  mechanism registry; `tickets_markdown.py` is its private byte-preserving
-  Markdown mechanism,
-  `tickets_inputs.py` owns typed identity resolution, `tickets_scope.py` owns
-  mutation/edge closure, and `tickets_admission.py` composes those lower
-  graders into receipts. Lifecycle and packet modules consume admission.
-  One ticket-family helper derives the gate mutation plan; dispatch
-  consumes it.
-  Cutcheck imports those lower owners directly, never the tickets facade;
+- [`scripts/`](scripts/) owns repository automation. Programs use Python
+  3.9+ on Windows and POSIX, no run-time network. An unprefixed family
+  module is the public command and import facade; helpers own internal
+  concerns. `tickets_format.py` owns syntax, closed parsers, and the
+  installed pack mechanism registry; `tickets_markdown.py`
+  is its private byte-preserving mechanism; `tickets_inputs.py` typed
+  identity resolution; `tickets_scope.py` mutation/edge closure;
+  `tickets_admission.py` composes those into receipts lifecycle and packet
+  modules consume. `tickets_project.py` owns run-project binding,
+  `tickets_emission.py` emission grading, `tickets_ceiling.py` the
+  instruction ceiling, `tickets_dispatch_gate.py` the gate family and its
+  mutation plan, `cutcheck_pricing.py` cut pricing.
+  Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
@@ -55,6 +55,8 @@ whitespace-delimited words. Terms are
   [`tools/run_report.py`](tools/run_report.py) owns the retrospective speed
   report. [`tools/verify_at.py`](tools/verify_at.py) owns running one command
   in a detached worktree at an exact revision.
+  [`tools/run_tests_scope.py`](tools/run_tests_scope.py) owns scoped test
+  selection.
   [`tests/`](tests/) owns regression evidence and pinned canonical
   bytes. [`AGENTS.md`](AGENTS.md) owns required checks and local-versus-CI
   guidance.

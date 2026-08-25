@@ -27,6 +27,7 @@ import scripts.tickets as tickets_mod  # noqa: E402  the ticket surface's one ow
 import scripts.tickets_reissue as reissue  # noqa: E402
 import scripts.tickets_transitions as transitions  # noqa: E402  the table under test
 from tests.test_tickets_issue_cases.common import (  # noqa: E402
+    GOOD_CRITERION,
     GOOD_TICKET as SOURCE_TICKET,
     make_template,
     place,
@@ -134,6 +135,39 @@ class ReissueStampsFromTheTableTest(unittest.TestCase):
             for field in entry.blanks:
                 self.assertIn(field, data)
                 self.assertEqual("", str(data.get(field) or ""))
+
+
+class WholeSuiteOracleExemptsAGrantedModuleTest(unittest.TestCase):
+    """A whole-module oracle discriminates nothing *between siblings* --
+    but a module the item itself was granted is the item's own artifact.
+    No sibling runs it, because no sibling may write it, so naming it
+    whole names exactly this item's work and the finding is a false one.
+    """
+
+    ORACLE = "python -m unittest tests.test_mechanical_batch"
+
+    def ticket(self, scope: str) -> str:
+        criterion = (
+            f"the module's cases hold | oracle: `{self.ORACLE}` "
+            "| oracle_class: deterministic"
+        )
+        return SOURCE_TICKET.replace(
+            "write_scope: [scratch/t1.txt]", f"write_scope: [{scope}]"
+        ).replace(GOOD_CRITERION, criterion)
+
+    def codes(self, scope: str) -> list:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            place(sink, "testrun", "T1", self.ticket(scope))
+            payload = run_cmd("lint", "testrun", "T1")
+            return [item["code"] for item in payload["lint"]["findings"]]
+
+    def test_a_granted_module_is_not_a_whole_suite_finding(self):
+        self.assertNotIn("whole-suite-oracle", self.codes("tests/test_mechanical_batch.py"))
+
+    def test_the_same_oracle_over_an_ungranted_module_still_fires(self):
+        self.assertIn("whole-suite-oracle", self.codes("scratch/t1.txt"))
 
 
 if __name__ == "__main__":
