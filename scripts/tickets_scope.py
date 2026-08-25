@@ -49,10 +49,7 @@ def _finding(code, field, detail):
 
 
 def _ordered(findings):
-    rows = {
-        (str(item["code"]), str(item["field"]), str(item["detail"]))
-        for item in findings
-    }
+    rows = {(str(item["code"]), str(item["field"]), str(item["detail"])) for item in findings}
     return [_finding(*row) for row in sorted(rows)]
 
 
@@ -241,6 +238,7 @@ def _cycle_nodes(graph):
 
 
 ROOT_COHORT_PREFIX = "v1:root:"
+ROOT_GENERATION_SUBJECT_RE = re.compile(r"^v2:root:([A-Za-z0-9][A-Za-z0-9._-]*):")
 GATE_INFIX = ".gate."
 V2_FIELDS = ("root_generation", "cut_generation", "ownership_regions", "assignment_seal")
 
@@ -267,27 +265,32 @@ def _closure_key(ticket_id, data):
     return f"cut:{generation}" if generation else f"unsealed:{ticket_id}"
 
 
-def _companion_owners(cohort, members):
-    """The member ids that may own a scope-edge companion in this cohort.
+def _companion_owners(data, members):
+    """The member ids that may own a scope-edge companion in this cut.
 
-    A decomposed cohort's root holds its whole subtree's write scope and its
-    gate stubs repair anywhere that subtree writes, so both cover every
-    companion the cut plans. Counting them would report the lawful shape --
-    one unit owning the companion -- as several owners, and the shape with no
-    unit owner as owned. Where the cohort holds no unit at all the whole
-    membership is eligible again, so a root graded on its own still owns the
-    companions it plans -- and a root standing with only gate stubs is read
-    exactly as it was, several owners and all.
+    A cut's root holds its whole subtree's write scope and its gate stubs
+    repair anywhere that subtree writes, so both cover every companion the cut
+    plans. Counting them would report the lawful shape -- one unit owning the
+    companion -- as several owners, and the shape with no unit owner as owned.
+    Where the cut holds no unit at all the whole membership is eligible again,
+    so a root graded alone still owns what it plans.  That reinstatement is
+    reported beside the set: only there is an owner pair the umbrella itself.
+
+    A v1 decomposition stamps every member with the root's cohort; a sealed v2
+    cut stamps none and freezes the root in ``root_generation`` instead, so
+    reading the cohort alone left a v2 root unnamed and eligible, making both
+    misreadings above.  Only its subject is read here -- whether the identity
+    is well formed is ``tickets_generations``'s -- and never split by position.
     """
 
-    root_id = (
-        cohort[len(ROOT_COHORT_PREFIX):] if cohort.startswith(ROOT_COHORT_PREFIX) else ""
-    )
+    cohort = str(data.get("cohort") or "")
+    sealed = ROOT_GENERATION_SUBJECT_RE.match(str(data.get("root_generation") or ""))
+    root_id = cohort[len(ROOT_COHORT_PREFIX):] if cohort.startswith(ROOT_COHORT_PREFIX) else (sealed.group(1) if sealed else "")
     units = {
         member_id for member_id in members
         if member_id != root_id and GATE_INFIX not in member_id
     }
-    return units or set(members)
+    return (units, False) if units else (set(members), True)
 
 
 def grade_closure(ticket_id, text, siblings, edges):
@@ -297,11 +300,13 @@ def grade_closure(ticket_id, text, siblings, edges):
     already spent under the authority it was worked with, so counting it here
     reports a finished unit and a pending one as two owners of the one
     companion the pending unit still has to write.  The ticket being graded is
-    always a member: its own plan is the authority under grade.
+    always a member: its own plan is the authority under grade.  A spent plan
+    still answers, though -- what a terminal member planned with a covering
+    mutation is written -- so it is missing of none; and where only the
+    umbrella fallback owns it, several owners is that umbrella, not a conflict.
     """
 
     current = _parse_frontmatter(text)
-    cohort = str(current.get("cohort") or "")
     member_texts = dict(siblings)
     member_texts[ticket_id] = text
     parsed = {
@@ -309,12 +314,15 @@ def grade_closure(ticket_id, text, siblings, edges):
         for member_id, member_text in member_texts.items()
     }
     key = _closure_key(ticket_id, parsed[ticket_id])
+    cut = {member: data for member, data in parsed.items() if _closure_key(member, data) == key}
     members = {
-        member_id: data
-        for member_id, data in parsed.items()
-        if _closure_key(member_id, data) == key
-        and (member_id == ticket_id or str(data.get("status") or "") not in TERMINAL)
+        member: data for member, data in cut.items()
+        if member == ticket_id or str(data.get("status") or "") not in TERMINAL
     }
+    spent = tuple(
+        (item["operation"], item["path"]) for member, data in cut.items()
+        if member not in members for item in parse_mutations(data)[0]
+    )
     findings, plans, authorized = [], {}, {}
     for member_id in sorted(members):
         data = members[member_id]
@@ -337,7 +345,7 @@ def grade_closure(ticket_id, text, siblings, edges):
                 ))
 
     owners = {}
-    eligible = _companion_owners(cohort, plans)
+    eligible, fallback = _companion_owners(current, plans)
     initial = set()
     for member_id, nodes in plans.items():
         for node in nodes:
@@ -372,14 +380,14 @@ def grade_closure(ticket_id, text, siblings, edges):
         }
         owners[required] = node_owners
         rendered = f"{required[0]}:{required[1]}"
+        if any(_plan_covers(plan, required) for plan in spent) and (fallback or not node_owners):
+            continue
         if not node_owners:
             findings.append(_finding("scope-owner-missing", "mutations", rendered))
             continue
         if len(node_owners) > 1:
-            findings.append(_finding(
-                "scope-owner-multiple", "mutations",
-                f"{rendered} owned by {', '.join(sorted(node_owners))}",
-            ))
+            detail = f"{rendered} owned by {', '.join(sorted(node_owners))}"
+            findings.append(_finding("scope-owner-multiple", "mutations", detail))
             continue
         owner = next(iter(node_owners))
         matching = [plan for plan in plans[owner] if _plan_covers(plan, required)]
@@ -499,6 +507,4 @@ def grade_scope(*, ticket_id, text, siblings, adapter_id, context=None):
     }
 
 
-__all__ = (
-    "MANIFEST_PATH", "parse_manifest", "path_covers", "unplanned_mutations", "grade_closure", "grade_scope",
-)
+__all__ = ("MANIFEST_PATH", "parse_manifest", "path_covers", "unplanned_mutations", "grade_closure", "grade_scope")

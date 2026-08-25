@@ -15,7 +15,9 @@ class RuntimeVenvTests(unittest.TestCase):
         self.project_runtime = self.root / "project" / ".venv"
 
     def test_user_install_uses_private_runtime_when_project_venv_is_active(self):
-        install.venv.EnvBuilder(with_pip=False).create(self.project_runtime)
+        install.venv.EnvBuilder(symlinks=os.name != "nt", with_pip=False).create(
+            self.project_runtime
+        )
         project_python = install.private_runtime_python(self.project_runtime)
         program = "\n".join(
             (
@@ -45,7 +47,7 @@ class RuntimeVenvTests(unittest.TestCase):
         rendered = (self.home / ".codex" / "AGENTS.md").read_text(encoding="utf-8")
         self.assertTrue(runtime_python.is_file())
         self.assertIn(str(runtime_python), rendered)
-        self.assertNotEqual(project_python.resolve(), runtime_python.resolve())
+        self.assertNotEqual(project_python, runtime_python)
         self.assertNotIn(str(self.project_runtime), rendered)
 
     def test_user_install_reuses_healthy_private_runtime(self):
@@ -55,6 +57,26 @@ class RuntimeVenvTests(unittest.TestCase):
             marker.write_text("keep", encoding="utf-8")
             install.apply_plan(install.build_plan("user", None))
         self.assertEqual("keep", marker.read_text(encoding="utf-8"))
+
+    def test_the_runtime_links_its_base_interpreter_rather_than_copying_it(self):
+        """The property a copied interpreter cannot hold.
+
+        A relocatable CPython -- uv's, and every python-build-standalone
+        build -- reaches ``libpython`` by a path relative to its own
+        executable, so a venv holding a copy aborts before it runs a line.
+        ``python -m venv`` symlinks on POSIX for that reason. CI's
+        interpreters are the kind that survive being copied, which leaves
+        this assertion the only thing standing between the builder and the
+        hosts where copying is fatal.
+        """
+
+        if os.name == "nt":
+            self.skipTest("Windows venvs copy: symlinking there needs a privilege")
+        with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
+            install.apply_plan(install.build_plan("user", None))
+            runtime_home = install.private_runtime_home()
+            runtime_python = install.private_runtime_python(runtime_home)
+        self.assertFalse(runtime_python.resolve().is_relative_to(runtime_home.resolve()))
 
     def test_user_install_repairs_an_unhealthy_private_runtime(self):
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):

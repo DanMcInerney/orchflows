@@ -1,12 +1,18 @@
 """Closure membership: which tickets one mutation plan is graded against.
 
-Two reproducers drive this module.  The first is checker-opus-02's, filed on
+Four reproducers drive this module.  The first is checker-opus-02's, filed on
 ticket 00-root.02: once v2 tickets stamp no cohort, every cohortless ticket in
 a run reads the same empty cohort string, collapses into one closure, and each
 member inherits every other member's mutation findings.  The second is live in
 this repository's own run -- a terminal member's spent plan still counted as a
 companion owner, so a completed unit and a pending one were reported as two
-owners of the same required node.
+owners of the same required node.  The third is the tail of that same ruling,
+live in run 20260825T143105Z: excluding the spent plan from ownership was read
+as leaving what it wrote unowned, and a sealed cut clean at seal became
+unadmittable once its companion planner finished.  The fourth is that ruling's
+own tail, live in the gate phase of the same run: with every unit terminal the
+companion fallback reinstates the root and its gate stubs, and the spent cover
+that silenced the missing branch did not reach the several-owners one.
 """
 
 from __future__ import annotations
@@ -30,6 +36,7 @@ from tests.test_tickets_issue_cases.generation_lifecycle import (  # noqa: E402
 
 CUT_ONE = "v2:cut:00-root:1:sha256:" + "a1" * 32
 CUT_TWO = "v2:cut:00-root:2:sha256:" + "b2" * 32
+ROOT_ONE = "v2:root:00-root:1:sha256:" + "c3" * 32
 
 
 def _body(ticket_id, header, *, mutations, scope, depends, status):
@@ -71,12 +78,14 @@ def v1_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending"
     return _body(ticket_id, header, mutations=mutations, scope=scope, depends=depends, status=status)
 
 
-def v2_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending", cut_generation=None):
+def v2_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending", cut_generation=None, root_generation=None):
     """A v2 ticket: no cohort, and a sealed cut identity only once sealed."""
 
     header = ["admission: v2:pending", "ownership_regions: []"]
     if cut_generation is not None:
         header.append(f"cut_generation: {cut_generation}")
+    if root_generation is not None:
+        header.append(f"root_generation: {root_generation}")
     return _body(ticket_id, header, mutations=mutations, scope=scope, depends=depends, status=status)
 
 
@@ -194,20 +203,33 @@ class TerminalMembershipTest(unittest.TestCase):
             [item["detail"] for item in result["findings"]],
         )
 
-    def test_a_companion_whose_only_owner_is_spent_is_reported_unowned(self):
-        """The other face of the ruling, so the join is not surprised by it.
+    def test_a_companion_whose_only_owner_is_spent_is_satisfied_not_unowned(self):
+        """Superseded: this case once asserted ``scope-owner-missing`` here.
 
-        Excluding a terminal member does not quietly authorize the node it
-        used to own.  Where the cut planned exactly one owner and that unit
-        has gone terminal, the companion the live member still triggers has
-        no owner left in the closure, and the grade says so.
+        Excluding a terminal member from ownership was read as leaving the
+        node it used to own unowned, and live in run 20260825T143105Z that
+        refused admission to every remaining member of a sealed cut over a
+        file the terminal unit had already written.  The exclusion answers
+        double-owner noise, not finished work: the spent plan satisfies the
+        requirement it covers, and its planner still joins no owner set.  The
+        guard against quiet authorization survives one case down -- a node no
+        member ever planned is still reported unowned.
         """
 
         members = self.companions("complete")
         del members["00-root.11"]
         result = grade("00-root.05", members, self.CONTENT)
-        self.assertIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-missing", codes(result))
         self.assertNotIn("scope-owner-multiple", codes(result))
+
+    def test_a_companion_no_member_planned_is_still_reported_unowned(self):
+        """Nothing spent and nothing live: the exclusion authorizes nothing."""
+
+        members = self.companions("complete")
+        del members["00-root.07"]
+        del members["00-root.11"]
+        result = grade("00-root.05", members, self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
 
     def test_a_terminal_ticket_being_graded_is_a_member_of_its_own_closure(self):
         members = {
@@ -219,6 +241,213 @@ class TerminalMembershipTest(unittest.TestCase):
         result = grade("00-root.07", members)
         self.assertIn("mutation-outside-write-scope", codes(result))
         self.assertIn("00-root.07.mutations", fields(result))
+
+
+class SealedV2RootMembershipTest(unittest.TestCase):
+    """A sealed cut names its root in the seal, and nowhere else.
+
+    A v1 decomposition stamps every member with ``cohort: v1:root:<id>``, and
+    that prefix was the only place the companion rule looked for the root.  A
+    sealed v2 cut stamps no cohort at all, so the root went unnamed and stayed
+    companion-eligible -- and its whole-subtree plan then covered every
+    companion the cut planned.  Both halves of the rule inverted at once: the
+    lawful shape reported ``scope-owner-multiple`` naming the root beside its
+    own unit, and a companion no unit planned reported nothing at all, because
+    the root looked like its one owner.  Live, that refused admission to every
+    member of a sealed run.  The root here is named by ``root_generation``,
+    not by an executor or an id shape.
+    """
+
+    CONTENT = manifest(edge("change:scripts/feature.py", "change:tests/pins.json"))
+
+    def cut(self, *, unit_owns_companion=True):
+        """A sealed cut: a root planning its whole subtree, and two units."""
+
+        sealed = {"cut_generation": CUT_ONE, "root_generation": ROOT_ONE}
+        members = {
+            "00-root": v2_ticket(
+                "00-root", mutations=["change:scripts/feature.py", "change:tests/pins.json"],
+                scope=["scripts/", "tests/"], **sealed,
+            ),
+            "00-root.05": v2_ticket(
+                "00-root.05", mutations=["change:scripts/feature.py"], scope=["scripts/feature.py"], **sealed,
+            ),
+            "00-root.11": v2_ticket(
+                "00-root.11", mutations=["change:tests/pins.json"], scope=["tests/pins.json"], **sealed,
+            ),
+        }
+        if not unit_owns_companion:
+            del members["00-root.11"]
+        return members
+
+    def test_the_root_of_a_sealed_cut_is_not_a_second_owner_of_a_companion(self):
+        result = grade("00-root.05", self.cut(), self.CONTENT)
+        self.assertNotIn("scope-owner-multiple", codes(result))
+        self.assertNotIn("scope-owner-missing", codes(result))
+
+    def test_a_companion_only_the_sealed_root_plans_is_still_reported_unowned(self):
+        """The other half: excluding the root must not authorize what it plans."""
+
+        result = grade("00-root.05", self.cut(unit_owns_companion=False), self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-multiple", codes(result))
+
+    def test_two_units_of_a_sealed_cut_are_still_two_owners(self):
+        """The grader still fires: exit-green is not the rule going quiet."""
+
+        members = self.cut()
+        members["00-root.07"] = v2_ticket(
+            "00-root.07", mutations=["change:tests/pins.json"], scope=["tests/pins.json"],
+            cut_generation=CUT_ONE, root_generation=ROOT_ONE,
+        )
+        result = grade("00-root.05", members, self.CONTENT)
+        self.assertIn("scope-owner-multiple", codes(result))
+        self.assertIn(
+            "change:tests/pins.json owned by 00-root.07, 00-root.11",
+            [item["detail"] for item in result["findings"]],
+        )
+
+    def test_a_sealed_root_standing_alone_still_owns_the_companions_it_plans(self):
+        """Where the cut holds no unit, the whole membership is eligible again."""
+
+        members = {"00-root": self.cut()["00-root"]}
+        result = grade("00-root", members, self.CONTENT)
+        self.assertNotIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-multiple", codes(result))
+
+
+class TerminalSatisfactionTest(unittest.TestCase):
+    """A spent plan is not authority, and it is still work that happened.
+
+    Live in run 20260825T143105Z: the sealed root planned ``write:scripts/``,
+    which closes the repository's own ``create:scripts/*.py`` edge onto
+    ``change:ARCHITECTURE.md``; the one unit that planned that companion went
+    ``complete``, left the closure with the terminal filter, and every
+    remaining member was then refused admission for ``scope-owner-missing``
+    on a file that was already written.  A sealed cut admission-clean at seal
+    became unadmittable at its tail, and the v2 reseal vantage refuses a cut
+    holding claimed or terminal members, so nothing in-run could correct it.
+    The terminal member stays out of ownership -- it is no second owner, no
+    ancestry owner, and never named in a finding -- and its plan alone
+    answers the requirement it covers.
+    """
+
+    CONTENT = manifest(edge("create:scripts/*.py", "change:ARCHITECTURE.md"))
+    SEALED = {"cut_generation": CUT_ONE, "root_generation": ROOT_ONE}
+
+    def cut(self, *, planner="00-root.03", planner_status="complete", second_planner=None):
+        """The live shape: a sealed root, a companion planner, a live unit."""
+
+        members = {
+            "00-root": v2_ticket(
+                "00-root", mutations=["write:scripts/", "change:ARCHITECTURE.md"],
+                scope=["scripts/", "ARCHITECTURE.md"], **self.SEALED,
+            ),
+            "00-root.06": v2_ticket(
+                "00-root.06", mutations=["change:scripts/nowview.py"],
+                scope=["scripts/nowview.py"], **self.SEALED,
+            ),
+        }
+        for member_id, status in ((planner, planner_status), (second_planner, "pending")):
+            if member_id:
+                members[member_id] = v2_ticket(
+                    member_id, mutations=["change:ARCHITECTURE.md"],
+                    scope=["ARCHITECTURE.md"], status=status, **self.SEALED,
+                )
+        return members
+
+    def test_a_terminal_members_spent_plan_satisfies_the_companion_it_covers(self):
+        for status in ("complete", "limited"):
+            with self.subTest(status=status):
+                result = grade("00-root.06", self.cut(planner_status=status), self.CONTENT)
+                self.assertNotIn("scope-owner-missing", codes(result))
+                self.assertNotIn("scope-owner-multiple", codes(result))
+                self.assertEqual([], [
+                    item for item in result["findings"] if "00-root.03" in item["detail"]
+                ])
+
+    def test_a_companion_no_member_ever_planned_is_still_reported_unowned(self):
+        """Nothing spent, nothing live: the requirement still has no owner."""
+
+        result = grade("00-root.06", self.cut(planner=None), self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
+        self.assertIn(
+            "change:ARCHITECTURE.md",
+            [item["detail"] for item in result["findings"]],
+        )
+
+    def test_two_live_planners_are_still_two_owners_beside_a_terminal_one(self):
+        """The terminal plan satisfies; it never joins an owner set."""
+
+        members = self.cut(second_planner="00-root.07")
+        members["00-root.08"] = v2_ticket(
+            "00-root.08", mutations=["change:ARCHITECTURE.md"],
+            scope=["ARCHITECTURE.md"], **self.SEALED,
+        )
+        result = grade("00-root.06", members, self.CONTENT)
+        self.assertIn("scope-owner-multiple", codes(result))
+        self.assertIn(
+            "change:ARCHITECTURE.md owned by 00-root.07, 00-root.08",
+            [item["detail"] for item in result["findings"]],
+        )
+
+
+class GatePhaseSatisfactionTest(unittest.TestCase):
+    """The tail of the same ruling, one branch over: several surviving owners.
+
+    Live in the gate phase of run 20260825T143105Z, with every unit terminal:
+    ``_companion_owners`` finds no live unit, its fallback reinstates the whole
+    membership, and the root and its gate stubs -- which plan the subtree and
+    repair anywhere in it -- are read as two owners of a companion a finished
+    unit had already written.  Every gate ticket was refused admission over
+    work that was done.  Suppressing only ``scope-owner-missing`` on spent
+    cover left this branch firing, so spent cover now answers the owner-count
+    branches too -- but only where the fallback fired, which
+    ``_companion_owners`` reports beside its set.  Two live units planning one
+    companion are a conflict whatever a finished member wrote, and
+    ``TerminalSatisfactionTest`` keeps that case.  Eligibility is untouched.
+    """
+
+    CONTENT = manifest(edge("create:scripts/*.py", "change:ARCHITECTURE.md"))
+    SEALED = {"cut_generation": CUT_ONE, "root_generation": ROOT_ONE}
+    COMPANION = "change:ARCHITECTURE.md"
+
+    def cut(self, *, terminal_unit_plans_companion=True):
+        """A sealed cut at its gate: root, one spent unit, one gate stub."""
+
+        spent_plan = self.COMPANION if terminal_unit_plans_companion else "change:scripts/nowview.py"
+        return {
+            "00-root": v2_ticket(
+                "00-root", mutations=["write:scripts/", self.COMPANION],
+                scope=["scripts/", "ARCHITECTURE.md"], **self.SEALED,
+            ),
+            "00-root.03": v2_ticket(
+                "00-root.03", mutations=[spent_plan], scope=[spent_plan.split(":", 1)[1]],
+                status="complete", **self.SEALED,
+            ),
+            "00-root.gate.repair": v2_ticket(
+                "00-root.gate.repair", mutations=[self.COMPANION],
+                scope=["ARCHITECTURE.md"], **self.SEALED,
+            ),
+        }
+
+    def test_a_gate_stub_is_admitted_over_a_companion_a_spent_unit_wrote(self):
+        result = grade("00-root.gate.repair", self.cut(), self.CONTENT)
+        self.assertNotIn("scope-owner-multiple", codes(result))
+        self.assertNotIn("scope-owner-missing", codes(result))
+        self.assertEqual([], [
+            item for item in result["findings"] if self.COMPANION in item["detail"]
+        ])
+
+    def test_without_spent_cover_the_fallbacks_several_owners_are_still_reported(self):
+        """The suppression demands spent cover; it is not the branch going quiet."""
+
+        result = grade("00-root.gate.repair", self.cut(terminal_unit_plans_companion=False), self.CONTENT)
+        self.assertIn("scope-owner-multiple", codes(result))
+        self.assertIn(
+            f"{self.COMPANION} owned by 00-root, 00-root.gate.repair",
+            [item["detail"] for item in result["findings"]],
+        )
 
 
 class V1GroupingUnchangedTest(unittest.TestCase):

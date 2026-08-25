@@ -66,6 +66,7 @@ class TestRunStateRootResolution(unittest.TestCase):
                  "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
                  "tickets_carry", "tickets_ceiling", "tickets_commands", "tickets_lint",
+                 "tickets_sequence",
                  "tickets_project", "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
                  "tickets_gate_mutations", "tickets_admission", "tickets_emission", "tickets_inputs",

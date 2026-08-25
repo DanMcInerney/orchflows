@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3060,
+  "count": 3097,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -179,6 +179,7 @@
    "test_installer.RuntimeVenvTests.test_runtime_build_enforces_hashes_from_the_complete_lock",
    "test_installer.RuntimeVenvTests.test_runtime_dependency_direct_set_has_one_owner_and_is_mirrored",
    "test_installer.RuntimeVenvTests.test_runtime_health_requires_exact_server_dependency_versions",
+   "test_installer.RuntimeVenvTests.test_the_runtime_links_its_base_interpreter_rather_than_copying_it",
    "test_installer.RuntimeVenvTests.test_unowned_runtime_is_refused_and_preserved",
    "test_installer.RuntimeVenvTests.test_update_and_uninstall_follow_the_private_runtime_policy",
    "test_installer.RuntimeVenvTests.test_user_install_repairs_an_unhealthy_private_runtime",
@@ -190,12 +191,13 @@
    "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
    "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
    "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_four_shared_adapters",
+   "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_writes_five_redirect_stubs",
    "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
    "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
    "test_installer.TestClaudeAdapterSet.test_the_parser_accepts_the_two_sets_and_refuses_any_other",
    "test_installer.TestClaudeAdapterSet.test_the_plan_count_and_printout_follow_the_adapter_set",
    "test_installer.TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
-   "test_installer.TestClaudeAdapterSet.test_the_shared_four_names_the_set_both_hosts_expose",
+   "test_installer.TestClaudeAdapterSet.test_the_shared_four_and_codex_redirect_names_are_explicit",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_writes_host_block_file_and_appends_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_reapply_does_not_duplicate_import_line",
@@ -300,7 +302,7 @@
    "test_installer.TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
    "test_installer.TestScopedHostConfiguration.test_user_plan_merges_limits_and_writes_native_role_agents",
    "test_installer.TestScopedHostConfiguration.test_user_plan_targets_user_config_and_agent_directories",
-   "test_installer.TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_four_codex_skill_stubs",
+   "test_installer.TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_codex_skill_stubs",
    "test_installer.TestScopedHostConfiguration.test_user_plan_writes_flat_by_name_index_for_every_package",
    "test_installer.TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
@@ -610,6 +612,7 @@
    "test_serial_compat_hardening.TestManifestHardening.test_only_observed_intentional_residue_is_allowlisted",
    "test_serial_compat_hardening.TestManifestHardening.test_required_fidelity_category_cannot_be_silently_removed",
    "test_serial_compat_hardening.TestStateBoundaryDiscrimination.test_each_process_seam_is_detected_and_restorable_seams_are_restored",
+   "test_serial_compat_manifest_regression.TestCodexRedirectManifestRegression.test_the_codex_redirect_test_identities_stay_serial_compatible",
    "test_serial_manifest.TestCommittedManifest.test_every_committed_owner_still_carries_its_restoration",
    "test_serial_manifest.TestCommittedManifest.test_the_committed_bytes_are_exactly_what_regeneration_would_write",
    "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_has_none",
@@ -700,6 +703,20 @@
    "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_each_stub_names_its_own_ticket_cohort",
    "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_no_stub_sits_in_the_roots_cohort",
    "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_the_three_stubs_do_not_share_one_cohort_with_each_other",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_a_chained_verify_must_depend_on_the_critique",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_a_missing_repair_without_the_chain_stays_malformed",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_the_legacy_three_stub_single_lens_family_stays_lawful",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_the_two_stub_chained_family_is_a_lawful_layout",
+   "test_tickets_gate_chain.MultiLensGateIsUnchangedTest.test_no_multi_lens_stub_carries_a_sequence",
+   "test_tickets_gate_chain.MultiLensGateIsUnchangedTest.test_the_multi_lens_edges_still_run_through_the_repair",
+   "test_tickets_gate_chain.MultiLensGateIsUnchangedTest.test_two_lenses_emit_the_three_kind_family",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_every_chained_stub_is_a_defect_free_ticket",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_exactly_the_critique_and_verify_stubs_are_written",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_chained_critique_holds_the_repairs_authority",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_chained_ticket_states_the_repair_halfs_criteria",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_critique_states_the_chain_and_stays_the_critique",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_root_input_records_reach_the_chained_critique_verbatim",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_verify_depends_on_the_critique_and_reads_its_result",
    "test_tickets_lint.CommandTableTest.test_every_routed_subcommand_states_a_usage_and_a_summary",
    "test_tickets_lint.CommandTableTest.test_tables_are_owned_by_the_commands_module",
    "test_tickets_lint.CommandTableTest.test_the_new_payload_flags_are_value_flags",
@@ -762,6 +779,16 @@
    "test_tickets_reissue.ReissueSuccessionTest.test_a_successor_with_nothing_left_to_report_exits_zero",
    "test_tickets_reissue.ReissueSuccessionTest.test_cite_result_names_the_result_section_and_its_digest",
    "test_tickets_reissue.ReissueSuccessionTest.test_the_lint_report_of_the_placed_ticket_is_printed",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_lawful_chain_has_no_defect",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_repeated_skill_is_a_defect",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_script_step_is_not_a_chain_entry",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_single_entry_chain_is_the_plain_executor",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_an_absent_sequence_is_the_plain_ticket",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_the_head_must_be_the_executor",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_a_chain_packet_states_order_price_and_read_path",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_a_further_child_packet_never_continues_the_chain",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_a_plain_packet_carries_no_chain_lines",
+   "test_tickets_sequence.TestTheSealBindsTheChain.test_the_assignment_digest_moves_with_the_sequence",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_fix_template_renders_every_section",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_process_prints_one_json_document_carrying_the_view",
    "test_tickets_view.WorklogViewTest.test_a_failed_ticket_contributes_its_result_and_its_feedback",
@@ -822,11 +849,21 @@
    "test_v2_closure.CohortlessV2MembershipTest.test_a_v2_ticket_still_grades_its_own_plan",
    "test_v2_closure.CohortlessV2MembershipTest.test_one_sealed_cut_is_still_one_closure",
    "test_v2_closure.CohortlessV2MembershipTest.test_v2_tickets_with_distinct_cut_generations_grade_independently",
+   "test_v2_closure.GatePhaseSatisfactionTest.test_a_gate_stub_is_admitted_over_a_companion_a_spent_unit_wrote",
+   "test_v2_closure.GatePhaseSatisfactionTest.test_without_spent_cover_the_fallbacks_several_owners_are_still_reported",
    "test_v2_closure.ReproducerAtTheAdmissionGradeTest.test_a_lawful_v2_ticket_is_admitted_beside_a_defective_sibling",
-   "test_v2_closure.TerminalMembershipTest.test_a_companion_whose_only_owner_is_spent_is_reported_unowned",
+   "test_v2_closure.SealedV2RootMembershipTest.test_a_companion_only_the_sealed_root_plans_is_still_reported_unowned",
+   "test_v2_closure.SealedV2RootMembershipTest.test_a_sealed_root_standing_alone_still_owns_the_companions_it_plans",
+   "test_v2_closure.SealedV2RootMembershipTest.test_the_root_of_a_sealed_cut_is_not_a_second_owner_of_a_companion",
+   "test_v2_closure.SealedV2RootMembershipTest.test_two_units_of_a_sealed_cut_are_still_two_owners",
+   "test_v2_closure.TerminalMembershipTest.test_a_companion_no_member_planned_is_still_reported_unowned",
+   "test_v2_closure.TerminalMembershipTest.test_a_companion_whose_only_owner_is_spent_is_satisfied_not_unowned",
    "test_v2_closure.TerminalMembershipTest.test_a_terminal_member_is_not_a_second_owner_of_a_companion",
    "test_v2_closure.TerminalMembershipTest.test_a_terminal_ticket_being_graded_is_a_member_of_its_own_closure",
    "test_v2_closure.TerminalMembershipTest.test_two_live_members_are_still_two_owners",
+   "test_v2_closure.TerminalSatisfactionTest.test_a_companion_no_member_ever_planned_is_still_reported_unowned",
+   "test_v2_closure.TerminalSatisfactionTest.test_a_terminal_members_spent_plan_satisfies_the_companion_it_covers",
+   "test_v2_closure.TerminalSatisfactionTest.test_two_live_planners_are_still_two_owners_beside_a_terminal_one",
    "test_v2_closure.V1GroupingUnchangedTest.test_a_member_of_another_cohort_stays_outside_the_closure",
    "test_v2_closure.V1GroupingUnchangedTest.test_a_stamped_cohort_still_groups_a_ticket_that_also_carries_a_cut",
    "test_v2_closure.V1GroupingUnchangedTest.test_cohortless_v1_members_group_exactly_as_they_did",
@@ -2279,7 +2316,7 @@
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_every_gate_sibling_uses_one_sealed_head_probe",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_every_stub_declares_its_independence_as_the_gate",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_every_stub_is_a_ticket_but_lifecycle_bypass_is_refused",
-   "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_exactly_the_three_stubs_are_written",
+   "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_exactly_the_family_stubs_are_written",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_lens_identity_is_case_insensitive_on_every_host",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_one_root_owns_gate_files_and_distinct_lenses",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_the_critique_depends_on_an_assembly_item_outside_the_nn_shape",
@@ -3063,7 +3100,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0498bdb6cd68ab02368065eaa72668fdd895e54f2d7541efdd665aaaddede985"
+  "sha256": "ed3f11bd521353847cc9170290d3cdc1c7d3904f831a5dcc50f8920a5ee53c6a"
  },
  "mutation_owners": [
   {
@@ -3986,6 +4023,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_the_runtime_links_its_base_interpreter_rather_than_copying_it",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
    "owner": "RuntimeVenvTests.test_unowned_runtime_is_refused_and_preserved",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -4152,7 +4197,7 @@
   },
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
-   "owner": "TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_four_codex_skill_stubs",
+   "owner": "TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_codex_skill_stubs",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -5560,6 +5605,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_gate_chain",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
    ]
   },
   {

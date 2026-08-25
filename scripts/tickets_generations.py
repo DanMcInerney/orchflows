@@ -29,7 +29,7 @@ AMENDMENT_FIELDS = (
 )
 ASSIGNMENT_AUTHORITY_FIELDS = (
     "write_scope", "mutations", "excluded_actions", "isolation", "pack",
-    "independence", "bound", "ownership_regions", "granted_scope",
+    "independence", "bound", "ownership_regions", "granted_scope", "sequence",
 )
 
 
