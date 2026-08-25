@@ -96,6 +96,20 @@ try:  # repository checkout
 except ImportError:  # installed flat script directory
     from cutcheck_graph import _root_ids
 
+try:  # repository checkout
+    from scripts import cutcheck_pricing as _pricing
+except ImportError:  # installed flat script directory
+    import cutcheck_pricing as _pricing
+# Family 3's other six, which read what a cut costs rather than what it says.
+# Their classes register themselves from that module; these names are re-exported
+# so a reader reaches every family 3 screen through the assembly that calls them.
+UNPRICED_GROWTH = _pricing.UNPRICED_GROWTH
+UNSPLITTABLE_OWNER = _pricing.UNSPLITTABLE_OWNER
+CEILING_WITHOUT_ARITHMETIC = _pricing.CEILING_WITHOUT_ARITHMETIC
+UNPINNED_OUTPUT = _pricing.UNPINNED_OUTPUT
+PACK_INADMISSIBLE_ROOT = _pricing.PACK_INADMISSIBLE_ROOT
+EXCLUDED_REQUIRED_COMMAND = _pricing.EXCLUDED_REQUIRED_COMMAND
+
 
 def _policy_findings(ticket_id, text, sibling_texts, baseline_tree, head_tree):
     """Render lower identity/scope validator codes unchanged in cutcheck."""
@@ -451,6 +465,15 @@ def _check_ticket(path, baseline_tree, head_tree, siblings):
         (ticket_id, 0, klass, detail)
         for klass, detail in _removal_evidence(frontmatter, objective, inputs)
     )
+    # Family 3's pricing and root-admissibility screens. No frozen exemption:
+    # every one of them reads this item's own grant, mutation plan or pack
+    # stamp, which is the authority `_frozen_authority` leaves graded -- and a
+    # root is the only item the last two can be asked about at all.
+    findings.extend(
+        (ticket_id, 0, klass, detail)
+        for klass, detail in _pricing.screens(
+            frontmatter, objective, inputs, baseline_tree, is_root)
+    )
     # Screen 4, and advisory rather than refusing: a marker is weak evidence of
     # meaning, never proof of its absence. Read off the section rather than the
     # `completion` local above, which a frozen root blanks -- the question here
@@ -469,5 +492,7 @@ __all__ = (
     '_policy_scope', '_deleted_phrases', '_consumer_census',
     '_removal_evidence', '_marker_only_relocation',
     'POLICY_OUTSIDE_SCOPE', 'UNGRANTED_CONSUMER', 'UNPROBED_REMOVAL',
-    'MARKER_ONLY_RELOCATION',
+    'MARKER_ONLY_RELOCATION', 'UNPRICED_GROWTH', 'UNSPLITTABLE_OWNER',
+    'CEILING_WITHOUT_ARITHMETIC', 'UNPINNED_OUTPUT',
+    'PACK_INADMISSIBLE_ROOT', 'EXCLUDED_REQUIRED_COMMAND',
 )

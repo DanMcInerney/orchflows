@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2865,
+  "count": 3044,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -82,6 +82,29 @@
    "test_cutcheck.CutScopeScreenTest.test_a_removal_claiming_no_reachability_is_asked_for_no_probe",
    "test_cutcheck.CutScopeScreenTest.test_the_census_is_silent_where_nothing_ungranted_holds_the_phrase",
    "test_cutcheck.CutScopeScreenTest.test_the_same_policy_is_silent_where_the_grant_carries_the_artifact",
+   "test_derived_guidance.CeilingArithmeticTest.test_an_instruction_at_the_ceiling_draws_no_sentence",
+   "test_derived_guidance.CeilingArithmeticTest.test_the_arithmetic_prints_every_part_and_the_total",
+   "test_derived_guidance.CeilingArithmeticTest.test_the_refusal_carries_the_arithmetic_and_the_overage",
+   "test_derived_guidance.CeilingArithmeticTest.test_the_rendered_order_is_the_breakdowns_order",
+   "test_derived_guidance.CutTimeRemedyTest.test_the_claimed_amend_chain_runs_under_sibling_held_leases",
+   "test_derived_guidance.CutTimeRemedyTest.test_the_claimed_recut_refusal_names_the_chain_the_table_runs",
+   "test_derived_guidance.CutTimeRemedyTest.test_the_sealed_amend_refusal_declines_the_chain_the_seal_refuses",
+   "test_derived_guidance.InstructionBreakdownTest.test_fixed_inputs_stay_free_of_every_part",
+   "test_derived_guidance.InstructionBreakdownTest.test_the_breakdown_leads_with_the_section_worth_cutting",
+   "test_derived_guidance.InstructionBreakdownTest.test_the_breakdown_names_every_graded_part",
+   "test_derived_guidance.InstructionBreakdownTest.test_the_counter_keeps_its_old_holders",
+   "test_derived_guidance.InstructionBreakdownTest.test_the_parts_sum_to_the_total_the_ceiling_grades",
+   "test_derived_guidance.NotARemedyTest.test_no_status_write_is_offered_as_a_route_to_grant_or_check",
+   "test_derived_guidance.SentinelIsNotContentTest.test_a_refusal_describes_the_section_it_actually_refused",
+   "test_derived_guidance.SentinelIsNotContentTest.test_a_section_holding_real_content_keeps_every_protection",
+   "test_derived_guidance.SentinelIsNotContentTest.test_a_writer_whose_own_content_is_the_sentinel_is_not_told_apart",
+   "test_derived_guidance.SentinelIsNotContentTest.test_an_empty_section_is_not_the_sentinel_and_stays_append_only",
+   "test_derived_guidance.SentinelIsNotContentTest.test_only_the_exact_sentinel_bytes_are_the_exception",
+   "test_derived_guidance.SentinelIsNotContentTest.test_the_filing_law_names_the_sentinel_rather_than_spelling_it",
+   "test_derived_guidance.SentinelIsNotContentTest.test_the_first_real_write_consumes_the_sentinel_under_every_flag",
+   "test_derived_guidance.SentinelIsNotContentTest.test_the_gate_emitter_prefills_that_same_one_constant",
+   "test_derived_guidance.SentinelIsNotContentTest.test_the_generator_prefills_the_one_sentinel_the_filing_law_names",
+   "test_derived_guidance.SentinelIsNotContentTest.test_the_help_states_the_append_only_law_the_command_enforces",
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
@@ -129,6 +152,7 @@
    "test_input_identities.InputRecordTest.test_producer_rejects_duplicate_keys_nonfinite_numbers_and_rendered_placeholders",
    "test_input_identities.InputRecordTest.test_record_grammar_rejects_prose_duplicates_and_noncanonical_json",
    "test_input_identities.InputRecordTest.test_routing_objectives_are_observable_states_not_embedded_procedures",
+   "test_input_identities.InputRecordTest.test_the_harvest_reads_a_roots_last_record_under_trailing_prose",
    "test_input_identities.TreeAdapterTest.test_document_and_evidence_roots_are_adapter_specific",
    "test_input_identities.TreeAdapterTest.test_document_root_may_be_project_or_sink_but_evidence_is_sink_only",
    "test_input_identities.TreeAdapterTest.test_store_resolution_stays_below_declared_root_and_matches_digest",
@@ -362,6 +386,24 @@
    "test_loop_pending_claim.PendingClaimAtomicityTest.test_incomplete_and_dangling_dependencies_leave_pending_bytes_identical",
    "test_loop_pending_claim.PendingClaimAtomicityTest.test_ready_and_claim_return_the_same_sorted_findings",
    "test_loop_pending_claim.PendingClaimAtomicityTest.test_two_process_claims_have_one_final_owner",
+   "test_mechanical_batch.IdentityKindRefusalNamesTheKindsTest.test_a_kind_the_adapter_does_not_take_is_told_what_it_takes",
+   "test_mechanical_batch.IdentityKindRefusalNamesTheKindsTest.test_an_unknown_kind_is_told_the_valid_kinds",
+   "test_mechanical_batch.InstantiateStampsItsOwnVersionTest.test_a_v1_stub_keeps_the_v1_pending_sentinel",
+   "test_mechanical_batch.InstantiateStampsItsOwnVersionTest.test_a_v2_stub_lands_with_the_v2_pending_sentinel",
+   "test_mechanical_batch.InstantiateStampsItsOwnVersionTest.test_every_stub_lands_at_the_tables_stamped_status",
+   "test_mechanical_batch.NoNameCheckerPacketWritesNoPlaceholderTest.test_a_packet_given_a_name_still_writes_the_check_command",
+   "test_mechanical_batch.NoNameCheckerPacketWritesNoPlaceholderTest.test_a_packet_without_a_name_writes_no_by_placeholder",
+   "test_mechanical_batch.ReadyWaitsForTheCutsCheckTest.test_a_unit_under_an_unchecked_cut_is_not_ready",
+   "test_mechanical_batch.ReadyWaitsForTheCutsCheckTest.test_the_same_unit_is_ready_once_the_cut_is_checked",
+   "test_mechanical_batch.ReissueStampsFromTheTableTest.test_the_blanked_lease_is_the_tables_own_tuple",
+   "test_mechanical_batch.ReissueStampsFromTheTableTest.test_the_successor_lands_at_the_tables_stamp",
+   "test_mechanical_batch.SharedScratchTreeIsQuarantinedTest.test_a_cached_tree_is_primed_before_its_first_span_is_graded",
+   "test_mechanical_batch.SweptCommandPatternsCarryABoundaryTest.test_no_swept_pattern_matches_a_longer_verb",
+   "test_mechanical_batch.WholeSuiteOracleExemptsAGrantedModuleTest.test_a_granted_module_is_not_a_whole_suite_finding",
+   "test_mechanical_batch.WholeSuiteOracleExemptsAGrantedModuleTest.test_the_same_oracle_over_an_ungranted_module_still_fires",
+   "test_mechanical_batch.WorklogReportsTheReadyAndUnclaimedAgeTest.test_a_claimed_item_carries_its_lease_stamp_and_no_age",
+   "test_mechanical_batch.WorklogReportsTheReadyAndUnclaimedAgeTest.test_a_pending_item_is_not_on_offer_at_all",
+   "test_mechanical_batch.WorklogReportsTheReadyAndUnclaimedAgeTest.test_a_ready_unclaimed_item_says_how_long_it_has_been_on_offer",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_category_free_entry_does_not_gain_one",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_historical_category_value_is_preserved",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_line_that_is_not_json_is_carried_across_unaltered",
@@ -394,6 +436,20 @@
    "test_migrate_state_cases.plan.TestUsage.test_an_unknown_flag_is_refused_rather_than_guessed",
    "test_migrate_state_cases.plan.TestUsage.test_no_source_is_a_usage_error",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
+   "test_project_binding.TestAttribution.test_a_recorded_project_is_corrected_to_the_root_tickets",
+   "test_project_binding.TestAttribution.test_a_root_ticket_naming_no_workspace_leaves_the_writer_owning_it",
+   "test_project_binding.TestAttribution.test_run_creation_stamps_the_project_the_root_ticket_names",
+   "test_project_binding.TestAttribution.test_the_writing_workspace_is_still_recorded_as_a_workspace",
+   "test_project_binding.TestClaimAdmission.test_a_claim_from_a_foreign_project_is_refused",
+   "test_project_binding.TestClaimAdmission.test_a_claim_from_the_runs_own_project_is_admitted_by_the_binding",
+   "test_project_binding.TestClaimAdmission.test_a_refused_claim_writes_nothing",
+   "test_project_binding.TestLegacyRuns.test_a_run_with_no_recorded_project_admits_any_workspace",
+   "test_project_binding.TestTerminalAdmission.test_a_terminal_write_from_a_foreign_project_is_refused",
+   "test_project_binding.TestTerminalAdmission.test_a_terminal_write_from_the_runs_own_project_proceeds",
+   "test_project_binding.TestTheSeamMoved.test_no_stale_copy_of_the_seam_survives_where_it_left",
+   "test_project_binding.TestTheSeamMoved.test_the_lifecycle_module_and_the_facade_still_export_the_seam",
+   "test_project_binding.TestTheSeamMoved.test_the_project_module_owns_the_binding_law",
+   "test_project_binding.TestTheSeamMoved.test_the_seam_is_defined_in_the_project_module",
    "test_refactor_compat.CutcheckFacadeCompatibilityTest.test_help_keeps_the_positional_and_public_flags",
    "test_refactor_compat.MigrateStateFacadeCompatibilityTest.test_missing_source_keeps_the_json_refusal_and_zero_exit_contract",
    "test_refactor_compat.SearchPlanFacadeCompatibilityTest.test_unknown_command_keeps_the_refusal_contract",
@@ -467,6 +523,8 @@
    "test_run_tests.TestEmit.test_everything_the_console_can_carry_is_written_verbatim",
    "test_run_tests.TestFailureOutputSurvivesTheConsole.test_the_report_names_the_module_and_carries_the_message",
    "test_run_tests.TestGuardedSeams.test_a_clean_module_is_accepted",
+   "test_run_tests.TestGuardedSeams.test_a_dead_path_inside_the_checkout_is_residue_wherever_it_sits",
+   "test_run_tests.TestGuardedSeams.test_a_dead_scratch_path_outside_the_checkout_is_still_dropped",
    "test_run_tests.TestGuardedSeams.test_a_nonzero_child_exit_rejects_an_ok_payload",
    "test_run_tests.TestGuardedSeams.test_an_arbitrary_live_import_path_is_still_rejected",
    "test_run_tests.TestGuardedSeams.test_an_expired_non_scratch_import_path_is_still_rejected",
@@ -485,6 +543,26 @@
    "test_run_tests.TestWorkflowContract.test_ci_uploads_each_python_legs_timing_even_after_failure",
    "test_run_tests.TestWorkflowContract.test_selected_serial_is_routine_and_exhaustive_is_the_fallback",
    "test_run_tests.TestWorkflowContract.test_star_imported_facades_do_not_export_test_cases",
+   "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_an_empty_selection_still_admits_the_paths_it_named",
+   "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_the_admission_precedes_the_selections_own_exit",
+   "test_run_tests_scope.TestScopeSpelling.test_a_scope_by_itself_is_accepted",
+   "test_run_tests_scope.TestScopeSpelling.test_a_space_separated_scope_is_refused_and_names_what_it_dropped",
+   "test_run_tests_scope.TestScopeSpelling.test_modules_by_themselves_are_accepted",
+   "test_run_tests_scope.TestScopeSpelling.test_the_runner_refuses_the_spelling_before_it_reads_anything",
+   "test_run_tests_scope.TestScopedAdmission.test_a_custom_tests_directory_admits_nothing",
+   "test_run_tests_scope.TestScopedAdmission.test_a_scoped_run_admits_its_own_paths_only",
+   "test_run_tests_scope.TestScopedAdmission.test_a_whole_suite_run_admits_the_whole_tree",
+   "test_run_tests_scope.TestScopedAdmission.test_an_explicit_module_run_admits_nothing",
+   "test_run_tests_scope.TestScopedAdmission.test_the_scoped_admission_reads_the_scope_not_the_selected_modules",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_checkout_with_no_git_still_answers_from_the_working_tree",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_path_git_cannot_be_asked_about_stays_a_note",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_revision_answer_is_accepted",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_scope_path_the_revision_carries_stays_a_note",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_scope_path_the_revision_does_not_carry_is_refused",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_shard_on_disk_the_revision_does_not_carry_is_refused",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_working_tree_answer_inside_a_git_checkout_is_refused",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_the_selection_line_does_not_claim_to_be_running_anything",
+   "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_the_selection_names_the_revision_it_decided_over",
    "test_scope_closure.CohortCompanionOwnerTests.test_a_root_graded_alone_still_owns_its_own_companions",
    "test_scope_closure.CohortCompanionOwnerTests.test_no_unit_owner_is_missing_rather_than_owned_by_root_and_gate",
    "test_scope_closure.CohortCompanionOwnerTests.test_one_unit_owner_closes_the_edge_beside_the_root_and_its_gate",
@@ -540,6 +618,17 @@
    "test_serial_manifest.TestRegeneration.test_the_sentinels_block_survives_regeneration_byte_for_byte",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
+   "test_skill_fork_governance.AdoptionIsPricedAndTheBillIsCurrent.test_every_blocked_contract_is_still_blocked",
+   "test_skill_fork_governance.AdoptionIsPricedAndTheBillIsCurrent.test_every_other_contract_can_already_afford_the_clause",
+   "test_skill_fork_governance.AdoptionIsPricedAndTheBillIsCurrent.test_no_contract_joins_the_blocked_set_by_growing",
+   "test_skill_fork_governance.AdoptionIsPricedAndTheBillIsCurrent.test_the_recorded_deficit_is_what_the_tree_actually_owes",
+   "test_skill_fork_governance.SpecStatesItsDirectTicketLane.test_the_direct_lane_names_its_condition_and_its_mechanics",
+   "test_skill_fork_governance.TheAllOrNothingPremiseHolds.test_the_all_or_nothing_premise_still_holds",
+   "test_skill_fork_governance.TheBudgetTheClauseIsSpentAgainstIsReal.test_every_body_stays_within_its_tier_budget",
+   "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_leaves_the_reserved_wordings_to_their_owners",
+   "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_states_every_property_the_firings_paid_for",
+   "test_skill_fork_governance.TheSweptPopulationIsReal.test_the_population_is_derived_and_non_empty",
+   "test_skill_fork_governance.TheSweptPopulationIsReal.test_the_population_spans_every_tier",
    "test_source_sizes.SourceSizeCheckerTest.test_510_lines_pass_and_511_lines_fail",
    "test_source_sizes.SourceSizeCheckerTest.test_all_six_executable_suffixes_are_owned",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
@@ -571,6 +660,37 @@
    "test_tickets_bound.ParkPredicateTest.test_a_claim_with_no_readable_start_has_no_deadline_to_have_passed",
    "test_tickets_bound.ParkPredicateTest.test_motion_after_the_bound_elapsed_is_over_bound_and_not_parked",
    "test_tickets_bound.ParkPredicateTest.test_the_facade_exports_the_predicate_the_engine_rule_names",
+   "test_tickets_emitters.EmissionLawPartition.test_a_dependency_that_has_not_run_yet_is_deferred",
+   "test_tickets_emitters.EmissionLawPartition.test_a_finding_code_the_law_does_not_know_refuses",
+   "test_tickets_emitters.EmissionLawPartition.test_an_emitter_owned_finding_is_refused",
+   "test_tickets_emitters.EmissionLawPartition.test_an_unsealed_v2_assignment_is_deferred",
+   "test_tickets_emitters.GateGradesItsEmission.test_gate_refuses_a_root_whose_stubs_it_cannot_express",
+   "test_tickets_emitters.InstantiateGradesItsEmission.test_every_shipped_composition_passes_its_own_door",
+   "test_tickets_emitters.InstantiateGradesItsEmission.test_instantiate_refuses_stubs_the_next_door_refuses",
+   "test_tickets_emitters.NewGradesItsEmission.test_new_refuses_the_locator_claim_refuses",
+   "test_tickets_emitters.NewGradesItsEmission.test_new_still_issues_a_clean_ticket",
+   "test_tickets_emitters.RecutAndAmendGradeTheirEmission.test_amend_refuses_a_section_the_next_door_refuses",
+   "test_tickets_emitters.RecutAndAmendGradeTheirEmission.test_recut_refuses_a_candidate_the_next_door_refuses",
+   "test_tickets_emitters.RootGenerationStamping.test_stamping_a_v1_root_opens_the_v2_path_without_a_hand_edit",
+   "test_tickets_emitters.RootGenerationStamping.test_stamping_refuses_a_root_that_is_already_taken_up",
+   "test_tickets_emitters.RootGenerationStamping.test_the_subcommand_is_offered",
+   "test_tickets_emitters.TheSealedBatchWedge.test_the_second_stub_carries_only_findings_time_repairs",
+   "test_tickets_emitters.TheSealedBatchWedge.test_the_shipped_chain_needs_no_correction_once_its_first_stub_lands",
+   "test_tickets_gate.GateAddsOnlyItsOwnRecordsTest.test_no_stub_states_one_input_name_twice",
+   "test_tickets_gate.GateAddsOnlyItsOwnRecordsTest.test_the_critique_keeps_its_lens_and_unit_results",
+   "test_tickets_gate.GateAddsOnlyItsOwnRecordsTest.test_the_gates_own_record_wins_a_name_the_root_also_used",
+   "test_tickets_gate.GateAddsOnlyItsOwnRecordsTest.test_the_one_surviving_baseline_is_the_roots_own",
+   "test_tickets_gate.GateAddsOnlyItsOwnRecordsTest.test_the_repair_and_verify_keep_the_records_they_are_decided_by",
+   "test_tickets_gate.GateGradesWhatItIsAboutToWriteTest.test_a_root_whose_stubs_grade_clean_still_gates",
+   "test_tickets_gate.GateGradesWhatItIsAboutToWriteTest.test_the_gate_refuses_an_emission_the_next_door_refuses",
+   "test_tickets_gate.GateInheritsRootAuthorityTest.test_a_note_under_the_records_costs_the_root_no_record",
+   "test_tickets_gate.GateInheritsRootAuthorityTest.test_a_root_that_holds_no_authority_lends_the_stubs_none",
+   "test_tickets_gate.GateInheritsRootAuthorityTest.test_every_stub_carries_every_root_input_record_verbatim",
+   "test_tickets_gate.GateInheritsRootAuthorityTest.test_every_stub_carries_the_roots_exclusions_entry_for_entry",
+   "test_tickets_gate.GateInheritsRootAuthorityTest.test_every_stub_carries_the_roots_isolation",
+   "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_each_stub_names_its_own_ticket_cohort",
+   "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_no_stub_sits_in_the_roots_cohort",
+   "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_the_three_stubs_do_not_share_one_cohort_with_each_other",
    "test_tickets_lint.CommandTableTest.test_every_routed_subcommand_states_a_usage_and_a_summary",
    "test_tickets_lint.CommandTableTest.test_tables_are_owned_by_the_commands_module",
    "test_tickets_lint.CommandTableTest.test_the_new_payload_flags_are_value_flags",
@@ -615,6 +735,11 @@
    "test_tickets_packet_checker.TestEveryEmittedPacketCarriesTheThreeDispatchParts.test_every_shape_resolves_the_ticket_store_to_the_sink",
    "test_tickets_packet_checker.TestEveryEmittedPacketCarriesTheThreeDispatchParts.test_every_shape_states_the_name_the_dispatch_assigned_the_child",
    "test_tickets_packet_checker.TestEveryEmittedPacketCarriesTheThreeDispatchParts.test_the_usage_line_names_the_flag_that_supplies_the_name",
+   "test_tickets_packet_checker.TestEveryEmittedPacketFilesAndMeasuresByRunnableCommand.test_a_scope_bearing_shape_carries_the_ceiling_measurement_command",
+   "test_tickets_packet_checker.TestEveryEmittedPacketFilesAndMeasuresByRunnableCommand.test_a_shape_with_no_write_scope_measures_nothing",
+   "test_tickets_packet_checker.TestEveryEmittedPacketFilesAndMeasuresByRunnableCommand.test_every_filing_and_measurement_line_is_argv_safe_on_every_shape",
+   "test_tickets_packet_checker.TestEveryEmittedPacketFilesAndMeasuresByRunnableCommand.test_the_file_filing_form_carries_append_on_every_shape",
+   "test_tickets_packet_checker.TestEveryEmittedPacketFilesAndMeasuresByRunnableCommand.test_the_file_form_is_named_the_primary_channel_and_multiline_is_refused",
    "test_tickets_reissue.ReissueRefusalTest.test_a_cited_section_the_source_does_not_carry_is_refused",
    "test_tickets_reissue.ReissueRefusalTest.test_a_root_is_refused_into_a_run_that_already_holds_one",
    "test_tickets_reissue.ReissueRefusalTest.test_a_set_naming_an_executor_owned_section_is_refused",
@@ -713,6 +838,14 @@
    "test_v2_regrade.LifecycleRegradeTest.test_ready_claim_and_packet_each_grade_the_v2_ticket_in_full",
    "test_v2_regrade.V1AndV0ParityTest.test_no_v1_or_v0_grade_moves_off_the_pinned_baseline",
    "test_v2_regrade.V1AndV0ParityTest.test_the_corpus_reaches_the_grading_it_claims_to_hold_still",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_path_the_installer_never_produces_is_an_error",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_script_resolves_through_the_installers_bin_mapping",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_tree_without_the_marker_is_skipped_not_failed",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_an_installed_library_path_resolves",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_plain_text_mentions_nothing",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_exemption_is_one_live_site_and_not_a_blanket",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_real_library_tree_carries_no_dead_documented_path",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_test_directory_is_an_error",
    "test_verification_owners.CheckedByHasOneOwner.test_at_least_one_kernel_skill_actually_carries_the_deferral",
    "test_verification_owners.CheckedByHasOneOwner.test_no_kernel_skill_states_immutability_without_naming_the_owner",
    "test_verification_owners.CheckedByHasOneOwner.test_the_contract_states_the_immutability_and_its_producer",
@@ -1156,6 +1289,31 @@
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_the_whole_layout_exits_zero",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_two_roots_and_two_gate_systems_fail",
    "tests.test_cutcheck_cases.layout.RootGateLayoutTest.test_two_unrelated_roots_fail_before_either_has_a_gate",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_ceiling_naming_no_granted_file_is_not_this_screens",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_ceiling_over_a_granted_file_without_arithmetic_is_reported",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_ceiling_shipped_with_its_arithmetic_is_silent",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_change_claiming_no_output_is_asked_for_no_pin",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_created_file_is_priced_by_nobody",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_cut_pricing_nothing_at_all_is_asked_for_nothing",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_cut_that_prices_one_grown_file_and_skips_another_is_reported",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_granted_split_destination_discharges_the_cap",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_a_non_python_file_under_tests_still_counts",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_an_output_change_names_the_ungranted_test_that_pins_the_output",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_an_owner_at_its_cap_with_no_sub_owner_granted_is_reported",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_an_owner_with_headroom_is_asked_for_no_split",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_granting_the_pinning_artifact_discharges_the_output_change",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_pricing_every_grown_file_is_silent",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_the_bare_stem_still_matches_which_is_where_the_noise_is",
+   "tests.test_cutcheck_cases.pricing.CutPricingScreenTest.test_the_class_is_advisory_until_its_precision_is_decided",
+   "tests.test_cutcheck_cases.pricing.PricingScreenRegistrationTest.test_every_screen_is_family_three_and_moves_the_status",
+   "tests.test_cutcheck_cases.pricing.PricingScreenRegistrationTest.test_no_screen_name_can_be_read_off_a_summary_line",
+   "tests.test_cutcheck_cases.pricing.PricingScreenRegistrationTest.test_the_ticket_module_re_exports_every_screen",
+   "tests.test_cutcheck_cases.pricing.RootAdmissibilityScreenTest.test_a_code_pack_root_fixing_isolation_none_is_refused",
+   "tests.test_cutcheck_cases.pricing.RootAdmissibilityScreenTest.test_a_prose_exclusion_contributes_no_tokens",
+   "tests.test_cutcheck_cases.pricing.RootAdmissibilityScreenTest.test_a_required_command_its_own_exclusions_forbid_is_flagged",
+   "tests.test_cutcheck_cases.pricing.RootAdmissibilityScreenTest.test_a_required_command_no_exclusion_names_is_silent",
+   "tests.test_cutcheck_cases.pricing.RootAdmissibilityScreenTest.test_a_root_naming_no_pack_is_graded_against_nothing",
+   "tests.test_cutcheck_cases.pricing.RootAdmissibilityScreenTest.test_a_root_whose_isolation_its_pack_permits_is_silent",
    "tests.test_cutcheck_cases.scope.FrozenAuthorityProseTest.test_a_gate_verify_stub_completion_test_commits_it_to_no_write",
    "tests.test_cutcheck_cases.scope.FrozenAuthorityProseTest.test_a_root_completion_test_commits_the_root_to_no_write",
    "tests.test_cutcheck_cases.scope.FrozenAuthorityProseTest.test_the_same_criterion_on_a_unit_still_commits_the_unit",
@@ -1888,6 +2046,7 @@
    "tests.test_tickets_cases.packet_workspace.TestPacketEmitsTheEstablishmentCommand.test_the_emitting_code_holds_no_literal_interpreter_or_script_path",
    "tests.test_tickets_cases.packet_workspace.TestPacketEmitsTheEstablishmentCommand.test_the_interpreter_and_script_path_are_derived_not_literal",
    "tests.test_tickets_cases.packet_workspace.TestPacketEmitsTheEstablishmentCommand.test_the_line_is_absolute_one_token_per_argument_and_shell_free",
+   "tests.test_tickets_cases.packet_workspace.UnboundWorkspaceTableTest.test_reaching_the_table_unbound_names_the_facade_that_binds_it",
    "tests.test_tickets_cases.readiness.TestAppendLockDocstringIsTrue.test_the_docstring_does_not_promise_readers_are_unaffected",
    "tests.test_tickets_cases.readiness.TestAppendLockDocstringIsTrue.test_the_terminal_reader_refuses_when_it_cannot_read_rather_than_calling_the_run_open",
    "tests.test_tickets_cases.readiness.TestClaimGradesStalenessAsReadyDoes.test_a_bare_scalar_scope_holds_the_claim_on_both_paths",
@@ -1971,7 +2130,7 @@
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_close_requires_a_known_state_and_its_deciding_evidence",
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_write_call_count_is_not_asserted",
    "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_explicit_root_cohort_is_validated",
-   "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_gate_stubs_share_the_roots_cut_cohort",
+   "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_gate_stubs_issue_in_their_own_cohorts",
    "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_instantiate_uses_one_order_independent_batch_cohort",
    "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_new_and_new_file_start_pending_with_a_ticket_cohort",
    "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_new_carries_canonical_inputs_and_mutation_plan",
@@ -2092,6 +2251,14 @@
    "tests.test_tickets_issue_cases.template_cases.InstantiateTest.test_the_placeholder_is_substituted_and_the_run_stamped",
    "tests.test_tickets_issue_cases.template_cases.InstantiateTest.test_the_run_argument_is_required",
    "tests.test_tickets_issue_cases.template_cases.InstantiateTest.test_two_terminal_stubs_are_refused_by_name",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_a_dot_slash_write_is_covered_by_the_grant_it_names",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_a_marker_inside_a_longer_word_is_not_a_marker",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_a_proviso_is_read_by_the_clause_and_not_by_the_sentence",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_each_reader_reports_exactly_the_stated_contradictions",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_every_permitting_marker_is_read_by_both_readers",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_the_plain_spelling_drops_only_a_leading_dot_slash",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_the_two_readers_agree_case_by_case",
+   "tests.test_tickets_lint_cases.family3.Family3OneLawTest.test_the_two_readers_state_one_vocabulary_and_one_window",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_a_malformed_root_mutation_refuses_the_whole_gate",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_a_root_with_no_pack_still_requires_the_lens",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_a_root_with_no_unit_tickets_is_refused_and_writes_nothing",
@@ -2788,6 +2955,16 @@
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_module_docstring_names_what_the_deviation_is_read_against",
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_resolvers_are_imported_never_copied",
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_script_is_stdlib_only_and_network_free",
+   "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_a_first_establishment_still_records_what_it_observed",
+   "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_an_empty_stamp_is_no_stamp",
+   "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_re_establishment_preserves_the_stamp_and_reports_what_it_saw",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_beside_real_dirt_leaves_only_the_dirt_in_the_refusal",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_outside_a_pycache_directory_is_still_emission",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_the_baseline_itself_tracks_is_still_emission",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_uncommitted_work_that_is_not_bytecode_still_breaches",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_untracked_bytecode_does_not_fail_the_grade",
+   "tests.test_workspace_cases.emission_cases.TestVerificationLawNamesItsCoverage.test_the_byte_identity_clause_names_both_domains",
+   "tests.test_workspace_cases.emission_cases.TestVerificationLawNamesItsCoverage.test_the_mutant_panel_clause_names_membership_carriers_and_placement",
    "tests.test_workspace_cases.grade_cases.RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_backticked_required_grades_the_same_as_a_bare_one",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_already_on_the_callers_head_exits_isolation_missing",
@@ -2866,9 +3043,11 @@
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_a_dirty_tree_records_the_exact_paths_including_both_ends_of_a_rename",
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_from_a_linked_worktree_it_writes_the_main_root_ticket_only",
    "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_in_the_main_checkout_it_exits_zero_and_records",
+   "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_a_pure_lf_ticket_is_still_pure_lf_after_the_stamp",
+   "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b6c6a59bd74eb76ecc1e4fc786877fc5fdf58965d330b4a28f4d0404ac154d86"
+  "sha256": "4e0a54f0f99085e0b1cea38c2e2a0dfbcefcfa98f966b152d2a7792aea5f10f5"
  },
  "mutation_owners": [
   {
@@ -3243,6 +3422,70 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_a_refusal_describes_the_section_it_actually_refused",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_a_section_holding_real_content_keeps_every_protection",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_a_writer_whose_own_content_is_the_sentinel_is_not_told_apart",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_an_empty_section_is_not_the_sentinel_and_stays_append_only",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_only_the_exact_sentinel_bytes_are_the_exception",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_the_first_real_write_consumes_the_sentinel_under_every_flag",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_the_generator_prefills_the_one_sentinel_the_filing_law_names",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_derived_guidance",
+   "owner": "SentinelIsNotContentTest.test_the_help_states_the_append_only_law_the_command_enforces",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -4324,6 +4567,14 @@
    ]
   },
   {
+   "module": "tests.test_mechanical_batch",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
    "module": "tests.test_migrate_state_cases.common",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
@@ -4358,6 +4609,22 @@
   {
    "module": "tests.test_migrate_state_cases.plan",
    "owner": "TestMigrationPlan.test_a_source_that_merely_holds_the_sink_still_migrates",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_project_binding",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_project_binding",
+   "owner": "ProjectBindingFixture.env",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
@@ -4447,6 +4714,22 @@
   },
   {
    "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams.test_a_dead_path_inside_the_checkout_is_residue_wherever_it_sits",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestGuardedSeams.test_a_dead_scratch_path_outside_the_checkout_is_still_dropped",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
    "owner": "TestGuardedSeams.test_an_arbitrary_live_import_path_is_still_rejected",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -4492,6 +4775,30 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests_scope",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests_scope",
+   "owner": "TestNothingSelectedStillOwesItsAdmission.main_over",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests_scope",
+   "owner": "TestSelectionIsAnAnswerNotASample.select",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
@@ -5144,6 +5451,14 @@
    ]
   },
   {
+   "module": "tests.test_tickets_cases.packet_workspace",
+   "owner": "UnboundWorkspaceTableTest",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
    "module": "tests.test_tickets_cases.readiness",
    "owner": "TestReadyReportsWhatItCouldNotGrade.test_the_flat_ticket_family_needs_no_ui_reader_module",
    "restoration": "sharded-module-guard",
@@ -5181,6 +5496,46 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_emitters",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_emitters",
+   "owner": "sink_root",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_emitters",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_gate",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_gate",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -5703,6 +6058,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_validate",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
    ]
   },
   {

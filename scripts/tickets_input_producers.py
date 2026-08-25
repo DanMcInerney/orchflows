@@ -207,7 +207,13 @@ def render_ticket_inputs(text, run, inherited_inputs="", baseline=None):
     if baseline is not None:
         values["baseline"] = baseline
     for group in input_groups(inherited_inputs):
-        if len(group) != 1 or not group[0].startswith("- input: "):
+        # Judged on the opening line alone, never on the group's length: a
+        # root that ends `## Fixed inputs` with prose delivers its final
+        # record inside a two-line group, and reading the length there drops
+        # a record the root plainly states. Same law as
+        # `tickets_dispatch_gate._is_record`, which states it in full; a
+        # record genuinely wrapped across lines still fails to parse below.
+        if not group or not group[0].startswith("- input: "):
             continue
         try:
             item = parse_canonical_json(group[0][len("- input: "):])

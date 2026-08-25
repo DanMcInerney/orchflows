@@ -23,7 +23,7 @@ if __package__:
     from .tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
     from .tickets_commands import LINT_USAGE
     from .tickets_context import graded_admission, run_snapshot
-    from .tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, instruction_words, parse_canonical_json
+    from .tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, effective_write_scope, instruction_words, parse_canonical_json
     from .tickets_issue import AMENDABLE_STATUSES, NEW_DEFAULT_BOUND, _issue_defects
     from .tickets_scope import path_covers
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
@@ -31,7 +31,7 @@ else:
     from tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
     from tickets_commands import LINT_USAGE
     from tickets_context import graded_admission, run_snapshot
-    from tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, instruction_words, parse_canonical_json
+    from tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, effective_write_scope, instruction_words, parse_canonical_json
     from tickets_issue import AMENDABLE_STATUSES, NEW_DEFAULT_BOUND, _issue_defects
     from tickets_scope import path_covers
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
@@ -62,6 +62,20 @@ VCS_PROSE_TOKENS = (
 GLOB_CHARS_RE = re.compile(r'[*?\[\]]')
 PLACEHOLDER_CHARS_RE = re.compile(r'[<>]')
 EXTENSION_RE = re.compile(r'\.[A-Za-z0-9]{1,5}$')
+# The other half of that reading: which clause of an exclusion the path sits in.
+# A prohibition names the path it forbids; a proviso names one the item must
+# re-pin or wait on *in order to* act -- "with tests/pins.json re-pinned" grants
+# pins.json rather than reserving it. Adjacency is the whole rule, as
+# cutcheck's is: a marker anywhere in the sentence would drop live
+# contradictions. Restated, never imported: the architecture map forbids this
+# family importing cutcheck, so the agreement pin is what holds the two equal.
+# The window is a floor, not a tuning: the pattern is anchored to the path's
+# own edge, so every width that holds the longest marker reads alike, and only
+# too short a one is felt -- it slices a word open and reads "herewith" as
+# "with". Spelled a literal here and an alias of `DENIAL_WINDOW` there, so the
+# two are pinned equal by name rather than by either one being the source.
+PERMISSION_RE = re.compile(r'\b(?:with|once|after|provided|unless|except)\s+$', re.I)
+PERMISSION_WINDOW = 24
 # The admission codes whose repair is exactly one mechanical rewrite.
 FIXABLE_ADMISSION = {
     'input-json-noncanonical': 're-emit the record as canonical JSON',
@@ -108,6 +122,38 @@ def _ceiling_finding(ticket_id: str, text: str, data: dict):
     )
 
 
+def _plain(path: str) -> str:
+    """One path's plain spelling: ``./x`` and ``x`` name the same file."""
+    text = str(path).strip()
+    while text[:2] == './':
+        text = text[2:]
+    return text
+
+
+def _prohibits(action: str, target: str) -> bool:
+    """Is ``target`` what this exclusion forbids, or a proviso attached to it?
+
+    Named once outside a permitting clause, the path is forbidden: an exclusion
+    that forbids a path in one clause and permits it in another is still
+    forbidding it, so the reading keeps the prohibition.
+    """
+    start = 0
+    while True:
+        at = action.find(target, start)
+        if at < 0:
+            return False
+        before = action[:at]
+        # ``target`` is the plain spelling and the clause is not: a proviso
+        # written ``with ./x re-pinned`` is found past its own ``./``, which
+        # ends the window in punctuation and hides the marker standing in
+        # front of it. The two halves of this reading have to compose.
+        while before[-2:] == './':
+            before = before[:-2]
+        if not PERMISSION_RE.search(before[max(0, len(before) - PERMISSION_WINDOW):]):
+            return True
+        start = at + 1
+
+
 def _path_tokens(entry: str) -> list:
     """The tokens in one prose action that name a path."""
     found = []
@@ -117,8 +163,9 @@ def _path_tokens(entry: str) -> list:
             continue
         if PLACEHOLDER_CHARS_RE.search(token):
             continue
-        if '/' in token or EXTENSION_RE.search(token):
-            found.append(token)
+        plain = _plain(token)
+        if plain and ('/' in token or EXTENSION_RE.search(token)):
+            found.append(plain)
     return found
 
 
@@ -132,13 +179,19 @@ def _contradiction_findings(data: dict) -> list:
     it may make reaches exit 0. Reported here, the producer sees it while the
     draft is still a draft. Semantic on purpose: which of the two the author
     meant is a decision, so `--fix` may not pick one.
+
+    The path has to be the one the exclusion *forbids*: named under a proviso
+    it is granted, not reserved, and `./x` and `x` are one path on both sides.
     """
     scope = _scope_entries(data.get('write_scope'))
     findings = []
     for action in _scope_entries(data.get('excluded_actions')):
         for target in _path_tokens(action):
+            if not _prohibits(action, target):
+                continue
             for entry in scope:
-                if path_covers(target, entry) or path_covers(entry, target):
+                plain = _plain(entry)
+                if path_covers(target, plain) or path_covers(plain, target):
                     findings.append(_finding(
                         'scope-contradiction', f'excluded_actions: {action} | {entry}',
                     ))
@@ -146,13 +199,42 @@ def _contradiction_findings(data: dict) -> list:
     return findings
 
 
-def _oracle_findings(text: str, tree: Path) -> list:
+def _own_modules(command: str, tree: Path, scope: list) -> bool:
+    """Does every module this oracle names sit inside this item's own scope?
+
+    `_whole_suite` owns the shape question -- whether a command names a node
+    or a whole module -- and this owns a different one, so it reads the scope
+    rather than re-asking that. A whole module discriminates nothing *between
+    siblings*, which is the finding's whole subject; but a module the item
+    itself was granted is the item's own artifact, and no sibling runs it
+    because no sibling may write it. Naming it whole names exactly this
+    item's work, so the finding over it is a false one -- the shape it
+    convicts is the shape a unit that authors its own test module has.
+
+    Every resolvable module must be covered, not merely one: an oracle
+    naming its own module beside the whole suite still runs the suite.
+    """
+    named = []
+    for token in command.split():
+        if token[:1] in ('-', '"', "'"):
+            continue
+        path = token if '/' in token else token.replace('.', '/')
+        path = path if path.endswith('.py') else path + '.py'
+        if (tree / path).is_file():
+            named.append(path)
+    if not named:
+        return False
+    return all(any(path_covers(entry, path) for entry in scope) for path in named)
+
+
+def _oracle_findings(text: str, tree: Path, scope=None) -> list:
     """One finding per criterion whose oracle runs the suite it is stated under."""
+    scope = list(scope or [])
     findings = []
     for number, criterion in enumerate(_criteria(_sections(text).get('Completion test', '')), start=1):
         match = ORACLE_RE.search(criterion)
         command = match.group(1).strip(' `.,;*') if match else ''
-        if command and _whole_suite(command, tree):
+        if command and _whole_suite(command, tree) and not _own_modules(command, tree, scope):
             findings.append(_finding(
                 'whole-suite-oracle',
                 f'criterion {number} names `{command}`, which runs the identical tests under every item '
@@ -203,7 +285,7 @@ def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued
     if _sections(text).get('Result', '').strip():
         for item in grade_result(ticket_id, text, dict(siblings or {}))['findings']:
             findings.append(_finding(str(item.get('code') or ''), f"{item.get('field')}: {item.get('detail')}"))
-    findings.extend(_oracle_findings(text, tree or _repo_tree()))
+    findings.extend(_oracle_findings(text, tree or _repo_tree(), effective_write_scope(data)))
     seen, ordered = set(), []
     for item in sorted(findings, key=lambda row: (row['code'], row['message'])):
         key = (item['code'], item['message'])

@@ -7,7 +7,7 @@ Stdlib only, Python 3.9+, POSIX and Windows.
 
 Usage:
     python tools/run_tests.py [-j N] [-v] [--tests-dir DIR]
-        [--scope PATH[,PATH]] [MODULE ...]
+        [--scope PATH[,PATH] | MODULE ...]
 """
 
 from __future__ import annotations
@@ -35,23 +35,15 @@ DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
 TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
 DEFAULT_COLD_ORDER = (
-    "tests.test_installer_planning",
-    "tests.test_installer_shared",
-    "tests.test_cutcheck",
-    "tests.test_tickets",
-    "tests.test_workspace",
-    "tests.test_installer_hosts",
-    "tests.test_installer_receipt",
-    "tests.test_validate",
+    "tests.test_installer_planning", "tests.test_installer_shared",
+    "tests.test_cutcheck", "tests.test_tickets",
+    "tests.test_workspace", "tests.test_installer_hosts",
+    "tests.test_installer_receipt", "tests.test_validate",
 )
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
-    os.path.normcase(os.path.abspath(str(path)))
-    for path in (
-        ROOT,
-        ROOT / "scripts",
-        ROOT / "benchmarks" / "benchmaker" / "tools",
-        ROOT / "skills" / "utilities" / "orch-visualize" / "scripts",
-    )
+    os.path.normcase(os.path.abspath(str(ROOT / relative)))
+    for relative in (".", "scripts", "benchmarks/benchmaker/tools",
+                     "skills/utilities/orch-visualize/scripts")
 )
 
 # --- child: run one module in this interpreter ------------------------
@@ -82,9 +74,14 @@ def restore_guarded_state(before: dict) -> list[str]:
     return ["os.environ"] if changed else []
 
 def meaningful_sys_path(entries):
-    """Drop dead scratch roots and the exact suite bootstrap roots."""
+    """Drop dead scratch roots and the exact suite bootstrap roots.
+
+    Scratch is judged strictly outside this checkout, so a checkout that sits
+    under the system temp root earns the same verdict as one that does not.
+    """
 
     temp_root = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
+    checkout = os.path.normcase(os.path.realpath(str(ROOT))) + os.sep
     meaningful = []
     for entry in entries:
         try:
@@ -99,7 +96,8 @@ def meaningful_sys_path(entries):
             in_scratch = os.path.commonpath((temp_root, absolute)) == temp_root
         except ValueError:
             in_scratch = False
-        if in_scratch and absolute != temp_root and not os.path.exists(absolute):
+        if (in_scratch and not absolute.startswith(checkout)
+                and absolute != temp_root and not os.path.exists(absolute)):
             continue
         meaningful.append(entry)
     return tuple(meaningful)
@@ -232,16 +230,9 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     handle, result_path = tempfile.mkstemp(prefix="run_tests_", suffix=".json")
     os.close(handle)
     command = [
-        sys.executable,
-        str(Path(__file__).resolve()),
-        "--child",
-        module,
-        "--import-root",
-        str(import_root),
-        "--result-file",
-        result_path,
-        "--child-verbosity",
-        str(verbosity),
+        sys.executable, str(Path(__file__).resolve()), "--child", module,
+        "--import-root", str(import_root), "--result-file", result_path,
+        "--child-verbosity", str(verbosity),
     ]
     started = time.monotonic()
     # Bytes, not text=True: a child may emit anything, and a decode error
@@ -406,10 +397,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("modules", metavar="MODULE", nargs="*", help="module name or path to run")
     parser.add_argument(
-        "-j",
-        "--jobs",
-        type=int,
-        default=os.cpu_count() or 1,
+        "-j", "--jobs", type=int, default=os.cpu_count() or 1,
         help="worker processes (default: CPU count); -j 1 runs modules one at a time in order",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose child test output")
@@ -436,6 +424,7 @@ def main(argv=None) -> int:
         return run_child(args.child, args.import_root, args.result_file, args.child_verbosity)
     if args.jobs < 1:
         raise SystemExit("run_tests: -j must be at least 1")
+    run_tests_scope.refuse_positional(args.scope, args.modules)
 
     tests_dir = Path(args.tests_dir).resolve()
     if not tests_dir.is_dir():
@@ -443,9 +432,14 @@ def main(argv=None) -> int:
     import_root, prefix, discovered = discover(tests_dir)
     if not discovered:
         raise SystemExit("run_tests: no test_*.py under " + str(tests_dir))
-    if tests_dir == DEFAULT_TESTS_DIR.resolve() and not args.modules:
+    # Over the sources this run named rather than the whole tree, and ahead of
+    # the selection: a scope reaching no module exits 0 in there, which would
+    # carry the admission the run still owes away with it.
+    admitted = run_tests_scope.admission_paths(
+        args.scope, args.modules, tests_dir == DEFAULT_TESTS_DIR.resolve())
+    if admitted is not None:
         size_check = subprocess.run(
-            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")],
+            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")] + admitted,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=child_env(),

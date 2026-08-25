@@ -1,7 +1,6 @@
 ---
 id: 03-result
 executor: orch-verify
-pack: orch-code-pack
 depends_on: [02-campaign]
 write_scope: []
 bound: <= 30 tool calls

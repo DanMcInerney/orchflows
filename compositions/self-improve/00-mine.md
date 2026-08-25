@@ -1,10 +1,13 @@
 ---
 id: 00-mine
 executor: orch-self-improve
-pack: orch-code-pack
 depends_on: []
 write_scope: []
 bound: <= 60 tool calls
+excluded_actions:
+  - editing any artifact of the mined workspace
+  - editing a friction entry or a prior covered line
+  - ranking a proposal on evidence a covered watermark already answers
 independence: checker
 isolation: none
 profile: orch-planner
@@ -21,7 +24,7 @@ target, or the finding that nothing qualified.
 ## Fixed inputs
 
 - input: {"name":"window","type":"literal","value":"{{window}}"}
-- input: {"identity":{"kind":"artifact","locator":"project:rules/improvement.md","sha256":"5855133149c60da7eea97a3ae8430affdc0cc5e0f1fde0c5355d1ecf4c0e616c"},"name":"improvement-law","type":"identity"}
+- input: {"name":"improvement-law","type":"literal","value":"rules/improvement.md in the orchflows library, whose §4 states the qualification and ranking this run applies"}
 
 ## Completion test
 

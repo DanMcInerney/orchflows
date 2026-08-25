@@ -100,7 +100,7 @@ class RunTerminalTimingTest(unittest.TestCase):
             )
             self.assertNotIn("error", root)
             unit = run_cmd(
-                repo, "new", "testrun", "R.01", "--executor", "orch-tdd",
+                repo, "new", "testrun", "R.01", "--executor", "orch-investigate",
                 "--objective", "unit", "--criterion",
                 "x | oracle: y | oracle_class: deterministic",
                 "--depends-on", "R", "--write-scope", "scratch/unit.txt",

@@ -58,6 +58,7 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
         "run-state",
         "seal",
         "set-status",
+        "stamp-generation",
         "worklog",
     }
     SIBLING_IMPORTS = {

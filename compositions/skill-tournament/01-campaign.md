@@ -1,7 +1,6 @@
 ---
 id: 01-campaign
 executor: orch-frontier
-pack: orch-code-pack
 depends_on: [00-benchmark]
 write_scope: [{{surface}}]
 bound: {{bound}}

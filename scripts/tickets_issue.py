@@ -3,17 +3,17 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, instruction_words, ticket_defects
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
-    from .tickets_transitions import pending_admission
+    from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
 else:
-    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, INSTRUCTION_BUDGET, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, instruction_words, ticket_defects
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
-    from tickets_transitions import pending_admission
+    from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from tickets_emission import grade_run_emission
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
 def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
 def _invalidate_assignment(text): data = _parse_frontmatter(text); text = _set_frontmatter_field(text, 'admission', _pending_admission(data)); return _remove_frontmatter_field(text, 'assignment_seal') if is_v2(data) else text
@@ -262,19 +262,18 @@ def _amend_under_run_lock(rest):
     if failure is not None:
         return failure
     frontmatter = _parse_frontmatter(text)
-    claimed_by = str(frontmatter.get('claimed_by') or '').strip()
-    if claimed_by:
-        return {'error': f"ticket {run}/{ticket_id} is claimed by '{claimed_by}': its cut-time sections are frozen once an executor is working against them (rules/verification.md §3). Queue the change as its own scope, or take the claim back first"}
-    status = str(frontmatter.get('status') or '').strip()
-    if status not in AMENDABLE_STATUSES:
-        return {'error': f"ticket {run}/{ticket_id} is '{status}': its cut-time sections are frozen outside {sorted(AMENDABLE_STATUSES)} (rules/verification.md §3). Queue the change as its own scope"}
     snapshot, failure = _exact_run_snapshot(ticket_path.parent)
     if failure is not None:
         return failure
+    status = str(frontmatter.get('status') or '').strip()
+    claimed_by = str(frontmatter.get('claimed_by') or '').strip()
+    if claimed_by or status not in AMENDABLE_STATUSES:
+        held = f"is claimed by '{claimed_by}'" if claimed_by else f"is '{status}'"
+        return {'error': cut_refusal(f'ticket {run}/{ticket_id} {held}: its cut-time sections are frozen while an executor works against them (rules/verification.md §3)', 'amend', status, ticket_id, text, snapshot, note=CUT_QUEUE_NOTE)}
     if str(frontmatter.get('checked_by') or '').strip():
         return {'error': f"ticket {run}/{ticket_id} has an immutable checked_by cut reader: further cut-time amendment is refused"}
     if cohort_sealed(ticket_id, text, snapshot):
-        return {'error': f"ticket {run}/{ticket_id} belongs to a sealed cohort: cut-time amendment is refused"}
+        return {'error': refusal(f'ticket {run}/{ticket_id} belongs to a sealed cohort', 'amend', status, note=CUT_QUEUE_NOTE, sealed=True)}
     try:
         rendered = _write_section(text, canonical, body)
     except TicketFormatError as error:
@@ -289,7 +288,7 @@ def _amend_under_run_lock(rest):
     rendered = _set_frontmatter_field(rendered, 'status', 'pending')
     rendered = _invalidate_assignment(rendered)
     rendered = _cohort_field(rendered, cohort)
-    failure = _replace_and_invalidate(ticket_path.parent, snapshot, ticket_id, rendered, {cohort} - {''})
+    failure = _replace_and_invalidate(ticket_path.parent, snapshot, ticket_id, rendered, {cohort} - {''}, 'amend')
     if failure is not None:
         return failure
     return {'amend': {'run': run, 'id': ticket_id, 'section': canonical, 'path': str(ticket_path)}}
@@ -305,8 +304,9 @@ def _exact_run_snapshot(run_dir):
     return (texts, None)
 
 
-def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts):
+def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, door='amend'):
     """Write one replacement and invalidate every old/new cohort member."""
+    if (refusal := grade_run_emission(door, run_dir.name, run_dir, {ticket_id: replacement}, repairs=True)) is not None: return refusal
     updates = {}
     for member_id, prior in snapshot.items():
         data = _parse_frontmatter(prior)
@@ -367,15 +367,15 @@ def _recut_under_run_lock(rest):
         return failure
     current_data = _parse_frontmatter(current)
     status = str(current_data.get('status') or '')
-    if status not in AMENDABLE_STATUSES:
-        return {'error': f"ticket {run}/{ticket_id} is '{status}': recut accepts only pending or ready tickets"}
     snapshot, failure = _exact_run_snapshot(target.parent)
     if failure is not None:
         return failure
+    if status not in AMENDABLE_STATUSES:
+        return {'error': cut_refusal(f"ticket {run}/{ticket_id} is '{status}'", 'recut', status, ticket_id, current, snapshot)}
     if str(current_data.get('checked_by') or '').strip():
         return {'error': f"ticket {run}/{ticket_id} has an immutable checked_by cut reader: recut is refused"}
     if cohort_sealed(ticket_id, current, snapshot):
-        return {'error': f"ticket {run}/{ticket_id} belongs to a sealed cohort: recut is refused"}
+        return {'error': refusal(f'ticket {run}/{ticket_id} belongs to a sealed cohort', 'recut', status, sealed=True)}
     candidate, failure = _read_utf8(candidate_path, 'recut candidate')
     if failure is not None:
         return failure
@@ -406,7 +406,7 @@ def _recut_under_run_lock(rest):
     over = _ceiling_error(f'the recut ticket {run}/{ticket_id}', ticket_id, candidate)
     if over is not None:
         return over
-    failure = _replace_and_invalidate(target.parent, snapshot, ticket_id, candidate, {value for value in (old_cohort, new_cohort) if value})
+    failure = _replace_and_invalidate(target.parent, snapshot, ticket_id, candidate, {value for value in (old_cohort, new_cohort) if value}, 'recut')
     if failure is not None:
         return failure
     return {'recut': {'run': run, 'id': ticket_id, 'path': str(target), 'cohort': new_cohort or None, 'status': 'pending', 'admission': _pending_admission(candidate_data)}}
@@ -421,15 +421,16 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
     `.gate.` stub carries the root's `## Completion test` verbatim -- `gate`
     renders them from it -- so grading either against the unit ceiling would
     refuse what this script itself writes.
+    Who is exempt is decided here; what the words come to is
+    `tickets_ceiling`'s, sentence included, so the refusal prints the
+    per-part arithmetic it had to compute to refuse at all.
     """
     if GATE_ID_MARKER in str(ticket_id or ''):
         return None
     if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
         return None
-    count = instruction_words(text)
-    if count <= INSTRUCTION_BUDGET:
-        return None
-    return {'error': f'{subject} has a {count}-word instruction, over the {INSTRUCTION_BUDGET}-word ceiling (rules/token-economy.md, section 11): the objective, completion test, excluded actions and return fields a child loads every dispatch, never its fixed inputs. A compound objective is two items, not one longer ticket'}
+    sentence = ceiling_sentence(subject, text)
+    return None if sentence is None else {'error': sentence}
 def _issue_defects(text: str, *, issued: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 
@@ -478,6 +479,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         with _run_lock(run):
             if ticket_path.exists():
                 return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
+            if (refusal := grade_run_emission('new', run, ticket_path.parent, {ticket_id: text})) is not None: return refusal
             data = _parse_frontmatter(text)
             if _executor_of(data) == ROOT_EXECUTOR:
                 existing_roots = []

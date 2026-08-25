@@ -110,4 +110,4 @@
     behavior is preserved; v1 pending, receipt, cohort, ready, claim, and
     packet semantics do not change. A named-field or enum change to the work
     item or pack signature lands as explicit T0 supersession with
-    `tests/pins.json` re-pinned.
+    tests/pins.json re-pinned.

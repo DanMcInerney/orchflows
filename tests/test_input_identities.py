@@ -206,6 +206,36 @@ class InputRecordTest(unittest.TestCase):
         }
         self.assertEqual("sink:documents/run/", literals["document-root"])
 
+    def test_the_harvest_reads_a_roots_last_record_under_trailing_prose(self):
+        """`input_groups` attaches every later non-blank line to the group the
+        last `- ` opened, so a root whose `## Fixed inputs` ends in a line of
+        prose delivers its final record inside a two-line group. Judging that
+        group by its length drops the record -- and when it is the one naming
+        the document or evidence-store root, the rendering refuses a root that
+        plainly states it. `tickets_dispatch_gate._is_record` owns the
+        corrected law; this is its twin in the harvest, and it is asserted at
+        this function rather than through the gate because the gate also
+        inherits the record verbatim and so masks the defect there.
+        """
+
+        child = ticket(record("question", value="exact"), pack="orch-content-pack",
+                       executor="orch-draft")
+        inherited = record("document-root", value="sink:documents/run/")
+
+        for label, body in (("lone record", inherited),
+                            ("record under prose", inherited + "\n\nReading order follows.")):
+            with self.subTest(label):
+                text, error = tickets_input_producers.render_ticket_inputs(
+                    child, "run", body)
+
+                self.assertIsNone(error, label)
+                literals = {
+                    item["name"]: item.get("value")
+                    for item in tickets_inputs.parse_input_records(text)["records"]
+                    if item["type"] == "literal"
+                }
+                self.assertEqual("sink:documents/run/", literals.get("document-root"))
+
     def test_cutcheck_renders_the_shared_input_codes_unchanged(self):
         revision = tickets_input_producers.git_head()
         inputs = "\n".join((

@@ -17,7 +17,7 @@ has coordinated owners with one-way dependencies:
   mechanics. Only the catalog-selected mounted feature polls.
 - `docs/ui/view-manifest.json` names every deterministic visual identity and
   its wide or compact viewport.
-- `tools/ui_frontend.py` captures, audits, and classifies diffs for that
+- tools/ui_frontend.py captures, audits, and classifies diffs for that
   manifest without admitting captures or goldens to source control.
 
 The audit traverses every manifest identity at its ordinary viewport and also

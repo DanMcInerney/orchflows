@@ -167,12 +167,19 @@ claimed_at:
 """
 
 
-def ceiling_ticket(total, inputs="None.", executor="orch-tdd", ticket_id="T1"):
+def ceiling_ticket(total, inputs="None.", executor="orch-investigate", ticket_id="T1"):
     """One ticket whose instruction is exactly ``total`` words.
 
     The objective takes whatever the excluded actions, the criterion and the
     return fields have not already spent; `## Fixed inputs` is free of the
     count by law, so a caller pads it to prove exactly that.
+
+    The default executor is pack-less on purpose. This template declares no
+    pack and no isolation, so an `orch-tdd` default made every ticket built
+    from it one `claim` refuses for `vcs-adapter-required` and
+    `vcs-isolation-required` -- a refusal about the executor arriving in
+    cases whose whole subject is the word count. A caller testing the
+    executor names one.
     """
 
     spent = sum(

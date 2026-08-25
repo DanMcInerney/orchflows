@@ -163,6 +163,7 @@ class V1ProducerTest(unittest.TestCase):
             "new", "testrun", "T1", "--executor", "orch-tdd",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
             "--pack", "orch-code-pack", "--isolation", "required",
+            "--write-scope", "scripts/tool.py",
             "--input", record, "--mutation", "change:scripts/tool.py",
         )
         text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
@@ -171,7 +172,7 @@ class V1ProducerTest(unittest.TestCase):
 
     def test_new_without_inputs_has_no_legacy_prose_sentinel(self):
         payload = run_cmd(
-            "new", "testrun", "T1", "--executor", "orch-tdd",
+            "new", "testrun", "T1", "--executor", "orch-investigate",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
         )
         text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
@@ -179,13 +180,13 @@ class V1ProducerTest(unittest.TestCase):
 
     def test_explicit_root_cohort_is_validated(self):
         refused = run_cmd(
-            "new", "testrun", "T1", "--executor", "orch-tdd",
+            "new", "testrun", "T1", "--executor", "orch-investigate",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
             "--cohort", "not-a-cohort",
         )
         self.assertIn("cohort", refused["error"])
         accepted = run_cmd(
-            "new", "testrun", "T1", "--executor", "orch-tdd",
+            "new", "testrun", "T1", "--executor", "orch-investigate",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
             "--cohort", "v1:root:R",
         )
@@ -231,7 +232,7 @@ class V1ProducerTest(unittest.TestCase):
             for record in records:
                 self.assertRegex(record["name"], r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 
-    def test_gate_stubs_share_the_roots_cut_cohort(self):
+    def test_gate_stubs_issue_in_their_own_cohorts(self):
         run_dir = self.sink / "tickets" / "testrun"
         run_dir.mkdir(parents=True)
         root = GOOD_TICKET.replace("id: T1", "id: R").replace("executor: orch-tdd", "executor: orch-decompose")
@@ -245,7 +246,7 @@ class V1ProducerTest(unittest.TestCase):
             text = Path(path).read_text(encoding="utf-8")
             self.assertIn("status: pending", text)
             self.assertIn(V1_PENDING, text)
-            self.assertIn("cohort: v1:root:R", text)
+            self.assertIn(f"cohort: v1:ticket:{Path(path).stem}", text)
             inputs = tickets_mod._sections(text)["Fixed inputs"]
             for line in inputs.splitlines():
                 if line.strip():

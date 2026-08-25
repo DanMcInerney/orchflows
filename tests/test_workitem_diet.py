@@ -28,7 +28,7 @@ PACK_SIGNATURE = ROOT / "contracts" / "pack-signature.md"
 VERIFICATION = ROOT / "rules" / "verification.md"
 FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
 SPEC = ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md"
-LIFECYCLE = ROOT / "scripts" / "tickets_lifecycle.py"
+PROJECT = ROOT / "scripts" / "tickets_project.py"
 BOUND = ROOT / "scripts" / "tickets_bound.py"
 
 #: contracts/work-item.md is shape, not procedure; the ceiling is what
@@ -38,9 +38,14 @@ LINE_CEILING = 180
 #: Each relocated passage: the markers that must have left the contract,
 #: the owner that must carry them, and the markers proving it does.
 RELOCATIONS = {
+    # The claim-admission seam left tickets_lifecycle.py for tickets_project.py,
+    # where the project binding it now grades also lives. The owner moves with
+    # the passage: `_admit_ready_cas` still compare-and-swaps in the lifecycle
+    # module, but it swaps into `ready` and not into a live claim, so naming it
+    # here would keep the row green off a phrase that no longer describes it.
     "claim compare-and-swap": {
         "gone_from_contract": ("compare-and-swap", "portable grader"),
-        "owner": LIFECYCLE,
+        "owner": PROJECT,
         "owner_carries": ("compare-and-swap", "live claim"),
     },
     "successors ownership": {

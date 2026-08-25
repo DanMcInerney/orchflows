@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 if __package__:
     from .tickets_format import FIELD_GLOSS_RE, FIELD_WORD_RE, PLACEHOLDER_RE, REQUIRED_FIELDS_CELL, REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE, TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8, _section_body, _sections, ticket_defects
@@ -345,13 +346,34 @@ def _quoted(body: str) -> list:
 def _claim_order(items: list) -> list:
     """Tickets in `claimed_at` order, the never-claimed last by id."""
     return sorted(items, key=lambda item: (not str(item.get('claimed_at') or '').strip(), str(item.get('claimed_at') or ''), item['id']))
+def _on_offer(item: dict) -> str:
+    """How long a ready, unclaimed item has been waiting to be taken up.
+
+    A ticket carries no `ready_at`: `ready` writes the status and the
+    admission receipt and stamps no time of its own, so the file's last
+    write is the closest honest reading -- for an item that is ready and
+    still unclaimed, that write is the promotion. Reported as what it is,
+    an age since that write, and only for the one state where the two
+    coincide. `never claimed` alone said nothing about a queue standing
+    still, which is the whole thing a reader of this view is looking for.
+    """
+    path = item.get('path')
+    if not path:
+        return ''
+    try:
+        written = datetime.fromtimestamp(Path(path).stat().st_mtime, timezone.utc)
+    except OSError:
+        return ''
+    minutes = int(max(0.0, (datetime.now(timezone.utc) - written).total_seconds()) // 60)
+    return f', on offer {minutes}m' if minutes else ', on offer under a minute'
 def _render_worklog(run: str, items: list, root: dict, kind: str='root') -> str:
     """The run view: contracts/worklog.md's fields, answered from tickets."""
     sections = root.get('sections') or {}
     lines = [WORKLOG_RENDER_MARKER, '', f'# run {run}', '', f"Rendered from this run's tickets by `tickets.py worklog {run}`. The ticket directory is the state; this file is a view of it, and an edit made here is lost at the next render.", '', '## goal', '', f'{kind.capitalize()} ticket `{root["id"]}` — executor `{_executor_of(root) or "none"}`.', '', 'Objective:', '', *_quoted(sections.get('Objective')), '', 'Completion test:', '', *_quoted(sections.get('Completion test')), '', '## iterations', '']
     for item in _claim_order(items):
         stamp = str(item.get('claimed_at') or '').strip()
-        lines.append(f'- `{item["id"]}` — executor `{_executor_of(item) or "none"}` — status `{item.get("status") or "none"}` — ' + (f'claimed {stamp}' if stamp else 'never claimed'))
+        waiting = _on_offer(item) if not stamp and str(item.get('status') or '').strip() == 'ready' else ''
+        lines.append(f'- `{item["id"]}` — executor `{_executor_of(item) or "none"}` — status `{item.get("status") or "none"}` — ' + (f'claimed {stamp}' if stamp else 'never claimed' + waiting))
         verification = (item.get('sections') or {}).get('Verification')
         if str(verification or '').strip():
             lines.extend(['', *_quoted(verification), ''])

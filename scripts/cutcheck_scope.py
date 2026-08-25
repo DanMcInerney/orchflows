@@ -45,6 +45,22 @@ try:  # repository checkout
 except ImportError:  # installed flat script directory
     import tickets_scope as _tickets_scope
 
+# Which clause of an exclusion a path is named in. A prohibition names the path
+# it forbids; a proviso names one the item must re-pin or wait on *in order to*
+# act, and forbids nothing about it -- "with tests/pins.json re-pinned" says the
+# item may write pins.json, so reading it as prohibitive contradicts a grant the
+# ticket never contradicted. Adjacency is the whole rule, exactly as
+# ``DENIAL_RE``'s is: the permitting clauses this corpus states put the marker
+# immediately in front of the path, and a window merely scanned for the word
+# would drop live contradictions that say "after" earlier in the same sentence.
+# The window is a floor, not a tuning: the pattern is anchored to the path's
+# own edge, so every width that holds the longest marker reads alike, and only
+# too short a one is felt -- it slices a word open and reads "herewith" as
+# "with". Both the words and the width are restated in ``tickets_lint`` and
+# pinned equal there; neither may be moved on one side alone.
+PERMISSION_RE = re.compile(r"\b(?:with|once|after|provided|unless|except)\s+$", re.I)
+PERMISSION_WINDOW = DENIAL_WINDOW
+
 def _flat(text):
     return " ".join(text.split())
 
@@ -91,6 +107,45 @@ def _granted(frontmatter, siblings):
     return scopes
 
 
+def _plain(path):
+    """One path's plain spelling: ``./x`` and ``x`` name the same file.
+
+    ``path_covers`` folds a backslash and a trailing slash away already. The
+    leading ``./`` it leaves is the third spelling of one path, and left
+    standing it invents unscoped writes and hides real contradictions at once.
+    """
+
+    text = str(path).strip()
+    while text[:2] == "./":
+        text = text[2:]
+    return text
+
+
+def _prohibits(action, target):
+    """Is ``target`` what this exclusion forbids, or a proviso attached to it?
+
+    Named once outside a permitting clause, the path is forbidden. An exclusion
+    that forbids a path in one clause and permits it in another is still
+    forbidding it, so the reading keeps the prohibition and reports it.
+    """
+
+    start = 0
+    while True:
+        at = action.find(target, start)
+        if at < 0:
+            return False
+        before = action[:at]
+        # ``target`` is the plain spelling and the clause is not: a proviso
+        # written ``with ./x re-pinned`` is found past its own ``./``, which
+        # ends the window in punctuation and hides the marker standing in
+        # front of it. The two halves of this reading have to compose.
+        while before[-2:] == "./":
+            before = before[:-2]
+        if not PERMISSION_RE.search(before[max(0, len(before) - PERMISSION_WINDOW):]):
+            return True
+        start = at + 1
+
+
 def _covered(rel, scopes):
     """Is ``rel`` inside one of ``scopes``?
 
@@ -101,9 +156,9 @@ def _covered(rel, scopes):
     happens to be somewhere it could live covers nothing.
     """
 
-    target = rel.strip().strip("/")
+    target = _plain(rel).strip("/")
     for entry in scopes:
-        scope = entry.strip().strip("/")
+        scope = _plain(entry).strip("/")
         if not scope:
             continue
         if _tickets_scope.path_covers(scope, target):
@@ -114,6 +169,7 @@ def _covered(rel, scopes):
 
 
 def _overlaps(left, right):
+    left, right = _plain(left), _plain(right)
     return _tickets_scope.path_covers(left, right) or _tickets_scope.path_covers(right, left)
 
 
@@ -151,8 +207,9 @@ def _paths_in(text):
             continue
         if PLACEHOLDER_RE.search(token):
             continue
-        if "/" in token or DOTTED_RE.search(token):
-            found.append(token)
+        plain = _plain(token)
+        if plain and ("/" in token or DOTTED_RE.search(token)):
+            found.append(plain)
     return found
 
 
@@ -245,6 +302,11 @@ def _scope_closure(frontmatter, prose):
     committing to write. "Write scope" is the grant's name rather than a write,
     and a denied write -- never written, not created -- commits the item to
     nothing at all.
+
+    An exclusion contradicts the grant over the path it *forbids*. A path it
+    names under a proviso is one the item may write, so ``_prohibits`` reads
+    the clause before the contradiction is claimed; ``./x`` and ``x`` are one
+    path on both sides of that reading.
     """
 
     scope = _listed(frontmatter, "write_scope")
@@ -268,6 +330,8 @@ def _scope_closure(frontmatter, prose):
             findings.append((UNSCOPED_WRITE, target))
     for action in _listed(frontmatter, "excluded_actions"):
         for target in _paths_in(action):
+            if not _prohibits(action, target):
+                continue
             for entry in scope:
                 if _overlaps(target, entry):
                     findings.append((SCOPE_CONTRADICTION, "{} | {}".format(action, entry)))
@@ -413,7 +477,7 @@ def _scope_open(frontmatter, objective, tree):
 
 __all__ = (
     '_flat', '_prose', '_listed', '_granted',
-    '_covered', '_overlaps', '_path_args', '_paths_in',
+    '_plain', '_prohibits', '_covered', '_overlaps', '_path_args', '_paths_in',
     '_where', '_cited_text', '_citations', '_path_reality',
     '_scope_closure', '_is_literal', '_literals', '_pins',
     '_pin_index', '_scope_open',

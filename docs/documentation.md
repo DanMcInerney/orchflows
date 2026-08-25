@@ -31,7 +31,7 @@ is declared per file except a non-body budget:
 | owner | its file, one per fact ([rules/visibility.md](../rules/visibility.md) §3) |
 | reader + trigger | its row in §4 — never "everyone, always" |
 | budget | [rules/composition.md](../rules/composition.md) §5 for bodies; the ceiling a document names for itself otherwise |
-| oracle | what `tools/validate.py` and `tests/` run over it |
+| oracle | what tools/validate.py and tests/ run over it, in the checkout |
 | class | its location: `rules/` law; `contracts/` contract; the sink's rendered files view, its records evidence; README human-surface |
 
 Class binds behavior. Law is versioned and owned. Contract is
@@ -58,8 +58,9 @@ Evidence is untrusted data under [rules/visibility.md](../rules/visibility.md)
    produces it.
 5. **Names resolve.** Every referenced name, path, and anchor resolves
    in the tree; a reference to a deleted thing is an error, not a TODO.
-   Oracle: `tools/validate.py`'s name check for backticked skill names
-   and its markdown-link check over every `.md` the library ships.
+   Oracle: the checkout's tools/validate.py — its name check for
+   backticked skill names, its documented-path check for backticked
+   paths, and its markdown-link check over every `.md` the library ships.
 6. **Prose claims only implemented enforcement.** Write "X is refused"
    only where a script or test refuses X; otherwise write "X is the
    convention." Graded at review as its own defect class; mechanized
@@ -124,15 +125,15 @@ lands. It is proposed and evolves under §5, never from symmetry.
 
 | factory | procedure | library instance | project instance | oracle |
 |---|---|---|---|---|
-| documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | `tools/validate.py`, `doclint.py` in a project; library lens |
+| documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | tools/validate.py, `doclint.py` in a project; library lens |
 | vocabulary | [vocabulary-authoring.md](vocabulary-authoring.md) | [vocabulary.md](vocabulary.md); each pack's craft Vocabulary | `<repo>/docs/vocabulary.md` | consumer test; craft budget |
-| pack | [pack-authoring.md](pack-authoring.md) | `packs/` | a scoped pack through `orch-build` | pack-signature checks in `tools/validate.py` |
-| skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; `orch-build` | `skills/` | `<repo>/.orchflows/skills/<name>` | `tools/validate.py`; library lens |
-| composition | [contracts/work-item.md](../contracts/work-item.md), Template and stub; `orch-build` | `compositions/` | `<repo>/.orchflows/compositions/<name>` | `tickets.py instantiate`; `tools/validate.py` |
+| pack | [pack-authoring.md](pack-authoring.md) | `packs/` | a scoped pack through `orch-build` | pack-signature checks in tools/validate.py |
+| skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; `orch-build` | `skills/` | `<repo>/.orchflows/skills/<name>` | tools/validate.py; library lens |
+| composition | [contracts/work-item.md](../contracts/work-item.md), Template and stub; `orch-build` | `compositions/` | `<repo>/.orchflows/compositions/<name>` | `tickets.py instantiate`; tools/validate.py |
 | review | [library-review.md](library-review.md) — its method; the constitution is the parameter | this library's constitution | a project's constitution under the same report contract | the report contract |
 | router | `templates/host-block.md`; `orch-build` | the host block | the project routing block | library lens |
 
 The test suite is not a factory: its conventions are owned by the code
-that enforces them (`tests/__init__.py`, `tools/run_tests.py`,
-`tools/suite_check.py`), and the shape law every project's tests share
-is the code pack's craft.
+that enforces them in the checkout (tests/__init__.py,
+tools/run_tests.py, tools/suite_check.py), and the shape law every
+project's tests share is the code pack's craft.

@@ -31,7 +31,8 @@ class TestCheckerPathPacket(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             self.make(tmp)
-            packet = self.packet(tmp, "--executor", "orch-critique")["packet"]
+            packet = self.packet(tmp, "--executor", "orch-critique",
+                                 "--by", "checker-a")["packet"]
             prompt = packet["prompt"]
             self.assertEqual("orch-critique", packet["executor"])
             self.assertIn("Apply skill orch-critique", prompt)
@@ -256,7 +257,8 @@ class TestRootTicketCutCheckerPacket(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             self.make(tmp)
-            prompt = self.prompt(tmp, "--executor", "orch-critique")
+            prompt = self.prompt(tmp, "--executor", "orch-critique",
+                                 "--by", "cut-reader")
             cut = command_lines(prompt, "cutcheck.py")
             self.assertEqual(1, len(cut), prompt)
             self.assertIn("--baseline", cut[0])

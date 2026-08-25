@@ -2,7 +2,7 @@
 name: self-improve
 description: Mine the state sink's friction and run evidence into one qualified proposal and land it in its owner. Use on demand or closing a run.
 entry: named
-placeholders: [window, workspace]
+placeholders: [window, workspace, run]
 ---
 
 The improvement loop of [rules/improvement.md](../../rules/improvement.md)
@@ -13,7 +13,9 @@ requalifying.
 
 `01-deliver` is a root ticket whose gate verifies the landing.
 
-Instantiate with both placeholders: `window`, the sessions, runs,
-projects, or period the cycle mines, and `workspace`, the repository
-holding the proposal's causal owner — `01-deliver`'s write scope;
-`00-mine` is read-only.
+Instantiate with two: `window`, the sessions, runs, projects, or period
+the cycle mines, and `workspace`, the repository holding the proposal's
+causal owner — `01-deliver`'s write scope; `00-mine` is read-only. The
+third, `run`, is `instantiate`'s own and takes no `--set`: `01-deliver`
+cites `00-mine`'s Result by identity, and an identity naming a ticket
+names the run it is in.

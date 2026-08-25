@@ -137,7 +137,9 @@ class TestPacketNamesTheFilingCommand(unittest.TestCase):
             lines = filing_lines(packet["prompt"])
             self.assertEqual(2, len(lines), packet["prompt"])
             file_line, text_line = lines
-            self.assertEqual(["--section", "SECTION", "--file", "PATH"], file_line.split()[5:])
+            self.assertEqual(
+                ["--section", "SECTION", "--file", "PATH", "--append"], file_line.split()[5:]
+            )
             self.assertEqual(["--section", "SECTION", "--text", "TEXT"], text_line.split()[5:])
             # the placeholder is answerable from the prompt alone
             for section in tickets_mod.EXECUTOR_SECTIONS:

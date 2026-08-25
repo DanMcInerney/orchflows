@@ -84,7 +84,7 @@ class TestRunIdentity(unittest.TestCase):
                 identity_doc("from-state")["orchflows"],
             )
             run_cmd(
-                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-tdd",
+                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-investigate",
                 "--objective", "one", "--criterion",
                 "x | oracle: y | oracle_class: deterministic",
             )

@@ -43,10 +43,9 @@ Subcommands:
     start <run> <id>
     check <run> <id> --base <rev> [--repo <path>]
 
-``check`` grades from the integrating checkout, and refuses at code 6 when
-run from inside the workspace it was asked about. ``--repo <path>`` aims it
-at another checkout instead: every git call and the repository root both
-come from there, so the caller need not stand where the answer lives.
+``--repo <path>`` aims ``check`` at another checkout: every git call and the
+repository root both come from there, so the caller need not stand where the
+answer lives.
 
 ``--help``, on the script or on either subcommand, prints usage on stdout
 and exits 0. It is the one call whose stdout is not a JSON payload: the
@@ -142,8 +141,6 @@ COMMAND_HELP = {
 }
 USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
 HELP_FLAGS = ("--help", "-h")
-
-
 Refused = workspace_git.Refused
 
 
@@ -171,22 +168,21 @@ def _git_out(*args: str) -> str:
 
 
 def _dirty_paths() -> list:
-    """Every path ``git status`` reports, both ends of a rename included."""
-    return workspace_git._dirty_paths(
-        _GIT_CWD, lambda cwd, *args: _git(*args)
-    )
+    """``workspace_git._dirty_paths``, in the tree under grade."""
+    return workspace_git._dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
 
 
 # --- the ticket, always at the main repository root -------------------------
 
 
 _graded = workspace_git._graded
-
-
 _locate = workspace_git._locate
-
-
 _record = workspace_git._record
+_refuse_ungradable_scope = workspace_scope._refuse_ungradable_scope
+_normalized_scope = workspace_scope._normalized_scope
+_in_scope = workspace_scope._in_scope
+_actual_mutations = workspace_scope._actual_mutations
+_sharers = workspace_git._sharers
 
 
 # --- subcommands ------------------------------------------------------------
@@ -198,10 +194,6 @@ def _positional(rest, count: int, command: str) -> list:
     if stray is not None or len(args) != count:
         raise Refused(f"{command} takes <run> <id>. {USAGE}")
     return args
-
-
-_exists_as_path = workspace_scope._exists_as_path
-_refuse_ungradable_scope = workspace_scope._refuse_ungradable_scope
 
 
 def _cmd_start(rest):
@@ -224,7 +216,17 @@ def _cmd_start(rest):
     scope = _normalized_scope(data.get(WRITE_SCOPE_KEY), top, root)
     branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
-    baseline = workspace_git._baseline(head, dirty)
+    # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
+    # --baseline``, so it goes on naming the revision the item was cut from,
+    # never the moved tree a re-establishment stands in -- a second executor
+    # turn, or the step a read-only verifier is itself required to run. The
+    # observation is reported under its own key instead of recorded: a second
+    # stamp would have to be a key ``contracts/work-item.md`` declares.
+    # Computed either way: this call also refuses a dirty path no
+    # comma-joined frontmatter scalar could carry unambiguously.
+    observed = workspace_git._baseline(head, dirty)
+    stamped = str(data.get(BASELINE_KEY) or "").strip()
+    baseline = stamped or observed
     outcome = _record(path, prior_text, branch, baseline)
     if "error" in outcome:
         raise Refused(outcome["error"])
@@ -241,6 +243,8 @@ def _cmd_start(rest):
             "ticket": str(path),
             BRANCH_KEY: branch,
             BASELINE_KEY: baseline,
+            # present only on a re-establishment, which its presence declares
+            **({"reestablished": observed} if stamped else {}),
             "workspace_root": str(top),
             "main_root": str(root),
             # a linked tree is necessary, and no longer sufficient
@@ -263,11 +267,6 @@ def _extract_flag(args: list, flag: str):
         del args[index : index + 1]
     return None
 
-
-_normalized_scope = workspace_scope._normalized_scope
-_in_scope = workspace_scope._in_scope
-_actual_mutations = workspace_scope._actual_mutations
-_sharers = workspace_git._sharers
 
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
     return workspace_git._is_ancestor(_git, ancestor, descendant)
@@ -397,12 +396,22 @@ def _cmd_check(rest):
     ticket_worktree = workspace_git._ticket_worktree(_git_out, branch, tip)
     if ticket_worktree is not None:
         dirty = workspace_git._dirty_paths(str(ticket_worktree))
+        # Emission, not the item's change: an acceptance oracle imports the
+        # tree it grades and CPython writes bytecode beside it, so counting
+        # those bytes fails the item for having been verified. By path shape,
+        # never by tracked status -- the verdict this replaced fired on
+        # bytecode a frozen baseline tracked. Reported, never dropped.
+        emitted = sorted(name for name in dirty
+                         if name.endswith((".pyc", ".pyo")) or "__pycache__" in name.split("/"))
+        dirty = sorted(set(dirty) - set(emitted))
+        if emitted:
+            reported["emission"] = emitted
         if dirty:
             raise Refused(
                 f"branch {branch!r} still has uncommitted bytes in its isolated worktree: "
-                + ", ".join(sorted(dirty)),
+                + ", ".join(dirty),
                 EXIT_SCOPE_BREACH,
-                dirty=sorted(dirty),
+                dirty=dirty,
             )
 
     actual = _actual_mutations(_git_out(
@@ -411,16 +420,11 @@ def _cmd_check(rest):
     operation_breaches = tickets_scope.unplanned_mutations(data, actual) if workspace_scope._operation_plan_required(data) else []
     path_breaches = [name for name in changed if not _in_scope(name, scope)]
     breaches = sorted(set(path_breaches) | {path for _, path in operation_breaches})
-    reported.update(
-        {
-            BRANCH_KEY: branch,
-            "tip": tip,
-            "base": base_commit,
-            "changed": changed,
-            "mutations": [f"{operation}:{path}" for operation, path in actual],
-            WRITE_SCOPE_KEY: list(scope),
-        }
-    )
+    reported.update({
+        BRANCH_KEY: branch, "tip": tip, "base": base_commit, "changed": changed,
+        "mutations": [f"{operation}:{path}" for operation, path in actual],
+        WRITE_SCOPE_KEY: list(scope),
+    })
     if breaches:
         raise Refused(
             f"branch {branch!r} changed {len(breaches)} path(s) outside {WRITE_SCOPE_KEY}: {', '.join(breaches)}",
@@ -488,11 +492,8 @@ def main(argv=None) -> int:
     try:
         payload, code = handler(arguments[1:])
     except Refused as refusal:
-        reported = {
-            "error": str(refusal),
-            "code": refusal.code,
-            "verdict": VERDICTS.get(refusal.code, "error"),
-        }
+        reported = {"error": str(refusal), "code": refusal.code,
+                    "verdict": VERDICTS.get(refusal.code, "error")}
         reported.update(refusal.detail)
         print(json.dumps(reported, ensure_ascii=False))
         print(f"workspace: {refusal}", file=sys.stderr)

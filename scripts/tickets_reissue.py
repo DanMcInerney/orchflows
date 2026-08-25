@@ -21,16 +21,18 @@ import hashlib
 import tempfile
 from pathlib import Path
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort, ticket_cohort, valid_cohort
+    from .tickets_admission import batch_cohort, root_cohort, ticket_cohort, valid_cohort
     from .tickets_commands import REISSUE_USAGE
+    from .tickets_transitions import LEASE_FIELDS, stamp
     from .tickets_format import EXECUTOR_SECTIONS_BY_KEY, ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _scope_entries, _sections, _set_frontmatter_field, _split_commas, _write_section, canonical_json, parse_canonical_json
     from .tickets_inputs import section_body
     from .tickets_issue import _place_ticket
     from .tickets_lint import _cmd_lint
     from .tickets_store import NO_SINK_ERROR, _load_ticket, _segment_error, _tickets_root
 else:
-    from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort, ticket_cohort, valid_cohort
+    from tickets_admission import batch_cohort, root_cohort, ticket_cohort, valid_cohort
     from tickets_commands import REISSUE_USAGE
+    from tickets_transitions import LEASE_FIELDS, stamp
     from tickets_format import EXECUTOR_SECTIONS_BY_KEY, ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _scope_entries, _sections, _set_frontmatter_field, _split_commas, _write_section, canonical_json, parse_canonical_json
     from tickets_inputs import section_body
     from tickets_issue import _place_ticket
@@ -44,7 +46,12 @@ else:
 LIFECYCLE_FIELDS = ('checked_by', 'workspace_branch', 'workspace_baseline',
                     'root_generation', 'cut_generation', 'ownership_regions',
                     'assignment_seal')
-BLANKED_FIELDS = ('claimed_by', 'claimed_at')
+BLANKED_FIELDS = LEASE_FIELDS
+# The stamp is the table's row, read once. Version 1 is not a default here
+# but a consequence: `LIFECYCLE_FIELDS` removes all four fields `is_v2`
+# reads, so a successor is a v1 producer however its predecessor was
+# opted in, and the row that stamps it has to be the v1 row.
+STAMP = stamp('stamp', 1)
 # `amend` and `recut` own a cut nobody has taken up yet; this owns the one
 # that has been. The two are refused here so the cheaper repair is not
 # reached for by writing a second ticket.
@@ -192,8 +199,8 @@ def _successor(text: str, data: dict, plan: dict) -> str:
         text = _assign(text, key, '')
     text = _assign(text, 'id', plan['id'])
     text = _assign(text, 'run', plan['run'])
-    text = _assign(text, 'status', 'pending')
-    text = _assign(text, 'admission', ADMISSION_PENDING)
+    text = _assign(text, 'status', STAMP.status)
+    text = _assign(text, 'admission', STAMP.admission)
     text = _assign(text, 'cohort', plan['cohort'])
     if plan['added']:
         scope = _scope_entries(data.get('write_scope'))

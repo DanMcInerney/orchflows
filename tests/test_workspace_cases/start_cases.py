@@ -391,3 +391,42 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
             self.assertEqual(1, done.returncode, done.stdout)
             self.assertIn("unreadable ticket", payload_of(done)["error"])
             self.assertEqual(before, ticket.read_bytes())
+
+
+class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
+    """``start`` stamps two frontmatter scalars; it must not rewrite every
+    other line's ending to do it. ``Path.write_text`` applies the platform
+    line separator, so on Windows a pure-LF ticket came back pure CRLF and a
+    two-scalar change produced a whole-file byte diff -- defeating byte-level
+    audit of the record, and contradicting the byte-domain clause this run
+    shipped. Every other sink writer pins ``newline='\n'`` explicitly
+    (``tickets_store._write_text_atomically``, ``_create_text_exclusively``);
+    this was the one that did not."""
+
+    def _stamped(self, body: bytes) -> bytes:
+        with tempfile.TemporaryDirectory() as tmp:
+            ticket = Path(tmp) / "T1.md"
+            ticket.write_bytes(body)
+            prior = ticket.read_text(encoding="utf-8")
+            result = workspace_git._record(ticket, prior, "a-branch", "abc123 clean")
+            self.assertNotIn("error", result, result)
+            return ticket.read_bytes()
+
+    def test_a_pure_lf_ticket_is_still_pure_lf_after_the_stamp(self):
+        body = b"---\nid: T1\nrun: testrun\nstatus: claimed\n---\n\n## Objective\n\nx\n"
+        after = self._stamped(body)
+
+        self.assertEqual(0, after.count(b"\r\n"), after)
+        self.assertEqual(b"## Objective", after.splitlines()[-3])
+
+    def test_only_the_two_stamped_lines_differ_from_the_prior_bytes(self):
+        body = b"---\nid: T1\nrun: testrun\nstatus: claimed\n---\n\n## Objective\n\nx\n"
+        before = body.split(b"\n")
+        after = self._stamped(body).split(b"\n")
+
+        added = [line for line in after if line not in before]
+        self.assertEqual(
+            [b"workspace_branch: a-branch", b"workspace_baseline: abc123 clean"],
+            added,
+        )
+        self.assertEqual([], [line for line in before if line not in after])

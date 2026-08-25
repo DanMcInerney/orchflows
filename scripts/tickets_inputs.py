@@ -62,6 +62,11 @@ SCHEMAS = {
         "breakpoint", "capture", "kind", "repo", "revision", "sha256", "state", "view",
     }),
 }
+# Every kind a producer may write. `ticket-section` carries no `SCHEMAS` row
+# because its shape depends on whether the run matches, so it is added here
+# rather than derived alone -- and a refusal that named the mistyped kind
+# without naming these spent a round trip on a question it could answer.
+KNOWN_KINDS = tuple(sorted(set(SCHEMAS) | {"ticket-section"}))
 
 
 def _canonical(value) -> str:
@@ -418,7 +423,7 @@ def resolve_identity_payload(*, identity, adapter_id, context=None, mode="input"
         same = identity.get("run") == str(context.get("run") or "")
         expected = frozenset({"kind", "run", "section", "ticket"} | (set() if same else {"sha256"}))
     if expected is None:
-        return {"findings": [_finding("identity-kind-unsupported", kind)], "fingerprint": f"identity:{kind}:error", "bytes": None}
+        return {"findings": [_finding("identity-kind-unsupported", f"{kind}; the kinds are {', '.join(KNOWN_KINDS)}")], "fingerprint": f"identity:{kind}:error", "bytes": None}
     if set(identity) != set(expected):
         return {"findings": [_finding("identity-schema", f"{kind}:{sorted(identity)}")], "fingerprint": f"identity:{kind}:error", "bytes": None}
     if any(not isinstance(identity.get(key), str) for key in expected):
@@ -427,7 +432,7 @@ def resolve_identity_payload(*, identity, adapter_id, context=None, mode="input"
     if allowed is None:
         return {"findings": [_finding("adapter-unknown", str(adapter_id))], "fingerprint": "identity:adapter-error", "bytes": None}
     if kind not in allowed:
-        return {"findings": [_finding("adapter-kind-unsupported", f"{adapter_id}:{kind}")], "fingerprint": f"identity:{kind}:error", "bytes": None}
+        return {"findings": [_finding("adapter-kind-unsupported", f"{adapter_id}:{kind}; {adapter_id} takes {', '.join(sorted(allowed))}")], "fingerprint": f"identity:{kind}:error", "bytes": None}
     if kind == "artifact":
         content, findings, fingerprint = _artifact(identity, context)
     elif kind == "ticket-section":

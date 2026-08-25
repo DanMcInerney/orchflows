@@ -25,8 +25,7 @@ charter names.
 - input: {"name":"sources","type":"literal","value":"{{sources}}"}
 - input: {"name":"rigor","type":"literal","value":"{{rigor}}"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
-- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-research.md","sha256":"b164798c788bb1fa408d858235a54ef26dc9bd48c9ec1cbbe6e6d7f680f9c94c"},"name":"research-charter","type":"identity"}
-
+- input: {"name":"research-charter","type":"literal","value":"the research charter at compositions/references/benchmaker-research.md in the orchflows library"}
 ## Completion test
 
 - the terminal synthesis fixes construct definition, claim register, failure atlas, prior-art register, disagreement register, gaps and sourcing mode at one result identity | oracle: the charter's artifact list against the frozen synthesis | oracle_class: deterministic | provenance: pre-existing

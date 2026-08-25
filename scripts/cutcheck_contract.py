@@ -157,6 +157,17 @@ ADVISORY = frozenset(
         # meaning and never proof of its absence, so the screen reports and
         # leaves the status alone.
         "marker-only-relocation",
+        # Family 3's output-pin screen, spelled for the same reason. It catches
+        # the instance it was built for and is imprecise by a factor of 171:
+        # 454 findings over run 20260824T222500Z's own cut, 171 on one unit,
+        # 316 of them from a single bare stem. Blocking, it would refuse every
+        # output-changing cut in this repository. Advisory is a holding
+        # position, not a verdict on the class: the remedy is to decide what
+        # "pins an output" means -- an import or dotted reference rather than a
+        # whole-token name match, with the bare stem dropped from the census.
+        # `tests/test_cutcheck_cases/pricing.py` holds both the flip and the
+        # imprecision still, so the precision fix has a red to move.
+        "unpinned-output",
     }
 )
 # The shape reading's classes, which are in neither set. An advisory is a
