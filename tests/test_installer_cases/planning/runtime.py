@@ -154,14 +154,25 @@ class TestClaudeAdapterSet(unittest.TestCase):
     def _names(pairs):
         return {dest.parent.name for dest, _ in pairs}
 
-    def test_the_shared_four_names_the_set_both_hosts_expose(self):
+    def test_the_shared_four_and_codex_redirect_names_are_explicit(self):
         self.assertEqual(
             ("orch-spec", "orch-frontier", "fix", "orch-build"),
             install.SHARED_ADAPTER_NAMES,
         )
-        # The Codex redirect set and the Claude four-adapter set are one set,
-        # not two tuples that happen to agree today.
-        self.assertIs(install.SHARED_ADAPTER_NAMES, install.CODEX_SKILL_REDIRECT_NAMES)
+        self.assertEqual(
+            (*install.SHARED_ADAPTER_NAMES, "orch-investigate"),
+            install.CODEX_SKILL_REDIRECT_NAMES,
+        )
+
+    def test_installer_description_says_codex_writes_five_redirect_stubs(self):
+        description = install.__doc__ or ""
+        _, separator, codex_description = description.partition("- Codex ")
+        self.assertTrue(separator, "Codex description paragraph is missing")
+        codex_description = codex_description.partition("\n\n")[0]
+        self.assertIn("five redirect skill stubs", codex_description)
+        self.assertNotIn("four redirect skill stubs", codex_description)
+        for redirect_name in install.CODEX_SKILL_REDIRECT_NAMES:
+            self.assertIn(f"``{redirect_name}``", codex_description)
 
     def test_four_mints_exactly_the_four_shared_adapters(self):
         plan = self._plan("four")

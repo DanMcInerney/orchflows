@@ -27,10 +27,10 @@ the installer warns and exits successfully without writing anything.
   and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
   import line — idempotent, migrating any legacy inline marker block found
   there from an older install.
-- Codex (when a Codex CLI is on ``PATH``): prompts, four redirect skill stubs
+- Codex (when a Codex CLI is on ``PATH``): prompts, five redirect skill stubs
   (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``,
-  ``orch-frontier``, ``fix``, ``orch-build``) that point at the library
-  instead of
+  ``orch-frontier``, ``fix``, ``orch-build``, ``orch-investigate``) that
+  point at the library instead of
   duplicating it, role agents, agent-limits config. ``CODEX_HOME`` replaces
   ``~/.codex`` throughout, matching the CLI. The always-on layer
   stays an inline marker block upserted into ``~/.codex/AGENTS.md`` — a
