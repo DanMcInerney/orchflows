@@ -154,6 +154,7 @@ export function fixtureTicket(location: InspectorRoute): TicketDetail | null {
   const unavailableHistory = location.fixture === "history-unavailable";
   const raw = location.fixture === "raw-escaped";
   const proof = location.fixture.startsWith("proof-");
+  const failing = location.fixture === "proof-fail";
   const rows = proof ? proofFixtureRows.map((row, index) =>
     location.fixture === "proof-fail" && index === 2
       ? { ...row, verdict: "FAIL", evidence: "plan named 3 scripts, 4 expected" }
@@ -169,13 +170,17 @@ export function fixtureTicket(location: InspectorRoute): TicketDetail | null {
     depends_on: raw ? ["A1"] : [],
     unreadable: false,
     readiness: {
-      state: running || raw ? "running" : unavailableHistory ? "attention" : "complete",
+      state: running || raw ? "running" : unavailableHistory || failing ? "attention" : "complete",
       dependencies: [],
       explanation: running
         ? "The assigned worker is executing this ticket within its bound."
-        : unavailableHistory
-          ? "The ticket is suspended and has no durable event projection."
-          : "Every dependency and criterion is complete.",
+        : raw
+          ? "The worker holds the claim; only the inert ticket source is projected."
+          : unavailableHistory
+            ? "The ticket is suspended and has no durable event projection."
+            : failing
+              ? "One named criterion returned a failing verdict."
+              : "Every dependency and criterion is complete.",
       cause: unavailableHistory ? "suspended_handoff" : "none",
       causal_chain: []
     },

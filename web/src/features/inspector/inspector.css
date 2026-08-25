@@ -42,7 +42,7 @@
 .inspector-panel:focus-visible { outline-offset: var(--space-1); }
 
 .inspector-card { min-width: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); background: var(--surface-1); }
-.overview-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .8fr); gap: var(--space-4); }
+.overview-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .8fr); align-items: start; gap: var(--space-4); }
 .overview-grid .inspector-card { padding: var(--space-5); }
 .inspector-card--next { grid-column: 1 / -1; }
 .inspector-card h2, .panel-heading h2 { margin: var(--space-1) 0 var(--space-3); color: var(--text-strong); font-size: var(--type-title-lg); }

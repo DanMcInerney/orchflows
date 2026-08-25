@@ -105,6 +105,27 @@ describe("ticket detail continuity with the workflows exemplar", () => {
     expect(stats).toEqual([["Criteria", "2"], ["Depends", "2"], ["Friction", "0"], ["Events", "0"]]);
   });
 
+  it("gives every manifest ticket state a hero lede that agrees with its own status", () => {
+    const states: Array<[string, string, string, string]> = [
+      ["running-overview", "G4", "running", "The assigned worker is executing this ticket within its bound."],
+      ["proof-pass", "G1", "complete", "Every dependency and criterion is complete."],
+      ["proof-fail", "G1", "failed", "One named criterion returned a failing verdict."],
+      ["friction-present", "G1", "complete", "Every dependency and criterion is complete."],
+      ["history-unavailable", "G7", "attention", "The ticket is suspended and has no durable event projection."],
+      ["raw-escaped", "A2", "running", "The worker holds the claim; only the inert ticket source is projected."]
+    ];
+    for (const [fixture, ticket, state, lede] of states) {
+      const container = open({ run: null, ticket: null }, fixture, `?fixture=${fixture}`, ticket);
+      expect(container.querySelector(".inspector-status")?.getAttribute("data-state"), fixture).toBe(state);
+      expect(text(container.querySelector(".inspector-lede")), fixture).toBe(lede);
+      if (state !== "complete") {
+        expect(text(container.querySelector(".inspector-lede")), `${fixture} must not claim completion`)
+          .not.toMatch(/complete/i);
+      }
+      cleanup();
+    }
+  });
+
   it("keeps verdict, criterion, and oracle at the row surface and dense evidence behind disclosure", () => {
     const container = open(model(), "proof-pass", "?fixture=proof-pass&tab=proof");
     const rows = Array.from(container.querySelectorAll(".proof-row"));
