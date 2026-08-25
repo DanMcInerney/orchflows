@@ -14,6 +14,9 @@ guard is the one thing a test module must not own twice.
 
 from __future__ import annotations
 
+import json
+import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -23,9 +26,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.cutcheck as cutcheck  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402  the ticket surface's one owner
+import scripts.tickets_inputs as inputs  # noqa: E402
 import scripts.tickets_reissue as reissue  # noqa: E402
 import scripts.tickets_transitions as transitions  # noqa: E402  the table under test
+import scripts.tickets_worklog as worklog  # noqa: E402
+import tests.test_verification_owners as owners  # noqa: E402  the swept patterns' owner
 from tests.test_tickets_issue_cases.common import (  # noqa: E402
     GOOD_CRITERION,
     GOOD_TICKET as SOURCE_TICKET,
@@ -207,6 +214,139 @@ class ReadyWaitsForTheCutsCheckTest(unittest.TestCase):
 
     def test_the_same_unit_is_ready_once_the_cut_is_checked(self):
         self.assertIn("00-root.01", self.ready_ids(checked=True))
+
+
+class IdentityKindRefusalNamesTheKindsTest(unittest.TestCase):
+    """A producer who mistypes a kind is told what they wrote and, now,
+    what they could have written. The set is in hand at both refusals --
+    `SCHEMAS` at one, `ADAPTER_KINDS[adapter]` at the other -- so leaving
+    it out spent a round trip on a question the refusal could answer.
+    """
+
+    def refusal(self, **identity) -> str:
+        payload = inputs.resolve_identity_payload(identity=identity, adapter_id="git")
+        return payload["findings"][0]["detail"]
+
+    def test_an_unknown_kind_is_told_the_valid_kinds(self):
+        detail = self.refusal(kind="git-blob")
+        self.assertIn("git-blob", detail)
+        for kind in ("git-tree", "git-path", "ticket-section", "artifact"):
+            self.assertIn(kind, detail)
+
+    def test_a_kind_the_adapter_does_not_take_is_told_what_it_takes(self):
+        """A whole-schema `view-identity`, so the adapter check is reached:
+        the git adapter is the one that does not take it."""
+
+        detail = self.refusal(**{
+            key: "x" for key in inputs.SCHEMAS["view-identity"]
+        } | {"kind": "view-identity"})
+        self.assertIn("view-identity", detail)
+        self.assertIn("git-tree", detail)
+
+
+class SweptCommandPatternsCarryABoundaryTest(unittest.TestCase):
+    """Every swept `tickets.py <verb>` pattern stops at the verb it
+    licenses. `tickets.py amend` once swept `amendment-request` through
+    exactly this hole; two patterns still had no boundary, and the guard
+    that would have caught them passes only while no live command name
+    extends either prefix.
+    """
+
+    def patterns(self) -> list:
+        return list(owners.PACKET_CARRIED_CLI) + list(owners.PACKET_BUILDS)
+
+    def test_no_swept_pattern_matches_a_longer_verb(self):
+        """The verb each pattern licenses, with three more letters on it."""
+
+        for pattern in self.patterns():
+            verb = re.sub(r"\(\?![^)]*\)", "", pattern)
+            verb = verb.replace(r"\.", ".").replace(r"\b", "")
+            with self.subTest(pattern=pattern):
+                self.assertIsNone(
+                    re.search(pattern, verb + "ly"),
+                    f"`{pattern}` reaches past the command it licenses",
+                )
+
+
+class NoNameCheckerPacketWritesNoPlaceholderTest(unittest.TestCase):
+    """`--by NAME` was pasteable. `check` accepts the literal word, so a
+    packet emitted without `--by` handed its child a command that records
+    a checker called NAME -- the very blank the packet's own prose tells
+    that child never to fill in. A packet emits a runnable command or no
+    command, so without a name the line is withheld.
+    """
+
+    def packet_prompt(self, *extra) -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            claimed = SOURCE_TICKET.replace(
+                "status: ready", "status: claimed"
+            ).replace("claimed_by:", "claimed_by: worker-1")
+            place(sink, "testrun", "T1", claimed)
+            payload = run_cmd(
+                "packet", "testrun", "T1", "--reply-to", "main",
+                "--executor", "orch-critique", *extra,
+            )
+            self.assertNotIn("error", payload)
+            return json.dumps(payload)
+
+    def test_a_packet_without_a_name_writes_no_by_placeholder(self):
+        self.assertNotIn("--by NAME", self.packet_prompt())
+
+    def test_a_packet_given_a_name_still_writes_the_check_command(self):
+        prompt = self.packet_prompt("--by", "checker-9")
+        self.assertIn("--by checker-9", prompt)
+
+
+class SharedScratchTreeIsQuarantinedTest(unittest.TestCase):
+    """A scratch tree reached a second time is a shared run tree. The
+    fresh path records its arrival state so the first span graded owns
+    only the difference it made; the cached path skipped that, and handed
+    the first span every path the tree already carried.
+    """
+
+    def test_a_cached_tree_is_primed_before_its_first_span_is_graded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            scratch_root = tmp / "scratch"
+            tree = scratch_root / "abc123"
+            tree.mkdir(parents=True)
+            subprocess.run(["git", "init", "-q"], cwd=str(tree), check=True)
+            (tree / "leftover.txt").write_text("a prior span's", encoding="utf-8")
+            cutcheck._TREE_STATE.clear()
+            self.assertEqual(tree, cutcheck._scratch_tree("abc123", tmp, scratch_root))
+            self.assertEqual(
+                [], cutcheck._mutations(tree),
+                "the arriving tree's own contents were charged to the first span",
+            )
+
+
+class WorklogReportsTheReadyAndUnclaimedAgeTest(unittest.TestCase):
+    """`never claimed` said nothing about a queue standing still, which
+    is what a reader of this view is looking for. A ready, unclaimed item
+    now carries how long it has been on offer.
+    """
+
+    def rendered(self, status: str, claimed_at: str = "") -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "00-root.01.md"
+            path.write_text("a ticket", encoding="utf-8")
+            item = {
+                "id": "00-root.01", "status": status, "claimed_at": claimed_at,
+                "path": str(path), "depends_on": [], "sections": {},
+            }
+            root = {"id": "00-root", "status": "claimed", "sections": {}}
+            return worklog._render_worklog("testrun", [item], root)
+
+    def test_a_ready_unclaimed_item_says_how_long_it_has_been_on_offer(self):
+        self.assertIn("on offer", self.rendered("ready"))
+
+    def test_a_claimed_item_carries_its_lease_stamp_and_no_age(self):
+        self.assertNotIn("on offer", self.rendered("claimed", "2026-08-24T00:00:00Z"))
+
+    def test_a_pending_item_is_not_on_offer_at_all(self):
+        self.assertNotIn("on offer", self.rendered("pending"))
 
 
 if __name__ == "__main__":

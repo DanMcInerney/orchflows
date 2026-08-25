@@ -229,8 +229,7 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
         head.append('Both are refused once a unit is claimed, and so is this packet: the cut is corrected before any unit of it is dispatched.')
         head.append(f'Your repair is accepted on the cut check re-run to exit 0 (rules/verification.md §11){unresolved}:')
         head.append(cut_check)
-        head.append("Append your findings and the changes you made to the root's `## Result`, and record the pass with:")
-        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', assigned_name or 'NAME'))
+        head.extend(_record_pass(script, run_id, loaded['id'], assigned_name, "Append your findings and the changes you made to the root's `## Result`, and record the pass with:"))
     elif is_root:
         head.append(f'This is the rules/verification.md §10 re-verification of a checked cut, never a second decomposition: the completion test at the checked set is the cut check, read on the host that produced it{unresolved}:')
         head.append(cut_check)
@@ -238,13 +237,28 @@ def _further_child_prompt(executor, loaded: dict, ticket_path: Path, run_id, scr
     elif executor == CHECKER_EXECUTOR:
         scope = effective_write_scope(loaded)
         head.append(f"This is the rules/verification.md §10 checker's pass on a result {claimed_by} produced under its claim, never a re-execution of the item: the lens is the ticket's own `## Completion test`, at {at_identity}.")
-        head.append(f"Your authority is the ticket's own write scope, {scope} — correct inside it, and append your findings, changes and the verification entries they invalidate to `## Result`. Record the pass, after correcting, with:")
-        head.append(_command_text(sys.executable, script, 'check', run_id, loaded['id'], '--by', assigned_name or 'NAME'))
+        head.extend(_record_pass(script, run_id, loaded['id'], assigned_name, f"Your authority is the ticket's own write scope, {scope} — correct inside it, and append your findings, changes and the verification entries they invalidate to `## Result`. Record the pass, after correcting, with:"))
         head.append("Your pass is the one outside execution of the completion test: run each oracle once at the identity you confirmed, and reuse any entry whose covers are unchanged — re-running it buys nothing (rules/verification.md §7, §10). Spend the bound on what execution cannot buy: weakened or vacuous checks, scope, and correction.")
     else:
         head.append(f"This is the rules/verification.md §10 re-verification of a checked result, never a re-execution of the item: run the ticket's `## Completion test` at {at_identity}, reusing prior `## Verification` entries whose `covers` are unchanged there.")
         head.append("Your authority grants no write: the item's workspace and its `## Result` are another context's, and `## Verification` is the one section you file.")
     return head
+def _record_pass(script, run_id, ticket_id, assigned_name, lead: str) -> list:
+    """The lead and its `check` command, or the lead alone when unnamed.
+
+    `NAME` was pasteable, and `check` accepts it: a packet emitted without
+    `--by` handed its child a line that records a checker called NAME --
+    the very blank this packet's own closing sentence tells that child
+    never to fill in, contradicted two paragraphs above it. A packet emits
+    a runnable command or no command (the rule `_source_size_checker`
+    already keeps where `tools/` is absent), so an unnamed child is given
+    the shape and nothing to paste.
+    """
+    if assigned_name:
+        return [lead, _command_text(sys.executable, script, 'check', run_id, ticket_id, '--by', assigned_name)]
+    return [lead.rstrip(':') + f" `tickets.py check {run_id} {ticket_id} --by <the name your dispatch spawned you under>`. No runnable line is written here: this packet was emitted without `--by`, and a placeholder `check` would accept is worse than none."]
+
+
 def _all_pre_existing(completion: str) -> bool:
     """Every criterion of ``completion`` declares `provenance: pre-existing`.
 

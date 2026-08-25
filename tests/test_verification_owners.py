@@ -39,10 +39,10 @@ KERNEL_SKILLS = (VERIFY, CRITIQUE, INTEGRATE)
 PACKET_CARRIED_CLI = (
     r"tickets\.py amend\b",
     r"tickets\.py new\b",
-    r"tickets\.py result(?!-)",
+    r"tickets\.py result(?![-\w])",
     r"tickets\.py check\b",
-    r"tickets\.py run-state",
-    r"workspace\.py start",
+    r"tickets\.py run-state\b",
+    r"workspace\.py start\b",
 )
 
 #: What makes each absence above safe: `scripts/tickets_packet.py` still
@@ -51,10 +51,10 @@ PACKET_CARRIED_CLI = (
 PACKET_BUILDS = {
     r"tickets\.py amend\b": r"_command_text\([^\n]*'amend'",
     r"tickets\.py new\b": r"_command_text\([^\n]*'new'",
-    r"tickets\.py result(?!-)": r"_command_text\([^\n]*'result'",
+    r"tickets\.py result(?![-\w])": r"_command_text\([^\n]*'result'",
     r"tickets\.py check\b": r"_command_text\([^\n]*'check'",
-    r"tickets\.py run-state": r"_command_text\([^\n]*'run-state'",
-    r"workspace\.py start": r"_command_text\([^\n]*'workspace\.py'\)[^\n]*'start'",
+    r"tickets\.py run-state\b": r"_command_text\([^\n]*'run-state'",
+    r"workspace\.py start\b": r"_command_text\([^\n]*'workspace\.py'\)[^\n]*'start'",
 }
 
 #: The three parts every emitted packet carries, keyed by the fact and

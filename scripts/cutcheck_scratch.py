@@ -123,6 +123,17 @@ def _scratch_tree(rev, worktree_root, scratch_root):
 
     tree = scratch_root / re.sub(r"[^A-Za-z0-9_.-]", "-", rev)
     if tree.is_dir():
+        # A shared run tree is the same copy reached a second time, and the
+        # priming below has already happened -- to somebody else's process,
+        # or to nobody, if this one is new to it. Unprimed, `_mutations`
+        # reads its first census as a delta from nothing and hands the
+        # first span graded every path the tree already carried: prior
+        # spans' `__pycache__`, a `.pytest_cache/`, whatever the checkout
+        # arrived with. That is the confinement instrument convicting an
+        # item for writes that are not its own, so the arrival state is
+        # recorded here too, once, exactly as it is on the fresh path.
+        if str(tree) not in _TREE_STATE:
+            _mutations(tree)
         return tree
     resolved = _git(["rev-parse", rev + "^{commit}"], worktree_root)
     if resolved is None or resolved.returncode != 0:
