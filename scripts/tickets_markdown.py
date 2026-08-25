@@ -1,14 +1,17 @@
 """Private byte-preserving Markdown mechanics for the ticket format owner."""
 from __future__ import annotations
 
-EXECUTOR_SECTIONS = ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff')
+EXECUTOR_SECTIONS = ('Result', 'Verification', 'Feedback', 'Risks', 'Carry', 'Handoff')
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
 CUT_SECTIONS = ('Objective', 'Fixed inputs', 'Completion test', 'Return fields')
 CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
 SECTION_ORDER = CUT_SECTIONS + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
-OPTIONAL_SECTION = 'Handoff'
-REQUIRED_SECTIONS = tuple(name for name in SECTION_ORDER if name != OPTIONAL_SECTION)
+# Optional twice over: `ticket_defects` requires neither, because every
+# ticket already in the sink was issued without them and a new optional
+# section that is retroactively required convicts the whole history.
+OPTIONAL_SECTIONS = ('Handoff', 'Carry')
+REQUIRED_SECTIONS = tuple(name for name in SECTION_ORDER if name not in OPTIONAL_SECTIONS)
 SECTION_SENTINEL = '[]'
 """The empty collection a cut prefills an executor-owned section with.
 

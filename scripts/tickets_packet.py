@@ -15,6 +15,10 @@ if __package__:
 else:
     from tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, PROVENANCE_RE, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
 if __package__:
+    from .tickets_carry import carry_block
+else:
+    from tickets_carry import carry_block
+if __package__:
     from .tickets_issue import AMENDABLE_STATUSES
 else:
     from tickets_issue import AMENDABLE_STATUSES
@@ -411,6 +415,11 @@ def _packet_under_run_lock(rest):
         prompt = [f'Run the script {executor_script} with the ticket path as its one argument, from your own workspace: {executor_script} {ticket_path}', f"No skill is applied. File the script's stdout verbatim as the ticket's `## Result`, and its exit code and the criterion it decides as `## Verification`. Change nothing else."]
     else:
         prompt = [f'Apply skill {executor} to ticket {ticket_path}.', 'Read the ticket; it is your complete delegation packet — objective, fixed inputs, authority (write_scope, excluded_actions), bounds, return fields. Gather nothing outside its fixed inputs.']
+        # Each dependency's `## Carry`, inlined rather than pointed at: the
+        # digest a predecessor filed is exactly the context a fresh executor
+        # otherwise re-gathers, and re-gathering it is the caller's defect
+        # under contracts/work-item.md's blame rule (tickets_carry.py).
+        prompt.extend(carry_block(loaded, ticket_path))
     # Where the store is, said beside the path that came out of it: a fork
     # that lost its packet went looking in a checkout's `.orch/`, found
     # nothing, and could not tell an empty tracker from the wrong one.
@@ -425,6 +434,7 @@ def _packet_under_run_lock(rest):
     has_own_workspace = further is None and isolation == REQUIRED_ISOLATION and writes_workspace_content and establishes_a_git_workspace(loaded.get('pack'))
     if executor_script is None and further is None:
         prompt.append('Close by running each criterion\'s oracle once at the frozen result identity and recording its summary and exit in `## Verification`; your own entries are UNVERIFIED alone — independence arrives per rules/verification.md §10, and later readers reuse entries whose covers are unchanged; `[]` fills an empty Feedback or Risks; an excluded action suspends through `## Handoff`.')
+        prompt.append('Before your last write, file `## Carry` through the same filing channel (--section Carry): two to five conclusions a successor needs — decisions, landed identities, hazards, and the command to re-take any measurement — never narrative.')
         prompt.append("A check's own summary line is its evidence: never pipe a test command through `tail` or any other filter — the runner writes that summary to stderr, and dropping it leaves exit status alone.")
         prompt.append("Run the oracles your own `## Completion test` names, nothing wider: a repository-level check the standards owner requires and your ticket does not name is the engine's, run on the integrated tip after each merge batch.")
         if has_own_workspace:

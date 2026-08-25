@@ -1,14 +1,34 @@
-"""The fork-arrival clause: its wording, its price, and what blocks it.
+"""The fork-arrival clause: its wording, its owner, and every surface it reaches.
 
 Eighteen times in one run, an executor invoking an orchflows skill by
 name spawned a fork that arrived with the contract loaded and no packet,
 no ticket, no assigned name -- at every tier: workers, checkers, the
 gate critique's own pass. The dispatch packet already carries a refusal
 sentence and it structurally cannot reach these agents: a packet-less
-fork never reads a packet. The contract is the one document such a fork
-provably read, so the contract is where the rule has to live.
+fork never reads a packet.
 
-What the firings proved, and what `CLAUSE` therefore says:
+The clause first aimed at the 22 skill contracts and was blocked twice
+over: rules/token-economy.md 11 left four contracts with no headroom
+(orch-frontier at exactly 450 of 450), and scripts/doclint.py's
+distinctiveness threshold made a partial rollout strictly worse than
+none (a measured 486 cross-tier warnings against a baseline of 27).
+The relocation dissolved both: the *adapter* is upstream of the
+contract in a fork's load path -- the installed Claude surface is
+rendered frontmatter plus an ``@``-include of the canonical body, so
+the clause above the include is the first body text a fork reads -- and
+installer-rendered surfaces are outside doclint's population and outside
+every skill-body budget. Precedent: ``ROLE_INSTRUCTIONS`` is behavioral
+dispatch law the installer already renders into the role agent files.
+
+So the clause has exactly one owner, ``installer.packages
+.FORK_ARRIVAL_CLAUSE``, and this module guards three things: the
+wording still states every property the firings paid for; every
+rendered name surface of a role-bearing skill carries it (Claude
+adapter, by-name pointer, Codex prompt and redirect); and no skill
+contract body carries a copy -- restating it there would re-open the
+doclint saturation the relocation closed.
+
+What the firings proved, and what the clause therefore says:
 
 * The refusal needs no address. The seventeenth firing refused, then
   reasoned that the missing packet also carried the address the refusal
@@ -27,56 +47,27 @@ What the firings proved, and what `CLAUSE` therefore says:
   a spec nobody stamped.
 * A name is never invented, and a by-name invocation from inside a
   governed execution forwards the invoker's packet or refuses at spawn.
-
-WHAT THIS MODULE DOES NOT YET DO, stated first so a green run is not
-mistaken for the finished invariant: **no skill contract carries the
-clause yet, and this module does not sweep for it.** Adoption is blocked
-on a budget, and the block is measured rather than asserted --
-`ADOPTION_BLOCKED` prices it per contract.
-
-Two facts, both measured at this unit's tip, decide that:
-
-1. rules/token-economy.md 11 caps each tier's body, and tools/validate.py
-   enforces it. Four contracts sit at or within three words of their
-   ceilings, so the clause does not fit them: orch-frontier is exactly at
-   450 of 450. Adding it there means deleting standing law those
-   contracts' owners wrote, which is their call and not a sweep's.
-2. Adoption is all-or-nothing, which is the counter-intuitive half.
-   scripts/doclint.py pairs two texts for duplicate comparison only when
-   they share a word carried by no more than `DISTINCTIVE_MAX` texts, and
-   skills are compared against each other. Below that threshold the
-   clause's own words are distinctive and every pair of carriers is
-   reported; above it they are idiom and none is. Measured: the clause in
-   all 22 contracts left the cross-tier warning count at 27, unchanged;
-   the same clause in 18 contracts raised it to 486, breaching the
-   ceiling tests/test_cell_linter.py ratchets. So a partial rollout is
-   strictly worse than none, and 21 of the 22 must land together.
-
-`test_the_all_or_nothing_premise_still_holds` pins fact 2, because it is
-the fact a later reader would otherwise rediscover by breaking the tree.
-The clause, its properties and its price are kept here so that landing it
-is one scoped change: free the words in `ADOPTION_BLOCKED`, then sweep.
 """
 
-import re
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+import install
+from installer.packages import (
+    FORK_ARRIVAL_CLAUSE,
+    by_name_pointer_text,
+    claude_role_adapter_text,
+    codex_role_adapter_body,
+    fork_arrival_preamble,
+    split_frontmatter,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
-#: The fork-arrival clause, verbatim. One constant, one wording, because
-#: a paraphrase is how these properties were lost before: a join once
-#: relayed a packet clause in its own words and dropped the
-#: invented-name half. Properties survive only verbatim transmission.
-CLAUSE = (
-    "Arriving without a packet, refuse before reading anything: your "
-    "refusal is your return, reaching your invoker through the invocation "
-    "itself, never the coordinator. Acquire nothing, claim no name, derive "
-    "no objective. Invoking a skill by name, forward your packet or refuse."
-)
-
 #: What each property is doing there, keyed by the words carrying it. A
-#: future editor shortening `CLAUSE` has to drop one of these to do it,
+#: future editor shortening the clause has to drop one of these to do it,
 #: and this is the case that says which firing paid for the sentence.
 CLAUSE_PROPERTIES = {
     "without a packet": "names the arrival the clause governs",
@@ -95,8 +86,8 @@ CLAUSE_PROPERTIES = {
     "forward your packet or refuse": "the by-name invocation boundary",
 }
 
-#: Wordings this clause must NOT use, and the owner each belongs to.
-#: Both say what `CLAUSE` says; both are pinned elsewhere, and reaching
+#: Wordings the clause must NOT use, and the owner each belongs to.
+#: Both say what the clause says; both are pinned elsewhere, and reaching
 #: for the more natural phrasing would redden a module this change has no
 #: business reddening. Recorded so the near-miss stays a decision with a
 #: reason rather than a coincidence a later edit undoes.
@@ -111,36 +102,9 @@ RESERVED_WORDINGS = {
     ),
 }
 
-#: The contracts the clause does not fit, with the words each owes,
-#: measured at this unit's tip. A shortfall recorded, never a licence:
-#: a fork loading one of these and no packet is ungoverned, and so is a
-#: fork loading any other contract until adoption lands.
-#:
-#: The set only shrinks. Nothing may join it -- a contract that grew until
-#: the clause no longer fit would otherwise exempt itself by getting
-#: fatter -- and a contract that frees the words leaves it, because
-#: `test_every_blocked_contract_is_still_blocked` fails once one of these
-#: can afford the clause.
-ADOPTION_BLOCKED = {
-    "skills/engines/orch-frontier/SKILL.md": 41,
-    "skills/kernel/orch-decompose/SKILL.md": 38,
-    "skills/kernel/orch-integrate/SKILL.md": 38,
-    "skills/workflows/orch-spec/SKILL.md": 40,
-}
-
-#: rules/token-economy.md 11, as tools/validate.py enforces it. Restated
-#: rather than imported because this module grades the tree the library
-#: ships: if these and validate.py's ever disagree, one of the two is
-#: wrong and the disagreement is the thing worth seeing.
-BODY_BUDGET = {
-    "kernel": 300,
-    "instances": 300,
-    "utilities": 300,
-    "engines": 450,
-    "workflows": 450,
-}
-
-LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
+#: The tiers the contract sweep must span; a glob that stopped matching
+#: one would leave its contracts unswept while this module stayed green.
+TIERS = {"kernel", "instances", "utilities", "engines", "workflows"}
 
 
 def contracts():
@@ -164,15 +128,9 @@ def flat(text: str) -> str:
     return " ".join(text.split())
 
 
-def body_words(text: str) -> int:
-    """validate.py's counter: words with markdown link targets stripped."""
-    return len(LINK_TARGET_RE.sub("]", text).split())
-
-
-def deficit(path: Path) -> int:
-    """Words `path` must free before the clause fits under its ceiling."""
-    tier = path.relative_to(ROOT).parts[1]
-    return body_words(body(path)) + len(CLAUSE.split()) - BODY_BUDGET[tier]
+def _frontmatter_of(relative: str) -> str:
+    frontmatter, _body = split_frontmatter((ROOT / relative).read_text(encoding="utf-8"))
+    return frontmatter
 
 
 class TheSweptPopulationIsReal(unittest.TestCase):
@@ -181,28 +139,28 @@ class TheSweptPopulationIsReal(unittest.TestCase):
     def test_the_population_is_derived_and_non_empty(self):
         self.assertNotEqual(
             [], contracts(),
-            "no skill contract was found under skills/; every sweep in this "
-            "module would pass vacuously",
+            "no skill contract was found under skills/; the absence sweep in "
+            "this module would pass vacuously",
         )
 
     def test_the_population_spans_every_tier(self):
         tiers = {path.relative_to(ROOT).parts[1] for path in contracts()}
         self.assertEqual(
-            set(BODY_BUDGET), tiers,
+            TIERS, tiers,
             "the swept population does not span the library's tiers; a glob "
             "that stopped matching one tier would leave those contracts "
-            "unpriced while this module stayed green",
+            "unswept while this module stayed green",
         )
 
 
 class TheClauseStillSaysWhatItWasWrittenToSay(unittest.TestCase):
-    """Guards on the constant itself, which is what adoption will copy."""
+    """Guards on the one owned constant, which is what every surface renders."""
 
     def test_the_clause_states_every_property_the_firings_paid_for(self):
         for token, why in sorted(CLAUSE_PROPERTIES.items()):
             with self.subTest(property=token):
                 self.assertIn(
-                    token, CLAUSE,
+                    token, FORK_ARRIVAL_CLAUSE,
                     f"the fork-arrival clause no longer says {token!r}, which "
                     f"{why}; shortening the clause past a property returns the "
                     "class of firing that property was written against",
@@ -212,7 +170,7 @@ class TheClauseStillSaysWhatItWasWrittenToSay(unittest.TestCase):
         for phrase, owner in sorted(RESERVED_WORDINGS.items()):
             with self.subTest(phrase=phrase):
                 self.assertNotIn(
-                    phrase, CLAUSE,
+                    phrase, FORK_ARRIVAL_CLAUSE,
                     f"the fork-arrival clause uses {phrase!r}: {owner}. The "
                     "clause says the same thing in words of its own on "
                     "purpose -- restoring the natural phrasing reddens a "
@@ -220,109 +178,99 @@ class TheClauseStillSaysWhatItWasWrittenToSay(unittest.TestCase):
                 )
 
 
-class AdoptionIsPricedAndTheBillIsCurrent(unittest.TestCase):
-    """What landing the clause costs, per contract, measured not asserted."""
+class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
+    """The clause renders on role-bearing surfaces and lives nowhere else."""
 
-    def test_no_contract_joins_the_blocked_set_by_growing(self):
-        unknown = sorted(set(ADOPTION_BLOCKED) - {label(p) for p in contracts()})
-        self.assertEqual(
-            [], unknown,
-            f"{unknown} is recorded as blocked but is not a contract in the "
-            "tree; a stale entry prices work against a file nobody reads",
-        )
+    PLANNER = "skills/workflows/orch-spec/SKILL.md"
+    WORKER = "skills/instances/orch-tdd/SKILL.md"
+    GLUE = "skills/engines/orch-frontier/SKILL.md"
 
-    def test_every_blocked_contract_is_still_blocked(self):
-        """Free the words and the entry goes, rather than being banked."""
-        for relative in sorted(ADOPTION_BLOCKED):
-            with self.subTest(contract=relative):
-                self.assertGreater(
-                    deficit(ROOT / relative), 0,
-                    f"{relative} now has room for the fork-arrival clause. "
-                    "Drop the entry and carry the clause: the block was the "
-                    "ceiling's, and the ceiling no longer binds this body",
+    def test_no_skill_contract_body_carries_a_copy(self):
+        """A body copy re-opens the doclint saturation the relocation closed."""
+        for path in contracts():
+            with self.subTest(contract=label(path)):
+                self.assertNotIn(
+                    flat(FORK_ARRIVAL_CLAUSE), flat(body(path)),
+                    f"{label(path)} restates the fork-arrival clause in its "
+                    "body; the installer renders the one copy onto every "
+                    "role-bearing surface, and a body copy is the partial "
+                    "rollout doclint measured at 486 cross-tier warnings",
                 )
 
-    def test_the_recorded_deficit_is_what_the_tree_actually_owes(self):
-        """A stale number is worse than none: it prices the wrong repair."""
-        for relative, recorded in sorted(ADOPTION_BLOCKED.items()):
-            with self.subTest(contract=relative):
+    def test_only_role_bearing_surfaces_get_the_preamble(self):
+        self.assertTrue(fork_arrival_preamble("planner").startswith(FORK_ARRIVAL_CLAUSE))
+        self.assertTrue(fork_arrival_preamble("worker").startswith(FORK_ARRIVAL_CLAUSE))
+        for role in ("none", "", None):
+            with self.subTest(role=role):
                 self.assertEqual(
-                    recorded, deficit(ROOT / relative),
-                    f"{relative} is recorded as owing {recorded} words and "
-                    f"owes {deficit(ROOT / relative)}; whoever reads this "
-                    "table to size the repair would size it against a tree "
-                    "that moved",
+                    "", fork_arrival_preamble(role),
+                    "a role: none surface runs in the invoking context and "
+                    "never produces the packet-less arrival the clause governs",
                 )
 
-    def test_every_other_contract_can_already_afford_the_clause(self):
-        """The blocked set is exactly the blocked ones, so the bill is whole."""
-        for path in contracts():
-            if label(path) in ADOPTION_BLOCKED:
-                continue
-            with self.subTest(contract=label(path)):
-                self.assertLessEqual(
-                    deficit(path), 0,
-                    f"{label(path)} cannot afford the clause either and is "
-                    f"not priced: it owes {deficit(path)} words. The blocked "
-                    "table is what adoption is scoped against, so a contract "
-                    "missing from it is work nobody has counted",
+    def test_the_claude_adapter_reads_the_clause_before_the_include(self):
+        for relative in (self.PLANNER, self.WORKER):
+            with self.subTest(contract=relative):
+                text = claude_role_adapter_text(_frontmatter_of(relative), Path("X"))
+                self.assertIn(FORK_ARRIVAL_CLAUSE, text)
+                self.assertLess(
+                    text.index(FORK_ARRIVAL_CLAUSE), text.index("@"),
+                    "the clause must be the first body text a fork reads, "
+                    "above the @-include that pulls the contract in",
                 )
+        self.assertNotIn(
+            FORK_ARRIVAL_CLAUSE,
+            claude_role_adapter_text(_frontmatter_of(self.GLUE), Path("X")),
+        )
 
+    def test_the_by_name_pointer_carries_it_for_role_bearing_names(self):
+        pointed = by_name_pointer_text(_frontmatter_of(self.WORKER), "worker", Path("X"))
+        self.assertIn(FORK_ARRIVAL_CLAUSE, pointed)
+        clean = by_name_pointer_text(_frontmatter_of(self.GLUE), "none", Path("X"))
+        self.assertNotIn(FORK_ARRIVAL_CLAUSE, clean)
 
-class TheAllOrNothingPremiseHolds(unittest.TestCase):
-    """Why the clause lands in 21 contracts at once or in none.
-
-    scripts/doclint.py pairs two texts only when they share a word
-    carried by no more than DISTINCTIVE_MAX texts, and
-    tools/validate_support/duplication.py compares skills against skills.
-    A clause in more contracts than that threshold is idiom in every one
-    of them and pairs with nothing; a clause in fewer is distinctive and
-    reports every pair of its carriers. That is why a partial rollout
-    measured 486 cross-tier warnings against a ceiling of 56 while the
-    full one measured 27 -- the tree's own baseline, unchanged.
-    """
-
-    def test_the_all_or_nothing_premise_still_holds(self):
-        from scripts import doclint
-        from tools.validate_support import duplication
-
+    def test_the_codex_gate_carries_it(self):
         self.assertIn(
-            "skills", duplication.SAME_TIER_COMPARED,
-            "skill bodies are no longer compared against each other, so the "
-            "all-or-nothing reasoning above no longer describes this tree",
-        )
-        self.assertGreater(
-            len(contracts()), doclint.DISTINCTIVE_MAX,
-            "the library has no more skill contracts than doclint's "
-            f"DISTINCTIVE_MAX of {doclint.DISTINCTIVE_MAX}, so even a "
-            "complete rollout would leave the clause's words distinctive and "
-            "every pair of carriers reported. Adoption would need the "
-            "duplication owner's licence rather than this threshold",
-        )
-        self.assertLessEqual(
-            len(contracts()) - len(ADOPTION_BLOCKED), doclint.DISTINCTIVE_MAX,
-            "the contracts that can already afford the clause now outnumber "
-            f"doclint's DISTINCTIVE_MAX of {doclint.DISTINCTIVE_MAX}, so "
-            "landing it in those alone is lint-safe and no longer has to wait "
-            "on the blocked four. Re-read the rollout scope before trimming "
-            "anything: the all-or-nothing constraint above has lifted",
+            FORK_ARRIVAL_CLAUSE,
+            codex_role_adapter_body("orch-tdd", "worker", Path("X")),
         )
 
+    def test_the_built_plan_renders_it_on_every_role_bearing_surface(self):
+        """The wiring, not just the composers: what an install actually writes."""
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir()
+            (home / ".codex").mkdir()
+            with patch.object(install.Path, "home", return_value=home), patch.object(
+                install.shutil, "which", return_value="claude"
+            ):
+                plan = install.build_plan("user", None)
 
-class TheBudgetTheClauseIsSpentAgainstIsReal(unittest.TestCase):
-    """rules/token-economy.md 11: a standing demand buys no width."""
+        roles = {}
+        for skill_md in install.discover_packages():
+            frontmatter, _body = install.split_frontmatter(skill_md.read_text(encoding="utf-8"))
+            name = install.frontmatter_field(frontmatter, "name")
+            roles[name] = install.frontmatter_field(frontmatter, "role") or "none"
 
-    def test_every_body_stays_within_its_tier_budget(self):
-        for path in contracts():
-            tier = path.relative_to(ROOT).parts[1]
-            count = body_words(body(path))
-            with self.subTest(contract=label(path)):
-                self.assertLessEqual(
-                    count, BODY_BUDGET[tier],
-                    f"{label(path)} has {count} words against the {tier} "
-                    f"budget of {BODY_BUDGET[tier]}. The fork-arrival clause "
-                    "is paid for out of the body, never out of the ceiling",
-                )
+        surfaces = {
+            "claude adapter": {dest.parent.name: content for dest, content in plan.claude_adapters},
+            "by-name pointer": {dest.parent.name: content for dest, content in plan.by_name},
+        }
+        for surface, rendered in surfaces.items():
+            for name, content in rendered.items():
+                role = roles.get(name)
+                if role is None:
+                    continue  # compositions and templates carry no role
+                with self.subTest(surface=surface, name=name):
+                    if role in ("planner", "worker"):
+                        self.assertIn(
+                            FORK_ARRIVAL_CLAUSE, content,
+                            f"{surface} for {name} (role {role}) does not "
+                            "carry the fork-arrival clause; a fork loading "
+                            "this surface is ungoverned",
+                        )
+                    else:
+                        self.assertNotIn(FORK_ARRIVAL_CLAUSE, content)
 
 
 class SpecStatesItsDirectTicketLane(unittest.TestCase):

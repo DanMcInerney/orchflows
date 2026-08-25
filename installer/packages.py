@@ -132,6 +132,54 @@ def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -
     )
 
 
+# The fork-arrival clause: what a skill fork that arrives holding a
+# contract and no packet must do. Eighteen firings in one session proved
+# the dispatch packet structurally cannot carry this rule -- a packet-less
+# fork never reads a packet -- and rules/token-economy.md 11 priced the
+# 22-contract sweep out of the skill bodies (tests/test_skill_fork_governance.py
+# holds the clause's property ledger and that pricing's history). The
+# adapter is upstream of the contract in a fork's load path, and the
+# installer already renders behavioral dispatch law (ROLE_INSTRUCTIONS),
+# so the clause lands on every rendered name surface of a role-bearing
+# skill: one owner, zero skill-body words, no doclint pairing.
+FORK_ARRIVAL_CLAUSE = (
+    "Arriving without a packet, refuse before reading anything: your "
+    "refusal is your return, reaching your invoker through the invocation "
+    "itself, never the coordinator. Acquire nothing, claim no name, derive "
+    "no objective. Invoking a skill by name, forward your packet or refuse."
+)
+
+
+def fork_arrival_preamble(role) -> str:
+    """The clause paragraph a role-bearing name surface opens with.
+
+    Only planner and worker adapters fork (`host_legal_frontmatter`), so
+    only their surfaces can produce the packet-less arrival the clause
+    governs; a `role: none` surface runs in the invoking context and
+    carries nothing extra."""
+
+    if role in ("planner", "worker"):
+        return FORK_ARRIVAL_CLAUSE + "\n\n"
+    return ""
+
+
+def claude_role_adapter_text(frontmatter: str, lib_skill_md: Path) -> str:
+    """The installed Claude adapter: legal frontmatter, the fork-arrival
+    clause where the adapter forks, then the ``@``-include of the one
+    canonical body -- so the clause is the first body text a fork reads,
+    before the contract the include pulls in."""
+
+    role = frontmatter_field(frontmatter, "role")
+    return host_legal_frontmatter(frontmatter) + fork_arrival_preamble(role) + f"@{lib_skill_md}\n"
+
+
+def by_name_pointer_text(frontmatter: str, role, lib_skill_md: Path) -> str:
+    """The flat ``by-name`` stub: the same clause-first shape for the one
+    deterministic path an agent resolves a role-bearing name through."""
+
+    return frontmatter + "\n" + fork_arrival_preamble(role) + f"Read {lib_skill_md} and follow it exactly.\n"
+
+
 def codex_role_adapter_body(name: str, role: str, lib_skill_md: Path) -> str:
     """Explicit Codex dispatch gate for one role-bearing named skill."""
 
@@ -143,7 +191,7 @@ def codex_role_adapter_body(name: str, role: str, lib_skill_md: Path) -> str:
         f"must dispatch one child with agent_type `{agent_type}`, passing the "
         "complete packet and exact named skill; refuse execution when that "
         "matching role child is missing or mismatched; there is no inline "
-        "fallback.\n"
+        f"fallback.\n\n{FORK_ARRIVAL_CLAUSE}\n"
     )
 
 

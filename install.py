@@ -198,11 +198,14 @@ from installer.models import (
     _is_build_artifact,
 )
 from installer.packages import (
+    FORK_ARRIVAL_CLAUSE,
     ROLE_INSTRUCTIONS,
     TEMPLATE_MANIFEST,
     _git_dirs,
     _parse_binding,
     _role_description,
+    by_name_pointer_text,
+    claude_role_adapter_text,
     discover_packages,
     discover_templates,
     frontmatter_field,
