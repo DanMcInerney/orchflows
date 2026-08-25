@@ -191,6 +191,7 @@
    "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
    "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
    "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_four_shared_adapters",
+   "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_writes_five_redirect_stubs",
    "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
    "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
    "test_installer.TestClaudeAdapterSet.test_the_parser_accepts_the_two_sets_and_refuses_any_other",

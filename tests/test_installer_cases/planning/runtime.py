@@ -164,6 +164,16 @@ class TestClaudeAdapterSet(unittest.TestCase):
             install.CODEX_SKILL_REDIRECT_NAMES,
         )
 
+    def test_installer_description_says_codex_writes_five_redirect_stubs(self):
+        description = install.__doc__ or ""
+        _, separator, codex_description = description.partition("- Codex ")
+        self.assertTrue(separator, "Codex description paragraph is missing")
+        codex_description = codex_description.partition("\n\n")[0]
+        self.assertIn("five redirect skill stubs", codex_description)
+        self.assertNotIn("four redirect skill stubs", codex_description)
+        for redirect_name in install.CODEX_SKILL_REDIRECT_NAMES:
+            self.assertIn(f"``{redirect_name}``", codex_description)
+
     def test_four_mints_exactly_the_four_shared_adapters(self):
         plan = self._plan("four")
         self.assertEqual(set(install.SHARED_ADAPTER_NAMES), self._names(plan.claude_adapters))
