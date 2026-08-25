@@ -180,10 +180,14 @@ def by_name_pointer_text(frontmatter: str, role, lib_skill_md: Path) -> str:
     return frontmatter + "\n" + fork_arrival_preamble(role) + f"Read {lib_skill_md} and follow it exactly.\n"
 
 
-def codex_role_adapter_body(name: str, profile: dict, lib_skill_md: Path) -> str:
+def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: Path) -> str:
     """Explicit Codex dispatch gate for one role-bearing named skill."""
 
-    role = profile["role"]
+    if profile["role"] != role:
+        raise ValueError(
+            f"cannot render {name}: declared role {role} does not match "
+            f"resolved profile role {profile['role']}"
+        )
     binding = profile["codex"]
     return (
         f"`{name}` requires the matching role `orch-{role}`. If this context "
@@ -219,6 +223,13 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
     missing = [f"orch-{role}" for role in PROFILE_ROLES if f"orch-{role}" not in profiles]
     if missing:
         raise ValueError(f"{profiles_md_path}: missing role profile row(s) for {', '.join(missing)}")
+    for role in PROFILE_ROLES:
+        name = f"orch-{role}"
+        declared = profiles[name]["role"]
+        if declared != role:
+            raise ValueError(
+                f"{profiles_md_path}: role profile {name} must declare role {role}, got {declared}"
+            )
     codex_agent_types = set()
     for name, profile in profiles.items():
         if not {"agent_type", "fork_turns", "model", "model_reasoning_effort"} <= set(

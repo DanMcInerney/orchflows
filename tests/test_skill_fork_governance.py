@@ -233,7 +233,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
         self.assertIn(
             FORK_ARRIVAL_CLAUSE,
             codex_role_adapter_body(
-                "orch-tdd", install.load_role_profiles()["orch-worker"], Path("X")
+                "orch-tdd", "worker", install.load_role_profiles()["orch-worker"], Path("X")
             ),
         )
 

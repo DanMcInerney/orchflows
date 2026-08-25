@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3193,
+  "count": 3198,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -165,10 +165,14 @@
    "test_installer.ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
    "test_installer.ProjectInstallBoundaryTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
    "test_installer.ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
+   "test_installer.RoleProfileRefusalTest.test_a_canonical_profile_name_must_match_its_declared_role",
+   "test_installer.RoleProfileRefusalTest.test_a_missing_codex_fork_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_a_missing_role_row_is_refused_and_the_role_is_named",
    "test_installer.RoleProfileRefusalTest.test_a_row_whose_role_is_outside_the_closed_set_is_skipped",
    "test_installer.RoleProfileRefusalTest.test_an_incomplete_claude_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_an_incomplete_codex_binding_is_refused_and_the_row_is_named",
+   "test_installer.RoleProfileRefusalTest.test_none_and_a_positive_decimal_are_valid_codex_fork_bindings",
+   "test_installer.RoleProfileRefusalTest.test_other_codex_fork_bindings_are_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_two_roles_may_not_claim_one_codex_agent_type",
    "test_installer.RuntimeVenvTests.test_dependency_install_ignores_project_and_pip_location_overrides",
    "test_installer.RuntimeVenvTests.test_dry_run_has_no_runtime_or_filesystem_effects",
@@ -647,6 +651,7 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_whose_start_cannot_be_read_is_reported_not_measured",
    "test_tickets_bound.BoundCheckCommandTest.test_a_clock_it_cannot_read_is_refused_before_any_run_is_opened",
@@ -3196,7 +3201,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "3d196b3ba7f1b436b9b07b52e464909de4cbff639cf40cfb97af8465f61fa9ce"
+  "sha256": "d57eac3ed5c880d0dfd7ad5dfd555b5d165683954e7ecb4cbdfa5c1eb9677719"
  },
  "mutation_owners": [
   {

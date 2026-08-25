@@ -178,7 +178,9 @@ def _build_user_plan(
             )
         if codex_enabled:
             codex_body = (
-                codex_role_adapter_body(name, profiles[f"orch-{role}"], lib_skill_md)
+                codex_role_adapter_body(
+                    name, role, profiles[f"orch-{role}"], lib_skill_md
+                )
                 if role in PROFILE_ROLES
                 else body.strip() + "\n"
             )
@@ -193,7 +195,7 @@ def _build_user_plan(
                         + "\n"
                         + (
                             codex_role_adapter_body(
-                                name, profiles[f"orch-{role}"], lib_skill_md
+                                name, role, profiles[f"orch-{role}"], lib_skill_md
                             )
                             if role in PROFILE_ROLES
                             else f"Read {lib_skill_md} and follow it exactly.\n"

@@ -56,6 +56,13 @@ class RoleProfileRefusalTest(unittest.TestCase):
                 ):
                     install.load_role_profiles(path)
 
+    def test_a_canonical_profile_name_must_match_its_declared_role(self):
+        path = self.table(("| `orch-planner` | planner |", "| `orch-planner` | worker |"))
+        with self.assertRaisesRegex(
+            ValueError, "role profile orch-planner must declare role planner, got worker"
+        ):
+            install.load_role_profiles(path)
+
     def test_an_incomplete_codex_binding_is_refused_and_the_row_is_named(self):
         path = self.table((", model_reasoning_effort `ultra`", ""))
         with self.assertRaisesRegex(ValueError, "incomplete Codex binding for orch-planner"):
