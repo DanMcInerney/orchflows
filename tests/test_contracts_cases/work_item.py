@@ -43,7 +43,7 @@ class TestWorkItemContract(unittest.TestCase):
         text = full[full.index("- `## Objective`"):].split("\n## Dispatch", 1)[0]
         order = [
             "Objective", "Fixed inputs", "Completion test", "Return fields",
-            "Result", "Verification", "Feedback", "Risks", "Handoff",
+            "Result", "Verification", "Feedback", "Risks", "Carry", "Handoff",
         ]
         seen = [text.index(f"`## {h}`") for h in order]
         self.assertEqual(

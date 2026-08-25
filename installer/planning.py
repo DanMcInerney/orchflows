@@ -41,6 +41,8 @@ from .models import (
 )
 from .packages import (
     TEMPLATE_MANIFEST,
+    by_name_pointer_text,
+    claude_role_adapter_text,
     codex_role_adapter_body,
     discover_packages,
     discover_templates,
@@ -166,12 +168,12 @@ def _build_user_plan(
         by_name.append(
             (
                 lib_home / "by-name" / name / "SKILL.md",
-                frontmatter + f"\nRead {lib_skill_md} and follow it exactly.\n",
+                by_name_pointer_text(frontmatter, role, lib_skill_md),
             )
         )
         if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
-                (claude_scope_home / "skills" / name / "SKILL.md", host_legal_frontmatter(frontmatter) + f"@{lib_skill_md}\n")
+                (claude_scope_home / "skills" / name / "SKILL.md", claude_role_adapter_text(frontmatter, lib_skill_md))
             )
         if codex_enabled:
             codex_body = (

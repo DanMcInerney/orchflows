@@ -1,8 +1,7 @@
 # Work-item contract (ticket)
 
 The one unit of work, plan, and record — a delegation packet made durable:
-packet parts ⊕ completion test ⊕ lifecycle ⊕ graph position, emitted by
-decomposition, consumed one per executor, integrated one per join.
+packet parts ⊕ completion test ⊕ lifecycle ⊕ graph position.
 
 Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the
 user-scope sink `scripts/state_root.py` resolves. An `excluded_actions`
@@ -23,8 +22,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 - `root_generation`, `cut_generation`, `ownership_regions`,
   `assignment_seal` — the v2 fields: content identities
   `v2:root:<root-id>:<ordinal>:sha256:<digest>` and
-  `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records
-  shaped
+  `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
   `{"artifact":"<path>","merge_oracle":"<identity>","owner":"<ticket-id>","selector":{"kind":"<kind>","value":"<stable identity>"}}`;
   and `sha256:<digest>` over the validated assignment fields `objective`,
   `inputs`, `authority`, `dependencies`, `acceptance`, `executor`. Digests,
@@ -34,11 +32,10 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 - `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
   `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
   `orch-frontier`: the first four live, `pending` and `suspended` the two
-  non-terminal waits and a suspended ticket staying claimed, resumable from
-  its `## Handoff`; the last five terminal, the join's (`orch-integrate`)
-  alone and the set [worklog.md](worklog.md)'s `terminal` and
-  [result.md](result.md)'s `status` read in, `complete` requiring PASS on
-  every required criterion.
+  non-terminal waits and a suspended ticket staying claimed, resumable from its
+  `## Handoff`; the last five terminal, the join's (`orch-integrate`) alone and
+  the set [worklog.md](worklog.md)'s `terminal` and [result.md](result.md)'s
+  `status` read in, `complete` requiring PASS on every required criterion.
 - `executor` — graph position: the named skill or script bound to do the
   work, per Executor form below; the pack's executor cell, its assembly cell
   for the terminal item, or the orchestrator selects it.
@@ -56,12 +53,12 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 - `depends_on` — graph position: list of item ids; empty list when none.
 - `write_scope` — packet `authority`: exactly what this item may change, in
   the workspace semantics of the ticket's `pack`; a strict subset of the
-  run's scope. Outside it sit the ticket's own `status` and its five
+  run's scope. Outside it sit the ticket's own `status` and its
   executor-owned sections — `## Result`, `## Verification`, `## Feedback`,
-  `## Risks`, and, suspending, `## Handoff` — append-only under v2 and never
-  in a generation or seal digest. A §10 checker corrects inside this same
-  `write_scope` ([rules/verification.md](../rules/verification.md) §9); a
-  root's cut instead.
+  `## Risks`, `## Carry`, and, suspending, `## Handoff` — append-only under
+  v2 and never in a generation or seal digest. A §10 checker corrects inside
+  this same `write_scope` ([rules/verification.md](../rules/verification.md)
+  §9); a root's cut instead.
 - `mutations` — v1 Git/design cut plan: `create:<file>`, `change:<file>`,
   `delete:<file>`, or `write:<prefix>/` nodes, each a repository-relative
   POSIX path without globs that fits `write_scope`.
@@ -122,6 +119,10 @@ Body sections, in order — completion test plus the packet's remaining parts:
   §10 checker appends its own pass and never rewrites the executor's.
 - `## Verification` — verdict entries, one per criterion; `## Feedback` and
   `## Risks` — bounded observations and risks, `[]` filling either when empty.
+- `## Carry` — optional, filed by the executor at close: the conclusions a
+  successor needs — decisions, landed identities, hazards, the command to
+  re-take a measurement — inlined by `packet` into each dependent's dispatch.
+  A successor-facing digest, never transcript: growing with history is wrong.
 - `## Handoff` — optional: the suspension, resumption, or escalation record —
   reason, remaining scope and known gaps, budget state — complete when a fresh
   agent can resume from it without the suspended agent's transcript, under
@@ -142,10 +143,9 @@ do; only `inputs` says what is true. What each part then obliges is
 [rules/delegation.md](../rules/delegation.md) §4, §5, §9 and §10 with
 [rules/composition.md](../rules/composition.md) rule 8.
 
-Blame rule, recorded at every join: work the child had to do because a
-packet field was missing or false is the caller's defect, delivered or not;
-failure to deliver the return contract inside authority and bounds is the
-child's.
+Blame rule, recorded at every join: work the child had to do because a packet
+field was missing or false is the caller's defect, delivered or not; failure to
+deliver the return contract inside authority and bounds is the child's.
 
 ## T0 supersession
 

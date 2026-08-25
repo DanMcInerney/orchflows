@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 if __package__:
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
-        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTION, REQUIRED_SECTIONS,
+        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
@@ -21,7 +21,7 @@ if __package__:
 else:
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
-        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTION, REQUIRED_SECTIONS,
+        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,

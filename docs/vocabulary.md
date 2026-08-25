@@ -223,7 +223,9 @@ composition).
   (§9, and `orch-triage` for its own), and the two **blame** classes —
   caller under-supplied, child under-delivered.
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
-  tested script, inline, worker, planner; per `rules/delegation.md` §2.
+  tested script (the `script:` executor, `contracts/work-item.md`), worker,
+  planner; role rungs per `rules/roles.md` §4. Inline is no rung:
+  `rules/delegation.md` §2 forbids it for role-bearing skills.
 - **role** — planner (judgment) or worker (execution); law in
   `rules/roles.md`.
 - **profile** — a role's concrete model and effort binding on one host,

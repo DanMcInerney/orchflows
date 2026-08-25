@@ -167,6 +167,16 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 len(install.discover_packages()) + len(templates),
                 len(plan.claude_adapters),
             )
+            role_bearing = set()
+            for skill_md in install.discover_packages():
+                skill_frontmatter, _ = install.split_frontmatter(
+                    skill_md.read_text(encoding="utf-8")
+                )
+                if install.frontmatter_field(skill_frontmatter, "role") in (
+                    "planner",
+                    "worker",
+                ):
+                    role_bearing.add(skill_md.parent.name)
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             for dest, content in plan.claude_adapters:
                 self.assertEqual(home / ".claude" / "skills", dest.parent.parent)
@@ -181,6 +191,14 @@ class TestScopedHostConfiguration(unittest.TestCase):
                     self.assertNotIn("@", body)
                     self.assertIn("tickets.py instantiate", body)
                     self.assertIn("orch-frontier", body)
+                elif dest.parent.name in role_bearing:
+                    # A role-bearing adapter forks, so its body opens with the
+                    # fork-arrival clause and then the `@`-include; the clause
+                    # is installer-rendered law, never a duplicated body.
+                    self.assertTrue(
+                        body.strip().startswith(install.FORK_ARRIVAL_CLAUSE)
+                    )
+                    self.assertIn("@", body)
                 else:
                     self.assertTrue(body.strip().startswith("@"))
                 self.assertIn(str(expected_lib_path), body)

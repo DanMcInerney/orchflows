@@ -34,11 +34,12 @@ context in any checkout resumes a run mid-flight.
     │ ## Verification      │ executor-written,                    │
     │ ## Feedback          │ streamed while the                   │
     │ ## Risks             │ work happens                         │
+    │ ## Carry             │                                      │
     │ ## Handoff           ┘                                      │
     └─────────────────────────────────────────────────────────────┘
 
 The top four sections are the **cut** — authored by the planner,
-frozen once anyone claims the ticket. The bottom five belong to the
+frozen once anyone claims the ticket. The bottom six belong to the
 executor, written as the work happens, never in one write at the end.
 Field-by-field meaning: [contracts/work-item.md](contracts/work-item.md).
 
@@ -140,6 +141,10 @@ verify re-runs the oracles.
   `## Risks`; `[]` fills an empty section so nothing is ambiguous.
   Hitting an excluded action means suspending with a `## Handoff` that
   a fresh context can resume from, not improvising.
+- **Conclusions travel forward.** At close an executor files `## Carry`
+  — the few conclusions a successor needs — and dispatch inlines each
+  dependency's Carry into the next ticket's packet, so a fresh agent
+  starts from what its predecessors learned instead of re-deriving it.
 - **Claims go stale.** Each ticket carries a `bound`; a claim past it
   with no motion is sent back to `pending` and recut before reclaim.
 - **Findings fork by severity.** Blocking defects go to `orch-repair`;

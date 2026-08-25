@@ -49,11 +49,13 @@ def frontmatter_of(path: Path) -> str:
 
 
 class TestResultClosedSet(unittest.TestCase):
-    """contracts/work-item.md:56-57 names exactly what an executor writes."""
+    """contracts/work-item.md names exactly what an executor writes."""
 
     def test_the_writable_set_is_the_contracts_five(self):
+        # six since `Carry` joined the census; the method name is pinned by
+        # tests/serial_compat_manifest.json, which the join regenerates once
         self.assertEqual(
-            ("Result", "Verification", "Feedback", "Risks", "Handoff"),
+            ("Result", "Verification", "Feedback", "Risks", "Carry", "Handoff"),
             tickets_mod.EXECUTOR_SECTIONS,
         )
 
