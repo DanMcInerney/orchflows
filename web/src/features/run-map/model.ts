@@ -96,6 +96,25 @@ export interface ReadinessGroup {
   statuses: string[];
 }
 
+export type SkillPhase = "ran" | "running" | "remaining";
+export type SkillContinuity = "first" | "same-subagent" | "new-subagent" | "unclaimed";
+
+export interface SkillStep {
+  order: number;
+  skill: string;
+  agent: string;
+  phase: SkillPhase;
+  continuity: SkillContinuity;
+  ticket: TicketSummary;
+}
+
+export interface SkillSequence {
+  steps: SkillStep[];
+  ran: number;
+  running: number;
+  remaining: number;
+}
+
 const GROUP_LABEL: Record<ReadinessState, string> = {
   attention: "Needs attention",
   running: "Running",
@@ -228,6 +247,106 @@ export function readinessGroups(tickets: TicketSummary[]): ReadinessGroup[] {
   }).filter((group) => group.ticketIds.length > 0);
 }
 
+export function statusGlyph(state: string): string {
+  if (state === "complete") return "✓";
+  if (state === "attention") return "!";
+  if (state === "running") return "◉";
+  if (state === "ready") return "▶";
+  if (state === "waiting") return "•";
+  return "?";
+}
+
+function dependencyDepth(tickets: TicketSummary[]): Map<string, number> {
+  const indexed = new Map(tickets.map((ticket) => [ticket.id, ticket]));
+  const depths = new Map<string, number>();
+
+  function depth(id: string, active: Set<string>): number {
+    const known = depths.get(id);
+    if (known !== undefined) return known;
+    const ticket = indexed.get(id);
+    if (!ticket || active.has(id)) return 0;
+    const next = new Set(active).add(id);
+    const value = ticket.depends_on.length
+      ? Math.max(0, ...ticket.depends_on.map((dependency) => depth(dependency, next))) + 1
+      : 0;
+    depths.set(id, value);
+    return value;
+  }
+
+  for (const ticket of tickets) depth(ticket.id, new Set());
+  return depths;
+}
+
+/**
+ * A claim alone does not mean a skill ran: `waiting` and `ready` are canonically
+ * unstarted, so a claim stamp on either is stale and the step stays still-to-run.
+ * Only readiness says a skill started, and the node's glyph reads the same field.
+ */
+function skillPhase(ticket: TicketSummary): SkillPhase {
+  const state = ticket.readiness.state;
+  if (state === "running") return "running";
+  if (state === "complete") return "ran";
+  if (state === "waiting" || state === "ready") return "remaining";
+  return ticket.claimed_at.trim() ? "ran" : "remaining";
+}
+
+/**
+ * Same-subagent holds exactly when consecutive steps carry equal non-empty `claimed_by`
+ * values. `claimed_by` is a claim-time field: absent or empty on unclaimed and pending
+ * tickets, and an empty value on either side is neither same-subagent nor new-subagent.
+ * The claim is scoped to this run; no continuity is implied across runs.
+ */
+function continuityBetween(previous: SkillStep | undefined, agent: string): SkillContinuity {
+  if (!previous) return "first";
+  if (!previous.agent || !agent) return "unclaimed";
+  return previous.agent === agent ? "same-subagent" : "new-subagent";
+}
+
+export function skillSequence(tickets: TicketSummary[]): SkillSequence {
+  const depths = dependencyDepth(tickets);
+  const entries = tickets.map((ticket, index) => ({ ticket, index, phase: skillPhase(ticket) }));
+
+  function order(started: boolean) {
+    return (left: typeof entries[number], right: typeof entries[number]): number => {
+      if (started) {
+        const leftClaim = left.ticket.claimed_at.trim() || "￿";
+        const rightClaim = right.ticket.claimed_at.trim() || "￿";
+        if (leftClaim !== rightClaim) return leftClaim.localeCompare(rightClaim);
+      }
+      const leftDepth = depths.get(left.ticket.id) ?? 0;
+      const rightDepth = depths.get(right.ticket.id) ?? 0;
+      if (leftDepth !== rightDepth) return leftDepth - rightDepth;
+      if (left.ticket.id !== right.ticket.id) return left.ticket.id.localeCompare(right.ticket.id);
+      return left.index - right.index;
+    };
+  }
+
+  const sequenced = [
+    ...entries.filter((entry) => entry.phase !== "remaining").sort(order(true)),
+    ...entries.filter((entry) => entry.phase === "remaining").sort(order(false))
+  ];
+
+  const steps: SkillStep[] = [];
+  for (const entry of sequenced) {
+    const agent = entry.ticket.claimed_by.trim();
+    steps.push({
+      order: steps.length + 1,
+      skill: entry.ticket.executor.trim() || "unnamed skill",
+      agent,
+      phase: entry.phase,
+      continuity: continuityBetween(steps.at(-1), agent),
+      ticket: entry.ticket
+    });
+  }
+
+  return {
+    steps,
+    ran: steps.filter((step) => step.phase === "ran").length,
+    running: steps.filter((step) => step.phase === "running").length,
+    remaining: steps.filter((step) => step.phase === "remaining").length
+  };
+}
+
 export function filterTickets(
   tickets: TicketSummary[],
   filter: RunMapFilter,
@@ -295,4 +414,4 @@ export function authoritativeCausalFocus(ticketId: string, tickets: TicketSummar
   };
 }
 
-export const model = { buildTopology, readinessGroups, filterTickets, authoritativeCausalFocus };
+export const model = { buildTopology, readinessGroups, skillSequence, filterTickets, authoritativeCausalFocus, statusGlyph };

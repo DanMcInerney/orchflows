@@ -30,11 +30,13 @@ import { executionTicketRoute } from "../../shared/routes/executionRoutes";
 import type { FeatureState } from "../../shared/transport/types";
 import { runForIdentity } from "./fixtures";
 import { RunTopologyMiniMap } from "./RunTopologyMiniMap";
+import { SkillSequence } from "./SkillSequence";
 import {
   authoritativeCausalFocus,
   buildTopology,
   filterTickets,
   readinessGroups,
+  statusGlyph,
   type CausalFocus,
   type ReadinessGroup,
   type RunDetail,
@@ -73,15 +75,6 @@ function initialLevel(identity: string): DisclosureLevel {
 
 function compactWorkspace(): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1100px)").matches;
-}
-
-function statusGlyph(state: string): string {
-  if (state === "complete") return "✓";
-  if (state === "attention") return "!";
-  if (state === "running") return "◉";
-  if (state === "ready") return "▶";
-  if (state === "waiting") return "•";
-  return "?";
 }
 
 function TicketNode({ data, selected }: NodeProps) {
@@ -441,6 +434,8 @@ export function RunMapView({ route, state }: RunMapViewProps) {
         {level >= 2 && <><ChevronRight aria-hidden="true" /><button type="button" aria-current={level === 2 ? "page" : undefined} onClick={() => setLevel(2)}>Canonical graph</button></>}
         {level === 3 && <><ChevronRight aria-hidden="true" /><span aria-current="page">Inspector</span></>}
       </nav>
+
+      <SkillSequence runId={run.id} fixture={route.fixture} tickets={run.tickets} />
 
       {level === 0 && <FleetView runs={state.model?.runs ?? []} />}
       {level === 1 && <SummaryView run={run} onGroup={openGroup} onExpand={() => setLevel(2)} />}

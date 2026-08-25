@@ -26,6 +26,8 @@
     {"identity": "now--unreadable-data--compact", "view": "now", "state": "unreadable-data", "breakpoint": "compact", "path": "/now?fixture=unreadable-data"},
     {"identity": "now--live-paused--wide", "view": "now", "state": "live-paused", "breakpoint": "wide", "path": "/now?fixture=live-paused"},
     {"identity": "now--live-paused--compact", "view": "now", "state": "live-paused", "breakpoint": "compact", "path": "/now?fixture=live-paused"},
+    {"identity": "now--empty--wide", "view": "now", "state": "empty", "breakpoint": "wide", "path": "/now?fixture=empty"},
+    {"identity": "now--empty--compact", "view": "now", "state": "empty", "breakpoint": "compact", "path": "/now?fixture=empty"},
     {"identity": "workflow-catalog--populated--wide", "view": "workflow-catalog", "state": "populated", "breakpoint": "wide", "path": "/workflows?fixture=populated"},
     {"identity": "workflow-catalog--populated--compact", "view": "workflow-catalog", "state": "populated", "breakpoint": "compact", "path": "/workflows?fixture=populated"},
     {"identity": "workflow-catalog--empty--wide", "view": "workflow-catalog", "state": "empty", "breakpoint": "wide", "path": "/workflows?fixture=empty"},

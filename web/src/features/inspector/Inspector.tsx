@@ -80,6 +80,19 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
   const history = durableHistory(viewModel, route);
   const objective = ticket.sections.objective || "No objective was recorded.";
   const result = ticket.sections.result;
+  const claim = ticket.claimed_by && ticket.claimed_at ? `${ticket.claimed_by} · ${ticket.claimed_at}` : "Unclaimed";
+  const agents = Array.from(new Set(history.map((item) => item.agent).filter(Boolean)));
+  const stats: Array<{ label: string; value: number }> = [
+    { label: "Criteria", value: rows.length },
+    { label: "Depends", value: ticket.depends_on.length },
+    { label: "Friction", value: friction.length },
+    { label: "Events", value: history.length }
+  ];
+  const identities = [
+    ticket.executor || "executor unavailable",
+    ticket.pack || "pack unavailable",
+    ticket.bound ? `bound ${ticket.bound}` : "bound unavailable"
+  ];
 
   const changeTab = (value: string) => {
     const next = value as InspectorTab;
@@ -90,20 +103,27 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
   return (
     <section className="foundation-view ticket-inspector" data-state={state} data-fixture={route.fixture || "live"} aria-labelledby="ticket-title">
       {featureState.status === "stale" && <div className="notice" role="status">{featureState.error.message}</div>}
-      <header className="inspector-header">
-        <div className="inspector-breadcrumb" aria-label="Ticket location">
-          <span>Now</span><ArrowRight aria-hidden="true" /><span className="mono">{route.run}</span><ArrowRight aria-hidden="true" />
-          <strong className="mono">{ticket.id}</strong>
-        </div>
-        <div className="inspector-heading">
-          <div>
-            <p className="eyebrow">Inspector evidence</p>
+      <div className="inspector-breadcrumb" aria-label="Ticket location">
+        <span>Now</span><ArrowRight aria-hidden="true" /><span className="mono">{route.run}</span><ArrowRight aria-hidden="true" />
+        <strong className="mono">{ticket.id}</strong>
+      </div>
+      <header className="inspector-hero">
+        <div className="inspector-hero__identity">
+          <p className="eyebrow">Inspector evidence</p>
+          <div className="inspector-hero__title">
             <h1 id="ticket-title">{ticket.id}</h1>
+            <div className="inspector-status" data-state={state} aria-label={`Ticket state: ${state}`}>
+              <StateGlyph state={state} /><span>{state}</span><small>{ticket.status}</small>
+            </div>
           </div>
-          <div className="inspector-status" data-state={state} aria-label={`Ticket state: ${state}`}>
-            <StateGlyph state={state} /><span>{state}</span><small>{ticket.status}</small>
+          <p className="inspector-lede">{ticket.readiness.explanation || "No readiness explanation was projected."}</p>
+          <div className="inspector-identities" aria-label="Ticket routing identities">
+            {identities.map((item) => <span key={item}>{item}</span>)}
           </div>
         </div>
+        <dl className="inspector-stats">
+          {stats.map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
+        </dl>
       </header>
 
       <Tabs.Root className="inspector-tabs" value={tab} onValueChange={changeTab} orientation="horizontal">
@@ -126,7 +146,11 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
             <article className="inspector-card inspector-card--phase">
               <p className="eyebrow">What is happening</p><h2>Current phase</h2>
               <div className="phase-state" data-state={state}><StateGlyph state={state} /><strong>{state}</strong><span>{ticket.status}</span></div>
-              <p>{ticket.readiness.explanation || "No readiness explanation was projected."}</p>
+              <dl className="fact-rows">
+                <div><dt>Cause</dt><dd className="mono">{ticket.readiness.cause}</dd></div>
+                <div><dt>Claim</dt><dd>{claim}</dd></div>
+                {ticket.readiness.causal_chain.length > 0 && <div><dt>Chain</dt><dd className="mono">{ticket.readiness.causal_chain.join(" → ")}</dd></div>}
+              </dl>
             </article>
             <article className="inspector-card inspector-card--next">
               <p className="eyebrow">What happens next</p><h2>Next transition</h2>
@@ -150,12 +174,12 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
         <Tabs.Content className="inspector-panel" value="proof">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Verification evidence</p><h2>Criteria and verdicts</h2><p>Every projected criterion keeps its oracle class and evidence identity.</p></div>
             <section className="judgment-summary" aria-labelledby="judgment-title">
-              <div><p className="eyebrow">Canonical fields only</p><h3 id="judgment-title">Judgment explanation</h3></div>
-              <dl>
+              <div className="judgment-heading"><p className="eyebrow">Canonical fields only</p><h3 id="judgment-title">Judgment explanation</h3></div>
+              <dl className="fact-rows">
                 {["result", "feedback", "risks"].map((name) => <div key={name}><dt>{name}</dt><dd>{ticket.sections[name] || "Unavailable"}</dd></div>)}
-                <div><dt>Rationale</dt><dd>{ticket.judgment?.rationale_state === "available" && ticket.judgment.rationale_identity
-                  ? <code>{ticket.judgment.rationale_identity}</code>
-                  : <><strong>Rationale unavailable</strong><span>{ticket.judgment?.rationale_reason || "No canonical rationale identity was recorded."}</span></>}</dd></div>
+                <div><dt>Rationale</dt><dd>{ticket.judgment?.rationale.state === "available" && ticket.judgment.rationale.identity
+                  ? <code>{ticket.judgment.rationale.identity.id}</code>
+                  : <><strong>Rationale unavailable</strong><span>No canonical rationale identity was recorded.</span></>}</dd></div>
               </dl>
             </section>
             {rows.some((row) => row.verdict.toLowerCase() === "fail") && <div className="proof-alert" role="status"><AlertTriangle aria-hidden="true" /><div><strong>Criterion {rows.find((row) => row.verdict.toLowerCase() === "fail")?.criterion} failed</strong><p>{rows.find((row) => row.verdict.toLowerCase() === "fail")?.oracle}: {rows.find((row) => row.verdict.toLowerCase() === "fail")?.evidence}</p></div></div>}
@@ -164,9 +188,14 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
               const Icon = verdict === "pass" ? CheckCircle2 : verdict === "fail" ? AlertTriangle : CircleHelp;
               return <article className="proof-row" data-verdict={verdict} role="listitem" key={`${row.criterion}-${row.oracle}`}>
                 <div className="proof-verdict"><Icon aria-hidden="true" /><span>{row.verdict}</span><small>Criterion {row.criterion}</small></div>
-                <div><span className="field-label">Oracle</span><strong className="mono">{row.oracle}</strong></div>
-                <div><span className="field-label">Class</span><span>{row.oracleClass}</span></div>
-                <div><span className="field-label">Evidence</span><code>{row.evidence}</code></div>
+                <div className="proof-oracle"><span className="field-label">Oracle</span><strong className="mono">{row.oracle}</strong></div>
+                <details className="disclosure proof-evidence" open={verdict !== "pass"}>
+                  <summary>Criterion {row.criterion} evidence</summary>
+                  <dl>
+                    <div><dt>Class</dt><dd><span>{row.oracleClass}</span></dd></div>
+                    <div><dt>Identity</dt><dd><code>{row.evidence}</code></dd></div>
+                  </dl>
+                </details>
               </article>;
             })}</div> : <EmptyEvidence title="Proof unavailable">No verification rows were projected. Unknown is preserved; it is not treated as a pass.</EmptyEvidence>}
           </article>
@@ -187,16 +216,28 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
 
         <Tabs.Content className="inspector-panel" value="friction">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Linked by run and ticket</p><h2>Friction records</h2></div>
-            {friction.length ? <div className="friction-list">{friction.map((item, index) => <article className="friction-record" key={`${item.ts}-${index}`}>
-              <header><AlertTriangle aria-hidden="true" /><time>{item.ts}</time></header>
-              <dl><div><dt>Observed</dt><dd>{item.observed}</dd></div><div><dt>Expected</dt><dd>{item.expected}</dd></div><div><dt>Host</dt><dd>{item.host}</dd></div></dl>
+            {friction.length ? <div className="friction-list" role="list" aria-label="Linked friction records">{friction.map((item, index) => <article className="friction-row" role="listitem" key={`${item.ts}-${index}`}>
+              <div className="friction-row__headline"><AlertTriangle aria-hidden="true" /><strong>{item.observed}</strong><time className="mono">{item.ts}</time></div>
+              <details className="disclosure friction-row__detail">
+                <summary>Expectation and host</summary>
+                <dl><div><dt>Expected</dt><dd>{item.expected}</dd></div><div><dt>Host</dt><dd className="mono">{item.host}</dd></div></dl>
+              </details>
             </article>)}</div> : <EmptyEvidence title="No linked friction">No friction record names both this run and this ticket.</EmptyEvidence>}
           </article>
         </Tabs.Content>
 
         <Tabs.Content className="inspector-panel" value="history">
-          <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Durable evidence only</p><h2>History</h2></div>
-            {history.length ? <ol className="history-list">{history.map((item, index) => <li key={`${item.ts}-${index}`}><Clock3 aria-hidden="true" /><div><strong>{item.event}</strong><p>{item.detail || "No durable detail recorded."}</p><span>{item.agent} · {item.ts}</span></div></li>)}</ol> : <EmptyEvidence title="History unavailable">No durable claim or event evidence is available for this ticket. Activity is not inferred from transcripts.</EmptyEvidence>}
+          <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Durable evidence only</p><h2>History</h2>
+            {agents.length > 0 && <p>{agents.length === 1 ? "One agent identity" : `${agents.length} agent identities`} recorded across {history.length} durable {history.length === 1 ? "event" : "events"}.</p>}</div>
+            {history.length ? <ol className="history-list" aria-label="Durable ticket events">{history.map((item, index) => <li className="history-row" key={`${item.ts}-${index}`}>
+              <span className="history-row__glyph"><Clock3 aria-hidden="true" /></span>
+              <strong>{item.event}</strong>
+              <time className="mono">{item.ts}</time>
+              <span className="history-row__agent mono">{item.agent}</span>
+              {item.detail
+                ? <details className="disclosure history-row__detail"><summary>Durable detail</summary><p>{item.detail}</p></details>
+                : <p className="history-row__detail history-row__detail--empty">No durable detail recorded.</p>}
+            </li>)}</ol> : <EmptyEvidence title="History unavailable">No durable claim or event evidence is available for this ticket. Activity is not inferred from transcripts.</EmptyEvidence>}
           </article>
         </Tabs.Content>
 

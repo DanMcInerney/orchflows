@@ -77,7 +77,7 @@ describe("feature package boundaries", () => {
   });
 
   it("keeps execution descendants under Now in the rendered identity contract", () => {
-    expect(viewManifest.views).toHaveLength(60);
+    expect(viewManifest.views).toHaveLength(62);
     expect(viewManifest.navigationParents).toEqual({
       now: "Now",
       "run-map": "Now",

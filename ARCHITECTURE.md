@@ -7,18 +7,18 @@ whitespace-delimited words. Terms are
 ## Four tiers
 
 - **T0 — [`contracts/`](contracts/):** the narrow waist. Each contract
-  owns one pure data shape, hash-pinned: a field or enum change is
-  breaking even when the prose meaning holds.
+  owns one pure data shape, hash-pinned: a field or enum change breaks
+  it even when the prose meaning holds.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
-  primitives that call no skill; `engines/` own control flow;
-  `workflows/` own domain-blind behavior; `instances/` own domain
-  executors and lenses; `utilities/` own generic leaf behavior. A
-  package owns its `SKILL.md`, `references/`, and `scripts/`.
+  primitives calling no skill; `engines/` control flow; `workflows/`
+  domain-blind behavior; `instances/` domain executors and lenses;
+  `utilities/` generic leaf behavior. A package owns its `SKILL.md`,
+  `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.
   Cells bind generic workflows to the domain concerns the signature
-  lists. The signature owns term-placement constraints; `craft` owns
-  domain vocabulary and domain-only shape.
+  lists; the signature owns term-placement constraints, `craft` domain
+  vocabulary and domain-only shape.
 - **T3 — [`compositions/`](compositions/):** named workflow templates.
   Their ticket stubs follow the
   [work-item contract](contracts/work-item.md), admitted through
@@ -26,11 +26,11 @@ whitespace-delimited words. Terms are
 
 ## Cross-cutting owners
 
-- [`rules/`](rules/) owns cross-cutting law. Scope, dependency, and
+- [`rules/`](rules/) owns cross-cutting law. Scope, dependency,
   canonical-fact ownership are [visibility](rules/visibility.md) §§1–3's.
 - [`docs/`](docs/) owns on-demand reference. `vocabulary.md` owns
-  library terms; `documentation.md` owns documentation design and the
-  reading order; each remaining file owns its named subject.
+  library terms; `documentation.md` documentation design and the
+  reading order; each remaining file its named subject.
 - [`scripts/`](scripts/) owns repository automation. Programs use Python
   3.9+ on Windows and POSIX, no network at run time. An unprefixed family
   module is the public command and import facade; same-family helpers own internal
@@ -47,25 +47,25 @@ whitespace-delimited words. Terms are
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
-  owns executable-source line ceilings.
+  executable-source line ceilings.
   [`tools/run_required.py`](tools/run_required.py) owns the local
   required-check run and its tree-keyed verdict cache.
   [`tools/affected_tests.py`](tools/affected_tests.py) owns
   write-scope-to-test-module derivation.
   [`tools/run_report.py`](tools/run_report.py) owns the retrospective speed
-  report. [`tools/verify_at.py`](tools/verify_at.py) owns running one command
-  in a detached worktree at an exact revision.
-  [`tools/run_tests_scope.py`](tools/run_tests_scope.py) owns scoped test
+  report. [`tools/verify_at.py`](tools/verify_at.py) owns running a command
+  in a detached worktree at an exact revision;
+  [`tools/run_tests_scope.py`](tools/run_tests_scope.py) scoped test
   selection.
   [`tests/`](tests/) owns regression evidence and pinned canonical
-  bytes. [`AGENTS.md`](AGENTS.md) owns required checks and local-versus-CI
+  bytes; [`AGENTS.md`](AGENTS.md) required checks and local-versus-CI
   guidance.
 - [`templates/`](templates/) owns host-block source. [`install.py`](install.py)
   is the installation compatibility facade; [`installer/`](installer/) owns
-  static support, `installer/runtime.py` owns the private runtime at
-  `~/.orchflows/runtime`, and the planning/application/uninstall modules own
-  the immutable frontend at `~/.orchflows/ui`. The user install is the only
-  installation scope, creating or reusing both. Replacement is staged and
+  static support, `installer/runtime.py` the private runtime at
+  `~/.orchflows/runtime`, and the planning/application/uninstall modules the
+  immutable frontend at `~/.orchflows/ui`. The user install is the only
+  installation scope, creating or reusing both; replacement is staged and
   probed before an owned prior generation moves.
   [`requirements-runtime.in`](requirements-runtime.in)
   and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins
@@ -74,43 +74,47 @@ whitespace-delimited words. Terms are
 - [`package.json`](package.json) and [`pnpm-lock.yaml`](pnpm-lock.yaml) own the
   exact browser build graph; Node and pnpm stop at the repository boundary.
   [`tools/ui_frontend.py`](tools/ui_frontend.py) owns deterministic build,
-  license, browser-smoke, capture, accessibility, and visual-diff admission.
+  license, browser-smoke, capture, accessibility, visual-diff admission.
   [`web/src/app/catalog.ts`](web/src/app/catalog.ts) owns route
-  matching/building, navigation order, view loading, and data binding;
+  matching/building, navigation order, view loading, data binding;
   [`web/src/app/shell/`](web/src/app/shell/) owns browser location and
   reader chrome. [`web/src/features/`](web/src/features/) owns each
   feature's routes, schemas, requests, projections, models, views,
-  fixtures, styles, and tests.
+  fixtures, styles, tests.
   [`web/src/shared/transport/`](web/src/shared/transport/) owns
-  feature-blind HTTP, ETag, retry, generation, and polling mechanics.
+  feature-blind HTTP, ETag, retry, generation, polling mechanics.
   [`web/src/design/`](web/src/design/) and [`web/src/styles/`](web/src/styles/)
-  own tokens. Dependency direction: `shell -> catalog -> feature -> shared`.
+  own tokens. Dependency direction: `shell -> catalog -> feature -> shared`,
+  with one named reuse edge: the Now view renders the Workflows-owned
+  [`SummaryFlow`](web/src/features/workflows/view/SummaryFlow.tsx) flowchart
+  and its stylesheet rather than paralleling it; Workflows keeps ownership, and a
+  second summary-flow component is a defect.
   `web/dist` owns the committed content-hashed distribution the installer
-  copies. The installed reader never runs a package manager or build.
+  copies; the installed reader never runs a package manager or build.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale; [`README.md`](README.md)
   is the human entry surface, not an owner of agent law.
 
 ## Runtime routing pins
 
-Helper membership is derived from code, not inventoried here. Two
+Helper membership derives from code, not inventoried here. Two
 non-derivable facts: `scripts/cutcheck.py` owns cut-defect
 detection over issued ticket sets; `scripts/tickets.py` owns
 the public ticket facade, the one root/gate
 family, immutable run identity (`opened_at`, installed version, source commit),
-and immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
-`tickets.py help` is operator-only: it answers a usage request.
+immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
+`tickets.py help` is operator-only: it answers usage requests.
 `tickets.py grant` is operator-only: only the dispatcher widens claimed
 authority.
 
 The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns
 route assembly, query validation, shared JSON ETags and closed failures,
-security middleware, and loopback Starlette/Uvicorn with fallback parity.
+security middleware, loopback Starlette/Uvicorn with fallback parity.
 Domain projections belong to `scripts/ui_artifacts_projection.py`,
 `scripts/ui_now_projection.py`,
 `scripts/ui_runs_projection.py`, `scripts/ui_workflows_projection.py`,
-`scripts/ui_sessions_projection.py`, and `scripts/ui_friction_projection.py`.
+`scripts/ui_sessions_projection.py`, `scripts/ui_friction_projection.py`.
 The Workflows projector owns `/api/v1/workflows`,
-`/api/v1/workflows/{workflow_id}` and
+`/api/v1/workflows/{workflow_id}`,
 `/api/v1/workflows/{workflow_id}/sources/{source_id}`; the typed catalog
 owns their browser counterparts under `/workflows`.
 `scripts/ui_experience.py` owns only the `orchflows.experience.v1`
@@ -123,7 +127,7 @@ stays in `scripts/ui_server.py`.
 
 ## State boundary
 
-- state sink — root, trust boundary, write law, record requirements, and
+- state sink — root, trust boundary, write law, record requirements,
   failure behavior: [visibility §6](rules/visibility.md). Resolver:
   [`scripts/state_root.py`](scripts/state_root.py). Research evidence lives in
   the sink's `research/` tree.
@@ -133,13 +137,13 @@ stays in `scripts/ui_server.py`.
 
 ## Dependency direction
 
-Arrows point from a reader or binder to what it depends on:
+Arrows point from reader or binder to dependency:
 
 `AGENTS.md` → `rules/` → `contracts/` → `skills/` → package `scripts/`.
 
 Packs depend on contracts and may name instance skills. Generic skills
 never name a pack or domain. Composition stubs bind skills or scripts as
 executors; no skill depends on a composition template. A lower layer
-may link the law or contract that binds it; a rule never depends on
+may link the law or contract binding it; a rule never depends on
 package internals for its meaning. Shared packages never name project packages;
 project packages may name visible ones.

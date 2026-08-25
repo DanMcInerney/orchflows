@@ -40,11 +40,16 @@ function artifacts(value: unknown): boolean {
     && optionalText(value.reason));
 }
 
+function rationale(value: unknown): boolean {
+  return record(value)
+    && ["available", "unavailable"].includes(String(value.state))
+    && (value.identity === null || (record(value.identity)
+      && typeof value.identity.kind === "string"
+      && typeof value.identity.id === "string"));
+}
+
 function judgment(value: unknown): boolean {
-  return value === undefined || (record(value)
-    && typeof value.rationale_identity === "string"
-    && ["available", "unavailable"].includes(String(value.rationale_state))
-    && optionalText(value.rationale_reason));
+  return value === undefined || (record(value) && rationale(value.rationale));
 }
 
 function ticket(value: unknown): value is TicketDetail {

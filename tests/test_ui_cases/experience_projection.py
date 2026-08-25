@@ -135,7 +135,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
 
         manifest = json.loads((ROOT / "docs" / "ui" / "view-manifest.json").read_text(encoding="utf-8"))
         states = {
-            "now": ["mixed-live", "needs-attention", "no-active-runs", "unreadable-data", "live-paused"],
+            "now": ["mixed-live", "needs-attention", "no-active-runs", "unreadable-data", "live-paused", "empty"],
             "run-map": ["summary-active", "full-collapsed", "full-expanded", "blocked-causal", "completed", "malformed-topology"],
             "ticket": ["running-overview", "proof-pass", "proof-fail", "friction-present", "history-unavailable", "raw-escaped"],
             "sessions": ["populated", "empty", "diagnostic"],
@@ -154,7 +154,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertEqual("orchflows.view-manifest.v1", manifest["schema"])
         self.assertEqual({"wide": [1440, 1024], "compact": [1024, 768]}, manifest["breakpoints"])
         self.assertEqual(expected, {item["identity"] for item in manifest["views"]})
-        self.assertEqual(60, len(manifest["views"]))
+        self.assertEqual(62, len(manifest["views"]))
         for item in manifest["views"]:
             self.assertEqual(item["identity"], "{view}--{state}--{breakpoint}".format(**item))
             self.assertTrue(item["path"].startswith("/"))

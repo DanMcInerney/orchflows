@@ -317,6 +317,7 @@ def smoke(browser: str, experience: bool = False) -> dict:
         raise RuntimeError("unsupported browser: {0}".format(browser))
     environment = os.environ.copy()
     environment.pop("FORCE_COLOR", None)
+    environment["NO_COLOR"] = "1"
     environment["ORCHFLOWS_BROWSER"] = browser
     environment["ORCHFLOWS_UI_EXPERIENCE"] = "1" if experience else "0"
     environment.setdefault("ORCHFLOWS_PYTHON", sys.executable)
@@ -342,8 +343,8 @@ def _view_manifest(path: str) -> dict:
     if manifest.get("schema") != "orchflows.view-manifest.v1":
         raise RuntimeError("unsupported view manifest schema")
     identities = [item.get("identity") for item in manifest.get("views", ())]
-    if len(identities) != 60 or len(set(identities)) != 60:
-        raise RuntimeError("view manifest must carry 60 unique identities")
+    if len(identities) != 62 or len(set(identities)) != 62:
+        raise RuntimeError("view manifest must carry 62 unique identities")
     return manifest
 
 
@@ -355,6 +356,7 @@ def _visual_run(action: str, host: str, port: int, manifest: str, browser: str, 
     contract = _view_manifest(manifest)
     environment = os.environ.copy()
     environment.pop("FORCE_COLOR", None)
+    environment["NO_COLOR"] = "1"
     environment["ORCHFLOWS_UI_ACTION"] = action
     environment["ORCHFLOWS_UI_API_ORIGIN"] = "http://{0}:{1}".format(host, port)
     environment["ORCHFLOWS_UI_MANIFEST"] = str(Path(manifest).resolve())

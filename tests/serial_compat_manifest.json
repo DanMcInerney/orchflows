@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3090,
+  "count": 3097,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -2531,6 +2531,13 @@
    "tests.test_ui_cases.root_resolution.TestUiResolvesSink.test_no_ticket_resolves_outside_the_sinks_tickets_root",
    "tests.test_ui_cases.root_resolution.TestUiResolvesSink.test_the_containment_root_moved_with_the_tickets_root",
    "tests.test_ui_cases.root_resolution.TestUiResolvesSink.test_the_three_streams_render_from_a_sink",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_a_run_json_naming_another_run_is_not_this_runs_identity",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_an_unrecorded_or_unusable_project_name_stays_empty",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_client_stays_empty_because_no_projection_safe_source_exists",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_repository_is_the_recorded_project_leaf_name",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_terminal_timing_is_projected_verbatim_and_empty_while_live",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_the_folder_name_opens_no_path_origin_or_workspace",
+   "tests.test_ui_cases.run_folder_projection.RunFolderProjectionTests.test_the_summary_carries_exactly_the_now_schemas_keys",
    "tests.test_ui_cases.session_activity.TestActivityState.test_a_call_whose_result_came_back_is_the_only_thing_read_as_finished",
    "tests.test_ui_cases.session_activity.TestActivityState.test_a_call_with_no_result_yet_is_read_as_running",
    "tests.test_ui_cases.session_activity.TestActivityState.test_a_result_for_a_call_that_never_happened_is_not_a_finished_agent",
@@ -3093,7 +3100,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1aa5a5f450920302d221bbcf28d3b2763b5d2213c2b1b5fe1819a8de33c7a66b"
+  "sha256": "ed3f11bd521353847cc9170290d3cdc1c7d3904f831a5dcc50f8920a5ee53c6a"
  },
  "mutation_owners": [
   {

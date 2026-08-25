@@ -40,8 +40,11 @@ test.beforeAll(async () => {
   }
   stateRoot = await mkdtemp(join(tmpdir(), "orchflows-smoke-"));
   await mkdir(join(stateRoot, "tickets"));
-  await cp(resolve("tests", "fixtures", "ui", "run-gamma"), join(stateRoot, "tickets", "run-gamma"), { recursive: true });
-  await cp(resolve("tests", "fixtures", "ui", "run-gamma"), join(stateRoot, "tickets", "run-delta"), { recursive: true });
+  for (const run of ["run-alpha", "run-beta", "run-delta", "run-epsilon", "run-gamma"]) {
+    await cp(resolve("tests", "fixtures", "ui", run), join(stateRoot, "tickets", run), { recursive: true });
+  }
+  // Folder identity and completion timing live beside the tickets, not in them.
+  await cp(resolve("tests", "fixtures", "ui", "runs"), join(stateRoot, "runs"), { recursive: true });
   const objectivePath = join(stateRoot, "tickets", "run-gamma", "G1.md");
   const objectiveTicket = await readFile(objectivePath, "utf8");
   await writeFile(
@@ -317,7 +320,7 @@ test("compiled experience preserves keyboard-reachable observer state across ref
 
 test("experience drill-down stays actionable and bounded in a real browser", async ({ page }) => {
   test.skip(action !== "smoke" || !experienceMode);
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
   await page.setViewportSize({ width: 1440, height: 1024 });
 
   await page.goto(`${origin}/workflows`);
@@ -363,8 +366,71 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   const objectiveHeights = await page.locator(".now-objective-summary").evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
   expect(Math.max(...objectiveHeights)).toBeLessThanOrEqual(72);
   await expect(nowRun.getByText("Full objective")).toBeVisible();
-  await nowRun.locator(".now-run-card__open").click();
-  await expect(page).toHaveURL(/\/runs\/[^/?]+$/);
+
+  // The served projection carries folder identity and completion timing, and
+  // carries no host path, origin or workspace out of the fixture run records.
+  const nowPayload = await (await page.request.get(`${origin}/api/v1/views/now`)).json();
+  const projected = Object.fromEntries(nowPayload.runs.map((run) => [run.id, run]));
+  expect(projected["run-gamma"].repository, "live run folder leaf").toBe("atlas-web");
+  expect(projected["run-delta"].repository, "backslash name reduces to the same leaf").toBe("atlas-web");
+  expect(projected["run-beta"].repository, "no run.json records no folder").toBe("");
+  expect(projected["run-epsilon"].terminal_at).toBe("2026-08-25T11:40:00Z");
+  expect(projected["run-epsilon"].terminal_status).toBe("limited");
+  expect(projected["run-gamma"].terminal_at, "a live run has no terminal timing").toBe("");
+  const nowBody = JSON.stringify(nowPayload);
+  for (const forbidden of ["/srv/fleet", "C:\\fleet", "example.invalid", ".worktrees"]) {
+    expect(nowBody.includes(forbidden), `privacy wall holds against ${forbidden}`).toBe(false);
+  }
+
+  // Running folders lead, the trouble-bearing folder first: `aegis-notes` sorts
+  // ahead of `atlas-web` alphabetically and yields to it because it needs nothing.
+  const runningFolders = page.locator("section[aria-labelledby='now-running-heading'] .now-folder h3");
+  await expect(runningFolders, "running folders, trouble first").toHaveText(["atlas-web", "aegis-notes", "Folder unrecorded"]);
+  const pastFolders = page.locator("section[aria-labelledby='now-past-heading'] .now-folder h3");
+  await expect(pastFolders, "past folders by newest completion").toHaveText(["beacon-cli", "atlas-web"]);
+  const runningBand = await page.locator("section[aria-labelledby='now-running-heading']").boundingBox();
+  const pastBand = await page.locator("section[aria-labelledby='now-past-heading']").boundingBox();
+  expect(runningBand.y, "running work precedes finished work").toBeLessThan(pastBand.y);
+
+  // A running card whose canonical data reads pairs the summarized flowchart
+  // with what the run is doing now; one whose data does not infers no progress.
+  const readableCard = page.locator(".now-folder")
+    .filter({ has: page.getByRole("heading", { level: 3, name: "aegis-notes" }) })
+    .locator(".now-run-card").first();
+  await expect(readableCard.locator(".workflow-summary")).toBeVisible();
+  await expect(readableCard.locator(".workflow-summary__node").first()).toBeVisible();
+  await expect(readableCard.locator(".now-run-card__task"), "task summary beside the flow").toContainText("Working on");
+  expect(await page.locator(".now-run-card .workflow-summary").count(), "a summary flow per readable card").toBeGreaterThan(1);
+  const runningCard = page.locator("section[aria-labelledby='now-running-heading'] .now-run-card").first();
+  await expect(runningCard.locator(".now-unknown"), "unreadable tickets infer no flow").toBeVisible();
+  await expect(runningCard.locator(".workflow-summary")).toHaveCount(0);
+
+  // A finished card states its recorded outcome and finish time instead.
+  const finishedCard = page.locator("section[aria-labelledby='now-past-heading'] .now-run-card").first();
+  await expect(finishedCard.locator(".now-run-card__task")).toContainText("limited");
+  await expect(finishedCard.locator(".now-run-card__task")).toContainText("2026-08-25T11:40:00Z");
+
+  await runningCard.locator(".now-run-card__open").click();
+  await expect(page).toHaveURL(/\/runs\/run-gamma$/);
+  await expect(page.locator('.run-map[data-view="run-map"]')).toBeVisible();
+
+  // From a skill in the sequence to the ticket that skill is running.
+  const skillNode = page.locator(".run-skills__node").first();
+  await expect(skillNode).toBeVisible();
+  const skillTicket = (await skillNode.locator(".run-skills__ticket").textContent())?.trim();
+  expect(skillTicket).toMatch(/^G\d$/);
+  await expect(skillNode).toHaveAttribute("href", `/runs/run-gamma/tickets/${skillTicket}`);
+  await skillNode.click();
+  await expect(page).toHaveURL(new RegExp(`/runs/run-gamma/tickets/${skillTicket}$`));
+  await expect(page.locator('.run-map[data-view="run-map"]'), "the run map yields to the ticket route").toHaveCount(0);
+
+  // The ticket detail the drill-down lands on, asserted at the live URL the
+  // click above already reached — no `?fixture=`, so the reader's own payload
+  // renders it.
+  await expect(page.locator(".ticket-inspector"), "the live ticket detail renders").toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: skillTicket })).toBeVisible();
+
+  await page.goBack();
   await expect(page.locator('.run-map[data-view="run-map"]')).toBeVisible();
 
   await page.goto(`${origin}/friction`);

@@ -25,6 +25,7 @@ from tests.test_ui_cases.session_graph import *  # noqa: F401,F403
 from tests.test_ui_cases.session_activity import *  # noqa: F401,F403
 from tests.test_ui_cases.session_rendering import *  # noqa: F401,F403
 from tests.test_ui_cases.platform_admission import *  # noqa: F401,F403
+from tests.test_ui_cases.run_folder_projection import *  # noqa: F401,F403
 
 
 if __name__ == "__main__":

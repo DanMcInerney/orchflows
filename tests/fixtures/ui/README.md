@@ -26,6 +26,17 @@ to the shapes it exhibits rather than redacted from it.
 | `friction/2026-07.jsonl` | two well-formed entries, one carrying `<b>markup</b>` |
 | `friction/2026-08.jsonl` | a line that is not JSON, an array that is JSON and not an entry, a blank line, and an entry with neither `category` nor `host` |
 | `events/run-gamma.jsonl` | the deferred hooks seam: one line per `event` value, one carrying `<b>markup</b>`, one with every nullable key null, plus the same two unreadable shapes and a blank line. No other run has one, so the seam's silent half is a fixture too |
+| `runs/run-gamma/run.json` | a live run's identity: `project.name` a POSIX path whose leaf is the folder, both terminal fields empty |
+| `runs/run-delta/run.json` | finished `failed`; `project.name` a backslash path landing on the same `atlas-web` leaf as `run-gamma`, so one folder holds both a live and a finished run |
+| `runs/run-epsilon/run.json` | finished `limited`, and the newest `terminal_at` in the corpus, so its folder leads any recency order |
+| `runs/run-alpha/run.json` | a live run whose `project.name` is a bare leaf, not a path |
+
+`runs/` carries the run identities `scripts/ui_experience.py` reads for folder
+and completion facts; `web/src/smoke.spec.ts` copies the tree beside `tickets/`.
+Every `project.root`, `origin` and `workspaces[].path` here is synthetic and
+projection-forbidden: a body that carried one would be a privacy-wall defect,
+which is why the smoke contract asserts none of them reaches the browser.
+`run-beta` has no `run.json` at all — the unrecorded folder is a shape too.
 
 Across both friction logs: five entries, two unreadable lines, and blank
 lines that are not unreadable. Every log here is oldest-first on disk, the
