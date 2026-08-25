@@ -1,7 +1,6 @@
 ---
 id: 01-deliver
 executor: orch-decompose
-pack: orch-code-pack
 depends_on: [00-mine]
 write_scope: [{{workspace}}]
 bound: <= 120 tool calls
@@ -27,7 +26,8 @@ revision.
 
 - input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
 - input: {"name":"target-repository","type":"literal","value":"{{workspace}}"}
-- input: {"identity":{"kind":"artifact","locator":"project:rules/improvement.md","sha256":"5855133149c60da7eea97a3ae8430affdc0cc5e0f1fde0c5355d1ecf4c0e616c"},"name":"improvement-law","type":"identity"}
+- input: {"name":"improvement-law","type":"literal","value":"rules/improvement.md in the orchflows library, whose §4 states the qualification this delivery inherits"}
+- input: {"identity":{"kind":"ticket-section","run":"{{run}}","section":"Result","ticket":"00-mine"},"name":"ranked-proposals","type":"identity"}
 
 ## Completion test
 

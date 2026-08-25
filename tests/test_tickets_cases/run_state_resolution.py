@@ -68,7 +68,7 @@ class TestRunStateRootResolution(unittest.TestCase):
                  "tickets_ceiling", "tickets_commands", "tickets_lint", "tickets_project",
                  "tickets_issue", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
-                 "tickets_gate_mutations", "tickets_admission", "tickets_inputs",
+                 "tickets_gate_mutations", "tickets_admission", "tickets_emission", "tickets_inputs",
                  "tickets_input_producers", "tickets_context", "tickets_scope",
                  "tickets_transitions", "tickets"},
                 imported,

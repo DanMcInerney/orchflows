@@ -1,7 +1,6 @@
 ---
 id: 00-eval
 executor: orch-eval-design
-pack: orch-code-pack
 depends_on: []
 write_scope: []
 bound: <= 40 tool calls

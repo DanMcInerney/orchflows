@@ -24,7 +24,7 @@ intended coverage, and expected execution cost.
 - input: {"name":"target","type":"literal","value":"{{target}}"}
 - input: {"name":"outcome","type":"literal","value":"{{outcome}}"}
 - input: {"name":"sources","type":"literal","value":"{{sources}}"}
-- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-protocol.md","sha256":"cbe548149efd0ce3184e5f805a91173bd85a6c8a354f8d6e083a1781e4331f8d"},"name":"protocol-contract","type":"identity"}
+- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Completion test

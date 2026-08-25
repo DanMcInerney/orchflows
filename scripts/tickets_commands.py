@@ -49,6 +49,9 @@ REISSUE_USAGE = 'reissue <run> <id> --run <new-run> [--id <new-id>] [--set <key>
 SUBCOMMAND_USAGE['reissue'] = REISSUE_USAGE
 SUBCOMMAND_SUMMARY['reissue'] = "Supersede one taken-up ticket into a successor run without a second specification pass: its cut carried forward, its lifecycle -- claim, checker, workspace, v2 generations and seal -- dropped, a cohort of the same shape freshly named, --set applied to frontmatter and --add-scope to write_scope and mutations, and one fixed input citing the predecessor's Handoff or Result by identity and digest. Landed through `new --file`, so every admission rule applies; the lint report of what landed is printed. Refused on a source `amend` still owns, on a root whose new run already holds one, and on a --set naming an executor-owned section. The source is never written."
 VALUE_FLAGS = VALUE_FLAGS | {'--id', '--add-scope', '--cite'}
+STAMP_GENERATION_USAGE = 'stamp-generation <run> <root-id>'
+SUBCOMMAND_USAGE['stamp-generation'] = STAMP_GENERATION_USAGE
+SUBCOMMAND_SUMMARY['stamp-generation'] = "Open the v2 generation lifecycle on one unclaimed v1 root and its cut: the root's generation identity computed from the exact snapshot and stamped on every member, with the v1 cohort dropped as it is written. `draft-validate` grades nothing that has not already declared itself v2, and this is what declares it -- the write that was a hand edit of the file in the sink, and so the one path around every refusal the emitting doors apply to those same bytes. Refused on a cut any member of which is already taken up, and on a root that is not one."
 def read_payload(source, subject: str='payload file'):
     """One flag's value read from a file, or from stdin when ``source`` is ``-``.
 

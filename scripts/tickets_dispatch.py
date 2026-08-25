@@ -5,9 +5,9 @@ import sys
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, _remove_frontmatter_field, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
 else:
-    from tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, _remove_frontmatter_field, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
 if __package__:
     from .tickets_issue import AMENDABLE_STATUSES, AMEND_USAGE, GATE_ID_MARKER, NEW_DEFAULT_BOUND, NEW_USAGE, RECUT_USAGE, _cmd_amend, _cmd_new, _cmd_recut, _distinct_gate_lenses, _render_ticket
 else:
@@ -25,19 +25,19 @@ if __package__:
 else:
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, RESULT_USAGE, RUN_STATE_USAGE, _append_one_line, _cmd_result, _cmd_run_state
 if __package__:
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_STATE_TREES, _create_text_exclusively, _identity_update, _improvement_root, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_STATE_TREES, _create_text_exclusively, _identity_update, _improvement_root, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
 else:
-    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_STATE_TREES, _create_text_exclusively, _identity_update, _improvement_root, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity
+    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_STATE_TREES, _create_text_exclusively, _identity_update, _improvement_root, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 else:
     from tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from .tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check; from .tickets_reissue import _cmd_reissue
+    from .tickets_admission import ADMISSION_PENDING, batch_cohort, is_v2, root_cohort; from .tickets_emission import grade_run_emission; from .tickets_context import run_snapshot; from .tickets_generations import _root_payload, generation_identity; from .tickets_transitions import pending_admission; from .tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check; from .tickets_reissue import _cmd_reissue
     from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS; from .tickets_gate_mutations import _canonical_gate_mutation_plan
     from .tickets_dispatch_gate import _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain; from .tickets_dispatch_gate import _cmd_gate as _gate_command
 else:
-    from tickets_admission import ADMISSION_PENDING, batch_cohort, root_cohort; from tickets_commands import GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
+    from tickets_admission import ADMISSION_PENDING, batch_cohort, is_v2, root_cohort; from tickets_emission import grade_run_emission; from tickets_context import run_snapshot; from tickets_transitions import pending_admission; _generations = __import__('tickets_generations'); _root_payload = _generations._root_payload; generation_identity = _generations.generation_identity; from tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
     from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check; _cmd_reissue = __import__('tickets_reissue')._cmd_reissue  # by name: the family's import census is pinned
     _gate_module = __import__('tickets_dispatch_gate'); _gate_command = _gate_module._cmd_gate; _gate_body = _gate_module._gate_body; _gate_input = _gate_module._gate_input; _gate_sections = _gate_module._gate_sections
@@ -51,7 +51,36 @@ def _cmd_gate(rest):
     so that one revision reaches every stub the family writes, and so that
     the seam a caller substitutes is the one this façade names.
     """
-    return _gate_command(rest, head_probe=git_head)
+    refusal = _gate_version_refusal(rest)
+    return _gate_command(rest, head_probe=git_head) if refusal is None else refusal
+def _gate_version_refusal(rest):
+    """Refuse a gate whose stubs its builder cannot express, or ``None``.
+
+    `_gate_stub` writes a v1 admission and a v1 cohort by construction, so
+    under a root already carrying a sealed v2 assignment every stub the
+    family would write is one `ready` and `claim` refuse -- the recorded
+    instance is exactly that, v1 cohorts emitted under a v2 root. The root
+    is read here, before the builder runs, because a gate that has already
+    written its family has spent the dispatch this refusal exists to save.
+
+    Only the version is decided here. Every other reason a gate is refused
+    stays the builder's, so this adds a door and moves no law: anything it
+    cannot resolve -- a malformed line, an absent sink, a root that is not
+    there -- is passed through untouched for the builder to phrase.
+    """
+    args = list(rest)
+    for flag in ('--lens', '--write-scope', '--acceptance-from'):
+        _extract_flag(args, flag)
+    if len(args) != 2:
+        return None
+    run, root_id = args
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return None
+    text, failure = _read_utf8(tickets_root / run / f'{root_id}.md')
+    if failure is not None or not is_v2(_parse_frontmatter(text)):
+        return None
+    return {'error': f"gate root '{run}/{root_id}' carries a v2 sealed assignment, and a gate stub is written v1 by construction: every stub this would emit is one `ready` and `claim` refuse. Nothing was written"}
 def _template_stubs(directory: Path, values: dict):
     """``(stubs, error)`` — every stub in the template, substituted and graded.
     ``stubs`` maps a stub id to its text and its dependency ids, in file
@@ -178,6 +207,9 @@ def _cmd_instantiate(rest):
                     existing_roots.append(str(loaded.get('id') or path.stem))
             if existing_roots and incoming_roots:
                 return {'error': f"run '{run}' would have root tickets {existing_roots + incoming_roots}: one physical run has one root and one composite gate. Nothing was written"}
+            emission = grade_run_emission('instantiate', run, run_dir, {path.stem: text for path, text in rendered})
+            if emission is not None:
+                return {**emission, 'error': emission['error'] + '. Nothing was written'}
             identity_dir, identity, refusal = _identity_update(run, datetime.now(timezone.utc))
             if refusal is not None:
                 return refusal
@@ -193,6 +225,80 @@ def _cmd_instantiate(rest):
             path.unlink(missing_ok=True)
         return {'error': f'unwritable ticket: {error}. Nothing was written'}
     return {'instantiate': {'template': str(template.get('name') or directory.name), 'run': run, 'ids': ordered, 'paths': [str(path) for path, _ in rendered]}}
+def _cmd_stamp_generation(rest):
+    """Open the v2 generation lifecycle on one v1 root and its cut.
+
+    `draft-validate` grades nothing that has not already declared itself
+    v2 -- a `root_generation`, a seal, or a v2 admission -- and no
+    subcommand wrote one. The only thing that produced the opt-in was a
+    hand edit of the file in the sink: the one write path around every
+    refusal the emitting doors apply to those same bytes, and so the way a
+    root could enter the sealed lifecycle carrying whatever a hand left on
+    it. This is that write, under the run lock, graded before it lands.
+
+    It sits here beside `instantiate` rather than in `tickets_generations`
+    because that module is the generation algebra and is at its source
+    ceiling; what it exports is called, not extended.
+
+    The identity comes from the exact snapshot, so a stamp is reproducible
+    from what it stamped. The v1 cohort is dropped as the stamp is
+    written: a v2 ticket is frozen by its assignment seal, and a member
+    carrying both is one two mechanisms claim at once.
+
+    Refused on a cut any member of which is already taken up -- a stamp
+    rewrites the assignment a member is graded against, and doing that
+    under a working executor is the moving target rules/verification.md §3
+    forbids.
+    """
+    args = list(rest)
+    if len(args) != 2:
+        return {'error': f'usage: {STAMP_GENERATION_USAGE}'}
+    run, root_id = args
+    for kind, value in (('run id', run), ('ticket id', root_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None: return invalid
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    run_dir = tickets_root / run
+    try:
+        with _run_lock(run):
+            snapshot, unreadable = run_snapshot(run_dir) if run_dir.is_dir() else ({}, [])
+            if unreadable:
+                return {'error': f'unreadable ticket: {unreadable[0][0]}'}
+            if root_id not in snapshot:
+                return {'error': f'root ticket not found in exact snapshot: {root_id}'}
+            members = [root_id] + sorted(i for i in snapshot if i.startswith(root_id + '.'))
+            for member_id in members:
+                data = _parse_frontmatter(snapshot[member_id])
+                status = str(data.get('status') or '')
+                if status not in AMENDABLE_STATUSES or str(data.get('claimed_by') or '').strip():
+                    return {'error': f"stamp-generation refused: {run}/{member_id} is '{status or '<missing>'}', and a stamp rewrites the assignment it would be working against (rules/verification.md §3). Nothing was written"}
+                if is_v2(data):
+                    return {'error': f'stamp-generation refused: {run}/{member_id} already carries a v2 generation; the lifecycle is opened once. Nothing was written'}
+            if _executor_of(_parse_frontmatter(snapshot[root_id])) != ROOT_EXECUTOR:
+                return {'error': f'stamp-generation refused: {run}/{root_id} is not a root ticket, and a root generation belongs to a root. Nothing was written'}
+            identity = generation_identity('root', root_id, 1, _root_payload(root_id, snapshot))
+            stamped = {}
+            for member_id in members:
+                text = _set_frontmatter_field(snapshot[member_id], 'root_generation', identity)
+                text = _set_frontmatter_field(text, 'admission', pending_admission(2))
+                stamped[member_id] = _remove_frontmatter_field(text, 'cohort')
+            emission = grade_run_emission('stamp-generation', run, run_dir, stamped, repairs=True)
+            if emission is not None:
+                return {**emission, 'error': emission['error'] + '. Nothing was written'}
+            written = {}
+            try:
+                for member_id, text in stamped.items():
+                    written[member_id] = snapshot[member_id]
+                    _write_text_atomically(run_dir / f'{member_id}.md', text)
+            except OSError:
+                for member_id, text in written.items():
+                    _write_text_atomically(run_dir / f'{member_id}.md', text)
+                raise
+    except (OSError, UnicodeDecodeError, ValueError) as error:
+        return {'error': str(error)}
+    return {'stamp_generation': {'root_generation': identity, 'run': run, 'root_id': root_id, 'ids': members, 'state': 'drafting'}}
 def _help_requested(rest) -> bool:
     """Whether a help flag in ``rest`` stands as its own token.
     A help flag consumed as a value-taking flag's value is that value
@@ -280,7 +386,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | amend | recut | reissue | lint | bound-check | instantiate | gate | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | amend | recut | reissue | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | amendment-request | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -294,6 +400,10 @@ def _dispatch(argv):
     if command == 'new': return _cmd_new(rest)
     if command == 'amend': return _cmd_amend(rest)
     if command == 'recut': return _cmd_recut(rest)
+    # Named one per line, not folded into a membership test: `cli_help`
+    # reads the dispatched set off these comparisons, and a subcommand
+    # reachable only through a lookup is one whose `--help` silently errs.
+    if command == 'stamp-generation': return _cmd_stamp_generation(rest)
     if command == 'draft-validate': return GENERATION_SUBCOMMANDS[command][2](rest)
     if command == 'seal': return GENERATION_SUBCOMMANDS[command][2](rest)
     if command == 'amendment-request': return GENERATION_SUBCOMMANDS[command][2](rest)

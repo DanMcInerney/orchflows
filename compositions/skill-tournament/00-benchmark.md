@@ -1,7 +1,6 @@
 ---
 id: 00-benchmark
 executor: orch-frontier
-pack: orch-code-pack
 depends_on: []
 write_scope: [benchmarks/{{skill}}/]
 bound: <= 200 tool calls

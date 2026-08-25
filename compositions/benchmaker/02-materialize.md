@@ -25,8 +25,7 @@ each at a preserved identity.
 
 - input: {"name":"pack","type":"literal","value":"{{pack}}"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
-- input: {"identity":{"kind":"artifact","locator":"project:compositions/references/benchmaker-manifest.md","sha256":"d9c4ea1a8071409be84ee1f8f3c43c07e995815cd62a4b501ac121b18c52683e"},"name":"manifest-contract","type":"identity"}
-
+- input: {"name":"manifest-contract","type":"literal","value":"the manifest contract at compositions/references/benchmaker-manifest.md in the orchflows library"}
 ## Completion test
 
 - every case the design names exists and runs, and no case exists that the design does not name | oracle: the case set against the frozen design | oracle_class: deterministic | provenance: pre-existing

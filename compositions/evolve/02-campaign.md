@@ -1,7 +1,6 @@
 ---
 id: 02-campaign
 executor: orch-loop
-pack: orch-code-pack
 depends_on: [01-eligibility]
 write_scope: [{{mutation_scope}}]
 bound: {{bound}}

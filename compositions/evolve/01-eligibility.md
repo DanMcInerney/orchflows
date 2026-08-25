@@ -1,7 +1,6 @@
 ---
 id: 01-eligibility
 executor: orch-verify
-pack: orch-code-pack
 depends_on: [00-eval]
 write_scope: []
 bound: <= 30 tool calls
