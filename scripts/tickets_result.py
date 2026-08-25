@@ -24,7 +24,7 @@ else:
     from tickets_markdown import SECTION_SENTINEL
 
 TERMINAL_HEADING = '## terminal'
-RESULT_USAGE = f'result <run> <id> --section <name> (--file <path> | --text <string>) [--append | --replace]; an executor-owned section is append-only once it carries content, and the cut sentinel {SECTION_SENTINEL} is not content: the first real write consumes it under any flag'
+RESULT_USAGE = f'result <run> <id> --section <name> (--file <path> | --text <string>) [--append | --replace]; an executor-owned section is append-only except over the cut sentinel {SECTION_SENTINEL}, which is not content: the first real write consumes it under any flag'
 RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact <name> [--replace] | --terminal <state>) (--file <path> | --text <string>))'
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
@@ -162,9 +162,15 @@ def _result_under_run_lock(rest):
     agrees on (contracts/work-item.md).
 
     A section holding nothing but the cut's ``SECTION_SENTINEL`` is empty for
-    every purpose here. The cut wrote that marker, not a writer, so the first
-    real content consumes it under any flag and is reported as the ``write``
-    it is. Before that held, the marker was a placeholder to the generator
+    every purpose here: the cut is the only writer that emits exactly those
+    bytes, so the first real content consumes it under any flag and is
+    reported as the ``write`` it is. What the guard reads is the bytes, not
+    who wrote them -- so a writer whose own content is exactly the sentinel
+    is indistinguishable from the cut, and its section stays consumable until
+    it holds something else. That edge is graded by
+    ``SentinelIsNotContentTest`` rather than left to accident; closing it
+    needs provenance the ticket does not record, which is its own scope.
+    Before this held, the marker was a placeholder to the generator
     that wrote it and content to the guard that read it, and the executor's
     first write paid the difference: five refusal round-trips in one cycle
     across three projects -- ``--replace`` refused outright by the sealed
@@ -230,13 +236,14 @@ def _result_under_run_lock(rest):
     if sentinel:
         prior, append = '', False
     if v2 and replace and (not sentinel):
-        return {'error': f"v2 executor-owned section '## {canonical}' is append-only once it carries content; --replace is prohibited. The cut sentinel {SECTION_SENTINEL} is the one exception and this section is past it: pass --append. ticket: {ticket_path}"}
+        return {'error': f"v2 executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
     try:
         rendered = _write_section(text, canonical, body, append)
     except TicketFormatError as error:
         return {'error': f'{error}. ticket: {ticket_path}'}
     if prior and (not append) and (not replace):
-        return {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. Pass --append to add after it, or --replace to overwrite it deliberately. ticket: {ticket_path}"}
+        remedy = 'Pass --append to add after it.' if v2 else 'Pass --append to add after it, or --replace to overwrite it deliberately.'
+        return {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. {remedy} ticket: {ticket_path}"}
     try:
         _write_text_atomically(ticket_path, rendered)
     except OSError as error:

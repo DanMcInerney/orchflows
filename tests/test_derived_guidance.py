@@ -31,7 +31,7 @@ from unittest import mock
 
 from scripts import tickets as tickets_mod
 from scripts import tickets_ceiling, tickets_format, tickets_transitions
-from scripts import tickets_markdown, tickets_result
+from scripts import tickets_markdown, tickets_packet, tickets_result
 from scripts.tickets_dispatch import _dispatch
 from tests.test_lifecycle_table import chain_commands, commands_named, v1_repo
 from tests.test_tickets_cases.common import run_cmd
@@ -413,6 +413,81 @@ class SentinelIsNotContentTest(unittest.TestCase):
                 refused = _dispatch(["result", "run", "00-root.01",
                                      "--section", "Risks"])["error"]
                 self.assertIn(tickets_result.RESULT_USAGE, refused)
+
+    def test_the_gate_emitter_prefills_that_same_one_constant(self):
+        """The second emitter, which the live case above cannot reach.
+
+        `GATE_EXECUTOR_SECTIONS` is the table every gate stub is built from,
+        and `gate` refuses a sealed root, so the live seal the case above
+        needs cannot be built over one. Unpinned, that table is the end the
+        trap gets rebuilt from with no test watching. The cardinality is
+        asserted too, so dropping a prefilled section fails here rather than
+        passing on the survivor.
+        """
+
+        prefilled = {name: body
+                     for name, body in tickets_packet.GATE_EXECUTOR_SECTIONS if body}
+        self.assertEqual({"Feedback", "Risks"}, set(prefilled))
+        for name, body in prefilled.items():
+            with self.subTest(name):
+                self.assertEqual(tickets_markdown.SECTION_SENTINEL, body)
+
+    def test_a_writer_whose_own_content_is_the_sentinel_is_not_told_apart(self):
+        """The boundary the byte comparison cannot see, graded not assumed.
+
+        `[]` is the likeliest thing an executor with nothing to report
+        writes into `## Feedback` itself. The guard compares bytes and not
+        provenance, so that section reads as the cut's marker again: the
+        write is taken as real (`append`), and the append-only seal then
+        does not hold over it. Closing that needs provenance the ticket does
+        not record, which is its own scope; pinned so it stays deliberate.
+        """
+
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                ticket = self.sealed(directory)
+                written = _dispatch([
+                    "result", "run", "00-root.01", "--section", "Verification",
+                    "--text", tickets_markdown.SECTION_SENTINEL, "--append",
+                ])
+                self.assertEqual("append", written["result"]["mode"])
+                self.assertEqual(tickets_markdown.SECTION_SENTINEL,
+                                 self.body(ticket, "Verification"))
+                again = _dispatch(["result", "run", "00-root.01", "--section",
+                                   "Verification", "--text", "later", "--replace"])
+                self.assertNotIn("error", again)
+                self.assertEqual("write", again["result"]["mode"])
+                self.assertEqual("later", self.body(ticket, "Verification"))
+
+    def test_a_refusal_describes_the_section_it_actually_refused(self):
+        """A refusal that misdescribes its section costs the round-trip it
+        exists to save -- this module's subject, told to these flags.
+
+        Two were live when the checker probed. The usage line and the seal's
+        refusal both read "append-only once it carries content", telling a
+        caller an empty section may be replaced; it may not. And the
+        bare-write refusal offered `--replace` while, under a seal, the next
+        guard prohibits exactly that -- a refusal naming a transition the
+        table refuses, which is what `remedy_path` exists to prevent.
+        """
+
+        self.assertNotIn("once it carries content", tickets_result.RESULT_USAGE)
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
+                ticket = self.sealed(directory)
+                self.assertEqual("", self.body(ticket, "Verification"))
+                empty = _dispatch(["result", "run", "00-root.01", "--section",
+                                   "Verification", "--text", "a pass",
+                                   "--replace"])["error"]
+                for untrue in ("once it carries content", "past it"):
+                    with self.subTest(untrue):
+                        self.assertNotIn(untrue, empty)
+                _dispatch(["result", "run", "00-root.01", "--section", "Risks",
+                           "--text", self.CONTENT])
+                bare = _dispatch(["result", "run", "00-root.01", "--section",
+                                  "Risks", "--text", "second"])["error"]
+                self.assertIn("--append", bare)
+                self.assertNotIn("--replace", bare)
 
     def test_the_filing_law_names_the_sentinel_rather_than_spelling_it(self):
         """One holder, so the marker cannot drift between its readers.
