@@ -1,13 +1,13 @@
 """Chain-dispatch prompt support: one child, several exact named skills.
 
 rules/delegation.md 4 admits a packet stating an ordered `sequence` of
-same-role skills: one fresh child executes each exact named skill in
-that stated order against the same ticket, in the same context -- one
-spawn, one assigned name, one witness. The chain buys back the spawn
-and the regather at seams where no verdict crosses; what it can never
-buy is its own acceptance: a verdict the chain renders on work the
-chain changed is void (rules/verification.md 11), so acceptance enters
-from outside its name -- the ticket's independence path, unchanged.
+skills: one fresh child executes each exact named skill in that stated
+order against the same ticket, in the same context -- one spawn, one
+assigned name, one witness, one role. The chain buys back the spawn and
+the regather at seams where no verdict crosses; what it can never buy
+is its own acceptance: a verdict the chain renders on work the chain
+changed is void (rules/verification.md 11), so acceptance enters from
+outside its name -- the ticket's independence path, unchanged.
 
 The prompt tells the child to read each continuation contract from the
 library directly rather than invoking it by name: a by-name invocation
@@ -31,9 +31,13 @@ def sequence_defects(declared, executor: str) -> list:
     child executes in one context. The head must be the ticket's own
     `executor` -- passed in by the format owner, whose helper reads it --
     because every other reader resolves the child through that field; a
-    chain whose head differs is two answers to "what runs first". Role
-    uniformity is not graded here: a mismatched continuation refuses in
-    the established child (rules/roles.md), where the roles are known.
+    chain whose head differs is two answers to "what runs first", and to
+    "at what role": rules/roles.md 4 resolves the chain's one role there.
+
+    So roles are not graded here -- with one role no ordering of
+    declarations is unlawful. The tradeoff rides the head: a chain
+    headed by a worker runs a planner continuation at the worker
+    binding, and the caller stating that order buys it.
     """
     if declared is None:
         return []
@@ -92,6 +96,11 @@ def sequence_block(loaded: dict) -> list:
     lines.append(
         f"Read each continuation skill's contract directly from {where}; "
         "invoking it by name forks a packet-less child that must refuse."
+    )
+    lines.append(
+        "This chain runs at one role, its head's — the role that "
+        "established you (rules/roles.md §4). A continuation's own `role:` "
+        "is not a mismatch here: run it, never refuse it."
     )
     lines.append(
         "The chain is one witness: a verdict you render on work this chain "

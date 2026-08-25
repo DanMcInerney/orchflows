@@ -298,7 +298,10 @@ def _gate_under_run_lock(rest, head_probe=None):
     # was, so everything the repair inherited -- the root's fixed inputs,
     # isolation and exclusions verbatim -- reaches it, and the gate scope
     # becomes its own write_scope: the chain's second skill holds exactly
-    # the authority the separate stub held. Several lenses keep that stub:
+    # the authority the separate stub held, but not its own role: a chain
+    # runs at its head's (rules/roles.md §4), so the repair half spends
+    # the critique's planner binding -- the price of the spawn it saves.
+    # Several lenses keep that stub:
     # pooled findings take one fix per shared cause, and a per-lens critique
     # owning its own repair bill has an incentive to soften findings.
     chained = len(lenses) == 1

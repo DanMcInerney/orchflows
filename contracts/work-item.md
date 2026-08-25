@@ -193,11 +193,11 @@ and a template run's bound the sum of its stubs'.
 
 ## Executor form
 
-`executor` names a skill in the tree, or `script:<repo-relative path>` naming
-a tested script — the ladder's floor as a graph node, so a deterministic step
-is a ticket like any other and costs no agent. An optional `sequence` lists
-ordered same-role skills, head equal to `executor`: one child executes each in
-this one context ([rules/delegation.md](../rules/delegation.md) §4), one witness
+`executor` names a skill in the tree, or `script:<repo-relative path>` naming a
+tested script — the ladder's floor as a graph node, so a deterministic step is a
+ticket like any other and costs no agent. An optional `sequence` lists ordered
+skills, head equal to `executor`: one child executes each in this one context, at
+the head's role ([rules/delegation.md](../rules/delegation.md) §4), one witness
 whose verdict on its own changes is void (rules/verification.md §11). Uncovered
 remainder belongs to the run's queued scope, never to a ticket; a ticket never
 widens its own scope or bound; domains extend the sections, never replace them.

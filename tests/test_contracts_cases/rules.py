@@ -350,3 +350,91 @@ class V2LifecycleRuleContractTest(unittest.TestCase):
             "authority", "dependencies", "acceptance", "executor",
         ):
             self.assertIn(token, seal, f"delegation.md §15 omits {token!r}")
+
+
+class ChainRoleLawTest(unittest.TestCase):
+    """One stated `sequence` is one child, and one child is one role.
+
+    The library ships one chain -- the single-lens gate's
+    `[orch-critique, orch-repair]` -- whose two skills declare different
+    roles, so a same-role rule made the shipped default unlawful with
+    nobody positioned to see it. The premise is pinned here beside the
+    law that admits it.
+    """
+
+    CHAIN = ("orch-critique", "orch-repair")
+
+    def declared_role(self, skill):
+        paths = [
+            path for path in SKILLS.rglob("SKILL.md") if path.parent.name == skill
+        ]
+        self.assertEqual(1, len(paths), f"{skill} resolves to {paths}")
+        found = re.search(r"(?m)^role:[ \t]*(\S+)[ \t]*$", paths[0].read_text(encoding="utf-8"))
+        self.assertIsNotNone(found, f"{skill} declares no role")
+        return found.group(1)
+
+    def test_the_shipped_gate_chain_crosses_roles(self):
+        self.assertEqual(
+            ["planner", "worker"],
+            [self.declared_role(skill) for skill in self.CHAIN],
+            "the single-lens gate chains these two skills in one child; if "
+            "they ever declare one role the law below is still right, but "
+            "this module no longer pins the case that forced it",
+        )
+
+    def test_roles_resolves_a_chain_once_at_its_head(self):
+        clause = read_clause_flat("rules/roles.md", 4)
+        for token, why in (
+            ("`sequence`", "names the packet field this branch is about"),
+            ("head", "names where the one role is resolved"),
+            ("`executor`", "names the field every other reader resolves"),
+            ("binding every skill in the chain", "states what that role covers"),
+            ("explicit packet profile wins", "keeps the caller's override above it"),
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, clause,
+                    f"rules/roles.md §4 omits {token!r}, which {why}; without "
+                    "it a chain has as many roles as it has skills",
+                )
+
+    def test_a_chained_skill_declaration_is_not_a_mismatch(self):
+        clause = read_clause_flat("rules/roles.md", 6)
+        for token, why in (
+            ("matching role", "is the standing rule the refusal reads"),
+            ("clause 4", "names where that role was resolved"),
+            ("chained skill's own declaration", "names what it is not"),
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, clause,
+                    f"rules/roles.md §6 omits {token!r}, which {why}; a child "
+                    "reading a continuation's `role:` then refuses the work "
+                    "its own packet stated",
+                )
+
+    def test_delegation_admits_the_chain_and_defers_its_role(self):
+        clause = read_clause_flat("rules/delegation.md", 4)
+        self.assertNotIn(
+            "same-role", clause,
+            "rules/delegation.md §4 restricts a chain to same-role skills "
+            "again, which the shipped single-lens gate chain breaks",
+        )
+        self.assertIn(
+            "roles.md", clause,
+            "rules/delegation.md §4 states a chain without naming the owner "
+            "of the role it runs at; unowned, the two drift apart",
+        )
+
+    def test_the_work_item_field_states_the_head_role(self):
+        form = read_flat("work-item.md")
+        self.assertNotIn(
+            "same-role", form,
+            "contracts/work-item.md still describes `sequence` as same-role "
+            "skills; the field's own contract is where an author reads it",
+        )
+        self.assertIn(
+            "at the head's role", form,
+            "contracts/work-item.md describes `sequence` without saying what "
+            "role the one child runs it at",
+        )

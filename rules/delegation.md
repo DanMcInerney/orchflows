@@ -10,17 +10,19 @@
    joins, verbatim user interaction, and answers decided by evidence
    already in context. Neither executes a role-bearing skill body nor
    authors or changes a deliverable. Every such skill runs in a child
-   whose role matches its declaration; inline execution is forbidden.
+   at the role [roles.md](roles.md) §4 resolves; inline execution is
+   forbidden.
 3. Star topology: children never communicate peer to peer; every result
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
 4. Authority attenuates: a child's write scope is a subset of its
    caller's at every depth. It executes its exact named skill directly
-   — or, when its packet states an ordered `sequence` of same-role
-   skills, each exact named skill in that stated order, one witness in
-   this one context — and never re-dispatches that primary work, and it
-   gathers nothing outside the `inputs` its packet names — an objective
-   that is itself investigation the one exception.
+   — or, when its packet states an ordered `sequence` of skills, each
+   exact named skill in that stated order, one witness in this one
+   context at the one role [roles.md](roles.md) §4 resolves — and never
+   re-dispatches that primary work, and it gathers nothing outside the
+   `inputs` its packet names — an objective that is itself
+   investigation the one exception.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
    it; no caller states a parallel prose join. A dispatch granting a
