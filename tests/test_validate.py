@@ -31,6 +31,7 @@ from tests.test_validate_cases.sink_law import (
 from tests.test_validate_cases.validator_ownership import (
     CrossTierDuplicationTest,
     FrictionLocationSyncTest,
+    TestPackAdmissionRegistryAgainstPacks,
     TestPackWorkspaceTableAgainstPacks,
     TestSyncCheckIsGone,
 )

@@ -419,7 +419,7 @@ class WorkItemV2ContractTest(unittest.TestCase):
                     restated, text,
                     f"work-item.md restates topology's {restated!r}",
                 )
-        topology = (ROOT / "rules" / "topology.md").read_text(encoding="utf-8")
+        topology = read_at_flat("rules/topology.md")
         for token in (
             "coverage-map digest",
             "self-referential generation fields",
@@ -443,7 +443,7 @@ class WorkItemV2ContractTest(unittest.TestCase):
                 self.assertIn(token, text)
 
     def test_absent_v2_fields_preserve_v1_without_reinterpretation(self):
-        text = read("work-item.md")
+        text = read_flat("work-item.md")
         for token in (
             "absence of all four v2 fields",
             "v1",

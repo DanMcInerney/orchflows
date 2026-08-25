@@ -144,10 +144,13 @@ class TestExperienceFoundationGap(unittest.TestCase):
             )
             self.assertEqual(before, snapshot(root))
 
+        # The summary's own key roster is pinned by run_folder_projection's
+        # test_the_summary_carries_exactly_the_now_schemas_keys; here it is
+        # the privacy wall, so a field arriving unreviewed fails both.
         run_keys = {
-            "id", "ticket_count", "active", "objective", "repository", "client",
-            "terminal_at", "terminal_status", "last_activity", "unreadable",
-            "tickets",
+            "id", "workflow", "execution", "ticket_count", "active",
+            "objective", "repository", "client", "terminal_at",
+            "terminal_status", "last_activity", "unreadable", "tickets",
         }
         self.assertTrue(selected["runs"])
         for run in selected["runs"]:

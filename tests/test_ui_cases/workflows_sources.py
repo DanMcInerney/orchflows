@@ -113,7 +113,12 @@ class WorkflowSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
             root = Path(directory)
             self._skill(root, "workflows", "demo", "Require: input.\n\nReturn: output.\n")
-            target = root / "skills" / "workflows" / "demo" / "SKILL.md"
+            # Resolved, because that is the only spelling the subject ever
+            # hands out: workflow_roots canonicalizes the root, so on a host
+            # whose temporary directory is not already canonical -- macOS
+            # /var -> /private/var, a Windows 8.3 short name -- the raw path
+            # matches nothing and the arming comparison below sees no read.
+            target = root.resolve() / "skills" / "workflows" / "demo" / "SKILL.md"
             external = Path(outside) / "secret.md"
             external.write_text("OUTSIDE_SECRET\n", encoding="utf-8")
             source_id = identity.source_id("lib/skills/workflows/demo/SKILL.md")
@@ -201,7 +206,12 @@ class WorkflowSourceTests(unittest.TestCase):
             )
             self._script(root, "runner.py", "print('ok')\n")
             source_id = identity.source_id("lib/skills/workflows/demo/SKILL.md")
-            target = root / "skills" / "workflows" / "demo" / "SKILL.md"
+            # Resolved, because that is the only spelling the subject ever
+            # hands out: workflow_roots canonicalizes the root, so on a host
+            # whose temporary directory is not already canonical -- macOS
+            # /var -> /private/var, a Windows 8.3 short name -- the raw path
+            # matches nothing and the arming comparison below sees no read.
+            target = root.resolve() / "skills" / "workflows" / "demo" / "SKILL.md"
             original_inventory = sources._inventory
             original = identity.read_contained_bytes
             reads = []
