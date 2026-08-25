@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3053,
+  "count": 3077,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -700,6 +700,20 @@
    "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_each_stub_names_its_own_ticket_cohort",
    "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_no_stub_sits_in_the_roots_cohort",
    "test_tickets_gate.GateStubsIssueInTheirOwnCohortTest.test_the_three_stubs_do_not_share_one_cohort_with_each_other",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_a_chained_verify_must_depend_on_the_critique",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_a_missing_repair_without_the_chain_stays_malformed",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_the_legacy_three_stub_single_lens_family_stays_lawful",
+   "test_tickets_gate_chain.CutcheckReadsTheActualStubSetTest.test_the_two_stub_chained_family_is_a_lawful_layout",
+   "test_tickets_gate_chain.MultiLensGateIsUnchangedTest.test_no_multi_lens_stub_carries_a_sequence",
+   "test_tickets_gate_chain.MultiLensGateIsUnchangedTest.test_the_multi_lens_edges_still_run_through_the_repair",
+   "test_tickets_gate_chain.MultiLensGateIsUnchangedTest.test_two_lenses_emit_the_three_kind_family",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_every_chained_stub_is_a_defect_free_ticket",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_exactly_the_critique_and_verify_stubs_are_written",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_chained_critique_holds_the_repairs_authority",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_chained_ticket_states_the_repair_halfs_criteria",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_critique_states_the_chain_and_stays_the_critique",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_root_input_records_reach_the_chained_critique_verbatim",
+   "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_verify_depends_on_the_critique_and_reads_its_result",
    "test_tickets_lint.CommandTableTest.test_every_routed_subcommand_states_a_usage_and_a_summary",
    "test_tickets_lint.CommandTableTest.test_tables_are_owned_by_the_commands_module",
    "test_tickets_lint.CommandTableTest.test_the_new_payload_flags_are_value_flags",
@@ -762,6 +776,16 @@
    "test_tickets_reissue.ReissueSuccessionTest.test_a_successor_with_nothing_left_to_report_exits_zero",
    "test_tickets_reissue.ReissueSuccessionTest.test_cite_result_names_the_result_section_and_its_digest",
    "test_tickets_reissue.ReissueSuccessionTest.test_the_lint_report_of_the_placed_ticket_is_printed",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_lawful_chain_has_no_defect",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_repeated_skill_is_a_defect",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_script_step_is_not_a_chain_entry",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_a_single_entry_chain_is_the_plain_executor",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_an_absent_sequence_is_the_plain_ticket",
+   "test_tickets_sequence.TestTheChainGrammarIsGraded.test_the_head_must_be_the_executor",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_a_chain_packet_states_order_price_and_read_path",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_a_further_child_packet_never_continues_the_chain",
+   "test_tickets_sequence.TestTheChainRidesThePacket.test_a_plain_packet_carries_no_chain_lines",
+   "test_tickets_sequence.TestTheSealBindsTheChain.test_the_assignment_digest_moves_with_the_sequence",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_fix_template_renders_every_section",
    "test_tickets_view.WorklogRendersTheLiveTemplateTest.test_the_process_prints_one_json_document_carrying_the_view",
    "test_tickets_view.WorklogViewTest.test_a_failed_ticket_contributes_its_result_and_its_feedback",
@@ -2279,7 +2303,7 @@
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_every_gate_sibling_uses_one_sealed_head_probe",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_every_stub_declares_its_independence_as_the_gate",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_every_stub_is_a_ticket_but_lifecycle_bypass_is_refused",
-   "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_exactly_the_three_stubs_are_written",
+   "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_exactly_the_family_stubs_are_written",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_lens_identity_is_case_insensitive_on_every_host",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_one_root_owns_gate_files_and_distinct_lenses",
    "tests.test_tickets_view_cases.gate_stubs.GateStubsTest.test_the_critique_depends_on_an_assembly_item_outside_the_nn_shape",
@@ -3056,7 +3080,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "591a600198c0adf1b6884c1632a98050bd659ea81eab9ffb4e169329635de21a"
+  "sha256": "7ee7c7bd0ed868d7e0e47bcd4304edc989269c62f9aae5c3d4a44d50b5597fc6"
  },
  "mutation_owners": [
   {
@@ -5553,6 +5577,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_gate_chain",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
    ]
   },
   {

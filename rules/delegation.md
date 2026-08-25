@@ -16,9 +16,11 @@
    sideways handoff of control — only call/return and suspension.
 4. Authority attenuates: a child's write scope is a subset of its
    caller's at every depth. It executes its exact named skill directly
-   and never re-dispatches that primary work, and it gathers nothing
-   outside the `inputs` its packet names — an objective that is itself
-   investigation the one exception.
+   — or, when its packet states an ordered `sequence` of same-role
+   skills, each exact named skill in that stated order, one witness in
+   this one context — and never re-dispatches that primary work, and it
+   gathers nothing outside the `inputs` its packet names — an objective
+   that is itself investigation the one exception.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
    it; no caller states a parallel prose join. A dispatch granting a
@@ -82,7 +84,8 @@
     `successor-or-new-root`.
 15. Before a worker becomes ready, is claimed, or receives a packet, the
     caller seals the exact validated assignment digest over objective,
-    inputs, authority, dependencies, acceptance, and executor. Those fields
-    are immutable after seal; any change creates a new generation. The
-    executor-owned `Result`, `Verification`, `Feedback`, `Risks`, and
-    `Handoff` sections remain append-only and outside the sealed assignment.
+    inputs, authority, dependencies, acceptance, and executor, its
+    `sequence` included. Those fields are immutable after seal; any change
+    creates a new generation. The executor-owned `Result`, `Verification`,
+    `Feedback`, `Risks`, `Carry`, and `Handoff` sections remain append-only
+    and outside the sealed assignment.

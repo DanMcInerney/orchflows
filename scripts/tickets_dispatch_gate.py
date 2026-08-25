@@ -1,10 +1,12 @@
 """Gate-stub construction: the one owner of what `tickets.py gate` emits.
 
 Split out of `tickets_dispatch.py`, which had reached its size ceiling with
-the gate family inside it. The family is one subject -- the three stubs a
-root's gate issues -- so it moves whole: the stub's frontmatter, the four
-cut-time sections each kind states, and the two command halves that read the
-run and write the family all-or-none.
+the gate family inside it. The family is one subject -- the stubs a root's
+gate issues: a critique per lens, a repair behind several, a verify -- so it
+moves whole: the stub's frontmatter, the four cut-time sections each kind
+states, and the two command halves that read the run and write the family
+all-or-none. With exactly one lens the family collapses to two stubs: the
+critique chains `orch-repair` as its `sequence` and verify follows it.
 
 The law this module owns beyond assembly is inheritance. A gate is the last
 door before terminal, so a stub that lost the root's authority would grade
@@ -111,7 +113,7 @@ def _with_inherited_inputs(sections: list, inherited: str) -> list:
                 content = '\n'.join(([content] if content.strip() else []) + lines)
         extended.append((heading, content))
     return extended
-def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None, isolation=None, excluded_actions=None) -> str:
+def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None, isolation=None, excluded_actions=None, sequence=None) -> str:
     """One gate stub: its own cohort, the root's authority, its own records.
     ``isolation`` and ``excluded_actions`` are the root's, passed in rather
     than defaulted, so a root that holds neither lends neither: what is
@@ -120,20 +122,22 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_
     so does its root, and under same-cohort sole-owner closure those two
     collide; issuing each stub in `v1:ticket:<its id>` keeps the collision
     from forming instead of leaving a hand edit to undo it.
+    ``sequence`` is the single-lens chain (rules/delegation.md §4): stated
+    beside `executor` so the chain's head visibly is the executor.
     """
     normalized_scope = [str(path).replace('\\', '/') for path in write_scope]
     mutations = [f"{'write' if path.endswith('/') else 'change'}:{path}" for path in normalized_scope]
     exclusions = [str(entry) for entry in (excluded_actions or [])]
     isolation = str(isolation).strip() if isolation else ''
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort or ticket_cohort(ticket_id), 'executor': executor, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'excluded_actions': exclusions or None, 'isolation': isolation or None, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort or ticket_cohort(ticket_id), 'executor': executor, 'sequence': list(sequence) if sequence else None, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'excluded_actions': exclusions or None, 'isolation': isolation or None, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
     body = _render_ticket(fields, _with_inherited_inputs(sections, inherited_inputs))
     text, error = render_ticket_inputs(body, run, inherited_inputs, baseline=baseline)
     if error is not None:
         raise ValueError(error)
     return text
-def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None) -> list:
-    """The body of one gate stub. One place, so the three read as one gate."""
-    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units, run, mutation_plan) + GATE_EXECUTOR_SECTIONS
+def _gate_sections(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None, chained: bool=False, repaired_by=None) -> list:
+    """The body of one gate stub. One place, so the family reads as one gate."""
+    return _gate_body(kind, root_id, lens, scope, acceptance_id, acceptance, units, run, mutation_plan, chained=chained, repaired_by=repaired_by) + GATE_EXECUTOR_SECTIONS
 def _listed_items(values, indent: str='') -> str:
     """A frontmatter list stated in prose as the items it holds.
     Never the Python repr of the list. An executor greps its own ticket for
@@ -156,8 +160,15 @@ def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section
 def _input_name(prefix: str, value: str, position: int) -> str:
     slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
     return f'{prefix}-{slug or position}'
-def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None) -> list:
-    """The four cut-time sections of one gate stub."""
+def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='', mutation_plan=None, chained: bool=False, repaired_by=None) -> list:
+    """The four cut-time sections of one gate stub.
+    ``chained`` marks the single-lens critique that carries the repair as
+    its `sequence` continuation: its body gains the repair half's objective
+    sentence and criteria, since the chained ticket is the complete packet
+    for both skills. ``repaired_by`` names the stub whose `## Result` holds
+    the repaired revision the verify decides at -- the repair stub where one
+    stands, the chained critique where none does.
+    """
     if kind == 'critique':
         inputs = [_gate_input('lens', literal=lens)]
         inputs.extend(
@@ -165,14 +176,21 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: s
             for position, unit in enumerate(units, start=1)
         )
         inputs.append(_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'))
-        return [('Objective', f"Every defect in `{root_id}`'s delivered result that the `{lens}` lens finds is reported by identity with its evidence: an open search over what the subtree produced, not a re-run of the criteria it already states."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join([f"- every finding names the artifact identity it was found at and the evidence that shows it | oracle: this ticket's `## Result` read under the `{lens}` lens | oracle_class: judged | provenance: pre-existing", f"- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — ranked findings, each with its artifact identity and evidence; verification; feedback; risks')]
+        objective = f"Every defect in `{root_id}`'s delivered result that the `{lens}` lens finds is reported by identity with its evidence: an open search over what the subtree produced, not a re-run of the criteria it already states."
+        criteria = [f"- every finding names the artifact identity it was found at and the evidence that shows it | oracle: this ticket's `## Result` read under the `{lens}` lens | oracle_class: judged | provenance: pre-existing", f"- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing"]
+        returns = 'status; result — ranked findings, each with its artifact identity and evidence; verification; feedback; risks'
+        if chained:
+            objective += " Then, as this chain's second skill, every accepted blocking finding is repaired inside this ticket's own write scope or declined with a stated reason, every accepted non-blocking finding is queued as candidate scope per verification §9, and nothing outside that scope changes."
+            criteria.extend(["- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: this ticket's own ranked findings against its `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"])
+            returns = "status; result — ranked findings, each with its artifact identity and evidence, then each finding's disposition and the changed artifact by identity; verification; feedback; risks"
+        return [('Objective', objective), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(criteria)), ('Return fields', returns)]
     if kind == 'repair':
         inputs = [
             _gate_input(_input_name('critique-result', unit, position), run=run, ticket=unit, section='Result')
             for position, unit in enumerate(units, start=1)
         ]
         return [('Objective', f"Every accepted blocking finding against `{root_id}` is repaired inside this ticket's own write scope, or declined with a stated reason; every accepted non-blocking finding is queued as candidate scope per verification §9, and nothing outside that scope changes."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(["- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — each finding, its disposition and the changed artifact by identity; verification; feedback; risks')]
-    repair_id = GATE_REPAIR_ID.format(root=root_id); inputs = [_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'), _gate_input('repair-result', run=run, ticket=repair_id, section='Result'), _gate_input('mutation-plan-paths', literal=mutation_plan)]
+    repair_id = repaired_by or GATE_REPAIR_ID.format(root=root_id); inputs = [_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'), _gate_input('repair-result', run=run, ticket=repair_id, section='Result'), _gate_input('mutation-plan-paths', literal=mutation_plan)]
     return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
 def _cmd_gate(rest, head_probe=None):
     """Serialize the gate's complete state read and all-or-none creation.
@@ -263,9 +281,20 @@ def _gate_under_run_lock(rest, head_probe=None):
         return {'error': f'{pack} gate input rendering cannot resolve the run-project HEAD. Nothing was written'}
     rendered = []
     critique_ids = []
-    def stub(stub_id, executor, depends, stub_scope, stub_sections):
+    # One lens pools nothing: that critique's findings are already the whole
+    # repair bill, so the repair rides the same child as a stated `sequence`
+    # (rules/delegation.md §4) and no separate repair stub is emitted. The
+    # chained stub is built by the same `stub` closure as the repair stub
+    # was, so everything the repair inherited -- the root's fixed inputs,
+    # isolation and exclusions verbatim -- reaches it, and the gate scope
+    # becomes its own write_scope: the chain's second skill holds exactly
+    # the authority the separate stub held. Several lenses keep that stub:
+    # pooled findings take one fix per shared cause, and a per-lens critique
+    # owning its own repair bill has an incentive to soften findings.
+    chained = len(lenses) == 1
+    def stub(stub_id, executor, depends, stub_scope, stub_sections, sequence=None):
         """One stub of this family, on this root's authority."""
-        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions)
+        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions, sequence=sequence)
     try:
         for lens in lenses:
             invalid = _segment_error('lens', lens)
@@ -273,11 +302,16 @@ def _gate_under_run_lock(rest, head_probe=None):
                 return invalid
             stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
             critique_ids.append(stub_id)
-            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, [], _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run))))
-        repair_id = GATE_REPAIR_ID.format(root=root_id)
-        rendered.append((repair_id, stub(repair_id, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, critique_ids, run))))
+            sections = _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run, chained=chained)
+            chain = [GATE_EXECUTORS['critique'], GATE_EXECUTORS['repair']] if chained else None
+            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, scope if chained else [], sections, sequence=chain)))
+        if chained:
+            repaired_by = critique_ids[0]
+        else:
+            repaired_by = GATE_REPAIR_ID.format(root=root_id)
+            rendered.append((repaired_by, stub(repaired_by, GATE_EXECUTORS['repair'], critique_ids, scope, _gate_sections('repair', root_id, '', scope, acceptance_id, acceptance, critique_ids, run))))
         verify_id = GATE_VERIFY_ID.format(root=root_id)
-        rendered.append((verify_id, stub(verify_id, GATE_EXECUTORS['verify'], [repair_id], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run, mutation_plan))))
+        rendered.append((verify_id, stub(verify_id, GATE_EXECUTORS['verify'], [repaired_by], [], _gate_sections('verify', root_id, '', scope, acceptance_id, acceptance, units, run, mutation_plan, repaired_by=repaired_by))))
     except ValueError as error:
         return {'error': str(error) + '. Nothing was written'}
     tickets_root = _tickets_root()
@@ -294,7 +328,7 @@ def _gate_under_run_lock(rest, head_probe=None):
     # shape only, so a family that is well-formed and collides with nothing
     # still reached the disk carrying whatever the next door refuses -- the
     # instance this run is named for. Graded as one batch, like `instantiate`:
-    # the three stubs are written all-or-none, so a refusal naming only
+    # the family's stubs are written all-or-none, so a refusal naming only
     # whichever was graded first is one the caller cannot act on.
     emission = grade_run_emission('gate', run, run_dir, dict(rendered))
     if emission is not None:

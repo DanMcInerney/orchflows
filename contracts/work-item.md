@@ -15,20 +15,18 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   `v1:<adapter>:sha256:<digest>` receipt for the exact cut/cohort snapshot.
   `scripts/tickets_lifecycle.py` owns the grade-then-swap protocol both
   `ready` and `claim` run; direct status writes create neither state.
-- `cohort` — v1 graph position and v1's alone: `v1:ticket:<id>`,
-  `v1:root:<root>`, or `v1:batch:<digest>`, graded and sealed as one when a
-  member goes live; amendment invalidates every unsealed member's receipt.
-  A v2 ticket carries none.
+- `cohort` — v1 graph position and v1's alone: `v1:ticket:<id>`, `v1:root:<root>`,
+  or `v1:batch:<digest>`, graded and sealed as one when a member goes live;
+  amendment invalidates every unsealed member's receipt. A v2 ticket carries none.
 - `root_generation`, `cut_generation`, `ownership_regions`,
   `assignment_seal` — the v2 fields: content identities
   `v2:root:<root-id>:<ordinal>:sha256:<digest>` and
   `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
   `{"artifact":"<path>","merge_oracle":"<identity>","owner":"<ticket-id>","selector":{"kind":"<kind>","value":"<stable identity>"}}`;
-  and `sha256:<digest>` over the validated assignment fields `objective`,
-  `inputs`, `authority`, `dependencies`, `acceptance`, `executor`. Digests,
-  selectors, seal, and the migration under which the absence of all four v2
-  fields means v1 and no v1 value is reinterpreted are
-  [rules/topology.md](../rules/topology.md) §8–§11's.
+  and `sha256:<digest>` over the validated assignment fields `objective`, `inputs`,
+  `authority`, `dependencies`, `acceptance`, `executor`. Digests, selectors, seal,
+  and the migration under which the absence of all four v2 fields means v1 and no
+  v1 value is reinterpreted are [rules/topology.md](../rules/topology.md) §8–§11's.
 - `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
   `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
   `orch-frontier`: the first four live, `pending` and `suspended` the two
@@ -82,8 +80,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
 Body sections, in order — completion test plus the packet's remaining parts:
 
-- `## Objective` — packet `objective`: one observable end state, never
-  activities.
+- `## Objective` — packet `objective`: one observable end state, never activities.
 - `## Fixed inputs` — packet `inputs`: evidence by identity, never prose
   copies and never an unpinned coordinate, which the `identity` entry of
   [docs/vocabulary.md](../docs/vocabulary.md) excludes; procedure belongs to
@@ -198,6 +195,9 @@ and a template run's bound the sum of its stubs'.
 
 `executor` names a skill in the tree, or `script:<repo-relative path>` naming
 a tested script — the ladder's floor as a graph node, so a deterministic step
-is a ticket like any other and costs no agent. Uncovered remainder belongs to
-the run's queued scope, never to a ticket; a ticket never widens its own scope
-or bound; domains extend the sections, never replace them.
+is a ticket like any other and costs no agent. An optional `sequence` lists
+ordered same-role skills, head equal to `executor`: one child executes each in
+this one context ([rules/delegation.md](../rules/delegation.md) §4), one witness
+whose verdict on its own changes is void (rules/verification.md §11). Uncovered
+remainder belongs to the run's queued scope, never to a ticket; a ticket never
+widens its own scope or bound; domains extend the sections, never replace them.
