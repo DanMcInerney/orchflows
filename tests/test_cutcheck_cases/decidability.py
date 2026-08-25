@@ -42,7 +42,11 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
         # not survivals: the claim this pins is still that GIT_NO_HISTORY left
         # and that no member standing beside it left with it. `shared-test-module`
         # joined later still, on those same terms, and `marker-only-relocation`
-        # later again -- a joiner, never a survival.
+        # later again -- a joiner, never a survival. `unpinned-output` is the
+        # latest joiner and the only one held on stated terms: it is advisory
+        # until its precision is decided, so when that lands it leaves this set
+        # and this line goes with it. A departure, unlike the others, is what
+        # `tests/test_cutcheck_cases/pricing.py` will then have to re-grade.
         self.assertEqual(
             cutcheck.ADVISORY,
             frozenset(
@@ -56,6 +60,7 @@ class GitNoHistoryDispositionTest(unittest.TestCase):
                     cutcheck.UNREAD_HALF,
                     cutcheck.SHARED_TEST_MODULE,
                     cutcheck.MARKER_ONLY_RELOCATION,
+                    cutcheck_ticket.UNPINNED_OUTPUT,
                     "ticket-result-not-terminal",
                 }
             ),
