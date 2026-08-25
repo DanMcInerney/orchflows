@@ -84,7 +84,11 @@ whitespace-delimited words. Terms are
   [`web/src/shared/transport/`](web/src/shared/transport/) owns
   feature-blind HTTP, ETag, retry, generation, and polling mechanics.
   [`web/src/design/`](web/src/design/) and [`web/src/styles/`](web/src/styles/)
-  own tokens. Dependency direction: `shell -> catalog -> feature -> shared`.
+  own tokens. Dependency direction: `shell -> catalog -> feature -> shared`,
+  with one named reuse edge: the Now view renders the Workflows-owned
+  [`SummaryFlow`](web/src/features/workflows/view/SummaryFlow.tsx) and the
+  stylesheet dressing it, rather than paralleling that summarized flowchart.
+  Workflows keeps ownership; a second summary-flow component would be a defect.
   `web/dist` owns the committed content-hashed distribution the installer
   copies. The installed reader never runs a package manager or build.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale; [`README.md`](README.md)

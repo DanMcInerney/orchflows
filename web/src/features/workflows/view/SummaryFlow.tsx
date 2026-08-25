@@ -1,4 +1,7 @@
 import type { WorkflowSummary } from "../model";
+import "../styles.css";
+
+export type { SummaryEdge, SummaryNode, WorkflowSummary } from "../model";
 
 const relationVerb = {
   sequence: "continues to",
@@ -9,16 +12,18 @@ const relationVerb = {
 export interface SummaryFlowProps {
   workflowId: string;
   summary: WorkflowSummary;
+  /** Optional exact state per node id; absent ids stay unstated rather than guessed. */
+  nodeStates?: Record<string, string>;
 }
 
-export function SummaryFlow({ workflowId, summary }: SummaryFlowProps) {
+export function SummaryFlow({ workflowId, summary, nodeStates }: SummaryFlowProps) {
   const labels = new Map(summary.nodes.map((node) => [node.id, node.label]));
   return (
     <figure className="workflow-summary" aria-label={`Summary flow for ${workflowId}`}>
       <div className="workflow-summary__visual" aria-hidden="true">
         <div className="workflow-summary__nodes" style={{ flexWrap: "wrap" }}>
           {summary.nodes.map((node, index) => (
-            <span className="workflow-summary__node" key={node.id}>
+            <span className="workflow-summary__node" data-state={nodeStates?.[node.id]} key={node.id}>
               {index > 0 && <i>→</i>}
               <b>{node.label}</b>
             </span>
@@ -35,7 +40,11 @@ export function SummaryFlow({ workflowId, summary }: SummaryFlowProps) {
         )}
       </div>
       <ol className="sr-only" aria-label={`Nonvisual summary for ${workflowId}`}>
-        {summary.nodes.map((node) => <li key={`node-${node.id}`}>Step: {node.label}</li>)}
+        {summary.nodes.map((node) => (
+          <li key={`node-${node.id}`}>
+            Step: {node.label}{nodeStates?.[node.id] ? `; ${nodeStates[node.id]}` : ""}
+          </li>
+        ))}
         {summary.edges.map((edge, index) => (
           <li key={`edge-${edge.source}-${edge.target}-${index}`}>
             {labels.get(edge.source)} {relationVerb[edge.kind]} {labels.get(edge.target)}

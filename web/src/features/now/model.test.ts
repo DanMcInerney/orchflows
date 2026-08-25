@@ -6,7 +6,7 @@ describe("Now fleet projection", () => {
   it("assigns each run exactly once and orders attention, active, completed", () => {
     const runs = nowFixture("mixed-live").runs;
     const fleet = projectFleet([...runs, runs[0]]);
-    expect(fleet.map((run) => run.band)).toEqual(["attention", "active", "completed"]);
+    expect(fleet.map((run) => run.band)).toEqual(["attention", "active", "active", "completed", "completed"]);
     expect(new Set(fleet.map((run) => run.id)).size).toBe(fleet.length);
     expect(projectFleet(nowFixture("needs-attention").runs).map((run) => run.band)).toEqual(["attention", "completed"]);
   });

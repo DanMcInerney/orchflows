@@ -10,13 +10,13 @@ const ready = (model: NowModel) => ({ status: "ready", model, error: null } as c
 const empty = ready({ runs: [] });
 
 describe("Now view", () => {
-  it("renders one vertical execution hierarchy with compact semantic flow and native detail links", () => {
+  it("renders one folder hierarchy with shared summary flows and native detail links", () => {
     const { container } = render(<NowView state={empty} route={{ fixture: "mixed-live" }} />);
     expect(container.querySelector(".foundation-view.now-view")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Now" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Current work" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Recent history" })).toBeTruthy();
-    expect(screen.getAllByLabelText(/Nonvisual execution summary for/)).toHaveLength(3);
+    expect(screen.getByRole("heading", { name: "Running now" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Past sessions" })).toBeTruthy();
+    expect(screen.getAllByLabelText(/Nonvisual summary for/)).toHaveLength(5);
     expect(screen.getByRole("link", { name: /Open run: Restore installed-reader portability/ }).getAttribute("href"))
       .toBe("/runs/20260819-portability-repair?fixture=mixed-live");
     expect(screen.getByRole("link", { name: /Open ticket: Repair the portability seam/ }).getAttribute("href"))
@@ -24,15 +24,15 @@ describe("Now view", () => {
     expect(screen.queryByLabelText(/dependency graph/i)).toBeNull();
   });
 
-  it("shows exact current and next work and keeps pause and filter state explicit", async () => {
+  it("keeps pause and filter state explicit", async () => {
     const user = userEvent.setup();
     render(<NowView state={empty} route={{ fixture: "live-paused" }} />);
     expect(screen.getByText("Live paused")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Current work" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Running now" })).toBeTruthy();
     expect(screen.getByText("Render the live fleet")).toBeTruthy();
-    expect(screen.getByText("Render session structure")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Needs attention" }));
     expect(screen.getByText("No runs match this filter.")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Past sessions" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Resume live" }));
     expect(screen.getByRole("button", { name: "Needs attention" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("Live · checking for changes")).toBeTruthy();
@@ -40,8 +40,8 @@ describe("Now view", () => {
 
   it("keeps empty, unreadable, and unknown projections explicit", () => {
     render(<NowView state={empty} route={{ fixture: "no-active-runs" }} />);
-    expect(screen.getByText("No current work")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Recent history" })).toBeTruthy();
+    expect(screen.getByText("No session is running")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Past sessions" })).toBeTruthy();
     cleanup();
     render(<NowView state={empty} route={{ fixture: "unreadable-data" }} />);
     expect(screen.getByText("Unreadable canonical data")).toBeTruthy();
@@ -53,7 +53,7 @@ describe("Now view", () => {
     const user = userEvent.setup();
     const objective = "A very long objective ".repeat(180);
     const longModel: NowModel = { runs: [{
-      id: "long-run", objective, repository: "orchflows", client: "Codex",
+      id: "long-run", objective, repository: "orchflows-public", client: "Codex",
       lastActivity: "now", unreadable: false, tickets: [],
     }] };
     const { container } = render(<NowView state={ready(longModel)} route={{ fixture: "" }} />);
