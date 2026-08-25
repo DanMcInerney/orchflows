@@ -18,10 +18,10 @@ sentinel differs; `scripts/tickets_issue.py` and
 from __future__ import annotations
 from collections import namedtuple
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed
+    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2
     from .tickets_format import TERMINAL_STATES, VALID_STATUSES, _set_frontmatter_field
 else:
-    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed
+    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, cohort_sealed, is_v2
     from tickets_format import TERMINAL_STATES, VALID_STATUSES, _set_frontmatter_field
 PENDING, READY, CLAIMED, SUSPENDED = 'pending', 'ready', 'claimed', 'suspended'
 STATUSES = tuple(sorted(VALID_STATUSES))
@@ -97,6 +97,38 @@ STAMPS = {
 def pending_admission(version: int = 1) -> str:
     """The pending-admission sentinel this admission version stamps."""
     return STAMPS[('stamp', int(version))].admission
+def declared_version(data) -> int:
+    """The admission version this ticket's own bytes declare.
+
+    The four public v2 fields opt in (`is_v2`), and so does the v2 pending
+    sentinel alone: a drafting member carries exactly that between the
+    door that emits it and the `seal` that writes its generation fields.
+    Everything else is v1, the default a bare ticket has always had.
+    """
+    if is_v2(data) or str(data.get('admission') or '').startswith('v2:'):
+        return 2
+    return 1
+def version_divergence(ticket_id: str, data: dict, root_data: dict):
+    """The finding that names a member disagreeing with its root, or None.
+
+    The version is the root's property: `stamp-generation` opens v2 on a
+    root and its whole cut at once, so a member emitted at the other
+    version is not an earlier lifecycle stage some later step rewrites --
+    nothing rewrites it -- but a ticket every grader reads
+    self-consistently down its own version's path while the run cannot run
+    it. The recorded instance wrote v1 gate stubs under a sealed v2 root,
+    and each graded clean until `ready`. Named here, beside the stamps, so
+    the one grade refuses it at every door while the flag that was wrong
+    is still in the caller's hand.
+    """
+    member, root = declared_version(data), declared_version(root_data)
+    if member == root:
+        return None
+    remedy = ('declare the opt-in the root carries: a v2 pending admission '
+              'or generation field, as `new --file` and `gate` emit'
+              if root == 2 else 'drop the v2 declaration: this root and its cut are v1')
+    return {'code': 'version-root-divergence', 'field': 'admission',
+            'detail': f'v{member} member under a v{root} root; {remedy}'}
 def stamp(command: str = 'stamp', version: int = 1):
     """The stamping entry for one command at one version, or None."""
     return STAMPS.get((command, int(version)))

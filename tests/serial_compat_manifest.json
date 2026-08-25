@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3097,
+  "count": 3107,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -676,7 +676,7 @@
    "test_tickets_emitters.EmissionLawPartition.test_a_finding_code_the_law_does_not_know_refuses",
    "test_tickets_emitters.EmissionLawPartition.test_an_emitter_owned_finding_is_refused",
    "test_tickets_emitters.EmissionLawPartition.test_an_unsealed_v2_assignment_is_deferred",
-   "test_tickets_emitters.GateGradesItsEmission.test_gate_refuses_a_root_whose_stubs_it_cannot_express",
+   "test_tickets_emitters.GateGradesItsEmission.test_gate_joins_a_sealed_v2_root_as_a_drafting_family",
    "test_tickets_emitters.InstantiateGradesItsEmission.test_every_shipped_composition_passes_its_own_door",
    "test_tickets_emitters.InstantiateGradesItsEmission.test_instantiate_refuses_stubs_the_next_door_refuses",
    "test_tickets_emitters.NewGradesItsEmission.test_new_refuses_the_locator_claim_refuses",
@@ -875,6 +875,16 @@
    "test_v2_cohort.V2CohortRulingTest.test_an_explicit_cohort_on_a_v2_ticket_is_refused_and_nothing_is_written",
    "test_v2_cohort.V2CohortRulingTest.test_placing_a_v2_ticket_stamps_no_cohort",
    "test_v2_cohort.V2CohortRulingTest.test_recut_leaves_a_v2_ticket_without_a_cohort",
+   "test_v2_membership.TheDoorsRefuseDivergence.test_new_file_lands_a_drafting_member_that_matches",
+   "test_v2_membership.TheDoorsRefuseDivergence.test_new_file_refuses_a_v1_member_under_a_sealed_v2_root",
+   "test_v2_membership.TheGateCompletesUnderV2.test_a_v1_root_still_issues_a_v1_gate",
+   "test_v2_membership.TheGateCompletesUnderV2.test_the_family_is_sealed_at_the_next_generation",
+   "test_v2_membership.TheVersionLaw.test_a_member_at_its_root_version_carries_no_divergence",
+   "test_v2_membership.TheVersionLaw.test_a_v1_member_under_a_v2_root_diverges",
+   "test_v2_membership.TheVersionLaw.test_a_v2_member_under_a_v1_root_diverges",
+   "test_v2_membership.TheVersionLaw.test_the_law_refuses_at_emission_and_is_not_deferred",
+   "test_v2_membership.TheVersionLaw.test_the_pure_halves_answer_alone",
+   "test_v2_membership.TheVersionLaw.test_the_root_itself_is_exempt",
    "test_v2_regrade.AdmissionVersionGateTest.test_a_ticket_with_no_admission_field_is_still_the_legacy_one",
    "test_v2_regrade.AdmissionVersionGateTest.test_a_v2_ticket_declared_edge_is_actually_closed",
    "test_v2_regrade.AdmissionVersionGateTest.test_a_v2_ticket_plan_still_bounds_its_actual_mutations",
@@ -3100,7 +3110,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "ed3f11bd521353847cc9170290d3cdc1c7d3904f831a5dcc50f8920a5ee53c6a"
+  "sha256": "3451a04bd87d3f2aba16cb2d82c9f8fdebae42d9e031f7c28fafe0388f15b07e"
  },
  "mutation_owners": [
   {
@@ -6119,6 +6129,30 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_v2_membership",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_v2_membership",
+   "owner": "run_dir_of",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_v2_membership",
+   "owner": "use_sink",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {

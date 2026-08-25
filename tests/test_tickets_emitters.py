@@ -408,27 +408,24 @@ class TheSealedBatchWedge(unittest.TestCase):
 
 
 class GateGradesItsEmission(unittest.TestCase):
-    def test_gate_refuses_a_root_whose_stubs_it_cannot_express(self):
-        """Recorded instance: gate stubs emitted v1 cohorts under a v2 root.
-
-        The builder writes a v1 admission and cohort by construction, so
-        under a sealed v2 root every stub it writes is one the next refuses.
-        """
+    def test_gate_joins_a_sealed_v2_root_as_a_drafting_family(self):
+        """The recorded instance, closed: stubs join the root's declared
+        version, and the law's half is `tests/test_v2_membership.py`."""
 
         with workspace() as (tmp, repo, head):
             run_dir = place_root(head, v2=True)
-
             validated = run_cmd(repo, "draft-validate", "testrun", "00-root")
-            self.assertNotIn("error", validated)
             sealed = run_cmd(
                 repo, "seal", "testrun", "00-root", "--cut-generation",
                 validated["draft_validation"]["cut_generation"])
             self.assertNotIn("error", sealed)
-
             payload = run_cmd(repo, "gate", "testrun", "00-root")
-            self.assertIn("v2 sealed assignment", str(payload.get("error")))
-            self.assertEqual([], sorted(run_dir.glob("*.gate.*.md")),
-                             "a refused gate writes no stub")
+            self.assertNotIn("error", payload)
+            stubs = sorted(run_dir.glob("*.gate.*.md"))
+            self.assertEqual(2, len(stubs), "one lens: chained critique + verify")
+            for data in map(frontmatter, stubs):
+                self.assertEqual(("v2:pending", None), (data.get("admission"), data.get("cohort")))
+                self.assertTrue(data.get("root_generation", "").startswith("v2:root:"))
 
 
 class RecutAndAmendGradeTheirEmission(unittest.TestCase):

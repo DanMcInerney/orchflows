@@ -20,7 +20,8 @@ from __future__ import annotations
 import json
 import re
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, ticket_cohort
+    from .tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, ticket_cohort
+    from .tickets_transitions import declared_version
     from .tickets_commands import GATE_USAGE
     from .tickets_emission import grade_run_emission
     from .tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
@@ -31,7 +32,8 @@ if __package__:
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _run_lock, _segment_error, _tickets_root
     from .tickets_worklog import _run_tickets
 else:
-    from tickets_admission import ADMISSION_PENDING, ticket_cohort
+    from tickets_admission import ADMISSION_PENDING, ADMISSION_V2_PENDING, ticket_cohort
+    from tickets_transitions import declared_version
     from tickets_commands import GATE_USAGE
     from tickets_emission import grade_run_emission
     from tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
@@ -113,15 +115,20 @@ def _with_inherited_inputs(sections: list, inherited: str) -> list:
                 content = '\n'.join(([content] if content.strip() else []) + lines)
         extended.append((heading, content))
     return extended
-def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None, isolation=None, excluded_actions=None, sequence=None) -> str:
-    """One gate stub: its own cohort, the root's authority, its own records.
+def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_scope: list, sections: list, pack=None, cohort=None, inherited_inputs='', baseline=None, isolation=None, excluded_actions=None, sequence=None, version=1, root_generation=None) -> str:
+    """One gate stub at the root's version, on the root's authority.
     ``isolation`` and ``excluded_actions`` are the root's, passed in rather
     than defaulted, so a root that holds neither lends neither: what is
     copied is what was granted, never a safe-looking value invented here.
-    The cohort is the stub's own. A gate stub holds a broad write grant and
-    so does its root, and under same-cohort sole-owner closure those two
-    collide; issuing each stub in `v1:ticket:<its id>` keeps the collision
-    from forming instead of leaving a hand edit to undo it.
+    ``version`` is the root's declared admission version, never this
+    module's spelling of it. Under v1 the cohort is the stub's own: a gate
+    stub holds a broad write grant and so does its root, and under
+    same-cohort sole-owner closure those two collide; `v1:ticket:<its id>`
+    keeps the collision from forming. Under v2 there is no cohort to issue
+    -- a v2 ticket is frozen by its assignment seal -- so the stub joins
+    as a drafting member: the root's current `root_generation` and the v2
+    pending sentinel, exactly what `stamp-generation` leaves on a member,
+    with the next `draft-validate` and `seal` covering the family.
     ``sequence`` is the single-lens chain (rules/delegation.md §4): stated
     beside `executor` so the chain's head visibly is the executor.
     """
@@ -129,7 +136,8 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list, write_
     mutations = [f"{'write' if path.endswith('/') else 'change'}:{path}" for path in normalized_scope]
     exclusions = [str(entry) for entry in (excluded_actions or [])]
     isolation = str(isolation).strip() if isolation else ''
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_PENDING, 'cohort': cohort or ticket_cohort(ticket_id), 'executor': executor, 'sequence': list(sequence) if sequence else None, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'excluded_actions': exclusions or None, 'isolation': isolation or None, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': ''}
+    v2 = int(version) == 2
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': ADMISSION_V2_PENDING if v2 else ADMISSION_PENDING, 'cohort': None if v2 else cohort or ticket_cohort(ticket_id), 'executor': executor, 'sequence': list(sequence) if sequence else None, 'pack': pack, 'independence': 'gate', 'depends_on': list(depends_on), 'write_scope': list(write_scope), 'mutations': mutations, 'excluded_actions': exclusions or None, 'isolation': isolation or None, 'bound': NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'root_generation': str(root_generation) if v2 and root_generation else None}
     body = _render_ticket(fields, _with_inherited_inputs(sections, inherited_inputs))
     text, error = render_ticket_inputs(body, run, inherited_inputs, baseline=baseline)
     if error is not None:
@@ -276,6 +284,8 @@ def _gate_under_run_lock(rest, head_probe=None):
     inherited_inputs = (root.get('sections') or {}).get('Fixed inputs', '')
     isolation = root.get('isolation')
     exclusions = list(root.get('excluded_actions') or [])
+    version = declared_version(root)
+    root_generation = str(root.get('root_generation') or '') or None
     gate_baseline = (head_probe or git_head)()
     if pack in ('orch-code-pack', 'orch-design-pack') and gate_baseline is None:
         return {'error': f'{pack} gate input rendering cannot resolve the run-project HEAD. Nothing was written'}
@@ -293,8 +303,8 @@ def _gate_under_run_lock(rest, head_probe=None):
     # owning its own repair bill has an incentive to soften findings.
     chained = len(lenses) == 1
     def stub(stub_id, executor, depends, stub_scope, stub_sections, sequence=None):
-        """One stub of this family, on this root's authority."""
-        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions, sequence=sequence)
+        """One stub of this family, on this root's authority and version."""
+        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions, sequence=sequence, version=version, root_generation=root_generation)
     try:
         for lens in lenses:
             invalid = _segment_error('lens', lens)
@@ -343,7 +353,12 @@ def _gate_under_run_lock(rest, head_probe=None):
         for path in written:
             path.unlink(missing_ok=True)
         return {'error': f'unwritable gate stub: {error}. Nothing was written'}
-    return {'gate': {'run': run, 'root': root_id, 'lenses': lenses, 'acceptance_from': acceptance_id, 'ids': [stub_id for stub_id, _ in rendered], 'paths': [str(path) for path in written]}}
+    payload = {'run': run, 'root': root_id, 'lenses': lenses, 'acceptance_from': acceptance_id, 'ids': [stub_id for stub_id, _ in rendered], 'paths': [str(path) for path in written]}
+    if version == 2:
+        # A v2 family lands drafting: the seal is the one door that writes
+        # generation fields, so completion is named rather than imitated.
+        payload['next'] = [f'draft-validate {run} {root_id}', f'seal {run} {root_id} --cut-generation <the new draft identity>']
+    return {'gate': payload}
 __all__ = (
     '_cmd_gate', '_gate_body', '_gate_input', '_gate_sections', '_gate_stub',
     '_gate_under_run_lock', '_inherited_input_lines', '_input_name',

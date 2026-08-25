@@ -17,12 +17,14 @@ from __future__ import annotations
 from pathlib import Path
 if __package__:
     from .tickets_admission import grade_admission
-    from .tickets_format import _read_utf8
+    from .tickets_format import _parse_frontmatter, _read_utf8
     from .tickets_store import _runs_root
+    from .tickets_transitions import declared_version, pending_admission, version_divergence
 else:
     from tickets_admission import grade_admission
-    from tickets_format import _read_utf8
+    from tickets_format import _parse_frontmatter, _read_utf8
     from tickets_store import _runs_root
+    from tickets_transitions import declared_version, pending_admission, version_divergence
 
 
 def grader_context(run) -> dict:
@@ -55,9 +57,31 @@ def run_snapshot(run_dir):
 
 
 def graded_admission(ticket_id: str, text: str, siblings, run) -> dict:
-    """Grade one snapshot through the one context, for all four callers."""
-    return grade_admission(ticket_id, text, dict(siblings or {}),
-                           context=grader_context(run))
+    """Grade one snapshot through the one context, for all four callers.
+
+    The version-divergence grade lives here rather than in the pure grader
+    because it is the context's own question: a member against the root of
+    the run it stands in. `grade_admission` branches on the member's bytes
+    alone, so a self-consistent member at the wrong version grades clean
+    down its own path -- the recorded instance -- and only this door, which
+    every grading and emitting site shares, holds both tickets at once. A
+    divergent member keeps the pending sentinel of its declared version:
+    a receipt is admission's grant, and this finding refuses admission.
+    """
+    siblings = dict(siblings or {})
+    grade = grade_admission(ticket_id, text, siblings,
+                            context=grader_context(run))
+    root_id = str(ticket_id).split('.', 1)[0]
+    root_text = siblings.get(root_id) if root_id != str(ticket_id) else None
+    if root_text is not None:
+        data = _parse_frontmatter(text)
+        divergence = version_divergence(ticket_id, data,
+                                        _parse_frontmatter(root_text))
+        if divergence is not None:
+            grade = dict(grade)
+            grade['findings'] = list(grade['findings']) + [divergence]
+            grade['receipt'] = pending_admission(declared_version(data))
+    return grade
 
 
 __all__ = ('grader_context', 'graded_admission', 'run_snapshot')
