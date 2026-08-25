@@ -273,8 +273,8 @@ def _companion_owners(data, members):
     plans. Counting them would report the lawful shape -- one unit owning the
     companion -- as several owners, and the shape with no unit owner as owned.
     Where the cut holds no unit at all the whole membership is eligible again,
-    so a root graded alone still owns the companions it plans -- and a root
-    with only gate stubs is read exactly as it was, several owners and all.
+    so a root graded alone still owns what it plans.  That reinstatement is
+    reported beside the set: only there is an owner pair the umbrella itself.
 
     A v1 decomposition stamps every member with the root's cohort; a sealed v2
     cut stamps none and freezes the root in ``root_generation`` instead, so
@@ -290,7 +290,7 @@ def _companion_owners(data, members):
         member_id for member_id in members
         if member_id != root_id and GATE_INFIX not in member_id
     }
-    return units or set(members)
+    return (units, False) if units else (set(members), True)
 
 
 def grade_closure(ticket_id, text, siblings, edges):
@@ -302,7 +302,8 @@ def grade_closure(ticket_id, text, siblings, edges):
     companion the pending unit still has to write.  The ticket being graded is
     always a member: its own plan is the authority under grade.  A spent plan
     still answers, though -- what a terminal member planned with a covering
-    mutation is written -- so it is owed by no live member and missing of none.
+    mutation is written -- so it is missing of none; and where only the
+    umbrella fallback owns it, several owners is that umbrella, not a conflict.
     """
 
     current = _parse_frontmatter(text)
@@ -344,7 +345,7 @@ def grade_closure(ticket_id, text, siblings, edges):
                 ))
 
     owners = {}
-    eligible = _companion_owners(current, plans)
+    eligible, fallback = _companion_owners(current, plans)
     initial = set()
     for member_id, nodes in plans.items():
         for node in nodes:
@@ -379,15 +380,14 @@ def grade_closure(ticket_id, text, siblings, edges):
         }
         owners[required] = node_owners
         rendered = f"{required[0]}:{required[1]}"
+        if any(_plan_covers(plan, required) for plan in spent) and (fallback or not node_owners):
+            continue
         if not node_owners:
-            if not any(_plan_covers(plan, required) for plan in spent):
-                findings.append(_finding("scope-owner-missing", "mutations", rendered))
+            findings.append(_finding("scope-owner-missing", "mutations", rendered))
             continue
         if len(node_owners) > 1:
-            findings.append(_finding(
-                "scope-owner-multiple", "mutations",
-                f"{rendered} owned by {', '.join(sorted(node_owners))}",
-            ))
+            detail = f"{rendered} owned by {', '.join(sorted(node_owners))}"
+            findings.append(_finding("scope-owner-multiple", "mutations", detail))
             continue
         owner = next(iter(node_owners))
         matching = [plan for plan in plans[owner] if _plan_covers(plan, required)]
