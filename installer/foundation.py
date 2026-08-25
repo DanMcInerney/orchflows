@@ -46,12 +46,11 @@ HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
-# The four names both hosts expose as first-class adapters; every other
-# name resolves at ``by-name/``. The routed composition ``fix`` replaced the
-# demoted ``orch-fix`` skill.
+# The four names exposed by Claude's bounded adapter set. The routed
+# composition ``fix`` replaced the demoted ``orch-fix`` skill.
 SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
-# The Codex redirect set is that same set, under its older name.
-CODEX_SKILL_REDIRECT_NAMES = SHARED_ADAPTER_NAMES
+# Codex also exposes its investigation worker as a first-class callable skill.
+CODEX_SKILL_REDIRECT_NAMES = SHARED_ADAPTER_NAMES + ("orch-investigate",)
 CLAUDE_ADAPTER_SETS = ("all", "four")
 AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill", "frontend-asset"))
 CODEX_MAX_THREADS = 20
