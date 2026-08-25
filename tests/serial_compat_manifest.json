@@ -3427,6 +3427,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_a_refusal_describes_the_section_it_actually_refused",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3434,6 +3435,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_a_section_holding_real_content_keeps_every_protection",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3441,6 +3443,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_a_writer_whose_own_content_is_the_sentinel_is_not_told_apart",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3448,6 +3451,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_an_empty_section_is_not_the_sentinel_and_stays_append_only",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3455,6 +3459,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_only_the_exact_sentinel_bytes_are_the_exception",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3462,6 +3467,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_the_first_real_write_consumes_the_sentinel_under_every_flag",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3469,6 +3475,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_the_generator_prefills_the_one_sentinel_the_filing_law_names",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -3476,6 +3483,7 @@
   {
    "module": "tests.test_derived_guidance",
    "owner": "SentinelIsNotContentTest.test_the_help_states_the_append_only_law_the_command_enforces",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -4561,6 +4569,7 @@
   {
    "module": "tests.test_mechanical_batch",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -4608,6 +4617,7 @@
   {
    "module": "tests.test_project_binding",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -4615,6 +4625,7 @@
   {
    "module": "tests.test_project_binding",
    "owner": "ProjectBindingFixture.env",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -4704,6 +4715,7 @@
   {
    "module": "tests.test_run_tests",
    "owner": "TestGuardedSeams.test_a_dead_path_inside_the_checkout_is_residue_wherever_it_sits",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -4711,6 +4723,7 @@
   {
    "module": "tests.test_run_tests",
    "owner": "TestGuardedSeams.test_a_dead_scratch_path_outside_the_checkout_is_still_dropped",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -4767,6 +4780,7 @@
   {
    "module": "tests.test_run_tests_scope",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -4774,6 +4788,7 @@
   {
    "module": "tests.test_run_tests_scope",
    "owner": "TestNothingSelectedStillOwesItsAdmission.main_over",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -4781,6 +4796,7 @@
   {
    "module": "tests.test_run_tests_scope",
    "owner": "TestSelectionIsAnAnswerNotASample.select",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -5437,6 +5453,7 @@
   {
    "module": "tests.test_tickets_cases.packet_workspace",
    "owner": "UnboundWorkspaceTableTest",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -5484,6 +5501,7 @@
   {
    "module": "tests.test_tickets_emitters",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -5491,6 +5509,7 @@
   {
    "module": "tests.test_tickets_emitters",
    "owner": "sink_root",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -5498,6 +5517,7 @@
   {
    "module": "tests.test_tickets_emitters",
    "owner": "use_sink",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -5505,6 +5525,7 @@
   {
    "module": "tests.test_tickets_gate",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -5512,6 +5533,7 @@
   {
    "module": "tests.test_tickets_gate",
    "owner": "use_sink",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -6041,6 +6063,7 @@
   {
    "module": "tests.test_validate",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
