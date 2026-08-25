@@ -1,9 +1,13 @@
-import { AlertTriangle, ArrowRight, Check, Circle, Clock3, Filter, GitBranch, Pause, Play, Radio, ShieldAlert } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ArrowRight, Check, Circle, Clock3, Filter, FolderGit2, Pause, Play, Radio, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { executionRunRoute, executionTicketRoute } from "../../shared/routes/executionRoutes";
 import type { FeatureState } from "../../shared/transport/types";
+import { SummaryFlow } from "../workflows/view/SummaryFlow";
 import { nowFixture } from "./fixtures";
-import { bandLabel, projectFleet, projectWork, type FleetRun, type NowModel, type NowTicket } from "./model";
+import {
+  bandLabel, projectFleet, projectFolders, projectWork, runSummary,
+  type FleetRun, type NowFolder, type NowModel, type NowTicket,
+} from "./model";
 import type { NowRoute } from "./route";
 import "./now.css";
 
@@ -20,82 +24,96 @@ function stateGlyph(state: string) {
   return <Circle aria-hidden="true" />;
 }
 
-function CountSummary({ counts }: { counts: Record<string, number> }) {
-  const entries = Object.entries(counts).filter(([, count]) => count > 0);
-  return <span className="now-counts" aria-label={entries.map(([name, count]) => `${count} ${name}`).join(", ")}>
-    {entries.map(([name, count]) => <span key={name}><b>{count}</b> {name}</span>)}
-  </span>;
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-function ExecutionFlow({ run }: { run: FleetRun }) {
-  return <figure className="now-flow" aria-label={`Compact execution summary for ${run.id}`}>
-    <div className="now-flow__visual" aria-hidden="true">
-      {run.groups.length ? run.groups.map((group, index) => <span className="now-flow__step" data-state={group.state} key={group.id}>
-        {index > 0 && <ArrowRight />}
-        {stateGlyph(group.state)}
-        <b>{group.label}</b>
-        <small>{group.ticketIds.length}</small>
-      </span>) : <span className="now-flow__empty">No canonical ticket steps</span>}
-    </div>
-    <ol className="sr-only" aria-label={`Nonvisual execution summary for ${run.id}`}>
-      {run.groups.map((group, index) => <li key={group.id}>
-        Step {index + 1}: {group.label}; {group.state}; {group.ticketIds.length} {group.ticketIds.length === 1 ? "ticket" : "tickets"}
-      </li>)}
-    </ol>
-  </figure>;
+function finished(run: FleetRun): boolean {
+  return Boolean(run.terminalAt) || run.band === "completed";
 }
 
-function TicketList({ label, tickets, run, fixture, emptyText }: {
-  label: string; tickets: NowTicket[]; run: string; fixture: string; emptyText: string;
-}) {
-  return <section className="now-work" aria-label={`${label} for ${run}`}>
-    <h4>{label}</h4>
-    {tickets.length ? <ul>{tickets.map((ticket) => <li key={ticket.id} data-state={ticket.readiness.state}>
-      {stateGlyph(ticket.readiness.state)}
-      <a href={executionTicketRoute.build({ run, ticket: ticket.id, fixture })} aria-label={`Open ticket: ${ticket.title ?? ticket.id}`}>
-        <strong>{ticket.title ?? ticket.id}</strong><code>{ticket.id}</code>
+function TaskLine({ run, fixture }: { run: FleetRun; fixture: string }) {
+  if (finished(run)) {
+    return <p className="now-run-card__task">
+      {stateGlyph("complete")}
+      <span>{run.terminalStatus || "Terminal state unrecorded"} · {plural(run.tickets.length, "ticket")} · {run.terminalAt || "finish time unrecorded"}</span>
+    </p>;
+  }
+  const current: NowTicket[] = projectWork(run.tickets).current;
+  if (!current.length) {
+    return <p className="now-run-card__task">{stateGlyph("waiting")}<span>No ticket is currently executing.</span></p>;
+  }
+  return <p className="now-run-card__task">
+    {stateGlyph("running")}
+    <span>Working on {current.map((ticket, index) => <span key={ticket.id}>
+      {index > 0 && ", "}
+      <a href={executionTicketRoute.build({ run: run.id, ticket: ticket.id, fixture })}
+        aria-label={`Open ticket: ${ticket.title ?? ticket.id}`}>{ticket.title ?? ticket.id}</a>
+    </span>)}</span>
+  </p>;
+}
+
+function RunCard({ run, fixture }: { run: FleetRun; fixture: string }) {
+  const href = executionRunRoute.build({ run: run.id, fixture });
+  const unknown = run.unreadable || projectWork(run.tickets).unknown.length > 0;
+  const flow = runSummary(run);
+  return <li className="now-run-card" data-band={run.band}>
+    <div className="now-run-card__identity">
+      <p className="now-run-card__meta">
+        <span className="now-run-card__state">{stateGlyph(run.band === "completed" ? "complete" : run.band === "attention" ? "attention" : "running")}{bandLabel[run.band]}</span>
+        <span><Clock3 aria-hidden="true" /> {run.lastActivity}</span>
+      </p>
+      <h4 className="now-objective-summary" title={run.objective}>
+        <a href={href} aria-label={`Open run: ${run.objective}`}>{run.objective}</a>
+      </h4>
+      <TaskLine run={run} fixture={fixture} />
+      <details className="now-objective-details"><summary>Full objective</summary><p>{run.objective}</p></details>
+      <a className="now-run-card__open" href={href}
+        aria-label={`${finished(run) ? "Open full run" : "Open live workflow"} for ${run.objective}`}>
+        {finished(run) ? "Open full run" : "Open live workflow"} <ArrowRight aria-hidden="true" />
       </a>
-      <span>{ticket.status}</span>
-    </li>)}</ul> : <p>{emptyText}</p>}
+    </div>
+    {unknown ? <div className="now-unknown" role="status">
+      <ShieldAlert aria-hidden="true" /><span><strong>Unknown progress</strong>Canonical ticket data is unavailable; no progress was inferred.</span>
+    </div> : <SummaryFlow workflowId={run.id} summary={flow.summary} nodeStates={flow.nodeStates} />}
+  </li>;
+}
+
+function FolderPanel({ folder, fixture, id, note }: { folder: NowFolder; fixture: string; id: string; note: string }) {
+  return <section className="now-folder" aria-labelledby={id}>
+    <header>
+      <div>
+        <p className="eyebrow"><FolderGit2 aria-hidden="true" /> Folder</p>
+        <h3 id={id}>{folder.label}</h3>
+      </div>
+      <p>{note}</p>
+    </header>
+    <ul className="now-folder__list" aria-label={`Sessions in ${folder.label}`}>
+      {folder.runs.map((run) => <RunCard key={run.id} run={run} fixture={fixture} />)}
+    </ul>
   </section>;
 }
 
-function RunCard({ run, fixture, historical = false }: { run: FleetRun; fixture: string; historical?: boolean }) {
-  const work = projectWork(run.tickets);
-  return <article className="now-run-card" data-band={run.band}>
+function FolderBand({ id, eyebrow, heading, folders, fixture, note, empty }: {
+  id: string; eyebrow: string; heading: string; folders: NowFolder[];
+  fixture: string; note: (folder: NowFolder) => string; empty: ReactNode;
+}) {
+  const runs = folders.reduce((total, folder) => total + folder.runs.length, 0);
+  return <section className="now-band" aria-labelledby={`${id}-heading`}>
     <header>
-      <span className="now-run-card__state">{stateGlyph(run.band === "completed" ? "complete" : run.band === "attention" ? "attention" : "running")}{bandLabel[run.band]}</span>
-      <CountSummary counts={run.counts} />
+      <div><p className="eyebrow">{eyebrow}</p><h2 id={`${id}-heading`}>{heading}</h2></div>
+      <p>{plural(runs, "session")} · {plural(folders.length, "folder")}</p>
     </header>
-    <div className="now-run-card__identity">
-      <div>
-        <h3 className="now-objective-summary" title={run.objective}>
-          <a href={executionRunRoute.build({ run: run.id, fixture })} aria-label={`Open run: ${run.objective}`}>{run.objective}</a>
-        </h3>
-        <p><GitBranch aria-hidden="true" /> {run.repository}</p>
-      </div>
-      <span><Clock3 aria-hidden="true" /> {run.lastActivity}</span>
-    </div>
-    <details className="now-objective-details"><summary>Full objective</summary><p>{run.objective}</p></details>
-    {run.unreadable || work.unknown.length ? <div className="now-unknown" role="status">
-      <ShieldAlert aria-hidden="true" /><span><strong>Unknown progress</strong>Canonical ticket data is unavailable; no progress was inferred.</span>
-    </div> : <>
-      <ExecutionFlow run={run} />
-      {historical ? <p className="now-history-note"><Check aria-hidden="true" /> Completed with {run.tickets.length} exact {run.tickets.length === 1 ? "ticket" : "tickets"}. Open the run for full evidence.</p>
-        : <div className="now-work-grid">
-          <TicketList label="Current" tickets={work.current} run={run.id} fixture={fixture} emptyText="No ticket is currently executing." />
-          <TicketList label="Next" tickets={work.next} run={run.id} fixture={fixture} emptyText="No ticket is ready next." />
-        </div>}
-    </>}
-    <a className="now-run-card__open" href={executionRunRoute.build({ run: run.id, fixture })}>Open full execution <ArrowRight aria-hidden="true" /></a>
-  </article>;
+    {folders.length ? folders.map((folder, index) => <FolderPanel
+      key={folder.key} folder={folder} fixture={fixture} id={`${id}-folder-${index}`} note={note(folder)} />) : empty}
+  </section>;
 }
 
 function EmptyCurrent({ filtered }: { filtered: boolean }) {
   return <div className="now-empty" role="status">
     {filtered ? <Filter aria-hidden="true" /> : <Check aria-hidden="true" />}
-    <strong>{filtered ? "No runs match this filter." : "No current work"}</strong>
-    <span>{filtered ? "Choose All runs to restore the full execution hierarchy." : "There is nothing active or waiting for attention."}</span>
+    <strong>{filtered ? "No runs match this filter." : "No session is running"}</strong>
+    <span>{filtered ? "Choose All runs to restore every folder." : "Nothing is active or waiting for attention right now."}</span>
   </div>;
 }
 
@@ -111,39 +129,44 @@ export default function NowView({ route, state }: NowViewProps) {
   useEffect(() => { setPaused(initialPaused); }, [initialPaused, route.fixture]);
   const fleet = useMemo(() => projectFleet(frozen), [frozen]);
   const visible = filter === "attention" ? fleet.filter((run) => run.band === "attention") : fleet;
-  const current = visible.filter((run) => run.band !== "completed");
-  const history = visible.filter((run) => run.band === "completed");
+  const { running, past } = useMemo(() => projectFolders(visible), [visible]);
+  const runningRuns = running.reduce((total, folder) => total + folder.runs.length, 0);
+  const folders = new Set([...running, ...past].map((folder) => folder.label)).size;
 
   if (!fixture && state.status === "loading") return <div className="loading">Waiting for reader</div>;
   if (!fixture && state.status === "error") return <div className="notice" role="status">{state.error.message}</div>;
 
   return <div className="foundation-view now-view" data-fixture={route.fixture || "live"}>
     {state.status === "stale" && <div className="notice" role="status">{state.error.message}</div>}
-    <header className="now-header">
-      <div><p className="now-kicker"><Radio aria-hidden="true" /> Execution overview</p><h1>Now</h1><p>Current execution first, exact next work beside it, and recent history below.</p></div>
-      <div className="now-live" role="status" aria-live="polite" data-paused={paused}>
-        <span>{paused ? <Pause aria-hidden="true" /> : <Radio aria-hidden="true" />}{paused ? "Live paused" : "Live · checking for changes"}</span>
-        <button type="button" aria-pressed={paused} onClick={() => setPaused((value) => !value)}>{paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}{paused ? "Resume live" : "Pause live"}</button>
+    <header className="now-hero">
+      <div>
+        <p className="eyebrow"><Radio aria-hidden="true" /> Execution overview</p>
+        <h1>Now</h1>
+        <p>Sessions running right now, grouped by the folder they run in. Finished sessions sit below, most recent folder first.</p>
       </div>
+      <dl aria-label="Now summary">
+        <div><dt>Running</dt><dd>{runningRuns}</dd></div>
+        <div><dt>Folders</dt><dd>{folders}</dd></div>
+        <div><dt>Finished</dt><dd>{past.reduce((total, folder) => total + folder.runs.length, 0)}</dd></div>
+      </dl>
     </header>
     {fixture?.diagnostic && <div className="now-diagnostic" role="status"><ShieldAlert aria-hidden="true" /><span><strong>Unreadable canonical data</strong>{fixture.diagnostic}</span></div>}
     <div className="now-toolbar" aria-label="Fleet filters">
       <Filter aria-hidden="true" /><span>Filter</span>
       <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>All runs</button>
       <button type="button" aria-pressed={filter === "attention"} onClick={() => setFilter("attention")}>Needs attention</button>
-      <small>{visible.length} visible</small>
+      <div className="now-live" role="status" aria-live="polite" data-paused={paused}>
+        <span>{paused ? <Pause aria-hidden="true" /> : <Radio aria-hidden="true" />}{paused ? "Live paused" : "Live · checking for changes"}</span>
+        <button type="button" aria-pressed={paused} onClick={() => setPaused((value) => !value)}>{paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}{paused ? "Resume live" : "Pause live"}</button>
+      </div>
     </div>
     <main className="now-hierarchy">
-      <section className="now-section" aria-labelledby="now-current-heading">
-        <header><div><p className="now-kicker">Live execution</p><h2 id="now-current-heading">Current work</h2></div><b>{current.length}</b></header>
-        {current.length ? <div className="now-run-list">{current.map((run) => <RunCard key={run.id} run={run} fixture={route.fixture} />)}</div>
-          : <EmptyCurrent filtered={filter === "attention"} />}
-      </section>
-      {filter === "all" && <section className="now-section now-section--history" aria-labelledby="now-history-heading">
-        <header><div><p className="now-kicker">Completed</p><h2 id="now-history-heading">Recent history</h2></div><b>{history.length}</b></header>
-        {history.length ? <div className="now-run-list">{history.map((run) => <RunCard key={run.id} run={run} fixture={route.fixture} historical />)}</div>
-          : <div className="now-empty"><Clock3 aria-hidden="true" /><strong>No recent runs</strong><span>Completed work will appear here.</span></div>}
-      </section>}
+      <FolderBand id="now-running" eyebrow="Live execution" heading="Running now" folders={running}
+        fixture={route.fixture} note={(folder) => plural(folder.runs.length, "session")}
+        empty={<EmptyCurrent filtered={filter === "attention"} />} />
+      {filter === "all" && <FolderBand id="now-past" eyebrow="Finished" heading="Past sessions" folders={past}
+        fixture={route.fixture} note={(folder) => `Newest finish ${folder.newestTerminal || "unrecorded"}`}
+        empty={<div className="now-empty"><Clock3 aria-hidden="true" /><strong>No past sessions</strong><span>Finished work will appear here, grouped by folder.</span></div>} />}
     </main>
     <p className="now-privacy">Only canonical status and metadata are shown. Prompts, tools, outputs, files, and conversations remain private.</p>
   </div>;

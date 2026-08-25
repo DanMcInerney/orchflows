@@ -30,8 +30,14 @@ function ticket(value: unknown): value is NowTicket {
     && strings(value.readiness.causal_chain);
 }
 
+function optionalString(value: unknown): boolean {
+  return value === undefined || typeof value === "string";
+}
+
 function run(value: unknown): value is NowRunPayload {
   return record(value)
+    && optionalString(value.terminal_at)
+    && optionalString(value.terminal_status)
     && typeof value.id === "string"
     && typeof value.ticket_count === "number"
     && typeof value.active === "boolean"
