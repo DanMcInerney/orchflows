@@ -11,9 +11,13 @@ from tests.test_tickets_view import make_run, run_cmd, ticket, tickets_mod, use_
 from scripts import tickets_dispatch
 
 class GateStubsTest(unittest.TestCase):
-    """`gate <run> <root>` writes work-item.md Root ticket's three stubs:
+    """`gate <run> <root>` writes work-item.md Root ticket's gate family:
     critique per lens (read-only, parallel, over every unit ticket), one
-    repair behind them all, one verify carrying the root's acceptance."""
+    repair behind them all, one verify carrying the root's acceptance.
+
+    The default lens pair here keeps the full three-kind family under
+    grade: a single lens collapses it to the critique-repair chain with no
+    separate repair stub, pinned in `tests/test_tickets_gate_chain.py`."""
 
     def make(self, sink: Path, units=("R.01", "R.02"), pack: str = "") -> Path:
         tickets = {
@@ -31,26 +35,27 @@ class GateStubsTest(unittest.TestCase):
 
     def gate(self, *extra):
         return run_cmd(
-            "gate", "testrun", "R", "--lens", "cut-lens",
+            "gate", "testrun", "R", "--lens", "cut-lens,craft",
             "--write-scope", "scripts/one.py", *extra
         )
 
     def stub(self, run_dir: Path, tid: str) -> str:
         return (run_dir / f"{tid}.md").read_text(encoding="utf-8")
 
-    def test_exactly_the_three_stubs_are_written(self):
+    def test_exactly_the_family_stubs_are_written(self):
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             run_dir = self.make(sink)
             payload = self.gate()
             self.assertNotIn("error", payload)
             self.assertEqual(
-                ["R.gate.critique.cut-lens", "R.gate.repair", "R.gate.verify"],
+                ["R.gate.critique.cut-lens", "R.gate.critique.craft",
+                 "R.gate.repair", "R.gate.verify"],
                 payload["gate"]["ids"],
             )
             self.assertEqual(
-                {"R", "R.01", "R.02", "R.gate.critique.cut-lens", "R.gate.repair",
-                 "R.gate.verify"},
+                {"R", "R.01", "R.02", "R.gate.critique.cut-lens",
+                 "R.gate.critique.craft", "R.gate.repair", "R.gate.verify"},
                 {path.stem for path in run_dir.glob("*.md")},
             )
 
@@ -79,7 +84,10 @@ class GateStubsTest(unittest.TestCase):
                 for item in run_cmd("list", "--run", "testrun")["tickets"]
             }
             self.assertEqual(["R.01", "R.02"], edges["R.gate.critique.cut-lens"])
-            self.assertEqual(["R.gate.critique.cut-lens"], edges["R.gate.repair"])
+            self.assertEqual(
+                ["R.gate.critique.craft", "R.gate.critique.cut-lens"],
+                sorted(edges["R.gate.repair"]),
+            )
             self.assertEqual(["R.gate.repair"], edges["R.gate.verify"])
             self.assertIn("status: pending", self.stub(run_dir, "R.gate.verify"))
 
@@ -110,7 +118,7 @@ class GateStubsTest(unittest.TestCase):
             sink = use_sink(Path(tmp))
             run_dir = self.make(sink)
             payload = run_cmd(
-                "gate", "testrun", "R", "--lens", "cut-lens",
+                "gate", "testrun", "R", "--lens", "cut-lens,craft",
                 "--write-scope", "scripts\\one.py,docs/two.md",
             )
             self.assertNotIn("error", payload)
@@ -370,7 +378,7 @@ class GateStubsTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            payload = run_cmd("gate", "testrun", "R", "--lens", "cut-lens")
+            payload = run_cmd("gate", "testrun", "R", "--lens", "cut-lens,craft")
             self.assertNotIn("error", payload)
             self.assertIn(
                 "write_scope: [scripts/one.py]", self.stub(run_dir, "R.gate.repair")

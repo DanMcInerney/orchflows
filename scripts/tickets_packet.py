@@ -16,8 +16,10 @@ else:
     from tickets_format import CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, GATE_EXECUTORS, LOOP_EXECUTOR, PROVENANCE_RE, REQUIRED_ISOLATION, RESULT_TOKEN_SPLIT_RE, RESULT_TOKEN_STRIP, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _scope_entries, _sections, criterion_defects, effective_write_scope
 if __package__:
     from .tickets_carry import carry_block
+    from .tickets_sequence import sequence_block
 else:
     from tickets_carry import carry_block
+    from tickets_sequence import sequence_block
 if __package__:
     from .tickets_issue import AMENDABLE_STATUSES
 else:
@@ -415,6 +417,10 @@ def _packet_under_run_lock(rest):
         prompt = [f'Run the script {executor_script} with the ticket path as its one argument, from your own workspace: {executor_script} {ticket_path}', f"No skill is applied. File the script's stdout verbatim as the ticket's `## Result`, and its exit code and the criterion it decides as `## Verification`. Change nothing else."]
     else:
         prompt = [f'Apply skill {executor} to ticket {ticket_path}.', 'Read the ticket; it is your complete delegation packet — objective, fixed inputs, authority (write_scope, excluded_actions), bounds, return fields. Gather nothing outside its fixed inputs.']
+        # A stated chain continues in this same child (rules/delegation.md
+        # §4); the block prices what a chain can never buy — its own
+        # acceptance (tickets_sequence.py).
+        prompt.extend(sequence_block(loaded))
         # Each dependency's `## Carry`, inlined rather than pointed at: the
         # digest a predecessor filed is exactly the context a fresh executor
         # otherwise re-gathers, and re-gathering it is the caller's defect
