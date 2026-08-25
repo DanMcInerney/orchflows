@@ -20,6 +20,7 @@ import re
 if __package__:
     from .tickets_admission import ADMISSION_PENDING, ticket_cohort
     from .tickets_commands import GATE_USAGE
+    from .tickets_emission import grade_run_emission
     from .tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
     from .tickets_gate_mutations import _canonical_gate_mutation_plan
     from .tickets_input_producers import git_head, input_groups, render_ticket_inputs
@@ -30,6 +31,7 @@ if __package__:
 else:
     from tickets_admission import ADMISSION_PENDING, ticket_cohort
     from tickets_commands import GATE_USAGE
+    from tickets_emission import grade_run_emission
     from tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
     from tickets_gate_mutations import _canonical_gate_mutation_plan
     from tickets_input_producers import git_head, input_groups, render_ticket_inputs
@@ -288,6 +290,15 @@ def _gate_under_run_lock(rest, head_probe=None):
             return {'error': f'gate stub {stub_id} is off contract (contracts/work-item.md): ' + '; '.join(defects)}
         if (run_dir / f'{stub_id}.md').exists():
             return {'error': f"gate stub '{stub_id}' is already issued in run '{run}': a root ticket has one gate. Nothing was written"}
+    # The fifth emitting door's grade. `ticket_defects` above reads contract
+    # shape only, so a family that is well-formed and collides with nothing
+    # still reached the disk carrying whatever the next door refuses -- the
+    # instance this run is named for. Graded as one batch, like `instantiate`:
+    # the three stubs are written all-or-none, so a refusal naming only
+    # whichever was graded first is one the caller cannot act on.
+    emission = grade_run_emission('gate', run, run_dir, dict(rendered))
+    if emission is not None:
+        return {**emission, 'error': emission['error'] + '. Nothing was written'}
     written = []
     try:
         for stub_id, text in rendered:

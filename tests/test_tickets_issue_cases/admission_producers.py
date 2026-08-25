@@ -231,7 +231,7 @@ class V1ProducerTest(unittest.TestCase):
             for record in records:
                 self.assertRegex(record["name"], r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 
-    def test_gate_stubs_share_the_roots_cut_cohort(self):
+    def test_gate_stubs_issue_in_their_own_cohorts(self):
         run_dir = self.sink / "tickets" / "testrun"
         run_dir.mkdir(parents=True)
         root = GOOD_TICKET.replace("id: T1", "id: R").replace("executor: orch-tdd", "executor: orch-decompose")
@@ -245,7 +245,7 @@ class V1ProducerTest(unittest.TestCase):
             text = Path(path).read_text(encoding="utf-8")
             self.assertIn("status: pending", text)
             self.assertIn(V1_PENDING, text)
-            self.assertIn("cohort: v1:root:R", text)
+            self.assertIn(f"cohort: v1:ticket:{Path(path).stem}", text)
             inputs = tickets_mod._sections(text)["Fixed inputs"]
             for line in inputs.splitlines():
                 if line.strip():

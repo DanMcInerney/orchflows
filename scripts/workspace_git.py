@@ -218,7 +218,13 @@ def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
     try:
         updated = tickets._set_frontmatter_field(prior_text, "workspace_branch", branch)
         updated = tickets._set_frontmatter_field(updated, "workspace_baseline", baseline)
-        ticket_path.write_text(updated, encoding="utf-8")
+        # The sink's own writer, not ``write_text``: it pins ``newline='\n'``
+        # so a two-scalar stamp stays a two-line diff instead of translating
+        # every ending to the platform's, and it replaces atomically so a
+        # crash mid-write cannot truncate the ticket. ``Path.write_text``
+        # grew a ``newline`` argument only in 3.10, below this tree's 3.9
+        # floor, so pinning it there would refuse on the floor interpreter.
+        tickets._write_text_atomically(ticket_path, updated)
     except (OSError, ValueError) as error:
         return {"error": f"unwritable ticket: {error}"}
     return {

@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
 
 import scripts.tickets as tickets  # noqa: E402  the grant key's one owner
 import scripts.workspace as workspace  # noqa: E402
+import scripts.workspace_git as workspace_git  # noqa: E402  the ticket stamp's writer
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"

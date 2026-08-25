@@ -440,5 +440,56 @@ class GateStubsIssueInTheirOwnCohortTest(unittest.TestCase):
             self.assertEqual(len(cohorts), len(set(cohorts)))
 
 
+class GateGradesWhatItIsAboutToWriteTest(unittest.TestCase):
+    """The fifth emitting door grades its emission before it writes.
+
+    `new`, `amend`, `recut`, `instantiate` and `stamp-generation` all run
+    `tickets_emission.grade_run_emission` and refuse rather than emit. The
+    gate checked contract shape and id collisions and then wrote, so it
+    could spend the run's time issuing three stubs the very next door
+    refuses -- which is the defect this run is named for.
+
+    The instance: a root with no pack still carries a `git-tree` fixed
+    input, and the gate copies that input into all three stubs verbatim.
+    With no pack no adapter resolves the `git-tree` kind, so every stub is
+    born carrying a refusable `adapter-kind-unsupported`. Contract shape is
+    clean and no id collides, so nothing the door already checked sees it.
+
+    The assertion is the refusal, not the call. A case that only proved
+    `grade_run_emission` was reached would pass against a grade whose
+    verdict the door discarded, and a version-only check is exactly what
+    let this defect stand while a gate case sat green beside it.
+    """
+
+    def _run(self, root):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            run_dir = make_run(sink, root)
+            return gate(), sorted(path.name for path in run_dir.glob("R.gate.*.md"))
+
+    def test_the_gate_refuses_an_emission_the_next_door_refuses(self):
+        payload, written = self._run(root_text().replace("pack: orch-code-pack\n", ""))
+
+        self.assertIn("gate refuses to emit", str(payload.get("error")))
+        self.assertEqual(
+            {"adapter-kind-unsupported"},
+            {finding.get("code") for finding in payload.get("findings") or []})
+        self.assertEqual(
+            ["R.gate.critique.code", "R.gate.repair", "R.gate.verify"],
+            sorted({finding.get("ticket") for finding in payload["findings"]}),
+            "the refusal names every stub it would have written")
+        self.assertEqual([], written, "a refused gate writes no stub")
+
+    def test_a_root_whose_stubs_grade_clean_still_gates(self):
+        """The refusal is the grade's, not a blanket one: the same door on
+        the same fixture emits all three stubs when the emission is clean."""
+
+        payload, written = self._run(root_text())
+
+        self.assertNotIn("error", payload)
+        self.assertEqual(
+            ["R.gate.critique.code.md", "R.gate.repair.md", "R.gate.verify.md"],
+            written)
+
 if __name__ == "__main__":
     unittest.main()
