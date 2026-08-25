@@ -7,23 +7,13 @@ import re
 from pathlib import Path
 
 try:
-    from scripts import (
-        ui_friction_projection,
-        ui_runs_projection,
-        ui_sessions_projection,
-    )
+    from scripts import ui_friction_projection, ui_runs_projection, ui_sessions_projection
     from scripts.ui_discovery import (
-        discover,
-        find_ticket,
-        graph_input,
-        identity_diagnostics,
-        read_events,
-        read_friction,
-        read_sessions,
-        run_tickets,
+        discover, find_ticket, graph_input, identity_diagnostics, read_events,
+        read_friction, read_run_identity, read_sessions, run_tickets,
     )
     from scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-    from scripts.ui_model import _in_tree, _json_object, _safe_name, _scalar, parse_verification
+    from scripts.ui_model import _scalar, parse_verification
     from scripts.ui_readiness import explain_run
     from scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 except ImportError:
@@ -31,11 +21,11 @@ except ImportError:
     import ui_runs_projection
     import ui_sessions_projection
     from ui_discovery import (
-        discover, find_ticket, graph_input, identity_diagnostics,
-        read_events, read_friction, read_sessions, run_tickets,
+        discover, find_ticket, graph_input, identity_diagnostics, read_events,
+        read_friction, read_run_identity, read_sessions, run_tickets,
     )
     from ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-    from ui_model import _in_tree, _json_object, _safe_name, _scalar, parse_verification
+    from ui_model import _scalar, parse_verification
     from ui_readiness import explain_run
     from ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
@@ -116,15 +106,26 @@ def _rationale_identity(value) -> dict:
     }
 
 
+def _run_identity(root: Path, run: str):
+    """One run's ``run.json`` only when it names the run it sits under: a
+    misfiled document lends its folder and completion time to no one."""
+
+    identity = read_run_identity(root, run)
+    return identity if identity and _scalar(identity.get("run")) == run else None
+
+
 def _run_workflow(root: Path, run: str):
-    run = _safe_name(run)
-    path = _in_tree(root.joinpath("runs"), run, "run.json") if run else None
-    try:
-        identity = _json_object(path.read_text(encoding="utf-8")) if path else None
-    except (OSError, UnicodeDecodeError):
-        return None
-    workflow = _scalar(identity.get("workflow")) if identity and _scalar(identity.get("run")) == run else ""
+    workflow = _scalar((_run_identity(root, run) or {}).get("workflow"))
     return workflow if CANONICAL_WORKFLOW_RE.fullmatch(workflow) else None
+
+
+def _leaf(value) -> str:
+    """The last path segment of a recorded name -- the only projectable part
+    of a folder identity, a session's cwd and a run's ``project.name`` alike.
+    The sink is untrusted, so a misrecorded path degrades to its leaf."""
+
+    value = _scalar(value).rstrip("/\\")
+    return re.split(r"[\\/]", value)[-1] if value else ""
 
 
 def _session_summary(session: dict) -> dict:
@@ -139,9 +140,8 @@ def _session_summary(session: dict) -> dict:
 
 def _session_list_summary(session: dict) -> dict:
     record = _session_summary(session)
-    named_cwd = _text(session.get("named_cwd")).rstrip("/\\")
     record["client"] = ""
-    record["project"] = re.split(r"[\\/]", named_cwd)[-1] if named_cwd else ""
+    record["project"] = _leaf(session.get("named_cwd"))
     return record
 
 
@@ -381,6 +381,8 @@ def _run_summaries(root: Path) -> list:
     summaries = []
     for found in discover(root)["runs"]:
         detail = _run_record(root, found["run"])
+        identity = _run_identity(root, found["run"]) or {}
+        project = identity.get("project")
         events = read_events(root, found["run"])
         objective = next(
             (
@@ -392,17 +394,16 @@ def _run_summaries(root: Path) -> list:
         )
         summaries.append({
             "id": found["run"],
-            "workflow": detail["workflow"] if detail else {
-                "state": "unavailable", "id": "",
-            },
-            "execution": detail["execution"] if detail else {
-                "current": [], "next": [],
-            },
+            "workflow": detail["workflow"] if detail else {"state": "unavailable", "id": ""},
+            "execution": detail["execution"] if detail else {"current": [], "next": []},
             "ticket_count": len(found["tickets"]),
             "active": bool(detail and detail["active"]),
             "objective": objective,
-            "repository": "",
+            "repository": _leaf(project.get("name")) if isinstance(project, dict) else "",
+            # No projection-safe client source exists; held open, not guessed.
             "client": "",
+            "terminal_at": _scalar(identity.get("terminal_at")),
+            "terminal_status": _scalar(identity.get("terminal_status")),
             "last_activity": _text(((events or {}).get("entries") or [{}])[0].get("ts")),
             "unreadable": any(bool(item.get("unreadable")) for item in found["tickets"]),
             "tickets": detail["tickets"] if detail else [],

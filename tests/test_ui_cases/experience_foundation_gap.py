@@ -146,7 +146,8 @@ class TestExperienceFoundationGap(unittest.TestCase):
 
         run_keys = {
             "id", "ticket_count", "active", "objective", "repository", "client",
-            "last_activity", "unreadable", "tickets",
+            "terminal_at", "terminal_status", "last_activity", "unreadable",
+            "tickets",
         }
         self.assertTrue(selected["runs"])
         for run in selected["runs"]:
@@ -154,6 +155,8 @@ class TestExperienceFoundationGap(unittest.TestCase):
             self.assertIsInstance(run["objective"], str)
             self.assertIsInstance(run["repository"], str)
             self.assertIsInstance(run["client"], str)
+            self.assertIsInstance(run["terminal_at"], str)
+            self.assertIsInstance(run["terminal_status"], str)
             self.assertIsInstance(run["last_activity"], str)
             self.assertIsInstance(run["unreadable"], bool)
             self.assertIsInstance(run["tickets"], list)
