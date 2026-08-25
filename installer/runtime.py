@@ -172,8 +172,17 @@ def _dependency_environment() -> dict[str, str]:
 
 
 def _build_private_runtime(runtime_home: Path) -> Path:
+    """Build the runtime the way ``python -m venv`` would.
+
+    POSIX symlinks are that command's default, and the only working choice
+    for a relocatable interpreter: copying one leaves its ``@executable_path``
+    reference to ``libpython`` dangling, and the copy aborts on first run.
+    """
+
     requirement_lines = _runtime_requirement_lines()
-    venv.EnvBuilder(with_pip=bool(requirement_lines)).create(runtime_home)
+    venv.EnvBuilder(
+        symlinks=os.name != "nt", with_pip=bool(requirement_lines)
+    ).create(runtime_home)
     runtime_python = private_runtime_python(runtime_home)
     if requirement_lines:
         installed = subprocess.run(

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3053,
+  "count": 3054,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -179,6 +179,7 @@
    "test_installer.RuntimeVenvTests.test_runtime_build_enforces_hashes_from_the_complete_lock",
    "test_installer.RuntimeVenvTests.test_runtime_dependency_direct_set_has_one_owner_and_is_mirrored",
    "test_installer.RuntimeVenvTests.test_runtime_health_requires_exact_server_dependency_versions",
+   "test_installer.RuntimeVenvTests.test_the_runtime_links_its_base_interpreter_rather_than_copying_it",
    "test_installer.RuntimeVenvTests.test_unowned_runtime_is_refused_and_preserved",
    "test_installer.RuntimeVenvTests.test_update_and_uninstall_follow_the_private_runtime_policy",
    "test_installer.RuntimeVenvTests.test_user_install_repairs_an_unhealthy_private_runtime",
@@ -3056,7 +3057,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "591a600198c0adf1b6884c1632a98050bd659ea81eab9ffb4e169329635de21a"
+  "sha256": "99a196871a46a0bf207053f2e18a0e775e600104824fcc0ecebd524ed3fae01d"
  },
  "mutation_owners": [
   {
@@ -3972,6 +3973,14 @@
   {
    "module": "tests.test_installer_cases.planning.private_runtime",
    "owner": "RuntimeVenvTests.test_runtime_health_requires_exact_server_dependency_versions",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.test_the_runtime_links_its_base_interpreter_rather_than_copying_it",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
