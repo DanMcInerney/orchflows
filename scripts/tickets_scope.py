@@ -241,6 +241,7 @@ def _cycle_nodes(graph):
 
 
 ROOT_COHORT_PREFIX = "v1:root:"
+ROOT_GENERATION_SUBJECT_RE = re.compile(r"^v2:root:([A-Za-z0-9][A-Za-z0-9._-]*):")
 GATE_INFIX = ".gate."
 V2_FIELDS = ("root_generation", "cut_generation", "ownership_regions", "assignment_seal")
 
@@ -267,22 +268,27 @@ def _closure_key(ticket_id, data):
     return f"cut:{generation}" if generation else f"unsealed:{ticket_id}"
 
 
-def _companion_owners(cohort, members):
-    """The member ids that may own a scope-edge companion in this cohort.
+def _companion_owners(data, members):
+    """The member ids that may own a scope-edge companion in this cut.
 
-    A decomposed cohort's root holds its whole subtree's write scope and its
-    gate stubs repair anywhere that subtree writes, so both cover every
-    companion the cut plans. Counting them would report the lawful shape --
-    one unit owning the companion -- as several owners, and the shape with no
-    unit owner as owned. Where the cohort holds no unit at all the whole
-    membership is eligible again, so a root graded on its own still owns the
-    companions it plans -- and a root standing with only gate stubs is read
-    exactly as it was, several owners and all.
+    A cut's root holds its whole subtree's write scope and its gate stubs
+    repair anywhere that subtree writes, so both cover every companion the cut
+    plans. Counting them would report the lawful shape -- one unit owning the
+    companion -- as several owners, and the shape with no unit owner as owned.
+    Where the cut holds no unit at all the whole membership is eligible again,
+    so a root graded alone still owns the companions it plans -- and a root
+    with only gate stubs is read exactly as it was, several owners and all.
+
+    A v1 decomposition stamps every member with the root's cohort; a sealed v2
+    cut stamps none and freezes the root in ``root_generation`` instead, so
+    reading the cohort alone left a v2 root unnamed and eligible, making both
+    misreadings above.  Only its subject is read here -- whether the identity
+    is well formed is ``tickets_generations``'s -- and never split by position.
     """
 
-    root_id = (
-        cohort[len(ROOT_COHORT_PREFIX):] if cohort.startswith(ROOT_COHORT_PREFIX) else ""
-    )
+    cohort = str(data.get("cohort") or "")
+    sealed = ROOT_GENERATION_SUBJECT_RE.match(str(data.get("root_generation") or ""))
+    root_id = cohort[len(ROOT_COHORT_PREFIX):] if cohort.startswith(ROOT_COHORT_PREFIX) else (sealed.group(1) if sealed else "")
     units = {
         member_id for member_id in members
         if member_id != root_id and GATE_INFIX not in member_id
@@ -301,7 +307,6 @@ def grade_closure(ticket_id, text, siblings, edges):
     """
 
     current = _parse_frontmatter(text)
-    cohort = str(current.get("cohort") or "")
     member_texts = dict(siblings)
     member_texts[ticket_id] = text
     parsed = {
@@ -337,7 +342,7 @@ def grade_closure(ticket_id, text, siblings, edges):
                 ))
 
     owners = {}
-    eligible = _companion_owners(cohort, plans)
+    eligible = _companion_owners(current, plans)
     initial = set()
     for member_id, nodes in plans.items():
         for node in nodes:

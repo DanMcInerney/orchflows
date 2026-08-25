@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3078,
+  "count": 3082,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -848,6 +848,10 @@
    "test_v2_closure.CohortlessV2MembershipTest.test_one_sealed_cut_is_still_one_closure",
    "test_v2_closure.CohortlessV2MembershipTest.test_v2_tickets_with_distinct_cut_generations_grade_independently",
    "test_v2_closure.ReproducerAtTheAdmissionGradeTest.test_a_lawful_v2_ticket_is_admitted_beside_a_defective_sibling",
+   "test_v2_closure.SealedV2RootMembershipTest.test_a_companion_only_the_sealed_root_plans_is_still_reported_unowned",
+   "test_v2_closure.SealedV2RootMembershipTest.test_a_sealed_root_standing_alone_still_owns_the_companions_it_plans",
+   "test_v2_closure.SealedV2RootMembershipTest.test_the_root_of_a_sealed_cut_is_not_a_second_owner_of_a_companion",
+   "test_v2_closure.SealedV2RootMembershipTest.test_two_units_of_a_sealed_cut_are_still_two_owners",
    "test_v2_closure.TerminalMembershipTest.test_a_companion_whose_only_owner_is_spent_is_reported_unowned",
    "test_v2_closure.TerminalMembershipTest.test_a_terminal_member_is_not_a_second_owner_of_a_companion",
    "test_v2_closure.TerminalMembershipTest.test_a_terminal_ticket_being_graded_is_a_member_of_its_own_closure",
@@ -3081,7 +3085,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "796797f1526998ee4f9641127073f4b965d24b846410c9b8e1c846f1831c58e3"
+  "sha256": "1ae92f5ca865975051e21df2f804ebe353d0904e2acd3928b70c7d2dbdd345a9"
  },
  "mutation_owners": [
   {
