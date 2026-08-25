@@ -11,6 +11,9 @@ if str(_ROOT) not in sys.path:
 
 import tools.validate as validate  # noqa: E402
 
+from tests.test_validate_cases.contract_pins import (  # noqa: F401
+    ContractPinIsNewlineInsensitiveTest,
+)
 from tests.test_validate_cases.sink_contracts import (
     TestContractsNameTheSink,
     TestWorkItemLocationInvariant,
