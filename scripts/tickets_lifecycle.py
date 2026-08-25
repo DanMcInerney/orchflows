@@ -93,6 +93,37 @@ def _cmd_list(rest):
             loaded = _load_ticket(ticket_path)
             items.append(loaded.get('summary') or loaded)
     return {'tickets': items}
+def _unchecked_cut(ticket_id: str, tickets: dict) -> str:
+    """The root of this item's cut while that cut is still unchecked.
+
+    A cut is checked before its first unit is dispatched, and `ready` is
+    the step that makes a dispatch possible -- so this is where the order
+    is kept. After it, the cut checker's own corrections are gone: `amend`
+    and `recut` are refused once an item leaves the amendable statuses,
+    and `scripts/tickets_packet.py` turns the cut-checker packet away
+    outright with nothing left for that child to correct. Enforcing it
+    there alone reported the loss; enforcing it here prevents it.
+
+    Held items are the root's own subtree only. An ad-hoc set has no root
+    and waits for nothing, and the root itself is never held -- its
+    `checked_by` is the very thing this waits for.
+
+    A v2 cut is never held here, because under v2 the same question has a
+    different answer: `draft-validate` and `seal` are what say a cut has
+    been graded whole, admission refuses an unsealed member outright, and
+    `checked_by` on a v2 root is the cut reader's bookkeeping beside that
+    seal rather than the gate in front of it. Holding both would put two
+    gates on one cut and stall every sealed run behind the older one.
+    """
+    root_id = str(ticket_id).split('.', 1)[0]
+    root = tickets.get(root_id)
+    if root_id == ticket_id or not isinstance(root, dict) or 'error' in root:
+        return ''
+    if _executor_of(root) != ROOT_EXECUTOR or is_v2(root):
+        return ''
+    return '' if str(root.get(CHECKED_BY_KEY) or '').strip() else root_id
+
+
 def _cmd_ready(rest):
     args = list(rest)
     run_filter = _extract_flag(args, '--run')
@@ -125,6 +156,10 @@ def _cmd_ready(rest):
                 continue
             if not facts['status_valid']:
                 skipped.append({'id': data['id'], 'reason': f"status '{status}' is none of {sorted(VALID_STATUSES)}, so readiness cannot be graded"})
+                continue
+            unchecked = _unchecked_cut(ticket_id, tickets)
+            if unchecked:
+                skipped.append({'id': ticket_id, 'reason': f"cut root '{unchecked}' carries no {CHECKED_BY_KEY}: a cut is checked before its first unit is dispatched, and readiness is what makes a dispatch possible. `check` the root first"})
                 continue
             deps_complete = facts['dependencies_complete']
             if not deps_complete and not (versioned and status in ('pending', 'ready')):

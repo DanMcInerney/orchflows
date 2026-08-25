@@ -40,6 +40,16 @@ from tests.test_tickets_issue_cases.common import (  # noqa: E402
 # into v2, so a stub carrying one is the shortest v2 template there is.
 V2_FIELD = "ownership_regions: []"
 
+# One cut: a root and one unit under it, both in the root's own cohort.
+CUT_COHORT = "cohort: v1:root:00-root"
+ROOT_TICKET = (
+    SOURCE_TICKET
+    .replace("id: T1", "id: 00-root\n" + CUT_COHORT)
+    .replace("executor: orch-tdd", "executor: orch-decompose")
+    .replace("claimed_by:", "checked_by:\nclaimed_by:")
+)
+UNIT_TICKET = SOURCE_TICKET.replace("id: T1", "id: 00-root.01\n" + CUT_COHORT)
+
 
 def v2_template(tmp: Path) -> Path:
     """A template whose first stub is a v2 producer."""
@@ -168,6 +178,35 @@ class WholeSuiteOracleExemptsAGrantedModuleTest(unittest.TestCase):
 
     def test_the_same_oracle_over_an_ungranted_module_still_fires(self):
         self.assertIn("whole-suite-oracle", self.codes("scratch/t1.txt"))
+
+
+class ReadyWaitsForTheCutsCheckTest(unittest.TestCase):
+    """A cut is checked before its first unit is dispatched. Once a unit
+    has left the amendable statuses the cut checker's own corrections are
+    refused and `tickets_packet` turns the checker packet away outright,
+    so the ordering has to be kept at `ready` -- the step that makes a
+    dispatch possible -- and not reported after it.
+    """
+
+    def sink_with_cut(self, tmp: Path, checked: bool) -> Path:
+        sink = use_sink(tmp)
+        root = ROOT_TICKET if not checked else ROOT_TICKET.replace(
+            "checked_by:", "checked_by: cut-reader-1"
+        )
+        place(sink, "testrun", "00-root", root)
+        place(sink, "testrun", "00-root.01", UNIT_TICKET)
+        return sink
+
+    def ready_ids(self, checked: bool) -> list:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.sink_with_cut(Path(tmp), checked)
+            return [item["id"] for item in run_cmd("ready", "--run", "testrun")["ready"]]
+
+    def test_a_unit_under_an_unchecked_cut_is_not_ready(self):
+        self.assertNotIn("00-root.01", self.ready_ids(checked=False))
+
+    def test_the_same_unit_is_ready_once_the_cut_is_checked(self):
+        self.assertIn("00-root.01", self.ready_ids(checked=True))
 
 
 if __name__ == "__main__":

@@ -16,10 +16,9 @@ canonical JSON `--input` records. Use the stamped workspace cell; carry its
 state. Give every item a write scope (siblings overlap only when dependency-ordered),
 isolation, bound, edges, and completion criteria with
 pack oracles and provenance. Stamp `independence: gate` exactly when the gate
-covers all authored-here criteria, otherwise `checker`,
+covers all authored-here criteria, otherwise `independence: checker`,
 regardless of oracle class. Apply §3 edges and sole ownership; emit §4
-assembly when named. Declared `isolation: required`, a cut still takes no
-workspace: it writes tickets.
+assembly when named. Declared `isolation: required`, a cut takes no workspace.
 
 Run `cutcheck.py` on the cut revision; amend defects and re-run to 0. The
 [cut lens](references/cut-lens.md) judges advisories and undecidable matters.
