@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3086,
+  "count": 3088,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -191,12 +191,13 @@
    "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
    "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
    "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_four_shared_adapters",
+   "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_writes_five_redirect_stubs",
    "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
    "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
    "test_installer.TestClaudeAdapterSet.test_the_parser_accepts_the_two_sets_and_refuses_any_other",
    "test_installer.TestClaudeAdapterSet.test_the_plan_count_and_printout_follow_the_adapter_set",
    "test_installer.TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
-   "test_installer.TestClaudeAdapterSet.test_the_shared_four_names_the_set_both_hosts_expose",
+   "test_installer.TestClaudeAdapterSet.test_the_shared_four_and_codex_redirect_names_are_explicit",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_writes_host_block_file_and_appends_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_reapply_does_not_duplicate_import_line",
@@ -301,7 +302,7 @@
    "test_installer.TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
    "test_installer.TestScopedHostConfiguration.test_user_plan_merges_limits_and_writes_native_role_agents",
    "test_installer.TestScopedHostConfiguration.test_user_plan_targets_user_config_and_agent_directories",
-   "test_installer.TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_four_codex_skill_stubs",
+   "test_installer.TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_codex_skill_stubs",
    "test_installer.TestScopedHostConfiguration.test_user_plan_writes_flat_by_name_index_for_every_package",
    "test_installer.TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
@@ -611,6 +612,7 @@
    "test_serial_compat_hardening.TestManifestHardening.test_only_observed_intentional_residue_is_allowlisted",
    "test_serial_compat_hardening.TestManifestHardening.test_required_fidelity_category_cannot_be_silently_removed",
    "test_serial_compat_hardening.TestStateBoundaryDiscrimination.test_each_process_seam_is_detected_and_restorable_seams_are_restored",
+   "test_serial_compat_manifest_regression.TestCodexRedirectManifestRegression.test_the_codex_redirect_test_identities_stay_serial_compatible",
    "test_serial_manifest.TestCommittedManifest.test_every_committed_owner_still_carries_its_restoration",
    "test_serial_manifest.TestCommittedManifest.test_the_committed_bytes_are_exactly_what_regeneration_would_write",
    "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_has_none",
@@ -3089,7 +3091,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "fe67ca66f15ee32fab2da2f840c09135a3a1cdc5563b8d0c6713ce87cb6dc382"
+  "sha256": "919d7aade9422d75bd940f5f5276ba050462207e6cffd9b6aff0bba21d7545bc"
  },
  "mutation_owners": [
   {
@@ -4186,7 +4188,7 @@
   },
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
-   "owner": "TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_four_codex_skill_stubs",
+   "owner": "TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_codex_skill_stubs",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

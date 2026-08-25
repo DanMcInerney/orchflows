@@ -147,7 +147,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(parsed["name"], {"orch_planner", "orch_worker"})
                 self.assertIn("developer_instructions", parsed)
 
-    def test_user_plan_writes_claude_adapters_and_four_codex_skill_stubs(self):
+    def test_user_plan_writes_claude_adapters_and_codex_skill_stubs(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
@@ -210,6 +210,10 @@ class TestScopedHostConfiguration(unittest.TestCase):
             }
             self.assertEqual(
                 expected_stub_names,
+                {dest.parent.name for dest, _ in plan.codex_skills},
+            )
+            self.assertEqual(
+                {*install.SHARED_ADAPTER_NAMES, "orch-investigate"},
                 {dest.parent.name for dest, _ in plan.codex_skills},
             )
             for dest, content in plan.codex_skills:
