@@ -1,11 +1,12 @@
 """Repository script ownership checks."""
 
-import hashlib
 import json
 import re
 import unittest
 
-from ._support import CONTRACTS, PINS, ROOT
+from tools.validate_support.lint import compute_pins
+
+from ._support import PINS, ROOT
 
 ARCHITECTURE = ROOT / "ARCHITECTURE.md"
 
@@ -100,10 +101,16 @@ class ScriptOwnershipTest(unittest.TestCase):
             for phrase in phrases:
                 self.assertIn(phrase, text, f"{relative} lost semantic pin {phrase!r}")
 
+        # Through the one hasher, never a second copy of it: this check
+        # held its own `sha256(read_bytes())` and so was blind to the same
+        # thing `compute_pins` was -- a CRLF working copy pinning a digest
+        # no CI leg reproduces. Two copies of a rule drift apart silently.
         pins = json.loads(PINS.read_text(encoding="utf-8"))
+        computed = compute_pins()
         for name in ("work-item.md", "worklog.md"):
-            actual = hashlib.sha256((CONTRACTS / name).read_bytes()).hexdigest()
-            self.assertEqual(actual, pins.get(name), f"{name} has no current T0 pin")
+            self.assertEqual(
+                computed[name], pins.get(name), f"{name} has no current T0 pin"
+            )
 
         flat_architecture = re.sub(
             r"\s+", " ", ARCHITECTURE.read_text(encoding="utf-8")

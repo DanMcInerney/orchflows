@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3135,
+  "count": 3137,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -2748,6 +2748,8 @@
    "tests.test_ui_cases.workflows_projection.WorkflowProjectionTests.test_catalog_detail_and_source_are_closed_and_inventory_exact",
    "tests.test_ui_cases.workflows_projection.WorkflowProjectionTests.test_evolve_source_contract_delivers_the_selected_canonical_text",
    "tests.test_ui_cases.workflows_projection.WorkflowProjectionTests.test_unknown_workflow_and_source_are_generic_not_found",
+   "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_a_changed_clause_still_moves_the_pin",
+   "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_crlf_and_lf_pin_the_same_contract",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_each_contract_states_its_sink_path",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_no_contract_composes_a_run_state_path_from_the_repository",
    "tests.test_validate_cases.sink_contracts.TestWorkItemLocationInvariant.test_the_clause_names_the_resolver_rather_than_restating_the_root",
@@ -3138,7 +3140,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2d7eaef9a251c91b73cd23adb4fa02ad6c45e835feffeacec64960a6e3b338e1"
+  "sha256": "31abe295fcfb2ba3239d9614f9d03b2a31adc40be2972569e9c677e74ec91a45"
  },
  "mutation_owners": [
   {
@@ -6217,6 +6219,14 @@
   },
   {
    "module": "tests.test_validate",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.contract_pins",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [

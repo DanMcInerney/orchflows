@@ -65,10 +65,16 @@ def validate_cross_package_links(packages, diag: Diagnostics) -> None:
                     )
 
 
-def compute_pins() -> dict:
+def compute_pins(contracts_dir=None) -> dict:
+    # Newlines normalized before hashing, for the reason `write_pins` gives
+    # below: the tree stores LF (`.gitattributes`), so a working copy a
+    # Windows tool rewrote as CRLF is the same contract, and hashing its
+    # raw bytes pins a digest no other host can reproduce. That pin passes
+    # `--pin`'s own author and fails every CI leg, which is the worst shape
+    # a guard can have -- green where it is written, red where it is read.
     return {
-        f.name: hashlib.sha256(f.read_bytes()).hexdigest()
-        for f in sorted(CONTRACTS_DIR.glob("*.md"))
+        f.name: hashlib.sha256(f.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        for f in sorted((contracts_dir or CONTRACTS_DIR).glob("*.md"))
     }
 
 
