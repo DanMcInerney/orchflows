@@ -16,11 +16,11 @@ from pathlib import Path
 
 if __package__:
     from . import tickets_store as _store
-    from .tickets_format import _parse_frontmatter, _scope_entries, parse_mutations
+    from .tickets_format import _parse_frontmatter, _scope_entries, adapter_id as _adapter_of, parse_mutations
     from .tickets_inputs import TERMINAL, is_admitted, parse_input_records
 else:  # flat installed script family
     import tickets_store as _store
-    from tickets_format import _parse_frontmatter, _scope_entries, parse_mutations
+    from tickets_format import _parse_frontmatter, _scope_entries, adapter_id as _adapter_of, parse_mutations
     from tickets_inputs import TERMINAL, is_admitted, parse_input_records
 
 
@@ -309,25 +309,24 @@ def grade_closure(ticket_id, text, siblings, edges):
     current = _parse_frontmatter(text)
     member_texts = dict(siblings)
     member_texts[ticket_id] = text
-    parsed = {
-        member_id: _parse_frontmatter(member_text)
-        for member_id, member_text in member_texts.items()
-    }
+    parsed = {member_id: _parse_frontmatter(member_text) for member_id, member_text in member_texts.items()}
     key = _closure_key(ticket_id, parsed[ticket_id])
     cut = {member: data for member, data in parsed.items() if _closure_key(member, data) == key}
-    members = {
-        member: data for member, data in cut.items()
-        if member == ticket_id or str(data.get("status") or "") not in TERMINAL
-    }
-    spent = tuple(
-        (item["operation"], item["path"]) for member, data in cut.items()
-        if member not in members for item in parse_mutations(data)[0]
-    )
+    members = {member: data for member, data in cut.items()
+               if member == ticket_id or str(data.get("status") or "") not in TERMINAL}
+    spent = tuple((item["operation"], item["path"]) for member, data in cut.items()
+                  if member not in members for item in parse_mutations(data)[0])
     findings, plans, authorized = [], {}, {}
     for member_id in sorted(members):
         data = members[member_id]
         if "mutations" not in data:
-            findings.append(_finding("mutation-plan-missing", f"{member_id}.mutations", "v1 Git/design ticket requires an explicit list"))
+            # A member's own pack answers for its own plan. The field is the git
+            # adapters' -- only their workspace cells declare it -- but whether
+            # this grade runs is the *subject's* adapter's call, so one content
+            # or research member charged every git member a law its pack never
+            # imposed, at a door that refuses rather than defers.
+            if _adapter_of(data.get("pack")) in GIT_ADAPTERS:
+                findings.append(_finding("mutation-plan-missing", f"{member_id}.mutations", "v1 Git/design ticket requires an explicit list"))
             plans[member_id] = ()
             continue
         parsed, defects = parse_mutations(data)

@@ -34,8 +34,8 @@ with exact nouns and verbs from
 the pack the stamp will name, so they read as the deliverable's
 searchable names.
 
-Stamp routing — exactly one pack per
-[rules/topology.md](../../../rules/topology.md). Write it through
+Stamp routing per [rules/topology.md](../../../rules/topology.md) 5a.
+Write it through
 `tickets.py new <run> <root-id> --executor orch-decompose --pack <the
 stamp> --independence gate …`; the root's `checked_by` is its cut-reader
 bookkeeping, never its final acceptance path.
@@ -54,7 +54,7 @@ assignment digest, and a post-seal assignment change is a new generation.
 Compatibility is closed: absence of v2 fields means v1, so legacy producers
 and existing v0/v1 tickets keep their prior admission and execution path.
 
-Never: stamp two packs in one root ticket; leave an acceptance criterion
+Never: stamp a pack the cut cannot share; leave an acceptance criterion
 oracle-less; restate standards an exemplar's owner already states.
 
 Return: the accepted root ticket's id and path, the durable `successors.md`

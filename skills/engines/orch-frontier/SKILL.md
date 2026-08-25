@@ -32,7 +32,7 @@ after a cutcheck advisory; units stay `pending` until `checked_by` and this
 engine's `cutcheck.py` re-run, the re-verification, exits 0. Below that
 threshold cutcheck accepts the cut alone.
 Accept every return once through `orch-integrate`; `suspended` parks it, any
-other grades isolation and integrates per the pack, conflicts through its
+other grades isolation and integrates per its pack, conflicts through its
 binding. After each merge batch run the
 standards owner's required checks on the integrated tip, the run's notes
 carrying the tip's revision. A lane runs its ticket's own oracles, nothing

@@ -20,7 +20,7 @@ Instantiate with `target` and `outcome` (the identity and the intended
 observable outcome, which stay opaque to every stage), `sources` (the
 source policy), `rigor` (the rigor bar acquisition's research pack
 requires — the confidence each load-bearing claim must reach, stated as
-the evidence that must exist for it), `pack` (the run's stamp) and
+the evidence that must exist for it), `pack` (the construction items' stamp) and
 `package` (where the benchmark is written). Construction craft that no
 stub, rule or contract owns is
 [the protocol](../references/benchmaker-protocol.md); the manifest's
