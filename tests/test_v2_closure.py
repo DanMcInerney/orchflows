@@ -30,6 +30,7 @@ from tests.test_tickets_issue_cases.generation_lifecycle import (  # noqa: E402
 
 CUT_ONE = "v2:cut:00-root:1:sha256:" + "a1" * 32
 CUT_TWO = "v2:cut:00-root:2:sha256:" + "b2" * 32
+ROOT_ONE = "v2:root:00-root:1:sha256:" + "c3" * 32
 
 
 def _body(ticket_id, header, *, mutations, scope, depends, status):
@@ -71,12 +72,14 @@ def v1_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending"
     return _body(ticket_id, header, mutations=mutations, scope=scope, depends=depends, status=status)
 
 
-def v2_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending", cut_generation=None):
+def v2_ticket(ticket_id, *, mutations=(), scope=(), depends=(), status="pending", cut_generation=None, root_generation=None):
     """A v2 ticket: no cohort, and a sealed cut identity only once sealed."""
 
     header = ["admission: v2:pending", "ownership_regions: []"]
     if cut_generation is not None:
         header.append(f"cut_generation: {cut_generation}")
+    if root_generation is not None:
+        header.append(f"root_generation: {root_generation}")
     return _body(ticket_id, header, mutations=mutations, scope=scope, depends=depends, status=status)
 
 
@@ -219,6 +222,79 @@ class TerminalMembershipTest(unittest.TestCase):
         result = grade("00-root.07", members)
         self.assertIn("mutation-outside-write-scope", codes(result))
         self.assertIn("00-root.07.mutations", fields(result))
+
+
+class SealedV2RootMembershipTest(unittest.TestCase):
+    """A sealed cut names its root in the seal, and nowhere else.
+
+    A v1 decomposition stamps every member with ``cohort: v1:root:<id>``, and
+    that prefix was the only place the companion rule looked for the root.  A
+    sealed v2 cut stamps no cohort at all, so the root went unnamed and stayed
+    companion-eligible -- and its whole-subtree plan then covered every
+    companion the cut planned.  Both halves of the rule inverted at once: the
+    lawful shape reported ``scope-owner-multiple`` naming the root beside its
+    own unit, and a companion no unit planned reported nothing at all, because
+    the root looked like its one owner.  Live, that refused admission to every
+    member of a sealed run.  The root here is named by ``root_generation``,
+    not by an executor or an id shape.
+    """
+
+    CONTENT = manifest(edge("change:scripts/feature.py", "change:tests/pins.json"))
+
+    def cut(self, *, unit_owns_companion=True):
+        """A sealed cut: a root planning its whole subtree, and two units."""
+
+        sealed = {"cut_generation": CUT_ONE, "root_generation": ROOT_ONE}
+        members = {
+            "00-root": v2_ticket(
+                "00-root", mutations=["change:scripts/feature.py", "change:tests/pins.json"],
+                scope=["scripts/", "tests/"], **sealed,
+            ),
+            "00-root.05": v2_ticket(
+                "00-root.05", mutations=["change:scripts/feature.py"], scope=["scripts/feature.py"], **sealed,
+            ),
+            "00-root.11": v2_ticket(
+                "00-root.11", mutations=["change:tests/pins.json"], scope=["tests/pins.json"], **sealed,
+            ),
+        }
+        if not unit_owns_companion:
+            del members["00-root.11"]
+        return members
+
+    def test_the_root_of_a_sealed_cut_is_not_a_second_owner_of_a_companion(self):
+        result = grade("00-root.05", self.cut(), self.CONTENT)
+        self.assertNotIn("scope-owner-multiple", codes(result))
+        self.assertNotIn("scope-owner-missing", codes(result))
+
+    def test_a_companion_only_the_sealed_root_plans_is_still_reported_unowned(self):
+        """The other half: excluding the root must not authorize what it plans."""
+
+        result = grade("00-root.05", self.cut(unit_owns_companion=False), self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-multiple", codes(result))
+
+    def test_two_units_of_a_sealed_cut_are_still_two_owners(self):
+        """The grader still fires: exit-green is not the rule going quiet."""
+
+        members = self.cut()
+        members["00-root.07"] = v2_ticket(
+            "00-root.07", mutations=["change:tests/pins.json"], scope=["tests/pins.json"],
+            cut_generation=CUT_ONE, root_generation=ROOT_ONE,
+        )
+        result = grade("00-root.05", members, self.CONTENT)
+        self.assertIn("scope-owner-multiple", codes(result))
+        self.assertIn(
+            "change:tests/pins.json owned by 00-root.07, 00-root.11",
+            [item["detail"] for item in result["findings"]],
+        )
+
+    def test_a_sealed_root_standing_alone_still_owns_the_companions_it_plans(self):
+        """Where the cut holds no unit, the whole membership is eligible again."""
+
+        members = {"00-root": self.cut()["00-root"]}
+        result = grade("00-root", members, self.CONTENT)
+        self.assertNotIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-multiple", codes(result))
 
 
 class V1GroupingUnchangedTest(unittest.TestCase):
