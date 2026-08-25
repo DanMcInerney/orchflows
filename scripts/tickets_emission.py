@@ -62,6 +62,25 @@ DEFERRED_CODES = frozenset({
     'v2-draft-status',
     'v2-opt-in-missing',
     'validation-receipt-mismatch',
+    # Resolved against the checkout, the sink or the validator the grading
+    # process happens to stand in, rather than against the ticket's text.
+    # A cut is emitted from wherever the cutter is standing and executed
+    # somewhere else, so refusing on these would make one ticket admissible
+    # or not by which worktree wrote it -- and would refuse a revision that
+    # is simply not fetched here. What is wrong in the text is this door's;
+    # what is merely unreachable from here is `ready`'s and `claim`'s, run
+    # from the workspace the work actually happens in.
+    'git-path-absent',
+    'git-project-mismatch',
+    'git-remote-mismatch',
+    'git-revision-unresolved',
+    'git-symbol-absent',
+    'identity-digest-mismatch',
+    'identity-locator-absent',
+    'identity-root-unavailable',
+    'result-resolver-unavailable',
+    'scope-baseline-unavailable',
+    'validator-unavailable',
 })
 
 

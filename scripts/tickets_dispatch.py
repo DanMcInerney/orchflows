@@ -153,13 +153,18 @@ def _cmd_instantiate(rest):
     template = _parse_frontmatter(manifest)
     declared = template.get('placeholders')
     declared = declared if isinstance(declared, list) else []
-    unsupplied = [name for name in declared if name not in values]
-    if unsupplied:
-        return {'error': f'{TEMPLATE_FILE} declares the placeholders {unsupplied} that no --set supplies'}
     builtins = {'run': run}
     baseline = git_head()
     if baseline is not None:
         builtins['baseline'] = baseline
+    # A declared builtin is supplied, not unsupplied. `run` and `baseline`
+    # are this command's to fill, and a stub that names one must be able to
+    # declare it: every `{{name}}` a stub uses has to appear in the
+    # manifest's `placeholders` (tools/validate_support/structure.py), so
+    # without this a template could use a builtin or validate, never both.
+    unsupplied = [name for name in declared if name not in values and name not in builtins]
+    if unsupplied:
+        return {'error': f'{TEMPLATE_FILE} declares the placeholders {unsupplied} that no --set supplies'}
     stubs, error = _template_stubs(directory, {**values, **builtins})
     if error is not None:
         return error
