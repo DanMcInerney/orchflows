@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3082,
+  "count": 3086,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -852,10 +852,14 @@
    "test_v2_closure.SealedV2RootMembershipTest.test_a_sealed_root_standing_alone_still_owns_the_companions_it_plans",
    "test_v2_closure.SealedV2RootMembershipTest.test_the_root_of_a_sealed_cut_is_not_a_second_owner_of_a_companion",
    "test_v2_closure.SealedV2RootMembershipTest.test_two_units_of_a_sealed_cut_are_still_two_owners",
-   "test_v2_closure.TerminalMembershipTest.test_a_companion_whose_only_owner_is_spent_is_reported_unowned",
+   "test_v2_closure.TerminalMembershipTest.test_a_companion_no_member_planned_is_still_reported_unowned",
+   "test_v2_closure.TerminalMembershipTest.test_a_companion_whose_only_owner_is_spent_is_satisfied_not_unowned",
    "test_v2_closure.TerminalMembershipTest.test_a_terminal_member_is_not_a_second_owner_of_a_companion",
    "test_v2_closure.TerminalMembershipTest.test_a_terminal_ticket_being_graded_is_a_member_of_its_own_closure",
    "test_v2_closure.TerminalMembershipTest.test_two_live_members_are_still_two_owners",
+   "test_v2_closure.TerminalSatisfactionTest.test_a_companion_no_member_ever_planned_is_still_reported_unowned",
+   "test_v2_closure.TerminalSatisfactionTest.test_a_terminal_members_spent_plan_satisfies_the_companion_it_covers",
+   "test_v2_closure.TerminalSatisfactionTest.test_two_live_planners_are_still_two_owners_beside_a_terminal_one",
    "test_v2_closure.V1GroupingUnchangedTest.test_a_member_of_another_cohort_stays_outside_the_closure",
    "test_v2_closure.V1GroupingUnchangedTest.test_a_stamped_cohort_still_groups_a_ticket_that_also_carries_a_cut",
    "test_v2_closure.V1GroupingUnchangedTest.test_cohortless_v1_members_group_exactly_as_they_did",
@@ -3085,7 +3089,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1ae92f5ca865975051e21df2f804ebe353d0904e2acd3928b70c7d2dbdd345a9"
+  "sha256": "fe67ca66f15ee32fab2da2f840c09135a3a1cdc5563b8d0c6713ce87cb6dc382"
  },
  "mutation_owners": [
   {
