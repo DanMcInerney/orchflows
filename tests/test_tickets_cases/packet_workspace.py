@@ -291,7 +291,17 @@ PACKS_SEGMENT = "packs"
 # the test below keeps: a tree read anchored on the caller's argument is
 # allowed here; one anchored on the script's own location is not, and no
 # module resolves a pack-to-mechanism binding by reading anything.
-TREE_READING_SCRIPTS = {"cutcheck.py", "tickets_worklog.py"}
+#
+# scripts/cutcheck_pricing.py joined on cutcheck.py's own terms, not on a
+# narrower licence: it carries the same `PACKS_DIR = "packs"` literal, and the
+# tree it reads through it is the orchflows library's, never the target
+# repository's -- family 6's one resolution, `cutcheck_executor._lib_root`,
+# says so in its own docstring. Recorded precisely because the shorter reason
+# offered for it -- that it anchors on a caller-supplied root and never on
+# `__file__` -- is not true: it calls that resolution with `declared=None`, so
+# it reaches the `__file__`-anchored candidate every time. What licenses it is
+# which tree it reads, not what it anchors on.
+TREE_READING_SCRIPTS = {"cutcheck.py", "cutcheck_pricing.py", "tickets_worklog.py"}
 
 
 def code_strings(source: str) -> list:

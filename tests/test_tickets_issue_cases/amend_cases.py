@@ -217,9 +217,14 @@ class InstructionCeilingTest(unittest.TestCase):
             )
             self.assertEqual(before, path.read_text(encoding="utf-8"))
             # The section that is never instruction stays amendable at any
-            # length, and a repair that brings the ticket down lands.
+            # length, and a repair that brings the ticket down lands. The
+            # padding is one canonical record rather than 400 words of prose:
+            # `amend` grades its emission now, and prose there is
+            # `non-identity`. Length is this case's subject, not shape.
+            padding = ('- input: {"name":"padding","type":"literal","value":"'
+                       + " ".join(["identity"] * 400) + '"}')
             for section, body in (
-                ("Fixed inputs", "- " + " ".join(["identity"] * 400)),
+                ("Fixed inputs", padding),
                 ("Objective", "cut the run"),
             ):
                 with self.subTest(section):

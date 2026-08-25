@@ -2,12 +2,18 @@
 
 from .common import *  # noqa: F401,F403
 
-def new_args(*extra) -> list:
-    """`new` with the three parts every ticket needs, plus ``extra``."""
+def new_args(*extra, executor="orch-verify") -> list:
+    """`new` with the three parts every ticket needs, plus ``extra``.
+
+    ``executor`` is a keyword because `new` refuses a repeated `--executor`,
+    so a caller that stamps a pack cannot override the default by appending
+    one: a pack binds its own executors, and the pack-less default is not
+    among `orch-code-pack`'s.
+    """
 
     return [
         "new", "testrun", "T1",
-        "--executor", "orch-verify",
+        "--executor", executor,
         "--objective", "the suite is green",
         "--criterion", GOOD_CRITERION,
         *extra,
@@ -105,11 +111,13 @@ class NewTest(unittest.TestCase):
                 "--bound", "40m",
                 "--input", "contracts/work-item.md",
                 "--input", "SPEC.md",
-                "--excluded", "pushing, or forcing a push",
+                "--excluded", "Editing a dated research document, or any run state",
                 "--profile", "orch-worker",
                 "--independence", "gate",
                 "--isolation", "required",
                 "--return-fields", "status; the branch name",
+                # orch-code-pack binds orch-tdd, not the pack-less default
+                executor="orch-tdd",
             ))
             text = self.ticket_path(sink).read_text(encoding="utf-8")
             data = tickets_mod._parse_frontmatter(text)
@@ -119,8 +127,13 @@ class NewTest(unittest.TestCase):
             self.assertEqual("orch-worker", data["profile"])
             self.assertEqual("gate", data["independence"])
             self.assertEqual("required", data["isolation"])
-            # an excluded action carrying a comma is one action, not two
-            self.assertEqual(["pushing, or forcing a push"], data["excluded_actions"])
+            # an excluded action carrying a comma is one action, not two.
+            # Deliberately not VCS-flavoured prose: under a pack with a vcs
+            # adapter that must be a reserved `vcs.*` token, and the subject
+            # here is the comma, not the exclusion vocabulary.
+            self.assertEqual(
+                ["Editing a dated research document, or any run state"],
+                data["excluded_actions"])
             sections = tickets_mod._sections(text)
             self.assertIn("contracts/work-item.md", sections["Fixed inputs"])
             self.assertIn("SPEC.md", sections["Fixed inputs"])

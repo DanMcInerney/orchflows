@@ -163,6 +163,7 @@ class V1ProducerTest(unittest.TestCase):
             "new", "testrun", "T1", "--executor", "orch-tdd",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
             "--pack", "orch-code-pack", "--isolation", "required",
+            "--write-scope", "scripts/tool.py",
             "--input", record, "--mutation", "change:scripts/tool.py",
         )
         text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
@@ -171,7 +172,7 @@ class V1ProducerTest(unittest.TestCase):
 
     def test_new_without_inputs_has_no_legacy_prose_sentinel(self):
         payload = run_cmd(
-            "new", "testrun", "T1", "--executor", "orch-tdd",
+            "new", "testrun", "T1", "--executor", "orch-investigate",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
         )
         text = Path(payload["new"]["path"]).read_text(encoding="utf-8")
@@ -179,13 +180,13 @@ class V1ProducerTest(unittest.TestCase):
 
     def test_explicit_root_cohort_is_validated(self):
         refused = run_cmd(
-            "new", "testrun", "T1", "--executor", "orch-tdd",
+            "new", "testrun", "T1", "--executor", "orch-investigate",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
             "--cohort", "not-a-cohort",
         )
         self.assertIn("cohort", refused["error"])
         accepted = run_cmd(
-            "new", "testrun", "T1", "--executor", "orch-tdd",
+            "new", "testrun", "T1", "--executor", "orch-investigate",
             "--objective", "Change one artifact.", "--criterion", GOOD_CRITERION,
             "--cohort", "v1:root:R",
         )
