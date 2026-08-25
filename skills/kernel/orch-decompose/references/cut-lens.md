@@ -48,6 +48,18 @@ the unclaimed items, `tickets.py new` for one the cut is missing, and
   disjoint write scopes, each subset still discriminating — two atoms
   issued as one. The instruction ceiling `tickets.py new` enforces is
   this judgment's mechanical half, never the whole of it.
+- vcs-prose fidelity: an `orch-tdd` item names a version-control
+  exclusion only as its reserved `vcs.*` token, and prose naming one is
+  refused `vcs-exclusion-not-tokenized`. The words that trip it are
+  exactly git, worktree, branch, commit, merge, push, pull request and
+  version control, matched whole once `-` and `_` have folded to spaces —
+  so `no-commit` trips and `precommitted` does not. Stated here because
+  the wording is chosen at the cut and only repaired after it, and
+  because the two halves are deliberately unequal: only a word naming
+  exactly one action rewrites mechanically, so git, branch and version
+  control are found and never fixed, and an item excluded by one of them
+  comes back for a decision this lens should have made.
+  `scripts/tickets_lint.py` owns which words rewrite.
 
 ## Proving a copy
 
