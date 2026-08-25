@@ -6,6 +6,7 @@ from tests.test_cell_linter_cases.pack_cells import (
     TestCellClauseSplitter,
     TestCellDuplication,
     TestMandatedEchoExemption,
+    V2WorkspaceBindingTest,
 )
 from tests.test_cell_linter_cases.warning_ratchets import WarningCeilingTest
 
@@ -15,5 +16,6 @@ __all__ = [
     "TestCellClauseSplitter",
     "TestCellDuplication",
     "TestMandatedEchoExemption",
+    "V2WorkspaceBindingTest",
     "WarningCeilingTest",
 ]

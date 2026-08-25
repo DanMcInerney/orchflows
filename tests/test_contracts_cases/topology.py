@@ -210,6 +210,10 @@ class V2GenerationTopologyContractTest(unittest.TestCase):
             "claimed or terminal", "never rewritten", "live v1 root",
             "successor", "new v2 root", "pending or ready v1", "explicitly",
             "v0", "admission", "migration", "v1 pending", "receipt", "cohort",
-            "ready", "claim", "packet", "T0 supersession", "`tests/pins.json`",
+            "ready", "claim", "packet", "T0 supersession",
+            # Plain text, not backticked: under validate_documented_paths
+            # a backticked path is a pointer that has to resolve in the
+            # installed tree, and tests/ ships nowhere.
+            "tests/pins.json",
         ):
             self.assertIn(token, text, f"topology.md §11 omits {token!r}")

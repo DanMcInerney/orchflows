@@ -4,6 +4,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from . import _registration
 from ._support import ROOT, called_name, calls_named
 
 
@@ -60,3 +61,51 @@ class TestNoTempTreeIsDeletedWhileItIsTheCwd(unittest.TestCase):
                 if not restored:
                     offenders.append(f"{path.name}:{node.lineno}")
         self.assertEqual([], offenders, "chdir inside a self-deleting temp tree")
+class TestEveryCaseClassIsRegistered(unittest.TestCase):
+    """No `tests/test_*_cases/` TestCase is dropped by its own shard family."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.survey = _registration.survey_in_a_fresh_process()
+
+    def test_every_case_class_its_package_defines_is_collected_by_its_family(self):
+        unreachable = self.survey["unreachable"]
+        self.assertEqual(
+            [], self.survey["errors"],
+            "the survey could not read every case package: {}".format(
+                self.survey["errors"]),
+        )
+        self.assertEqual(
+            [], unreachable,
+            "case classes no shard collects, so none of their tests run:\n"
+            + "\n".join(
+                "  {case} ({tests} test(s)) -- import it in {aggregator}".format(
+                    **record)
+                for record in unreachable
+            ),
+        )
+        # Without this the test passes when the walk finds nothing to walk.
+        self.assertGreater(
+            self.survey["scanned"], 400,
+            "the survey reached too few case classes to have looked",
+        )
+
+    def test_every_exemption_still_names_a_live_base_with_no_test_of_its_own(self):
+        """Both halves, so an exemption cannot outlive what justified it.
+
+        A dropped class appears here only because the walk found it dropped,
+        so a complete list is also the proof that the walk still fires.
+        """
+
+        dropped = {record["case"]: record["tests"] for record in self.survey["exempt"]}
+        for name in sorted(_registration.BASE_ONLY):
+            with self.subTest(exemption=name):
+                self.assertIn(
+                    name, dropped,
+                    "{} is gone or is now collected; drop the exemption".format(name),
+                )
+                self.assertEqual(
+                    0, dropped[name],
+                    "{} carries tests of its own now, so exempting it hides "
+                    "them; register it instead".format(name),
+                )
