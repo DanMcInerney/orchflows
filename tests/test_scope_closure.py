@@ -399,5 +399,50 @@ class RepositoryScopeManifestTests(unittest.TestCase):
                     self.assertIn(anchor, workspace)
 
 
+class ThePlanIsItsOwnMembersLaw(unittest.TestCase):
+    """A member's own pack answers for its own mutation plan.
+
+    The plan is the git adapters' field -- only their workspace cells declare
+    it -- but whether this grade runs at all is the *subject's* adapter's
+    call. So one content or research member in a cut charged every git member
+    `mutation-plan-missing` for a law that member's pack never imposed, at a
+    door that refuses rather than defers: the git members could not be
+    admitted, and `tickets.py instantiate` -- which puts every stub of a
+    composition in one cohort -- refused the batch outright.
+    """
+
+    def _mixed(self, sibling_pack):
+        return {
+            "10-code": ticket("10-code", mutations=["change:src/a.ts"], scope=["src/a.ts"]),
+            "20-other": ticket("20-other", pack=sibling_pack, scope=["docs/a.md"],
+                               include_plan=False),
+        }
+
+    def test_a_non_git_member_is_not_charged_the_git_plan(self):
+        for pack in ("orch-content-pack", "orch-research-pack"):
+            with self.subTest(pack=pack):
+                siblings = self._mixed(pack)
+                self.assertNotIn("mutation-plan-missing",
+                                 codes(grade("10-code", siblings, None)))
+
+    def test_a_git_member_is_still_charged_it(self):
+        """The can-fail direction: revert the per-member test and the case
+        above goes green for the wrong reason, so this one must stay red
+        without the finding at all."""
+
+        for pack in ("orch-code-pack", "orch-design-pack"):
+            with self.subTest(pack=pack):
+                siblings = self._mixed(pack)
+                self.assertIn("mutation-plan-missing",
+                              codes(grade("10-code", siblings, None)))
+
+    def test_the_non_git_member_grades_clean_on_its_own_vantage(self):
+        siblings = self._mixed("orch-content-pack")
+        result = tickets_scope.grade_scope(
+            ticket_id="20-other", text=siblings["20-other"], siblings=siblings,
+            adapter_id="document-tree", context={"scope_manifest": None})
+        self.assertEqual([], codes(result))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,7 +11,7 @@ Goal: minimize critical path; every item an atom; obey §3's test/count/width la
 
 Cut [work items](../../../contracts/work-item.md) as `<root>.NN` through
 `tickets.py new --cohort v1:root:<root>`. Pass exact parameters/evidence as
-canonical JSON `--input` records. Use the stamped workspace cell; carry its
+canonical JSON `--input` records. Use each item's stamped workspace cell; carry its
 `mutations` via `--mutation`. Objective states the routed observable end
 state. Give every item a write scope (siblings overlap only when dependency-ordered),
 isolation, bound, edges, and completion criteria with

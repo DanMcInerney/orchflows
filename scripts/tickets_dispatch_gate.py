@@ -15,6 +15,11 @@ isolation, excluded_actions and fixed-input records byte-for-byte and adds
 only the records its own job needs. Each stub issues in its own ticket
 cohort -- a gate's broad write grant and the root's collide under
 same-cohort sole-owner closure, and the escape used to be a hand edit.
+
+A stub's pack is that inheritance too, and per stub. The root's is the floor,
+since every stub carries the root's records; the cut raises it only to a pack
+whose adapter carries those records too. The repair and verify take that
+ceiling; a critique takes its lens's pack where the root lends it.
 """
 from __future__ import annotations
 import json
@@ -24,9 +29,9 @@ if __package__:
     from .tickets_transitions import declared_version
     from .tickets_commands import GATE_USAGE
     from .tickets_emission import grade_run_emission
-    from .tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from .tickets_format import ADAPTER_BY_PACK, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
     from .tickets_gate_mutations import _canonical_gate_mutation_plan
-    from .tickets_input_producers import git_head, input_groups, render_ticket_inputs
+    from .tickets_input_producers import GIT_PACKS, git_head, input_groups, render_ticket_inputs
     from .tickets_issue import GATE_ID_MARKER, NEW_DEFAULT_BOUND, _distinct_gate_lenses, _render_ticket
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_EXECUTORS, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _run_lock, _segment_error, _tickets_root
@@ -36,9 +41,9 @@ else:
     from tickets_transitions import declared_version
     from tickets_commands import GATE_USAGE
     from tickets_emission import grade_run_emission
-    from tickets_format import PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from tickets_format import ADAPTER_BY_PACK, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
     from tickets_gate_mutations import _canonical_gate_mutation_plan
-    from tickets_input_producers import git_head, input_groups, render_ticket_inputs
+    from tickets_input_producers import GIT_PACKS, git_head, input_groups, render_ticket_inputs
     from tickets_issue import GATE_ID_MARKER, NEW_DEFAULT_BOUND, _distinct_gate_lenses, _render_ticket
     from tickets_packet import GATE_CRITIQUE_ID, GATE_EXECUTORS, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _run_lock, _segment_error, _tickets_root
@@ -55,6 +60,65 @@ def _pack_domain(pack) -> str:
     if name.endswith(PACK_NAME_SUFFIX):
         name = name[:-len(PACK_NAME_SUFFIX)]
     return name
+def _pack_for_domain(domain):
+    """The stamped pack a gate lens label names, or ``None``.
+
+    `_pack_domain`'s inverse, and deliberately partial. A lens is a
+    free-form review identity -- `security`, `style`, `cut-lens` -- and most
+    name no pack at all; only a label a pack is actually named for names one.
+    A total inverse would stamp `orch-security-pack` on a stub, and no
+    adapter resolves a pack no table holds: the emission then refuses the
+    whole family for a record nobody wrote.
+    """
+    name = PACK_NAME_PREFIX + str(domain or '').strip().casefold() + PACK_NAME_SUFFIX
+    return name if name in ADAPTER_BY_PACK else None
+# Which pack a gate stub may be stamped with in place of the root's. A table
+# rather than a derivation, so this writing door need not import the grading
+# slice: `tickets_inputs.ADAPTER_KINDS` nests exactly once -- `git-plus-render`
+# resolves every kind `git` does and adds `view-identity` -- and
+# `tickets_input_producers.ROOT_BY_PACK` forbids every other promotion, since
+# `document-tree` and `evidence-store` each require a root literal a git or
+# plain root states no source for. tests/test_tickets_gate_packs.py derives the
+# relation from both tables and asserts this literal.
+PACK_WIDENINGS = {'orch-code-pack': ('',), 'orch-design-pack': ('', 'orch-code-pack')}
+def _pack_widens(pack, base) -> bool:
+    """Whether a stub stamped ``pack`` carries every record one stamped ``base`` does."""
+    pack, base = str(pack or '').strip(), str(base or '').strip()
+    return pack == base or base in PACK_WIDENINGS.get(pack, ())
+def _stub_pack_ceiling(base, packs):
+    """The pack the repair and verify carry: the root's, widened to the widest
+    pack the cut stamps that can still carry every record the root states.
+
+    The repair changes what every unit produced, so a unit's pack reading a
+    kind the root's does not -- a design unit's `view-identity` over a code
+    root -- would leave the repair with no vocabulary for the finding. Only a
+    widening is taken: a promotion across any other pair adds a root literal
+    the promoted stub has no source for, refusing the family at render. A pack
+    that widens nothing simply does not raise the ceiling, because refusing
+    there would refuse a family admissible exactly as it stands, and
+    `compositions/benchmaker` is that family.
+
+    A root naming no pack promotes to nothing: a stub inherits what the root
+    held and never invents what it did not.
+    """
+    if not str(base or '').strip():
+        return base
+    ceiling = base
+    for pack in sorted({str(item or '').strip() for item in packs} - {''}):
+        if _pack_widens(pack, ceiling):
+            ceiling = pack
+    return ceiling
+def _critique_pack(lens, base, ceiling):
+    """One critique stub's pack: its lens's, where the root can lend it.
+
+    An unstamped root lends nothing, the ceiling's rule: a lens naming a pack
+    would otherwise stamp one the root never held, and a root carrying a
+    `git-tree` under no pack is a defect the gate reports rather than repairs.
+    """
+    if not str(base or '').strip():
+        return ceiling
+    named = _pack_for_domain(lens)
+    return named if named and _pack_widens(named, base) else ceiling
 def _is_record(group: list) -> bool:
     """Whether ``group`` opens on a canonical ``- input:`` record line.
     Judged on the opening line alone, never on the group's length. A
@@ -250,10 +314,22 @@ def _gate_under_run_lock(rest, head_probe=None):
     roots = sorted((str(item.get('id') or '') for item in items if _executor_of(item) == ROOT_EXECUTOR))
     if _executor_of(root) != ROOT_EXECUTOR or roots != [root_id]:
         return {'error': f"gate root '{root_id}' is not the run's sole orch-decompose root ({roots or 'none'}). One physical run's one gate belongs only to that root. Nothing was written"}
+    gate_prefix = f'{root_id}.gate.'
+    units = sorted((item_id for item_id in by_id if item_id.startswith(f'{root_id}.') and (not item_id.startswith(gate_prefix))))
     if not lenses:
-        lenses = _split_commas(_pack_domain(root.get('pack')))
+        # The cut's domains, not the root's alone: a mixed cut whose default
+        # lens set was the root's shipped one domain unreviewed. The root's
+        # label leads and is unfiltered -- a custom pack keeps yielding its own
+        # domain, as it did -- while an added unit's domain must name a pack
+        # this host knows, since a garbage stamp would otherwise mint a lens
+        # whose critique stub refuses. For any single-pack cut this is the
+        # root's label alone, which is what it has always been.
+        domains = [_pack_domain(root.get('pack'))]
+        domains.extend(_pack_domain(by_id[unit].get('pack')) for unit in units
+                       if _pack_for_domain(_pack_domain(by_id[unit].get('pack'))))
+        lenses = [label for label in dict.fromkeys(domains) if label]
     if not lenses:
-        return {'error': f"gate requires --lens: one critique stub per stamped lens, and root ticket '{root_id}' names no pack whose domain could stand in. usage: " + GATE_USAGE}
+        return {'error': f"gate requires --lens: one critique stub per stamped lens, and neither root ticket '{root_id}' nor its cut names a pack whose domain could stand in. usage: " + GATE_USAGE}
     try:
         lenses = _distinct_gate_lenses(lenses)
     except ValueError as error:
@@ -269,8 +345,6 @@ def _gate_under_run_lock(rest, head_probe=None):
     mutation_plan, mutation_error = _canonical_gate_mutation_plan(root.get('mutations'))
     if mutation_error is not None:
         return {'error': mutation_error + '. Nothing was written'}
-    gate_prefix = f'{root_id}.gate.'
-    units = sorted((item_id for item_id in by_id if item_id.startswith(f'{root_id}.') and (not item_id.startswith(gate_prefix))))
     if not units:
         return {'error': f"root ticket '{root_id}' has no `{root_id}.` subtree ticket yet: a gate closes over a cut subtree, so there is nothing here for a critique to read"}
     acceptance_id = acceptance_from or root_id
@@ -281,14 +355,19 @@ def _gate_under_run_lock(rest, head_probe=None):
     if not acceptance:
         return {'error': f"ticket '{acceptance_id}' states no `## Completion test`, so the verify stub would carry no acceptance"}
     pack = root.get('pack')
+    ceiling = _stub_pack_ceiling(pack, (by_id[unit].get('pack') for unit in units))
+    critique_packs = {lens: _critique_pack(lens, pack, ceiling) for lens in lenses}
     inherited_inputs = (root.get('sections') or {}).get('Fixed inputs', '')
     isolation = root.get('isolation')
     exclusions = list(root.get('excluded_actions') or [])
     version = declared_version(root)
     root_generation = str(root.get('root_generation') or '') or None
     gate_baseline = (head_probe or git_head)()
-    if pack in ('orch-code-pack', 'orch-design-pack') and gate_baseline is None:
-        return {'error': f'{pack} gate input rendering cannot resolve the run-project HEAD. Nothing was written'}
+    # Asked of the packs this family will actually be stamped with, and read
+    # off `GIT_PACKS` rather than a second copy of its membership here.
+    needs_head = sorted({name for name in {ceiling, *critique_packs.values()} if name in GIT_PACKS})
+    if needs_head and gate_baseline is None:
+        return {'error': f"{', '.join(needs_head)} gate input rendering cannot resolve the run-project HEAD. Nothing was written"}
     rendered = []
     critique_ids = []
     # One lens pools nothing: that critique's findings are already the whole
@@ -305,9 +384,14 @@ def _gate_under_run_lock(rest, head_probe=None):
     # pooled findings take one fix per shared cause, and a per-lens critique
     # owning its own repair bill has an incentive to soften findings.
     chained = len(lenses) == 1
-    def stub(stub_id, executor, depends, stub_scope, stub_sections, sequence=None):
-        """One stub of this family, on this root's authority and version."""
-        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions, sequence=sequence, version=version, root_generation=root_generation)
+    def stub(stub_id, executor, depends, stub_scope, stub_sections, sequence=None, stub_pack=None):
+        """One stub of this family, on this root's authority, version and pack.
+
+        `stub_pack` defaults to the ceiling: the repair and the verify write and
+        decide across every unit, so they carry the widest pack the cut lends.
+        A critique passes its lens's.
+        """
+        return _gate_stub(run, stub_id, executor, depends, stub_scope, stub_sections, ceiling if stub_pack is None else stub_pack, inherited_inputs=inherited_inputs, baseline=gate_baseline, isolation=isolation, excluded_actions=exclusions, sequence=sequence, version=version, root_generation=root_generation)
     try:
         for lens in lenses:
             invalid = _segment_error('lens', lens)
@@ -317,7 +401,10 @@ def _gate_under_run_lock(rest, head_probe=None):
             critique_ids.append(stub_id)
             sections = _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run, chained=chained)
             chain = [GATE_EXECUTORS['critique'], GATE_EXECUTORS['repair']] if chained else None
-            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, scope if chained else [], sections, sequence=chain)))
+            # A chained critique is also the repair, and the write half is the
+            # half a pack is authority for: it takes the ceiling, which always
+            # widens any lens pack eligible to be used at all.
+            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, scope if chained else [], sections, sequence=chain, stub_pack=None if chained else critique_packs[lens])))
         if chained:
             repaired_by = critique_ids[0]
         else:
@@ -363,8 +450,9 @@ def _gate_under_run_lock(rest, head_probe=None):
         payload['next'] = [f'draft-validate {run} {root_id}', f'seal {run} {root_id} --cut-generation <the new draft identity>']
     return {'gate': payload}
 __all__ = (
-    '_cmd_gate', '_gate_body', '_gate_input', '_gate_sections', '_gate_stub',
-    '_gate_under_run_lock', '_inherited_input_lines', '_input_name',
-    '_is_record', '_listed_items', '_pack_domain', '_record_names',
-    '_with_inherited_inputs',
+    'PACK_WIDENINGS', '_cmd_gate', '_critique_pack', '_gate_body', '_gate_input',
+    '_gate_sections', '_gate_stub', '_gate_under_run_lock',
+    '_inherited_input_lines', '_input_name', '_is_record', '_listed_items',
+    '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
+    '_stub_pack_ceiling', '_with_inherited_inputs',
 )

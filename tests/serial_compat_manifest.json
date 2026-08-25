@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3117,
+  "count": 3135,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -584,6 +584,9 @@
    "test_scope_closure.MutationPlanSchemaTests.test_v1_git_ticket_requires_an_explicit_plan",
    "test_scope_closure.RepositoryScopeManifestTests.test_closed_manifest_contains_only_the_five_evidence_backed_edges",
    "test_scope_closure.RepositoryScopeManifestTests.test_code_and_design_workspace_cells_name_plan_graph_and_direct_only_mode",
+   "test_scope_closure.ThePlanIsItsOwnMembersLaw.test_a_git_member_is_still_charged_it",
+   "test_scope_closure.ThePlanIsItsOwnMembersLaw.test_a_non_git_member_is_not_charged_the_git_plan",
+   "test_scope_closure.ThePlanIsItsOwnMembersLaw.test_the_non_git_member_grades_clean_on_its_own_vantage",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_bare_script_prefix_names_no_path_and_is_refused",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_directory_is_not_a_tested_script",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_naming_no_file_in_the_tree_is_refused",
@@ -717,6 +720,21 @@
    "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_critique_states_the_chain_and_stays_the_critique",
    "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_root_input_records_reach_the_chained_critique_verbatim",
    "test_tickets_gate_chain.SingleLensGateCollapsesToAChainTest.test_the_verify_depends_on_the_critique_and_reads_its_result",
+   "test_tickets_gate_packs.TheLensDefault.test_a_pack_less_unit_mints_no_lens",
+   "test_tickets_gate_packs.TheLensDefault.test_a_second_domain_in_the_cut_earns_its_own_lens",
+   "test_tickets_gate_packs.TheLensDefault.test_a_single_pack_cut_is_unchanged",
+   "test_tickets_gate_packs.ThePureRules.test_a_critique_pack_is_its_lens_or_the_ceiling",
+   "test_tickets_gate_packs.ThePureRules.test_the_ceiling_never_falls_below_its_floor",
+   "test_tickets_gate_packs.ThePureRules.test_the_head_guard_names_no_second_copy_of_git_packs",
+   "test_tickets_gate_packs.ThePureRules.test_the_relation_is_reflexive_and_anchored",
+   "test_tickets_gate_packs.ThePureRules.test_the_widening_table_matches_the_tables_it_mirrors",
+   "test_tickets_gate_packs.TheStubPack.test_a_chained_critique_takes_the_ceiling_not_its_lens",
+   "test_tickets_gate_packs.TheStubPack.test_a_free_form_lens_names_no_pack_and_takes_the_ceiling",
+   "test_tickets_gate_packs.TheStubPack.test_an_unstamped_root_promotes_to_nothing",
+   "test_tickets_gate_packs.TheStubPack.test_an_unwidenable_lens_pack_is_not_stamped",
+   "test_tickets_gate_packs.TheStubPack.test_an_unwidenable_unit_pack_does_not_raise_the_ceiling",
+   "test_tickets_gate_packs.TheStubPack.test_each_critique_carries_its_own_lens_pack",
+   "test_tickets_gate_packs.TheStubPack.test_the_repair_and_verify_take_the_ceiling",
    "test_tickets_lint.CommandTableTest.test_every_routed_subcommand_states_a_usage_and_a_summary",
    "test_tickets_lint.CommandTableTest.test_tables_are_owned_by_the_commands_module",
    "test_tickets_lint.CommandTableTest.test_the_new_payload_flags_are_value_flags",
@@ -3120,7 +3138,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "84df78f88e0c0fe83fe343ee96341374cd271594f19c19484094c8c020853479"
+  "sha256": "2d7eaef9a251c91b73cd23adb4fa02ad6c45e835feffeacec64960a6e3b338e1"
  },
  "mutation_owners": [
   {
@@ -5633,6 +5651,22 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_gate_packs",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_gate_packs",
+   "owner": "cut",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {

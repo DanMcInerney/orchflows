@@ -102,7 +102,7 @@ that needs a different meaning needs a different word.
 - **stamp** — the pack fixed at intake, carried by a ticket's `pack`
   field, which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
-  design); selects exactly one pack per run.
+  design); selects an item's pack and gate lens, per [topology](../rules/topology.md) 5a.
 - **work item / ticket** — a delegation packet made durable: packet parts
   ⊕ completion test ⊕ lifecycle ⊕ graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes

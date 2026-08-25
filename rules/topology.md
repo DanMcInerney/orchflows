@@ -63,6 +63,11 @@
    reviewer is a unique named lens feeding that same gate's one repair and
    one verification. Never one gate per domain — cross-lens inconsistency
    is the most valuable finding class.
+5a. The pack is the item's, not the run's: a cut may stamp several, and the
+   gate reviews each domain under its own lens. What a run cannot span is
+   workspace semantics — a gate stub carries the root's records, so a
+   member's pack raises its stamp only where that adapter carries them too.
+   Genuinely different workspaces are successor runs under rule 7.
 6. Escalation: [delegation.md](delegation.md) §9.
 7. Multi-run work is successor roots linked by accepted result identities:
    seq opens a successor run only after the predecessor's result identity is
@@ -77,7 +82,7 @@
    predecessor identity to it before the request is reported finished. A named
    multi-run shape is a template
    ([work-item.md](../contracts/work-item.md)) run by `orch-frontier`.
-   Mixed decomposition inside one graph is undefined.
+   Decomposition across incompatible workspace semantics is rule 5a's.
 8. A v2 assignment cut advances only through `draft`, `validated`, and
    `sealed`. The draft is the complete implementation cut: units,
    dependencies, ownership regions, coverage map, and composite gate.
