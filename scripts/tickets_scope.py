@@ -49,10 +49,7 @@ def _finding(code, field, detail):
 
 
 def _ordered(findings):
-    rows = {
-        (str(item["code"]), str(item["field"]), str(item["detail"]))
-        for item in findings
-    }
+    rows = {(str(item["code"]), str(item["field"]), str(item["detail"])) for item in findings}
     return [_finding(*row) for row in sorted(rows)]
 
 
@@ -303,7 +300,9 @@ def grade_closure(ticket_id, text, siblings, edges):
     already spent under the authority it was worked with, so counting it here
     reports a finished unit and a pending one as two owners of the one
     companion the pending unit still has to write.  The ticket being graded is
-    always a member: its own plan is the authority under grade.
+    always a member: its own plan is the authority under grade.  A spent plan
+    still answers, though -- what a terminal member planned with a covering
+    mutation is written -- so it is owed by no live member and missing of none.
     """
 
     current = _parse_frontmatter(text)
@@ -314,12 +313,15 @@ def grade_closure(ticket_id, text, siblings, edges):
         for member_id, member_text in member_texts.items()
     }
     key = _closure_key(ticket_id, parsed[ticket_id])
+    cut = {member: data for member, data in parsed.items() if _closure_key(member, data) == key}
     members = {
-        member_id: data
-        for member_id, data in parsed.items()
-        if _closure_key(member_id, data) == key
-        and (member_id == ticket_id or str(data.get("status") or "") not in TERMINAL)
+        member: data for member, data in cut.items()
+        if member == ticket_id or str(data.get("status") or "") not in TERMINAL
     }
+    spent = tuple(
+        (item["operation"], item["path"]) for member, data in cut.items()
+        if member not in members for item in parse_mutations(data)[0]
+    )
     findings, plans, authorized = [], {}, {}
     for member_id in sorted(members):
         data = members[member_id]
@@ -378,7 +380,8 @@ def grade_closure(ticket_id, text, siblings, edges):
         owners[required] = node_owners
         rendered = f"{required[0]}:{required[1]}"
         if not node_owners:
-            findings.append(_finding("scope-owner-missing", "mutations", rendered))
+            if not any(_plan_covers(plan, required) for plan in spent):
+                findings.append(_finding("scope-owner-missing", "mutations", rendered))
             continue
         if len(node_owners) > 1:
             findings.append(_finding(
@@ -504,6 +507,4 @@ def grade_scope(*, ticket_id, text, siblings, adapter_id, context=None):
     }
 
 
-__all__ = (
-    "MANIFEST_PATH", "parse_manifest", "path_covers", "unplanned_mutations", "grade_closure", "grade_scope",
-)
+__all__ = ("MANIFEST_PATH", "parse_manifest", "path_covers", "unplanned_mutations", "grade_closure", "grade_scope")

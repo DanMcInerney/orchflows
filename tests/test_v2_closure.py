@@ -1,12 +1,15 @@
 """Closure membership: which tickets one mutation plan is graded against.
 
-Two reproducers drive this module.  The first is checker-opus-02's, filed on
+Three reproducers drive this module.  The first is checker-opus-02's, filed on
 ticket 00-root.02: once v2 tickets stamp no cohort, every cohortless ticket in
 a run reads the same empty cohort string, collapses into one closure, and each
 member inherits every other member's mutation findings.  The second is live in
 this repository's own run -- a terminal member's spent plan still counted as a
 companion owner, so a completed unit and a pending one were reported as two
-owners of the same required node.
+owners of the same required node.  The third is the tail of that same ruling,
+live in run 20260825T143105Z: excluding the spent plan from ownership was read
+as leaving what it wrote unowned, and a sealed cut clean at seal became
+unadmittable once its companion planner finished.
 """
 
 from __future__ import annotations
@@ -197,20 +200,33 @@ class TerminalMembershipTest(unittest.TestCase):
             [item["detail"] for item in result["findings"]],
         )
 
-    def test_a_companion_whose_only_owner_is_spent_is_reported_unowned(self):
-        """The other face of the ruling, so the join is not surprised by it.
+    def test_a_companion_whose_only_owner_is_spent_is_satisfied_not_unowned(self):
+        """Superseded: this case once asserted ``scope-owner-missing`` here.
 
-        Excluding a terminal member does not quietly authorize the node it
-        used to own.  Where the cut planned exactly one owner and that unit
-        has gone terminal, the companion the live member still triggers has
-        no owner left in the closure, and the grade says so.
+        Excluding a terminal member from ownership was read as leaving the
+        node it used to own unowned, and live in run 20260825T143105Z that
+        refused admission to every remaining member of a sealed cut over a
+        file the terminal unit had already written.  The exclusion answers
+        double-owner noise, not finished work: the spent plan satisfies the
+        requirement it covers, and its planner still joins no owner set.  The
+        guard against quiet authorization survives one case down -- a node no
+        member ever planned is still reported unowned.
         """
 
         members = self.companions("complete")
         del members["00-root.11"]
         result = grade("00-root.05", members, self.CONTENT)
-        self.assertIn("scope-owner-missing", codes(result))
+        self.assertNotIn("scope-owner-missing", codes(result))
         self.assertNotIn("scope-owner-multiple", codes(result))
+
+    def test_a_companion_no_member_planned_is_still_reported_unowned(self):
+        """Nothing spent and nothing live: the exclusion authorizes nothing."""
+
+        members = self.companions("complete")
+        del members["00-root.07"]
+        del members["00-root.11"]
+        result = grade("00-root.05", members, self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
 
     def test_a_terminal_ticket_being_graded_is_a_member_of_its_own_closure(self):
         members = {
@@ -295,6 +311,82 @@ class SealedV2RootMembershipTest(unittest.TestCase):
         result = grade("00-root", members, self.CONTENT)
         self.assertNotIn("scope-owner-missing", codes(result))
         self.assertNotIn("scope-owner-multiple", codes(result))
+
+
+class TerminalSatisfactionTest(unittest.TestCase):
+    """A spent plan is not authority, and it is still work that happened.
+
+    Live in run 20260825T143105Z: the sealed root planned ``write:scripts/``,
+    which closes the repository's own ``create:scripts/*.py`` edge onto
+    ``change:ARCHITECTURE.md``; the one unit that planned that companion went
+    ``complete``, left the closure with the terminal filter, and every
+    remaining member was then refused admission for ``scope-owner-missing``
+    on a file that was already written.  A sealed cut admission-clean at seal
+    became unadmittable at its tail, and the v2 reseal vantage refuses a cut
+    holding claimed or terminal members, so nothing in-run could correct it.
+    The terminal member stays out of ownership -- it is no second owner, no
+    ancestry owner, and never named in a finding -- and its plan alone
+    answers the requirement it covers.
+    """
+
+    CONTENT = manifest(edge("create:scripts/*.py", "change:ARCHITECTURE.md"))
+    SEALED = {"cut_generation": CUT_ONE, "root_generation": ROOT_ONE}
+
+    def cut(self, *, planner="00-root.03", planner_status="complete", second_planner=None):
+        """The live shape: a sealed root, a companion planner, a live unit."""
+
+        members = {
+            "00-root": v2_ticket(
+                "00-root", mutations=["write:scripts/", "change:ARCHITECTURE.md"],
+                scope=["scripts/", "ARCHITECTURE.md"], **self.SEALED,
+            ),
+            "00-root.06": v2_ticket(
+                "00-root.06", mutations=["change:scripts/nowview.py"],
+                scope=["scripts/nowview.py"], **self.SEALED,
+            ),
+        }
+        for member_id, status in ((planner, planner_status), (second_planner, "pending")):
+            if member_id:
+                members[member_id] = v2_ticket(
+                    member_id, mutations=["change:ARCHITECTURE.md"],
+                    scope=["ARCHITECTURE.md"], status=status, **self.SEALED,
+                )
+        return members
+
+    def test_a_terminal_members_spent_plan_satisfies_the_companion_it_covers(self):
+        for status in ("complete", "limited"):
+            with self.subTest(status=status):
+                result = grade("00-root.06", self.cut(planner_status=status), self.CONTENT)
+                self.assertNotIn("scope-owner-missing", codes(result))
+                self.assertNotIn("scope-owner-multiple", codes(result))
+                self.assertEqual([], [
+                    item for item in result["findings"] if "00-root.03" in item["detail"]
+                ])
+
+    def test_a_companion_no_member_ever_planned_is_still_reported_unowned(self):
+        """Nothing spent, nothing live: the requirement still has no owner."""
+
+        result = grade("00-root.06", self.cut(planner=None), self.CONTENT)
+        self.assertIn("scope-owner-missing", codes(result))
+        self.assertIn(
+            "change:ARCHITECTURE.md",
+            [item["detail"] for item in result["findings"]],
+        )
+
+    def test_two_live_planners_are_still_two_owners_beside_a_terminal_one(self):
+        """The terminal plan satisfies; it never joins an owner set."""
+
+        members = self.cut(second_planner="00-root.07")
+        members["00-root.08"] = v2_ticket(
+            "00-root.08", mutations=["change:ARCHITECTURE.md"],
+            scope=["ARCHITECTURE.md"], **self.SEALED,
+        )
+        result = grade("00-root.06", members, self.CONTENT)
+        self.assertIn("scope-owner-multiple", codes(result))
+        self.assertIn(
+            "change:ARCHITECTURE.md owned by 00-root.07, 00-root.08",
+            [item["detail"] for item in result["findings"]],
+        )
 
 
 class V1GroupingUnchangedTest(unittest.TestCase):
