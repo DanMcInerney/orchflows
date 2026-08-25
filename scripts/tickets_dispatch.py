@@ -50,37 +50,12 @@ def _cmd_gate(rest):
     The probe is supplied from here rather than read inside the gate module
     so that one revision reaches every stub the family writes, and so that
     the seam a caller substitutes is the one this façade names.
-    """
-    refusal = _gate_version_refusal(rest)
-    return _gate_command(rest, head_probe=git_head) if refusal is None else refusal
-def _gate_version_refusal(rest):
-    """Refuse a gate whose stubs its builder cannot express, or ``None``.
 
-    `_gate_stub` writes a v1 admission and a v1 cohort by construction, so
-    under a root already carrying a sealed v2 assignment every stub the
-    family would write is one `ready` and `claim` refuse -- the recorded
-    instance is exactly that, v1 cohorts emitted under a v2 root. The root
-    is read here, before the builder runs, because a gate that has already
-    written its family has spent the dispatch this refusal exists to save.
-
-    Only the version is decided here. Every other reason a gate is refused
-    stays the builder's, so this adds a door and moves no law: anything it
-    cannot resolve -- a malformed line, an absent sink, a root that is not
-    there -- is passed through untouched for the builder to phrase.
+    No version door stands in front of the builder any more: the builder
+    emits at the root's declared version, and a member at the wrong one is
+    the one grade's own `version-root-divergence` refusal at every door.
     """
-    args = list(rest)
-    for flag in ('--lens', '--write-scope', '--acceptance-from'):
-        _extract_flag(args, flag)
-    if len(args) != 2:
-        return None
-    run, root_id = args
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return None
-    text, failure = _read_utf8(tickets_root / run / f'{root_id}.md')
-    if failure is not None or not is_v2(_parse_frontmatter(text)):
-        return None
-    return {'error': f"gate root '{run}/{root_id}' carries a v2 sealed assignment, and a gate stub is written v1 by construction: every stub this would emit is one `ready` and `claim` refuse. Nothing was written"}
+    return _gate_command(rest, head_probe=git_head)
 def _template_stubs(directory: Path, values: dict):
     """``(stubs, error)`` — every stub in the template, substituted and graded.
     ``stubs`` maps a stub id to its text and its dependency ids, in file
