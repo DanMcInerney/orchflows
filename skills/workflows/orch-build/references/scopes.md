@@ -30,7 +30,10 @@ scope. Canonical work happens in this repository itself and needs no install.
   machine that wrote it and nowhere else — never the orchflows-only
   `role`, which the item file itself keeps in full anatomy —
   and one routing line naming the item in the scope's AGENTS.md, which
-  is the Codex surface.
+  is the Codex surface. For a role-bearing item that line uses the
+  declared role to resolve its canonical profile, then carries both native
+  Codex dispatch fields, `agent_type` and `fork_turns`; it never reconstructs
+  either field from the role name.
 - The scope's named oracle (library lens) is the only oracle for a
   custom item.
 - Custom workflows instantiate from compositions: pick the nearest

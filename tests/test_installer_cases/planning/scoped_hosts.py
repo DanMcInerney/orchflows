@@ -18,7 +18,8 @@ class RoleProfileRefusalTest(unittest.TestCase):
 
     ROW = (
         "| `{name}` | {role} | agent_type `{agent}`, model `gpt-5.6-sol`, "
-        "model_reasoning_effort `high` | model `claude-opus-5`, effort `high` |\n"
+        "model_reasoning_effort `high`, fork_turns `none` | "
+        "model `claude-opus-5`, effort `high` |\n"
     )
 
     def table(self, *replacements, extra: str = "") -> Path:
@@ -59,6 +60,27 @@ class RoleProfileRefusalTest(unittest.TestCase):
         path = self.table((", model_reasoning_effort `ultra`", ""))
         with self.assertRaisesRegex(ValueError, "incomplete Codex binding for orch-planner"):
             install.load_role_profiles(path)
+
+    def test_a_missing_codex_fork_binding_is_refused_and_the_row_is_named(self):
+        path = self.table((", fork_turns `none`", ""))
+        with self.assertRaisesRegex(ValueError, "incomplete Codex binding for orch-planner"):
+            install.load_role_profiles(path)
+
+    def test_none_and_a_positive_decimal_are_valid_codex_fork_bindings(self):
+        self.assertEqual(
+            "none", install.load_role_profiles()["orch-planner"]["codex"]["fork_turns"]
+        )
+        path = self.table(("fork_turns `none`", "fork_turns `3`"))
+        self.assertEqual("3", install.load_role_profiles(path)["orch-planner"]["codex"]["fork_turns"])
+
+    def test_other_codex_fork_bindings_are_refused_and_the_row_is_named(self):
+        for value in ("all", "0", "01", "latest"):
+            with self.subTest(value=value):
+                path = self.table(("fork_turns `none`", f"fork_turns `{value}`"))
+                with self.assertRaisesRegex(
+                    ValueError, f"invalid Codex fork_turns for orch-planner: {value}"
+                ):
+                    install.load_role_profiles(path)
 
     def test_two_roles_may_not_claim_one_codex_agent_type(self):
         """The Codex agent_type is the spawn identifier and the installed

@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import install
+from installer.packages import codex_role_adapter_body
 from tools import validate
 
 
@@ -128,6 +129,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 prompt = prompts[name]
                 for anchor in (
                     f"agent_type `orch_{role}`",
+                    "fork_turns `none`",
                     f"`{name}`",
                     "complete packet",
                     "matching role",
@@ -144,6 +146,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]
                 self.assertIn(f"agent_type `orch_{role}`", content)
+                self.assertIn("fork_turns `none`", content)
                 self.assertIn("matching role", content)
                 self.assertIn("refuse", content)
 
@@ -152,6 +155,24 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         )
         for anchor in ("exact named skill", "directly", "never redispatch", "mismatched"):
             self.assertIn(anchor, role_agent)
+
+    def test_custom_codex_routing_uses_the_resolved_native_binding(self):
+        rendered = codex_role_adapter_body(
+            "custom-worker",
+            {
+                "role": "worker",
+                "codex": {"agent_type": "resolved_worker", "fork_turns": "3"},
+            },
+            Path("X"),
+        )
+        self.assertIn("agent_type `resolved_worker`", rendered)
+        self.assertIn("fork_turns `3`", rendered)
+
+        scopes = (
+            ROOT / "skills/workflows/orch-build/references/scopes.md"
+        ).read_text(encoding="utf-8")
+        for anchor in ("declared role", "canonical profile", "agent_type", "fork_turns"):
+            self.assertIn(anchor, scopes)
 
 
 if __name__ == "__main__":

@@ -180,15 +180,17 @@ def by_name_pointer_text(frontmatter: str, role, lib_skill_md: Path) -> str:
     return frontmatter + "\n" + fork_arrival_preamble(role) + f"Read {lib_skill_md} and follow it exactly.\n"
 
 
-def codex_role_adapter_body(name: str, role: str, lib_skill_md: Path) -> str:
+def codex_role_adapter_body(name: str, profile: dict, lib_skill_md: Path) -> str:
     """Explicit Codex dispatch gate for one role-bearing named skill."""
 
-    agent_type = f"orch_{role}"
+    role = profile["role"]
+    binding = profile["codex"]
     return (
         f"`{name}` requires the matching role `orch-{role}`. If this context "
         f"is already that established child, read {lib_skill_md} and follow it exactly. Execute "
         "the exact named skill directly; never redispatch it. Otherwise root "
-        f"must dispatch one child with agent_type `{agent_type}`, passing the "
+        f"must dispatch one child with agent_type `{binding['agent_type']}` and "
+        f"fork_turns `{binding['fork_turns']}`, passing the "
         "complete packet and exact named skill; refuse execution when that "
         "matching role child is missing or mismatched; there is no inline "
         f"fallback.\n\n{FORK_ARRIVAL_CLAUSE}\n"
@@ -219,7 +221,9 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
         raise ValueError(f"{profiles_md_path}: missing role profile row(s) for {', '.join(missing)}")
     codex_agent_types = set()
     for name, profile in profiles.items():
-        if not {"agent_type", "model", "model_reasoning_effort"} <= set(profile["codex"]):
+        if not {"agent_type", "fork_turns", "model", "model_reasoning_effort"} <= set(
+            profile["codex"]
+        ):
             raise ValueError(f"{profiles_md_path}: incomplete Codex binding for {name}")
         agent_type = profile["codex"]["agent_type"]
         if _CODEX_AGENT_TYPE_RE.fullmatch(agent_type) is None:
@@ -227,6 +231,11 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
         if agent_type in codex_agent_types:
             raise ValueError(f"{profiles_md_path}: duplicate Codex agent_type: {agent_type}")
         codex_agent_types.add(agent_type)
+        fork_turns = profile["codex"]["fork_turns"]
+        if fork_turns != "none" and not (
+            fork_turns.isascii() and fork_turns.isdecimal() and not fork_turns.startswith("0")
+        ):
+            raise ValueError(f"{profiles_md_path}: invalid Codex fork_turns for {name}: {fork_turns}")
         if "model" not in profile["claude"]:
             raise ValueError(f"{profiles_md_path}: incomplete Claude binding for {name}")
     return profiles

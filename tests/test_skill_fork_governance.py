@@ -232,7 +232,9 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     def test_the_codex_gate_carries_it(self):
         self.assertIn(
             FORK_ARRIVAL_CLAUSE,
-            codex_role_adapter_body("orch-tdd", "worker", Path("X")),
+            codex_role_adapter_body(
+                "orch-tdd", install.load_role_profiles()["orch-worker"], Path("X")
+            ),
         )
 
     def test_the_built_plan_renders_it_on_every_role_bearing_surface(self):
