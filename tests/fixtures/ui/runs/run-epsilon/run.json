@@ -1,0 +1,16 @@
+{
+  "run": "run-epsilon",
+  "project": {
+    "root": "/srv/fleet/beacon-cli",
+    "origin": "https://example.invalid/fleet/beacon-cli.git",
+    "name": "/srv/fleet/beacon-cli"
+  },
+  "workspaces": [
+    {"path": "/srv/fleet/beacon-cli/.worktrees/epsilon", "first_seen": "2026-08-25T10:05:00Z"}
+  ],
+  "opened_at": "2026-08-25T10:05:00Z",
+  "terminal_at": "2026-08-25T11:40:00Z",
+  "terminal_status": "limited",
+  "terminal_ticket_id": "E1",
+  "elapsed_ms": 5700000
+}

@@ -1,0 +1,16 @@
+{
+  "run": "run-alpha",
+  "project": {
+    "root": "/srv/fleet/aegis-notes",
+    "origin": "https://example.invalid/fleet/aegis-notes.git",
+    "name": "aegis-notes"
+  },
+  "workspaces": [
+    {"path": "/srv/fleet/aegis-notes/.worktrees/alpha", "first_seen": "2026-08-25T08:30:00Z"}
+  ],
+  "opened_at": "2026-08-25T08:30:00Z",
+  "terminal_at": "",
+  "terminal_status": "",
+  "terminal_ticket_id": "",
+  "elapsed_ms": 0
+}

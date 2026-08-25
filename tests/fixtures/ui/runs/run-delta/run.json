@@ -1,0 +1,16 @@
+{
+  "run": "run-delta",
+  "project": {
+    "root": "C:\\fleet\\atlas-web",
+    "origin": "https://example.invalid/fleet/atlas-web.git",
+    "name": "C:\\fleet\\atlas-web"
+  },
+  "workspaces": [
+    {"path": "C:\\fleet\\atlas-web\\.worktrees\\delta", "first_seen": "2026-08-24T07:40:00Z"}
+  ],
+  "opened_at": "2026-08-24T07:40:00Z",
+  "terminal_at": "2026-08-24T09:15:00Z",
+  "terminal_status": "failed",
+  "terminal_ticket_id": "D3",
+  "elapsed_ms": 5700000
+}

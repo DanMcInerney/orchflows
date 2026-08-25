@@ -1,0 +1,16 @@
+{
+  "run": "run-gamma",
+  "project": {
+    "root": "/srv/fleet/atlas-web",
+    "origin": "https://example.invalid/fleet/atlas-web.git",
+    "name": "/srv/fleet/atlas-web"
+  },
+  "workspaces": [
+    {"path": "/srv/fleet/atlas-web/.worktrees/gamma", "first_seen": "2026-08-25T09:02:00Z"}
+  ],
+  "opened_at": "2026-08-25T09:02:00Z",
+  "terminal_at": "",
+  "terminal_status": "",
+  "terminal_ticket_id": "",
+  "elapsed_ms": 0
+}
