@@ -18,8 +18,8 @@ defines.
   establishes isolation first. A born-red or
   pre-existing deterministic oracle uses one worker; an `authored-here`
   oracle adds at most the same claim's checker. **ticket** — independent atoms
-  use one same planner child for optional packet-stated `orch-spec` then
-  `orch-decompose`; the root's `executor` is `orch-decompose` and the root
+  use one matching planner child for optional packet-stated, dispatch-only `orch-spec` then
+  `orch-decompose`; the root's `executor` is `orch-decompose`; outer join
   starts `orch-frontier`. Never persist or
   redispatch that sequence. A known cause enters errand; **fix** — an unknown cause →
   `tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run>
