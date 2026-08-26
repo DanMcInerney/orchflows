@@ -32,17 +32,18 @@ whitespace-delimited words. Terms are
   library terms; `documentation.md` documentation design and the
   reading order; each remaining file its named subject.
 - [`scripts/`](scripts/) owns repository automation. Programs use Python
-  3.9+ on Windows and POSIX, no network at run time. An unprefixed family
-  module is the public command and import facade; same-family helpers own internal
-  concerns. `tickets_format.py` owns syntax, closed parsers, and the
+  3.9+, Windows/POSIX, no run-time network. An unprefixed family module is
+  the public command/import facade; same-family helpers own internals.
+  `tickets_format.py` owns syntax, closed parsers, and the
   installed pack mechanism registry; `tickets_markdown.py`
   is its private byte-preserving mechanism; `tickets_inputs.py` typed
   identity resolution; `tickets_scope.py` mutation/edge closure;
   `tickets_admission.py` composes those into receipts lifecycle and packet
   modules consume. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
-  ceiling, `tickets_dispatch_gate.py` the gate family and
-  mutation plan, `cutcheck_pricing.py` cut pricing.
+  ceiling, `tickets_dispatch_gate.py` gate-only cut, ordered lens bundle
+  Fixed-input record and mutation plan,
+  `cutcheck_pricing.py` cut pricing.
   Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text

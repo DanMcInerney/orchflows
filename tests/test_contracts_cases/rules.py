@@ -215,6 +215,92 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             self.assertIn(token, worklog, f"worklog.md omits {token!r}")
 
 
+class ReviewBundleContractTest(unittest.TestCase):
+    """The additive gate-only and ordered-lens-bundle contract."""
+
+    def test_gate_only_cut_is_coverage_complete_and_not_padding(self):
+        text = read_clause_flat("rules/topology.md", 3)
+        for token in (
+            "gate-only", "zero", "`<id>.NN`", "every root criterion",
+            "coverage map", "not padding", "composite gate",
+        ):
+            self.assertIn(token, text, f"topology.md §3 omits {token!r}")
+
+    def test_work_item_owns_the_canonical_opt_in_bundle_carrier(self):
+        root = read_flat("work-item.md").split("## Root ticket", 1)[1].split(
+            "## Template and stub", 1
+        )[0]
+        record = (
+            '- input: {"name":"ordered-lens-bundle","type":"literal",'
+            '"value":[{"evidence":["<identity-input-name>"],'
+            '"identity":"<unique-lens-identity>"}]}'
+        )
+        for token in (
+            record, "opt-in", "canonical", "assignment seal",
+            "critique-and-repair ticket", "unchanged",
+            "not a frontmatter field or enum",
+        ):
+            self.assertIn(token, root, f"Root ticket omits {token!r}")
+
+    def test_bundle_is_one_ordered_gate_ticket_with_unique_lens_evidence(self):
+        topology = read_clause_flat("rules/topology.md", 5)
+        for token in (
+            "ordered lens bundle", "one critique-and-repair ticket",
+            "unique lens identity", "evidence", "bundle order",
+            "one verification",
+        ):
+            self.assertIn(token, topology, f"topology.md §5 omits {token!r}")
+
+    def test_repair_verdicts_are_void_and_verifier_is_fresh_and_separate(self):
+        text = read_clause_flat("rules/verification.md", 10)
+        for token in (
+            "ordered lens bundle", "per-lens", "identity", "evidence",
+            "repair", "void", "fresh separate verifier",
+        ):
+            self.assertIn(token, text, f"verification.md §10 omits {token!r}")
+
+    def test_child_identity_never_crosses_the_ticket_boundary(self):
+        text = read_clause_flat("rules/delegation.md", 4)
+        for token in (
+            "ticket boundary", "never reused", "ordered lens bundle",
+            "critique and repair", "same ticket",
+        ):
+            self.assertIn(token, text, f"delegation.md §4 omits {token!r}")
+
+    def test_vocabulary_defines_both_opt_in_shapes_once(self):
+        vocabulary = read_at_flat("docs/vocabulary.md")
+        for term, tokens in {
+            "**gate-only cut**": (
+                "zero", "unit tickets", "every root criterion",
+                "coverage map", "not padding",
+            ),
+            "**ordered lens bundle**": (
+                "Fixed-input", "ordered", "unique", "evidence",
+                "critique-and-repair ticket", "fresh separate verifier",
+            ),
+        }.items():
+            self.assertEqual(1, vocabulary.count(term), f"expected one {term}")
+            entry = vocabulary.split(term, 1)[1].split(" - **", 1)[0]
+            for token in tokens:
+                self.assertIn(token, entry, f"{term} omits {token!r}")
+
+    def test_migration_preserves_legacy_and_already_sealed_v2_history(self):
+        text = read_clause_flat("rules/topology.md", 11)
+        for token in (
+            "additive opt-in", "ordered lens bundle", "v0", "v1",
+            "already sealed", "claimed or terminal v2", "unchanged",
+        ):
+            self.assertIn(token, text, f"topology.md §11 omits {token!r}")
+
+    def test_architecture_names_the_runtime_owner_without_moving_t0_shape(self):
+        text = read_at_flat("ARCHITECTURE.md")
+        for token in (
+            "tickets_dispatch_gate.py", "gate-only cut",
+            "ordered lens bundle", "Fixed-input record",
+        ):
+            self.assertIn(token, text, f"ARCHITECTURE.md omits {token!r}")
+
+
 class VocabularyCutTermsTest(unittest.TestCase):
     """The atom and critical-path entries in docs/vocabulary.md."""
 

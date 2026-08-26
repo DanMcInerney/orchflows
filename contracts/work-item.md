@@ -180,6 +180,18 @@ law [rules/verification.md](../rules/verification.md) §10's, when one is
 staffed `orch-frontier`'s — which never satisfies the root result's
 outside-independence path, the run's one composite gate.
 
+An additive opt-in v2 root may carry this canonical Fixed-input record:
+
+`- input: {"name":"ordered-lens-bundle","type":"literal","value":[{"evidence":["<identity-input-name>"],"identity":"<unique-lens-identity>"}]}`
+
+List position is lens order; each identity is unique and each evidence entry
+names an identity input on the root. This carrier is not a frontmatter field or
+enum. Before the cut's assignment seal, it is copied unchanged onto one
+critique-and-repair ticket whose `sequence` is `[orch-critique, orch-repair]`;
+the assignment seal therefore binds the bundle, and one fresh
+`<id>.gate.verify` follows it. A gate-only cut may have zero `<id>.NN` unit
+tickets only under [rules/topology.md](../rules/topology.md) §3's coverage law.
+
 ## Template and stub
 
 A composition is a template: a directory of ticket stubs plus the manifest
