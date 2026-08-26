@@ -14,16 +14,19 @@ class TestHostAutoDetection(unittest.TestCase):
             (home / ".claude").mkdir()
             (home / ".codex").mkdir()
 
-            self.assertEqual((False, False), install.detect_hosts(home))
+            self.assertEqual((False, False, False), install.detect_hosts(home))
 
     def test_each_cross_platform_cli_candidate_enables_its_host(self):
         cases = (
-            ("claude", (True, False)),
-            ("claude.exe", (True, False)),
-            ("claude.cmd", (True, False)),
-            ("codex", (False, True)),
-            ("codex.exe", (False, True)),
-            ("codex.cmd", (False, True)),
+            ("claude", (True, False, False)),
+            ("claude.exe", (True, False, False)),
+            ("claude.cmd", (True, False, False)),
+            ("codex", (False, True, False)),
+            ("codex.exe", (False, True, False)),
+            ("codex.cmd", (False, True, False)),
+            ("grok", (False, False, True)),
+            ("grok.exe", (False, False, True)),
+            ("grok.cmd", (False, False, True)),
         )
         for executable, expected in cases:
             with self.subTest(executable=executable), patch.object(
@@ -37,7 +40,32 @@ class TestHostAutoDetection(unittest.TestCase):
 
     def test_both_clis_enable_both_hosts_before_state_directories_exist(self):
         with mock_host_clis("claude", "codex"):
-            self.assertEqual((True, True), install.detect_hosts(Path("missing-home")))
+            self.assertEqual(
+                (True, True, False), install.detect_hosts(Path("missing-home"))
+            )
+
+    def test_every_cli_enables_every_host_before_state_directories_exist(self):
+        with mock_host_clis("claude", "codex", "grok"):
+            self.assertEqual(
+                (True, True, True), install.detect_hosts(Path("missing-home"))
+            )
+
+    def test_a_grok_home_is_not_an_installation_signal_without_the_cli(self):
+        """The Grok signal is the CLI, exactly as it is for the other two.
+
+        A ``GROK_HOME`` an agent runtime left behind, or a bare ``~/.grok``,
+        says nothing about whether a grok CLI is runnable here.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp, mock_host_clis("claude"):
+            root = Path(tmp)
+            (root / ".grok").mkdir()
+            with isolated_grok_home(root) as grok_home:
+                (grok_home / "skills").mkdir()
+
+                self.assertEqual(
+                    (True, False, False), install.detect_hosts(root)
+                )
 
     def test_protected_stale_codex_directory_is_ignored_without_codex_cli(self):
         with tempfile.TemporaryDirectory() as tmp:

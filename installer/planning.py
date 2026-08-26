@@ -11,6 +11,7 @@ from .foundation import (
     CLAUDE_CLI_CANDIDATES,
     CODEX_CLI_CANDIDATES,
     CODEX_SKILL_REDIRECT_NAMES,
+    GROK_CLI_CANDIDATES,
     PROFILE_ROLES,
     REPO_ROOT,
     SHARED_ADAPTER_NAMES,
@@ -56,17 +57,22 @@ from .packages import (
 )
 from .runtime import private_runtime_action
 
-def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
-    """Return host enablement from runnable CLI presence on ``PATH``.
+def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
+    """Return Claude, Codex and Grok enablement from runnable CLI presence on
+    ``PATH``.
 
     ``home`` remains accepted for caller compatibility, but state/config
-    directories under it are deliberately not installation signals.
+    directories under it are deliberately not installation signals. That holds
+    for Grok too: ``~/.grok`` -- or a ``GROK_HOME`` pointed anywhere else --
+    can outlive the CLI that made it, and the compat directories Grok reads
+    are Claude's, so neither says a grok CLI is runnable here.
     """
 
     del home
     return (
         any(shutil.which(candidate) for candidate in CLAUDE_CLI_CANDIDATES),
         any(shutil.which(candidate) for candidate in CODEX_CLI_CANDIDATES),
+        any(shutil.which(candidate) for candidate in GROK_CLI_CANDIDATES),
     )
 
 
@@ -94,7 +100,10 @@ def _build_user_plan(
     scope_home = _scope_home("user", None)
     bin_dir = _bin_dir("user", None)
     home = Path.home()
-    claude_enabled, codex_enabled = detect_hosts(home)
+    # Sliced, not unpacked in full: this plan builds the two host surfaces it
+    # already knows, and reading the Grok signal here before there are Grok
+    # entries to plan would only bind an unused name.
+    claude_enabled, codex_enabled = detect_hosts(home)[:2]
     if not claude_enabled and not codex_enabled:
         return Plan(
             scope="user",

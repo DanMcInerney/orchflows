@@ -15,24 +15,26 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
 import install
+from installer import foundation
 from tools import validate
 
 _ENV_GUARD = patch.dict(os.environ)
 
 
 def setUpModule():
-    """Every test here fakes a home dir; a real ``CLAUDE_CONFIG_DIR`` or
-    ``CODEX_HOME`` in the developer's environment would send user-scope writes
-    outside that fake."""
+    """Every test here fakes a home dir; a real ``CLAUDE_CONFIG_DIR``,
+    ``CODEX_HOME`` or ``GROK_HOME`` in the developer's environment would send
+    user-scope writes outside that fake."""
 
     _ENV_GUARD.start()
     os.environ.pop("CLAUDE_CONFIG_DIR", None)
     os.environ.pop("CODEX_HOME", None)
+    os.environ.pop("GROK_HOME", None)
 
 
 _SHARED: dict = {}
@@ -233,6 +235,23 @@ def mock_host_clis(*hosts: str):
         return str(Path("mock-bin") / candidate) if host in installed else None
 
     return patch.object(install.shutil, "which", side_effect=lookup)
+
+
+@contextmanager
+def isolated_grok_home(root: Path):
+    """Select a fresh Grok home under ``root`` for the body of the ``with``.
+
+    ``GROK_HOME`` is the only relocation the grok CLI reads, so it is the only
+    lever a test has: faking ``Path.home`` alone still leaves a real
+    ``GROK_HOME`` in the developer's environment pointing every Grok write at
+    the home they actually use. Yields the directory, already created, so a
+    caller can seed it before the code under test reads it.
+    """
+
+    grok_home = Path(root) / "grok-home"
+    grok_home.mkdir(parents=True, exist_ok=True)
+    with patch.dict(os.environ, {"GROK_HOME": str(grok_home)}):
+        yield grok_home
 
 
 # A bare filename the way a stub writes one: `search_plan.py`, never
