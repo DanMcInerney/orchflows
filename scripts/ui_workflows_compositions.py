@@ -50,10 +50,12 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
     executor = fields.get("executor")
     executor_is_slot = executor == "{{executor}}"
     sequence = fields.get("sequence")
+    if isinstance(executor, list):
+        raise WorkflowCompositionError("composition executor must be scalar")
     if executor_is_slot:
         executors = []
     elif sequence is None:
-        executors = executor if isinstance(executor, list) else [executor]
+        executors = [executor]
     elif not isinstance(sequence, list) or not sequence or sequence[0] != executor:
         raise WorkflowCompositionError("composition sequence must start with executor")
     else:

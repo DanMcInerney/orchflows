@@ -87,6 +87,22 @@ class WorkflowCatalogTests(unittest.TestCase):
             with self.assertRaises(compositions.WorkflowCompositionError):
                 compositions.project_composition(root, "errand")
 
+    def test_list_valued_executor_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write(
+                root / "compositions" / "errand" / "template.md",
+                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+            )
+            self._write(
+                root / "compositions" / "errand" / "00-deliver.md",
+                "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-build]\n"
+                "depends_on: []\nbound: 30m\n---\n",
+            )
+
+            with self.assertRaises(compositions.WorkflowCompositionError):
+                compositions.project_composition(root, "errand")
+
     def test_escaping_file_and_directory_symlink_owners_are_rejected(self):
         for link_kind in ("file", "directory"):
             with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
