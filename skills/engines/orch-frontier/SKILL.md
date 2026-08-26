@@ -10,17 +10,19 @@ Dispatch each ticket with complete `depends_on`. `tickets.py claim`; take its
 packet (refusal is a cut defect); spawn a fresh child under
 [delegation](../../../rules/delegation.md) §1–§2 and its
 [role](../../../rules/roles.md) §4/[profile](references/profiles.md), applying
-the executor. Each ticket takes one outside-independence path. Only unchecked
-`independence: checker` tickets with an `authored-here` oracle get the claim's
-`--executor orch-critique` checker packet, and never for gate-deferred,
-already checked, or pre-existing-only tickets. Then, where its pass invalidates
-a judged oracle, dispatch `--executor orch-verify`; otherwise re-run
-invalidated deterministic oracles at the checked identity
+the executor. Each ticket takes one outside-independence path. In a
+single-ticket run, pre-existing-only acceptance ends with its falsifiable
+oracles; only an unchecked `independence: checker` ticket with an
+`authored-here` oracle gets the claim's `--executor orch-critique` checker
+packet. Never add it to gate-deferred or already checked tickets. Where a
+checker invalidates a judged oracle, dispatch `--executor orch-verify`;
+otherwise re-run invalidated deterministic oracles at the checked identity
 ([verification](../../../rules/verification.md) §10).
 
-A sealed ordered-bundle gate critique gets one fresh reviewer and sequence
-packet without evaluator redispatch. Dispatch gate.verify once in another fresh child
-at final identity; reuse neither.
+A sealed ordered-bundle gate critique gets one fresh closer and one sequence
+packet for `orch-critique` then `orch-repair`, without evaluator redispatch.
+Dispatch gate.verify once in another fresh child at final identity; reuse
+neither context.
 
 V2 readiness/claim/packet require `root_generation`, `cut_generation`, and
 `assignment_seal` resolving to one sealed snapshot and validation receipt.
@@ -33,15 +35,11 @@ units stay `pending` until `checked_by` and this engine's `cutcheck.py`
 re-verification exits 0. Below that threshold cutcheck accepts the cut alone.
 Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
-An errand run authored through `tickets.py errand` runs the ticket's scoped
-oracles and its one lawful checker only. Once every return integrates
-and derived closure is closed, run the standards owner's required checks
-exactly once at the accepted terminal identity and record its revision.
-For every non-errand run, keep the existing policy: After each merge batch run
-the standards owner's required checks on the integrated tip, the run's notes
-carrying the tip's revision. A lane runs its ticket's own oracles, nothing
-wider; its green is provisional until the tip's, and a red tip blocks the next
-dispatch but its repair's.
+A lane runs its ticket's own oracles, nothing wider. After every return is
+integrated and its required checker or run gate is closed, run the standards
+owner's required checks exactly once at the accepted terminal identity and
+record its revision, not per merge batch. A red terminal suite blocks
+completion.
 
 Watch per [profiles](references/profiles.md); recompute on results, tickets,
 suspensions, or stale claims. `bound-check` parks overdue work without
