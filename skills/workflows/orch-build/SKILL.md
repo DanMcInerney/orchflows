@@ -22,8 +22,9 @@ tools/validate.py and the tests, and for a template also
 Return [references/library-lens.md](references/library-lens.md) with the
 artifact for frontier-owned acceptance; never launch an independent reviewer
 here. `independence: gate` defers that lens to the run's ordered lens bundle.
-Otherwise the ordinary ticket follows frontier's provenance-driven checker
-path. Run the validator and scoped tests here only as deterministic admission.
+Otherwise the ordinary ticket follows frontier's provenance-driven
+`orch-critique` checker path. Run the validator and scoped tests here only as
+deterministic admission.
 
 Never: touch a
 T0 contract outside a supersession change; land at canonical scope what

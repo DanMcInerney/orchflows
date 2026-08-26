@@ -1,5 +1,5 @@
 {
-  "schema": "orchflows.errand-canary-manifest.v1",
+  "schema": "orchflows.single-canary-manifest.v1",
   "ticket": {
     "path": "tickets/canary/repair.md",
     "sha256": "ba56206b00fdc0abff7b0824e04e27c46738d0e5484d6c9930cd29d2a205dabe",
@@ -13,23 +13,23 @@
   "replay_artifacts": [
     {
       "path": "README.md",
-      "sha256": "8333a2a068c26c82087852cc5e14a53f483da1df2c6181c04f4a45d9c357c3b6"
+      "sha256": "7f006bbd0781916626ef731ce1033fb2c64241ae038da6cd08f3505eaf7aaa08"
     },
     {
       "path": "admission-replay.json",
-      "sha256": "fdcd1f9c46f0e41782dac92a790beaf09fa9f8946ace3710acce884993b088de"
+      "sha256": "1dbd5319e42948e0b5985dc20ee7c3f00e879293a883e8e3f8d8b32f9f8a28f2"
     },
     {
       "path": "counterfactual-replay.json",
-      "sha256": "c9971f3bfa63d03ce89472fe99f63d033f9daf06b38036ab36676a6f6ca81e6f"
+      "sha256": "c98bf7cc121ce644712f5e01ac403a2c01c620f37b1b9aa993f8c227c981e63a"
     },
     {
       "path": "counterfactual-targets.json",
-      "sha256": "6cbaba0ebeaa3a39b3fe1fdf3032fd1892597050072f2b799f55b2cbe8f5171f"
+      "sha256": "de79d48c0c8dc34567fa14b5808b084fe632270a49377780a33800d890d7d256"
     },
     {
       "path": "golden.json",
-      "sha256": "48a2a9e539d12f64ee82efbe60a2fb4bdd35ee04a56f7cb0aaa264d6a759d3cb"
+      "sha256": "22d4b0bcbb394bddb4240e23c78f36d424986e446931ddf2931fc5e17d927e47"
     }
   ],
   "fixed_inputs": [
@@ -52,11 +52,6 @@
       "name": "integrated-baseline",
       "type": "literal",
       "value": "git:fa62ab22b32bd8f4e28c0766b91b9d4a2b863203"
-    },
-    {
-      "path": "inputs/tickets/errand-lane-final-tail-20260826-retry/errand-lane-final-tail-root-retry.gate.critique.library.md",
-      "sha256": "3df2fb8b7e0cb802eae9d146ba727a2a144de49be555429654d70e78d526ecc1",
-      "result_section_sha256": "cf4576cfb34e14993c7874f97041b9c604a9cba7822d6f63a7356658c2d7c13e"
     }
   ],
   "oracle_artifacts": [

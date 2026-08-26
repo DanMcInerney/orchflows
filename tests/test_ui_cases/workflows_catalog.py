@@ -21,19 +21,19 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "errand" / "template.md",
-                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+                root / "compositions" / "demo" / "template.md",
+                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "errand" / "00-deliver.md",
+                root / "compositions" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: {{executor}}\n"
                 "depends_on: []\nbound: {{bound}}\n---\n",
             )
 
-            detail = compositions.project_composition(root, "errand")
+            detail = compositions.project_composition(root, "demo")
 
         self.assertEqual(
-            ["workflow:errand", "work:errand/00-deliver"],
+            ["workflow:demo", "work:demo/00-deliver"],
             [node["id"] for node in detail["nodes"]],
         )
         self.assertEqual([], detail["edges"])
@@ -43,11 +43,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "errand" / "template.md",
-                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+                root / "compositions" / "demo" / "template.md",
+                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "errand" / "00-deliver.md",
+                root / "compositions" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-tdd\n"
                 "sequence: [orch-tdd, orch-build]\n"
                 "depends_on: []\nbound: 30m\n---\n",
@@ -58,7 +58,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                     f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
                 )
 
-            detail = compositions.project_composition(root, "errand")
+            detail = compositions.project_composition(root, "demo")
 
         executor_edges = [
             edge for edge in detail["edges"] if edge["kind"] == "executor"
@@ -74,34 +74,34 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "errand" / "template.md",
-                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+                root / "compositions" / "demo" / "template.md",
+                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "errand" / "00-deliver.md",
+                root / "compositions" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-tdd\n"
                 "sequence: [orch-build, orch-tdd]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
 
             with self.assertRaises(compositions.WorkflowCompositionError):
-                compositions.project_composition(root, "errand")
+                compositions.project_composition(root, "demo")
 
     def test_list_valued_executor_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "errand" / "template.md",
-                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+                root / "compositions" / "demo" / "template.md",
+                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "errand" / "00-deliver.md",
+                root / "compositions" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-build]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
 
             with self.assertRaises(compositions.WorkflowCompositionError):
-                compositions.project_composition(root, "errand")
+                compositions.project_composition(root, "demo")
 
     def test_escaping_file_and_directory_symlink_owners_are_rejected(self):
         for link_kind in ("file", "directory"):
@@ -134,7 +134,7 @@ class WorkflowCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                "benchmaker", "drift-canary", "errand", "evolve", "fix", "renovate",
+                "benchmaker", "drift-canary", "evolve", "fix", "renovate",
                 "self-improve", "skill-tournament", "orch-build",
                 "orch-eval-design", "orch-fixture", "orch-repair",
                 "orch-self-improve", "orch-spec", "orch-triage",
@@ -148,8 +148,6 @@ class WorkflowCatalogTests(unittest.TestCase):
         by_id = {workflow["id"]: workflow for workflow in projected}
         self.assertEqual("composition", by_id["fix"]["type"])
         self.assertEqual("routed", by_id["fix"]["entry"])
-        self.assertEqual("composition", by_id["errand"]["type"])
-        self.assertEqual("named", by_id["errand"]["entry"])
         self.assertEqual(
             "Take a failure to a proven, regression-guarded repair. Use for any bug or defect with an unknown or unverified cause.",
             by_id["fix"]["description"],
