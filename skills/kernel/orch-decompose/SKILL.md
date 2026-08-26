@@ -9,8 +9,11 @@ pack slicing and oracle_policy. Reject missing parts by name.
 
 Goal: minimize critical path; every item an atom; obey §3's test/count/width law.
 
-Cut [work items](../../../contracts/work-item.md) as `<root>.NN` through
-`tickets.py new --cohort v1:root:<root>`. Pass exact parameters/evidence as
+Cut [work items](../../../contracts/work-item.md) as `<root>.NN`, emitting by
+the frozen root version. Mandatory-v2 roots use candidate files carrying the
+exact inherited `root_generation` and no `cohort`, placed through
+`tickets.py new <run> --file <candidate>`. Legacy-v1 roots use
+`tickets.py new <run> <id> --cohort v1:root:<root>`. Pass exact parameters/evidence as
 canonical JSON `--input` records. Use each item's stamped workspace cell; carry its
 `mutations` via `--mutation`. Objective states the routed observable end
 state. Give every item a write scope (siblings overlap only when dependency-ordered),

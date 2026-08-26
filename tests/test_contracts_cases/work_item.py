@@ -323,6 +323,26 @@ class TestV1AdmissionContract(unittest.TestCase):
                 self.assertIn(token, text)
         self.assertNotIn("--mutation create|change|delete|write", text)
 
+    def test_decomposer_names_version_aware_v1_and_v2_member_emission(self):
+        text = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Mandatory-v2 roots", text)
+        self.assertIn("Legacy-v1 roots", text)
+        v2 = text.split("Mandatory-v2 roots", 1)[1].split("Legacy-v1 roots", 1)[0]
+        v1 = text.split("Legacy-v1 roots", 1)[1].split("Pass exact", 1)[0]
+        for token in (
+            "candidate files",
+            "`tickets.py new <run> --file <candidate>`",
+            "exact inherited `root_generation`",
+            "no `cohort`",
+        ):
+            with self.subTest(version="v2", token=token):
+                self.assertIn(token, v2)
+        self.assertIn(
+            "`tickets.py new <run> <id> --cohort v1:root:<root>`", v1
+        )
+
     def test_result_clause_shape_and_actual_enforcement_have_distinct_owners(self):
         work_item = read("work-item.md")
         result = read("result.md")
