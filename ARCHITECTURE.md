@@ -39,7 +39,9 @@ whitespace-delimited words. Terms are
   is its private byte-preserving mechanism; `tickets_inputs.py` typed
   identity resolution; `tickets_scope.py` mutation/edge closure;
   `tickets_admission.py` composes those into receipts lifecycle and packet
-  modules consume. `tickets_project.py` owns run-project binding,
+  modules consume. `tickets_successor_context.py` owns dependency digest
+  hydration, canonical Context precedence, and legacy Carry provenance.
+  `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
   ceiling, `tickets_dispatch_gate.py` the gate family and
   mutation plan, `cutcheck_pricing.py` cut pricing.
