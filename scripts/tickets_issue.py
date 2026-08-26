@@ -21,7 +21,7 @@ AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
 def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
 def _invalidate_assignment(text): data = _parse_frontmatter(text); text = _set_frontmatter_field(text, 'admission', _pending_admission(data)); return _remove_frontmatter_field(text, 'assignment_seal') if is_v2(data) else text
 def _cohort_field(text, cohort): return _set_frontmatter_field(text, 'cohort', cohort) if cohort else _remove_frontmatter_field(text, 'cohort')
-NEW_USAGE = 'new <run> <id> --executor E --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
+NEW_USAGE = 'new <run> <id> --executor E [--sequence E[,E...]] --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
 NEW_DEFAULT_BOUND = f'{DEFAULT_BOUND_MINUTES}m'
 NEW_DEFAULT_INPUTS = '- input: {"name":"none","type":"literal","value":null}'
 NEW_DEFAULT_RETURN_FIELDS = 'status; result (what changed, by identity); verification; feedback; risks'
@@ -64,6 +64,7 @@ def _cmd_new(rest):
     args = list(rest)
     file_arg = _extract_flag(args, '--file')
     executor = _extract_flag(args, '--executor')
+    sequence = _extract_flag(args, '--sequence')
     objective = _extract_flag(args, '--objective')
     criteria = _extract_all(args, '--criterion')
     depends_on = _extract_flag(args, '--depends-on')
@@ -82,7 +83,7 @@ def _cmd_new(rest):
     if stray is not None:
         return {'error': f'new does not accept {stray}. usage: {NEW_USAGE}'}
     if file_arg is not None:
-        supplied = [name for name, value in (('--executor', executor), ('--objective', objective), ('--criterion', criteria or None), ('--depends-on', depends_on), ('--write-scope', write_scope), ('--mutation', mutations or None), ('--bound', bound), ('--pack', pack), ('--input', inputs or None), ('--excluded', excluded or None), ('--profile', profile), ('--independence', independence), ('--isolation', isolation), ('--return-fields', return_fields)) if value is not None]
+        supplied = [name for name, value in (('--executor', executor), ('--sequence', sequence), ('--objective', objective), ('--criterion', criteria or None), ('--depends-on', depends_on), ('--write-scope', write_scope), ('--mutation', mutations or None), ('--bound', bound), ('--pack', pack), ('--input', inputs or None), ('--excluded', excluded or None), ('--profile', profile), ('--independence', independence), ('--isolation', isolation), ('--return-fields', return_fields)) if value is not None]
         if supplied:
             return {'error': f'--file places a ticket already written; it takes none of {supplied}. usage: {NEW_USAGE}'}
         if not 1 <= len(args) <= 2:
@@ -105,7 +106,7 @@ def _cmd_new(rest):
     if not valid_cohort(cohort):
         return {'error': f"--cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     dependencies = _split_commas(depends_on)
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'cohort': cohort, 'executor': executor, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'cohort': cohort, 'executor': executor, 'sequence': _split_commas(sequence) or None, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
     fields['admission'] = _pending_admission(fields)
     sections = [('Objective', objective), ('Fixed inputs', '\n'.join((_input_record(item, position) for position, item in enumerate(inputs, start=1))) or NEW_DEFAULT_INPUTS), ('Completion test', '\n'.join((f'- {item}' for item in criteria))), ('Return fields', return_fields or NEW_DEFAULT_RETURN_FIELDS), ('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
     text, input_error = render_ticket_inputs(_render_ticket(fields, sections), run)
