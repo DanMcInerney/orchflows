@@ -39,20 +39,27 @@ def _planned_files(plan: Plan):
         ("adapter", plan.claude_adapters),
         ("prompt", plan.codex_prompts),
         ("codex-skill", plan.codex_skills),
+        ("grok-skill", plan.grok_skills),
     ):
         for destination, content in entries:
             yield "redirect", kind, destination, None, content
     for kind, entries in (
         ("claude-agent", plan.claude_agents),
         ("codex-agent", plan.codex_agents),
+        ("grok-agent", plan.grok_agents),
     ):
         for destination, content in entries:
             yield "role-profile", kind, destination, None, content
     for config in plan.configs:
         yield "configuration", config.kind, config.dest, None, config.content
-    if plan.host_block is not None:
-        config = plan.host_block
-        yield "configuration", config.kind, config.dest, None, config.content
+    # The two whole managed files: Claude's ``~/.orchflows/host-block.md`` and
+    # Grok's ``$GROK_HOME/rules/orchflows.md``. Neither is a ``configs`` entry,
+    # so each is named here or is inspected by nothing -- and an installed file
+    # the desired plan never names reads back as ``receipt.unexpected-entry``,
+    # which is the report telling a whole host to delete itself.
+    for managed in (plan.host_block, plan.grok_rules):
+        if managed is not None:
+            yield "configuration", managed.kind, managed.dest, None, managed.content
 
 
 def _read_receipt(path: Path):

@@ -19,12 +19,20 @@ def _sha256(path: Path) -> str:
 
 
 class DoctorFixture:
-    def __init__(self, root: Path):
+    """One installed tree, one plan, one receipt that agree with each other.
+
+    ``grok`` selects whether a Grok surface was installed at all: a host with
+    no CLI on PATH plans nothing, records nothing, and must draw no finding.
+    ``grok_root`` relocates that surface the way ``GROK_HOME`` does.
+    """
+
+    def __init__(self, root: Path, *, grok: bool = True, grok_root: Path | None = None):
         self.root = root
         source = root / "source"
         installed = root / "installed"
         hosts = root / "hosts"
         source.mkdir()
+        grok_home = (hosts / "grok") if grok_root is None else grok_root
 
         library_source = source / "catalog" / "orch-tdd" / "SKILL.md"
         library_source.parent.mkdir(parents=True)
@@ -38,6 +46,10 @@ class DoctorFixture:
         self.host_surface = hosts / "codex" / "AGENTS.md"
         self.claude_surface = hosts / "claude" / "CLAUDE.md"
         self.host_block = installed / "host-block.md"
+        self.grok_skill = grok_home / "skills" / "orch-tdd" / "SKILL.md"
+        self.grok_agent = grok_home / "agents" / "orch-worker.md"
+        self.grok_config = grok_home / "config.toml"
+        self.grok_rules = grok_home / "rules" / "orchflows.md"
         desired = {
             self.library: library_source.read_text(encoding="utf-8"),
             self.by_name: "Read installed/lib/catalog/orch-tdd/SKILL.md\n",
@@ -46,6 +58,15 @@ class DoctorFixture:
             self.config: "[agents]\nmax_depth = 4\n",
             self.host_block: "<!-- BEGIN ORCHFLOWS -->\nbody\n<!-- END ORCHFLOWS -->\n",
         }
+        if grok:
+            desired.update(
+                {
+                    self.grok_skill: "---\nname: orch-tdd\n---\n\nRead it exactly.\n",
+                    self.grok_agent: "---\nname: orch-worker\n---\n\nrole\n",
+                    self.grok_config: "[subagents]\nmax_depth = 1\n",
+                    self.grok_rules: "<!-- BEGIN ORCHFLOWS -->\nbody\n<!-- END ORCHFLOWS -->\n",
+                }
+            )
         for path, content in desired.items():
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
@@ -69,7 +90,35 @@ class DoctorFixture:
             by_name=[(self.by_name, desired[self.by_name])],
             codex_skills=[(self.redirect, desired[self.redirect])],
             codex_agents=[(self.role, desired[self.role])],
-            configs=[ConfigPlan(self.config, desired[self.config], "codex-config", "Codex config")],
+            grok_skills=(
+                [(self.grok_skill, desired[self.grok_skill])] if grok else []
+            ),
+            grok_agents=(
+                [(self.grok_agent, desired[self.grok_agent])] if grok else []
+            ),
+            grok_rules=(
+                ConfigPlan(
+                    self.grok_rules,
+                    desired[self.grok_rules],
+                    "grok-rules",
+                    "Grok instruction file",
+                )
+                if grok
+                else None
+            ),
+            configs=[ConfigPlan(self.config, desired[self.config], "codex-config", "Codex config")]
+            + (
+                [
+                    ConfigPlan(
+                        self.grok_config,
+                        desired[self.grok_config],
+                        "grok-config",
+                        "Grok subagent limits",
+                    )
+                ]
+                if grok
+                else []
+            ),
             blocks=[
                 BlockPlan(
                     self.host_surface,
@@ -101,6 +150,15 @@ class DoctorFixture:
             self.config: "codex-config",
             self.host_block: "host-block",
         }
+        if grok:
+            kinds.update(
+                {
+                    self.grok_skill: "grok-skill",
+                    self.grok_agent: "grok-agent",
+                    self.grok_config: "grok-config",
+                    self.grok_rules: "grok-rules",
+                }
+            )
         receipt = {
             "version": 4,
             "scope": "user",
@@ -184,6 +242,54 @@ class TestInstallDoctor(unittest.TestCase):
                     self.fixture.plan,
                     current_source_commit=(content if path is None else "abc123"),
                 ) if path is None else report)
+
+    def _grok_census(self):
+        """Every Grok artifact, paired with the receipt kind that files it."""
+
+        return (
+            ("redirect", "grok-skill", self.fixture.grok_skill),
+            ("role-profile", "grok-agent", self.fixture.grok_agent),
+            ("configuration", "grok-config", self.fixture.grok_config),
+            ("configuration", "grok-rules", self.fixture.grok_rules),
+        )
+
+    def test_each_grok_artifact_reports_presence_and_staleness_by_receipt(self):
+        """Absent from the desired plan, a Grok artifact is neither checked for
+        drift nor expected in the receipt -- so a whole installed Grok surface
+        reads back as unexpected junk, and a corrupted one reads as coherent.
+        """
+
+        for surface, kind, path in self._grok_census():
+            with self.subTest(kind=kind, state="stale"):
+                original = path.read_text(encoding="utf-8")
+                path.write_text("drifted\n", encoding="utf-8")
+                try:
+                    report = inspect_installation(
+                        self.fixture.plan, current_source_commit="abc123"
+                    )
+                finally:
+                    path.write_text(original, encoding="utf-8")
+                self.assertIn(
+                    {"id": f"{surface}.content", "path": str(path), "kind": kind},
+                    report["findings"],
+                )
+                self.assertIn(
+                    {"id": "receipt.hash", "path": str(path), "kind": kind},
+                    report["findings"],
+                )
+            with self.subTest(kind=kind, state="missing"):
+                original = path.read_text(encoding="utf-8")
+                path.unlink()
+                try:
+                    report = inspect_installation(
+                        self.fixture.plan, current_source_commit="abc123"
+                    )
+                finally:
+                    path.write_text(original, encoding="utf-8")
+                self.assertIn(
+                    {"id": f"{surface}.missing", "path": str(path), "kind": kind},
+                    report["findings"],
+                )
 
     def test_desired_plan_and_receipt_drift_have_stable_findings(self):
         duplicate = self.fixture.plan.codex_skills[0]
