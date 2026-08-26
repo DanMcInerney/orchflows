@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 EXECUTOR_SECTIONS = ('Result', 'Verification', 'Feedback', 'Risks', 'Context', 'Handoff')
-FILEABLE_EXECUTOR_SECTIONS = EXECUTOR_SECTIONS
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
 CUT_SECTIONS = ('Objective', 'Fixed inputs', 'Completion test', 'Return fields')
 CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
