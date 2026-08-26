@@ -350,6 +350,34 @@ class GitAdapterTest(ResolverFixture):
         bad = view.replace(digest, "0" * 64)
         self.assertIn("identity-digest-mismatch", [x["code"] for x in self.grade([self.baseline(), bad], "git-plus-render")["findings"]])
 
+    def test_git_plus_render_resolves_fresh_captures_only_from_the_sink(self):
+        payload = b"fresh capture"
+        capture = self.sink / "captures" / "home-ready.png"
+        capture.parent.mkdir()
+        capture.write_bytes(payload)
+        identity = {
+            "breakpoint": "1280x720", "kind": "capture-artifact",
+            "locator": "sink:captures/home-ready.png",
+            "sha256": hashlib.sha256(payload).hexdigest(), "state": "ready",
+            "view": "home",
+        }
+        grade = self.grade(
+            [self.baseline(), record("fresh-capture", identity=identity)],
+            "git-plus-render",
+        )
+        self.assertEqual([], grade["findings"])
+        self.assertNotIn(str(self.sink), grade["fingerprint"])
+
+        identity["locator"] = "project:capture.png"
+        in_scope = self.grade(
+            [self.baseline(), record("fresh-capture", identity=identity)],
+            "git-plus-render",
+        )
+        self.assertIn(
+            "identity-locator-invalid",
+            [item["code"] for item in in_scope["findings"]],
+        )
+
 
 class TreeAdapterTest(ResolverFixture):
     def test_document_and_evidence_roots_are_adapter_specific(self):

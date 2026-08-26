@@ -49,10 +49,15 @@ ADAPTER_KINDS = {
     "git": COMMON_KINDS | {"git-tree", "git-path", "git-symbol"},
     "document-tree": COMMON_KINDS | {"document-revision"},
     "evidence-store": COMMON_KINDS | {"evidence-packet"},
-    "git-plus-render": COMMON_KINDS | {"git-tree", "git-path", "git-symbol", "view-identity"},
+    "git-plus-render": COMMON_KINDS | {
+        "capture-artifact", "git-tree", "git-path", "git-symbol", "view-identity",
+    },
 }
 SCHEMAS = {
     "artifact": frozenset({"kind", "locator", "sha256"}),
+    "capture-artifact": frozenset({
+        "breakpoint", "kind", "locator", "sha256", "state", "view",
+    }),
     "git-tree": frozenset({"kind", "repo", "revision"}),
     "git-path": frozenset({"kind", "path", "repo", "revision"}),
     "git-symbol": frozenset({"kind", "path", "repo", "revision", "symbol"}),
@@ -411,6 +416,21 @@ def _view(identity, context):
     return (content, findings, f"view-identity:{fingerprint}:{values}:{identity.get('sha256')}")
 
 
+def _capture_artifact(identity, context):
+    locator = identity.get("locator")
+    if not isinstance(locator, str) or not locator.startswith("sink:"):
+        return (None, [_finding("identity-locator-invalid", str(locator))], "")
+    projected = {
+        "kind": "artifact", "locator": locator, "sha256": identity.get("sha256"),
+    }
+    content, findings, fingerprint = _artifact(projected, context)
+    values = ":".join(str(identity.get(key)) for key in ("view", "breakpoint", "state"))
+    return (
+        content, findings,
+        f"capture-artifact:{fingerprint}:{values}:{identity.get('sha256')}",
+    )
+
+
 def resolve_identity_payload(*, identity, adapter_id, context=None, mode="input") -> dict:
     """Resolve one identity through the selected stable adapter."""
 
@@ -443,6 +463,8 @@ def resolve_identity_payload(*, identity, adapter_id, context=None, mode="input"
         content, findings, fingerprint = _rooted(identity, context, "document-root", ("project", "sink"))
     elif kind == "evidence-packet":
         content, findings, fingerprint = _rooted(identity, context, "evidence-store-root", ("sink",))
+    elif kind == "capture-artifact":
+        content, findings, fingerprint = _capture_artifact(identity, context)
     else:
         content, findings, fingerprint = _view(identity, context)
     return {"findings": _ordered(findings), "fingerprint": fingerprint or f"identity:{kind}:error", "bytes": content}

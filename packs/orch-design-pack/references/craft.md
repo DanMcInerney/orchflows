@@ -14,7 +14,9 @@ Framework specifics live with the workspace's standards owner.
   focus, disabled, empty, loading, error, overflow; enumerated per
   view, each one rendered, never assumed.
 - **capture** — the saved rendered image at one view identity; the
-  only evidence a visual verdict accepts.
+  only evidence a visual verdict accepts. A fresh capture returns a
+  `capture-artifact` identity (view, breakpoint, state, `sink:` locator,
+  and digest), never a path in mutation scope.
 - **golden capture** — an approved capture frozen as the baseline for
   one view identity; the visual analog of a pinned hash.
 - **token** — a design token: the single named carrier of one visual

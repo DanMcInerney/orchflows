@@ -16,4 +16,5 @@ checks. Commit each verified slice.
 
 Never: claim a visual result without a capture.
 
-Return: the completed ticket; its evidence citing captures by identity.
+Return: the completed ticket; its evidence citing fresh
+`capture-artifact` identities.
