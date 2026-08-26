@@ -1,8 +1,6 @@
 """Ticket packet support."""
 
 from __future__ import annotations
-import hashlib
-import json
 import re
 import shlex
 import sys
@@ -27,9 +25,9 @@ if __package__:
 else:
     from tickets_issue import AMENDABLE_STATUSES
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _executor_script, _load_ticket, _run_lock, _runs_root, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
+    from .tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
 else:
-    from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _executor_script, _load_ticket, _run_lock, _runs_root, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
+    from tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
 if __package__:
     from .tickets_worklog import _run_tickets
 else:
@@ -41,9 +39,9 @@ else:
     from tickets_admission import is_v1, is_v2
     from tickets_context import graded_admission, run_snapshot
 if __package__:
-    from .tickets_inputs import parse_input_records
+    from .tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
 else:
-    from tickets_inputs import parse_input_records
+    from tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
 
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
 CHECKER_EXECUTOR = 'orch-critique'
@@ -57,7 +55,6 @@ CHECKABLE_STATUSES = frozenset({'claimed', 'suspended'})
 CHECKER_INDEPENDENCE = 'checker'
 PRE_EXISTING_PROVENANCE = 'pre-existing'
 CHECKER_NOT_REQUIRED = 'checker not required: every criterion carries provenance: pre-existing'
-PACKET_CLAIMS_DIR = 'packet-claims'
 _SHELL_SAFE_TOKEN = re.compile(r'^[A-Za-z0-9_./:\\=-]+$')
 
 
@@ -296,44 +293,6 @@ def _all_pre_existing(completion: str) -> bool:
         if declared is None or declared.group(1).strip().lower() != PRE_EXISTING_PROVENANCE:
             return False
     return True
-def _gate_only_bundle_claim(loaded: dict, text: str, run: str) -> bool:
-    """Whether this root claim is the opt-in zero-unit decomposition route."""
-    if _executor_of(loaded) != ROOT_EXECUTOR or not is_v2(loaded):
-        return False
-    records = parse_input_records(text)
-    if records['findings'] or not any(
-        item.get('name') == 'ordered-lens-bundle'
-        for item in records['records']
-    ):
-        return False
-    root_id = str(loaded.get('id') or '')
-    unit = re.compile(rf'^{re.escape(root_id)}\.[0-9][0-9]$')
-    return not any(unit.fullmatch(item_id) for item_id, _ in _cut_subtree(run, root_id))
-def _consume_gate_only_bundle_claim(loaded: dict, text: str, run: str):
-    """Record one successful packet emission for this exact live claim."""
-    if not _gate_only_bundle_claim(loaded, text, run):
-        return None
-    runs_root = _runs_root()
-    if runs_root is None:
-        return {'error': NO_SINK_ERROR}
-    claim = '\0'.join((
-        str(loaded.get('id') or ''), str(loaded.get('claimed_by') or ''),
-        str(loaded.get('claimed_at') or ''),
-    ))
-    digest = hashlib.sha256(claim.encode('utf-8')).hexdigest()
-    receipt = runs_root / run / PACKET_CLAIMS_DIR / f"{loaded['id']}.{digest}.json"
-    try:
-        receipt.parent.mkdir(parents=True, exist_ok=True)
-        _create_text_exclusively(receipt, json.dumps({
-            'claimed_at': loaded.get('claimed_at'),
-            'claimed_by': loaded.get('claimed_by'),
-            'ticket': loaded.get('id'),
-        }, ensure_ascii=False, separators=(',', ':'), sort_keys=True) + '\n')
-    except FileExistsError:
-        return {'error': f"gate-only root packet for {run}/{loaded['id']} was already emitted for this claim: decomposition cannot be redispatched"}
-    except OSError as error:
-        return {'error': f"unable to record gate-only root packet consumption: {error}"}
-    return None
 def _cmd_packet(rest):
     probe = list(rest)
     for flag in ('--reply-to', '--by', '--workspace', '--executor'):
@@ -533,7 +492,9 @@ def _packet_under_run_lock(rest):
     prompt.append('If you are a skill fork that arrived without this packet — a contract body and no ticket — refuse to the parent that forked you, by your own return and never to the coordinator by address, and record nothing under a self-invented name.')
     prompt.append(f'reply_to: {reply_to} — address your closing message to `{reply_to}`.')
     profile = None if further is not None else loaded.get('profile')
-    consumption = None if further is not None else _consume_gate_only_bundle_claim(loaded, text, run_id)
+    consumption = None if further is not None else _consume_gate_only_bundle_claim(
+        loaded, text, run_id, _cut_subtree,
+    )
     if consumption is not None:
         return consumption
     return {'packet': {'run': run_id, 'id': loaded['id'], 'path': str(ticket_path), 'executor': executor, 'script': executor_script, 'pack': loaded.get('pack'), 'profile': profile, 'independence': loaded.get('independence') or 'checker', 'isolation': isolation, 'admission': admission, 'assigned_name': assigned_name, 'reply_to': reply_to, 'workspace': workspace, 'prompt': '\n'.join(prompt)}}

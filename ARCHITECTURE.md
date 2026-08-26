@@ -41,8 +41,10 @@ whitespace-delimited words. Terms are
   `tickets_admission.py` composes those into receipts lifecycle and packet
   modules consume. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
-  ceiling, `tickets_dispatch_gate.py` gate-only cut construction from the
-  contract-owned ordered lens bundle and its mutation plan,
+  ceiling, `tickets_dispatch_gate.py` gate-only cut construction,
+  `tickets_gate_bundle.py` contract-owned ordered lens bundle validation,
+  `tickets_packet_receipts.py` one-shot packet claims, and
+  `tickets_gate_mutations.py` the gate mutation plan,
   `cutcheck_pricing.py` cut pricing.
   Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.
