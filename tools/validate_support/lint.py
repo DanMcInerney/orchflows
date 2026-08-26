@@ -92,21 +92,18 @@ def write_pins() -> dict:
     return pins
 
 
-T0_FIELD_RE = re.compile(
-    r"(?m)^\s*(?:[-*]\s+)?`([a-z][a-z0-9_]*)`\s*(?:—|-)"
-)
+T0_FIELD_RE = re.compile(r"(?m)^\s*(?:[-*]\s+)?`([a-z][a-z0-9_]*)`\s*(?:—|-)")
 T0_TABLE_FIELD_RE = re.compile(r"(?m)^\|\s*([a-z][a-z0-9_]*)\s*\|")
 
 
 def _t0_shape(text: str) -> tuple:
     """The named-field surface whose change requires supersession."""
 
-    fields = set(T0_FIELD_RE.findall(text))
-    fields.update(T0_TABLE_FIELD_RE.findall(text))
-    enums = set()
-    for line in text.splitlines():
-        if re.search(r"\b(?:one of|enum|values?)\b", line, re.IGNORECASE):
-            enums.update(re.findall(r"`([a-z][a-z0-9_-]*)`", line))
+    fields = set(T0_FIELD_RE.findall(text)) | set(T0_TABLE_FIELD_RE.findall(text))
+    enum_lines = (line for line in text.splitlines()
+                  if re.search(r"\b(?:one of|enum|values?)\b", line, re.IGNORECASE))
+    enums = {token for line in enum_lines
+             for token in re.findall(r"`([a-z][a-z0-9_-]*)`", line)}
     return tuple(sorted(fields)), tuple(sorted(enums))
 
 
@@ -128,10 +125,7 @@ def _historical_contract_text(path, digest: str):
         return None
     for revision in history.splitlines()[:100]:
         data = _git("show", f"{revision}:{relative}")
-        if data is None:
-            continue
-        data = data.replace(b"\r\n", b"\n")
-        if hashlib.sha256(data).hexdigest() == digest:
+        if data is not None and hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest() == digest:
             return data.decode("utf-8-sig")
     return None
 
@@ -154,10 +148,8 @@ def validate_pin_supersessions(diag: Diagnostics) -> None:
         before = _historical_contract_text(path, old_digest)
         if before is not None and _t0_shape(before) == _t0_shape(_read_source(path)):
             continue
-        record = re.compile(
-            rf"(?im)^.*T0\s+supersess\w*.*sha256:{re.escape(old_digest)}.*$"
-        )
-        if not record.search(corpus):
+        record = rf"(?im)^.*T0\s+supersess\w*.*sha256:{re.escape(old_digest)}.*$"
+        if not re.search(record, corpus):
             diag.error(
                 rel(path),
                 "named-field or enum change requires an explicit T0 supersession "
@@ -171,9 +163,7 @@ def validate_pin_supersessions(diag: Diagnostics) -> None:
 # a file and, when present, a heading in that file. External URLs and
 # templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
 LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates", "benchmarks")
-# One legacy label points at the owning section whose heading now carries a
-# parenthetical suffix. Keep the exemption occurrence-scoped: another use of
-# the same fragment is graded normally.
+# One occurrence whose heading carries a parenthetical suffix.
 MARKDOWN_ANCHOR_EXEMPT_SITES = frozenset({
     ("skills/engines/orch-loop/SKILL.md", "../../../contracts/work-item.md#admission-and-migration"),
 })
@@ -191,10 +181,7 @@ def _anchor_target(source, target: str):
     """Return (resolved markdown file, anchor) for an internal fragment."""
 
     raw = target.strip()
-    if raw.startswith("<") and ">" in raw:
-        raw = raw[1:raw.index(">")]
-    else:
-        raw = raw.split(" ", 1)[0]
+    raw = raw[1:raw.index(">")] if raw.startswith("<") and ">" in raw else raw.split(" ", 1)[0]
     if "#" not in raw or raw.startswith(_doclint().EXTERNAL_PREFIXES) or "{{" in raw:
         return None
     path_text, anchor = raw.split("#", 1)
@@ -209,10 +196,6 @@ def _anchor_target(source, target: str):
 def validate_markdown_links(diag: Diagnostics) -> None:
     absent = [root for root in LINKED_MD_ROOTS if not (ROOT / root).is_dir()]
     if absent:
-        # A partial tree (the isolated test fixtures) is not graded -- and
-        # this skip is the whole check, not one file's: one absent root
-        # silences link resolution over every other root, so each is named
-        # and the operator restores them in one pass rather than eight.
         for root in absent:
             diag.warn(root, SKIPPED)
         return
@@ -225,14 +208,8 @@ def validate_markdown_links(diag: Diagnostics) -> None:
             if (rel(source), match.group(1)) in MARKDOWN_ANCHOR_EXEMPT_SITES:
                 continue
             anchored = _anchor_target(source, match.group(1))
-            if anchored is None:
-                continue
-            target, anchor = anchored
-            if anchor not in _heading_slugs(_read_source(target)):
-                diag.error(
-                    rel(source),
-                    f"markdown anchor does not resolve: {match.group(1)}",
-                )
+            if anchored and anchored[1] not in _heading_slugs(_read_source(anchored[0])):
+                diag.error(rel(source), f"markdown anchor does not resolve: {match.group(1)}")
 
 
 def validate_pins(diag: Diagnostics) -> None:
@@ -252,12 +229,6 @@ def validate_pins(diag: Diagnostics) -> None:
         if name not in current:
             diag.error(rel(PINS_FILE), PIN_MESSAGE)
 
-
-# Where a backticked `orch-*` is a call edge the call-graph check never
-# sees: rules/composition.md rule 2 makes any backticked name one, and
-# `build_call_graph` reads skill bodies only. A rule pointing at a deleted
-# owner therefore rode through exit 0 twice (`orch-mechanize`,
-# `orch-review-fix`), which is a rule naming an owner that is not there.
 
 __all__ = (
     'validate_loop_lint', 'validate_cross_package_links', 'compute_pins', 'write_pins',

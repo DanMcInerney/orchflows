@@ -121,15 +121,6 @@ def validate_markdown_links(diag: Diagnostics) -> None:
 # lib/<relative path>, and scripts/<name>.py lands flat at bin/<name>.py.
 # What ships nowhere -- tools/, tests/, installer/ -- is exactly what the
 # friction record caught executors walking into under lib/.
-#
-# Importing the roster is not the same as being drift-proof, and the gap
-# runs one way. A head this module does not recognize is skipped, not
-# convicted, so dropping a directory from CANONICAL_DIRS turns every
-# pointer into it from correct to unexamined rather than into an error --
-# silence exactly when the defect becomes universal. Two facts are restated
-# and can go stale on their own: SOURCE_ONLY_DIRS below, and the flat bin
-# mapping, which accepts any scripts/<name> present in the checkout while
-# install.py's discover_script_names ships a filtered subset of them.
 try:
     from installer.foundation import CANONICAL_DIRS as _INSTALLED_LIB_DIRS
 except ImportError:  # pragma: no cover - a checkout without the installer
