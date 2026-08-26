@@ -1,6 +1,6 @@
 ---
 name: orch-frontier
-description: Execute a ticket dependency graph by rolling frontier dispatch — every ready ticket in flight. Use whenever items have dependency edges.
+description: Execute ticket runs by rolling frontier dispatch — every ready ticket in flight. Use for single tickets and dependency graphs.
 role: none
 ---
 
@@ -20,7 +20,7 @@ otherwise re-run invalidated deterministic oracles at the checked identity
 ([verification](../../../rules/verification.md) §10).
 
 A sealed ordered-bundle gate critique gets one fresh closer and one sequence
-packet for `orch-critique` then `orch-repair`, without evaluator redispatch.
+packet for orch-critique then orch-repair, without evaluator redispatch.
 Dispatch gate.verify once in another fresh child at final identity; reuse
 neither context.
 

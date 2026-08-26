@@ -21,7 +21,7 @@ def _gaps(frontier: str, profiles: str, build: str) -> list[str]:
         "pre-existing minimum": "pre-existing-only",
         "authored checker": "`authored-here`",
         "one closer": "one fresh closer",
-        "closer sequence": "`orch-critique` then `orch-repair`",
+        "closer sequence": "orch-critique then orch-repair",
         "fresh verifier": "another fresh child",
         "terminal suite": "required checks exactly once at the accepted terminal identity",
         "terminal profile": "Running the terminal required checks",
