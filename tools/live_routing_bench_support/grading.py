@@ -6,7 +6,7 @@ import re
 
 from tools.live_claude_profiles import _json_events
 
-ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+ROUTE_CLASSES = ("answer", "errand", "ticket", "doctor", "fix", "build", "named")
 UNROUTED = "unrouted"
 # A session that failed before it could route -- an API error, an
 # unauthenticated CLI -- is neither a route nor a misroute; the first

@@ -1,5 +1,6 @@
 """Routing case-set, grading, and loader regression cases."""
 
+from . import _support
 from ._support import *
 
 # --- benchmarks/routing/cases.json ------------------------------------
@@ -7,7 +8,7 @@ from ._support import *
 
 ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
 ROUTING_CASES = ROUTING_DIR / "cases.json"
-ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+ROUTE_CLASSES = ("answer", "errand", "ticket", "doctor", "fix", "build", "named")
 CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
 ROLE_SKILL_KEYS = {"required_role", "required_skill"}
 # A deleted or never-routed name whose surface words a prompt can borrow
@@ -58,19 +59,26 @@ class TestRoutingCases(unittest.TestCase):
                     self.assertIn(expected, ROUTE_CLASSES)
                     self.assertNotEqual("named", expected, "named needs a name")
 
+    def test_the_route_enum_matches_both_consumers(self):
+        self.assertEqual(ROUTE_CLASSES, _support.ROUTE_CLASSES)
+        self.assertEqual(ROUTE_CLASSES, routing_live.ROUTE_CLASSES)
+
     def test_every_class_carries_enough_cases_to_read_a_rate_from(self):
-        """Four apiece, except `build`.
+        """Four apiece, except the deliberately narrow routed lanes.
 
         `build` is not a routed class the block decides — it is one named
         skill, and a prompt reaches it only by saying `orch-build`. Two
         cases say it: one new item, one amendment. Padding the class would
         mean inventing prompts whose honest route is `ticket`, which is what
         the five it replaced were doing.
+
+        The graph-shaped `ticket` and dispatch-bootstrap `doctor` lanes each
+        have one producer case; the one-executor cases live under `errand`.
         """
 
         counts = collections.Counter(self._class_of(case) for case in self.cases)
         self.assertEqual(set(ROUTE_CLASSES), set(counts))
-        floors = {"build": 2}
+        floors = {"build": 2, "ticket": 1, "doctor": 1}
         for route_class in ROUTE_CLASSES:
             with self.subTest(route_class=route_class):
                 self.assertGreaterEqual(
@@ -88,8 +96,10 @@ class TestRoutingCases(unittest.TestCase):
                     "a distractor must borrow a deleted or non-routed name",
                 )
                 # The whole point: the surface word is a lure, and the
-                # correct route is still one of the three routed classes.
-                self.assertIn(self._class_of(case), ("answer", "ticket", "fix"))
+                # correct route is still one of the ordinary routed classes.
+                self.assertIn(
+                    self._class_of(case), ("answer", "errand", "ticket", "fix")
+                )
 
     def test_no_routed_case_reads_as_an_instruction_to_the_grader(self):
         # Prompts are typed into a live session; a prompt that dictated its
@@ -448,9 +458,9 @@ class TestRoutingCaseLoader(unittest.TestCase):
         for case in cases:
             if case["expected"] != "build":
                 self.assertNotIn("orch-build", case["prompt"], case["id"])
-        self.assertEqual(33, len(cases))
+        self.assertEqual(37, len(cases))
 
-    def test_the_catalog_counterfactual_uses_answer_then_one_known_cause_ticket(self):
+    def test_the_catalog_counterfactual_uses_answer_then_one_known_cause_errand(self):
         cases = {
             case["id"]: case
             for case in json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
@@ -461,16 +471,17 @@ class TestRoutingCaseLoader(unittest.TestCase):
         self.assertIn("explanation only", explanation["note"])
 
         implementation = cases["ticket-codex-catalog-gap"]
-        self.assertEqual("ticket", implementation["expected"])
+        self.assertEqual("errand", implementation["expected"])
         for expectation in (
             "known cause",
+            "one ordered errand",
             "derived consequences",
-            "no spec",
-            "no decompose",
-            "no fix",
         ):
             with self.subTest(expectation=expectation):
                 self.assertIn(expectation, implementation["note"].lower())
+        self.assertIn(
+            "with no spec, decompose, or fix workflow", implementation["note"].lower()
+        )
 
     def test_the_shipped_case_file_loads(self):
         self.assertEqual(
