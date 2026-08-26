@@ -153,6 +153,7 @@ def _build_user_plan(
     codex_prompts = []
     codex_skills = []
     by_name = []
+    profiles = load_role_profiles()
     for skill_md in discover_packages():
         rel = skill_md.relative_to(REPO_ROOT)
         name = skill_md.parent.name
@@ -177,7 +178,9 @@ def _build_user_plan(
             )
         if codex_enabled:
             codex_body = (
-                codex_role_adapter_body(name, role, lib_skill_md)
+                codex_role_adapter_body(
+                    name, role, profiles[f"orch-{role}"], lib_skill_md
+                )
                 if role in PROFILE_ROLES
                 else body.strip() + "\n"
             )
@@ -191,7 +194,9 @@ def _build_user_plan(
                         frontmatter
                         + "\n"
                         + (
-                            codex_role_adapter_body(name, role, lib_skill_md)
+                            codex_role_adapter_body(
+                                name, role, profiles[f"orch-{role}"], lib_skill_md
+                            )
                             if role in PROFILE_ROLES
                             else f"Read {lib_skill_md} and follow it exactly.\n"
                         ),
@@ -233,7 +238,6 @@ def _build_user_plan(
                     (codex_user_home / "skills" / name / "SKILL.md", pointer)
                 )
 
-    profiles = load_role_profiles()
     claude_agents = []
     codex_agents = []
     for name in (f"orch-{role}" for role in PROFILE_ROLES):

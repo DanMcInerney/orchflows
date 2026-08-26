@@ -9,10 +9,23 @@ from pathlib import Path
 from unittest.mock import patch
 
 import install
+from installer.packages import codex_role_adapter_body
 from tools import validate
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PROFILE_OWNER_LINK = (
+    "[Role profiles](../../../engines/orch-frontier/references/profiles.md)"
+)
+
+
+def _custom_routing_uses_profile_owner(text: str) -> bool:
+    return (
+        PROFILE_OWNER_LINK in text
+        and "resolve the declared role" in text
+        and "use the native binding that owner returns" in text
+        and not re.search(r"\b(?:derive|reconstruct|synthesize)\b", text)
+    )
 
 
 def _frontmatter(path: str) -> dict[str, str]:
@@ -128,6 +141,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 prompt = prompts[name]
                 for anchor in (
                     f"agent_type `orch_{role}`",
+                    "fork_turns `none`",
                     f"`{name}`",
                     "complete packet",
                     "matching role",
@@ -144,6 +158,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]
                 self.assertIn(f"agent_type `orch_{role}`", content)
+                self.assertIn("fork_turns `none`", content)
                 self.assertIn("matching role", content)
                 self.assertIn("refuse", content)
 
@@ -152,6 +167,39 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         )
         for anchor in ("exact named skill", "directly", "never redispatch", "mismatched"):
             self.assertIn(anchor, role_agent)
+
+    def test_custom_codex_routing_uses_the_resolved_native_binding(self):
+        rendered = codex_role_adapter_body(
+            "custom-worker",
+            "worker",
+            {
+                "role": "worker",
+                "codex": {"agent_type": "resolved_worker", "fork_turns": "3"},
+            },
+            Path("X"),
+        )
+        self.assertIn("agent_type `resolved_worker`", rendered)
+        self.assertIn("fork_turns `3`", rendered)
+        with self.assertRaisesRegex(ValueError, "declared role planner.*profile role worker"):
+            codex_role_adapter_body(
+                "custom-planner",
+                "planner",
+                {
+                    "role": "worker",
+                    "codex": {"agent_type": "resolved_worker", "fork_turns": "3"},
+                },
+                Path("X"),
+            )
+
+        scopes = (
+            ROOT / "skills/workflows/orch-build/references/scopes.md"
+        ).read_text(encoding="utf-8")
+        self.assertTrue(_custom_routing_uses_profile_owner(scopes))
+        reconstructed = scopes.replace(
+            "use the native binding that owner returns",
+            "reconstruct agent_type and fork_turns from the role name",
+        )
+        self.assertFalse(_custom_routing_uses_profile_owner(reconstructed))
 
 
 if __name__ == "__main__":

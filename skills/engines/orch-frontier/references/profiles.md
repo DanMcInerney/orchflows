@@ -6,8 +6,8 @@ dispatch-surface mechanics, and lane watching.
 
 | Profile | Role | Codex | Claude Code |
 | --- | --- | --- | --- |
-| `orch-planner` | planner | agent_type `orch_planner`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `max` |
-| `orch-worker` | worker | agent_type `orch_worker`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` |
+| `orch-planner` | planner | agent_type `orch_planner`, fork_turns `none`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `max` |
+| `orch-worker` | worker | agent_type `orch_worker`, fork_turns `none`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` |
 
 Use native invocation fields when available; a prompt-only request is
 requested, not verified. An unsupported or blocked model binding stops
