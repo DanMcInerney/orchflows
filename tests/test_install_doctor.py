@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
+import install
 from installer.doctor import inspect_installation
 from installer.models import BlockPlan, ConfigPlan, ImportPlan, Plan
 
@@ -199,6 +203,34 @@ class TestInstallDoctor(unittest.TestCase):
                 self.fixture.plan, current_source_commit="abc123"
             )["findings"]
         })
+
+    def test_both_cli_forms_print_the_same_report_and_exit_by_status(self):
+        for argv in (["doctor"], ["--doctor"]):
+            with self.subTest(argv=argv), patch.object(
+                install, "build_plan", return_value=self.fixture.plan
+            ), patch.object(
+                install, "resolve_source_commit", return_value="abc123"
+            ):
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    exit_code = install.main(argv)
+
+                self.assertEqual(0, exit_code)
+                self.assertEqual(
+                    {"findings": [], "status": "coherent"},
+                    json.loads(output.getvalue()),
+                )
+
+        self.fixture.by_name.write_text("drifted pointer\n", encoding="utf-8")
+        with patch.object(
+            install, "build_plan", return_value=self.fixture.plan
+        ), patch.object(install, "resolve_source_commit", return_value="abc123"):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = install.main(["doctor"])
+
+        self.assertEqual(1, exit_code)
+        self.assertEqual("drift", json.loads(output.getvalue())["status"])
 
 
 if __name__ == "__main__":
