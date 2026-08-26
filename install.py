@@ -152,6 +152,8 @@ from installer.foundation import (
     CODEX_MAX_DEPTH,
     CODEX_MAX_THREADS,
     CODEX_SKILL_REDIRECT_NAMES,
+    GROK_CLI_CANDIDATES, GROK_LIMITS_END, GROK_LIMITS_START,
+    GROK_MAX_CONCURRENT, GROK_MAX_DEPTH,
     HOST_BLOCK_TEMPLATE,
     MIN_PYTHON,
     PROFILES_MD,
@@ -173,6 +175,8 @@ from installer.foundation import (
     _codex_scope_home,
     _codex_user_home,
     _frontend_home,
+    _grok_agents_dir, _grok_config_path, _grok_rules_path,
+    _grok_skills_dir, _grok_user_home,
     _iter_json_strings,
     _lib_home,
     _require_project_root,
@@ -182,8 +186,10 @@ from installer.foundation import (
     tomllib,
 )
 from installer.managed_text import (
+    grok_skill_text, render_grok_agent,
     render_claude_settings,
     render_codex_agent_limits as _render_codex_agent_limits,
+    render_grok_subagent_limits as _render_grok_subagent_limits,
     render_host_block,
     upsert_import_line,
     upsert_marked_block,
@@ -283,7 +289,7 @@ def discover_packages():
     return _discover_packages_impl()
 
 
-def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
+def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
     return _detect_hosts_impl(home)
 
 
@@ -292,10 +298,16 @@ def render_codex_agent_limits(text: str) -> tuple[str, dict]:
     return _render_codex_agent_limits(text, tomllib)
 
 
+def render_grok_subagent_limits(text: str) -> tuple[str, dict]:
+    _sync_installer_seams()
+    return _render_grok_subagent_limits(text, tomllib)
+
+
 def _build_user_plan(claude_adapter_set: str = "all") -> Plan:
     _sync_installer_seams()
     return _planning._build_user_plan(
-        claude_adapter_set, render_codex_agent_limits, discover_script_names
+        claude_adapter_set, render_codex_agent_limits, discover_script_names,
+        render_grok_subagent_limits,
     )
 
 
@@ -311,6 +323,7 @@ def build_plan(
         claude_adapter_set,
         render_codex_agent_limits,
         discover_script_names,
+        render_grok_subagent_limits,
     )
 
 
@@ -455,7 +468,8 @@ def main(argv=None) -> int:
                 file=sys.stderr,
             )
             return 1
-        if (plan.claude_enabled or plan.codex_enabled) and plan_entry_count(plan) == 0:
+        enabled = plan.claude_enabled or plan.codex_enabled or plan.grok_enabled
+        if enabled and plan_entry_count(plan) == 0:
             print(
                 "error: a host is enabled but the plan is empty; nothing would be installed",
                 file=sys.stderr,
@@ -463,7 +477,7 @@ def main(argv=None) -> int:
             return 1
         return 0
 
-    if scope == "user" and not plan.claude_enabled and not plan.codex_enabled:
+    if scope == "user" and not (plan.claude_enabled or plan.codex_enabled or plan.grok_enabled):
         return 0
 
     try:
