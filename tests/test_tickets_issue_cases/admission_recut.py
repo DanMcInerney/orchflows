@@ -85,6 +85,57 @@ class RecutAndCohortTest(unittest.TestCase):
         self.assertNotIn("Context", sections)
         self.assertNotIn("Carry", sections)
 
+    def test_recut_preserves_legacy_carry_and_canonical_context(self):
+        self.run_dir.mkdir(parents=True)
+        current = GOOD_TICKET.replace("status: ready", "status: pending")
+        current = tickets_mod._write_section(current, "Carry", "legacy conclusion")
+        current = tickets_mod._write_section(
+            current, "Context", "- state: canonical conclusion"
+        )
+        target = self.run_dir / "T1.md"
+        target.write_text(current, encoding="utf-8")
+        candidate = self.tmp / "candidate.md"
+        candidate.write_text(
+            GOOD_TICKET.replace("Add `double(n)`.", "Corrected cut."),
+            encoding="utf-8",
+        )
+
+        payload = run_cmd("recut", "testrun", "T1", "--file", candidate)
+
+        self.assertNotIn("error", payload)
+        sections = tickets_mod._sections(target.read_text(encoding="utf-8"))
+        self.assertEqual("legacy conclusion", sections["Carry"])
+        self.assertEqual("- state: canonical conclusion", sections["Context"])
+
+    def test_recut_refuses_to_invent_carry_or_create_a_new_dual_section(self):
+        self.run_dir.mkdir(parents=True)
+        target = self.run_dir / "T1.md"
+        original = GOOD_TICKET.replace("status: ready", "status: pending")
+        target.write_text(original, encoding="utf-8")
+        before = target.read_bytes()
+        candidate = self.tmp / "candidate.md"
+        candidate.write_text(
+            tickets_mod._write_section(GOOD_TICKET, "Carry", "invented legacy"),
+            encoding="utf-8",
+        )
+        payload = run_cmd("recut", "testrun", "T1", "--file", candidate)
+        self.assertIn("legacy", payload["error"])
+        self.assertEqual(before, target.read_bytes())
+
+        with_carry = tickets_mod._write_section(original, "Carry", "existing legacy")
+        target.write_text(with_carry, encoding="utf-8")
+        before = target.read_bytes()
+        candidate.write_text(
+            tickets_mod._write_section(
+                GOOD_TICKET, "Context", "- state: new canonical conclusion"
+            ),
+            encoding="utf-8",
+        )
+        payload = run_cmd("recut", "testrun", "T1", "--file", candidate)
+        self.assertIn("Carry", payload["error"])
+        self.assertIn("Context", payload["error"])
+        self.assertEqual(before, target.read_bytes())
+
     def test_recut_rejects_a_ticket_id_that_traverses_into_another_run(self):
         foreign = self.sink / "tickets" / "other"
         foreign.mkdir(parents=True)
