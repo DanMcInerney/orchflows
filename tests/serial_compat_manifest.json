@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3251,
+  "count": 3252,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -135,6 +135,7 @@
    "test_errand_authoring.ErrandAuthoringTest.test_a_refused_errand_writes_no_ticket",
    "test_errand_authoring.ErrandAuthoringTest.test_an_authored_here_oracle_selects_the_existing_same_claim_checker",
    "test_errand_authoring.ErrandAuthoringTest.test_an_ordered_sequence_keeps_its_head_as_executor",
+   "test_errand_authoring.ErrandAuthoringTest.test_tdd_errand_requires_its_own_workspace_from_either_checkout_kind",
    "test_errand_composition.ErrandCompositionTest.test_the_delivery_stub_binds_the_code_pack_and_delivery_shape",
    "test_errand_composition.ErrandCompositionTest.test_the_named_composition_has_exactly_one_delivery_stub",
    "test_errand_counterfactual.ErrandCounterfactualTest.test_actual_frontier_admission_replay_matches_the_golden",
@@ -3254,7 +3255,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "9de96e00a011f7273e8126c2933c1829455757c294934e482b27b2d89efc6a17"
+  "sha256": "d0c75e5c3751da86c2c77eade4098e882cf937b826fd4475635422f0342d7814"
  },
  "mutation_owners": [
   {
@@ -3706,6 +3707,14 @@
   {
    "module": "tests.test_doclint",
    "owner": "FixtureRootTest.test_a_target_the_path_layer_refuses_is_reported_missing_not_skipped",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_errand_authoring",
+   "owner": "ErrandAuthoringTest.test_tdd_errand_requires_its_own_workspace_from_either_checkout_kind",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
