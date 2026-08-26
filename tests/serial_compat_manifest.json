@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3222,
+  "count": 3246,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -131,6 +131,24 @@
    "test_doclint.ValidateLinkCheckTest.test_a_dangling_link_in_a_graded_tier_is_an_error",
    "test_doclint.ValidateLinkCheckTest.test_a_link_that_resolves_is_not",
    "test_doclint.ValidateLinkCheckTest.test_an_external_url_is_not_the_repositorys_to_resolve",
+   "test_errand_authoring.ErrandAuthoringTest.test_a_pre_existing_oracle_authors_one_ready_admitted_worker_ticket",
+   "test_errand_authoring.ErrandAuthoringTest.test_a_refused_errand_writes_no_ticket",
+   "test_errand_authoring.ErrandAuthoringTest.test_an_authored_here_oracle_selects_the_existing_same_claim_checker",
+   "test_errand_authoring.ErrandAuthoringTest.test_an_ordered_sequence_keeps_its_head_as_executor",
+   "test_errand_composition.ErrandCompositionTest.test_the_delivery_stub_binds_the_code_pack_and_delivery_shape",
+   "test_errand_composition.ErrandCompositionTest.test_the_named_composition_has_exactly_one_delivery_stub",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_catalog_redirect_replay_meets_the_frozen_counterfactual",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_replay_check_discriminates_each_target_beside_the_tree",
+   "test_errand_derived_closure.ErrandDerivedClosureTest.test_a_new_test_closes_over_the_serial_compat_manifest_and_step",
+   "test_errand_derived_closure.ErrandDerivedClosureTest.test_an_incomplete_registry_entry_is_refused_before_expansion",
+   "test_errand_derived_closure.ErrandDerivedClosureTest.test_an_ordinary_test_edit_does_not_change_membership",
+   "test_errand_frontier.ErrandFrontierTests.test_errand_acceptance_is_one_terminal_suite_after_derived_closure",
+   "test_errand_frontier.ErrandFrontierTests.test_terminal_suite_contract_can_fail_beside_the_tree",
+   "test_errand_routing.ErrandRoutingTests.test_host_routes_the_minimum_context_graph",
+   "test_errand_routing.ErrandRoutingTests.test_new_helper_has_direct_owner_edges",
+   "test_errand_routing.ErrandRoutingTests.test_routing_benchmark_names_every_errand_boundary",
+   "test_errand_routing.ErrandRoutingTests.test_vocabulary_defines_errand_once",
+   "test_errand_routing.ErrandRoutingTests.test_workflow_catalog_projects_named_errand_composition",
    "test_gate_only_lifecycle.GateOnlyLifecycleTest.test_controlled_wrong_variants_are_discriminated",
    "test_gate_only_lifecycle.GateOnlyLifecycleTest.test_seal_claim_packet_gate_verify_and_no_redispatch",
    "test_input_identities.CommonIdentityTest.test_artifact_locators_resolve_without_host_paths_in_the_fingerprint",
@@ -159,6 +177,10 @@
    "test_input_identities.TreeAdapterTest.test_document_and_evidence_roots_are_adapter_specific",
    "test_input_identities.TreeAdapterTest.test_document_root_may_be_project_or_sink_but_evidence_is_sink_only",
    "test_input_identities.TreeAdapterTest.test_store_resolution_stays_below_declared_root_and_matches_digest",
+   "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
+   "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
+   "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
+   "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
    "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
@@ -2787,10 +2809,12 @@
    "tests.test_ui_cases.transcript_rendering.TestTranscriptDegradation.test_an_empty_transcript_names_a_diagnostic_rather_than_looking_healthy",
    "tests.test_ui_cases.transcript_rendering.TestTranscriptsAreReadOnly.test_exercising_every_route_writes_nothing_under_the_transcript_root",
    "tests.test_ui_cases.transcript_rendering.TestTranscriptsAreReadOnly.test_the_snapshot_would_notice_a_write",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_composition_executor_sequence_is_projected_in_declared_order",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_duplicate_owner_identity_and_unknown_entry_are_closed_errors",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_escaping_file_and_directory_symlink_owners_are_rejected",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_owner_name_must_match_its_canonical_package",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_repository_catalog_is_derived_from_compositions_and_workflow_skills",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_uninstantiated_executor_slot_invents_no_skill_projection",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_validated_summary_is_joined_by_canonical_id",
    "tests.test_ui_cases.workflows_compositions.WorkflowCompositionTests.test_duplicate_dangling_and_unresolved_source_are_diagnosed_without_repair",
    "tests.test_ui_cases.workflows_compositions.WorkflowCompositionTests.test_escaping_template_and_stub_symlinks_are_rejected",
@@ -3225,7 +3249,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e0e60c61ad1194c5d32f69c9eca4e64d963f339a5bee945e591c9d7e44b6f335"
+  "sha256": "bf4bb91b59d5b77621aa93f755635ba915ce4659c45c24f2d1b63b5e238f5cb2"
  },
  "mutation_owners": [
   {
@@ -3683,6 +3707,14 @@
    ]
   },
   {
+   "module": "tests.test_errand_derived_closure",
+   "owner": "ErrandDerivedClosureTest.test_an_incomplete_registry_entry_is_refused_before_expansion",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_friction_cases.cli",
    "owner": "TestMainWritesEntry.test_a_worktree_and_its_main_checkout_append_to_one_stream",
    "restoration": "sharded-module-guard",
@@ -3869,6 +3901,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_install_doctor",
+   "owner": "TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

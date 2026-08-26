@@ -1,0 +1,42 @@
+{
+  "schema": "orchflows.errand-counterfactual.v1",
+  "fixture": "catalog redirect repair",
+  "observed": {
+    "runs": 7,
+    "agent_contexts": 21,
+    "full_suite_runs": 5,
+    "wall_minutes": 170
+  },
+  "errand_replay": {
+    "ticket": {
+      "derived_closure": [
+        "tests/test_errand_counterfactual.py",
+        "tests/serial_compat_manifest.json"
+      ],
+      "regeneration_command": "uv run --no-project python tools/run_serial_compat.py --write-manifest"
+    },
+    "runs": [
+      {
+        "id": "catalog-redirect-errand",
+        "start_minute": 0,
+        "end_minute": 24,
+        "agent_contexts": [
+          "worker",
+          "checker"
+        ],
+        "events": [
+          {
+            "kind": "derived-closure",
+            "minute": 18,
+            "owner": "ticket"
+          },
+          {
+            "kind": "required-suite",
+            "minute": 24,
+            "identity": "accepted-terminal"
+          }
+        ]
+      }
+    ]
+  }
+}
