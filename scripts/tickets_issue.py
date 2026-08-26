@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, FILEABLE_EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, successor_section_defects, ticket_defects
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, successor_section_defects, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
 else:
-    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, FILEABLE_EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, successor_section_defects, ticket_defects
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, successor_section_defects, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
@@ -388,17 +388,10 @@ def _recut_under_run_lock(rest):
     if input_error is not None:
         return {'error': input_error}
     current_sections = _sections(current)
-    candidate_sections = _sections(candidate)
-    current_successor = {name for name in ('Carry', 'Context') if name in current_sections}
-    candidate_successor = {name for name in ('Carry', 'Context') if name in candidate_sections}
-    if 'Carry' in candidate_successor and 'Carry' not in current_successor:
-        return {'error': 'recut cannot invent legacy ## Carry provenance; Context is the canonical new-work section'}
-    if current_successor != {'Carry', 'Context'} and len(current_successor | candidate_successor) > 1:
-        return {'error': 'recut refuses to create ambiguous dual successor sections ## Carry and ## Context'}
-    for heading in FILEABLE_EXECUTOR_SECTIONS:
+    for heading in EXECUTOR_SECTIONS:
         if heading in current_sections:
             candidate = _write_section(candidate, heading, current_sections[heading])
-    defects = _issue_defects(candidate, allow_legacy_carry=True)
+    defects = _issue_defects(candidate)
     if defects:
         return {'error': f'the recut ticket {run}/{ticket_id} would be off contract (contracts/work-item.md): ' + '; '.join(defects)}
     over = _ceiling_error(f'the recut ticket {run}/{ticket_id}', ticket_id, candidate)
@@ -429,7 +422,7 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
         return None
     sentence = ceiling_sentence(subject, text)
     return None if sentence is None else {'error': sentence}
-def _issue_defects(text: str, *, issued: bool=False, allow_legacy_carry: bool=False) -> list:
+def _issue_defects(text: str, *, issued: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 
     Existing tickets may carry the immutable identity ``tickets.py check``
@@ -442,7 +435,7 @@ def _issue_defects(text: str, *, issued: bool=False, allow_legacy_carry: bool=Fa
     if not data:
         return defects
     if not issued:
-        defects.extend(successor_section_defects(_sections(text), allow_legacy_carry))
+        defects.extend(successor_section_defects(_sections(text)))
     independence = 'checker'
     if 'independence' in data:
         independence = str(data.get('independence') or '').strip().strip('`').strip()

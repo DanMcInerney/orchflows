@@ -63,6 +63,9 @@ class RecutAndCohortTest(unittest.TestCase):
         self.run_dir.mkdir(parents=True)
         current = GOOD_TICKET.replace("status: ready", "status: pending").replace("## Result\n", "## Result\n\nold result\n")
         current = current.replace("## Verification\n", "## Verification\n\nold verification\n")
+        current = tickets_mod._write_section(
+            current, "Context", "- state: canonical conclusion"
+        )
         target = self.run_dir / "T1.md"
         target.write_text(current, encoding="utf-8")
         candidate = self.tmp / "candidate.md"
@@ -76,6 +79,9 @@ class RecutAndCohortTest(unittest.TestCase):
         self.assertIn("Corrected cut.", text)
         self.assertIn("old result", tickets_mod._sections(text)["Result"])
         self.assertIn("old verification", tickets_mod._sections(text)["Verification"])
+        self.assertEqual(
+            "- state: canonical conclusion", tickets_mod._sections(text)["Context"]
+        )
 
     def test_new_issuance_omits_optional_successor_context(self):
         issue_v1("T1", "v1:ticket:T1")
@@ -83,94 +89,22 @@ class RecutAndCohortTest(unittest.TestCase):
             (self.run_dir / "T1.md").read_text(encoding="utf-8")
         )
         self.assertNotIn("Context", sections)
-        self.assertNotIn("Carry", sections)
-
-        variants = (
-            (
-                "carry", "T2",
-                tickets_mod._write_section(
-                    GOOD_TICKET.replace("id: T1", "id: T2"), "Carry", "legacy"
-                ),
-                ("Carry",),
-            ),
-            (
-                "malformed-context", "T3",
-                tickets_mod._write_section(
-                    GOOD_TICKET.replace("id: T1", "id: T3"), "Context", "[]"
-                ),
-                ("Context",),
-            ),
-            (
-                "dual", "T4",
-                tickets_mod._write_section(
-                    tickets_mod._write_section(
-                        GOOD_TICKET.replace("id: T1", "id: T4"), "Carry", "legacy"
-                    ),
-                    "Context", "- state: canonical",
-                ),
-                ("Carry", "Context"),
-            ),
-        )
-        for name, ticket_id, body, markers in variants:
-            with self.subTest(name=name):
-                candidate = self.tmp / f"{name}.md"
-                candidate.write_text(body, encoding="utf-8")
-                payload = run_cmd("new", "testrun", "--file", candidate)
-                self.assertIn("error", payload)
-                for marker in markers:
-                    self.assertIn(marker, payload["error"])
-                self.assertFalse((self.run_dir / f"{ticket_id}.md").exists())
-
-    def test_recut_preserves_legacy_carry_and_canonical_context(self):
-        self.run_dir.mkdir(parents=True)
-        current = GOOD_TICKET.replace("status: ready", "status: pending")
-        current = tickets_mod._write_section(current, "Carry", "legacy conclusion")
-        current = tickets_mod._write_section(
-            current, "Context", "- state: canonical conclusion"
-        )
-        target = self.run_dir / "T1.md"
-        target.write_text(current, encoding="utf-8")
-        candidate = self.tmp / "candidate.md"
-        candidate.write_text(
-            GOOD_TICKET.replace("Add `double(n)`.", "Corrected cut."),
-            encoding="utf-8",
-        )
-
-        payload = run_cmd("recut", "testrun", "T1", "--file", candidate)
-
-        self.assertNotIn("error", payload)
-        sections = tickets_mod._sections(target.read_text(encoding="utf-8"))
-        self.assertEqual("legacy conclusion", sections["Carry"])
-        self.assertEqual("- state: canonical conclusion", sections["Context"])
-
-    def test_recut_refuses_to_invent_carry_or_create_a_new_dual_section(self):
-        self.run_dir.mkdir(parents=True)
-        target = self.run_dir / "T1.md"
-        original = GOOD_TICKET.replace("status: ready", "status: pending")
-        target.write_text(original, encoding="utf-8")
-        before = target.read_bytes()
-        candidate = self.tmp / "candidate.md"
-        candidate.write_text(
-            tickets_mod._write_section(GOOD_TICKET, "Carry", "invented legacy"),
-            encoding="utf-8",
-        )
-        payload = run_cmd("recut", "testrun", "T1", "--file", candidate)
-        self.assertIn("legacy", payload["error"])
-        self.assertEqual(before, target.read_bytes())
-
-        with_carry = tickets_mod._write_section(original, "Carry", "existing legacy")
-        target.write_text(with_carry, encoding="utf-8")
-        before = target.read_bytes()
+        candidate = self.tmp / "malformed-context.md"
         candidate.write_text(
             tickets_mod._write_section(
-                GOOD_TICKET, "Context", "- state: new canonical conclusion"
+                GOOD_TICKET.replace("id: T1", "id: T2"), "Context", "[]"
             ),
             encoding="utf-8",
         )
-        payload = run_cmd("recut", "testrun", "T1", "--file", candidate)
-        self.assertIn("Carry", payload["error"])
+        payload = run_cmd("new", "testrun", "--file", candidate)
         self.assertIn("Context", payload["error"])
-        self.assertEqual(before, target.read_bytes())
+        self.assertFalse((self.run_dir / "T2.md").exists())
+
+        source = (ROOT / "scripts" / "tickets_issue.py").read_text(encoding="utf-8")
+        legacy_heading = "Car" + "ry"
+        self.assertNotIn(f"'{legacy_heading}'", source)
+        self.assertNotIn("FILEABLE_EXECUTOR_SECTIONS", source)
+        self.assertNotIn("allow_legacy_" + legacy_heading.lower(), source)
 
     def test_recut_rejects_a_ticket_id_that_traverses_into_another_run(self):
         foreign = self.sink / "tickets" / "other"
