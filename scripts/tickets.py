@@ -107,6 +107,7 @@ if __package__:
     from . import tickets_reissue as _tickets_reissue_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
+    from . import tickets_errand as _tickets_errand_module
 else:
     # By name, as `tickets_generations` is reached: the family's
     # module-level import census is pinned, and this module joined after it.
@@ -123,6 +124,7 @@ else:
     _tickets_reissue_module = __import__('tickets_reissue')
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
+    import tickets_errand as _tickets_errand_module
 
 BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
 OTHER_BOUND_KIND = _tickets_bound_module.OTHER_BOUND_KIND
@@ -316,6 +318,7 @@ _cmd_new = _tickets_issue_module._cmd_new
 _distinct_gate_lenses = _tickets_issue_module._distinct_gate_lenses
 _frontmatter_list = _tickets_issue_module._frontmatter_list
 _issue_ticket = _tickets_issue_module._issue_ticket
+issue_admitted_ticket = _tickets_issue_module.issue_admitted_ticket
 _place_ticket = _tickets_issue_module._place_ticket
 _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
@@ -421,6 +424,7 @@ lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
 REISSUE_USAGE = _tickets_commands_module.REISSUE_USAGE
 _cmd_reissue = _tickets_reissue_module._cmd_reissue
+_cmd_errand = _tickets_errand_module._cmd_errand
 _cmd_gate = _tickets_dispatch_module._cmd_gate
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
@@ -473,6 +477,7 @@ def _sync_seams():
     _tickets_result_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._append_one_line = _append_one_line
     _tickets_dispatch_module._cmd_new = _cmd_new
+    _tickets_dispatch_module._cmd_errand = _cmd_errand
     _tickets_dispatch_module._cmd_amend = _cmd_amend
     _tickets_dispatch_module._cmd_recut = _cmd_recut
     _tickets_dispatch_module._cmd_claim = _cmd_claim

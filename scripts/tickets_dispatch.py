@@ -34,11 +34,11 @@ else:
     from tickets_worklog import WORKLOG_USAGE, _closure_defects, _cmd_worklog, _run_tickets, _spec_field_defect, _template_order
 if __package__:
     from .tickets_admission import batch_cohort, is_v2, root_cohort; from .tickets_emission import grade_run_emission; from .tickets_context import run_snapshot; from .tickets_generations import _root_payload, generation_identity; from .tickets_transitions import pending_admission, stamp; from .tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check; from .tickets_reissue import _cmd_reissue
-    from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS; from .tickets_gate_mutations import _canonical_gate_mutation_plan
+    from .tickets_input_producers import git_head, render_stub, render_ticket_inputs; from .tickets_generations import GENERATION_SUBCOMMANDS; from .tickets_gate_mutations import _canonical_gate_mutation_plan; from .tickets_errand import _cmd_errand
     from .tickets_dispatch_gate import _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain; from .tickets_dispatch_gate import _cmd_gate as _gate_command
 else:
     from tickets_admission import batch_cohort, is_v2, root_cohort; from tickets_emission import grade_run_emission; from tickets_context import run_snapshot; from tickets_transitions import pending_admission, stamp; _generations = __import__('tickets_generations'); _root_payload = _generations._root_payload; generation_identity = _generations.generation_identity; from tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
-    from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan
+    from tickets_input_producers import git_head, render_stub, render_ticket_inputs; from tickets_gate_mutations import _canonical_gate_mutation_plan; from tickets_errand import _cmd_errand
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check; _cmd_reissue = __import__('tickets_reissue')._cmd_reissue  # by name: the family's import census is pinned
     _gate_module = __import__('tickets_dispatch_gate'); _gate_command = _gate_module._cmd_gate; _gate_body = _gate_module._gate_body; _gate_input = _gate_module._gate_input; _gate_sections = _gate_module._gate_sections
     _gate_stub = _gate_module._gate_stub; _gate_under_run_lock = _gate_module._gate_under_run_lock; _input_name = _gate_module._input_name; _listed_items = _gate_module._listed_items; _pack_domain = _gate_module._pack_domain
@@ -371,7 +371,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | amend | recut | reissue | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | amendment-request | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | errand | amend | recut | reissue | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | amendment-request | list | ready | claim | grant | check | set-status | result-grade | packet | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -383,6 +383,7 @@ def _dispatch(argv):
     if command == 'bound-check': return _cmd_bound_check(rest)
     if command == 'reissue': return _cmd_reissue(rest)
     if command == 'new': return _cmd_new(rest)
+    if command == 'errand': return _cmd_errand(rest)
     if command == 'amend': return _cmd_amend(rest)
     if command == 'recut': return _cmd_recut(rest)
     # Named one per line, not folded into a membership test: `cli_help`

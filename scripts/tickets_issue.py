@@ -6,12 +6,14 @@ if __package__:
     from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
+    from .tickets_context import graded_admission, run_snapshot
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
 else:
     from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
+    from tickets_context import graded_admission, run_snapshot
     from tickets_input_producers import render_ticket_inputs
     from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from tickets_emission import grade_run_emission
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
@@ -508,3 +510,69 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         ticket_path.unlink(missing_ok=True)
         return {'error': f'unwritable ticket: {error}'}
     return {'new': {'run': run, 'id': ticket_id, 'path': str(ticket_path), 'status': _parse_frontmatter(text).get('status')}}
+
+
+def issue_admitted_ticket(run: str, ticket_id: str, text: str):
+    """Atomically issue one already-graded ticket at ``ready``.
+
+    ``new`` deliberately exposes the pending cut so a decomposer may amend a
+    cohort before admission.  A one-shot errand has no such interval: its
+    complete cut is one ticket, so the issue and admission receipts either
+    land together or neither lands.  The shape, emission and identity work
+    remain this module's; the receipt is still the admission owner's exact
+    grade over the prospective closed snapshot.
+    """
+    defects = _issue_defects(text)
+    if defects:
+        return {'error': f'ticket {run}/{ticket_id} is off contract (contracts/work-item.md): ' + '; '.join(defects)}
+    over = _ceiling_error(f'ticket {run}/{ticket_id}', ticket_id, text)
+    if over is not None:
+        return over
+    if GATE_ID_MARKER in ticket_id:
+        return {'error': f"ticket id '{ticket_id}' is reserved for `tickets.py gate`; errand cannot assemble a gate family"}
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    try:
+        with _run_lock(run):
+            if ticket_path.exists():
+                return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
+            snapshot, unreadable = run_snapshot(ticket_path.parent)
+            if unreadable:
+                return {'error': f'admission refused: run snapshot is not closed: {unreadable[0][1]["error"]}'}
+            if (refusal := grade_run_emission('new', run, ticket_path.parent, {ticket_id: text})) is not None:
+                return refusal
+            data = _parse_frontmatter(text)
+            if _executor_of(data) == ROOT_EXECUTOR:
+                return {'error': 'errand issues a delivery ticket, never a root ticket'}
+            prospective = dict(snapshot)
+            prospective[ticket_id] = text
+            grade = graded_admission(ticket_id, text, prospective, run)
+            if grade['findings']:
+                return {'error': 'admission refused', 'findings': grade['findings']}
+            admitted = _set_frontmatter_field(text, 'admission', grade['receipt'])
+            admitted = _set_frontmatter_field(admitted, 'status', 'ready')
+            identity_dir, identity, refusal = _identity_update(run, datetime.now(timezone.utc))
+            if refusal is not None:
+                return refusal
+            ticket_path.parent.mkdir(parents=True, exist_ok=True)
+            _create_text_exclusively(ticket_path, admitted)
+            try:
+                if identity is not None:
+                    identity_dir.mkdir(parents=True, exist_ok=True)
+                    _write_identity(identity_dir, identity)
+            except OSError:
+                ticket_path.unlink(missing_ok=True)
+                raise
+    except FileExistsError:
+        return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
+    except OSError as error:
+        ticket_path.unlink(missing_ok=True)
+        return {'error': f'unwritable ticket: {error}'}
+    return {
+        'errand': {
+            'run': run, 'ids': [ticket_id], 'paths': [str(ticket_path)],
+            'status': 'ready', 'admission': grade['receipt'],
+        }
+    }
