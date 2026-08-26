@@ -5054,6 +5054,7 @@
   {
    "module": "tests.test_scaled_ticket_mechanics",
    "owner": "OrdinaryNewAuthoringTest.test_new_authors_one_generic_sequenced_code_ticket",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]

@@ -14,7 +14,7 @@ the executor. Each ticket takes one outside-independence path. In a
 single-ticket run, pre-existing-only acceptance ends with its falsifiable
 oracles; only an unchecked `independence: checker` ticket with an
 `authored-here` oracle gets the claim's `--executor orch-critique` checker
-packet. Never add it to gate-deferred or already checked tickets. Where a
+packet, never for gate-deferred or already checked tickets. Where a
 checker invalidates a judged oracle, dispatch `--executor orch-verify`;
 otherwise re-run invalidated deterministic oracles at the checked identity
 ([verification](../../../rules/verification.md) §10).
