@@ -27,6 +27,10 @@
    ([cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)),
    never a safe default; below the atom is padding — an item no oracle
    discriminates from a sibling — which is where cutting finer stops.
+   A gate-only cut is the sole zero-unit form: its coverage map assigns
+   every root criterion to the composite gate and emits zero `<id>.NN` unit
+   tickets. It is not padding because that composite gate discriminates the
+   root result.
    Count is unbounded above; width past the host profile is the
    frontier's queue, not the cut's. A decomposition that
    cannot cover most acceptance criteria under the stamped slicing
@@ -62,7 +66,10 @@
    [work-item.md](../contracts/work-item.md), Root ticket. Every additional
    reviewer is a unique named lens feeding that same gate's one repair and
    one verification. Never one gate per domain — cross-lens inconsistency
-   is the most valuable finding class.
+   is the most valuable finding class. An opt-in ordered lens bundle is
+   sealed on one critique-and-repair ticket: it consumes entries in bundle
+   order, each with a unique lens identity and its evidence, before that
+   gate's one verification.
 5a. The pack is the item's, not the run's: a cut may stamp several, and the
    gate reviews each domain under its own lens. What a run cannot span is
    workspace semantics — a gate stub carries the root's records, so a
@@ -115,4 +122,6 @@
     behavior is preserved; v1 pending, receipt, cohort, ready, claim, and
     packet semantics do not change. A named-field or enum change to the work
     item or pack signature lands as explicit T0 supersession with
-    tests/pins.json re-pinned.
+    tests/pins.json re-pinned. The ordered lens bundle is an additive opt-in:
+    v0 and v1 stay unchanged, and already sealed, claimed or terminal v2 cuts
+    stay unchanged.

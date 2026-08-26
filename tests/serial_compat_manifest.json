@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3205,
+  "count": 3252,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -35,6 +35,7 @@
    "test_canary_host.CanaryOracleSpellingTest.test_the_head_is_the_bare_interpreter_name",
    "test_command_surface.NamedOperatorsTest.test_each_required_operator_is_named_by_the_skill_that_requires_it",
    "test_command_surface.NamedOperatorsTest.test_orch_decompose_names_the_command_that_writes_the_composite_gate",
+   "test_command_surface.NamedOperatorsTest.test_orch_spec_routes_only_unresolved_roots_through_every_v2_door",
    "test_command_surface.NamedOperatorsTest.test_the_engine_that_refuses_an_unsealed_generation_names_the_seal",
    "test_command_surface.NamedOperatorsTest.test_the_v2_lifecycle_operators_are_all_reachable_by_name",
    "test_command_surface.ReissueRulingTest.test_the_compat_pin_names_the_surviving_surface_exactly",
@@ -130,6 +131,29 @@
    "test_doclint.ValidateLinkCheckTest.test_a_dangling_link_in_a_graded_tier_is_an_error",
    "test_doclint.ValidateLinkCheckTest.test_a_link_that_resolves_is_not",
    "test_doclint.ValidateLinkCheckTest.test_an_external_url_is_not_the_repositorys_to_resolve",
+   "test_errand_authoring.ErrandAuthoringTest.test_a_pre_existing_oracle_authors_one_ready_admitted_worker_ticket",
+   "test_errand_authoring.ErrandAuthoringTest.test_a_refused_errand_writes_no_ticket",
+   "test_errand_authoring.ErrandAuthoringTest.test_an_authored_here_oracle_selects_the_existing_same_claim_checker",
+   "test_errand_authoring.ErrandAuthoringTest.test_an_ordered_sequence_keeps_its_head_as_executor",
+   "test_errand_authoring.ErrandAuthoringTest.test_tdd_errand_requires_its_own_workspace_from_either_checkout_kind",
+   "test_errand_composition.ErrandCompositionTest.test_the_delivery_stub_binds_the_code_pack_and_delivery_shape",
+   "test_errand_composition.ErrandCompositionTest.test_the_named_composition_has_exactly_one_delivery_stub",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_actual_frontier_admission_replay_matches_the_golden",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_counterfactual_model_is_evidence_bound_and_meets_targets",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_counterfactual_mutants_fail_every_target_without_raising",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_fixture_freezes_every_named_input_and_oracle_by_content",
+   "test_errand_derived_closure.ErrandDerivedClosureTest.test_a_new_test_closes_over_the_serial_compat_manifest_and_step",
+   "test_errand_derived_closure.ErrandDerivedClosureTest.test_an_incomplete_registry_entry_is_refused_before_expansion",
+   "test_errand_derived_closure.ErrandDerivedClosureTest.test_an_ordinary_test_edit_does_not_change_membership",
+   "test_errand_frontier.ErrandFrontierTests.test_errand_acceptance_is_one_terminal_suite_after_derived_closure",
+   "test_errand_frontier.ErrandFrontierTests.test_terminal_suite_contract_can_fail_beside_the_tree",
+   "test_errand_routing.ErrandRoutingTests.test_host_routes_the_minimum_context_graph",
+   "test_errand_routing.ErrandRoutingTests.test_new_helper_has_direct_owner_edges",
+   "test_errand_routing.ErrandRoutingTests.test_routing_benchmark_names_every_errand_boundary",
+   "test_errand_routing.ErrandRoutingTests.test_vocabulary_defines_errand_once",
+   "test_errand_routing.ErrandRoutingTests.test_workflow_catalog_projects_named_errand_composition",
+   "test_gate_only_lifecycle.GateOnlyLifecycleTest.test_controlled_wrong_variants_are_discriminated",
+   "test_gate_only_lifecycle.GateOnlyLifecycleTest.test_seal_claim_packet_gate_verify_and_no_redispatch",
    "test_input_identities.CommonIdentityTest.test_artifact_locators_resolve_without_host_paths_in_the_fingerprint",
    "test_input_identities.CommonIdentityTest.test_migrated_historical_fixtures_keep_the_coordinate_and_reach_a_specific_resolver",
    "test_input_identities.CommonIdentityTest.test_prior_run_ticket_section_requires_and_checks_digest",
@@ -156,6 +180,10 @@
    "test_input_identities.TreeAdapterTest.test_document_and_evidence_roots_are_adapter_specific",
    "test_input_identities.TreeAdapterTest.test_document_root_may_be_project_or_sink_but_evidence_is_sink_only",
    "test_input_identities.TreeAdapterTest.test_store_resolution_stays_below_declared_root_and_matches_digest",
+   "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
+   "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
+   "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
+   "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
    "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
@@ -441,6 +469,9 @@
    "test_migrate_state_cases.plan.TestUnreadableDestination.test_the_unterminated_line_question_refuses_rather_than_answers_no",
    "test_migrate_state_cases.plan.TestUsage.test_an_unknown_flag_is_refused_rather_than_guessed",
    "test_migrate_state_cases.plan.TestUsage.test_no_source_is_a_usage_error",
+   "test_ordered_lens_bundle.OrderedLensBundleTest.test_each_controlled_wrong_bundle_is_rejected",
+   "test_ordered_lens_bundle.OrderedLensBundleTest.test_packet_and_frontier_preserve_one_ordered_same_child_sequence",
+   "test_ordered_lens_bundle.OrderedLensBundleTest.test_public_gate_help_names_the_opt_in_and_gate_only_shape",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
    "test_project_binding.TestAttribution.test_a_recorded_project_is_corrected_to_the_root_tickets",
    "test_project_binding.TestAttribution.test_a_root_ticket_naming_no_workspace_leaves_the_writer_owning_it",
@@ -900,6 +931,7 @@
    "test_v2_membership.TheDoorsRefuseDivergence.test_new_file_lands_a_drafting_member_that_matches",
    "test_v2_membership.TheDoorsRefuseDivergence.test_new_file_refuses_a_v1_member_under_a_sealed_v2_root",
    "test_v2_membership.TheGateCompletesUnderV2.test_a_v1_root_still_issues_a_v1_gate",
+   "test_v2_membership.TheGateCompletesUnderV2.test_same_planner_full_route_terminalizes_root_before_frontier",
    "test_v2_membership.TheGateCompletesUnderV2.test_the_family_is_sealed_at_the_next_generation",
    "test_v2_membership.TheVersionLaw.test_a_member_at_its_root_version_carries_no_divergence",
    "test_v2_membership.TheVersionLaw.test_a_v1_member_under_a_v2_root_diverges",
@@ -1131,6 +1163,14 @@
    "tests.test_contracts_cases.rules.ChainRoleLawTest.test_roles_resolves_a_chain_once_at_its_head",
    "tests.test_contracts_cases.rules.ChainRoleLawTest.test_the_shipped_gate_chain_crosses_roles",
    "tests.test_contracts_cases.rules.ChainRoleLawTest.test_the_work_item_field_states_the_head_role",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_architecture_names_the_runtime_owner_without_moving_t0_shape",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_bundle_is_one_ordered_gate_ticket_with_unique_lens_evidence",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_child_identity_never_crosses_the_ticket_boundary",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_gate_only_cut_is_coverage_complete_and_not_padding",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_migration_preserves_legacy_and_already_sealed_v2_history",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_repair_verdicts_are_void_and_verifier_is_fresh_and_separate",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_vocabulary_defines_both_opt_in_shapes_once",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_work_item_owns_the_canonical_opt_in_bundle_carrier",
    "tests.test_contracts_cases.rules.TestSkillDescriptions.test_every_skill_description_is_at_most_140_chars",
    "tests.test_contracts_cases.rules.TestVerificationHomelessLaws.test_a_gate_returning_findings_moves_the_result_identity",
    "tests.test_contracts_cases.rules.TestVerificationHomelessLaws.test_one_independence_path_unique_lenses_and_one_root_gate",
@@ -1154,6 +1194,7 @@
    "tests.test_contracts_cases.topology.V2GenerationTopologyContractTest.test_v0_and_v1_history_is_not_reinterpreted_during_v2_migration",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_architecture_and_pack_signature_own_lower_adapters",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_decomposer_cuts_one_cohort_with_typed_inputs_and_mutations",
+   "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_decomposer_names_version_aware_v1_and_v2_member_emission",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_fixed_inputs_and_return_size_have_canonical_grammars",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_frontmatter_owns_admission_cohort_and_mutation_plan",
@@ -1596,6 +1637,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_role_bearing_route_requires_its_exact_role_skill_pair",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_an_off_enum_expected_route_is_refused",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_only_a_prompt_naming_orch_build_expects_the_build_route",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_catalog_counterfactual_uses_answer_then_one_known_cause_errand",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_shipped_case_file_loads",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_at_least_four_distractors_borrow_a_lure_word",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_case_ids_are_unique",
@@ -1604,6 +1646,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_expected_route_is_in_the_enum",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_no_routed_case_reads_as_an_instruction_to_the_grader",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_readme_states_the_command_and_the_decision_rule",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_route_enum_matches_both_consumers",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_set_carries_at_least_twenty_four_cases",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_by_name_read_is_the_route_the_four_adapter_set_takes",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_final_text_with_no_tool_use_grades_as_answer",
@@ -1615,6 +1658,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_empty_transcript_is_unrouted",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_unauthenticated_session_grades_error_not_answer",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_any_other_skill_grades_as_that_name",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_errand_and_doctor_commands_grade_as_their_routes",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_instantiating_a_template_grades_as_that_template",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_issuing_a_ticket_from_bash_grades_as_ticket",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_matching_role_child_requires_exact_skill",
@@ -2770,10 +2814,13 @@
    "tests.test_ui_cases.transcript_rendering.TestTranscriptDegradation.test_an_empty_transcript_names_a_diagnostic_rather_than_looking_healthy",
    "tests.test_ui_cases.transcript_rendering.TestTranscriptsAreReadOnly.test_exercising_every_route_writes_nothing_under_the_transcript_root",
    "tests.test_ui_cases.transcript_rendering.TestTranscriptsAreReadOnly.test_the_snapshot_would_notice_a_write",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_canonical_sequence_is_projected_in_declared_order",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_duplicate_owner_identity_and_unknown_entry_are_closed_errors",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_escaping_file_and_directory_symlink_owners_are_rejected",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_list_valued_executor_is_rejected",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_owner_name_must_match_its_canonical_package",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_repository_catalog_is_derived_from_compositions_and_workflow_skills",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_uninstantiated_executor_slot_invents_no_skill_projection",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_validated_summary_is_joined_by_canonical_id",
    "tests.test_ui_cases.workflows_compositions.WorkflowCompositionTests.test_duplicate_dangling_and_unresolved_source_are_diagnosed_without_repair",
    "tests.test_ui_cases.workflows_compositions.WorkflowCompositionTests.test_escaping_template_and_stub_symlinks_are_rejected",
@@ -3208,7 +3255,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "7758e42bfc1540145398b2a87e3804fd44b6a6231ae15422abd9e4d37968df22"
+  "sha256": "d0c75e5c3751da86c2c77eade4098e882cf937b826fd4475635422f0342d7814"
  },
  "mutation_owners": [
   {
@@ -3666,6 +3713,22 @@
    ]
   },
   {
+   "module": "tests.test_errand_authoring",
+   "owner": "ErrandAuthoringTest.test_tdd_errand_requires_its_own_workspace_from_either_checkout_kind",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_errand_derived_closure",
+   "owner": "ErrandDerivedClosureTest.test_an_incomplete_registry_entry_is_refused_before_expansion",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_friction_cases.cli",
    "owner": "TestMainWritesEntry.test_a_worktree_and_its_main_checkout_append_to_one_stream",
    "restoration": "sharded-module-guard",
@@ -3833,6 +3896,30 @@
   {
    "module": "tests.test_friction_cases.storage_lock",
    "owner": "FrictionAppendLockTest.test_the_unacquired_path_returns_inside_a_budget_under_one_second",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_gate_only_lifecycle",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_gate_only_lifecycle",
+   "owner": "fixture",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_install_doctor",
+   "owner": "TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

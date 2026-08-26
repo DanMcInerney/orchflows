@@ -6,7 +6,7 @@ import re
 
 from tools.live_claude_profiles import _json_events
 
-ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+ROUTE_CLASSES = ("answer", "errand", "ticket", "doctor", "fix", "build", "named")
 UNROUTED = "unrouted"
 # A session that failed before it could route -- an API error, an
 # unauthenticated CLI -- is neither a route nor a misroute; the first
@@ -83,8 +83,13 @@ def _named_in(text: str) -> str | None:
 
 
 def _classify_bash(command: str) -> str | None:
-    if "tickets.py new" in command.replace("\\", "/"):
+    normalized = command.replace("\\", "/")
+    if "tickets.py new" in normalized:
         return "ticket"
+    if "tickets.py errand" in normalized:
+        return "errand"
+    if "install.py doctor" in normalized:
+        return "doctor"
     name = _named_in(command)
     return _classify_skill(name) if name else None
 

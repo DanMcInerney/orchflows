@@ -1,7 +1,6 @@
 # Architecture
 
-Cold ownership map for executing agents. Ceiling: 850
-whitespace-delimited words. Terms are
+Ceiling: 850 whitespace-delimited words. Terms are
 [the vocabulary](docs/vocabulary.md)'s.
 
 ## Four tiers
@@ -32,17 +31,19 @@ whitespace-delimited words. Terms are
   library terms; `documentation.md` documentation design and the
   reading order; each remaining file its named subject.
 - [`scripts/`](scripts/) owns repository automation. Programs use Python
-  3.9+ on Windows and POSIX, no network at run time. An unprefixed family
-  module is the public command and import facade; same-family helpers own internal
-  concerns. `tickets_format.py` owns syntax, closed parsers, and the
-  installed pack mechanism registry; `tickets_markdown.py`
-  is its private byte-preserving mechanism; `tickets_inputs.py` typed
-  identity resolution; `tickets_scope.py` mutation/edge closure;
-  `tickets_admission.py` composes those into receipts lifecycle and packet
-  modules consume. `tickets_project.py` owns run-project binding,
+  3.9+, Windows and POSIX, then no network. An unprefixed family module is
+  the public command and import facade; same-family helpers own internal concerns.
+  `tickets_format.py` owns syntax, closed parsers, and the pack registry;
+  `tickets_markdown.py` byte preservation; `tickets_inputs.py` typed identity
+  resolution; `tickets_scope.py` mutation/edge closure; `tickets_admission.py`
+  receipt lifecycle. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
-  ceiling, `tickets_dispatch_gate.py` the gate family and
-  mutation plan, `cutcheck_pricing.py` cut pricing.
+  ceiling, `tickets_issue_render.py` issuance markdown and ceiling refusals,
+  `tickets_dispatch_gate.py` gate-only cut construction,
+  `tickets_gate_bundle.py` contract-owned ordered lens bundle validation,
+  `tickets_packet_receipts.py` one-shot packet claims, and
+  `tickets_gate_mutations.py` the gate mutation plan,
+  `tickets_errand.py` errand authoring; `cutcheck_pricing.py` pricing.
   Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text

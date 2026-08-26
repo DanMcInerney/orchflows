@@ -123,6 +123,7 @@ def workspace():
 
 def run_cmd(cwd: Path, *args):
     original = tickets_mod._cwd
+    original_store = tickets_mod._tickets_store_module._cwd
     tickets_mod._cwd = lambda: Path(cwd).resolve()
     try:
         try:
@@ -131,6 +132,7 @@ def run_cmd(cwd: Path, *args):
             payload = {"error": str(error)}
     finally:
         tickets_mod._cwd = original
+        tickets_mod._tickets_store_module._cwd = original_store
     return json.loads(json.dumps(payload, ensure_ascii=False))
 
 
@@ -271,6 +273,152 @@ class TheDoorsRefuseDivergence(unittest.TestCase):
 
 class TheGateCompletesUnderV2(unittest.TestCase):
     """The capability half, end to end: gate, then the seal covers it."""
+
+    def test_same_planner_full_route_terminalizes_root_before_frontier(self):
+        """The dispatch-only planner continuation crosses every real door.
+
+        The sequence is deliberately an action trace rather than ticket
+        authority: the created root is sealed, admitted to one planner,
+        packeted to that same planner for decomposition, resealed with its
+        cut, and terminalized by the outer join before frontier sees work.
+        """
+
+        with workspace() as (tmp, repo, head):
+            run_dir = run_dir_of()
+            run_dir.mkdir(parents=True, exist_ok=True)
+            root_path = run_dir / "00-root.md"
+            root_path.write_text(
+                stub("00-root", head, executor="orch-decompose",
+                     independence="gate", v2=True),
+                encoding="utf-8",
+            )
+            first_generation = seal_run(repo)
+
+            ready = run_cmd(repo, "ready", "--run", "testrun")
+            self.assertEqual(["00-root"], [item["id"] for item in ready["ready"]])
+            claim = run_cmd(
+                repo, "claim", "testrun", "00-root", "--by", "planner-lane"
+            )
+            self.assertNotIn("error", claim)
+            root_packet = run_cmd(
+                repo, "packet", "testrun", "00-root", "--reply-to", "outer",
+                "--by", "planner-lane",
+            )["packet"]
+            self.assertEqual("planner-lane", root_packet["assigned_name"])
+            self.assertEqual(
+                frontmatter(root_path)["admission"], root_packet["admission"],
+                "claim and packet retain the shared admission receipt",
+            )
+            self.assertEqual("orch-decompose", root_packet["executor"])
+
+            root_generation = frontmatter(root_path)["root_generation"]
+            for ticket_id, depends_on in (
+                ("00-root.01", "[]"),
+                ("00-root.02", "[00-root.01]"),
+            ):
+                candidate = tmp / f"{ticket_id}.md"
+                candidate.write_text(
+                    stub(ticket_id, head, depends_on=depends_on).replace(
+                        "admission: v1:pending",
+                        f"root_generation: {root_generation}",
+                    ),
+                    encoding="utf-8",
+                )
+                emitted = run_cmd(
+                    repo, "new", "testrun", ticket_id, "--file", str(candidate)
+                )
+                self.assertNotIn("error", emitted, emitted)
+
+            gate = run_cmd(repo, "gate", "testrun", "00-root")
+            self.assertNotIn("error", gate, gate)
+            second_generation = seal_run(repo)
+            self.assertNotEqual(first_generation, second_generation)
+            cut_ids = ["00-root.01", "00-root.02", *gate["gate"]["ids"]]
+            for ticket_id in ["00-root", *cut_ids]:
+                with self.subTest(sealed=ticket_id):
+                    data = frontmatter(run_dir / f"{ticket_id}.md")
+                    self.assertNotEqual(
+                        "[orch-spec, orch-decompose]", data.get("sequence"),
+                        "the planner continuation is dispatch-only authority",
+                    )
+                    self.assertEqual(second_generation, data["cut_generation"])
+                    self.assertTrue(data["assignment_seal"].startswith("sha256:"))
+            for ticket_id in ("00-root", "00-root.01", "00-root.02"):
+                self.assertNotIn("sequence", frontmatter(run_dir / f"{ticket_id}.md"))
+
+            carry_file = tmp / "root-carry.md"
+            carry_file.write_text(
+                "- admission: root ready, claim, and packet used one receipt\n"
+                "- continuation: cut resealed before frontier\n",
+                encoding="utf-8",
+            )
+            filed = run_cmd(
+                repo, "result", "testrun", "00-root", "--section", "Carry",
+                "--file", str(carry_file), "--append",
+            )
+            self.assertNotIn("error", filed, filed)
+            joined = run_cmd(repo, "set-status", "testrun", "00-root", "complete")
+            self.assertNotIn("error", joined, joined)
+            self.assertEqual("complete", frontmatter(root_path)["status"])
+
+            frontier = run_cmd(repo, "ready", "--run", "testrun")
+            frontier_ids = [item["id"] for item in frontier["ready"]]
+            self.assertNotIn("00-root", frontier_ids,
+                             "frontier cannot dispatch decomposition twice")
+            self.assertIn("00-root.01", frontier_ids)
+
+            claimed_unit = run_cmd(
+                repo, "claim", "testrun", "00-root.01", "--by", "worker-lane"
+            )
+            self.assertNotIn("error", claimed_unit, claimed_unit)
+            worker_packet = run_cmd(
+                repo, "packet", "testrun", "00-root.01", "--reply-to", "outer",
+                "--by", "worker-lane",
+            )["packet"]
+            self.assertIn("file `## Carry`", worker_packet["prompt"])
+            checker_packet = run_cmd(
+                repo, "packet", "testrun", "00-root.01", "--reply-to", "outer",
+                "--executor", "orch-critique", "--by", "verifier-lane",
+            )["packet"]
+            self.assertEqual("verifier-lane", checker_packet["assigned_name"])
+            self.assertNotEqual(worker_packet["assigned_name"],
+                                checker_packet["assigned_name"])
+            checked = run_cmd(
+                repo, "check", "testrun", "00-root.01", "--by", "verifier-lane"
+            )
+            self.assertNotIn("error", checked, checked)
+
+            unit_carry = tmp / "unit-carry.md"
+            unit_carry.write_text(
+                "- landed: lawful v2 member\n- verify: verifier-lane\n",
+                encoding="utf-8",
+            )
+            filed = run_cmd(
+                repo, "result", "testrun", "00-root.01", "--section", "Carry",
+                "--file", str(unit_carry), "--append",
+            )
+            self.assertNotIn("error", filed, filed)
+            completed = run_cmd(
+                repo, "set-status", "testrun", "00-root.01", "complete"
+            )
+            self.assertNotIn("error", completed, completed)
+
+            next_frontier = run_cmd(repo, "ready", "--run", "testrun")
+            self.assertIn(
+                "00-root.02", [item["id"] for item in next_frontier["ready"]]
+            )
+            claimed_next = run_cmd(
+                repo, "claim", "testrun", "00-root.02", "--by", "worker-next"
+            )
+            self.assertNotIn("error", claimed_next, claimed_next)
+            successor_prompt = run_cmd(
+                repo, "packet", "testrun", "00-root.02", "--reply-to", "outer",
+                "--by", "worker-next",
+            )["packet"]["prompt"]
+            self.assertIn("Carried context from 00-root.01 (complete)",
+                          successor_prompt)
+            self.assertIn("landed: lawful v2 member", successor_prompt)
+            self.assertIn("verify: verifier-lane", successor_prompt)
 
     def test_the_family_is_sealed_at_the_next_generation(self):
         with workspace() as (tmp, repo, head):

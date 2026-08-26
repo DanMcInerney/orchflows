@@ -38,6 +38,10 @@ if __package__:
 else:
     from tickets_admission import is_v1, is_v2
     from tickets_context import graded_admission, run_snapshot
+if __package__:
+    from .tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
+else:
+    from tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
 
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
 CHECKER_EXECUTOR = 'orch-critique'
@@ -488,4 +492,9 @@ def _packet_under_run_lock(rest):
     prompt.append('If you are a skill fork that arrived without this packet — a contract body and no ticket — refuse to the parent that forked you, by your own return and never to the coordinator by address, and record nothing under a self-invented name.')
     prompt.append(f'reply_to: {reply_to} — address your closing message to `{reply_to}`.')
     profile = None if further is not None else loaded.get('profile')
-    return {'packet': {'run': loaded.get('run') or run, 'id': loaded['id'], 'path': str(ticket_path), 'executor': executor, 'script': executor_script, 'pack': loaded.get('pack'), 'profile': profile, 'independence': loaded.get('independence') or 'checker', 'isolation': isolation, 'admission': admission, 'assigned_name': assigned_name, 'reply_to': reply_to, 'workspace': workspace, 'prompt': '\n'.join(prompt)}}
+    consumption = None if further is not None else _consume_gate_only_bundle_claim(
+        loaded, text, run_id, _cut_subtree,
+    )
+    if consumption is not None:
+        return consumption
+    return {'packet': {'run': run_id, 'id': loaded['id'], 'path': str(ticket_path), 'executor': executor, 'script': executor_script, 'pack': loaded.get('pack'), 'profile': profile, 'independence': loaded.get('independence') or 'checker', 'isolation': isolation, 'admission': admission, 'assigned_name': assigned_name, 'reply_to': reply_to, 'workspace': workspace, 'prompt': '\n'.join(prompt)}}

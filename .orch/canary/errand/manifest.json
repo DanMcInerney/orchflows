@@ -1,0 +1,82 @@
+{
+  "schema": "orchflows.errand-canary-manifest.v1",
+  "ticket": {
+    "path": "tickets/canary/repair.md",
+    "sha256": "ba56206b00fdc0abff7b0824e04e27c46738d0e5484d6c9930cd29d2a205dabe",
+    "result_section_sha256": "282fd70a5c2c279a1b0609b68381bc8291543af6c850c8baa64d7883a897d209"
+  },
+  "spec": {
+    "path": "spec.md",
+    "sha256": "c7927ab371aeb1b83deb415d3dcdde3a8a7f5cc1b6a6a09b4fda2b10ad1f8226",
+    "kind": "ad-hoc-ticket-statement"
+  },
+  "replay_artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "8333a2a068c26c82087852cc5e14a53f483da1df2c6181c04f4a45d9c357c3b6"
+    },
+    {
+      "path": "admission-replay.json",
+      "sha256": "fdcd1f9c46f0e41782dac92a790beaf09fa9f8946ace3710acce884993b088de"
+    },
+    {
+      "path": "counterfactual-replay.json",
+      "sha256": "c9971f3bfa63d03ce89472fe99f63d033f9daf06b38036ab36676a6f6ca81e6f"
+    },
+    {
+      "path": "counterfactual-targets.json",
+      "sha256": "6cbaba0ebeaa3a39b3fe1fdf3032fd1892597050072f2b799f55b2cbe8f5171f"
+    },
+    {
+      "path": "golden.json",
+      "sha256": "48a2a9e539d12f64ee82efbe60a2fb4bdd35ee04a56f7cb0aaa264d6a759d3cb"
+    }
+  ],
+  "fixed_inputs": [
+    {
+      "path": "inputs/tickets/orch-install-catalog-diagnosis-20260825/investigate.md",
+      "sha256": "04f7479481bdf62646ec9e614255b59d8928b84a4d68a84cbbcd70e219b39b70",
+      "result_section_sha256": "625ca8aaa7a02c5d41fa1af42b9e605ad336097beadf229d5ff5886eaa496b9e"
+    },
+    {
+      "name": "workspace",
+      "type": "literal",
+      "value": "C:\\Users\\danhm\\.codex\\worktrees\\2cb3\\orchflows-public"
+    },
+    {
+      "path": "inputs/orch-fixture.SKILL.md",
+      "sha256": "82070e601dae14fbb57793f881a20eb08b3ff2ccd533e18508a00b9ffca4d43a",
+      "revision": "fa62ab22b32bd8f4e28c0766b91b9d4a2b863203"
+    },
+    {
+      "name": "integrated-baseline",
+      "type": "literal",
+      "value": "git:fa62ab22b32bd8f4e28c0766b91b9d4a2b863203"
+    },
+    {
+      "path": "inputs/tickets/errand-lane-final-tail-20260826-retry/errand-lane-final-tail-root-retry.gate.critique.library.md",
+      "sha256": "3df2fb8b7e0cb802eae9d146ba727a2a144de49be555429654d70e78d526ecc1",
+      "result_section_sha256": "cf4576cfb34e14993c7874f97041b9c604a9cba7822d6f63a7356658c2d7c13e"
+    }
+  ],
+  "oracle_artifacts": [
+    {
+      "source_path": "installer/foundation.py",
+      "archive_path": "oracles/installer/foundation.py.b64",
+      "encoding": "base64",
+      "decoded_sha256": "ab60b61dc666c12b6d7fa26c53d8fa485a0b6ed0182a381980af5124fa355165"
+    },
+    {
+      "source_path": "tests/test_installer_cases/planning/runtime.py",
+      "archive_path": "oracles/tests/test_installer_cases/planning/runtime.py.b64",
+      "encoding": "base64",
+      "decoded_sha256": "565600f1ece418c7cdfaa9053a498cfa7251c4c08bf7116f3f0e31ca48fe21fd"
+    },
+    {
+      "source_path": "tests/test_installer_cases/planning/scoped_hosts.py",
+      "archive_path": "oracles/tests/test_installer_cases/planning/scoped_hosts.py.b64",
+      "encoding": "base64",
+      "decoded_sha256": "5090d9d79880e93f25f73305509cad09cbf14dbdfd75adda9f96aa8bcfdc7119"
+    }
+  ]
+}

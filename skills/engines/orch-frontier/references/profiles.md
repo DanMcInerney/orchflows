@@ -66,3 +66,9 @@ status lands, by the §11 reading above: a launched process whose outcome
 never reaches durable state graded the tip not at all. A host whose
 `git` tip is a worktree branch runs them where the batch merged, and the
 revision recorded beside the verdict is that tree's `HEAD`.
+
+## Running an errand terminal check (Claude Code)
+
+Use the same engine's own context and held-command mechanics, but only after
+the errand's derived closure is closed. Run the required suite exactly once;
+the revision recorded beside its verdict is the accepted terminal identity's revision.

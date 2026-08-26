@@ -323,6 +323,33 @@ class TestV1AdmissionContract(unittest.TestCase):
                 self.assertIn(token, text)
         self.assertNotIn("--mutation create|change|delete|write", text)
 
+    def test_decomposer_names_version_aware_v1_and_v2_member_emission(self):
+        lines = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        rows = {}
+        for line in lines:
+            if line.startswith(("| `mandatory-v2` |", "| `legacy-v1` |")):
+                cells = [cell.strip() for cell in line.strip("|").split("|")]
+                rows[cells[0].strip("`")] = cells[1:]
+        self.assertEqual(
+            {
+                "mandatory-v2": [
+                    "candidate file",
+                    "exact inherited",
+                    "absent",
+                    "`tickets.py new <run> --file <candidate>`",
+                ],
+                "legacy-v1": [
+                    "arguments",
+                    "absent",
+                    "`v1:root:<root>`",
+                    "`tickets.py new <run> <id> --cohort v1:root:<root>`",
+                ],
+            },
+            rows,
+        )
+
     def test_result_clause_shape_and_actual_enforcement_have_distinct_owners(self):
         work_item = read("work-item.md")
         result = read("result.md")

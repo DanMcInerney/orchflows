@@ -64,7 +64,10 @@
     the root cut reader is the distinct exception. Additional adversarial
     review is a unique named root-gate critique lens feeding the same one
     repair and terminal verification, never another ordinary independence
-    path.
+    path. An ordered lens bundle's critique-and-repair context records
+    findings by per-lens identity and evidence in bundle order. Because it
+    may repair, every verdict it renders is void; a fresh separate verifier
+    renders the gate's verdicts after it.
     Acceptance resting only on checks the executing context authored
     is UNVERIFIED.
 11. A repair by the context that found the defect is accepted only on a

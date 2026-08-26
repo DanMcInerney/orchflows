@@ -1,0 +1,24 @@
+{
+  "schema": "orchflows.errand-canary-golden.v1",
+  "item": "catalog-redirect-repair",
+  "admission": {
+    "adapter": "plain-artifact",
+    "findings": [],
+    "receipt": "v1:plain-artifact:sha256:4b4b94b1e6a6ba192aa91d5ef4825d139f8ab42299852a10ca07b3a1ee218479",
+    "snapshot_ids": [
+      "repair"
+    ]
+  },
+  "result": {
+    "status": "complete",
+    "result_section_sha256": "282fd70a5c2c279a1b0609b68381bc8291543af6c850c8baa64d7883a897d209",
+    "criteria": {
+      "1": "PASS",
+      "2": "PASS",
+      "3": "PASS",
+      "4": "PASS"
+    },
+    "overall": "PASS"
+  },
+  "counterfactual_targets_path": "counterfactual-targets.json"
+}

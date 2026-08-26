@@ -381,11 +381,19 @@ class RepositoryScopeManifestTests(unittest.TestCase):
                 (("create", "contracts/*.md"), ("change", "tests/pins.json")),
                 (("change", "contracts/*.md"), ("change", "tests/pins.json")),
                 (("delete", "contracts/*.md"), ("change", "tests/pins.json")),
+                (
+                    ("change", "scripts/tickets_errand.py"),
+                    ("change", "ARCHITECTURE.md"),
+                ),
+                (
+                    ("delete", "scripts/tickets_errand.py"),
+                    ("change", "ARCHITECTURE.md"),
+                ),
                 (("write", "web/src/"), ("write", "web/dist/")),
             },
             rows,
         )
-        self.assertEqual(5, len(parsed))
+        self.assertEqual(7, len(parsed))
 
     def test_code_and_design_workspace_cells_name_plan_graph_and_direct_only_mode(self):
         for relative in (

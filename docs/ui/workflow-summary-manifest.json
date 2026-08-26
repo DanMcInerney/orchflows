@@ -59,6 +59,12 @@
         {"source": "compare", "target": "report", "kind": "sequence"}
       ]
     },
+    "errand": {
+      "nodes": [
+        {"id": "deliver", "label": "Deliver one bounded errand"}
+      ],
+      "edges": []
+    },
     "renovate": {
       "nodes": [
         {"id": "audit", "label": "Audit the workspace"},

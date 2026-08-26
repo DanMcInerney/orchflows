@@ -1,6 +1,6 @@
 ---
 name: orch-spec
-description: Turn a request plus evidence into a routing-stamped, decomposition-ready root ticket. Use before any delivery run.
+description: Freeze and seal a semantic root when evidence, user decisions, kind boundaries, or successor planning are unresolved.
 role: planner
 ---
 
@@ -44,13 +44,15 @@ When one executor plus the mandatory `orch-integrate` join owns the whole
 outcome, bind that executor in the root itself rather than `orch-decompose`,
 with its own completion test and write scope.
 
-For every new root this producer opens, opt into v2 explicitly. Finish its
-frozen assignment as a `draft`, derive `root_generation` as
-`v2:root:<root-id>:<ordinal>:sha256:<digest>`, validate that exact snapshot,
-record its validation receipt in script-owned run state, then compare-and-swap
-it from `validated` to `sealed`. Only the exact validated digest is sealed and
-made eligible for `orch-decompose`; its `assignment_seal` records that exact
-assignment digest, and a post-seal assignment change is a new generation.
+For every new root, opt into v2 through
+`tickets.py stamp-generation <run> <root-id>`, which derives `root_generation`
+as `v2:root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
+that snapshot through `tickets.py draft-validate <run> <root-id>`, then
+compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
+<run> <root-id> --cut-generation <validated cut_generation>`. Only that
+validated digest is sealed and eligible for `orch-decompose`; its
+`assignment_seal` records that exact assignment digest, and a post-seal
+assignment change is a new generation.
 Compatibility is closed: absence of v2 fields means v1, so legacy producers
 and existing v0/v1 tickets keep their prior admission and execution path.
 
