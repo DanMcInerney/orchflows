@@ -88,8 +88,8 @@
     caller seals the exact validated assignment digest over objective,
     inputs, authority, dependencies, acceptance, and executor, its
     `sequence` included. Those fields are immutable after seal; any change
-    creates a new generation. The executor-owned `## Result`,
-    `## Verification`, `## Feedback`, `## Risks`, `## Context`, legacy
-    `## Carry`, and `## Handoff` sections remain append-only and outside the
+    creates a new generation. The executor-owned `Result`, `Verification`,
+    `Feedback`, `Risks`, `Context` (`## Context`), legacy `Carry`, and `Handoff`
+    sections remain append-only and outside the
     sealed assignment; Context is canonical for new work, while already-taken-up
     `## Carry` history retains its T0 meaning.

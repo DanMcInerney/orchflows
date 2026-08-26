@@ -3,23 +3,21 @@
 The one unit of work, plan, and record — a delegation packet made durable:
 packet parts ⊕ completion test ⊕ lifecycle ⊕ graph position.
 
-Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the
-user-scope sink `scripts/state_root.py` resolves. An `excluded_actions`
-forbidding a directory always carves out the run's own directory there.
+Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the user-scope
+sink `scripts/state_root.py` resolves. An `excluded_actions` forbidding a directory
+always carves out the run's own directory there.
 
 Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
 - `id` — lifecycle: unique within the run; stable once issued.
 - `run` — lifecycle: the owning run id.
-- `admission` — lifecycle: `v1:pending` at issue, then the portable
-  `v1:<adapter>:sha256:<digest>` receipt for the exact cut/cohort snapshot.
+- `admission` — lifecycle: `v1:pending` at issue, then the portable `v1:<adapter>:sha256:<digest>` receipt for the exact cut/cohort snapshot.
   `scripts/tickets_lifecycle.py` owns the grade-then-swap protocol both
   `ready` and `claim` run; direct status writes create neither state.
 - `cohort` — v1 graph position and v1's alone: `v1:ticket:<id>`, `v1:root:<root>`,
   or `v1:batch:<digest>`, graded and sealed as one when a member goes live;
   amendment invalidates every unsealed member's receipt. A v2 ticket carries none.
-- `root_generation`, `cut_generation`, `ownership_regions`,
-  `assignment_seal` — the v2 fields: content identities
+- `root_generation`, `cut_generation`, `ownership_regions`, `assignment_seal` — the v2 fields: content identities
   `v2:root:<root-id>:<ordinal>:sha256:<digest>` and
   `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
   `{"artifact":"<path>","merge_oracle":"<identity>","owner":"<ticket-id>","selector":{"kind":"<kind>","value":"<stable identity>"}}`;
@@ -27,8 +25,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   `authority`, `dependencies`, `acceptance`, `executor`. Digests, selectors, seal,
   and the migration under which the absence of all four v2 fields means v1 and no
   v1 value is reinterpreted are [rules/topology.md](../rules/topology.md) §8–§11's.
-- `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
-  `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
+- `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` | `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
   `orch-frontier`: the first four live, `pending` and `suspended` the two
   non-terminal waits and a suspended ticket staying claimed, resumable from its
   `## Handoff`; the last five terminal, the join's (`orch-integrate`) alone and
@@ -40,8 +37,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 - `pack` — optional: the stamped pack binding this item's workspace, oracles,
   and craft — set by decomposition from the root ticket's stamp, or by the
   ad-hoc cutter when a pack fits. Absent, workspace semantics are plain paths.
-- `independence` — optional: `gate` | `checker` — which
-  [rules/verification.md](../rules/verification.md) §10 source this item's
+- `independence` — optional: `gate` | `checker` — which [rules/verification.md](../rules/verification.md) §10 source this item's
   `authored-here` acceptance rides, exactly one outside-independence path
   being selected: `gate`, the downstream gate re-verifying all authored-here
   criteria regardless of oracle class, or `checker`, an absent field's read.
@@ -49,8 +45,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   checker sets through `tickets.py check`. Invalid on a non-root ticket
   whose `independence` is `gate`; a root's is under Root ticket.
 - `depends_on` — graph position: list of item ids; empty list when none.
-- `write_scope` — packet `authority`: exactly what this item may change, in
-  the workspace semantics of the ticket's `pack`; a strict subset of the
+- `write_scope` — packet `authority`: exactly what this item may change, in the workspace semantics of the ticket's `pack`; a strict subset of the
   run's scope. Outside it sit the ticket's own `status` and its
   executor-owned sections — `## Result`, `## Verification`, `## Feedback`,
   `## Risks`, `## Context`, legacy `## Carry`, and, suspending, `## Handoff`
@@ -64,8 +59,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 - `excluded_actions` — packet `authority`, optional: named actions this
   item's executor may not take without suspending through `## Handoff`, never
   a path in its own `write_scope` — that contradiction is the cut's to fix.
-- `isolation` — packet `authority`, optional: `required` | `none` — whether
-  this item executes in a workspace of its own; absent reads `none`. The
+- `isolation` — packet `authority`, optional: `required` | `none` — whether this item executes in a workspace of its own; absent reads `none`. The
   decomposer is the field's only setter, `scripts/workspace.py check` grades
   the declaration, and the join runs that check before assembly.
 - `bound` — packet `bounds`: the item's effort budget.
@@ -82,8 +76,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 Body sections, in order — completion test plus the packet's remaining parts:
 
 - `## Objective` — packet `objective`: one observable end state, never activities.
-- `## Fixed inputs` — packet `inputs`: evidence by identity, never prose
-  copies and never an unpinned coordinate, which the `identity` entry of
+- `## Fixed inputs` — packet `inputs`: evidence by identity, never prose copies and never an unpinned coordinate, which the `identity` entry of
   [docs/vocabulary.md](../docs/vocabulary.md) excludes; procedure belongs to
   the executor, never to inputs. An item carries verbatim every field its
   executor's Require names, each non-empty bullet one recursively key-sorted
@@ -93,8 +86,7 @@ Body sections, in order — completion test plus the packet's remaining parts:
 
   `- input: {"name":"question","type":"literal","value":"exact value"}`
 
-- `## Completion test` — enumerated criteria, each naming its oracle and
-  oracle_class per [verdict.md](verdict.md), and optionally its oracle
+- `## Completion test` — enumerated criteria, each naming its oracle and oracle_class per [verdict.md](verdict.md), and optionally its oracle
   provenance — `pre-existing` where the oracle exists or is concretely
   specified before the unit's work, else `authored-here`, which the
   executing context creates and an absent field reads as. Independence law:
@@ -104,8 +96,7 @@ Body sections, in order — completion test plus the packet's remaining parts:
   the one outside execution arrives per §10, and a later reader reuses an
   entry whose covers are unchanged ([verdict.md](verdict.md)'s invalidation
   clause) rather than re-running it.
-- `## Return fields` — packet `return_contract`: the named fields the
-  executor's result must carry. A `status` here is the result envelope's
+- `## Return fields` — packet `return_contract`: the named fields the executor's result must carry. A `status` here is the result envelope's
   ([result.md](result.md)), never the ticket frontmatter key above. It may
   carry at most one exact size line, whose resolution, counting, and
   enforcement are [Result](result.md)'s:
@@ -156,8 +147,7 @@ deliver the return contract inside authority and bounds is the child's.
 
 ## T0 supersession
 
-A named-field or enum change to this contract or
-[pack-signature.md](pack-signature.md) lands as an explicit T0 supersession.
+A named-field or enum change to this contract or [pack-signature.md](pack-signature.md) lands as an explicit T0 supersession.
 The change updates its focused contract checks and re-pins the superseded
 canonical bytes in `tests/pins.json`; old admission versions retain their
 existing meaning and it never reinterprets claimed or terminal history. This
