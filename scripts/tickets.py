@@ -23,8 +23,9 @@ Subcommands:
         [--isolation required|none] [--return-fields TEXT]
     new <run> --file <path>
     instantiate <template-dir> --run <run> [--set k=v ...]
-    gate <run> <root-id> --lens <name>[,<name>] --write-scope <path>[,<path>]
-        [--acceptance-from <id>]
+    gate <run> <root-id> [--lens <name>[,<name>] |
+        --ordered-lens-bundle <name>[,<name>]]
+        --write-scope <path>[,<path>] [--acceptance-from <id>]
     list [--run R]
     ready [--run R]
     claim <run> <id> --by <name>

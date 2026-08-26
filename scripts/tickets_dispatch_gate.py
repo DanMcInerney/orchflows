@@ -229,6 +229,19 @@ def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section
     else:
         record = {'name': name, 'type': 'literal', 'value': literal}
     return '- input: ' + json.dumps(record, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+def _ordered_lens_bundle(value) -> list:
+    """The ordered, nonempty, identity-unique bundle an opt-in names.
+
+    Unlike ``_split_commas``, this parser keeps empty positions observable:
+    dropping one would turn ``code,,library`` into a different bundle.  Lens
+    identity is case-insensitive, as it is for the ordinary gate family, but
+    spelling and order are preserved in the returned value so the sealed
+    assignment records exactly what the caller requested.
+    """
+    lenses = [part.strip() for part in str(value or '').split(',')]
+    if not lenses or any(not lens for lens in lenses):
+        raise ValueError('ordered lens bundle must not contain an empty lens identity')
+    return _distinct_gate_lenses(lenses)
 def _input_name(prefix: str, value: str, position: int) -> str:
     slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
     return f'{prefix}-{slug or position}'
@@ -264,6 +277,36 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: s
         return [('Objective', f"Every accepted blocking finding against `{root_id}` is repaired inside this ticket's own write scope, or declined with a stated reason; every accepted non-blocking finding is queued as candidate scope per verification §9, and nothing outside that scope changes."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(["- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: the critique tickets' findings against this ticket's `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"])), ('Return fields', 'status; result — each finding, its disposition and the changed artifact by identity; verification; feedback; risks')]
     repair_id = repaired_by or GATE_REPAIR_ID.format(root=root_id); inputs = [_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'), _gate_input('repair-result', run=run, ticket=repair_id, section='Result'), _gate_input('mutation-plan-paths', literal=mutation_plan)]
     return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
+def _ordered_bundle_sections(root_id: str, lenses: list, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
+    """One closer packet that critiques in bundle order, then repairs.
+
+    The list is one canonical literal rather than one record per lens.  Its
+    order consequently belongs to ``assignment_payload``'s sealed Fixed
+    inputs and cannot be re-sorted between draft validation and dispatch.
+    """
+    inputs = [_gate_input('ordered-lens-bundle', literal=list(lenses))]
+    inputs.extend(
+        _gate_input(_input_name('unit-result', unit, position), run=run, ticket=unit, section='Result')
+        for position, unit in enumerate(units, start=1)
+    )
+    inputs.append(_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'))
+    named = ', '.join(f'`{lens}`' for lens in lenses)
+    objective = (
+        f"Every defect in `{root_id}`'s delivered result found by the ordered lens bundle "
+        f"{named} is reported by identity with its evidence, applying each lens in the stated "
+        "order as an open search over what the subtree produced. Then, as this chain's second "
+        "skill, every accepted blocking finding is repaired inside this ticket's own write scope "
+        "or declined with a stated reason, every accepted non-blocking finding is queued as "
+        "candidate scope per verification §9, and nothing outside that scope changes."
+    )
+    criteria = [
+        "- every finding names the artifact identity it was found at, the lens that found it, and the evidence that shows it | oracle: this ticket's `## Result` read under the `ordered-lens-bundle` in its stated order | oracle_class: judged | provenance: pre-existing",
+        "- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing",
+        "- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: this ticket's own ranked findings against its `## Result` | oracle_class: deterministic | provenance: pre-existing",
+        "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing",
+    ]
+    returns = "status; result — ranked findings in ordered-lens-bundle order, each with its lens, artifact identity and evidence, then each finding's disposition and the changed artifact by identity; verification; feedback; risks"
+    return [('Objective', objective), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(criteria)), ('Return fields', returns)] + GATE_EXECUTOR_SECTIONS
 def _cmd_gate(rest, head_probe=None):
     """Serialize the gate's complete state read and all-or-none creation.
     ``head_probe`` is the revision reading the whole family is sealed at.
@@ -273,7 +316,7 @@ def _cmd_gate(rest, head_probe=None):
     grade one delivery at two identities.
     """
     probe = list(rest)
-    for flag in ('--lens', '--write-scope', '--acceptance-from'):
+    for flag in ('--lens', '--ordered-lens-bundle', '--write-scope', '--acceptance-from'):
         _extract_flag(probe, flag)
     if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
         return _gate_under_run_lock(rest, head_probe)
@@ -290,7 +333,10 @@ def _gate_under_run_lock(rest, head_probe=None):
     repairs on one scope. Nothing lands until every stub is graded.
     """
     args = list(rest)
+    lens_present = '--lens' in args
+    bundle_present = '--ordered-lens-bundle' in args
     lens_arg = _extract_flag(args, '--lens')
+    bundle_arg = _extract_flag(args, '--ordered-lens-bundle')
     scope_arg = _extract_flag(args, '--write-scope')
     acceptance_from = _extract_flag(args, '--acceptance-from')
     stray = next((arg for arg in args if arg.startswith('-')), None)
@@ -303,7 +349,12 @@ def _gate_under_run_lock(rest, head_probe=None):
         invalid = _segment_error(kind, value)
         if invalid is not None:
             return invalid
-    lenses = _split_commas(lens_arg)
+    if lens_present and bundle_present:
+        return {'error': 'gate accepts either --lens or --ordered-lens-bundle, not both. Nothing was written'}
+    try:
+        lenses = _ordered_lens_bundle(bundle_arg) if bundle_present else _split_commas(lens_arg)
+    except ValueError as error:
+        return {'error': str(error) + '. Nothing was written'}
     items, error = _run_tickets(run)
     if error is not None:
         return error
@@ -316,7 +367,7 @@ def _gate_under_run_lock(rest, head_probe=None):
         return {'error': f"gate root '{root_id}' is not the run's sole orch-decompose root ({roots or 'none'}). One physical run's one gate belongs only to that root. Nothing was written"}
     gate_prefix = f'{root_id}.gate.'
     units = sorted((item_id for item_id in by_id if item_id.startswith(f'{root_id}.') and (not item_id.startswith(gate_prefix))))
-    if not lenses:
+    if not lenses and not bundle_present:
         # The cut's domains, not the root's alone: a mixed cut whose default
         # lens set was the root's shipped one domain unreviewed. The root's
         # label leads and is unfiltered -- a custom pack keeps yielding its own
@@ -330,10 +381,11 @@ def _gate_under_run_lock(rest, head_probe=None):
         lenses = [label for label in dict.fromkeys(domains) if label]
     if not lenses:
         return {'error': f"gate requires --lens: one critique stub per stamped lens, and neither root ticket '{root_id}' nor its cut names a pack whose domain could stand in. usage: " + GATE_USAGE}
-    try:
-        lenses = _distinct_gate_lenses(lenses)
-    except ValueError as error:
-        return {'error': str(error) + '. Nothing was written'}
+    if not bundle_present:
+        try:
+            lenses = _distinct_gate_lenses(lenses)
+        except ValueError as error:
+            return {'error': str(error) + '. Nothing was written'}
     gate_roots = sorted({str(item.get('id') or '').split(GATE_ID_MARKER, 1)[0] for item in items if GATE_ID_MARKER in str(item.get('id') or '')})
     other_gate_roots = [owner for owner in gate_roots if owner != root_id]
     if other_gate_roots:
@@ -383,7 +435,7 @@ def _gate_under_run_lock(rest, head_probe=None):
     # Several lenses keep that stub:
     # pooled findings take one fix per shared cause, and a per-lens critique
     # owning its own repair bill has an incentive to soften findings.
-    chained = len(lenses) == 1
+    chained = bundle_present or len(lenses) == 1
     def stub(stub_id, executor, depends, stub_scope, stub_sections, sequence=None, stub_pack=None):
         """One stub of this family, on this root's authority, version and pack.
 
@@ -397,14 +449,22 @@ def _gate_under_run_lock(rest, head_probe=None):
             invalid = _segment_error('lens', lens)
             if invalid is not None:
                 return invalid
-            stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
+        if bundle_present:
+            stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens='bundle')
             critique_ids.append(stub_id)
-            sections = _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run, chained=chained)
-            chain = [GATE_EXECUTORS['critique'], GATE_EXECUTORS['repair']] if chained else None
-            # A chained critique is also the repair, and the write half is the
-            # half a pack is authority for: it takes the ceiling, which always
-            # widens any lens pack eligible to be used at all.
-            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, scope if chained else [], sections, sequence=chain, stub_pack=None if chained else critique_packs[lens])))
+            sections = _ordered_bundle_sections(root_id, lenses, scope, acceptance_id, acceptance, units, run)
+            chain = [GATE_EXECUTORS['critique'], GATE_EXECUTORS['repair']]
+            rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, scope, sections, sequence=chain)))
+        else:
+            for lens in lenses:
+                stub_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
+                critique_ids.append(stub_id)
+                sections = _gate_sections('critique', root_id, lens, scope, acceptance_id, acceptance, units, run, chained=chained)
+                chain = [GATE_EXECUTORS['critique'], GATE_EXECUTORS['repair']] if chained else None
+                # A chained critique is also the repair, and the write half is the
+                # half a pack is authority for: it takes the ceiling, which always
+                # widens any lens pack eligible to be used at all.
+                rendered.append((stub_id, stub(stub_id, GATE_EXECUTORS['critique'], units, scope if chained else [], sections, sequence=chain, stub_pack=None if chained else critique_packs[lens])))
         if chained:
             repaired_by = critique_ids[0]
         else:
@@ -444,6 +504,8 @@ def _gate_under_run_lock(rest, head_probe=None):
             path.unlink(missing_ok=True)
         return {'error': f'unwritable gate stub: {error}. Nothing was written'}
     payload = {'run': run, 'root': root_id, 'lenses': lenses, 'acceptance_from': acceptance_id, 'ids': [stub_id for stub_id, _ in rendered], 'paths': [str(path) for path in written]}
+    if bundle_present:
+        payload['ordered_lens_bundle'] = list(lenses)
     if version == 2:
         # A v2 family lands drafting: the seal is the one door that writes
         # generation fields, so completion is named rather than imitated.
@@ -453,6 +515,6 @@ __all__ = (
     'PACK_WIDENINGS', '_cmd_gate', '_critique_pack', '_gate_body', '_gate_input',
     '_gate_sections', '_gate_stub', '_gate_under_run_lock',
     '_inherited_input_lines', '_input_name', '_is_record', '_listed_items',
-    '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
+    '_ordered_bundle_sections', '_ordered_lens_bundle', '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
     '_stub_pack_ceiling', '_with_inherited_inputs',
 )
