@@ -39,7 +39,8 @@ whitespace-delimited words. Terms are
   resolution; `tickets_scope.py` mutation/edge closure; `tickets_admission.py`
   receipt lifecycle. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
-  ceiling, `tickets_dispatch_gate.py` gate-only cut construction,
+  ceiling, `tickets_issue_render.py` issuance markdown and ceiling refusals,
+  `tickets_dispatch_gate.py` gate-only cut construction,
   `tickets_gate_bundle.py` contract-owned ordered lens bundle validation,
   `tickets_packet_receipts.py` one-shot packet claims, and
   `tickets_gate_mutations.py` the gate mutation plan,

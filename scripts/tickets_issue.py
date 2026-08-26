@@ -1,20 +1,21 @@
 """Ticket issue support."""
 from __future__ import annotations
-import json
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_input_producers import render_ticket_inputs
+    from .tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
     from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
 else:
-    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_context import graded_admission, run_snapshot
     from tickets_input_producers import render_ticket_inputs
+    from tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
     from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from tickets_emission import grade_run_emission
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
 def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
@@ -45,61 +46,6 @@ def _distinct_gate_lenses(lenses: list) -> list:
     if repeated:
         raise ValueError('gate review lenses must be distinct; repeated: ' + ', '.join(repeated))
     return lenses
-def _frontmatter_list(key: str, values) -> list:
-    """One frontmatter list, as the lines that carry it.
-
-    The inline form ``[a, b]`` splits on the comma and on nothing else —
-    a semicolon inside an entry is part of that entry
-    (``_parse_frontmatter``). So an entry carrying a comma, or a semicolon
-    a reader might take for a separator, is written in the block form
-    instead, one ``- entry`` per line: an excluded action is prose, and
-    prose has commas in it. No second inline separator is offered, because
-    one written shape read two ways is how a scope that was granted and a
-    scope that was refused come to be the same line. Both shapes read back
-    as the same list.
-    """
-    items = list(values)
-    if any((',' in item or ';' in item for item in items)):
-        return [f'{key}:'] + [f'- {item}' for item in items]
-    return [f"{key}: [{', '.join(items)}]"]
-def _render_ticket(fields: dict, sections: list) -> str:
-    """One ticket's markdown: frontmatter in the contract's key order, then
-    its body sections in the contract's section order.
-
-    ``fields`` values are already strings or lists; ``None`` omits an
-    optional key entirely, so nothing is written that the reader would have
-    to interpret as absent.
-    """
-    lines = ['---']
-    for key, value in fields.items():
-        if value is None:
-            continue
-        if isinstance(value, list):
-            lines.extend(_frontmatter_list(key, value))
-        else:
-            lines.append(f'{key}: {value}' if value != '' else f'{key}:')
-    lines.append('---')
-    body = []
-    for heading, content in sections:
-        body.append(f'\n## {heading}\n')
-        if content:
-            body.append(f'\n{content}\n')
-    return '\n'.join(lines) + '\n' + ''.join(body)
-
-
-def _input_record(value: str, position: int=1) -> str:
-    """Render one ``--input`` value as the canonical-record bullet shell."""
-    stripped = str(value).strip()
-    if stripped.startswith('input: '):
-        stripped = stripped[len('input: '):]
-    try:
-        json.loads(stripped)
-    except json.JSONDecodeError:
-        stripped = json.dumps(
-            {'name': f'legacy-input-{position}', 'type': 'literal', 'value': stripped},
-            ensure_ascii=False, separators=(',', ':'), sort_keys=True,
-        )
-    return f'- input: {stripped}'
 def _cmd_new(rest):
     """Issue one ticket into the run, or place one already written.
 
@@ -412,27 +358,6 @@ def _recut_under_run_lock(rest):
     if failure is not None:
         return failure
     return {'recut': {'run': run, 'id': ticket_id, 'path': str(target), 'cohort': new_cohort or None, 'status': 'pending', 'admission': _pending_admission(candidate_data)}}
-def _ceiling_error(subject: str, ticket_id: str, text: str):
-    """The refusal a ticket over the instruction ceiling gets, or ``None``.
-
-    Applied where the cutter still holds the flag that was wrong. An
-    objective enumerating (1)...(5) cannot fit inside the ceiling, which is
-    the point: the ticket that does not fit is two tickets.
-
-    The ceiling is a unit's. A root ticket states a whole run, and each
-    `.gate.` stub carries the root's `## Completion test` verbatim -- `gate`
-    renders them from it -- so grading either against the unit ceiling would
-    refuse what this script itself writes.
-    Who is exempt is decided here; what the words come to is
-    `tickets_ceiling`'s, sentence included, so the refusal prints the
-    per-part arithmetic it had to compute to refuse at all.
-    """
-    if GATE_ID_MARKER in str(ticket_id or ''):
-        return None
-    if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
-        return None
-    sentence = ceiling_sentence(subject, text)
-    return None if sentence is None else {'error': sentence}
 def _issue_defects(text: str, *, issued: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 
