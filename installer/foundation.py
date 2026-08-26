@@ -46,6 +46,8 @@ PROFILES_MD = REPO_ROOT / "skills" / "engines" / "orch-frontier" / "references" 
 HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
 CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
+GROK_LIMITS_START = "# BEGIN ORCHFLOWS SUBAGENT LIMITS"
+GROK_LIMITS_END = "# END ORCHFLOWS SUBAGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
 # The four names exposed by Claude's bounded adapter set. The routed
 # composition ``fix`` replaced the demoted ``orch-fix`` skill.
@@ -56,6 +58,10 @@ CLAUDE_ADAPTER_SETS = ("all", "four")
 AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill", "frontend-asset"))
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
+GROK_MAX_CONCURRENT = 20
+# Grok's own cap, not a house choice: a subagent that calls
+# ``spawn_subagent`` fails with a depth error, so 1 is the only honest value.
+GROK_MAX_DEPTH = 1
 CLAUDE_MAX_TOOL_USE_CONCURRENCY = 20
 CLAUDE_SETTINGS_SCHEMA = "https://json.schemastore.org/claude-code-settings.json"
 _BINDING_RE = re.compile(r"(?P<key>[a-z_]+)\s*`(?P<value>[^`]+)`")
@@ -193,6 +199,41 @@ def _codex_agents_path(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
         return _codex_user_home() / "AGENTS.md"
     return _require_project_root(project_root) / "AGENTS.md"
+
+
+def _grok_user_home() -> Path:
+    """Grok Build's user config directory, the root of every Grok surface.
+
+    ``GROK_HOME`` overrides the ``~/.grok`` default, as the grok CLI reads it.
+    User scope is the whole story here: a project ``.grok/config.toml`` honours
+    only ``mcp_servers``, ``plugins``, ``permission`` and ``mcp.max_output_bytes``,
+    so nothing this installer writes has a project-local equivalent.
+    """
+
+    override = os.environ.get("GROK_HOME", "").strip()
+    return Path(override).expanduser() if override else Path.home() / ".grok"
+
+
+def _grok_skills_dir() -> Path:
+    return _grok_user_home() / "skills"
+
+
+def _grok_agents_dir() -> Path:
+    return _grok_user_home() / "agents"
+
+
+def _grok_rules_path() -> Path:
+    """The one managed file under Grok's instruction root.
+
+    ``$GROK_HOME/rules/*.md`` is loaded as global project instructions, so this
+    file is owned whole rather than fenced inside a file the user also writes.
+    """
+
+    return _grok_user_home() / "rules" / "orchflows.md"
+
+
+def _grok_config_path() -> Path:
+    return _grok_user_home() / "config.toml"
 
 
 def _iter_json_strings(value):
