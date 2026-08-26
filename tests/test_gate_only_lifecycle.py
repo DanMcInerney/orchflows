@@ -105,6 +105,7 @@ def _git_repo(parent: Path) -> tuple[Path, str]:
 def fixture(coverage: str):
     previous_sink = os.environ.get(STATE_HOME_ENV_VAR)
     previous_cwd = tickets_mod._cwd
+    previous_store_cwd = tickets_mod._tickets_store_module._cwd
     with tempfile.TemporaryDirectory() as raw:
         base = Path(raw)
         sink = (base / "state").resolve()
@@ -123,6 +124,7 @@ def fixture(coverage: str):
             yield base, run_dir
         finally:
             tickets_mod._cwd = previous_cwd
+            tickets_mod._tickets_store_module._cwd = previous_store_cwd
             if previous_sink is None:
                 os.environ.pop(STATE_HOME_ENV_VAR, None)
             else:
