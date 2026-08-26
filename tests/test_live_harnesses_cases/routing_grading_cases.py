@@ -299,10 +299,8 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("answer", self._observed(events))
 
     def test_reading_the_library_and_then_answering_grades_as_answer(self):
-        """Six of the seven `answer` cases need a read before they can be
-        answered — the block's own instruction is to read the owner. Any
-        tool use at all used to sink the transcript to `unrouted`, so the
-        cases that most need reading were the ones that could not pass."""
+        """Six of seven `answer` cases must read the owner first. Tool use used
+        to sink those transcripts to `unrouted`, so they could not pass."""
 
         events = [
             _tool_use("Read", {"file_path": "/lib/docs/vocabulary.md"}),
@@ -312,8 +310,7 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("answer", self._observed(events))
 
     def test_a_slash_command_is_read_by_its_first_token(self):
-        """`SlashCommand` carries the whole typed line. `/orch-build foo`
-        graded `named:orch-build foo` — a route class no case can expect."""
+        """Use the first token; the whole line made an impossible route class."""
 
         self.assertEqual(
             "build",
@@ -325,10 +322,8 @@ class TestRoutingGrading(unittest.TestCase):
         )
 
     def test_a_by_name_read_is_the_route_the_four_adapter_set_takes(self):
-        """Under `four` the block's fallback for an unadapted name is a read
-        of `by-name/<name>/SKILL.md`. Grading that as no route at all gave
-        the four-adapter set a structural misroute floor on every `named:`
-        case however well the session behaved."""
+        """Under `four`, unadapted names read `by-name/<name>/SKILL.md`.
+        Treating that as unrouted made every `named:` case structurally fail."""
 
         for reader in (
             _tool_use("Read", {"file_path": "/home/u/.orchflows/lib/by-name/evolve/SKILL.md"}),
@@ -442,11 +437,8 @@ class TestRoutingCaseLoader(unittest.TestCase):
         return path
 
     def test_only_a_prompt_naming_orch_build_expects_the_build_route(self):
-        """templates/host-block.md routes an unnamed request to answer,
-        ticket or fix, and says everything else runs only when named.
-        `orch-build` appears in the block as a scope-law pointer, not as a
-        route — so five prompts that never said `orch-build` and expected
-        `build` were measuring the benchmark's own invention."""
+        """The host block routes unnamed requests to answer, ticket, or fix.
+        Prompts expecting `build` without naming `orch-build` measured an invention."""
 
         cases = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
         build = [case for case in cases if case["expected"] == "build"]
