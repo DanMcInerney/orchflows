@@ -60,7 +60,7 @@ def validate_cross_package_links(packages, diag: Diagnostics) -> None:
                 owner_text = _read_source(owner_pkg["skill_md"])
                 ref_suffix = f"references/{resolved.name}"
                 if ref_suffix not in owner_text:
-                    diag.warn(
+                    diag.error(
                         rel(source_file),
                         f"cross-package link to {rel(resolved)} but owning package's "
                         f"SKILL.md does not itself cite '{ref_suffix}'",

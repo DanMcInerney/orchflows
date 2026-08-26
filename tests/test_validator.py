@@ -81,6 +81,32 @@ class TestMarkdownAnchors(_IsolatedTree):
         )
 
 
+class TestPrivateReferenceAdmission(_IsolatedTree):
+    def test_cross_package_private_reference_is_an_error(self):
+        for name in ("pack-a", "pack-b"):
+            package = self.tmp_path / "packs" / name
+            package.mkdir(parents=True)
+            (package / "SKILL.md").write_text(
+                f"---\nname: {name}\ndescription: synthetic pack\n---\n",
+                encoding="utf-8",
+            )
+        private = self.tmp_path / "packs" / "pack-b" / "references" / "private.md"
+        private.parent.mkdir()
+        private.write_text("# Private\n", encoding="utf-8")
+        with (self.tmp_path / "packs" / "pack-a" / "SKILL.md").open(
+            "a", encoding="utf-8"
+        ) as stream:
+            stream.write("\nSee [private](../pack-b/references/private.md).\n")
+
+        result = self._run()
+
+        finding = next(
+            line for line in result.stdout.splitlines()
+            if "cross-package link" in line and "private.md" in line
+        )
+        self.assertTrue(finding.startswith("ERROR "), finding)
+
+
 if __name__ == "__main__":
     unittest.main()
 
