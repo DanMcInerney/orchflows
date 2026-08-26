@@ -7,21 +7,20 @@ role: planner
 Require: root [ticket](../../../contracts/work-item.md#root-ticket), stamped
 pack slicing and oracle_policy. Reject missing parts by name.
 
-Goal: minimize critical path; every item an atom; obey §3's test/count/width law.
+Goal: minimize critical path; every item an atom under §3.
 
-Cut [work items](../../../contracts/work-item.md) as `<root>.NN`, emitting by
-the frozen root version. Mandatory-v2 roots use candidate files carrying the
-exact inherited `root_generation` and no `cohort`, placed through
-`tickets.py new <run> --file <candidate>`. Legacy-v1 roots use
-`tickets.py new <run> <id> --cohort v1:root:<root>`. Pass exact parameters/evidence as
-canonical JSON `--input` records. Use each item's stamped workspace cell; carry its
-`mutations` via `--mutation`. Objective states the routed observable end
-state. Give every item a write scope (siblings overlap only when dependency-ordered),
-isolation, bound, edges, and completion criteria with
-pack oracles and provenance. Stamp `independence: gate` exactly when the gate
-covers all authored-here criteria, otherwise `independence: checker`,
-regardless of oracle class. Apply §3 edges and sole ownership; emit §4
-assembly when named. Declared `isolation: required`, a cut takes no workspace.
+Cut [work items](../../../contracts/work-item.md) as `<root>.NN` by frozen root
+version. Mandatory-v2 roots: candidate files carrying the
+exact inherited `root_generation` and no `cohort`, via
+`tickets.py new <run> --file <candidate>`. Legacy-v1 roots:
+`tickets.py new <run> <id> --cohort v1:root:<root>`. Carry exact parameters as
+canonical JSON `--input`, the stamped workspace cell, and `mutations` via
+`--mutation`. Give each item an observable objective, write scope (siblings
+overlap only when dependency-ordered), isolation, bound, edges, and criteria
+with pack oracles and provenance. Stamp `independence: gate` when the gate
+covers all authored-here criteria; otherwise `independence: checker`,
+regardless of oracle class. Apply §3 edges and sole ownership; emit named §4
+assembly. Declared `isolation: required`, a cut takes no workspace.
 
 Run `cutcheck.py` on the cut revision; amend defects and re-run to 0. The
 [cut lens](references/cut-lens.md) judges advisories and undecidable matters.
@@ -31,17 +30,16 @@ unique lens, feeding one repair and one verification over run scope.
 Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 
-For v2, complete one `draft` before eligibility: all assignments, edges,
+For v2, complete one `draft` before eligibility with assignments, edges,
 coverage, `ownership_regions`, and merge-oracle identities. Every assignment
 names one `root_generation`; the cut names its content-addressed
-`cut_generation` and `assignment_seal` over exact validated worker fields.
-Grade one exact snapshot and persist its receipt through
-`tickets.py draft-validate`, then compare-and-swap only that digest to sealed
-with `tickets.py seal` after cutcheck and lens pass. Post-seal
-changes create and validate a new generation; repeated normalized validation
-failure suspends at the correction bound. Absent v2 fields mean v1;
-never reinterpret legacy membership, receipts, cohorts, readiness, claims, or
-packets.
+`cut_generation` and `assignment_seal` over validated worker fields. Persist
+one exact-snapshot receipt through `tickets.py draft-validate`; after cutcheck
+and lens pass, compare-and-swap only its digest through `tickets.py seal`.
+Post-seal changes require a new validated generation; repeated normalized
+validation failure suspends at the correction bound. Absent v2 fields mean
+v1; never reinterpret legacy membership, receipts, cohorts, readiness,
+claims, or packets.
 
 Never: edit the root ticket's frozen statement.
 
