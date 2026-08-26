@@ -86,7 +86,7 @@ class TestHostBlockRendering(unittest.TestCase):
             "pre-existing deterministic",
             "authored-here",
             "independent atoms",
-            "same planner child",
+            "matching planner child",
             "known cause",
             "unknown cause",
             "install.py doctor",
