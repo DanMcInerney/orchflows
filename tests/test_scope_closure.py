@@ -381,19 +381,36 @@ class RepositoryScopeManifestTests(unittest.TestCase):
                 (("create", "contracts/*.md"), ("change", "tests/pins.json")),
                 (("change", "contracts/*.md"), ("change", "tests/pins.json")),
                 (("delete", "contracts/*.md"), ("change", "tests/pins.json")),
-                (
-                    ("change", "scripts/tickets_errand.py"),
-                    ("change", "ARCHITECTURE.md"),
-                ),
-                (
-                    ("delete", "scripts/tickets_errand.py"),
-                    ("change", "ARCHITECTURE.md"),
-                ),
+                (("create", "tests/*.py"), ("change", "tests/serial_compat_manifest.json")),
+                (("delete", "tests/*.py"), ("change", "tests/serial_compat_manifest.json")),
                 (("write", "web/src/"), ("write", "web/dist/")),
             },
             rows,
         )
         self.assertEqual(7, len(parsed))
+
+    def test_test_membership_mutants_require_the_generic_serial_manifest_owner(self):
+        content = (ROOT / ".orchflows" / "scope-edges.json").read_bytes()
+        for operation in ("create", "delete"):
+            with self.subTest(operation=operation):
+                source = f"{operation}:tests/test_new_behavior.py"
+                source_scope = source.split(":", 1)[1]
+                closed = {
+                    "A": ticket(
+                        "A",
+                        mutations=(source, "change:tests/serial_compat_manifest.json"),
+                        scope=(source_scope, "tests/serial_compat_manifest.json"),
+                    )
+                }
+                self.assertEqual([], grade("A", closed, content)["findings"])
+
+                missing_companion = {
+                    "A": ticket("A", mutations=(source,), scope=(source_scope,))
+                }
+                self.assertEqual(
+                    ["scope-owner-missing"],
+                    codes(grade("A", missing_companion, content)),
+                )
 
     def test_code_and_design_workspace_cells_name_plan_graph_and_direct_only_mode(self):
         for relative in (
