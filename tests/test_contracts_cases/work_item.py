@@ -43,7 +43,7 @@ class TestWorkItemContract(unittest.TestCase):
         text = full[full.index("- `## Objective`"):].split("\n## Dispatch", 1)[0]
         order = [
             "Objective", "Fixed inputs", "Completion test", "Return fields",
-            "Result", "Verification", "Feedback", "Risks", "Carry", "Handoff",
+            "Result", "Verification", "Feedback", "Risks", "Context", "Handoff",
         ]
         seen = [text.index(f"`## {h}`") for h in order]
         self.assertEqual(
@@ -200,6 +200,33 @@ class TestWorkItemContract(unittest.TestCase):
             "Compatibility floor", read("work-item.md"),
             "work-item.md still carries the changelog the supersession deletes",
         )
+
+    def test_context_is_the_canonical_successor_digest(self):
+        contract = read("work-item.md")
+        delegation = read_at_flat("rules/delegation.md")
+        public = (ROOT / "TICKETS.md").read_text(encoding="utf-8")
+
+        for name, text in (
+            ("work-item.md", contract),
+            ("rules/delegation.md", delegation),
+            ("TICKETS.md", public),
+        ):
+            with self.subTest(surface=name):
+                self.assertIn("`## Context`", text)
+
+        for token in (
+            "one to five",
+            "`- state:`",
+            "`- watch:`",
+            "optional",
+            "omission",
+            "T0 supersession",
+            "legacy `## Carry`",
+        ):
+            with self.subTest(contract_token=token):
+                self.assertIn(token, contract)
+
+        self.assertNotIn("`## Carry` — optional", contract)
 
     def test_no_reference_to_the_dead_contracts(self):
         for name in (

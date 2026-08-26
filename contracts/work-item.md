@@ -53,8 +53,9 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   the workspace semantics of the ticket's `pack`; a strict subset of the
   run's scope. Outside it sit the ticket's own `status` and its
   executor-owned sections — `## Result`, `## Verification`, `## Feedback`,
-  `## Risks`, `## Carry`, and, suspending, `## Handoff` — append-only under
-  v2 and never in a generation or seal digest. A §10 checker corrects inside
+  `## Risks`, `## Context`, legacy `## Carry`, and, suspending, `## Handoff`
+  — append-only under v2 and never in a generation or seal digest. A §10
+  checker corrects inside
   this same `write_scope` ([rules/verification.md](../rules/verification.md)
   §9); a root's cut instead.
 - `mutations` — v1 Git/design cut plan: `create:<file>`, `change:<file>`,
@@ -116,10 +117,19 @@ Body sections, in order — completion test plus the packet's remaining parts:
   §10 checker appends its own pass and never rewrites the executor's.
 - `## Verification` — verdict entries, one per criterion; `## Feedback` and
   `## Risks` — bounded observations and risks, `[]` filling either when empty.
-- `## Carry` — optional, filed by the executor at close: the conclusions a
-  successor needs — decisions, landed identities, hazards, the command to
-  re-take a measurement — inlined by `packet` into each dependent's dispatch.
-  A successor-facing digest, never transcript: growing with history is wrong.
+- `## Context` — optional, filed by the executor at close as one to five
+  top-level successor-relevant conclusion bullets. Each begins exactly
+  `- state:` or `- watch:` and has non-empty content: `state` says what is
+  now true, including a decision or landed identity; `watch` says a hazard,
+  invalidation condition, or exact re-check. Either kind may repeat or be
+  omitted. An identity or command appears only when it enables trust or
+  re-check; work narrative never appears. Absence is omission, never an empty
+  heading, `[]`, or filler. As an executor-owned section it is outside the
+  instruction ceiling. This T0 supersession makes Context the only canonical
+  new-work spelling. Legacy `## Carry` keeps its untyped meaning in existing
+  claimed, suspended, or terminal history: it is never renamed, rewritten, or
+  graded as Context, and remains fileable and preserved through recut with
+  explicit legacy provenance and deterministic precedence for mixed history.
 - `## Handoff` — optional: the suspension, resumption, or escalation record —
   reason, remaining scope and known gaps, budget state — complete when a fresh
   agent can resume from it without the suspended agent's transcript, under
