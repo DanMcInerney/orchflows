@@ -138,6 +138,10 @@ that needs a different meaning needs a different word.
 - **ad-hoc set** — ad-hoc tickets cut together with dependency edges,
   sharing one run id and ticket directory; the caller names the run
   bound; the ticket files are the whole record — no worklog.
+- **errand** — an operator-authored run for one bounded change expressed by
+  one executor or one ordered executor sequence plus integration, issued
+  through `tickets.py errand`; its workers run only scoped oracles before
+  the frontier performs terminal acceptance.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the

@@ -47,7 +47,7 @@ class WorkflowCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                "benchmaker", "drift-canary", "evolve", "fix", "renovate",
+                "benchmaker", "drift-canary", "errand", "evolve", "fix", "renovate",
                 "self-improve", "skill-tournament", "orch-build",
                 "orch-eval-design", "orch-fixture", "orch-repair",
                 "orch-self-improve", "orch-spec", "orch-triage",
@@ -61,6 +61,8 @@ class WorkflowCatalogTests(unittest.TestCase):
         by_id = {workflow["id"]: workflow for workflow in projected}
         self.assertEqual("composition", by_id["fix"]["type"])
         self.assertEqual("routed", by_id["fix"]["entry"])
+        self.assertEqual("composition", by_id["errand"]["type"])
+        self.assertEqual("named", by_id["errand"]["entry"])
         self.assertEqual(
             "Take a failure to a proven, regression-guarded repair. Use for any bug or defect with an unknown or unverified cause.",
             by_id["fix"]["description"],
