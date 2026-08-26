@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3246,
+  "count": 3251,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -694,15 +694,12 @@
    "test_tickets_bound.ParkPredicateTest.test_a_claim_with_no_readable_start_has_no_deadline_to_have_passed",
    "test_tickets_bound.ParkPredicateTest.test_motion_after_the_bound_elapsed_is_over_bound_and_not_parked",
    "test_tickets_bound.ParkPredicateTest.test_the_facade_exports_the_predicate_the_engine_rule_names",
-   "test_tickets_carry.TestCarryIsFiledLikeAnyExecutorSection.test_a_ticket_without_carry_has_no_section_defect",
-   "test_tickets_carry.TestCarryIsFiledLikeAnyExecutorSection.test_carry_files_onto_a_claimed_ticket_between_risks_and_handoff",
-   "test_tickets_carry.TestCarryIsFiledLikeAnyExecutorSection.test_result_is_still_required",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_a_complete_dependency_without_carry_yields_the_pointer_line",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_a_dependencys_carry_rides_the_prompt_after_the_head_lines",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_a_missing_sibling_degrades_to_silence_not_refusal",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_dependencies_are_carried_in_frontmatter_order",
-   "test_tickets_carry.TestTheCloseOrdersACarryFiling.test_a_further_child_packet_does_not",
-   "test_tickets_carry.TestTheCloseOrdersACarryFiling.test_a_primary_packet_orders_the_carry_filing",
+   "test_tickets_context.TestPrimaryCloseGuidance.test_further_child_gets_no_context_filing_instruction",
+   "test_tickets_context.TestPrimaryCloseGuidance.test_primary_close_requests_only_terse_state_watch_context",
+   "test_tickets_context.TestSuccessorContextHydration.test_canonical_context_is_flattened_with_status",
+   "test_tickets_context.TestSuccessorContextHydration.test_complete_absence_points_to_result_and_nonterminal_absence_is_silent",
+   "test_tickets_context.TestSuccessorContextHydration.test_dependency_order_is_preserved_and_unreadable_siblings_are_silent",
+   "test_tickets_context.TestSuccessorContextHydration.test_non_context_section_is_ignored_and_complete_dependency_uses_result",
    "test_tickets_emitters.EmissionLawPartition.test_a_dependency_that_has_not_run_yet_is_deferred",
    "test_tickets_emitters.EmissionLawPartition.test_a_finding_code_the_law_does_not_know_refuses",
    "test_tickets_emitters.EmissionLawPartition.test_an_emitter_owned_finding_is_refused",
@@ -772,6 +769,7 @@
    "test_tickets_lint.LintDraftTest.test_a_whole_suite_oracle_is_reported_as_a_warning",
    "test_tickets_lint.LintDraftTest.test_an_executor_named_on_the_command_line_is_graded",
    "test_tickets_lint.LintDraftTest.test_an_unreadable_draft_is_exit_two",
+   "test_tickets_lint.LintDraftTest.test_context_is_outside_the_300_word_instruction_budget",
    "test_tickets_lint.LintDraftTest.test_five_defects_are_reported_in_one_call",
    "test_tickets_lint.LintDraftTest.test_the_ceiling_finding_names_its_count_and_its_overage",
    "test_tickets_lint.LintFixTest.test_fix_clears_the_three_syntactic_findings_and_leaves_the_two",
@@ -1201,6 +1199,7 @@
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_absorbs_the_four_supersession_sections",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_body_sections_are_listed_in_contract_order",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_carries_no_compatibility_floor",
+   "tests.test_contracts_cases.work_item.TestWorkItemContract.test_context_is_the_canonical_successor_digest",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_dispatch_section_names_the_six_packet_parts",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_executor_form_admits_a_tested_script",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_lists_all_body_section_headers",
@@ -2200,6 +2199,10 @@
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_a_readable_run_reports_an_empty_skipped_list",
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_an_unreadable_ticket_is_named_with_its_reason",
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_the_flat_ticket_family_needs_no_ui_reader_module",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_append_validates_the_combined_context_atomically",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_context_accepts_one_to_five_state_or_watch_bullets",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_context_is_the_only_successor_digest_filing_channel",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_every_malformed_context_is_refused_without_changing_bytes",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_an_unreadable_body_file_is_an_error_not_a_traceback",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_both_file_and_text_is_an_error",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_neither_file_nor_text_is_an_error",
@@ -2248,6 +2251,7 @@
    "tests.test_tickets_cases.run_state_resolution.TestRunStateRootResolution.test_inside_a_real_git_worktree_the_bytes_land_in_the_sink",
    "tests.test_tickets_cases.run_state_resolution.TestRunStateRootResolution.test_the_root_comes_from_the_one_resolver_with_no_subprocess",
    "tests.test_tickets_cases.run_state_resolution.TestUnterminatedFenceIsReported.test_an_unterminated_fence_in_an_earlier_section_is_reported_not_duplicated",
+   "tests.test_tickets_cases.run_state_resolution.TestUnterminatedFenceIsReported.test_successor_context_helper_keeps_unreadable_dependencies_non_authoritative",
    "tests.test_tickets_cases.run_state_resolution.TestUnterminatedFenceIsReported.test_the_refusal_covers_append_a_tilde_fence_and_a_fence_below_the_target",
    "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_a_first_write_needs_no_flag_and_reports_it_replaced_nothing",
    "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_a_note_is_an_append_and_never_trips_the_artifact_guard",
@@ -2286,6 +2290,7 @@
    "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_the_canonical_fix_template_enters_v1_admission",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_amend_demotes_and_invalidates_every_unsealed_cohort_receipt",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_amend_refuses_a_checked_or_sealed_cohort_without_changing_bytes",
+   "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_new_issuance_omits_optional_successor_context",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_converts_v0_and_preserves_executor_sections",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_rejects_a_ticket_id_that_traverses_into_another_run",
    "tests.test_tickets_issue_cases.amend_cases.AmendTest.test_a_claimed_ticket_is_refused_and_left_exactly_as_it_was",
@@ -3249,7 +3254,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5bf9cecbc5973780e58be22820bd533fd7a286c987eb2cfda5688b5f7acda073"
+  "sha256": "cdccb6075ad62c75c10b4c56c1d8587ec23b9efeaee19fb77ca550ba20103e61"
  },
  "mutation_owners": [
   {

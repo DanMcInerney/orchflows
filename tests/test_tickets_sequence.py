@@ -9,7 +9,7 @@ verification.md 11 voids a verdict the chain renders on work it changed
 -- so the prompt prices that, and the seal binds the chain
 (delegation 15): an edited `sequence` is a new generation.
 
-Self-contained by write scope, like `tests/test_tickets_carry.py`:
+Self-contained by write scope, like `tests/test_tickets_context.py`:
 fixtures from `tests.test_tickets_cases.common`'s primitives.
 """
 
