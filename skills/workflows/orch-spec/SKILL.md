@@ -40,10 +40,6 @@ Write it through
 stamp> --independence gate …`; the root's `checked_by` is its cut-reader
 bookkeeping, never its final acceptance path.
 
-When one executor plus the mandatory `orch-integrate` join owns the whole
-outcome, bind that executor in the root itself rather than `orch-decompose`,
-with its own completion test and write scope.
-
 For every new root, opt into v2 through
 `tickets.py stamp-generation <run> <root-id>`, which derives `root_generation`
 as `v2:root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate

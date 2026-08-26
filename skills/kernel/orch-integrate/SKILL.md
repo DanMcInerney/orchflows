@@ -29,7 +29,9 @@ Apply [result.md](../../../contracts/result.md)'s `return-size` crossing once:
 `tickets.py result-grade <run> <id>`. Caller-authored malformed clauses or
 missing resolver inputs are `reject(caller)`; executor-authored invalid,
 unresolved, or oversized results are `reject(child)`. Record blame on the
-run-state channel; only this join calls `tickets.py set-status`.
+run-state channel; only this join calls `tickets.py set-status`. An accepted
+`orch-decompose` Result is `cut-accepted`: retain the root's live status.
+Accepting `<root>.gate.verify` performs the root's terminal status transition.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here by filing the empty result and
 status, without dispatch. Accepted non-blocking findings go to the run's

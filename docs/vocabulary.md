@@ -78,10 +78,8 @@ that needs a different meaning needs a different word.
   environment.
 - **run** — one physical execution of a workflow against one spec; owns a
   run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. When
-  decomposed it has one root ticket and one composite gate. An ad-hoc
-  run executes one ad-hoc ticket — or an ad-hoc set — instead: the
-  tickets' objectives and completion tests are its frozen statement,
-  the ticket files the whole record — no worklog.
+  decomposed it has one root ticket and one composite gate; a `single`
+  run has one ordinary ticket.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §10 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
@@ -114,7 +112,8 @@ that needs a different meaning needs a different word.
   `rules/topology.md` §3.
 - **root ticket** — a ticket whose executor is `orch-decompose`; its
   subtree is any `<id>.NN` unit tickets plus `<id>.gate.*`, checked before
-  its first unit is promoted; it completes when
+  its first unit is promoted. Its decomposition Result is **cut-accepted**,
+  a nonterminal receipt; the root completes only when
   `<id>.gate.verify` completes. A successor root lives in a successor run
   opened after this root's result identity resolves and cites that identity
   among its own fixed inputs; the predecessor run's durable `successors.md`
@@ -131,13 +130,6 @@ that needs a different meaning needs a different word.
   `claimed_*` and any `{{placeholder}}`.
 - **terminal ticket** — the stub no other stub depends on; its
   completion test is the template's done check.
-- **ad-hoc ticket** — a work item the orchestrator cuts directly from a
-  one-off request: a delegation packet persisted with a completion test,
-  not a separate species — same contract shape, run id
-  `<utc-stamp>-adhoc-<slug>`, `ready` at issue.
-- **ad-hoc set** — ad-hoc tickets cut together with dependency edges,
-  sharing one run id and ticket directory; the caller names the run
-  bound; the ticket files are the whole record — no worklog.
 - **routing shape** — the host projection selected before execution:
   `answer` when available evidence decides; `single` for one ordinary ticket;
   `graph` for a frozen root that needs decomposition; `spec` when a planner

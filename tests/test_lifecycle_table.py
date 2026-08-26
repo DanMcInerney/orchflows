@@ -505,6 +505,35 @@ class LifecycleCommandsTest(unittest.TestCase):
                 "the lease leftover still seals the cohort the refusal routes through",
             )
 
+    def test_a_decomposed_root_terminalizes_only_with_gate_verify(self):
+        """A decomposition return accepts a cut, not the run result."""
+
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            initialize_git_fixture(tmp)
+            run_dir = use_sink(tmp) / "tickets" / "run"
+            run_dir.mkdir(parents=True)
+            current = generation_lifecycle.snapshot()
+            current["00-root.gate.verify"] = generation_lifecycle.ticket(
+                "00-root.gate.verify", executor="orch-verify"
+            )
+            for ticket_id, text in current.items():
+                status = "claimed" if ticket_id in {"00-root", "00-root.gate.verify"} else "complete"
+                text = tickets_format._set_frontmatter_field(text, "status", status)
+                (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+
+            early = run_cmd(tmp, "set-status", "run", "00-root", "complete")
+            self.assertIn("gate.verify", early["error"])
+            accepted = run_cmd(
+                tmp, "set-status", "run", "00-root.gate.verify", "complete"
+            )
+            self.assertNotIn("error", accepted)
+            for ticket_id in ("00-root", "00-root.gate.verify"):
+                self.assertIn(
+                    "status: complete",
+                    (run_dir / f"{ticket_id}.md").read_text(encoding="utf-8"),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

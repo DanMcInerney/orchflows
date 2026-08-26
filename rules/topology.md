@@ -54,9 +54,7 @@
    move the verdict it observes, in the workspace where it observes it —
    isolation keeping a sibling's in-flight change out of that workspace
    qualifies as squarely as disjointness does. A sibling's write counts
-   as material until shown immaterial. An ad-hoc set is a cut like any
-   other: every clause here binds it, and `scripts/cutcheck.py` reads
-   it before its first dispatch.
+   as material until shown immaterial.
 4. At most one terminal assembly item per run, depending on every unit
    item. Assembly rewrites its inputs, so unit verification upstream of
    it is invalidated at the join; the final gate re-verifies the
@@ -118,7 +116,7 @@
     new v2 root citing its Handoff or Result identity; pending or ready v1
     remains v1 unless the caller explicitly recuts or migrates it. New
     `orch-spec` and `orch-decompose` producers may opt into v2 while legacy
-    and ad-hoc producers remain v1. Existing v0 admission and migration
+    producers remain v1. Existing v0 admission and migration
     behavior is preserved; v1 pending, receipt, cohort, ready, claim, and
     packet semantics do not change. A named-field or enum change to the work
     item or pack signature lands as explicit T0 supersession with

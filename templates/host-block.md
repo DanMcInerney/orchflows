@@ -15,10 +15,10 @@ defines.
   `orch-frontier`; pre-existing deterministic or born-red acceptance needs
   only its worker, while `authored-here` adds
   that claim's checker. **graph** — a frozen root goes to a planner for
-  `orch-decompose`; outer coordinator integrates it and
+  `orch-decompose`; outer coordinator joins its cut-accepted return and
   starts `orch-frontier`. **spec** — one same planner child runs `orch-spec`,
   takes its root through `ready` → `claim` → `packet`, then runs
-  `orch-decompose`; outer coordinator integrates it and starts
+  `orch-decompose`; outer coordinator joins its cut-accepted return and starts
   `orch-frontier`. Never persist this as a ticket sequence or start frontier
   inside planner. A known cause enters single; **fix** — an unknown cause →
   `tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run>

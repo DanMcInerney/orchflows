@@ -39,6 +39,6 @@ legacy-v1 path unchanged.
 
 Never: edit the root ticket's frozen statement.
 
-Return: status; ticket directory; cutcheck; item ids and edges; graph critical
+Return: `cut-accepted` (nonterminal); ticket directory; cutcheck; item ids and edges; graph critical
 path and level widths; uncovered remainder (`[]` when none); decision_gap
 (`[]` when coverable).

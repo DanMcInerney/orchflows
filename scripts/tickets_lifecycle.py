@@ -399,6 +399,30 @@ def _set_status_under_run_lock(rest):
                 'findings': grade['findings'],
             }
     items, run_error = _run_tickets(run)
+    root_item = next(
+        (item for item in items or [] if _executor_of(item) == ROOT_EXECUTOR),
+        None,
+    )
+    root_id = str((root_item or {}).get('id') or '')
+    gate_verify_id = root_id + '.gate.verify' if root_id else ''
+    gate_item = next(
+        (item for item in items or [] if str(item.get('id') or '') == gate_verify_id),
+        None,
+    )
+    if ticket_id == root_id and status in TERMINAL_STATES:
+        gate_status = str((gate_item or {}).get('status') or '')
+        if gate_status not in TERMINAL_STATES:
+            return {
+                'error': (
+                    f"root {run}/{root_id} is only cut-accepted before "
+                    f"{gate_verify_id or '<root>.gate.verify'} terminalizes; "
+                    'the decomposition return is nonterminal'
+                )
+            }
+    cascaded_root = (
+        ticket_id == gate_verify_id and status in TERMINAL_STATES
+        and root_item is not None
+    )
     terminal_transition = False
     terminal_now = False
     terminal_id = ticket_id
@@ -409,6 +433,8 @@ def _set_status_under_run_lock(rest):
         for item in items:
             changed = dict(item)
             if str(changed.get('id') or '') == ticket_id:
+                changed['status'] = status
+            if cascaded_root and str(changed.get('id') or '') == root_id:
                 changed['status'] = status
             simulated.append(changed)
         after_root, _ = _run_goal(simulated)
@@ -428,15 +454,30 @@ def _set_status_under_run_lock(rest):
     updated = _set_frontmatter_field(text, 'status', status)
     for field in set_status_blanks(status):
         updated = _set_frontmatter_field(updated, field, '')
+    root_path = tickets_root / run / f'{root_id}.md' if cascaded_root else None
+    root_text = None
+    root_updated = None
+    if root_path is not None:
+        root_text, failure = _read_utf8(root_path)
+        if failure is not None:
+            return failure
+        root_updated = _set_frontmatter_field(root_text, 'status', status)
     try:
         _write_text_atomically(ticket_path, updated)
+        if root_path is not None and root_path != ticket_path:
+            _write_text_atomically(root_path, root_updated)
         if identity is not None:
             identity_dir.mkdir(parents=True, exist_ok=True)
             _write_identity(identity_dir, identity)
     except OSError as error:
         try:
             _write_text_atomically(ticket_path, text)
+            if root_path is not None and root_text is not None and root_path != ticket_path:
+                _write_text_atomically(root_path, root_text)
         except OSError:
             pass
         return {'error': f'unable to record status and terminal timing: {error}'}
-    return {'set_status': {'run': run, 'id': ticket_id, 'status': status}}
+    result = {'run': run, 'id': ticket_id, 'status': status}
+    if cascaded_root:
+        result['root'] = {'id': root_id, 'status': status}
+    return {'set_status': result}
