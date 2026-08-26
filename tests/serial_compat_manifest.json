@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3212,
+  "count": 3211,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -669,15 +669,13 @@
    "test_tickets_bound.ParkPredicateTest.test_a_claim_with_no_readable_start_has_no_deadline_to_have_passed",
    "test_tickets_bound.ParkPredicateTest.test_motion_after_the_bound_elapsed_is_over_bound_and_not_parked",
    "test_tickets_bound.ParkPredicateTest.test_the_facade_exports_the_predicate_the_engine_rule_names",
-   "test_tickets_carry.TestCarryIsFiledLikeAnyExecutorSection.test_a_ticket_without_carry_has_no_section_defect",
-   "test_tickets_carry.TestCarryIsFiledLikeAnyExecutorSection.test_carry_files_onto_a_claimed_ticket_between_risks_and_handoff",
-   "test_tickets_carry.TestCarryIsFiledLikeAnyExecutorSection.test_result_is_still_required",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_a_complete_dependency_without_carry_yields_the_pointer_line",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_a_dependencys_carry_rides_the_prompt_after_the_head_lines",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_a_missing_sibling_degrades_to_silence_not_refusal",
-   "test_tickets_carry.TestPacketInlinesTheDependencysCarry.test_dependencies_are_carried_in_frontmatter_order",
-   "test_tickets_carry.TestTheCloseOrdersACarryFiling.test_a_further_child_packet_does_not",
-   "test_tickets_carry.TestTheCloseOrdersACarryFiling.test_a_primary_packet_orders_the_carry_filing",
+   "test_tickets_context.TestPrimaryCloseGuidance.test_further_child_gets_no_context_filing_instruction",
+   "test_tickets_context.TestPrimaryCloseGuidance.test_primary_close_requests_only_terse_state_watch_context",
+   "test_tickets_context.TestSuccessorContextHydration.test_canonical_context_is_flattened_with_status",
+   "test_tickets_context.TestSuccessorContextHydration.test_complete_absence_points_to_result_and_nonterminal_absence_is_silent",
+   "test_tickets_context.TestSuccessorContextHydration.test_context_wins_deterministically_in_mixed_history",
+   "test_tickets_context.TestSuccessorContextHydration.test_dependency_order_is_preserved_and_unreadable_siblings_are_silent",
+   "test_tickets_context.TestSuccessorContextHydration.test_legacy_carry_is_hydrated_with_explicit_provenance",
    "test_tickets_emitters.EmissionLawPartition.test_a_dependency_that_has_not_run_yet_is_deferred",
    "test_tickets_emitters.EmissionLawPartition.test_a_finding_code_the_law_does_not_know_refuses",
    "test_tickets_emitters.EmissionLawPartition.test_an_emitter_owned_finding_is_refused",
@@ -2214,6 +2212,7 @@
    "tests.test_tickets_cases.run_state_resolution.TestRunStateRootResolution.test_inside_a_real_git_worktree_the_bytes_land_in_the_sink",
    "tests.test_tickets_cases.run_state_resolution.TestRunStateRootResolution.test_the_root_comes_from_the_one_resolver_with_no_subprocess",
    "tests.test_tickets_cases.run_state_resolution.TestUnterminatedFenceIsReported.test_an_unterminated_fence_in_an_earlier_section_is_reported_not_duplicated",
+   "tests.test_tickets_cases.run_state_resolution.TestUnterminatedFenceIsReported.test_successor_context_helper_keeps_unreadable_dependencies_non_authoritative",
    "tests.test_tickets_cases.run_state_resolution.TestUnterminatedFenceIsReported.test_the_refusal_covers_append_a_tilde_fence_and_a_fence_below_the_target",
    "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_a_first_write_needs_no_flag_and_reports_it_replaced_nothing",
    "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_a_note_is_an_append_and_never_trips_the_artifact_guard",
@@ -3215,7 +3214,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "298db9c2f9e6b874baf4fa86e964c6ac41857fd81a659df0a59125826cf65b53"
+  "sha256": "5dde139abeeab9eaeb0afdbb94659599de335a96856852b670ce5dac69d53a83"
  },
  "mutation_owners": [
   {
