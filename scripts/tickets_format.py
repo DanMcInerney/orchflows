@@ -100,16 +100,10 @@ PACK_EXECUTOR_BINDINGS = {
 }
 
 
-def adapter_id(pack) -> str:
-    return ADAPTER_BY_PACK.get(str(pack or '').strip(), PLAIN_ADAPTER)
-
-
-def executor_bindings(pack) -> set:
-    return set(PACK_EXECUTOR_BINDINGS.get(str(pack or '').strip(), ()))
+def adapter_id(pack) -> str: return ADAPTER_BY_PACK.get(str(pack or '').strip(), PLAIN_ADAPTER)
+def executor_bindings(pack) -> set: return set(PACK_EXECUTOR_BINDINGS.get(str(pack or '').strip(), ()))
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""
-
-
 def _json_object(pairs):
     value = {}
     for key, item in pairs:
@@ -117,20 +111,13 @@ def _json_object(pairs):
             raise DuplicateJsonKey(str(key))
         value[key] = item
     return value
-
-
 def _nonfinite_json(value):
     raise ValueError(f"non-finite JSON number {value}")
-
-
 def canonical_json(value) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'), sort_keys=True, allow_nan=False)
-
-
 def parse_canonical_json(encoded: str):
     """Parse the portable canonical JSON grammar shared by ticket fields."""
     return json.loads(encoded, object_pairs_hook=_json_object, parse_constant=_nonfinite_json)
-
 
 def parse_mutations(data):
     declared = data.get('mutations') if isinstance(data, dict) else data
@@ -160,7 +147,6 @@ def parse_mutations(data):
             parsed.append({'operation': operation, 'path': path})
             seen.add((operation, path))
     return (parsed, defects)
-
 
 def parse_return_size(section_text):
     candidates = [line for line in section_text.splitlines() if 'return-size:' in line]
@@ -195,7 +181,6 @@ def parse_return_size(section_text):
         defects.append("return-size target must be 'result'")
     return (clause if not defects else None, defects)
 
-
 def parse_result_identity(section_text):
     candidates = [line for line in section_text.splitlines() if line.startswith('result:')]
     if len(candidates) != 1:
@@ -218,14 +203,12 @@ def parse_result_identity(section_text):
         return (None, ['result identity JSON is not canonical: recursively sorted keys and no insignificant whitespace required'])
     return (identity, [])
 
-
 def count_return_text(text, counter):
     if counter == 'words-v1':
         return len(text.split())
     if counter == 'lines-v1':
         return len(text.splitlines())
     raise ValueError(f"unknown return-size counter '{counter}'")
-
 
 def successor_context_defects(body: str) -> list:
     """Return every violation of the optional successor Context grammar."""
@@ -240,7 +223,6 @@ def successor_context_defects(body: str) -> list:
                 f"Context line {number} must begin exactly '- state:' or '- watch:' and have non-empty content"
             )
     return defects
-
 
 def format_policy_defects(text, data, sections):
     defects = []

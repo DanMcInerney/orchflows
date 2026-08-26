@@ -83,8 +83,6 @@ def _render_ticket(fields: dict, sections: list) -> str:
         if content:
             body.append(f'\n{content}\n')
     return '\n'.join(lines) + '\n' + ''.join(body)
-
-
 def _input_record(value: str, position: int=1) -> str:
     """Render one ``--input`` value as the canonical-record bullet shell."""
     stripped = str(value).strip()
@@ -293,7 +291,6 @@ def _amend_under_run_lock(rest):
         return failure
     return {'amend': {'run': run, 'id': ticket_id, 'section': canonical, 'path': str(ticket_path)}}
 
-
 def _exact_run_snapshot(run_dir):
     texts = {}
     for path in sorted(run_dir.glob('*.md')):
@@ -302,7 +299,6 @@ def _exact_run_snapshot(run_dir):
             return (None, failure)
         texts[path.stem] = text
     return (texts, None)
-
 
 def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, door='amend'):
     """Write one replacement and invalidate every old/new cohort member."""
@@ -333,7 +329,6 @@ def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, 
         return {'error': f'unwritable ticket cohort: {error}'}
     return None
 
-
 def _cmd_recut(rest):
     probe = list(rest)
     _extract_flag(probe, '--file')
@@ -344,8 +339,6 @@ def _cmd_recut(rest):
             return _recut_under_run_lock(rest)
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
-
-
 def _recut_under_run_lock(rest):
     args = list(rest)
     candidate_path = _extract_flag(args, '--file')
