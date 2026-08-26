@@ -44,18 +44,20 @@ class TestWorkflowContract(unittest.TestCase):
             )
         self.assertEqual([], offenders)
 
-    def test_ci_has_exactly_the_four_supported_boundary_legs(self):
+    def test_ci_covers_four_boundaries_whole_and_splits_only_windows(self):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
         matrix = workflow.split("      matrix:\n", 1)[1].split("\n    steps:", 1)[0]
         os_axis = re.search(r"^        os: \[([^]]+)\]$", matrix, re.MULTILINE)
         python_axis = re.search(
             r"^        python-version: \[([^]]+)\]$", matrix, re.MULTILINE
         )
+        shard_axis = re.search(r"^        shard: \[([^]]+)\]$", matrix, re.MULTILINE)
         self.assertIsNotNone(os_axis)
         self.assertIsNotNone(python_axis)
+        self.assertIsNotNone(shard_axis)
         self.assertNotRegex(matrix, re.compile(r"^        include:", re.MULTILINE))
         self.assertEqual(
-            {"os", "python-version", "exclude"},
+            {"os", "python-version", "shard", "exclude"},
             set(re.findall(r"^        ([a-z][a-z0-9-]*):", matrix, re.MULTILINE)),
         )
         self.assertEqual(
@@ -76,25 +78,54 @@ class TestWorkflowContract(unittest.TestCase):
         def values(match):
             return [value.strip(" '\"") for value in match.group(1).split(",")]
 
-        excluded = set(re.findall(
-            r"- os: ([a-z-]+)\s+python-version: ['\"]([0-9.]+)['\"]",
-            matrix,
-        ))
-        legs = [
-            (os_name, python_version)
+        # An exclude entry names only the keys it constrains, so it is read as
+        # a dict and applied as a subset -- `- os: ubuntu-latest / shard: 1-of-2`
+        # drops that shard on every interpreter without naming one.
+        excludes, entry = [], None
+        for line in matrix.splitlines():
+            opened = re.match(r"^          - ([a-z-]+): '?([^'\s]+)'?$", line)
+            if opened:
+                entry = {opened.group(1): opened.group(2)}
+                excludes.append(entry)
+                continue
+            carried = re.match(r"^            ([a-z-]+): '?([^'\s]+)'?$", line)
+            if carried and entry is not None:
+                entry[carried.group(1)] = carried.group(2)
+
+        def dropped(job):
+            return any(all(job[key] == value for key, value in e.items()) for e in excludes)
+
+        jobs = [
+            (os_name, python_version, shard)
             for os_name in values(os_axis)
             for python_version in values(python_axis)
-            if (os_name, python_version) not in excluded
+            for shard in values(shard_axis)
+            if not dropped(
+                {"os": os_name, "python-version": python_version, "shard": shard})
         ]
         self.assertEqual(
             [
-                ("ubuntu-latest", "3.9"),
-                ("ubuntu-latest", "3.13"),
-                ("macos-latest", "3.13"),
-                ("windows-latest", "3.13"),
+                ("ubuntu-latest", "3.9", "1-of-1"),
+                ("ubuntu-latest", "3.13", "1-of-1"),
+                ("macos-latest", "3.13", "1-of-1"),
+                ("windows-latest", "3.13", "1-of-2"),
+                ("windows-latest", "3.13", "2-of-2"),
             ],
-            legs,
+            jobs,
         )
+        # The invariant a leg list alone cannot hold: every boundary's shards
+        # must be a *complete* cover. Excluding one half of a split leg leaves
+        # a green job that ran a hand-picked half of the suite.
+        covers = {}
+        for os_name, python_version, shard in jobs:
+            covers.setdefault((os_name, python_version), set()).add(shard)
+        for boundary, shards in covers.items():
+            count = int(next(iter(shards)).split("-of-")[1])
+            self.assertEqual(
+                {"%d-of-%d" % (index, count) for index in range(1, count + 1)},
+                shards,
+                "%s runs a partial suite" % (boundary,),
+            )
         # Both sides of the one version-gated import, and no third copy of
         # either side: 3.9 has no `tomllib`, every other supported version
         # has it, and which side a leg is on is all this axis can grade.
@@ -119,7 +150,10 @@ class TestWorkflowContract(unittest.TestCase):
         workflow = CHECKS_YML.read_text(encoding="utf-8")
         self.assertIn("uses: actions/cache@v4", workflow)
         self.assertIn("path: .orch/run_tests_times.json", workflow)
-        leg = "${{ matrix.os }}-py${{ matrix.python-version }}"
+        # The shard is part of the leg's identity: two shards of one leg run
+        # different modules, so one cache would answer the other with timings
+        # for modules it never runs, and they would race to save it.
+        leg = "${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.shard }}"
         self.assertIn("key: run-tests-times-" + leg + "-${{ github.run_id }}", workflow)
         self.assertIn("restore-keys: |", workflow)
         # Twelve spaces of indent: the key line above already holds the

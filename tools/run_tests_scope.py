@@ -143,3 +143,25 @@ def select(scope: str, tests_dir, discovered) -> list:
     if not selected:
         raise SystemExit(0)
     return selected
+def shard(selector, ordered: list) -> list:
+    """Return the ``K-of-N`` slice of an already-scheduled order, or all of it.
+
+    Round-robin over the schedule, never a contiguous block. The order this
+    receives is longest-first, so every N-th module hands each shard one of
+    each size class and the shards land together; a contiguous half would
+    take every long module into the first one and finish no sooner than the
+    whole suite did.
+
+    ``K-of-N`` and not ``K/N`` because CI carries this value into a cache key
+    and an artifact name, and an artifact name cannot hold a slash.
+    """
+
+    if not selector:
+        return ordered
+    parts = str(selector).split("-of-")
+    if len(parts) != 2 or not all(part.isdigit() for part in parts):
+        raise SystemExit("run_tests: --shard wants K-of-N, for example 2-of-3")
+    index, count = int(parts[0]), int(parts[1])
+    if count < 1 or not 1 <= index <= count:
+        raise SystemExit("run_tests: --shard %s names no shard of %d" % (selector, count))
+    return ordered[index - 1::count]

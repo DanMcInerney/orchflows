@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3201,
+  "count": 3204,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -541,8 +541,11 @@
    "test_run_tests.TestSchedule.test_a_cold_custom_directory_remains_alphabetical",
    "test_run_tests.TestSchedule.test_a_cold_prior_covers_the_long_pole_of_every_matrix_leg",
    "test_run_tests.TestSchedule.test_a_cold_repository_starts_known_slow_modules_first",
+   "test_run_tests.TestSchedule.test_a_shard_is_round_robin_over_the_longest_first_order",
+   "test_run_tests.TestSchedule.test_an_absent_shard_is_the_whole_order_and_a_bad_one_is_refused",
    "test_run_tests.TestSchedule.test_expected_failures_are_preserved_as_outcomes",
    "test_run_tests.TestSchedule.test_installer_cases_are_exactly_once_across_process_visible_shards",
+   "test_run_tests.TestSchedule.test_shards_partition_the_schedule_exactly",
    "test_run_tests.TestSchedule.test_timing_record_carries_context_occupancy_modules_and_outcomes",
    "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_an_empty_selection_still_admits_the_paths_it_named",
    "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_the_admission_precedes_the_selections_own_exit",
@@ -1727,8 +1730,8 @@
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_a_ticket_that_was_never_claimed_has_no_duration_to_report",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_each_executor_reports_its_median_p90_and_max",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_top_bounds_the_longest_list_and_leaves_the_executor_summary_whole",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_covers_four_boundaries_whole_and_splits_only_windows",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_does_not_repeat_oracles_already_in_the_sharded_suite",
-   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_has_exactly_the_four_supported_boundary_legs",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_restores_a_timing_cache_scoped_to_the_leg_that_wrote_it",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_runs_the_regression_suite_once_through_the_parallel_runner",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_uploads_each_python_legs_timing_even_after_failure",
@@ -3204,7 +3207,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a516cd9b1a6625e4e84ed9828f13875ea09e29483fe18d317f21070a1b75bc6e"
+  "sha256": "cd9f7107650472a48152101f9f8defda1ab79263efcad59a8e4fb833c78f7e86"
  },
  "mutation_owners": [
   {

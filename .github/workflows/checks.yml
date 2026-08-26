@@ -76,7 +76,7 @@ jobs:
         run: uv run --no-project python tools/ui_frontend.py smoke --browser chromium
 
   checks:
-    name: py${{ matrix.python-version }} / ${{ matrix.os }}
+    name: py${{ matrix.python-version }} / ${{ matrix.os }} / ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     strategy:
       # Every leg reports. A red 3.9 must not hide the state of Windows.
@@ -84,11 +84,28 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.9', '3.13']
+        # Windows alone is split, and only in two. It is the slowest leg, so
+        # it is the one the pipeline's wall clock waits on; splitting it costs
+        # nothing billed, because two half-length Windows jobs round to the
+        # same minutes as one whole. Splitting the others would buy no wall
+        # clock -- each already finishes inside macOS's whole-suite time --
+        # and macOS bills at ten times the rate. `1-of-1` is the whole suite.
+        shard: ['1-of-1', '1-of-2', '2-of-2']
         exclude:
           - os: macos-latest
             python-version: '3.9'
           - os: windows-latest
             python-version: '3.9'
+          - os: ubuntu-latest
+            shard: '1-of-2'
+          - os: ubuntu-latest
+            shard: '2-of-2'
+          - os: macos-latest
+            shard: '1-of-2'
+          - os: macos-latest
+            shard: '2-of-2'
+          - os: windows-latest
+            shard: '1-of-1'
 
     steps:
       # Full history, not the default depth-1: tests/test_cutcheck.py grades
@@ -129,9 +146,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .orch/run_tests_times.json
-          key: run-tests-times-${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}
+          key: run-tests-times-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.shard }}-${{ github.run_id }}
           restore-keys: |
-            run-tests-times-${{ matrix.os }}-py${{ matrix.python-version }}-
+            run-tests-times-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.shard }}-
 
       # The suite, sharded one module per child interpreter. Thread
       # parallelism is unsound here -- the suite performs ~30
@@ -140,13 +157,13 @@ jobs:
       # TestValidatorAgainstRepo and DryRunOracleTest cases cover the
       # validator and installer dry run without repeating either command.
       - name: python tools/run_tests.py
-        run: python tools/run_tests.py --timing-file .orch/run-tests.json
+        run: python tools/run_tests.py --shard ${{ matrix.shard }} --timing-file .orch/run-tests.json
 
       - name: upload test timing
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: test-timing-py${{ matrix.python-version }}-${{ matrix.os }}
+          name: test-timing-py${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.shard }}
           path: .orch/run-tests.json
           if-no-files-found: warn
           include-hidden-files: true
