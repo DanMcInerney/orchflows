@@ -221,3 +221,113 @@ class TestConservativeUninstall(unittest.TestCase):
 
             self.assertFalse(stub.exists())
             self.assertEqual(1, len(result["skill_actions"]))
+
+    # --- Grok ------------------------------------------------------------
+
+    def test_uninstall_removes_the_installed_grok_surface_by_receipt(self):
+        """A real install into an isolated Grok home, then its uninstall.
+
+        The census is taken off the plan rather than spelled out, so a Grok
+        artifact added later is graded by this case the day it is planned.
+        Two things the receipt does not claim are seeded first: a hand-written
+        skill, and a ``config.toml`` the user already had. The skill has to
+        survive untouched and the config has to come back holding its own
+        table -- the installer owns the marked block inside that file, not the
+        file.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            home.mkdir()
+            with isolated_grok_home(root) as grok_home:
+                config = grok_home / "config.toml"
+                config.write_text('[permission]\nmode = "ask"\n', encoding="utf-8")
+                mine = grok_home / "skills" / "handwritten" / "SKILL.md"
+                mine.parent.mkdir(parents=True)
+                mine.write_text("mine\n", encoding="utf-8")
+
+                with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                    "grok"
+                ), patch.object(install, "private_runtime_action", return_value=None):
+                    plan = install.build_plan("user", None)
+                    install.apply_plan(plan)
+                    self.assertIn("max_concurrent", config.read_text(encoding="utf-8"))
+                    installed = [dest for dest, _ in plan.grok_skills + plan.grok_agents]
+                    installed.append(plan.grok_rules.dest)
+                    report = install.run_uninstall("user", None, dry_run=False)
+
+                for path in installed:
+                    self.assertFalse(path.exists(), path)
+                removed = {entry["path"] for entry in report["skill_actions"]}
+                self.assertTrue({str(path) for path in installed} <= removed)
+                self.assertIn(str(config), removed)
+                manual = {entry["path"] for entry in report["manual_actions"]}
+                self.assertFalse({str(path) for path in installed + [config]} & manual)
+
+                self.assertTrue(mine.is_file())
+                self.assertEqual("mine\n", mine.read_text(encoding="utf-8"))
+                remaining = config.read_text(encoding="utf-8")
+                self.assertNotIn("# BEGIN ORCHFLOWS SUBAGENT LIMITS", remaining)
+                self.assertNotIn("max_concurrent", remaining)
+                self.assertIn('mode = "ask"', remaining)
+
+    def test_uninstall_drops_a_grok_config_the_installer_wrote_whole(self):
+        """No user TOML, no file: the installer's own block was all of it.
+
+        The companion to the case above. There the merge ran into a file the
+        user already had, so the file stays; here the installer created it,
+        so removing the block leaves nothing to keep. A hand-written file next
+        to the managed rules file proves the removal reads the receipt and not
+        the directory.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with isolated_grok_home(root) as grok_home:
+                config = grok_home / "config.toml"
+                config.write_text(
+                    "# BEGIN ORCHFLOWS SUBAGENT LIMITS\n"
+                    "subagents.max_concurrent = 20\n"
+                    "# END ORCHFLOWS SUBAGENT LIMITS\n",
+                    encoding="utf-8",
+                )
+                rules = grok_home / "rules" / "orchflows.md"
+                mine = grok_home / "rules" / "mine.md"
+                rules.parent.mkdir(parents=True)
+                rules.write_text("managed\n", encoding="utf-8")
+                mine.write_text("mine\n", encoding="utf-8")
+                receipt_path = root / ".orchflows" / "receipt.json"
+                receipt_path.parent.mkdir(parents=True)
+                receipt_path.write_text(
+                    json.dumps(
+                        {
+                            "files": [
+                                {
+                                    "path": str(rules),
+                                    "kind": "grok-rules",
+                                    "install_action": "created",
+                                    "sha256": digest(rules),
+                                },
+                                {
+                                    "path": str(config),
+                                    "kind": "grok-config",
+                                    "install_action": "created",
+                                    "sha256": digest(config),
+                                },
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                with patch.object(install.Path, "home", return_value=root):
+                    report = install.run_uninstall("user", None, dry_run=True)
+                    self.assertTrue(config.is_file())
+                    self.assertTrue(rules.is_file())
+                    report = install.run_uninstall("user", None, dry_run=False)
+
+                self.assertFalse(config.exists())
+                self.assertFalse(rules.exists())
+                self.assertTrue(mine.is_file())
+                self.assertEqual(2, len(report["skill_actions"]))
