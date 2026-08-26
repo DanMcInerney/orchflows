@@ -2,10 +2,10 @@
 
 ![orchflows](docs/banner.png)
 
-A skill library that turns Claude Code or Codex into an orchestrator:
-subagents that work in parallel, real verification of everything they
-produce, and workflows that improve themselves. You just talk; it
-picks the right workflow.
+A skill library that turns Claude Code, Codex or Grok Build into an
+orchestrator: subagents that work in parallel, real verification of
+everything they produce, and workflows that improve themselves. You
+just talk; it picks the right workflow.
 
 ## Install
 
@@ -13,8 +13,17 @@ picks the right workflow.
     cd orchflows
     ./install.sh          # install.cmd on Windows
 
-Works with Claude Code and Codex, on Windows, macOS, and Linux. It
-configures whichever CLI it finds. To update: `git pull`, rerun.
+Works with Claude Code, Codex and Grok Build, on Windows, macOS, and
+Linux. It configures whichever CLI it finds. To update: `git pull`,
+rerun.
+
+Each host keeps its own user-scope surface under its own home, and each
+home has an override the installer follows: `CLAUDE_CONFIG_DIR`,
+`CODEX_HOME`, `GROK_HOME`. Grok Build's is skills at
+`~/.grok/skills/<name>/SKILL.md`, role agents in `~/.grok/agents/`, a
+`[subagents]` block merged into `~/.grok/config.toml`, and the always-on
+instruction layer as one whole installer-owned file,
+`~/.grok/rules/orchflows.md`.
 
 This is a user install, the only installation scope. It creates or reuses
 `~/.orchflows/runtime`, a private Python
@@ -103,7 +112,7 @@ skills and compositions remain ordinary `orch-build` outputs under
 Claude gets first-class adapters for — `all` (the default) mints one per
 package and template, `four` mints only `orch-spec`, `orch-frontier`,
 `fix` and `orch-build` and leaves every other name to resolve at
-`by-name/`. Default model and effort per role, both hosts:
+`by-name/`. Default model and effort per role, all three hosts:
 [profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
@@ -262,7 +271,8 @@ Against the shipped runtime as documented on 2026-08-15
 ([the workflows docs](https://code.claude.com/docs/en/workflows)) —
 saved workflows are no longer the difference, so this is what is:
 
-- **Cross-harness.** One library drives both Claude Code and Codex.
+- **Cross-harness.** One library drives Claude Code, Codex and Grok
+  Build.
 - **Verification is contractual, not merely available.** Adversarial
   review is house advice there; here named oracles and the applicable
   independent path stand between an executor's claim and "done".
