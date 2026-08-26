@@ -78,6 +78,7 @@ workspace_git = __import__("workspace_git")
 workspace_prepare = __import__("workspace_prepare")
 workspace_scope = __import__("workspace_scope")
 tickets_scope = __import__("tickets_scope")
+ticket_store = __import__("tickets_store")
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
 BASELINE_KEY = "workspace_baseline"
@@ -202,6 +203,24 @@ def _cmd_start(rest):
     run, ticket_id = _positional(rest, 2, "start")
     root, path = _locate(run, ticket_id)
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
+    if ticket_store.is_document_ticket(data):
+        try:
+            established = ticket_store.establish_document_workspace(
+                run, ticket_id, data
+            )
+        except ValueError as error:
+            raise Refused(str(error)) from error
+        return {
+            "start": {
+                "run": run,
+                "id": ticket_id,
+                "ticket": str(path),
+                "main_root": str(root),
+                "isolated": True,
+                WRITE_SCOPE_KEY: tickets._scope_entries(data.get(WRITE_SCOPE_KEY)),
+                **established,
+            }
+        }, EXIT_OK
     # the snapshot the stamps are written against, taken before the git calls
     # below and not after them: those calls are the seconds a concurrent
     # `set-status` lands in, and a snapshot taken past them absorbs the write
@@ -309,6 +328,15 @@ def _cmd_check(rest):
         reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})
         return {"check": reported}, EXIT_OK
     reported[ISOLATION_KEY] = isolation
+
+    if ticket_store.is_document_ticket(data):
+        try:
+            checked = ticket_store.check_document_workspace(run, ticket_id, data)
+        except ValueError as error:
+            raise Refused(str(error), EXIT_SCOPE_BREACH) from error
+        reported.update(checked)
+        reported["verdict"] = "pass"
+        return {"check": reported}, EXIT_OK
 
     effective = data.get(WRITE_SCOPE_KEY)
     empty = effective is not None and not tickets._scope_entries(effective)

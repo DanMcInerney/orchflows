@@ -40,6 +40,11 @@ _listed = _scope._listed
 _overlaps = _scope._overlaps
 _path_args = _scope._path_args
 
+try:  # repository checkout
+    from scripts import tickets_store as _regions
+except ImportError:  # installed flat script directory
+    import tickets_store as _regions
+
 
 def _issued_under(siblings, root):
     """Defer the graph-to-coverage edge until coverage is loaded."""
@@ -365,16 +370,11 @@ def _pairwise(siblings, reads, region_prover=None, tree=None):
     decides what the other's regression read. Never counted: the resolver
     over-approximates on purpose.
 
-    ``region_prover`` is accepted and ignored. `ownership_regions` once
-    bought an exemption from the collision above, behind a prover this
-    function's only production caller never passed and no adapter ever
-    supplied -- so a flawless region pair could draw one verdict,
-    `region-proof-failed`. A refusal dressed as a proof is worse than the
-    refusal, and a prover that admitted on selector shape alone would be
-    worse than both, so the exemption is gone: sharing an artifact is
-    collision again, and same-artifact work orders its dependencies or
-    takes a sole owner. Restoring it means a resolver that reads the
-    artifact at the pinned identity, and this caller handing one over.
+    Same-artifact work is admitted only when the stamped adapter proves the
+    two durable ownership regions disjoint under one merge-oracle identity.
+    Heading proof reads the baseline document tree; structural code selectors
+    are compared as paths, never as unequal strings. Failed proof keeps the
+    ordinary collision verdict and its dependency-order-or-sole-owner remedy.
     """
 
     findings = []
@@ -388,10 +388,19 @@ def _pairwise(siblings, reads, region_prover=None, tree=None):
             scopes = {
                 item: _listed(siblings[item], "write_scope") for item in (left, right)
             }
-            for shared in _shared_artifacts(scopes[left], scopes[right]):
-                findings.append(
-                    (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
+            shared_artifacts = set(_shared_artifacts(scopes[left], scopes[right]))
+            shared_artifacts.update(
+                _regions.shared_artifacts(siblings[left], siblings[right])
+            )
+            for shared in sorted(shared_artifacts):
+                admission = _regions.parallel_admission(
+                    left, siblings[left], right, siblings[right], shared,
+                    prover=region_prover, tree=tree,
                 )
+                if not admission["admitted"]:
+                    findings.append(
+                        (left, 0, SCOPE_COLLISION, "with {}: {}".format(right, shared))
+                    )
             for reader, writer in ((left, right), (right, left)):
                 path = _first_overlap(reads.get(reader) or [], scopes[writer])
                 if path is not None:

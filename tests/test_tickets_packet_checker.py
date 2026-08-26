@@ -17,7 +17,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts import tickets_packet
+from scripts import tickets_packet, tickets_store
 from tests.test_tickets_cases.common import run_cmd, run_full, use_sink
 
 REFUSAL = "checker not required: every criterion carries provenance: pre-existing"
@@ -576,6 +576,14 @@ status.
         self.assertIn(
             "does not match",
             self.defect('- input: {"name":"audience","type":"literal","value":"executives"}') or "",
+        )
+
+    def test_v2_content_gets_the_script_owned_workspace_path(self):
+        self.assertTrue(
+            tickets_store.establishes_a_workspace("orch-content-pack", v2=True)
+        )
+        self.assertFalse(
+            tickets_store.establishes_a_workspace("orch-content-pack", v2=False)
         )
 
 

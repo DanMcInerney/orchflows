@@ -25,6 +25,7 @@ The shape principles every domain shares are
 
 ## Shape
 
+- The root's audience record is unchanged in every section and terminal edit.
 - Concrete before abstract: an abstraction is earned by the instance
   beneath it.
 - The length budget is design pressure: cut weakest-first, into the

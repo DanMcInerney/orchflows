@@ -1,7 +1,9 @@
 """Ticket store support."""
 
 from __future__ import annotations
+import hashlib
 import json
+import re
 import tempfile
 import time
 from contextlib import contextmanager
@@ -20,9 +22,9 @@ try:
 except ImportError:
     fcntl = None
 if __package__:
-    from .tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, effective_write_scope
+    from .tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, _scope_entries, adapter_id, effective_write_scope
 else:
-    from tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, effective_write_scope
+    from tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, _scope_entries, adapter_id, effective_write_scope
 
 UTC_STAMP = '%Y-%m-%dT%H:%M:%SZ'
 RUN_IDENTITY_NAME = 'run.json'
@@ -96,6 +98,247 @@ def establishes_a_git_workspace(pack) -> bool:
             'which owns the table, before reaching establishes_a_git_workspace')
     mechanism = PACK_WORKSPACE_MECHANISMS.get(name)
     return mechanism is None or mechanism in GIT_WORKSPACE_MECHANISMS
+
+
+def establishes_a_workspace(pack, *, v2: bool = False) -> bool:
+    """Whether the public workspace script establishes this pack's cell.
+
+    Git keeps its historical path. The document-tree adapter is v2-only:
+    v0/v1 tickets have no ownership-region generation to prove, and migration
+    law forbids silently reinterpreting them as document workspaces.
+    """
+
+    name = str(pack or '').strip().strip('`').strip()
+    if establishes_a_git_workspace(name):
+        return True
+    mechanism = PACK_WORKSPACE_MECHANISMS.get(name)
+    return bool(v2 and mechanism in {'document tree', 'document-tree'})
+
+
+# --- document-tree adapter -------------------------------------------------
+
+
+DOCUMENT_ADAPTER = 'document-tree'
+DOCUMENT_WORKSPACES = 'document-workspaces'
+DOCUMENT_RECEIPT = 'region-proof.json'
+DOCUMENT_TREE = 'tree'
+DOCUMENT_SEGMENT = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*$')
+MERGE_ORACLE_ID = re.compile(r'^[^\s:]+(?::[^\s:]+)+$')
+
+
+def _canonical_json(value) -> str:
+    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+
+
+def _content_digest(value) -> str:
+    return hashlib.sha256(_canonical_json(value).encode('utf-8')).hexdigest()
+
+
+def _region_records(value) -> list:
+    """Read records despite the legacy frontmatter parser's comma split."""
+
+    if value in (None, ''):
+        return []
+    if isinstance(value, dict):
+        return [value]
+    raw = value if isinstance(value, list) else [value]
+    if all(isinstance(item, dict) for item in raw):
+        return list(raw)
+    fragments = []
+    for position, item in enumerate(raw):
+        fragment = str(item)
+        if position and not fragment.startswith(('"', '{', '[')):
+            fragment = '"' + fragment
+        if position < len(raw) - 1 and fragment.count('"') % 2:
+            fragment += '"'
+        fragments.append(fragment)
+    joined = ','.join(fragments)
+    for candidate in (joined, '[' + joined + ']'):
+        try:
+            parsed = json.loads(candidate)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        records = parsed if isinstance(parsed, list) else [parsed]
+        if records and all(isinstance(item, dict) for item in records):
+            return records
+    raise ValueError('ownership region is not JSON object data')
+
+
+def is_document_ticket(data: dict) -> bool:
+    return adapter_id(data.get('pack')) == DOCUMENT_ADAPTER
+
+
+def region_findings(ticket_id: str, data: dict) -> list:
+    """Defects in the content adapter's canonical heading records."""
+
+    try:
+        records = _region_records(data.get('ownership_regions'))
+    except ValueError as error:
+        return [{'code': 'ownership-regions-invalid', 'detail': str(error)}]
+    findings = []
+    required = {'artifact', 'merge_oracle', 'owner', 'selector'}
+    for position, record in enumerate(records, start=1):
+        field = 'ownership_regions[{}]'.format(position)
+        if set(record) != required:
+            findings.append({'code': 'region-fields', 'detail': field})
+        artifact = record.get('artifact')
+        if not isinstance(artifact, str) or not artifact.strip():
+            findings.append({'code': 'region-artifact-missing', 'detail': field})
+        if record.get('owner') != ticket_id:
+            findings.append({'code': 'region-owner-mismatch', 'detail': field})
+        oracle = record.get('merge_oracle')
+        if not isinstance(oracle, str) or not MERGE_ORACLE_ID.fullmatch(oracle):
+            findings.append({'code': 'merge-oracle-unpinned', 'detail': field})
+        selector = record.get('selector')
+        if not isinstance(selector, dict) or set(selector) != {'kind', 'value'}:
+            findings.append({'code': 'region-selector-missing', 'detail': field})
+        elif selector.get('kind') != 'heading':
+            findings.append({'code': 'region-selector-adapter', 'detail': field})
+        elif not isinstance(selector.get('value'), str) or not selector['value'].strip():
+            findings.append({'code': 'region-selector-value', 'detail': field})
+    return sorted(findings, key=lambda item: (item['code'], item['detail']))
+
+
+def _document_headings(path: Path) -> dict:
+    found, stack = {}, []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        match = re.match(r'^(#{1,6})\s+(.+?)\s*$', line)
+        if not match:
+            continue
+        level = len(match.group(1))
+        name = match.group(2).rstrip('#').strip()
+        stack = stack[:level - 1]
+        stack.append(name)
+        found.setdefault(name, []).append(tuple(stack))
+    return found
+
+
+def shared_artifacts(left: dict, right: dict) -> list:
+    """Artifacts both tickets claim, independent of outline-slot names."""
+
+    try:
+        left_names = {row.get('artifact') for row in _region_records(left.get('ownership_regions'))}
+        right_names = {row.get('artifact') for row in _region_records(right.get('ownership_regions'))}
+    except ValueError:
+        return []
+    return sorted(name for name in left_names & right_names if isinstance(name, str))
+
+
+def parallel_admission(left_id: str, left: dict, right_id: str, right: dict,
+                       artifact: str, prover=None, tree=None) -> dict:
+    """Prove two document headings disjoint at the baseline document tree."""
+
+    if not is_document_ticket(left) or not is_document_ticket(right):
+        return {'admitted': False, 'fallback': 'dependency-order-or-sole-owner'}
+    if region_findings(left_id, left) or region_findings(right_id, right):
+        return {'admitted': False, 'fallback': 'dependency-order-or-sole-owner'}
+    left_at = [row for row in _region_records(left.get('ownership_regions')) if row.get('artifact') == artifact]
+    right_at = [row for row in _region_records(right.get('ownership_regions')) if row.get('artifact') == artifact]
+    if len(left_at) != 1 or len(right_at) != 1 or tree is None:
+        return {'admitted': False, 'fallback': 'dependency-order-or-sole-owner'}
+    left_region, right_region = left_at[0], right_at[0]
+    oracle = left_region.get('merge_oracle')
+    if oracle != right_region.get('merge_oracle'):
+        return {'admitted': False, 'fallback': 'dependency-order-or-sole-owner'}
+    if prover is not None:
+        admitted = bool(prover(DOCUMENT_ADAPTER, artifact, left_region['selector'],
+                               right_region['selector'], oracle, tree))
+        return {'admitted': admitted,
+                'fallback': None if admitted else 'dependency-order-or-sole-owner'}
+    path = Path(tree) / artifact
+    if not path.is_file():
+        return {'admitted': False, 'fallback': 'dependency-order-or-sole-owner'}
+    headings = _document_headings(path)
+    left_paths = headings.get(left_region['selector']['value'], [])
+    right_paths = headings.get(right_region['selector']['value'], [])
+    if len(left_paths) != 1 or len(right_paths) != 1:
+        return {'admitted': False, 'fallback': 'dependency-order-or-sole-owner'}
+    width = min(len(left_paths[0]), len(right_paths[0]))
+    admitted = left_paths[0][:width] != right_paths[0][:width]
+    return {'admitted': admitted,
+            'fallback': None if admitted else 'dependency-order-or-sole-owner'}
+
+
+def _document_workspace_paths(run: str, ticket_id: str):
+    if not DOCUMENT_SEGMENT.fullmatch(run) or not DOCUMENT_SEGMENT.fullmatch(ticket_id):
+        raise ValueError('document workspace run and ticket id must be safe path segments')
+    base = state_root.runs_root() / run / DOCUMENT_WORKSPACES / ticket_id
+    return base / DOCUMENT_TREE, base / DOCUMENT_RECEIPT
+
+
+def _document_proof(run: str, ticket_id: str, data: dict, workspace: Path) -> dict:
+    records = _region_records(data.get('ownership_regions'))
+    if not records:
+        raise ValueError('claimed document mutation has no ownership region')
+    findings = region_findings(ticket_id, data)
+    if findings:
+        raise ValueError('ownership region proof failed: ' + _canonical_json(findings))
+    scopes = sorted(_scope_entries(data.get('write_scope')))
+    selectors = sorted(record['selector']['value'] for record in records)
+    if scopes != selectors:
+        raise ValueError('ownership region selectors must exactly cover document write_scope')
+    body = {'adapter': DOCUMENT_ADAPTER, 'regions': records, 'run': run,
+            'ticket': ticket_id, 'workspace': str(workspace)}
+    return {**body, 'proof': 'sha256:' + _content_digest(body)}
+
+
+def establish_document_workspace(run: str, ticket_id: str, data: dict) -> dict:
+    """Create one run/ticket-owned document tree and durable region receipt."""
+
+    workspace, receipt = _document_workspace_paths(run, ticket_id)
+    expected = _document_proof(run, ticket_id, data, workspace)
+    workspace.mkdir(parents=True, exist_ok=True)
+    if receipt.is_file():
+        try:
+            existing = json.loads(receipt.read_text(encoding='utf-8'))
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError('existing document workspace region proof is unreadable') from error
+        if existing != expected:
+            raise ValueError('existing document workspace region proof does not match ticket')
+    else:
+        _write_text_atomically(receipt, _canonical_json(expected) + '\n')
+    return {'workspace_root': str(workspace), 'region_receipt': str(receipt),
+            'region_proof': expected['proof']}
+
+
+def _document_revision(workspace: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(item for item in workspace.rglob('*') if item.is_file()):
+        digest.update(path.relative_to(workspace).as_posix().encode('utf-8') + b'\0')
+        digest.update(path.read_bytes())
+        digest.update(b'\0')
+    return 'document-tree:sha256:' + digest.hexdigest()
+
+
+def check_document_workspace(run: str, ticket_id: str, data: dict) -> dict:
+    """Re-derive the receipt and constrain each produced document artifact."""
+
+    workspace, receipt = _document_workspace_paths(run, ticket_id)
+    expected = _document_proof(run, ticket_id, data, workspace)
+    try:
+        recorded = json.loads(receipt.read_text(encoding='utf-8'))
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError('document workspace has no readable region proof') from error
+    if recorded != expected:
+        raise ValueError('document workspace region proof receipt changed')
+    changed = sorted(path.relative_to(workspace).as_posix()
+                     for path in workspace.rglob('*') if path.is_file())
+    artifacts = sorted({row['artifact'] for row in expected['regions']})
+    outside = sorted(set(changed) - set(artifacts))
+    if outside:
+        raise ValueError('document workspace changed artifacts without region proof: '
+                         + ', '.join(outside))
+    missing = sorted(set(artifacts) - set(changed))
+    if missing:
+        raise ValueError('document workspace omitted artifacts named by region proof: '
+                         + ', '.join(missing))
+    for record in expected['regions']:
+        heading = record['selector']['value']
+        if len(_document_headings(workspace / record['artifact']).get(heading, [])) != 1:
+            raise ValueError('document workspace does not contain heading region: ' + heading)
+    return {'workspace_root': str(workspace), 'region_receipt': str(receipt),
+            'region_proof': expected['proof'], 'changed': changed,
+            'document_revision': _document_revision(workspace)}
 _main_checkout_root = state_root.main_checkout_root
 _find_repo_root = state_root.find_repo_root
 def _cwd() -> Path:

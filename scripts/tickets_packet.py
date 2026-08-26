@@ -25,9 +25,9 @@ if __package__:
 else:
     from tickets_issue import AMENDABLE_STATUSES
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
+    from .tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_workspace, normalized_isolation
 else:
-    from tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_git_workspace, normalized_isolation
+    from tickets_store import NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock, _segment_error, _tickets_root, establishes_a_workspace, normalized_isolation
 if __package__:
     from .tickets_worklog import _run_tickets
 else:
@@ -503,7 +503,7 @@ def _packet_under_run_lock(rest):
     prompt.append("Write your result into the ticket's own sections as you produce it, never in one write at the end; the join alone sets terminal status.")
     isolation = normalized_isolation(loaded.get('isolation'))
     writes_workspace_content = bool(loaded.get('write_scope'))
-    has_own_workspace = further is None and isolation == REQUIRED_ISOLATION and writes_workspace_content and establishes_a_git_workspace(loaded.get('pack'))
+    has_own_workspace = further is None and isolation == REQUIRED_ISOLATION and writes_workspace_content and establishes_a_workspace(loaded.get('pack'), v2=is_v2(loaded))
     if executor_script is None and further is None:
         prompt.append('Close by running each criterion\'s oracle once at the frozen result identity and recording its summary and exit in `## Verification`; your own entries are UNVERIFIED alone — independence arrives per rules/verification.md §10, and later readers reuse entries whose covers are unchanged; `[]` fills an empty Feedback or Risks; an excluded action suspends through `## Handoff`.')
         prompt.append('Before your last write, file `## Carry` through the same filing channel (--section Carry): two to five conclusions a successor needs — decisions, landed identities, hazards, and the command to re-take any measurement — never narrative.')
@@ -512,7 +512,10 @@ def _packet_under_run_lock(rest):
         if has_own_workspace:
             prompt.append("Your branch is not the revision those repository-level checks decide, and your green is provisional until the tip's.")
     if has_own_workspace:
-        prompt.append('Workspace establishment (isolation: required), your first act, run from inside your own workspace:')
+        if str(loaded.get('pack') or '').strip() == CONTENT_PACK:
+            prompt.append('Workspace establishment (document-tree, isolation: required), your first act: run this from the checkout, then make every document mutation inside the returned workspace_root; its region_receipt is the join proof:')
+        else:
+            prompt.append('Workspace establishment (isolation: required), your first act, run from inside your own workspace:')
         prompt.append(_command_text(sys.executable, script.with_name('workspace.py'), 'start', run_id, loaded['id']))
     # A measurement relayed into a packet is a measurement taken at the cut
     # and read at a tip several commits later: one dispatch relayed a line
