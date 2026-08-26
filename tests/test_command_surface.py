@@ -108,6 +108,30 @@ def _routed_commands() -> set:
 class NamedOperatorsTest(unittest.TestCase):
     """Each required operator is named by the skill that requires it."""
 
+    def test_orch_spec_routes_only_unresolved_roots_through_every_v2_door(self):
+        text = _skill_text("workflows/orch-spec")
+        frontmatter = text.split("---", 2)[1]
+        description = next(
+            (line.removeprefix("description:").strip()
+             for line in frontmatter.splitlines()
+             if line.startswith("description:")),
+            "",
+        ).lower()
+        missing = sorted(
+            {
+                *(f"description omits {anchor!r}"
+                  for anchor in ("evidence", "decisions", "kind boundaries",
+                                 "unresolved")
+                  if anchor not in description),
+                *(f"orch-spec does not name tickets.py {command}"
+                  for command in ("stamp-generation", "draft-validate", "seal")
+                  if not _names(text, command)),
+            }
+        )
+        if re.search(r"\b(?:any|every) delivery\b", description):
+            missing.append("description still routes every delivery")
+        self.assertEqual([], missing)
+
     def test_orch_decompose_names_the_command_that_writes_the_composite_gate(self):
         text = _skill_text("kernel/orch-decompose")
         self.assertTrue(_names(text, "gate"))
