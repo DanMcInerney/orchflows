@@ -201,6 +201,13 @@ def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: P
     )
 
 
+# Every Grok text surface -- dispatch gate, legal frontmatter, skill file and
+# `render_grok_agent` -- lives in installer/managed_text.py, not here beside
+# its Claude and Codex siblings. Not a taxonomy choice: this file measured 483
+# of its 510 tracked-source lines before the Grok column arrived, and the group
+# does not fit in 27.
+
+
 # --- host role agents, parsed from the canonical table -----------------
 
 
