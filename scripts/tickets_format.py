@@ -8,6 +8,7 @@ if __package__:
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
+        FILEABLE_EXECUTOR_SECTIONS, LEGACY_EXECUTOR_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
@@ -22,6 +23,7 @@ else:
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
+        FILEABLE_EXECUTOR_SECTIONS, LEGACY_EXECUTOR_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
@@ -57,6 +59,7 @@ PROVENANCE_RE = re.compile('provenance:\\s*([A-Za-z_-]*)', re.IGNORECASE)
 DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'
+SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
 # The instruction ceiling is `tickets_ceiling`'s: one counter, so the lint
 # twin and the issue refusal cannot drift apart. Re-exported here because
 # this module is where the family and the `tickets` facade already read it.
@@ -222,6 +225,21 @@ def count_return_text(text, counter):
     if counter == 'lines-v1':
         return len(text.splitlines())
     raise ValueError(f"unknown return-size counter '{counter}'")
+
+
+def successor_context_defects(body: str) -> list:
+    """Return every violation of the optional successor Context grammar."""
+    lines = body.splitlines()
+    defects = []
+    if not 1 <= len(lines) <= 5:
+        defects.append('Context must contain one to five top-level bullets')
+    for number, line in enumerate(lines, start=1):
+        prefix = next((item for item in SUCCESSOR_CONTEXT_PREFIXES if line.startswith(item)), None)
+        if prefix is None or not line[len(prefix):].strip():
+            defects.append(
+                f"Context line {number} must begin exactly '- state:' or '- watch:' and have non-empty content"
+            )
+    return defects
 
 
 def format_policy_defects(text, data, sections):

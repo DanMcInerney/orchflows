@@ -77,6 +77,14 @@ class RecutAndCohortTest(unittest.TestCase):
         self.assertIn("old result", tickets_mod._sections(text)["Result"])
         self.assertIn("old verification", tickets_mod._sections(text)["Verification"])
 
+    def test_new_issuance_omits_optional_successor_context(self):
+        issue_v1("T1", "v1:ticket:T1")
+        sections = tickets_mod._sections(
+            (self.run_dir / "T1.md").read_text(encoding="utf-8")
+        )
+        self.assertNotIn("Context", sections)
+        self.assertNotIn("Carry", sections)
+
     def test_recut_rejects_a_ticket_id_that_traverses_into_another_run(self):
         foreign = self.sink / "tickets" / "other"
         foreign.mkdir(parents=True)
