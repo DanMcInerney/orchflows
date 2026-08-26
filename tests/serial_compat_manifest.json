@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3209,
+  "count": 3221,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -131,6 +131,8 @@
    "test_doclint.ValidateLinkCheckTest.test_a_dangling_link_in_a_graded_tier_is_an_error",
    "test_doclint.ValidateLinkCheckTest.test_a_link_that_resolves_is_not",
    "test_doclint.ValidateLinkCheckTest.test_an_external_url_is_not_the_repositorys_to_resolve",
+   "test_gate_only_lifecycle.GateOnlyLifecycleTest.test_controlled_wrong_variants_are_discriminated",
+   "test_gate_only_lifecycle.GateOnlyLifecycleTest.test_seal_claim_packet_gate_verify_and_no_redispatch",
    "test_input_identities.CommonIdentityTest.test_artifact_locators_resolve_without_host_paths_in_the_fingerprint",
    "test_input_identities.CommonIdentityTest.test_migrated_historical_fixtures_keep_the_coordinate_and_reach_a_specific_resolver",
    "test_input_identities.CommonIdentityTest.test_prior_run_ticket_section_requires_and_checks_digest",
@@ -442,6 +444,8 @@
    "test_migrate_state_cases.plan.TestUnreadableDestination.test_the_unterminated_line_question_refuses_rather_than_answers_no",
    "test_migrate_state_cases.plan.TestUsage.test_an_unknown_flag_is_refused_rather_than_guessed",
    "test_migrate_state_cases.plan.TestUsage.test_no_source_is_a_usage_error",
+   "test_ordered_lens_bundle.OrderedLensBundleTest.test_each_controlled_wrong_bundle_is_rejected",
+   "test_ordered_lens_bundle.OrderedLensBundleTest.test_packet_and_frontier_preserve_one_ordered_same_child_sequence",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
    "test_project_binding.TestAttribution.test_a_recorded_project_is_corrected_to_the_root_tickets",
    "test_project_binding.TestAttribution.test_a_root_ticket_naming_no_workspace_leaves_the_writer_owning_it",
@@ -1133,6 +1137,14 @@
    "tests.test_contracts_cases.rules.ChainRoleLawTest.test_roles_resolves_a_chain_once_at_its_head",
    "tests.test_contracts_cases.rules.ChainRoleLawTest.test_the_shipped_gate_chain_crosses_roles",
    "tests.test_contracts_cases.rules.ChainRoleLawTest.test_the_work_item_field_states_the_head_role",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_architecture_names_the_runtime_owner_without_moving_t0_shape",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_bundle_is_one_ordered_gate_ticket_with_unique_lens_evidence",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_child_identity_never_crosses_the_ticket_boundary",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_gate_only_cut_is_coverage_complete_and_not_padding",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_migration_preserves_legacy_and_already_sealed_v2_history",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_repair_verdicts_are_void_and_verifier_is_fresh_and_separate",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_vocabulary_defines_both_opt_in_shapes_once",
+   "tests.test_contracts_cases.rules.ReviewBundleContractTest.test_work_item_owns_the_canonical_opt_in_bundle_carrier",
    "tests.test_contracts_cases.rules.TestSkillDescriptions.test_every_skill_description_is_at_most_140_chars",
    "tests.test_contracts_cases.rules.TestVerificationHomelessLaws.test_a_gate_returning_findings_moves_the_result_identity",
    "tests.test_contracts_cases.rules.TestVerificationHomelessLaws.test_one_independence_path_unique_lenses_and_one_root_gate",
@@ -3212,7 +3224,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f8a8ecc46930c4e9e64736532f28bbca2c4547ac1a31738c650732b6b0622bd4"
+  "sha256": "5504a35795b848fd1372c3373a9fba04cde6a023220051fa7bf2f41626676d58"
  },
  "mutation_owners": [
   {
@@ -3840,6 +3852,20 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_gate_only_lifecycle",
+   "owner": "<module>",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_gate_only_lifecycle",
+   "owner": "fixture",
+   "seams": [
+    "environment"
    ]
   },
   {
