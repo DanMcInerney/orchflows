@@ -17,8 +17,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts import tickets_packet, tickets_store
 from tests.test_tickets_cases.common import run_cmd, run_full, use_sink
+from tests.test_tickets_cases.packet_checker import (
+    ContentAudienceCarriageCases,
+    filing_lines,
+)
 
 REFUSAL = "checker not required: every criterion carries provenance: pre-existing"
 
@@ -141,22 +144,6 @@ SCOPE_BEARING_SHAPES = frozenset(
 )
 
 CEILING_TOOL = "check_source_sizes.py"
-
-
-def filing_lines(prompt: str) -> list:
-    """Every emitted `result --section` line, found by its own tokens.
-
-    By the tokens rather than by position: the same reading a child does,
-    and the one `tests/test_tickets_cases/cli_help.py` does for the single
-    shape it covers. Here it walks all six.
-    """
-
-    found = []
-    for line in prompt.splitlines():
-        tokens = line.split()
-        if len(tokens) > 2 and Path(tokens[1]).name == "tickets.py" and tokens[2] == "result":
-            found.append(line)
-    return found
 
 
 def measurement_lines(prompt: str) -> list:
@@ -507,84 +494,8 @@ class TestCheckerNotDispatchedWhenSectionTenExempts(unittest.TestCase):
             self.assertIn("subtree ticket yet", payload["error"])
 
 
-class TestContentAudienceCarriage(unittest.TestCase):
+class TestContentAudienceCarriage(ContentAudienceCarriageCases, unittest.TestCase):
     """A content section or terminal edit carries the root reader exactly."""
-
-    ROOT = """---
-id: 00-root
-run: content-run
-status: claimed
-executor: orch-decompose
-pack: orch-content-pack
-depends_on: []
-write_scope: [Introduction]
-bound: 30m
-root_generation: v2:root:00-root:1:sha256:{digest}
-cut_generation: v2:cut:00-root:1:sha256:{digest}
-ownership_regions: []
-assignment_seal: sha256:{digest}
----
-
-## Objective
-
-Produce one document.
-
-## Fixed inputs
-
-- input: {{"name":"audience","type":"literal","value":"operators"}}
-
-## Completion test
-
-- the document works | oracle: review | oracle_class: judged | provenance: authored-here
-
-## Return fields
-
-status.
-""".format(digest="0" * 64)
-
-    ITEM = ROOT.replace("id: 00-root", "id: 00-root.01").replace(
-        "executor: orch-decompose", "executor: orch-draft"
-    ).replace("status: claimed", "status: claimed", 1)
-
-    def defect(self, audience_line):
-        with tempfile.TemporaryDirectory() as tmp:
-            run = Path(tmp)
-            root = run / "00-root.md"
-            item = run / "00-root.01.md"
-            root.write_text(self.ROOT, encoding="utf-8")
-            item.write_text(
-                self.ITEM.replace(
-                    '- input: {"name":"audience","type":"literal","value":"operators"}',
-                    audience_line,
-                ),
-                encoding="utf-8",
-            )
-            loaded = {"id": "00-root.01", "executor": "orch-draft", "pack": "orch-content-pack"}
-            return tickets_packet._content_audience_defect(
-                item, loaded, item.read_text(encoding="utf-8")
-            )
-
-    def test_a_matching_root_audience_is_carried(self):
-        self.assertIsNone(
-            self.defect('- input: {"name":"audience","type":"literal","value":"operators"}')
-        )
-
-    def test_a_missing_audience_is_refused(self):
-        self.assertIn("missing", self.defect("None.") or "")
-
-    def test_an_altered_audience_is_refused(self):
-        self.assertIn(
-            "does not match",
-            self.defect('- input: {"name":"audience","type":"literal","value":"executives"}') or "",
-        )
-
-    def test_v2_content_gets_the_script_owned_workspace_path(self):
-        self.assertTrue(
-            tickets_store.establishes_a_workspace("orch-content-pack", v2=True)
-        )
-        self.assertFalse(
-            tickets_store.establishes_a_workspace("orch-content-pack", v2=False)
-        )
 
 
 if __name__ == "__main__":
