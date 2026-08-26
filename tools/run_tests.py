@@ -34,12 +34,16 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
 TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
-DEFAULT_COLD_ORDER = (
-    "tests.test_installer_planning", "tests.test_installer_shared",
-    "tests.test_cutcheck", "tests.test_tickets",
-    "tests.test_workspace", "tests.test_installer_hosts",
-    "tests.test_installer_receipt", "tests.test_validate",
-)
+# Cold-checkout order: the modules whose *worst* matrix leg is expensive,
+# that leg's duration descending. Worst and not typical -- the long pole
+# moves by leg (visualize_scripts on macOS, serial_compat on 3.9) and
+# starting a module early costs nothing on a leg where it is cheap. Read
+# off the timing artifacts CI uploads; a leg with a cache never reads it.
+DEFAULT_COLD_ORDER = tuple("tests.test_" + _name for _name in (
+    "visualize_scripts", "installer_planning", "workspace", "serial_compat",
+    "installer_shared", "cutcheck", "tickets", "validate", "ui",
+    "run_required", "affected_tests", "cell_linter",
+))
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
     os.path.normcase(os.path.abspath(str(ROOT / relative)))
     for relative in (".", "scripts", "benchmarks/benchmaker/tools",

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3198,
+  "count": 3201,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -539,16 +539,11 @@
    "test_run_tests.TestGuardedSeams.test_each_import_time_whole_interpreter_leak_is_rejected_and_named",
    "test_run_tests.TestGuardedSeams.test_each_whole_interpreter_leak_is_rejected_and_named",
    "test_run_tests.TestSchedule.test_a_cold_custom_directory_remains_alphabetical",
+   "test_run_tests.TestSchedule.test_a_cold_prior_covers_the_long_pole_of_every_matrix_leg",
    "test_run_tests.TestSchedule.test_a_cold_repository_starts_known_slow_modules_first",
    "test_run_tests.TestSchedule.test_expected_failures_are_preserved_as_outcomes",
    "test_run_tests.TestSchedule.test_installer_cases_are_exactly_once_across_process_visible_shards",
    "test_run_tests.TestSchedule.test_timing_record_carries_context_occupancy_modules_and_outcomes",
-   "test_run_tests.TestWorkflowContract.test_ci_does_not_repeat_oracles_already_in_the_sharded_suite",
-   "test_run_tests.TestWorkflowContract.test_ci_has_exactly_the_five_supported_boundary_legs",
-   "test_run_tests.TestWorkflowContract.test_ci_runs_the_regression_suite_once_through_the_parallel_runner",
-   "test_run_tests.TestWorkflowContract.test_ci_uploads_each_python_legs_timing_even_after_failure",
-   "test_run_tests.TestWorkflowContract.test_selected_serial_is_routine_and_exhaustive_is_the_fallback",
-   "test_run_tests.TestWorkflowContract.test_star_imported_facades_do_not_export_test_cases",
    "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_an_empty_selection_still_admits_the_paths_it_named",
    "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_the_admission_precedes_the_selections_own_exit",
    "test_run_tests_scope.TestScopeSpelling.test_a_scope_by_itself_is_accepted",
@@ -1732,6 +1727,13 @@
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_a_ticket_that_was_never_claimed_has_no_duration_to_report",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_each_executor_reports_its_median_p90_and_max",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_top_bounds_the_longest_list_and_leaves_the_executor_summary_whole",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_does_not_repeat_oracles_already_in_the_sharded_suite",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_has_exactly_the_four_supported_boundary_legs",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_restores_a_timing_cache_scoped_to_the_leg_that_wrote_it",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_runs_the_regression_suite_once_through_the_parallel_runner",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_uploads_each_python_legs_timing_even_after_failure",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_selected_serial_is_routine_and_exhaustive_is_the_fallback",
+   "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_star_imported_facades_do_not_export_test_cases",
    "tests.test_search_plan_cases.archive.TestMergeLineage.test_complementary_merge_and_complete_fresh_lineage",
    "tests.test_search_plan_cases.archive.TestMergeLineage.test_cycle_dangling_reuse_and_inherited_score_are_rejected",
    "tests.test_search_plan_cases.archive.TestMergeLineage.test_settlement_is_exact_and_atomic",
@@ -2190,6 +2192,7 @@
    "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_a_note_from_a_worktree_appends_in_the_sink",
    "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_a_note_waits_past_the_windows_finite_lock_window",
    "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_a_prior_line_and_an_outside_writer_both_survive",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_an_append_waits_past_a_refusal_longer_than_the_finite_window",
    "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_concurrent_notes_all_land_whole",
    "tests.test_tickets_cases.run_state_resolution.TestFenceRepairHoldsBothDirections.test_the_repair_holds_in_both_directions",
    "tests.test_tickets_cases.run_state_resolution.TestIndentedFenceIsNotAFence.test_a_four_space_indented_fence_is_not_a_fence",
@@ -3201,7 +3204,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d57eac3ed5c880d0dfd7ad5dfd555b5d165683954e7ecb4cbdfa5c1eb9677719"
+  "sha256": "a516cd9b1a6625e4e84ed9828f13875ea09e29483fe18d317f21070a1b75bc6e"
  },
  "mutation_owners": [
   {
@@ -4173,6 +4176,14 @@
    ]
   },
   {
+   "module": "tests.test_installer_cases.planning.private_runtime",
+   "owner": "RuntimeVenvTests.use_copied_runtime_builds",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_installer_cases.planning.runtime",
    "owner": "TestClaudeAdapterSet._plan",
    "restoration": "sharded-module-guard",
@@ -4359,6 +4370,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "copied_runtime_builds",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
@@ -5642,6 +5661,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.run_state_artifacts",
+   "owner": "TestRunStateWorklog.test_an_append_waits_past_a_refusal_longer_than_the_finite_window",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

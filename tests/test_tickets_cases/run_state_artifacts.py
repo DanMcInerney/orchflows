@@ -3,6 +3,7 @@
 import time
 
 from .result_sections import *  # noqa: F401,F403
+from scripts import tickets_result as tickets_result_mod
 from scripts import tickets_store as tickets_store_mod
 
 def run_dir_of(run: str = "testrun") -> Path:
@@ -163,6 +164,40 @@ class TestRunStateWorklog(unittest.TestCase):
             )
             self.assertEqual(0, process.returncode, stdout or stderr)
             self.assertEqual([note], notes_of().read_text(encoding="utf-8").splitlines())
+
+
+    def test_an_append_waits_past_a_refusal_longer_than_the_finite_window(self):
+        """The sibling case above holds the *run* lock, so its child blocks
+        there and never reaches this one. `LK_LOCK` stops retrying after ten
+        attempts and raises; byte zero here is contended by every appender,
+        and eight of them on one runner outlast that -- reported as
+        `unwritable run state: [Errno 13] Permission denied`.
+        """
+
+        if tickets_store_mod.msvcrt is None:
+            self.skipTest("the finite retry window is Windows-only")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "notes.md"
+            path.write_text("first\n", encoding="utf-8")
+            real = tickets_store_mod.msvcrt.locking
+            refusals = {"count": 0}
+
+            def refusing(descriptor, mode, size):
+                # Both lock modes, never the unlock: a mode that gives up at
+                # ten must fail this, and one that waits must clear it.
+                if mode != tickets_store_mod.msvcrt.LK_UNLCK and refusals["count"] < 25:
+                    refusals["count"] += 1
+                    raise PermissionError(13, "Permission denied")
+                return real(descriptor, mode, size)
+
+            with mock.patch.object(
+                tickets_store_mod.msvcrt, "locking", refusing
+            ), mock.patch.object(
+                tickets_store_mod, "WINDOWS_LOCK_RETRY_SECONDS", 0.001
+            ):
+                tickets_result_mod._append_one_line(path, "second\n")
+            self.assertEqual(25, refusals["count"], "the appender stopped waiting early")
+            self.assertEqual("first\nsecond\n", path.read_text(encoding="utf-8"))
 
 
 class TestRunStateArtifact(unittest.TestCase):

@@ -1,10 +1,14 @@
 # The checks AGENTS.md requires, run on every supported boundary.
 #
-# Versions: 3.9 is the floor `install.py` enforces via MIN_PYTHON. 3.11 is
-# the first release with stdlib `tomllib`, so the two sides of the
-# install.py import guard both get exercised. 3.13 is current. 3.10 and
-# 3.12 add no distinct code path -- each sits on the same side of that
-# guard as a version already here.
+# Versions: 3.9 is the floor `install.py` enforces via MIN_PYTHON, and the
+# only leg where stdlib `tomllib` is absent; 3.13 is current and covers the
+# side where it is present. That import guard is this repository's only
+# version-gated code, so no third version adds a distinct path -- 3.10,
+# 3.11 and 3.12 each sit on the same side of it as a version already here.
+#
+# The OS axis carries the signal instead. Over 198 runs, every failure that
+# no other leg caught was OS-specific, and 3.11 was never once the only leg
+# to fail. Which is why all three operating systems stay, at full width.
 #
 # Two local checks are deliberately absent. `git diff --check` inspects the
 # working tree, which a fresh checkout leaves clean by construction. The
@@ -56,6 +60,15 @@ jobs:
       - name: verify reproducible frontend build
         run: uv run --no-project python tools/ui_frontend.py verify-build
 
+      # The download, not the `--with-deps` apt half, which needs root and
+      # reinstalls either way. Keyed on the lockfile because that is what
+      # pins the browser: @playwright/test moving is what must miss here.
+      - name: cache the pinned browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: install browser
         run: pnpm exec playwright install --with-deps chromium
 
@@ -70,16 +83,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.9', '3.11', '3.13']
+        python-version: ['3.9', '3.13']
         exclude:
           - os: macos-latest
             python-version: '3.9'
-          - os: macos-latest
-            python-version: '3.11'
           - os: windows-latest
             python-version: '3.9'
-          - os: windows-latest
-            python-version: '3.11'
 
     steps:
       # Full history, not the default depth-1: tests/test_cutcheck.py grades
@@ -107,6 +116,22 @@ jobs:
 
       - name: install exact reader backend
         run: uv pip install --system --require-hashes -r requirements-runtime.txt
+
+      # Without this the runner cold-starts on a static prior every run, and
+      # the prior can only be right for one leg at a time: macOS's longest
+      # module ran alone for the final third of its job, 87s of a 284s wall.
+      # Keyed per leg because the long pole moves by OS and interpreter. The
+      # run_id suffix writes a fresh entry each run while the prefix restores
+      # the newest earlier one -- a fixed key would pin the first run's
+      # timings forever. A pull request reads its base branch's entry, which
+      # is the same matrix leg over nearly the same suite.
+      - name: restore this leg's suite timings
+        uses: actions/cache@v4
+        with:
+          path: .orch/run_tests_times.json
+          key: run-tests-times-${{ matrix.os }}-py${{ matrix.python-version }}-${{ github.run_id }}
+          restore-keys: |
+            run-tests-times-${{ matrix.os }}-py${{ matrix.python-version }}-
 
       # The suite, sharded one module per child interpreter. Thread
       # parallelism is unsound here -- the suite performs ~30

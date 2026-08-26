@@ -40,14 +40,70 @@ _SHARED: dict = {}
 
 def tearDownModule():
     _ENV_GUARD.stop()
-    for key in ("root", "uninstall_root"):
+    # Each root is dropped with the value cached out of it. Dropping the root
+    # alone would leave the cache answering a later caller with a path this
+    # just deleted -- the builders below all treat a present key as a hit.
+    for key, cached in (
+        ("root", "value"),
+        ("uninstall_root", "uninstalled"),
+        ("runtime_template_root", "runtime_template"),
+    ):
+        _SHARED.pop(cached, None)
         root = _SHARED.pop(key, None)
         if root is not None:
             # Strict, like every other removal in this suite: a root that
-            # cannot be removed is a failure worth hearing, and neither shared
+            # cannot be removed is a failure worth hearing, and no shared
             # root can hold a repository, so `tree_removal.remove_repo_tree`
             # is not the owner here (see its docstring's scope clause).
             shutil.rmtree(root)
+
+
+def built_runtime_template() -> Path:
+    """One really-built private runtime, kept for this process to copy from.
+
+    A build is ``ensurepip`` plus a hash-locked dependency install -- 14s on
+    the author's host, 8s per test on the Windows leg -- and the lifecycle
+    cases asked for ten of them. What those cases grade is policy: reuse,
+    repair, refuse, uninstall retention, receipt state. None of it is about
+    how the runtime was made, and a copy of a real one satisfies the same
+    health probe at any path, which is asserted here before any copy is made.
+
+    The builder's own output stays covered by the two cases that grade it:
+    the symlinked base interpreter, and the end-to-end install run out of an
+    active project venv. Both keep calling the real builder.
+    """
+
+    if "runtime_template" not in _SHARED:
+        root = Path(tempfile.mkdtemp(prefix="orchflows-runtime-template-"))
+        _SHARED["runtime_template_root"] = root
+        template = root / "runtime"
+        install._build_private_runtime(template)
+        if not install.private_runtime_is_healthy(template):
+            raise RuntimeError("runtime template is unhealthy; refusing to seed copies")
+        _SHARED["runtime_template"] = template
+    return _SHARED["runtime_template"]
+
+
+def copied_runtime_builds():
+    """Patch the runtime builder to copy `built_runtime_template` into place.
+
+    ``_create_private_runtime`` reads the builder off ``install`` at call
+    time, so patching the module attribute reaches the staging build inside
+    it. ``dirs_exist_ok``: that staging directory is an existing mkdtemp.
+
+    The template is resolved here, before the patch exists. Resolving it
+    inside ``build`` would route the template's own build back through the
+    patch that build is meant to satisfy, and recur until the stack ends.
+    """
+
+    template = built_runtime_template()
+
+    def build(runtime_home):
+        home = Path(runtime_home)
+        shutil.copytree(template, home, symlinks=True, dirs_exist_ok=True)
+        return install.private_runtime_python(home)
+
+    return patch.object(install, "_build_private_runtime", new=build)
 
 
 def relocated_user_install():
