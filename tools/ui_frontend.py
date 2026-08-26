@@ -431,9 +431,16 @@ def main(argv=None) -> int:
     except (OSError, RuntimeError) as error:
         print("ui-frontend {0}: FAIL: {1}".format(arguments.command, error), file=sys.stderr)
         return 1
+    failed = (
+        arguments.command == "diff"
+        and any(value in {"different", "missing"} for value in evidence["results"].values())
+    )
     print(json.dumps(evidence, sort_keys=True))
-    print("ui-frontend {0}: PASS".format(arguments.command), file=sys.stderr)
-    return 0
+    print(
+        "ui-frontend {0}: {1}".format(arguments.command, "FAIL" if failed else "PASS"),
+        file=sys.stderr,
+    )
+    return int(failed)
 
 
 if __name__ == "__main__":

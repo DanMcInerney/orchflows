@@ -147,9 +147,9 @@ active rail owner part of the rendered contract without adding an identity.
 `tools/ui_frontend.py capture`, `audit`, and `diff` consume that
 manifest. Capture writes ephemeral evidence only; audit applies WCAG 2.2 AA
 rules plus 200-percent zoom-equivalent reflow, forced-colors, reduced-motion,
-and keyboard-reach parity to every identity; diff reports `no-golden`
-explicitly for this greenfield foundation until a separate owner admits
-goldens.
+and keyboard-reach parity to every identity. Diff exits nonzero on a
+missing or changed capture; `no-golden` is explicit and allowed only for
+this greenfield foundation until a separate owner admits goldens.
 
 `web/src/styles/tokens.css` is the single carrier for the closed type-size
 scale and shared privacy, status-border, radius, spacing, surface, and focus
