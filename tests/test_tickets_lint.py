@@ -128,6 +128,19 @@ def _instruction_words(baseline, tid):
     return fmt.instruction_words(draft(baseline, tid=tid, objective=UNPADDED_OBJECTIVE, **FIVE_DEFECTS))
 
 
+def draft_at_instruction_limit(baseline, words):
+    """A clean draft whose four counted fields total exactly ``words``."""
+    base = draft(baseline, objective=UNPADDED_OBJECTIVE)
+    objective_words = words - _instruction_words_for_text(base) + len(UNPADDED_OBJECTIVE.split())
+    return draft(baseline, objective=" ".join(["word"] * objective_words))
+
+
+def _instruction_words_for_text(text):
+    import scripts.tickets_format as fmt
+
+    return fmt.instruction_words(text)
+
+
 class LintFixture(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -177,6 +190,28 @@ class LintDraftTest(LintFixture):
         self.assertIn("320-word instruction", finding["message"])
         self.assertIn("20 over the 300-word ceiling", finding["message"])
         self.assertEqual("semantic", finding["kind"])
+
+    def test_context_is_outside_the_300_word_instruction_budget(self):
+        context = (
+            "## Context\n\n"
+            "- state: The successor may rely on the settled boundary.\n"
+            "- watch: Re-check the named oracle if that boundary changes.\n\n"
+        )
+        at_limit = draft_at_instruction_limit(self.baseline, 300).replace(
+            "## Completion test\n", context + "## Completion test\n", 1)
+        self.assertEqual(300, _instruction_words_for_text(at_limit))
+        self.assertNotIn(
+            "instruction-ceiling",
+            self.codes(self.lint("--file", str(self.write_draft(at_limit, "at-limit.md")))),
+        )
+
+        over_limit = draft_at_instruction_limit(self.baseline, 301).replace(
+            "## Completion test\n", context + "## Completion test\n", 1)
+        self.assertEqual(301, _instruction_words_for_text(over_limit))
+        self.assertIn(
+            "instruction-ceiling",
+            self.codes(self.lint("--file", str(self.write_draft(over_limit, "over-limit.md")))),
+        )
 
     def test_a_clean_draft_exits_zero_with_no_finding(self):
         path = self.write_draft(draft(self.baseline))
