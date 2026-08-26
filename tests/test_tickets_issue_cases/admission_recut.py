@@ -85,6 +85,42 @@ class RecutAndCohortTest(unittest.TestCase):
         self.assertNotIn("Context", sections)
         self.assertNotIn("Carry", sections)
 
+        variants = (
+            (
+                "carry", "T2",
+                tickets_mod._write_section(
+                    GOOD_TICKET.replace("id: T1", "id: T2"), "Carry", "legacy"
+                ),
+                ("Carry",),
+            ),
+            (
+                "malformed-context", "T3",
+                tickets_mod._write_section(
+                    GOOD_TICKET.replace("id: T1", "id: T3"), "Context", "[]"
+                ),
+                ("Context",),
+            ),
+            (
+                "dual", "T4",
+                tickets_mod._write_section(
+                    tickets_mod._write_section(
+                        GOOD_TICKET.replace("id: T1", "id: T4"), "Carry", "legacy"
+                    ),
+                    "Context", "- state: canonical",
+                ),
+                ("Carry", "Context"),
+            ),
+        )
+        for name, ticket_id, body, markers in variants:
+            with self.subTest(name=name):
+                candidate = self.tmp / f"{name}.md"
+                candidate.write_text(body, encoding="utf-8")
+                payload = run_cmd("new", "testrun", "--file", candidate)
+                self.assertIn("error", payload)
+                for marker in markers:
+                    self.assertIn(marker, payload["error"])
+                self.assertFalse((self.run_dir / f"{ticket_id}.md").exists())
+
     def test_recut_preserves_legacy_carry_and_canonical_context(self):
         self.run_dir.mkdir(parents=True)
         current = GOOD_TICKET.replace("status: ready", "status: pending")

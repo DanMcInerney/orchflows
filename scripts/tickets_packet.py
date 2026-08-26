@@ -439,7 +439,7 @@ def _packet_under_run_lock(rest):
     has_own_workspace = further is None and isolation == REQUIRED_ISOLATION and writes_workspace_content and establishes_a_git_workspace(loaded.get('pack'))
     if executor_script is None and further is None:
         prompt.append('Close by running each criterion\'s oracle once at the frozen result identity and recording its summary and exit in `## Verification`; your own entries are UNVERIFIED alone — independence arrives per rules/verification.md §10, and later readers reuse entries whose covers are unchanged; `[]` fills an empty Feedback or Risks; an excluded action suspends through `## Handoff`.')
-        prompt.append('Before your last write, file `## Context` through the same filing channel (--section Context): one to five non-empty `- state:`/`- watch:` bullets a successor needs; keep them terse and never narrate work performed.')
+        prompt.append('Before your last write, file `## Context` through the same filing channel (--section Context) only when a successor needs a conclusion; the section is optional, otherwise omit it. When present, use one to five non-empty `- state:`/`- watch:` bullets; keep them terse and never narrate work performed.')
         prompt.append("A check's own summary line is its evidence: never pipe a test command through `tail` or any other filter — the runner writes that summary to stderr, and dropping it leaves exit status alone.")
         prompt.append("Run the oracles your own `## Completion test` names, nothing wider: a repository-level check the standards owner requires and your ticket does not name is the engine's, run on the integrated tip after each merge batch.")
         if has_own_workspace:

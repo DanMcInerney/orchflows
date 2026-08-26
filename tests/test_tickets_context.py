@@ -185,6 +185,9 @@ class TestPrimaryCloseGuidance(unittest.TestCase):
             prompt = packet_prompt(tmp)
             self.assertIn("file `## Context`", prompt)
             self.assertIn("--section Context", prompt)
+            self.assertIn("section is optional", prompt)
+            self.assertIn("only when a successor needs a conclusion", prompt)
+            self.assertIn("otherwise omit it", prompt)
             self.assertIn("one to five non-empty `- state:`/`- watch:` bullets", prompt)
             self.assertNotIn("file `## Carry`", prompt)
 

@@ -98,8 +98,6 @@ PACK_EXECUTOR_BINDINGS = {
     'orch-design-pack': frozenset({'orch-render'}),
     'orch-research-pack': frozenset({'orch-investigate', 'orch-synthesize'}),
 }
-
-
 def adapter_id(pack) -> str: return ADAPTER_BY_PACK.get(str(pack or '').strip(), PLAIN_ADAPTER)
 def executor_bindings(pack) -> set: return set(PACK_EXECUTOR_BINDINGS.get(str(pack or '').strip(), ()))
 class DuplicateJsonKey(ValueError):
@@ -118,7 +116,6 @@ def canonical_json(value) -> str:
 def parse_canonical_json(encoded: str):
     """Parse the portable canonical JSON grammar shared by ticket fields."""
     return json.loads(encoded, object_pairs_hook=_json_object, parse_constant=_nonfinite_json)
-
 def parse_mutations(data):
     declared = data.get('mutations') if isinstance(data, dict) else data
     if declared is None:
@@ -147,7 +144,6 @@ def parse_mutations(data):
             parsed.append({'operation': operation, 'path': path})
             seen.add((operation, path))
     return (parsed, defects)
-
 def parse_return_size(section_text):
     candidates = [line for line in section_text.splitlines() if 'return-size:' in line]
     if not candidates:
@@ -180,7 +176,6 @@ def parse_return_size(section_text):
     if clause.get('target') != 'result':
         defects.append("return-size target must be 'result'")
     return (clause if not defects else None, defects)
-
 def parse_result_identity(section_text):
     candidates = [line for line in section_text.splitlines() if line.startswith('result:')]
     if len(candidates) != 1:
@@ -202,14 +197,12 @@ def parse_result_identity(section_text):
     if canonical != encoded:
         return (None, ['result identity JSON is not canonical: recursively sorted keys and no insignificant whitespace required'])
     return (identity, [])
-
 def count_return_text(text, counter):
     if counter == 'words-v1':
         return len(text.split())
     if counter == 'lines-v1':
         return len(text.splitlines())
     raise ValueError(f"unknown return-size counter '{counter}'")
-
 def successor_context_defects(body: str) -> list:
     """Return every violation of the optional successor Context grammar."""
     lines = body.splitlines()
@@ -223,7 +216,12 @@ def successor_context_defects(body: str) -> list:
                 f"Context line {number} must begin exactly '- state:' or '- watch:' and have non-empty content"
             )
     return defects
-
+def successor_section_defects(sections: dict, allow_legacy_carry: bool=False) -> list:
+    named = {str(name).lower(): body for name, body in sections.items()}; suffix = ' beside ## Context' if 'context' in named else ''
+    defects = ([f'canonical new work cannot contain legacy ## Carry{suffix}']
+               if 'carry' in named and not allow_legacy_carry else [])
+    if 'context' in named: defects.extend(successor_context_defects(named['context']))
+    return defects
 def format_policy_defects(text, data, sections):
     defects = []
     for key in _duplicate_frontmatter_keys(text):
@@ -393,6 +391,8 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     for name in REQUIRED_SECTIONS:
         if name.lower() not in sections:
             defects.append(f"no '## {name}' section")
+    if stub:
+        defects.extend(successor_section_defects(sections))
     completion = sections.get('completion test')
     if completion is not None:
         defects.extend(criterion_defects(completion))

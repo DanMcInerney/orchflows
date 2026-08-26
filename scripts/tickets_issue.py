@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, FILEABLE_EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, FILEABLE_EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, successor_section_defects, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
 else:
-    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, FILEABLE_EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, ticket_defects
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, FILEABLE_EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ceiling_sentence, successor_section_defects, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
@@ -28,7 +28,6 @@ AMEND_USAGE = 'amend <run> <id> --section <name> (--file <path> | --text <string
 RECUT_USAGE = 'recut <run> <id> --file <candidate>'
 def _distinct_gate_lenses(lenses: list) -> list:
     """Return ``lenses`` or refuse a repeated review identity.
-
     A second adversarial review is represented by another named lens. Two
     critique stubs with one label are one review identity written twice, not
     additional independence.
@@ -45,7 +44,6 @@ def _distinct_gate_lenses(lenses: list) -> list:
     return lenses
 def _frontmatter_list(key: str, values) -> list:
     """One frontmatter list, as the lines that carry it.
-
     The inline form ``[a, b]`` splits on the comma and on nothing else —
     a semicolon inside an entry is part of that entry
     (``_parse_frontmatter``). So an entry carrying a comma, or a semicolon
@@ -400,7 +398,7 @@ def _recut_under_run_lock(rest):
     for heading in FILEABLE_EXECUTOR_SECTIONS:
         if heading in current_sections:
             candidate = _write_section(candidate, heading, current_sections[heading])
-    defects = _issue_defects(candidate)
+    defects = _issue_defects(candidate, allow_legacy_carry=True)
     if defects:
         return {'error': f'the recut ticket {run}/{ticket_id} would be off contract (contracts/work-item.md): ' + '; '.join(defects)}
     over = _ceiling_error(f'the recut ticket {run}/{ticket_id}', ticket_id, candidate)
@@ -431,7 +429,7 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
         return None
     sentence = ceiling_sentence(subject, text)
     return None if sentence is None else {'error': sentence}
-def _issue_defects(text: str, *, issued: bool=False) -> list:
+def _issue_defects(text: str, *, issued: bool=False, allow_legacy_carry: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 
     Existing tickets may carry the immutable identity ``tickets.py check``
@@ -443,6 +441,8 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
     data = _parse_frontmatter(text)
     if not data:
         return defects
+    if not issued:
+        defects.extend(successor_section_defects(_sections(text), allow_legacy_carry))
     independence = 'checker'
     if 'independence' in data:
         independence = str(data.get('independence') or '').strip().strip('`').strip()
