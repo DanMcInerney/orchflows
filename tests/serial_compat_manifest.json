@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3205,
+  "count": 3212,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -2162,6 +2162,10 @@
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_a_readable_run_reports_an_empty_skipped_list",
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_an_unreadable_ticket_is_named_with_its_reason",
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_the_flat_ticket_family_needs_no_ui_reader_module",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_append_validates_the_combined_context_atomically",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_carry_is_legacy_only_and_dual_section_creation_is_refused",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_context_accepts_one_to_five_state_or_watch_bullets",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_every_malformed_context_is_refused_without_changing_bytes",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_an_unreadable_body_file_is_an_error_not_a_traceback",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_both_file_and_text_is_an_error",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_neither_file_nor_text_is_an_error",
@@ -2248,7 +2252,10 @@
    "tests.test_tickets_issue_cases.admission_producers.V1ProducerTest.test_the_canonical_fix_template_enters_v1_admission",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_amend_demotes_and_invalidates_every_unsealed_cohort_receipt",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_amend_refuses_a_checked_or_sealed_cohort_without_changing_bytes",
+   "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_new_issuance_omits_optional_successor_context",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_converts_v0_and_preserves_executor_sections",
+   "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_preserves_legacy_carry_and_canonical_context",
+   "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_refuses_to_invent_carry_or_create_a_new_dual_section",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_rejects_a_ticket_id_that_traverses_into_another_run",
    "tests.test_tickets_issue_cases.amend_cases.AmendTest.test_a_claimed_ticket_is_refused_and_left_exactly_as_it_was",
    "tests.test_tickets_issue_cases.amend_cases.AmendTest.test_a_cut_time_section_is_replaced_on_an_unclaimed_ticket",
@@ -3208,7 +3215,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "7758e42bfc1540145398b2a87e3804fd44b6a6231ae15422abd9e4d37968df22"
+  "sha256": "298db9c2f9e6b874baf4fa86e964c6ac41857fd81a659df0a59125826cf65b53"
  },
  "mutation_owners": [
   {
