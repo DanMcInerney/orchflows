@@ -53,11 +53,13 @@ class OrdinaryNewAuthoringTest(unittest.TestCase):
                         "--criterion",
                         criterion,
                         "--write-scope",
-                        "scripts/helper.py,tests/test_helper.py",
+                        "scripts/helper.py,tests/test_helper.py,tests/serial_compat_manifest.json",
                         "--mutation",
                         "change:scripts/helper.py",
                         "--mutation",
                         "create:tests/test_helper.py",
+                        "--mutation",
+                        "change:tests/serial_compat_manifest.json",
                         "--bound",
                         "30m",
                         "--pack",
@@ -80,7 +82,12 @@ class OrdinaryNewAuthoringTest(unittest.TestCase):
             self.assertEqual(["orch-tdd", "orch-build"], data["sequence"])
             self.assertEqual("orch-code-pack", data["pack"])
             self.assertEqual(
-                ["scripts/helper.py", "tests/test_helper.py"], data["write_scope"]
+                [
+                    "scripts/helper.py",
+                    "tests/test_helper.py",
+                    "tests/serial_compat_manifest.json",
+                ],
+                data["write_scope"],
             )
             self.assertEqual("v1:pending", data["admission"])
             self.assertEqual("pending", data["status"])
