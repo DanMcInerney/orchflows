@@ -23,7 +23,7 @@ sentence in the library must be required by one of them.
    contradiction are recorded as found, never smoothed.
 4. Star topology: one caller, one join per return; authority
    attenuates downward.
-5. One owner per fact; everything else links.
+5. Canonical ownership follows [rules/visibility.md](../rules/visibility.md) §3.
 6. Coordination is bought only when parallelism, isolation, or
    durability forces it.
 7. Fixes consume causes, not findings, bounded by the frozen spec's

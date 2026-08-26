@@ -19,12 +19,6 @@ verdict.
 
 Refuse a repair objective without write `authority`.
 
-Refuse §10 checker packets for gate-deferred non-roots or already checked
-tickets: `checked_by` is the single immutable checker identity
-[contracts/work-item.md](../../../contracts/work-item.md) defines. Additional
-review is a unique named root-gate critique lens, read-only and never setting
-`checked_by`.
-
 As the §10 checker ([rules/verification.md](../../../rules/verification.md)
 §10), use the ticket's completion test; for a root, use its packet's cut lens
 and sections. Hunt tautological or weakened checks and results passing without
