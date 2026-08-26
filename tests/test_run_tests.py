@@ -18,6 +18,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools import run_tests  # noqa: E402
+from tools import run_tests_scope  # noqa: E402
 from tests.test_run_tests_cases.workflow_contract import (  # noqa: E402,F401
     TestWorkflowContract,
 )
@@ -293,6 +294,33 @@ class TestSchedule(unittest.TestCase):
             ["tests.test_visualize_scripts", "tests.test_serial_compat"],
             run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR)[:2],
         )
+
+    def test_shards_partition_the_schedule_exactly(self):
+        """Every module in exactly one shard. A shard that drops one runs a
+        green half-suite, and a shard that repeats one pays for it twice."""
+        order = ["tests.test_%02d" % index for index in range(23)]
+        for count in range(1, 6):
+            shards = [
+                run_tests_scope.shard("%d-of-%d" % (index, count), order)
+                for index in range(1, count + 1)
+            ]
+            union = [module for shard in shards for module in shard]
+            self.assertEqual(sorted(order), sorted(union), "count=%d" % count)
+            self.assertEqual(len(union), len(set(union)), "count=%d" % count)
+
+    def test_a_shard_is_round_robin_over_the_longest_first_order(self):
+        """Contiguous halves would take every long module into the first one,
+        which finishes no sooner than the unsharded suite did."""
+        order = ["a", "b", "c", "d", "e"]
+        self.assertEqual(["a", "c", "e"], run_tests_scope.shard("1-of-2", order))
+        self.assertEqual(["b", "d"], run_tests_scope.shard("2-of-2", order))
+
+    def test_an_absent_shard_is_the_whole_order_and_a_bad_one_is_refused(self):
+        order = ["a", "b"]
+        self.assertEqual(order, run_tests_scope.shard(None, order))
+        for bad in ("3-of-2", "0-of-2", "2-of-0", "1/2", "two-of-three", "2"):
+            with self.assertRaises(SystemExit, msg=bad):
+                run_tests_scope.shard(bad, order)
 
     def test_a_cold_custom_directory_remains_alphabetical(self):
         with tempfile.TemporaryDirectory() as tmp:
