@@ -1,7 +1,6 @@
 # Architecture
 
-Cold ownership map for executing agents. Ceiling: 850
-whitespace-delimited words. Terms are
+Ceiling: 850 whitespace-delimited words. Terms are
 [the vocabulary](docs/vocabulary.md)'s.
 
 ## Four tiers
