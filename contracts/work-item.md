@@ -3,34 +3,25 @@
 The one unit of work, plan, and record — a delegation packet made durable:
 packet parts ⊕ completion test ⊕ lifecycle ⊕ graph position.
 
-Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the
-user-scope sink `scripts/state_root.py` resolves. An `excluded_actions`
-forbidding a directory always carves out the run's own directory there.
+Location: `<state-root>/tickets/<run>/<id>.md`, the state root being the user-scope sink `scripts/state_root.py` resolves. An `excluded_actions` forbidding a directory always carves out the run's own directory there.
 
 Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
 - `id` — lifecycle: unique within the run; stable once issued.
 - `run` — lifecycle: the owning run id.
-- `admission` — lifecycle: `v1:pending` at issue, then the portable
-  `v1:<adapter>:sha256:<digest>` receipt for the exact cut/cohort snapshot.
-  `scripts/tickets_lifecycle.py` owns the grade-then-swap protocol both
-  `ready` and `claim` run; direct status writes create neither state.
-- `cohort` — v1 graph position and v1's alone: `v1:ticket:<id>`, `v1:root:<root>`,
-  or `v1:batch:<digest>`, graded and sealed as one when a member goes live;
+- `admission` — lifecycle: `v1:pending` at issue, then the portable `v1:<adapter>:sha256:<digest>` receipt for the exact cut/cohort snapshot.
+  `scripts/tickets_lifecycle.py` owns the grade-then-swap protocol both `ready` and `claim` run; direct status writes create neither state.
+- `cohort` — v1 graph position and v1's alone: `v1:ticket:<id>`, `v1:root:<root>`, or `v1:batch:<digest>`, graded and sealed as one when a member goes live;
   amendment invalidates every unsealed member's receipt. A v2 ticket carries none.
-- `root_generation`, `cut_generation`, `ownership_regions`,
-  `assignment_seal` — the v2 fields: content identities
-  `v2:root:<root-id>:<ordinal>:sha256:<digest>` and
-  `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
+- `root_generation`, `cut_generation`, `ownership_regions`, `assignment_seal` — the v2 fields: content identities
+  `v2:root:<root-id>:<ordinal>:sha256:<digest>` and `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
   `{"artifact":"<path>","merge_oracle":"<identity>","owner":"<ticket-id>","selector":{"kind":"<kind>","value":"<stable identity>"}}`;
   and `sha256:<digest>` over the validated assignment fields `objective`, `inputs`,
   `authority`, `dependencies`, `acceptance`, `executor`. Digests, selectors, seal,
   and the migration under which the absence of all four v2 fields means v1 and no
   v1 value is reinterpreted are [rules/topology.md](../rules/topology.md) §8–§11's.
-- `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` |
-  `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
-  `orch-frontier`: the first four live, `pending` and `suspended` the two
-  non-terminal waits and a suspended ticket staying claimed, resumable from its
+- `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` | `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
+  `orch-frontier`: the first four live, `pending` and `suspended` the two non-terminal waits and a suspended ticket staying claimed, resumable from its
   `## Handoff`; the last five terminal, the join's (`orch-integrate`) alone and
   the set [worklog.md](worklog.md)'s `terminal` and [result.md](result.md)'s
   `status` read in, `complete` requiring PASS on every required criterion.

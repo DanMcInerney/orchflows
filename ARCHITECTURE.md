@@ -32,14 +32,12 @@ whitespace-delimited words. Terms are
   library terms; `documentation.md` documentation design and the
   reading order; each remaining file its named subject.
 - [`scripts/`](scripts/) owns repository automation. Programs use Python
-  3.9+, Windows/POSIX, no run-time network. An unprefixed family module is
-  the public command/import facade; same-family helpers own internals.
-  `tickets_format.py` owns syntax, closed parsers, and the
-  installed pack mechanism registry; `tickets_markdown.py`
-  is its private byte-preserving mechanism; `tickets_inputs.py` typed
-  identity resolution; `tickets_scope.py` mutation/edge closure;
-  `tickets_admission.py` composes those into receipts lifecycle and packet
-  modules consume. `tickets_project.py` owns run-project binding,
+  3.9+, Windows and POSIX, then no network. An unprefixed family module is
+  the public command and import facade; same-family helpers own internal concerns.
+  `tickets_format.py` owns syntax, closed parsers, and the pack registry;
+  `tickets_markdown.py` byte preservation; `tickets_inputs.py` typed identity
+  resolution; `tickets_scope.py` mutation/edge closure; `tickets_admission.py`
+  receipt lifecycle. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
   ceiling, `tickets_dispatch_gate.py` gate-only cut construction,
   `tickets_gate_bundle.py` contract-owned ordered lens bundle validation,
