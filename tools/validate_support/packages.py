@@ -225,8 +225,8 @@ def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
     if not (require and never and returning and require.start() < never.start() < returning.start()):
         diag.error(file_label, "skill body missing ordered Require/procedure/Never/Return anatomy")
         return
-    paragraphs = [part.strip() for part in re.split(r"\n[ \t]*\n", operative.strip()) if part.strip()]
-    if not paragraphs or not RETURN_RE.match(paragraphs[-1]):
+    return_tail = operative[returning.start():].strip()
+    if len([part for part in re.split(r"\n[ \t]*\n", return_tail) if part.strip()]) > 1:
         diag.error(file_label, "Return must be the terminal paragraph")
 
 

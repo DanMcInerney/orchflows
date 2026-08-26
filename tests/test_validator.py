@@ -177,6 +177,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         self._write_skill(
             "orch-new-executor", "Require: input.\nNever: skip.\nReturn: assumptions.\n"
         )
+        self._write_pack("orch-binding-pack", "| executor | `orch-new-executor` |\n")
         result = self._run()
         self.assertIn("does not lead with the result envelope", result.stdout)
 
@@ -186,6 +187,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             "Require: input.\nNever: skip.\n"
             "Return: the ticket has status, result identity, and verification.\n",
         )
+        self._write_pack("orch-binding-pack", "| executor | `orch-prose-envelope` |\n")
         result = self._run()
         self.assertIn("does not lead with structured result-envelope fields", result.stdout)
 

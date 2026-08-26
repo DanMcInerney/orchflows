@@ -11,6 +11,8 @@ ENVELOPE_UNITS = __dep_common.ENVELOPE_UNITS
 ENVELOPE_VOCAB_RES = __dep_common.ENVELOPE_VOCAB_RES
 MANIFEST_BUDGET = __dep_common.MANIFEST_BUDGET
 MD_LINK_RE = __dep_common.MD_LINK_RE
+PACK_ASSEMBLY_RE = __dep_common.PACK_ASSEMBLY_RE
+PACK_EXECUTOR_RE = __dep_common.PACK_EXECUTOR_RE
 Path = __dep_common.Path
 RETURN_TEXT_RE = __dep_common.RETURN_TEXT_RE
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
@@ -143,8 +145,14 @@ def _envelope_missing(clause: str) -> list:
 def validate_envelope(packages, diag: Diagnostics) -> None:
     """contracts/result.md: every bound dispatchable unit leads its
     Return: with status, result identity, and verification."""
+    bound = set(ENVELOPE_UNITS)
+    for pack in packages:
+        if not pack["is_pack"]:
+            continue
+        for pattern in (PACK_EXECUTOR_RE, PACK_ASSEMBLY_RE):
+            bound.update(pattern.findall(pack.get("body") or ""))
     for pkg in packages:
-        if pkg["path"].name not in ENVELOPE_UNITS and pkg["kind"] != "instances":
+        if pkg["path"].name not in bound:
             continue
         clause = _envelope_first_clause(pkg["body"])
         if clause is None:
