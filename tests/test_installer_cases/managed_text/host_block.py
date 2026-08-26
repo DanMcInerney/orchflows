@@ -78,6 +78,17 @@ class TestHostBlockRendering(unittest.TestCase):
                 rendered.count(branch),
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
+        for lane in (
+            "semantic-root/graph shape",
+            "oracle provenance",
+            "explanation-only",
+            "frozen one-executor",
+            "frozen graph",
+            "unresolved root",
+            "known cause",
+            "unknown cause",
+        ):
+            self.assertIn(lane, rendered)
         for gone in ("orch-task", "orch-deliver", "orch-compose"):
             self.assertNotIn(gone, rendered)
 

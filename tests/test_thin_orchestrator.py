@@ -73,6 +73,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             ROOT / "skills/engines/orch-frontier/references/profiles.md"
         ).read_text(encoding="utf-8")
         host = (ROOT / "templates/host-block.md").read_text(encoding="utf-8")
+        collapsed_host = re.sub(r"\s+", " ", host)
         combined = "\n".join((delegation, roles, profiles, host))
 
         for anchor in (
@@ -86,6 +87,15 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             self.assertIn(anchor, combined)
         self.assertNotIn("ad-hoc ticket", delegation)
         self.assertNotRegex(delegation, re.compile(r"inline fallback", re.I))
+        for anchor in (
+            "one matching planner child",
+            "packet-stated",
+            "dispatch-only",
+            "`orch-spec` then `orch-decompose`",
+            "outer join",
+        ):
+            self.assertIn(anchor, collapsed_host)
+        self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
