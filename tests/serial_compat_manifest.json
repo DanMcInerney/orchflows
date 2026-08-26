@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3221,
+  "count": 3222,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -446,6 +446,7 @@
    "test_migrate_state_cases.plan.TestUsage.test_no_source_is_a_usage_error",
    "test_ordered_lens_bundle.OrderedLensBundleTest.test_each_controlled_wrong_bundle_is_rejected",
    "test_ordered_lens_bundle.OrderedLensBundleTest.test_packet_and_frontier_preserve_one_ordered_same_child_sequence",
+   "test_ordered_lens_bundle.OrderedLensBundleTest.test_public_gate_help_names_the_opt_in_and_gate_only_shape",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
    "test_project_binding.TestAttribution.test_a_recorded_project_is_corrected_to_the_root_tickets",
    "test_project_binding.TestAttribution.test_a_root_ticket_naming_no_workspace_leaves_the_writer_owning_it",
@@ -3224,7 +3225,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5504a35795b848fd1372c3373a9fba04cde6a023220051fa7bf2f41626676d58"
+  "sha256": "e0e60c61ad1194c5d32f69c9eca4e64d963f339a5bee945e591c9d7e44b6f335"
  },
  "mutation_owners": [
   {
@@ -3857,6 +3858,7 @@
   {
    "module": "tests.test_gate_only_lifecycle",
    "owner": "<module>",
+   "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
    ]
@@ -3864,6 +3866,7 @@
   {
    "module": "tests.test_gate_only_lifecycle",
    "owner": "fixture",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
