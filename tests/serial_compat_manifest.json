@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3204,
+  "count": 3205,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -3052,6 +3052,7 @@
    "tests.test_validator_cases.repo_and_frontmatter.TestValidatorAgainstRepo.test_repo_passes_clean",
    "tests.test_visualize_scripts_cases.command_line.TestCommandLineEntry.test_non_codepage_unicode_never_crashes_the_verifier",
    "tests.test_visualize_scripts_cases.command_line.TestCommandLineEntry.test_renderer_without_the_cli_writes_no_page_and_exits_two",
+   "tests.test_visualize_scripts_cases.preview.TestPreviewBindsWithoutResolving.test_building_the_server_performs_no_reverse_lookup",
    "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_accept_socket_error_is_immediate_and_closes_server",
    "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_connected_client_that_sends_no_request_is_bounded_by_deadline",
    "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_read_and_bind_failures_emit_no_readiness",
@@ -3207,7 +3208,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cd9f7107650472a48152101f9f8defda1ab79263efcad59a8e4fb833c78f7e86"
+  "sha256": "7758e42bfc1540145398b2a87e3804fd44b6a6231ae15422abd9e4d37968df22"
  },
  "mutation_owners": [
   {
@@ -6437,6 +6438,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_visualize_scripts_cases.preview",
+   "owner": "TestPreviewBindsWithoutResolving.test_building_the_server_performs_no_reverse_lookup",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

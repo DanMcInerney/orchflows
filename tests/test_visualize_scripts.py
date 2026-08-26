@@ -9,6 +9,7 @@ from tests.test_visualize_scripts_cases.command_line import (  # noqa: F401
     TestCommandLineEntry,
 )
 from tests.test_visualize_scripts_cases.preview import (  # noqa: F401
+    TestPreviewBindsWithoutResolving,
     TestPreviewFailureCleanup,
     TestPreviewReadinessAndExactFile,
     TestPreviewSkillContract,
