@@ -300,13 +300,27 @@ class TestCanonicalTemplatesClose(unittest.TestCase):
                 )
 
     def test_every_canonical_template_instantiates_under_closure(self):
+        placeholders = {
+            "executor": "orch-tdd",
+            "isolation": "required",
+            "mutations": "change:scripts/a.py",
+            "oracle_command": "uv run --no-project python -m unittest tests.test_templates",
+            "oracle_name": "the named fixture oracle",
+            "oracle_provenance": "pre-existing",
+            "paths": "scripts/a.py",
+            "simple_task": "Deliver one simple code change.",
+        }
         for directory in self.directories():
             manifest = tickets._parse_frontmatter(
                 (directory / tickets.TEMPLATE_FILE).read_text(encoding="utf-8")
             )
             settings = []
             for name in manifest.get("placeholders") or []:
-                value = "<= 40 tool calls" if name == "bound" else f"{name}-identity"
+                value = (
+                    "<= 40 tool calls"
+                    if name == "bound"
+                    else placeholders.get(name, f"{name}-identity")
+                )
                 settings += ["--set", f"{name}={value}"]
             with self.subTest(template=directory.name), _temporary_sink():
                 result = tickets._cmd_instantiate(
