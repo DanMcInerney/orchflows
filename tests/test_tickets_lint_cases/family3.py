@@ -12,9 +12,147 @@ written twice. Two readers, one law: a case that greens one and reds the other
 is the drift these cases exist to catch.
 """
 
-from scripts import cutcheck_scope, tickets_lint
-
+import os
+import tempfile
 import unittest
+from pathlib import Path
+
+from scripts import cutcheck_scope, tickets_lint
+from scripts.tickets_format import _parse_frontmatter, _sections
+from tests.test_tickets_cases.admission_v1 import initialize_git_fixture
+from tests.test_tickets_issue_cases.common import *  # noqa: F401,F403
+
+
+# One narrowed oracle: `python -m unittest` alone is the whole-suite finding,
+# and a draft meant to carry exactly five defects may not carry a sixth.
+NARROW_ORACLE = "`python -m unittest tests.test_thing.CaseTest.test_one`"
+GOOD_CRITERION_NARROW = (
+    f"the artifact has the requested value | oracle: {NARROW_ORACLE} "
+    "| oracle_class: deterministic | provenance: authored-here"
+)
+DRAFT = """---
+id: {tid}
+run: testrun
+status: pending
+admission: v1:pending
+cohort: v1:ticket:{tid}
+executor: orch-tdd
+pack: orch-code-pack
+independence: gate
+depends_on: []
+write_scope: [scratch/{tid}.txt]
+mutations: [change:scratch/{tid}.txt]
+excluded_actions: [{excluded}]
+isolation: {isolation}
+bound: 30m
+claimed_by:
+claimed_at:
+---
+
+## Objective
+
+{objective}
+
+## Fixed inputs
+
+- input: {{"identity":{{"kind":"git-tree","repo":"run-project","revision":"{baseline}"}},"name":"baseline","type":"identity"}}
+- input: {inputs}
+
+## Completion test
+
+- {criterion}
+
+## Return fields
+
+status; result; changed_artifacts; verification; feedback; risks
+
+## Result
+
+## Verification
+
+## Feedback
+
+[]
+
+## Risks
+
+[]
+"""
+
+CANONICAL_SECOND_INPUT = '{"name":"question","type":"literal","value":"fixed"}'
+# The same record with its keys out of canonical order: the one defect the
+# normaliser is allowed to repair on its own.
+NONCANONICAL_SECOND_INPUT = '{"type":"literal","name":"question","value":"fixed"}'
+
+
+def draft(baseline, *, tid="T1", isolation="required",
+          excluded="vcs.integrate, vcs.push, vcs.open-pr",
+          inputs=CANONICAL_SECOND_INPUT, criterion=GOOD_CRITERION_NARROW,
+          objective="Change one observable artifact."):
+    return DRAFT.format(
+        tid=tid, baseline=baseline, isolation=isolation, excluded=excluded,
+        inputs=inputs, criterion=criterion, objective=objective,
+    )
+
+
+# The five defects the item's completion test names, as one set of overrides
+# rather than two copies of it. Three are syntactic -- keys out of canonical
+# order, `isolation: none` under `orch-tdd`, an exclusion written as prose --
+# and two are decisions nothing may rewrite: an instruction over the ceiling,
+# and a criterion naming no oracle class.
+FIVE_DEFECTS = {
+    "isolation": "none",
+    "excluded": "vcs.integrate, do not push to the remote",
+    "inputs": NONCANONICAL_SECOND_INPUT,
+    "criterion": f"the artifact changes | oracle: {NARROW_ORACLE}",
+}
+UNPADDED_OBJECTIVE = "Change one observable artifact."
+
+
+def five_defect_draft(baseline, tid="T1"):
+    """That draft, its objective padded to exactly 320 instruction words."""
+    over = 320 - _instruction_words(baseline, tid) + len(UNPADDED_OBJECTIVE.split())
+    return draft(baseline, tid=tid, objective="word " * (over - 1) + "word", **FIVE_DEFECTS)
+
+
+def _instruction_words(baseline, tid):
+    """The word count of the five-defect draft before its objective is padded."""
+    import scripts.tickets_format as fmt
+
+    return fmt.instruction_words(draft(baseline, tid=tid, objective=UNPADDED_OBJECTIVE, **FIVE_DEFECTS))
+
+
+class LintFixture(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.sink = use_sink(self.tmp)
+        self.repo = self.tmp / "repo"
+        self.repo.mkdir()
+        self.baseline = initialize_git_fixture(self.repo)
+        self._cwd = os.getcwd()
+        os.chdir(self.repo)
+
+    def tearDown(self):
+        os.chdir(self._cwd)
+        self._tmp.cleanup()
+
+    def write_draft(self, text, name="draft.md"):
+        path = self.tmp / name
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def issue(self, run, ticket_id, text):
+        """One ticket in the sink, where lint's issued half reads it."""
+        run_dir = self.sink / "tickets" / run
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+
+    def lint(self, *args):
+        return run_cmd("lint", *args)
+
+    def codes(self, payload):
+        return {item["code"] for item in payload["lint"]["findings"]}
 
 
 def _readings(scope, excluded):
@@ -170,3 +308,38 @@ class Family3OneLawTest(unittest.TestCase):
                          tickets_lint.PERMISSION_RE.flags)
         self.assertEqual(cutcheck_scope.PERMISSION_WINDOW,
                          tickets_lint.PERMISSION_WINDOW)
+
+
+CONTRADICTED = "vcs.integrate, vcs.push, vcs.open-pr, never write scratch/T1.txt"
+
+
+class ScopeContradictionLintTest(LintFixture):
+    """Family 3's judgment, surfaced while the text can still be changed."""
+
+    def test_an_exclusion_naming_a_granted_path_is_reported(self):
+        path = self.write_draft(draft(self.baseline, excluded=CONTRADICTED))
+        payload = self.lint("--file", str(path))
+        finding = next(item for item in payload["lint"]["findings"] if item["code"] == "scope-contradiction")
+        self.assertEqual("semantic", finding["kind"])
+        self.assertIn("never write scratch/T1.txt | scratch/T1.txt", finding["message"])
+        self.assertEqual(1, payload["exit_code"])
+        self.issue("testrun", "T1", path.read_text(encoding="utf-8"))
+        self.assertIn("scope-contradiction", self.codes(self.lint("testrun", "T1")))
+
+    def test_lint_and_cutcheck_report_the_same_contradictions(self):
+        """One judgment, two readers: the finding sets must not drift apart."""
+        for excluded in (CONTRADICTED, "vcs.integrate, vcs.push, vcs.open-pr",
+                         "vcs.push, never write docs/other.md", "vcs.push, with scratch/T1.txt re-pinned", "vcs.push, once scratch/T1.txt is sealed",
+                         "vcs.push, never write scratch/T1.txt, and never write scratch/T1.txt",
+                         "vcs.push, never write scratch/T1.txt., never write `scratch/T1.txt`, never write scratch\\T1.txt, never write scratch/",
+                         "vcs.push, never write ./scratch/T1.txt, never write ././scratch/T1.txt, never write scratch/*.txt, never write <ws>/scratch/T1.txt, never write SCRATCH/T1.TXT, never write scratch/T1.txt.bak, never write scratch/sub/T1.txt"):
+            text = draft(self.baseline, excluded=excluded)
+            path = self.write_draft(text, "case.md")
+            mine = {item["message"].split(": ", 1)[1]
+                    for item in self.lint("--file", str(path))["lint"]["findings"]
+                    if item["code"] == "scope-contradiction"}
+            prose = "\n".join(_sections(text).values())
+            theirs = {detail for code, detail
+                      in cutcheck_scope._scope_closure(_parse_frontmatter(text), prose)
+                      if code == cutcheck_scope.SCOPE_CONTRADICTION}
+            self.assertEqual(theirs, mine, excluded)

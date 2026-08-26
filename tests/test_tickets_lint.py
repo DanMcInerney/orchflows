@@ -7,12 +7,12 @@ from pathlib import Path
 from unittest import mock
 
 from tests.test_tickets_issue_cases.common import *  # noqa: F401,F403
-from scripts import cutcheck_scope, tickets_commands, tickets_context, tickets_dispatch
-from scripts.tickets_format import _parse_frontmatter, _sections
-from tests.test_tickets_cases.admission_v1 import initialize_git_fixture
+from scripts import tickets_commands, tickets_context, tickets_dispatch
+from scripts.tickets_format import _parse_frontmatter
 from scripts.tickets_store import _runs_root
 from tests.test_tickets_issue_cases.generation_lifecycle import ticket as v2_ticket
 from tests.test_tickets_lint_cases.family3 import *  # noqa: F401,F403  family 3's two-reader law
+
 
 class DesignPackInputContractTest(unittest.TestCase):
     REQUIRED_FIELDS = (
@@ -54,106 +54,12 @@ class OracleDiscriminationContractTest(unittest.TestCase):
         self.assertIn("wrong result built beside the tree", owner_compact)
         self.assertIn("its PASS is void", owner_compact)
 
-# Two readings of one frozen ticket used to disagree; both halves land in the
-# three classes at the foot of this module. Lint graded with no context, so the
-# sealed run-state record could never be found and every sealed root reported
-# `seal-state-unavailable` while `ready` admitted it clean; and lint said
-# nothing on an exclusion contradicting its own write scope, which `cutcheck`
-# family 3 reports on the cut -- by which time the root is sealed.
+# Lint once graded with no context, so sealed roots reported unavailable state
+# even while `ready` admitted them clean.
 SEAL_STATE_CODES = {
     "seal-state-unavailable", "seal-state-missing", "seal-state-mismatch",
     "validation-receipt-mismatch", "sealed-assignment-mismatch",
 }
-CONTRADICTED = "vcs.integrate, vcs.push, vcs.open-pr, never write scratch/T1.txt"
-
-NARROW_ORACLE = "`python -m unittest tests.test_thing.CaseTest.test_one`"
-GOOD_CRITERION_NARROW = (
-    f"the artifact has the requested value | oracle: {NARROW_ORACLE} "
-    "| oracle_class: deterministic | provenance: authored-here"
-)
-DRAFT = """---
-id: {tid}
-run: testrun
-status: pending
-admission: v1:pending
-cohort: v1:ticket:{tid}
-executor: orch-tdd
-pack: orch-code-pack
-independence: gate
-depends_on: []
-write_scope: [scratch/{tid}.txt]
-mutations: [change:scratch/{tid}.txt]
-excluded_actions: [{excluded}]
-isolation: {isolation}
-bound: 30m
-claimed_by:
-claimed_at:
----
-
-## Objective
-
-{objective}
-
-## Fixed inputs
-
-- input: {{"identity":{{"kind":"git-tree","repo":"run-project","revision":"{baseline}"}},"name":"baseline","type":"identity"}}
-- input: {inputs}
-
-## Completion test
-
-- {criterion}
-
-## Return fields
-
-status; result; changed_artifacts; verification; feedback; risks
-
-## Result
-
-## Verification
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
-"""
-
-CANONICAL_SECOND_INPUT = '{"name":"question","type":"literal","value":"fixed"}'
-NONCANONICAL_SECOND_INPUT = '{"type":"literal","name":"question","value":"fixed"}'
-
-
-def draft(baseline, *, tid="T1", isolation="required",
-          excluded="vcs.integrate, vcs.push, vcs.open-pr",
-          inputs=CANONICAL_SECOND_INPUT, criterion=GOOD_CRITERION_NARROW,
-          objective="Change one observable artifact."):
-    return DRAFT.format(
-        tid=tid, baseline=baseline, isolation=isolation, excluded=excluded,
-        inputs=inputs, criterion=criterion, objective=objective,
-    )
-
-
-FIVE_DEFECTS = {
-    "isolation": "none",
-    "excluded": "vcs.integrate, do not push to the remote",
-    "inputs": NONCANONICAL_SECOND_INPUT,
-    "criterion": f"the artifact changes | oracle: {NARROW_ORACLE}",
-}
-UNPADDED_OBJECTIVE = "Change one observable artifact."
-
-
-def five_defect_draft(baseline, tid="T1"):
-    """That draft, its objective padded to exactly 320 instruction words."""
-    over = 320 - _instruction_words(baseline, tid) + len(UNPADDED_OBJECTIVE.split())
-    return draft(baseline, tid=tid, objective="word " * (over - 1) + "word", **FIVE_DEFECTS)
-
-
-def _instruction_words(baseline, tid):
-    """The word count of the five-defect draft before its objective is padded."""
-    import scripts.tickets_format as fmt
-
-    return fmt.instruction_words(draft(baseline, tid=tid, objective=UNPADDED_OBJECTIVE, **FIVE_DEFECTS))
 
 
 def draft_at_instruction_limit(baseline, words):
@@ -167,39 +73,6 @@ def _instruction_words_for_text(text):
     import scripts.tickets_format as fmt
 
     return fmt.instruction_words(text)
-
-
-class LintFixture(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.tmp = Path(self._tmp.name)
-        self.sink = use_sink(self.tmp)
-        self.repo = self.tmp / "repo"
-        self.repo.mkdir()
-        self.baseline = initialize_git_fixture(self.repo)
-        self._cwd = os.getcwd()
-        os.chdir(self.repo)
-
-    def tearDown(self):
-        os.chdir(self._cwd)
-        self._tmp.cleanup()
-
-    def write_draft(self, text, name="draft.md"):
-        path = self.tmp / name
-        path.write_text(text, encoding="utf-8")
-        return path
-
-    def issue(self, run, ticket_id, text):
-        """One ticket in the sink, where lint's issued half reads it."""
-        run_dir = self.sink / "tickets" / run
-        run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
-
-    def lint(self, *args):
-        return run_cmd("lint", *args)
-
-    def codes(self, payload):
-        return {item["code"] for item in payload["lint"]["findings"]}
 
 
 class LintDraftTest(LintFixture):
@@ -339,6 +212,11 @@ class LintFixTest(LintFixture):
         self.assertEqual(claimed, path.read_text(encoding="utf-8"))
 
     def test_fix_refuses_every_cut_time_freeze_amend_refuses(self):
+        """`--fix` is a cut-time rewrite, so it stops where `amend` stops.
+
+        Each of these is unclaimed and `pending`, so both status guards pass
+        and the ticket is one `amend` refuses on its own separate terms.
+        """
         frozen = (
             ("checked_by: some_checker", "has an immutable checked_by"),
             ("assignment_seal: v2:sha256:deadbeef", "carries an assignment_seal"),
@@ -397,6 +275,13 @@ class LintTicketTest(LintFixture):
         self.assertIsNone(finding["fix"])
 
     def test_a_checked_ticket_lints_clean(self):
+        """`check` writes `checked_by`; the issued form may not call that a defect.
+
+        `new`'s grader refuses `checked_by` because an unissued ticket
+        carrying it would suppress the checker before dispatch. Once
+        `check` has written it the same field is the lawful record, and
+        `lint <run> <id>` reads issued tickets only.
+        """
         text = (draft(self.baseline)
                 .replace("independence: gate", "independence: checker")
                 .replace("status: pending", "status: complete")
@@ -450,6 +335,8 @@ class LintTicketTest(LintFixture):
 
 
 class SealedRootLintTest(LintFixture):
+    """Lint reads a sealed v2 root the way `ready` and `claim` read it."""
+
     def test_a_sealed_cut_is_graded_against_its_run_state_record(self):
         """Threading the context is not silencing the finding: a record
         naming another cut still fails."""
@@ -470,36 +357,6 @@ class SealedRootLintTest(LintFixture):
             payload["root_generation"] = "v2:root:00-root:9:sha256:" + "cd" * 32
             record.write_text(json.dumps(payload), encoding="utf-8")
         self.assertIn("seal-state-mismatch", self.codes(self.lint("run", "00-root")))
-
-
-class ScopeContradictionLintTest(LintFixture):
-    def test_an_exclusion_naming_a_granted_path_is_reported(self):
-        path = self.write_draft(draft(self.baseline, excluded=CONTRADICTED))
-        payload = self.lint("--file", str(path))
-        finding = next(item for item in payload["lint"]["findings"] if item["code"] == "scope-contradiction")
-        self.assertEqual("semantic", finding["kind"])
-        self.assertIn("never write scratch/T1.txt | scratch/T1.txt", finding["message"])
-        self.assertEqual(1, payload["exit_code"])
-        self.issue("testrun", "T1", path.read_text(encoding="utf-8"))
-        self.assertIn("scope-contradiction", self.codes(self.lint("testrun", "T1")))
-
-    def test_lint_and_cutcheck_report_the_same_contradictions(self):
-        """One judgment, two readers: the finding sets must not drift apart."""
-        for excluded in (CONTRADICTED, "vcs.integrate, vcs.push, vcs.open-pr",
-                         "vcs.push, never write docs/other.md", "vcs.push, with scratch/T1.txt re-pinned", "vcs.push, once scratch/T1.txt is sealed",
-                         "vcs.push, never write scratch/T1.txt, and never write scratch/T1.txt",
-                         "vcs.push, never write scratch/T1.txt., never write `scratch/T1.txt`, never write scratch\\T1.txt, never write scratch/",
-                         "vcs.push, never write ./scratch/T1.txt, never write ././scratch/T1.txt, never write scratch/*.txt, never write <ws>/scratch/T1.txt, never write SCRATCH/T1.TXT, never write scratch/T1.txt.bak, never write scratch/sub/T1.txt"):
-            text = draft(self.baseline, excluded=excluded)
-            path = self.write_draft(text, "case.md")
-            mine = {item["message"].split(": ", 1)[1]
-                    for item in self.lint("--file", str(path))["lint"]["findings"]
-                    if item["code"] == "scope-contradiction"}
-            prose = "\n".join(_sections(text).values())
-            theirs = {detail for code, detail
-                      in cutcheck_scope._scope_closure(_parse_frontmatter(text), prose)
-                      if code == cutcheck_scope.SCOPE_CONTRADICTION}
-            self.assertEqual(theirs, mine, excluded)
 
 
 class GraderContextTest(LintFixture):
