@@ -49,9 +49,15 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
     stub_id = fields.get("id")
     executor = fields.get("executor")
     executor_is_slot = executor == "{{executor}}"
-    executors = [] if executor_is_slot else (
-        executor if isinstance(executor, list) else [executor]
-    )
+    sequence = fields.get("sequence")
+    if executor_is_slot:
+        executors = []
+    elif sequence is None:
+        executors = executor if isinstance(executor, list) else [executor]
+    elif not isinstance(sequence, list) or not sequence or sequence[0] != executor:
+        raise WorkflowCompositionError("composition sequence must start with executor")
+    else:
+        executors = sequence
     try:
         identity.work_node_id(workflow, stub_id)
         if not executors and not executor_is_slot:
