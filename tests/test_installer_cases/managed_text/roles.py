@@ -6,15 +6,15 @@ from ..support import *  # noqa: F403
 
 from installer import managed_text, packages
 
-# --- Grok text surfaces --------------------------------------------------
-#
-# The Grok cases below ship as mixins folded into the one class this shard
-# imports, rather than as classes of their own. `test_installer_cases/
-# managed_text/*.py` is collected by nothing: the only door is the explicit
-# class-name import block at `tests/test_installer_managed.py:9-14`, which is
-# outside this ticket's write scope. A new top-level `TestCase` here would be
-# imported by no shard and would report green without ever running -- verified,
-# not assumed; see the ticket's Verification section.
+# This module declares exactly one class, and every case below is a method of
+# it. `test_installer_cases/managed_text/*.py` is collected by nothing: the one
+# door is the explicit class-name import block at `tests/test_installer_managed
+# .py`, which is outside this ticket's write scope, so a second top-level
+# `TestCase` here would be imported by no shard and would report green without
+# ever running. A mixin folded into the imported class is not the way out
+# either: `tests/test_run_tests.py` holds every class name DECLARED under this
+# tree against the class name each case LOADS under, and a mixin declares its
+# methods under one name and loads them under another.
 
 _GROK_WORKER_FRONTMATTER = (
     "---\n"
@@ -34,16 +34,22 @@ _GROK_GLUE_FRONTMATTER = (
 _GROK_LIB_SKILL_MD = Path("/lib/orchflows/skills/units/orch-tdd/SKILL.md")
 
 
-class GrokRoleAgentCases:
-    """The rendered ``$GROK_HOME/agents/<role>.md``.
+class TestRoleAgentInstructions(unittest.TestCase):
+    """The role instruction and the three Grok text surfaces rendered around it.
 
-    Grok parses an agent definition out of YAML frontmatter with camelCase
-    keys, and its ``AgentDefinition`` also accepts ``completionRequirement``,
-    ``capabilityMode``, ``maxTurns`` and ``isolation``. None of those is a
-    field the one role-profile table binds, so none is rendered. ``isolation``
-    in particular stays the decomposer's ticket field, established at dispatch
-    through ``spawn_subagent``'s own argument rather than frozen per role in a
-    file every dispatch of that role would inherit."""
+    The instruction is what every child of every role loads before it has read
+    its own ticket. It used to open by sending that child to read rules/roles.md
+    (149 words) 'before acting' -- and the two clauses a child acts on are in
+    the rendered text itself, while folding roles.md's own clauses in instead
+    would be 105 words against an 80-word body. So the sentence is cut, and
+    pinned cut: nothing else in the tree counts these words (D-2).
+
+    The pin covers the whole rendered file, not only its instruction: the
+    ``description`` is listed to every context holding the Agent tool --
+    the dispatcher and every child alike -- on every turn, so a contract
+    pointer left there is still a roles.md read the file names."""
+
+    BODY_CEILING = 80
 
     # A snake_case key -- `subagent_type`, `model_reasoning_effort` -- is the
     # exact mistake this catches: it is what the profile row and the Codex
@@ -55,6 +61,58 @@ class GrokRoleAgentCases:
         "maxTurns",
         "isolation",
     )
+
+    # --- The role instruction itself -------------------------------------
+
+    def test_role_instructions_send_no_child_to_read_the_role_contract(self):
+        self.assertNotIn("roles.md", install.ROLE_INSTRUCTIONS)
+        self.assertNotIn("before acting", install.ROLE_INSTRUCTIONS)
+        self.assertIn("delegated scope", install.ROLE_INSTRUCTIONS)
+        for anchor in (
+            "exact primary skill",
+            "each exact member",
+            "packet-stated ordered sequence",
+            "directly",
+            "never redispatch",
+        ):
+            self.assertIn(anchor, install.ROLE_INSTRUCTIONS)
+
+    def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
+        profile = install.load_role_profiles()["orch-worker"]
+
+        rendered = install.render_claude_agent("orch-worker", profile)
+
+        self.assertNotIn("roles.md", rendered)
+        _frontmatter, body = install.split_frontmatter(rendered)
+        self.assertLessEqual(validate.body_words(body), self.BODY_CEILING)
+
+    def test_codex_agent_file_names_no_contract_read(self):
+        profile = install.load_role_profiles()["orch-worker"]
+
+        rendered = install.render_codex_agent("orch-worker", profile)
+
+        self.assertNotIn("roles.md", rendered)
+        line = next(
+            line for line in rendered.splitlines() if line.startswith("developer_instructions")
+        )
+        self.assertLessEqual(validate.body_words(line), self.BODY_CEILING)
+
+    def test_role_description_is_the_role_name_and_nothing_to_follow(self):
+        # The name is the routing fact. "follow the role contract at <path>"
+        # was an imperative with no addressee in a field every context reads,
+        # and the dispatcher's law already lives in rules/roles.md section 4
+        # by way of contracts/work-item.md and orch-frontier.
+        self.assertEqual("Orchflows child role orch-worker.", install._role_description("orch-worker"))
+
+    # --- The rendered ``$GROK_HOME/agents/<role>.md`` ---------------------
+    #
+    # Grok parses an agent definition out of YAML frontmatter with camelCase
+    # keys, and its ``AgentDefinition`` also accepts ``completionRequirement``,
+    # ``capabilityMode``, ``maxTurns`` and ``isolation``. None of those is a
+    # field the one role-profile table binds, so none is rendered. ``isolation``
+    # in particular stays the decomposer's ticket field, established at dispatch
+    # through ``spawn_subagent``'s own argument rather than frozen per role in a
+    # file every dispatch of that role would inherit.
 
     def _grok_agent_frontmatter(self, rendered):
         frontmatter, _body = install.split_frontmatter(rendered)
@@ -112,17 +170,15 @@ class GrokRoleAgentCases:
         self.assertIn("model_reasoning_effort", codex)
         self.assertIn(f"model: {profile['claude']['model']}", claude)
 
-
-class GrokSkillBodyCases:
-    """The rendered ``$GROK_HOME/skills/<name>/SKILL.md``.
-
-    Two verified gaps own this shape. Grok does not expand ``@`` includes, so
-    every Claude adapter body reaching it through the compat scan is a literal
-    path and the canonical body never loads -- the Grok body names that body by
-    an explicit read instead. And ``context: fork`` / ``agent: <role>`` are
-    unknown skill keys on Grok and are ignored, so the role binding those keys
-    carry natively on Claude has to be stated in the body, as an explicit
-    dispatch gate."""
+    # --- The rendered ``$GROK_HOME/skills/<name>/SKILL.md`` ---------------
+    #
+    # Two verified gaps own this shape. Grok does not expand ``@`` includes, so
+    # every Claude adapter body reaching it through the compat scan is a literal
+    # path and the canonical body never loads -- the Grok body names that body by
+    # an explicit read instead. And ``context: fork`` / ``agent: <role>`` are
+    # unknown skill keys on Grok and are ignored, so the role binding those keys
+    # carry natively on Claude has to be stated in the body, as an explicit
+    # dispatch gate.
 
     def _role_body(self):
         return managed_text.grok_skill_text(
@@ -182,15 +238,13 @@ class GrokSkillBodyCases:
                 _GROK_LIB_SKILL_MD,
             )
 
-
-class GrokSubagentLimitCases:
-    """The managed ``[subagents]`` block in ``$GROK_HOME/config.toml``.
-
-    A user's config.toml is theirs; this owns three keys inside it and nothing
-    else, fenced by markers so a reinstall replaces its own block rather than
-    appending a second one. ``limit_behavior`` is ``queue`` on purpose: a spawn
-    past the concurrent cap waits its turn instead of becoming a lost lane,
-    which is what ``fail`` would make of it."""
+    # --- The managed ``[subagents]`` block in ``$GROK_HOME/config.toml`` --
+    #
+    # A user's config.toml is theirs; this owns three keys inside it and nothing
+    # else, fenced by markers so a reinstall replaces its own block rather than
+    # appending a second one. ``limit_behavior`` is ``queue`` on purpose: a spawn
+    # past the concurrent cap waits its turn instead of becoming a lost lane,
+    # which is what ``fail`` would make of it.
 
     def _rendered(self, text):
         updated, details = managed_text.render_grok_subagent_limits(text)
@@ -250,64 +304,3 @@ class GrokSubagentLimitCases:
         self.assertIn(foundation.CODEX_LIMITS_START, codex)
         self.assertNotIn(foundation.GROK_LIMITS_START, codex)
         self.assertNotIn("subagents", codex)
-
-
-class TestRoleAgentInstructions(
-    GrokRoleAgentCases,
-    GrokSkillBodyCases,
-    GrokSubagentLimitCases,
-    unittest.TestCase,
-):
-    """The instruction every child of every role loads before it has read its
-    own ticket. It used to open by sending that child to read rules/roles.md
-    (149 words) 'before acting' -- and the two clauses a child acts on are in
-    the rendered text itself, while folding roles.md's own clauses in instead
-    would be 105 words against an 80-word body. So the sentence is cut, and
-    pinned cut: nothing else in the tree counts these words (D-2).
-
-    The pin covers the whole rendered file, not only its instruction: the
-    ``description`` is listed to every context holding the Agent tool --
-    the dispatcher and every child alike -- on every turn, so a contract
-    pointer left there is still a roles.md read the file names."""
-
-    BODY_CEILING = 80
-
-    def test_role_instructions_send_no_child_to_read_the_role_contract(self):
-        self.assertNotIn("roles.md", install.ROLE_INSTRUCTIONS)
-        self.assertNotIn("before acting", install.ROLE_INSTRUCTIONS)
-        self.assertIn("delegated scope", install.ROLE_INSTRUCTIONS)
-        for anchor in (
-            "exact primary skill",
-            "each exact member",
-            "packet-stated ordered sequence",
-            "directly",
-            "never redispatch",
-        ):
-            self.assertIn(anchor, install.ROLE_INSTRUCTIONS)
-
-    def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
-        profile = install.load_role_profiles()["orch-worker"]
-
-        rendered = install.render_claude_agent("orch-worker", profile)
-
-        self.assertNotIn("roles.md", rendered)
-        _frontmatter, body = install.split_frontmatter(rendered)
-        self.assertLessEqual(validate.body_words(body), self.BODY_CEILING)
-
-    def test_codex_agent_file_names_no_contract_read(self):
-        profile = install.load_role_profiles()["orch-worker"]
-
-        rendered = install.render_codex_agent("orch-worker", profile)
-
-        self.assertNotIn("roles.md", rendered)
-        line = next(
-            line for line in rendered.splitlines() if line.startswith("developer_instructions")
-        )
-        self.assertLessEqual(validate.body_words(line), self.BODY_CEILING)
-
-    def test_role_description_is_the_role_name_and_nothing_to_follow(self):
-        # The name is the routing fact. "follow the role contract at <path>"
-        # was an imperative with no addressee in a field every context reads,
-        # and the dispatcher's law already lives in rules/roles.md section 4
-        # by way of contracts/work-item.md and orch-frontier.
-        self.assertEqual("Orchflows child role orch-worker.", install._role_description("orch-worker"))
