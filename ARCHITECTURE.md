@@ -43,8 +43,7 @@ whitespace-delimited words. Terms are
   `tickets_gate_bundle.py` contract-owned ordered lens bundle validation,
   `tickets_packet_receipts.py` one-shot packet claims, and
   `tickets_gate_mutations.py` the gate mutation plan,
-  `tickets_errand.py` the one-shot errand authoring family, and
-  `cutcheck_pricing.py` cut pricing.
+  `tickets_errand.py` errand authoring; `cutcheck_pricing.py` pricing.
   Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
