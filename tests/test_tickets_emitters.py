@@ -35,56 +35,15 @@ if str(ROOT) not in sys.path:
 
 import scripts.tickets as tickets_mod  # noqa: E402
 from scripts import tickets_emission  # noqa: E402
+from tests.test_workspace_cases.emission_cases import (  # noqa: E402
+    PLAIN_INPUT,
+    declared_placeholders,
+    frontmatter,
+    stub,
+)
 
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 COMPOSITIONS = ROOT / "compositions"
-
-STUB = """---
-id: {tid}
-run: testrun
-status: pending
-admission: v1:pending
-cohort: v1:ticket:{tid}
-executor: {executor}
-{pack}independence: {independence}
-depends_on: {depends_on}
-write_scope: [scripts/a.py]
-mutations: [change:scripts/a.py]
-isolation: required
-bound: 60m
-claimed_by:
-claimed_at:
----
-"""
-BODY = ("\n## Objective\n\n{objective}\n\n## Fixed inputs\n\n{inputs}\n\n"
-        "## Completion test\n\n- it works | oracle: `true` | oracle_class: "
-        "deterministic | provenance: authored-here\n\n## Return fields\n\n"
-        "status; result; verification; feedback; risks\n\n## Result\n\n"
-        "## Verification\n\n## Feedback\n\n[]\n\n## Risks\n\n[]\n")
-
-
-PLAIN_INPUT = '- input: {"name":"subject","type":"literal","value":"the subject"}'
-GIT_INPUT = ('- input: {{"identity":{{"kind":"git-tree","repo":"run-project",'
-             '"revision":"{baseline}"}},"name":"baseline","type":"identity"}}')
-
-
-def stub(tid, baseline=None, executor=None, independence="checker",
-         depends_on="[]", objective="Deliver the one thing this item is for."):
-    """One ticket its adapter admits, in either of the two shapes.
-
-    With ``baseline`` -- the fixture repository's own HEAD -- it is a code
-    pack ticket, whose git adapter reads one ``git-tree`` identity and
-    resolves it against the checkout. Without one it carries no pack, the
-    shape most shipped composition stubs have and the one the pure-law
-    cases need, since a grade with no checkout cannot resolve a revision.
-    """
-    git = baseline is not None
-    return (STUB + BODY).format(
-        tid=tid, pack="pack: orch-code-pack\n" if git else "",
-        executor=executor or ("orch-tdd" if git else "orch-investigate"),
-        inputs=GIT_INPUT.format(baseline=baseline) if git else PLAIN_INPUT,
-        independence=independence, depends_on=depends_on, objective=objective)
-
 
 def use_sink(tmp: Path) -> Path:
     sink = (tmp / "state-sink").resolve()
@@ -151,24 +110,6 @@ def run_cmd(cwd: Path, *args):
 
 def codes(payload) -> set:
     return {finding.get("code") for finding in payload.get("findings") or []}
-
-
-def declared_placeholders(directory: Path) -> list:
-    """The names one template's manifest requires a ``--set`` for."""
-
-    for line in (directory / "template.md").read_text(encoding="utf-8").splitlines():
-        if line.startswith("placeholders:"):
-            return [name.strip() for name in
-                    line.partition(":")[2].strip().strip("[]").split(",") if name.strip()]
-    return []
-
-
-def frontmatter(path: Path) -> dict:
-    data = {}
-    for line in path.read_text(encoding="utf-8").split("---")[1].strip().splitlines():
-        key, _, value = line.partition(":")
-        data[key.strip()] = value.strip()
-    return data
 
 
 def place_root(head, v2=False, root_status=None):
