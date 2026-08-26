@@ -60,6 +60,13 @@ class PublicRouteLifecycleTest(unittest.TestCase):
         self.assertIn("cut-accepted", vocabulary)
         self.assertIn("cut-accepted", integration)
 
+    def test_evidence_invalidation_takes_the_fresh_verifier_branch(self):
+        verification = self.text("rules/verification.md")
+        frontier = self.text("skills/engines/orch-frontier/SKILL.md")
+        self.assertIn("any is non-deterministic", verification)
+        self.assertIn("non-deterministic oracle", frontier)
+        self.assertNotIn("any is judged", verification)
+
 
 if __name__ == "__main__":
     unittest.main()

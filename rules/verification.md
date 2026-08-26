@@ -57,7 +57,7 @@
     correcting per §9, the completion test then re-verified, over the
     entries the checker invalidated, by a context that rendered no part
     of the result — where every invalidated oracle is deterministic that
-    context is the join, which re-runs them, and where any is judged one
+    context is the join, which re-runs them, and where any is non-deterministic one
     fresh child re-verifies them all; or the downstream gate the ticket's
     `independence` field names. A non-root gate-deferred ticket cannot
     carry `checked_by`, and a checker identity is single and immutable;
