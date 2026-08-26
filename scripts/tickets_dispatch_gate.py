@@ -147,6 +147,48 @@ def _record_names(body: str) -> set:
         if isinstance(name, str):
             names.add(name)
     return names
+def _ordered_bundle_carrier(body: str, lenses: list) -> dict:
+    """The contract-owned root carrier, validated before it is copied."""
+    records = []
+    for group in input_groups(body or ''):
+        if not _is_record(group):
+            continue
+        try:
+            record = parse_canonical_json(group[0][len('- input: '):])
+        except ValueError:
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    carriers = [record for record in records if record.get('name') == 'ordered-lens-bundle']
+    if len(carriers) != 1:
+        raise ValueError('ordered lens bundle requires the root\'s one canonical `ordered-lens-bundle` Fixed-input record')
+    carrier = carriers[0]
+    rows = carrier.get('value') if carrier.get('type') == 'literal' else None
+    if not isinstance(rows, list) or not rows:
+        raise ValueError('ordered-lens-bundle value must be a non-empty ordered list')
+    identity_inputs = {
+        record.get('name') for record in records if record.get('type') == 'identity'
+    }
+    identities = []
+    used_evidence = set()
+    for position, row in enumerate(rows, start=1):
+        if not isinstance(row, dict) or set(row) != {'evidence', 'identity'}:
+            raise ValueError(f'ordered-lens-bundle entry {position} must contain only identity and evidence')
+        identity = row.get('identity')
+        evidence = row.get('evidence')
+        if not isinstance(identity, str) or not identity.strip() or identity in identities:
+            raise ValueError(f'ordered-lens-bundle entry {position} identity must be non-empty and unique')
+        if not isinstance(evidence, list) or not evidence or any(
+            not isinstance(name, str) or name not in identity_inputs for name in evidence
+        ):
+            raise ValueError(f'ordered-lens-bundle entry {position} evidence must name root identity inputs')
+        if len(evidence) != len(set(evidence)) or used_evidence.intersection(evidence):
+            raise ValueError(f'ordered-lens-bundle entry {position} evidence must be separately attributable')
+        identities.append(identity)
+        used_evidence.update(evidence)
+    if identities != lenses:
+        raise ValueError('ordered-lens-bundle CLI order must equal the root carrier identities unchanged')
+    return carrier
 def _inherited_input_lines(own: str, inherited: str) -> list:
     """The root's fixed-input records the gate does not already state.
     Each is carried as the exact line the root states it on. A gate grades a
@@ -279,14 +321,13 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: s
     repair_id = repaired_by or GATE_REPAIR_ID.format(root=root_id); inputs = [_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'), _gate_input('repair-result', run=run, ticket=repair_id, section='Result'), _gate_input('mutation-plan-paths', literal=mutation_plan)]
     return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
 def _ordered_bundle_sections(root_id: str, lenses: list, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
-    """One closer packet whose canonical literal seals the lens order."""
-    inputs = [_gate_input('ordered-lens-bundle', literal=list(lenses))]
-    inputs.extend(_gate_input(_input_name('unit-result', unit, position), run=run, ticket=unit, section='Result') for position, unit in enumerate(units, start=1))
+    """One closer packet; its root carrier is inherited byte-for-byte."""
+    inputs = [_gate_input(_input_name('unit-result', unit, position), run=run, ticket=unit, section='Result') for position, unit in enumerate(units, start=1)]
     inputs.append(_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'))
     named = ', '.join(f'`{lens}`' for lens in lenses)
     objective = (f"Every defect in `{root_id}`'s delivered result found by the ordered lens bundle {named} is reported by identity with its evidence, applying each lens in the stated order as an open search over what the subtree produced. Then, as this chain's second skill, every accepted blocking finding is repaired inside this ticket's own write scope or declined with a stated reason, every accepted non-blocking finding is queued as candidate scope per verification §9, and nothing outside that scope changes.")
-    criteria = ["- every finding names the artifact identity it was found at, the lens that found it, and the evidence that shows it | oracle: this ticket's `## Result` read under the `ordered-lens-bundle` in its stated order | oracle_class: judged | provenance: pre-existing", "- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing", "- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: this ticket's own ranked findings against its `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"]
-    returns = "status; result — ranked findings in ordered-lens-bundle order, each with its lens, artifact identity and evidence, then each finding's disposition and the changed artifact by identity; verification; feedback; risks"
+    criteria = ["- every finding names the artifact identity it was found at, the lens that found it, and the evidence that shows it | oracle: this ticket's `## Result` read under the `ordered-lens-bundle` in its stated order | oracle_class: judged | provenance: pre-existing", "- every bundle identity has a completion record in bundle order naming its artifact identity and separately attributable evidence, and the repairing reviewer renders no post-repair verdict | oracle: this ticket's `## Result` against the `ordered-lens-bundle` | oracle_class: deterministic | provenance: pre-existing", "- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing", "- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: this ticket's own ranked findings against its `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"]
+    returns = "status; result — completion records in ordered-lens-bundle order, each with its bundle identity, artifact identity and separately attributable evidence; ranked findings with the same attribution; each finding's disposition and the changed artifact by identity; no post-repair verdict; verification; feedback; risks"
     return [('Objective', objective), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(criteria)), ('Return fields', returns)] + GATE_EXECUTOR_SECTIONS
 def _cmd_gate(rest, head_probe=None):
     """Serialize the gate's complete state read and all-or-none creation.
@@ -400,6 +441,12 @@ def _gate_under_run_lock(rest, head_probe=None):
     ceiling = _stub_pack_ceiling(pack, (by_id[unit].get('pack') for unit in units))
     critique_packs = {lens: _critique_pack(lens, pack, ceiling) for lens in lenses}
     inherited_inputs = (root.get('sections') or {}).get('Fixed inputs', '')
+    bundle_carrier = None
+    if bundle_present:
+        try:
+            bundle_carrier = _ordered_bundle_carrier(inherited_inputs, lenses)
+        except ValueError as error:
+            return {'error': str(error) + '. Nothing was written'}
     isolation = root.get('isolation')
     exclusions = list(root.get('excluded_actions') or [])
     version = declared_version(root)
@@ -495,7 +542,7 @@ def _gate_under_run_lock(rest, head_probe=None):
         return {'error': f'unwritable gate stub: {error}. Nothing was written'}
     payload = {'run': run, 'root': root_id, 'lenses': lenses, 'acceptance_from': acceptance_id, 'ids': [stub_id for stub_id, _ in rendered], 'paths': [str(path) for path in written]}
     if bundle_present:
-        payload['ordered_lens_bundle'] = list(lenses)
+        payload['ordered_lens_bundle'] = bundle_carrier['value']
     if version == 2:
         # A v2 family lands drafting: the seal is the one door that writes
         # generation fields, so completion is named rather than imitated.
@@ -505,6 +552,6 @@ __all__ = (
     'PACK_WIDENINGS', '_cmd_gate', '_critique_pack', '_gate_body', '_gate_input',
     '_gate_sections', '_gate_stub', '_gate_under_run_lock',
     '_inherited_input_lines', '_input_name', '_is_record', '_listed_items',
-    '_gate_complete_coverage', '_ordered_bundle_sections', '_ordered_lens_bundle', '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
+    '_gate_complete_coverage', '_ordered_bundle_carrier', '_ordered_bundle_sections', '_ordered_lens_bundle', '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
     '_stub_pack_ceiling', '_with_inherited_inputs',
 )

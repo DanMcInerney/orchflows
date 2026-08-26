@@ -52,6 +52,9 @@ Close this result through the composite gate without implementation padding.
 ## Fixed inputs
 
 - input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"%s"},"name":"baseline","type":"identity"}
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"%s"},"name":"code-baseline","type":"identity"}
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"%s"},"name":"library-baseline","type":"identity"}
+- input: {"name":"ordered-lens-bundle","type":"literal","value":[{"evidence":["code-baseline"],"identity":"code"},{"evidence":["library-baseline"],"identity":"library"}]}
 
 ## Completion test
 
@@ -115,7 +118,7 @@ def fixture(coverage: str):
         run_dir = sink / "tickets" / RUN
         run_dir.mkdir(parents=True)
         (run_dir / f"{ROOT_ID}.md").write_text(
-            ROOT_TICKET % head, encoding="utf-8"
+            ROOT_TICKET % (head, head, head), encoding="utf-8"
         )
         coverage_path = sink / "runs" / RUN / f"{ROOT_ID}.coverage.md"
         coverage_path.parent.mkdir(parents=True)
@@ -186,6 +189,10 @@ class GateOnlyLifecycleTest(unittest.TestCase):
                 "packet", RUN, ROOT_ID, "--reply-to", "outer", "--by", "planner"
             )["packet"]
             self.assertEqual("orch-decompose", root_packet["executor"])
+            redispatch = dispatch(
+                "packet", RUN, ROOT_ID, "--reply-to", "outer", "--by", "planner"
+            )
+            self.assertIn("already emitted for this claim", redispatch["error"])
 
             gate = dispatch(
                 "gate", RUN, ROOT_ID, "--ordered-lens-bundle", LENSES,
@@ -259,7 +266,7 @@ class GateOnlyLifecycleTest(unittest.TestCase):
                 "implementation_members": [
                     path.stem for path in run_dir.glob(f"{ROOT_ID}.[0-9][0-9].md")
                 ],
-                "root_packet_count": 1,
+                "root_packet_count": 1 + int("packet" in redispatch),
                 "reviewer": review_packet["assigned_name"],
                 "verifier": verify_packet["assigned_name"],
                 "ready_after_root": ready_after_root,

@@ -13,6 +13,7 @@ import unittest
 from pathlib import Path
 
 import scripts.tickets as tickets_mod
+from scripts import tickets_commands
 from tests import test_gate_only_lifecycle as gate_fixture
 
 ROOT_ID = gate_fixture.ROOT_ID
@@ -23,6 +24,10 @@ frontmatter_text = gate_fixture.frontmatter_text
 seal = gate_fixture.seal
 
 EXPECTED_LENSES = ["code", "library"]
+EXPECTED_BUNDLE = [
+    {"evidence": ["code-baseline"], "identity": "code"},
+    {"evidence": ["library-baseline"], "identity": "library"},
+]
 
 
 def _complete(ticket_id: str, result: str) -> None:
@@ -50,6 +55,18 @@ def _bundle_literal(ticket_text: str) -> list:
         if record.get("name") == "ordered-lens-bundle":
             return record["value"]
     raise AssertionError("ordered-lens-bundle record is missing")
+
+
+def _bundle_result(ticket_text: str) -> dict:
+    result = tickets_mod._sections(ticket_text)["Result"]
+    values = {}
+    for line in result.splitlines():
+        name, separator, encoded = line.partition(": ")
+        if separator and name in {
+            "completion-records", "findings", "post-repair-verdicts",
+        }:
+            values[name.replace("-", "_")] = json.loads(encoded)
+    return values
 
 
 def validate_bundle_execution(record: dict) -> None:
@@ -83,6 +100,12 @@ def validate_bundle_execution(record: dict) -> None:
 
 
 class OrderedLensBundleTest(unittest.TestCase):
+    def test_public_gate_help_names_the_opt_in_and_gate_only_shape(self):
+        gate_help = dispatch("--help")["help"]["subcommands"]["gate"]
+        self.assertIn("--ordered-lens-bundle", gate_help["usage"])
+        self.assertIn("gate-only", gate_help["summary"])
+        self.assertIn("--ordered-lens-bundle", tickets_commands.VALUE_FLAGS)
+
     def test_packet_and_frontier_preserve_one_ordered_same_child_sequence(self):
         with fixture(gate_fixture.GateOnlyLifecycleTest.COVERAGE) as (_base, run_dir):
             seal()
@@ -98,7 +121,7 @@ class OrderedLensBundleTest(unittest.TestCase):
             )
             self.assertNotIn("error", payload, payload)
             self.assertEqual(EXPECTED_LENSES, payload["gate"]["lenses"])
-            self.assertEqual(EXPECTED_LENSES, payload["gate"]["ordered_lens_bundle"])
+            self.assertEqual(EXPECTED_BUNDLE, payload["gate"]["ordered_lens_bundle"])
             self.assertEqual(
                 [f"{ROOT_ID}.gate.critique.bundle", f"{ROOT_ID}.gate.verify"],
                 payload["gate"]["ids"],
@@ -119,7 +142,13 @@ class OrderedLensBundleTest(unittest.TestCase):
                 "packet", RUN, closer, "--reply-to", "outer", "--by", "one-reviewer"
             )["packet"]
             closer_text = (run_dir / f"{closer}.md").read_text(encoding="utf-8")
-            self.assertEqual(EXPECTED_LENSES, _bundle_literal(closer_text))
+            self.assertEqual(EXPECTED_BUNDLE, _bundle_literal(closer_text))
+            root_text = (run_dir / f"{ROOT_ID}.md").read_text(encoding="utf-8")
+            root_line = next(
+                line for line in tickets_mod._sections(root_text)["Fixed inputs"].splitlines()
+                if '"name":"ordered-lens-bundle"' in line
+            )
+            self.assertIn(root_line, tickets_mod._sections(closer_text)["Fixed inputs"])
             self.assertIn(
                 "sequence: [orch-critique, orch-repair]", frontmatter_text(
                     run_dir / f"{closer}.md"
@@ -127,7 +156,32 @@ class OrderedLensBundleTest(unittest.TestCase):
             )
             self.assertEqual("orch-critique", reviewer_packet["executor"])
 
-            _complete(closer, "ordered findings recorded; one repair pass; no verdict")
+            completion_records = [
+                {
+                    "lens": "code", "artifact_identity": "git:code-result",
+                    "evidence": ["code-baseline"],
+                },
+                {
+                    "lens": "library", "artifact_identity": "git:library-result",
+                    "evidence": ["library-baseline"],
+                },
+            ]
+            findings = [
+                {
+                    "lens": "library", "artifact_identity": "git:library-result",
+                    "evidence": "library-baseline", "blocking": True,
+                }
+            ]
+            actual_result = "\n".join((
+                "completion-records: " + json.dumps(completion_records),
+                "findings: " + json.dumps(findings),
+                "post-repair-verdicts: []",
+            ))
+            _complete(closer, actual_result)
+            closer_text = (run_dir / f"{closer}.md").read_text(encoding="utf-8")
+            self.assertIn(
+                "completion records", tickets_mod._sections(closer_text)["Return fields"]
+            )
             self.assertEqual(
                 [verifier],
                 [item["id"] for item in dispatch("ready", "--run", RUN)["ready"]],
@@ -140,27 +194,12 @@ class OrderedLensBundleTest(unittest.TestCase):
                 "--by", "separate-verifier",
             )["packet"]
 
+            recorded = _bundle_result(closer_text)
             execution = {
-                "lenses": _bundle_literal(closer_text),
+                "lenses": [row["identity"] for row in _bundle_literal(closer_text)],
                 "reviewer_children": [reviewer_packet["assigned_name"]],
                 "sequence": ["orch-critique", "orch-repair"],
-                "completion_records": [
-                    {
-                        "lens": "code", "artifact_identity": "git:code-result",
-                        "evidence": ["code-evidence-1"],
-                    },
-                    {
-                        "lens": "library", "artifact_identity": "git:library-result",
-                        "evidence": ["library-evidence-1"],
-                    },
-                ],
-                "findings": [
-                    {
-                        "lens": "library", "artifact_identity": "git:library-result",
-                        "evidence": "library-evidence-1", "blocking": True,
-                    }
-                ],
-                "post_repair_verdicts": [],
+                **recorded,
                 "verifier_child": verifier_packet["assigned_name"],
             }
             validate_bundle_execution(execution)

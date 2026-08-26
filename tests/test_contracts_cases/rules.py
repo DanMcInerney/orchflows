@@ -296,9 +296,10 @@ class ReviewBundleContractTest(unittest.TestCase):
         text = read_at_flat("ARCHITECTURE.md")
         for token in (
             "tickets_dispatch_gate.py", "gate-only cut",
-            "ordered lens bundle", "Fixed-input record",
+            "contract-owned ordered lens bundle", "mutation plan",
         ):
             self.assertIn(token, text, f"ARCHITECTURE.md omits {token!r}")
+        self.assertNotIn("ordered lens bundle Fixed-input record", text)
 
 
 class VocabularyCutTermsTest(unittest.TestCase):
