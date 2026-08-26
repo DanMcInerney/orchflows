@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -290,6 +291,93 @@ class TestInstallDoctor(unittest.TestCase):
                     {"id": f"{surface}.missing", "path": str(path), "kind": kind},
                     report["findings"],
                 )
+
+    def test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was(self):
+        """No grok CLI plans no Grok surface, records none in the receipt, and
+        must draw no finding -- and the Claude and Codex findings must read
+        exactly as they did before the Grok column existed. Both halves at
+        once: the same Claude-side drift, reported against a Grok-bearing
+        install and a Grok-free one, has to relativise to the same findings."""
+
+        def relative(report, root):
+            return sorted(
+                (
+                    finding["id"],
+                    Path(finding["path"]).relative_to(root).as_posix(),
+                    finding.get("kind"),
+                )
+                for finding in report["findings"]
+                if "path" in finding
+            )
+
+        with tempfile.TemporaryDirectory(prefix="orchflows-doctor-bare-") as name:
+            bare = DoctorFixture(Path(name), grok=False)
+            self.assertEqual(
+                {"status": "coherent", "findings": []},
+                inspect_installation(bare.plan, current_source_commit="abc123"),
+            )
+            for fixture in (bare, self.fixture):
+                fixture.by_name.write_text("drifted pointer\n", encoding="utf-8")
+            bare_report = inspect_installation(bare.plan, current_source_commit="abc123")
+            self.assertEqual(
+                relative(bare_report, bare.root),
+                relative(
+                    inspect_installation(
+                        self.fixture.plan, current_source_commit="abc123"
+                    ),
+                    self.fixture.root,
+                ),
+            )
+        self.assertEqual(
+            [], [entry for entry in relative(bare_report, bare.root) if "grok" in str(entry)]
+        )
+
+    def test_the_doctor_inspects_whatever_grok_home_the_override_names(self):
+        """The doctor holds no host path of its own: it reads the desired plan
+        it is handed. So the whole chain -- override, plan, report -- has to be
+        run to state that ``GROK_HOME`` is the surface a doctor run examines,
+        and that the default ``~/.grok`` is not examined beside it."""
+
+        with tempfile.TemporaryDirectory(prefix="orchflows-doctor-home-") as name:
+            root = Path(name)
+            home = root / "home"
+            home.mkdir()
+            override = root / "relocated-grok"
+            output = io.StringIO()
+            with patch.dict(os.environ, {"GROK_HOME": str(override)}), patch.object(
+                install.Path, "home", return_value=home
+            ), patch.object(
+                install.shutil,
+                "which",
+                side_effect=lambda candidate: (
+                    "mock-grok" if candidate.split(".", 1)[0] == "grok" else None
+                ),
+            ), redirect_stdout(output):
+                exit_code = install.main(["doctor"])
+
+            report = json.loads(output.getvalue())
+            self.assertEqual(1, exit_code)
+            grok = [
+                finding
+                for finding in report["findings"]
+                if str(finding.get("kind", "")).startswith("grok-")
+            ]
+            self.assertEqual(
+                {"grok-skill", "grok-agent", "grok-rules", "grok-config"},
+                {finding["kind"] for finding in grok},
+            )
+            for finding in grok:
+                with self.subTest(kind=finding["kind"]):
+                    self.assertIn(override, Path(finding["path"]).parents)
+            self.assertEqual(
+                [],
+                [
+                    finding
+                    for finding in report["findings"]
+                    if "path" in finding
+                    and home / ".grok" in Path(finding["path"]).parents
+                ],
+            )
 
     def test_desired_plan_and_receipt_drift_have_stable_findings(self):
         duplicate = self.fixture.plan.codex_skills[0]
