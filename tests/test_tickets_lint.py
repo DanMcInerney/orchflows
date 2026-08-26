@@ -48,6 +48,18 @@ class DesignPackInputContractTest(unittest.TestCase):
         self.assertIn("Every ticket names one callable view", slicing)
         self.assertNotIn("token set alone opens", slicing)
 
+
+class OracleDiscriminationContractTest(unittest.TestCase):
+    def test_tdd_consumes_the_owner_rule_without_accepting_already_green_evidence(self):
+        tdd = Path("skills/instances/orch-tdd/SKILL.md").read_text(encoding="utf-8")
+        owner = Path("rules/verification.md").read_text(encoding="utf-8")
+        tdd_compact = " ".join(tdd.split())
+        owner_compact = " ".join(owner.split())
+        self.assertNotIn("a check that arrives green proves it can fail", tdd_compact)
+        self.assertIn("authored-here discrimination record required by", tdd_compact)
+        self.assertIn("wrong result built beside the tree", owner_compact)
+        self.assertIn("its PASS is void", owner_compact)
+
 # Two readings of one frozen ticket used to disagree; both halves land in the
 # three classes at the foot of this module. Lint graded with no context, so the
 # sealed run-state record could never be found and every sealed root reported
