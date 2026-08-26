@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3249,
+  "count": 3251,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1636,7 +1636,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_role_bearing_route_requires_its_exact_role_skill_pair",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_an_off_enum_expected_route_is_refused",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_only_a_prompt_naming_orch_build_expects_the_build_route",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_catalog_counterfactual_uses_answer_then_one_known_cause_ticket",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_catalog_counterfactual_uses_answer_then_one_known_cause_errand",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_shipped_case_file_loads",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_at_least_four_distractors_borrow_a_lure_word",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_case_ids_are_unique",
@@ -1645,6 +1645,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_every_expected_route_is_in_the_enum",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_no_routed_case_reads_as_an_instruction_to_the_grader",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_readme_states_the_command_and_the_decision_rule",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_route_enum_matches_both_consumers",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_the_set_carries_at_least_twenty_four_cases",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_by_name_read_is_the_route_the_four_adapter_set_takes",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_final_text_with_no_tool_use_grades_as_answer",
@@ -1656,6 +1657,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_empty_transcript_is_unrouted",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_unauthenticated_session_grades_error_not_answer",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_any_other_skill_grades_as_that_name",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_errand_and_doctor_commands_grade_as_their_routes",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_instantiating_a_template_grades_as_that_template",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_issuing_a_ticket_from_bash_grades_as_ticket",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_matching_role_child_requires_exact_skill",
@@ -3252,7 +3254,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "30e667fa42bebadd074e6d9f1f503f4b03731599fd7cd2ed35fdde479b2fa032"
+  "sha256": "9de96e00a011f7273e8126c2933c1829455757c294934e482b27b2d89efc6a17"
  },
  "mutation_owners": [
   {
