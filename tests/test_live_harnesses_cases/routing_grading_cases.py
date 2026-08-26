@@ -439,7 +439,29 @@ class TestRoutingCaseLoader(unittest.TestCase):
         for case in cases:
             if case["expected"] != "build":
                 self.assertNotIn("orch-build", case["prompt"], case["id"])
-        self.assertEqual(31, len(cases))
+        self.assertEqual(33, len(cases))
+
+    def test_the_catalog_counterfactual_uses_answer_then_one_known_cause_ticket(self):
+        cases = {
+            case["id"]: case
+            for case in json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
+        }
+
+        explanation = cases["answer-codex-catalog-gap"]
+        self.assertEqual("answer", explanation["expected"])
+        self.assertIn("explanation only", explanation["note"])
+
+        implementation = cases["ticket-codex-catalog-gap"]
+        self.assertEqual("ticket", implementation["expected"])
+        for expectation in (
+            "known cause",
+            "derived consequences",
+            "no spec",
+            "no decompose",
+            "no fix",
+        ):
+            with self.subTest(expectation=expectation):
+                self.assertIn(expectation, implementation["note"].lower())
 
     def test_the_shipped_case_file_loads(self):
         self.assertEqual(

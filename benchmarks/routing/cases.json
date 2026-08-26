@@ -35,6 +35,13 @@
     "distractor": false
   },
   {
+    "id": "answer-codex-catalog-gap",
+    "prompt": "why was orch-investigate unavailable in the Codex catalog on 2026-08-25?",
+    "expected": "answer",
+    "note": "The known catalog cause is already established and the request is explanation only; no repository change or run is requested.",
+    "distractor": false
+  },
+  {
     "id": "answer-lure-worklog",
     "prompt": "what does the worklog view show for a run?",
     "expected": "answer",
@@ -81,6 +88,13 @@
     "prompt": "the README still describes the old install steps -- bring it in line with install.py",
     "expected": "ticket",
     "note": "Known cause, bounded edit; nothing to diagnose.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-codex-catalog-gap",
+    "prompt": "orch-investigate is missing from the Codex catalog because CODEX_SKILL_REDIRECT_NAMES omits it; add it and update the coupled help, tests, and derived manifests",
+    "expected": "ticket",
+    "note": "The known cause makes this one code ticket; coupled help, tests, and derived consequences stay inside it, with no spec, no decompose, and no fix workflow.",
     "distractor": false
   },
   {
