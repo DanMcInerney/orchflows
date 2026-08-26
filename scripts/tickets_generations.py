@@ -228,28 +228,26 @@ def _amendment_requests(worker_text: str) -> list:
 
 
 def _validate_resume_record(record: dict, request: dict) -> str:
-    """Return the disposition defect, or ``''`` for one exact request."""
-
     if not isinstance(record, dict) or tuple(record) != RESUME_FIELDS:
         return f"resume record fields must be exactly {list(RESUME_FIELDS)} in canonical order"
-    if record.get("disposition") not in RESUME_DISPOSITIONS:
-        return f"resume disposition must be one of {list(RESUME_DISPOSITIONS)}"
     if record.get("request-id") != request.get("request-id"):
         return "resume request-id does not name the parked amendment request"
     amendments = record.get("amendments")
     if not isinstance(amendments, dict):
         return "resume amendments must be an object"
-    if record["disposition"] == "continue":
+    disposition = record.get("disposition")
+    if disposition == "continue":
         return "" if not amendments else "continue cannot change assignment fields"
+    if disposition != "amend-and-reseal":
+        return f"resume disposition must be one of {list(RESUME_DISPOSITIONS)}"
     if not amendments:
         return "amend-and-reseal requires at least one assignment amendment"
-    allowed = set(request.get("target-fields") or [])
-    unsupported = sorted(set(amendments) - set(ASSIGNMENT_AUTHORITY_FIELDS))
-    if unsupported:
-        return "resume amendments are not assignment authority fields: " + ", ".join(unsupported)
-    unrequested = sorted(set(amendments) - allowed)
-    if unrequested:
-        return "resume amendments exceed the request target-fields: " + ", ".join(unrequested)
+    extra = set(amendments) - set(ASSIGNMENT_AUTHORITY_FIELDS)
+    if extra:
+        return "resume amendments are not assignment authority fields: " + ", ".join(sorted(extra))
+    extra = set(amendments) - set(request.get("target-fields") or [])
+    if extra:
+        return "resume amendments exceed the request target-fields: " + ", ".join(sorted(extra))
     if any(value is None for value in amendments.values()):
         return "resume amendments cannot remove a sealed assignment field"
     return ""
@@ -578,6 +576,8 @@ def _cmd_resume_generation(rest) -> dict:
             if len(requests) != 1:
                 return {"error": "resume-generation requires exactly one matching amendment request"}
             request = requests[0]
+            if request["root-generation"] != worker.get("root_generation") or request["cut-generation"] != worker.get("cut_generation"):
+                return {"error": "amendment request was already disposed into another generation"}
             defect = _validate_resume_record(record, request)
             if defect:
                 return {"error": defect}
@@ -623,20 +623,9 @@ def _cmd_resume_generation(rest) -> dict:
                 "root_id": root_id,
                 "state": "sealed",
             }) + "\n"
-            disposition_document = canonical_json({
-                "disposition": record,
-                "new-cut-generation": draft["cut_generation"],
-                "new-root-generation": draft["root_generation"],
-                "request": request,
-                "run": run,
-                "ticket": ticket_id,
-            }) + "\n"
-            disposition_digest = hashlib.sha256(disposition_document.encode("utf-8")).hexdigest()
-            disposition_path = _generation_dir(run) / (disposition_digest + ".disposition.json")
             records = (
                 (validated_path, validated_document),
                 (sealed_path, sealed_document),
-                (disposition_path, disposition_document),
             )
             for path, body in records:
                 if path.exists() and path.read_text(encoding="utf-8") != body:
@@ -664,7 +653,7 @@ def _cmd_resume_generation(rest) -> dict:
     return {"resume_generation": {
         "cut_generation": draft["cut_generation"],
         "disposition": record["disposition"],
-        "path": str(disposition_path),
+        "path": str(sealed_path),
         "root_generation": draft["root_generation"],
         "run": run,
         "status": "suspended",

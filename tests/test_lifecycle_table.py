@@ -379,6 +379,11 @@ class ResumeGenerationTest(unittest.TestCase):
             self.assertEqual("worker-a", data["claimed_by"])
             self.assertEqual(["scripts/example.py", "scripts/extra.py"], data["write_scope"])
             self.assertEqual([], tickets_generations.v2_seal_findings("00-root.01", changed))
+            replay = run_cmd(
+                tmp, "resume-generation", "run", "00-root.01", "--record",
+                tickets_generations.canonical_json(disposition),
+            )
+            self.assertIn("already disposed", replay["error"])
 
     def test_resume_rejects_an_assignment_field_the_request_did_not_name(self):
         record = {
