@@ -138,7 +138,7 @@ _SPLIT_CLAUSE_RE = re.compile(
     r"—\s+where\s+every\s+invalidated.*?fresh\s+child", re.S
 )
 _FRONTIER_SPLIT_RE = re.compile(
-    r"(?:;\s+then,|\.\s+Then,)\s+where\s+its\s+pass.*?§10\)\.", re.S
+    r"Where\s+a\s+checker\s+invalidates.*?§10\)\.", re.S
 )
 
 _FRONTIER_TIP_CHECK = {
@@ -146,16 +146,19 @@ _FRONTIER_TIP_CHECK = {
         "oracles", "nothing wider",
     ),
     "whose checks run at the tip, and how often": (
-        "standards owner", "each merge batch",
+        "standards owner", "exactly once", "accepted terminal identity",
     ),
-    "the revision they run on": ("integrated tip",),
-    "where that revision is recorded": ("tip's revision", "run's notes"),
+    "the revision they run on": ("accepted terminal identity",),
+    "where that revision is recorded": ("record its revision",),
     "what a red tip costs, and what a lane's green is worth before it": (
-        "red tip", "next dispatch", "provisional",
+        "red terminal suite", "blocks completion",
     ),
 }
 
-_TIP_CLAUSE_RE = re.compile(r"After\s+each\s+merge\s+batch.*?its\s+repair's\.", re.S)
+_TIP_CLAUSE_RE = re.compile(
+    r"A\s+lane\s+runs.*?A\s+red\s+terminal\s+suite\s+blocks\s+completion\.",
+    re.S,
+)
 
 
 class TipCheckTest(unittest.TestCase):

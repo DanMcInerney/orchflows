@@ -6,7 +6,9 @@ import re
 
 from tools.live_claude_profiles import _json_events
 
-ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+ROUTE_CLASSES = (
+    "answer", "single", "graph", "spec", "doctor", "fix", "build", "named",
+)
 UNROUTED = "unrouted"
 # A session that failed before it could route -- an API error, an
 # unauthenticated CLI -- is neither a route nor a misroute; the first
@@ -15,7 +17,14 @@ ERROR = "error"
 ROLE_AGENT_TYPES = {"planner": "orch-planner", "worker": "orch-worker"}
 
 # The host block's routing table, read as transcript evidence.
-TICKET_SKILLS = frozenset({"orch-frontier", "orch-spec"})
+ROUTING_SKILLS = {
+    "orch-frontier": "single",
+    "orch-decompose": "graph",
+    "orch-spec": "spec",
+}
+# Compatibility export for the live harness facade; values now span the three
+# executable graph shapes instead of naming one route class.
+TICKET_SKILLS = frozenset(ROUTING_SKILLS)
 FIX_SKILL = "fix"
 BUILD_SKILL = "orch-build"
 SKILL_TOOLS = frozenset({"Skill", "SlashCommand"})
@@ -54,8 +63,8 @@ def _skill_name(block_input: dict) -> str | None:
 
 
 def _classify_skill(skill: str) -> str:
-    if skill in TICKET_SKILLS:
-        return "ticket"
+    if skill in ROUTING_SKILLS:
+        return ROUTING_SKILLS[skill]
     if skill == FIX_SKILL:
         return "fix"
     if skill == BUILD_SKILL:
@@ -83,8 +92,11 @@ def _named_in(text: str) -> str | None:
 
 
 def _classify_bash(command: str) -> str | None:
-    if "tickets.py new" in command.replace("\\", "/"):
-        return "ticket"
+    normalized = command.replace("\\", "/")
+    if "tickets.py new" in normalized:
+        return "single"
+    if "install.py doctor" in normalized:
+        return "doctor"
     name = _named_in(command)
     return _classify_skill(name) if name else None
 

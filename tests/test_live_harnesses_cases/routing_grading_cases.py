@@ -1,5 +1,6 @@
 """Routing case-set, grading, and loader regression cases."""
 
+from . import _support
 from ._support import *
 
 # --- benchmarks/routing/cases.json ------------------------------------
@@ -7,7 +8,9 @@ from ._support import *
 
 ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
 ROUTING_CASES = ROUTING_DIR / "cases.json"
-ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+ROUTE_CLASSES = (
+    "answer", "single", "graph", "spec", "doctor", "fix", "build", "named",
+)
 CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
 ROLE_SKILL_KEYS = {"required_role", "required_skill"}
 # A deleted or never-routed name whose surface words a prompt can borrow
@@ -58,19 +61,23 @@ class TestRoutingCases(unittest.TestCase):
                     self.assertIn(expected, ROUTE_CLASSES)
                     self.assertNotEqual("named", expected, "named needs a name")
 
+    def test_the_route_enum_matches_both_consumers(self):
+        self.assertEqual(ROUTE_CLASSES, _support.ROUTE_CLASSES)
+        self.assertEqual(ROUTE_CLASSES, routing_live.ROUTE_CLASSES)
+
     def test_every_class_carries_enough_cases_to_read_a_rate_from(self):
-        """Four apiece, except `build`.
+        """Four apiece, except the deliberately narrow routed lanes.
 
         `build` is not a routed class the block decides — it is one named
         skill, and a prompt reaches it only by saying `orch-build`. Two
-        cases say it: one new item, one amendment. Padding the class would
-        mean inventing prompts whose honest route is `ticket`, which is what
-        the five it replaced were doing.
+        cases say it: one new item, one amendment. The `graph`, `spec`, and
+        dispatch-bootstrap `doctor` lanes each need only one discriminating
+        producer case; bounded one-executor cases live under `single`.
         """
 
         counts = collections.Counter(self._class_of(case) for case in self.cases)
         self.assertEqual(set(ROUTE_CLASSES), set(counts))
-        floors = {"build": 2}
+        floors = {"build": 2, "graph": 1, "spec": 1, "doctor": 1}
         for route_class in ROUTE_CLASSES:
             with self.subTest(route_class=route_class):
                 self.assertGreaterEqual(
@@ -88,8 +95,10 @@ class TestRoutingCases(unittest.TestCase):
                     "a distractor must borrow a deleted or non-routed name",
                 )
                 # The whole point: the surface word is a lure, and the
-                # correct route is still one of the three routed classes.
-                self.assertIn(self._class_of(case), ("answer", "ticket", "fix"))
+                # correct route is still one of the ordinary routed classes.
+                self.assertIn(
+                    self._class_of(case), ("answer", "single", "graph", "spec", "fix")
+                )
 
     def test_no_routed_case_reads_as_an_instruction_to_the_grader(self):
         # Prompts are typed into a live session; a prompt that dictated its
@@ -242,14 +251,23 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("failed", graded["status"])
         self.assertIn("primary_skill_redispatched", graded["reasons"])
 
-    def test_the_two_ticket_skills_grade_as_ticket(self):
-        for skill in ("orch-frontier", "orch-spec"):
+    def test_routing_skills_grade_as_their_graph_shapes(self):
+        expected = {
+            "orch-frontier": "single",
+            "orch-decompose": "graph",
+            "orch-spec": "spec",
+        }
+        for skill, route in expected.items():
             with self.subTest(skill=skill):
-                self.assertEqual("ticket", self._observed([_skill_use(skill)]))
+                self.assertEqual(route, self._observed([_skill_use(skill)]))
 
-    def test_issuing_a_ticket_from_bash_grades_as_ticket(self):
+    def test_issuing_a_ticket_from_bash_grades_as_single(self):
         command = "python ~/.orchflows/bin/tickets.py new --run r --id A --executor orch-tdd"
-        self.assertEqual("ticket", self._observed([_bash_use(command)]))
+        self.assertEqual("single", self._observed([_bash_use(command)]))
+
+    def test_doctor_command_grades_as_its_route(self):
+        command = "python ~/.orchflows/lib/install.py doctor"
+        self.assertEqual("doctor", self._observed([_bash_use(command)]))
 
     def test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix(self):
         self.assertEqual("fix", self._observed([_skill_use("fix")]))
@@ -280,10 +298,8 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("answer", self._observed(events))
 
     def test_reading_the_library_and_then_answering_grades_as_answer(self):
-        """Six of the seven `answer` cases need a read before they can be
-        answered — the block's own instruction is to read the owner. Any
-        tool use at all used to sink the transcript to `unrouted`, so the
-        cases that most need reading were the ones that could not pass."""
+        """Six of seven `answer` cases must read the owner first. Tool use used
+        to sink those transcripts to `unrouted`, so they could not pass."""
 
         events = [
             _tool_use("Read", {"file_path": "/lib/docs/vocabulary.md"}),
@@ -293,8 +309,7 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("answer", self._observed(events))
 
     def test_a_slash_command_is_read_by_its_first_token(self):
-        """`SlashCommand` carries the whole typed line. `/orch-build foo`
-        graded `named:orch-build foo` — a route class no case can expect."""
+        """Use the first token; the whole line made an impossible route class."""
 
         self.assertEqual(
             "build",
@@ -306,10 +321,8 @@ class TestRoutingGrading(unittest.TestCase):
         )
 
     def test_a_by_name_read_is_the_route_the_four_adapter_set_takes(self):
-        """Under `four` the block's fallback for an unadapted name is a read
-        of `by-name/<name>/SKILL.md`. Grading that as no route at all gave
-        the four-adapter set a structural misroute floor on every `named:`
-        case however well the session behaved."""
+        """Under `four`, unadapted names read `by-name/<name>/SKILL.md`.
+        Treating that as unrouted made every `named:` case structurally fail."""
 
         for reader in (
             _tool_use("Read", {"file_path": "/home/u/.orchflows/lib/by-name/evolve/SKILL.md"}),
@@ -359,7 +372,7 @@ class TestRoutingGrading(unittest.TestCase):
             _skill_use("orch-frontier", tool_id="t2"),
         ]
         graded = routing_live.grade_transcript(_stream(events))
-        self.assertEqual("ticket", graded["observed"])
+        self.assertEqual("single", graded["observed"])
         self.assertEqual(2, graded["turns"])
 
     def test_the_first_route_bearing_event_decides_it(self):
@@ -369,7 +382,7 @@ class TestRoutingGrading(unittest.TestCase):
             _bash_use("tickets.py new --id A"),
             _skill_use("evolve", tool_id="t2"),
         ]
-        self.assertEqual("ticket", self._observed(reversed_events))
+        self.assertEqual("single", self._observed(reversed_events))
 
     def test_a_text_answer_after_a_skill_never_overrides_the_skill(self):
         events = [_skill_use("fix"), _parent_text("ROUTE: answer")]
@@ -423,11 +436,8 @@ class TestRoutingCaseLoader(unittest.TestCase):
         return path
 
     def test_only_a_prompt_naming_orch_build_expects_the_build_route(self):
-        """templates/host-block.md routes an unnamed request to answer,
-        ticket or fix, and says everything else runs only when named.
-        `orch-build` appears in the block as a scope-law pointer, not as a
-        route — so five prompts that never said `orch-build` and expected
-        `build` were measuring the benchmark's own invention."""
+        """The host block routes unnamed requests by graph shape or to fix.
+        Prompts expecting `build` without naming `orch-build` measured an invention."""
 
         cases = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
         build = [case for case in cases if case["expected"] == "build"]
@@ -439,7 +449,30 @@ class TestRoutingCaseLoader(unittest.TestCase):
         for case in cases:
             if case["expected"] != "build":
                 self.assertNotIn("orch-build", case["prompt"], case["id"])
-        self.assertEqual(31, len(cases))
+        self.assertEqual(38, len(cases))
+
+    def test_the_catalog_counterfactual_uses_answer_then_one_single_ticket(self):
+        cases = {
+            case["id"]: case
+            for case in json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
+        }
+
+        explanation = cases["answer-codex-catalog-gap"]
+        self.assertEqual("answer", explanation["expected"])
+        self.assertIn("explanation only", explanation["note"])
+
+        implementation = cases["ticket-codex-catalog-gap"]
+        self.assertEqual("single", implementation["expected"])
+        for expectation in (
+            "known cause",
+            "one ordinary ticket",
+            "derived consequences",
+        ):
+            with self.subTest(expectation=expectation):
+                self.assertIn(expectation, implementation["note"].lower())
+        self.assertIn(
+            "with no spec, decompose, or fix workflow", implementation["note"].lower()
+        )
 
     def test_the_shipped_case_file_loads(self):
         self.assertEqual(

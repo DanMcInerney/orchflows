@@ -61,6 +61,7 @@ project install) and retains that receipt until cleanup is complete.
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -126,6 +127,7 @@ from installer import planning as _planning
 from installer import presentation as _presentation
 from installer import application as _application
 from installer import runtime as _runtime
+from installer.doctor import inspect_installation
 from installer.application import (
     _diverged_role_agents,
     _installed_file,
@@ -330,6 +332,12 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Install or remove orchflows for Claude Code and Codex.")
+    parser.add_argument(
+        "command",
+        nargs="?",
+        choices=("doctor",),
+        help="Inspect the user installation for bootstrap drift; write nothing.",
+    )
     parser.add_argument("--user", action="store_true", help="Install scope: user (all sessions).")
     parser.add_argument(
         "--project",
@@ -345,6 +353,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Skip the prompts: user scope, and keep any role agent this machine has changed.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
+    parser.add_argument(
+        "--doctor",
+        action="store_true",
+        help="Inspect the user installation for bootstrap drift; write nothing.",
+    )
     parser.add_argument(
         "--claude-adapters",
         choices=CLAUDE_ADAPTER_SETS,
@@ -380,6 +393,11 @@ def _resolve_scope(args) -> tuple[str, Path | None]:
 def main(argv=None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    doctor_requested = args.command == "doctor" or args.doctor
+
+    if doctor_requested and args.uninstall:
+        print("error: doctor and --uninstall are mutually exclusive", file=sys.stderr)
+        return 2
 
     try:
         scope, project_root = _resolve_scope(args)
@@ -414,6 +432,13 @@ def main(argv=None) -> int:
     except Exception as error:
         print(f"error: could not build install plan: {error}", file=sys.stderr)
         return 1
+
+    if doctor_requested:
+        report = inspect_installation(
+            plan, current_source_commit=resolve_source_commit()
+        )
+        print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+        return 0 if report["status"] == "coherent" else 1
 
     for warning in plan.warnings:
         print(warning)

@@ -136,11 +136,13 @@ def cut(cases):
 
 def gate(repo, *args):
     original = tickets_mod._cwd
+    original_store = tickets_mod._tickets_store_module._cwd
     tickets_mod._cwd = lambda: Path(repo).resolve()
     try:
         payload = tickets_mod._dispatch(["gate", "r", "00-root", *args])
     finally:
         tickets_mod._cwd = original
+        tickets_mod._tickets_store_module._cwd = original_store
     return json.loads(json.dumps(payload, ensure_ascii=False))
 
 

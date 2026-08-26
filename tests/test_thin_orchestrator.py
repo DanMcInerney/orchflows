@@ -73,6 +73,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             ROOT / "skills/engines/orch-frontier/references/profiles.md"
         ).read_text(encoding="utf-8")
         host = (ROOT / "templates/host-block.md").read_text(encoding="utf-8")
+        collapsed_host = re.sub(r"\s+", " ", host)
         combined = "\n".join((delegation, roles, profiles, host))
 
         for anchor in (
@@ -86,6 +87,18 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             self.assertIn(anchor, combined)
         self.assertNotIn("ad-hoc ticket", delegation)
         self.assertNotRegex(delegation, re.compile(r"inline fallback", re.I))
+        for anchor in (
+            "**answer**",
+            "**single**",
+            "**graph**",
+            "**spec**",
+            "one same planner child",
+            "`ready` → `claim` → `packet`",
+            "outer coordinator",
+        ):
+            self.assertIn(anchor, collapsed_host)
+        self.assertNotIn("**errand**", collapsed_host)
+        self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
@@ -122,7 +135,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         role_agent = install.render_claude_agent(
             "orch-worker", install.load_role_profiles()["orch-worker"]
         )
-        for anchor in ("exact named skill", "directly", "never redispatch"):
+        for anchor in (
+            "exact primary skill",
+            "each exact member",
+            "packet-stated ordered sequence",
+            "directly",
+            "never redispatch",
+        ):
             self.assertIn(anchor, role_agent)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
@@ -165,7 +184,14 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         role_agent = install.render_codex_agent(
             "orch-planner", install.load_role_profiles()["orch-planner"]
         )
-        for anchor in ("exact named skill", "directly", "never redispatch", "mismatched"):
+        for anchor in (
+            "exact primary skill",
+            "each exact member",
+            "packet-stated ordered sequence",
+            "directly",
+            "never redispatch",
+            "mismatched",
+        ):
             self.assertIn(anchor, role_agent)
 
     def test_custom_codex_routing_uses_the_resolved_native_binding(self):

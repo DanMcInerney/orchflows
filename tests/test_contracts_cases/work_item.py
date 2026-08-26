@@ -5,12 +5,7 @@ import json
 import unittest
 from pathlib import Path
 
-from tests.test_contracts_cases.support import (
-    read,
-    read_at_flat,
-    read_bullet_flat,
-    read_flat,
-)
+from tests.test_contracts_cases.support import read, read_at_flat, read_bullet_flat, read_flat
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -19,8 +14,8 @@ class TestWorkItemContract(unittest.TestCase):
     def test_lists_the_frontmatter_keys(self):
         text = read("work-item.md")
         for key in (
-            "id", "run", "status", "executor", "depends_on", "write_scope",
-            "bound", "claimed_by", "claimed_at",
+            "id", "run", "status", "executor", "depends_on", "write_scope", "bound",
+            "claimed_by", "claimed_at",
         ):
             self.assertIn(
                 f"`{key}`", text,
@@ -30,8 +25,8 @@ class TestWorkItemContract(unittest.TestCase):
     def test_lists_all_body_section_headers(self):
         text = read("work-item.md")
         for header in (
-            "Objective", "Fixed inputs", "Completion test", "Return fields",
-            "Result", "Verification", "Feedback", "Risks",
+            "Objective", "Fixed inputs", "Completion test", "Return fields", "Result",
+            "Verification", "Feedback", "Risks",
         ):
             self.assertIn(
                 f"## {header}", text,
@@ -41,10 +36,8 @@ class TestWorkItemContract(unittest.TestCase):
     def test_body_sections_are_listed_in_contract_order(self):
         full = read("work-item.md")
         text = full[full.index("- `## Objective`"):].split("\n## Dispatch", 1)[0]
-        order = [
-            "Objective", "Fixed inputs", "Completion test", "Return fields",
-            "Result", "Verification", "Feedback", "Risks", "Context", "Handoff",
-        ]
+        order = ["Objective", "Fixed inputs", "Completion test", "Return fields",
+                 "Result", "Verification", "Feedback", "Risks", "Context", "Handoff"]
         seen = [text.index(f"`## {h}`") for h in order]
         self.assertEqual(
             seen, sorted(seen),
@@ -54,8 +47,8 @@ class TestWorkItemContract(unittest.TestCase):
     def test_status_enum_is_the_nine_ticket_statuses(self):
         text = read("work-item.md")
         for status in (
-            "pending", "ready", "claimed", "suspended", "complete",
-            "blocked", "stalled", "failed", "limited",
+            "pending", "ready", "claimed", "suspended", "complete", "blocked",
+            "stalled", "failed", "limited",
         ):
             self.assertIn(
                 f"`{status}`", text,
@@ -72,10 +65,8 @@ class TestWorkItemContract(unittest.TestCase):
 
     def test_absorbs_the_four_supersession_sections(self):
         text = read("work-item.md")
-        for heading in (
-            "## Dispatch", "## Root ticket", "## Template and stub",
-            "## Executor form",
-        ):
+        for heading in ("## Dispatch", "## Root ticket", "## Template and stub",
+                        "## Executor form"):
             self.assertIn(
                 f"\n{heading}\n", text,
                 f"work-item.md is missing the '{heading}' section the "
@@ -84,10 +75,8 @@ class TestWorkItemContract(unittest.TestCase):
 
     def test_dispatch_section_names_the_six_packet_parts(self):
         text = read("work-item.md")
-        for part in (
-            "`objective`", "`inputs`", "`authority`", "`bounds`",
-            "`return_contract`", "`reply_to`",
-        ):
+        for part in ("`objective`", "`inputs`", "`authority`", "`bounds`",
+                     "`return_contract`", "`reply_to`"):
             self.assertIn(
                 part, text,
                 f"work-item.md does not name the packet part {part}",
@@ -96,9 +85,8 @@ class TestWorkItemContract(unittest.TestCase):
     def test_root_ticket_names_its_stamp_and_its_gate_subtree(self):
         text = read("work-item.md")
         for token in (
-            "`orch-decompose`", "`required_spec_fields`", "`<id>.NN`",
-            "`<id>.gate.critique.<lens>`", "`<id>.gate.repair`",
-            "`<id>.gate.verify`", "`plan_gate`",
+            "`orch-decompose`", "`required_spec_fields`", "`<id>.NN`", "`<id>.gate.critique.<lens>`",
+            "`<id>.gate.repair`", "`<id>.gate.verify`", "`plan_gate`",
         ):
             self.assertIn(
                 token, text,
@@ -121,10 +109,8 @@ class TestWorkItemContract(unittest.TestCase):
 
     def test_template_and_stub_names_its_shape_and_its_owner(self):
         text = read("work-item.md")
-        for token in (
-            "`template.md`", "`{{placeholder}}`", "terminal stub",
-            "tickets.py instantiate", "`template_defects`",
-        ):
+        for token in ("`template.md`", "`{{placeholder}}`", "terminal stub",
+                      "tickets.py instantiate", "`template_defects`"):
             self.assertIn(
                 token, text,
                 f"work-item.md's template register does not name {token}",
@@ -156,9 +142,7 @@ class TestWorkItemContract(unittest.TestCase):
                     token, contract,
                     f"work-item.md still states the timer's {token!r}",
                 )
-        owner = (ROOT / "scripts" / "tickets_bound.py").read_text(
-            encoding="utf-8"
-        )
+        owner = (ROOT / "scripts" / "tickets_bound.py").read_text(encoding="utf-8")
         for token in ("60 minutes", "wall clock", "`## Result`"):
             with self.subTest(owner_token=token):
                 self.assertIn(
@@ -213,8 +197,8 @@ class TestWorkItemContract(unittest.TestCase):
         ):
             with self.subTest(surface=name):
                 self.assertIn("`## Context`", text)
-                self.assertNotIn("`## Carry`", text,
-                                 f"{name} still exposes Carry as a ticket successor digest")
+                self.assertNotIn(
+                    "`## Carry`", text, f"{name} still exposes Carry as a ticket successor digest")
 
         for token in (
             "one to five",
@@ -229,15 +213,11 @@ class TestWorkItemContract(unittest.TestCase):
                 self.assertIn(token, contract)
 
     def test_no_reference_to_the_dead_contracts(self):
-        for name in (
-            "work-item.md", "pack-signature.md", "worklog.md", "verdict.md",
-            "result.md",
-        ):
+        for name in ("work-item.md", "pack-signature.md", "worklog.md", "verdict.md", "result.md"):
             text = read(name)
             for dead in (
-                "task-result.md", "handoff.md", "(spec.md)", "(delegation.md)",
-                "contracts/spec.md", "contracts/delegation.md",
-                "(composition.md)", "contracts/composition.md",
+                "task-result.md", "handoff.md", "(spec.md)", "(delegation.md)", "contracts/spec.md",
+                "contracts/delegation.md", "(composition.md)", "contracts/composition.md",
             ):
                 self.assertNotIn(
                     dead, text,
@@ -350,6 +330,31 @@ class TestV1AdmissionContract(unittest.TestCase):
                 self.assertIn(token, text)
         self.assertNotIn("--mutation create|change|delete|write", text)
 
+    def test_decomposer_names_version_aware_v1_and_v2_member_emission(self):
+        lines = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8").splitlines()
+        rows = {}
+        for line in lines:
+            if line.startswith(("| `mandatory-v2` |", "| `legacy-v1` |")):
+                cells = [cell.strip() for cell in line.strip("|").split("|")]
+                rows[cells[0].strip("`")] = cells[1:]
+        self.assertEqual(
+            {
+                "mandatory-v2": [
+                    "candidate file",
+                    "exact inherited",
+                    "absent",
+                    "`tickets.py new <run> --file <candidate>`",
+                ],
+                "legacy-v1": [
+                    "arguments",
+                    "absent",
+                    "`v1:root:<root>`",
+                    "`tickets.py new <run> <id> --cohort v1:root:<root>`",
+                ],
+            },
+            rows,
+        )
+
     def test_result_clause_shape_and_actual_enforcement_have_distinct_owners(self):
         work_item = read("work-item.md")
         result = read("result.md")
@@ -397,12 +402,7 @@ class TestV1AdmissionContract(unittest.TestCase):
 class WorkItemV2ContractTest(unittest.TestCase):
     def test_v2_frontmatter_exposes_generation_region_and_seal_fields(self):
         text = read("work-item.md")
-        for field in (
-            "root_generation",
-            "cut_generation",
-            "ownership_regions",
-            "assignment_seal",
-        ):
+        for field in ("root_generation", "cut_generation", "ownership_regions", "assignment_seal"):
             with self.subTest(field=field):
                 self.assertIn(f"`{field}`", text)
 
@@ -436,11 +436,7 @@ class WorkItemV2ContractTest(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(token, text)
         for restated in (
-            "coverage-map digest",
-            "self-referential generation fields",
-            "`json-pointer`",
-            "string inequality",
-        ):
+            "coverage-map digest", "self-referential generation fields", "`json-pointer`", "string inequality"):
             with self.subTest(restated=restated):
                 self.assertNotIn(
                     restated, text,

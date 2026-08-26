@@ -183,7 +183,6 @@ class WorkflowSourceTests(unittest.TestCase):
         orch_build = sources.source_inventory(ROOT, "orch-build")
         expected_build_paths = {
             "lib/skills/workflows/orch-build/SKILL.md",
-            "lib/skills/kernel/orch-critique/SKILL.md",
             "bin/tickets.py",
         }
         self.assertEqual(

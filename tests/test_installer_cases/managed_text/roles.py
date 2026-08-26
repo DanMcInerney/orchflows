@@ -24,6 +24,14 @@ class TestRoleAgentInstructions(unittest.TestCase):
         self.assertNotIn("roles.md", install.ROLE_INSTRUCTIONS)
         self.assertNotIn("before acting", install.ROLE_INSTRUCTIONS)
         self.assertIn("delegated scope", install.ROLE_INSTRUCTIONS)
+        for anchor in (
+            "exact primary skill",
+            "each exact member",
+            "packet-stated ordered sequence",
+            "directly",
+            "never redispatch",
+        ):
+            self.assertIn(anchor, install.ROLE_INSTRUCTIONS)
 
     def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
         profile = install.load_role_profiles()["orch-worker"]

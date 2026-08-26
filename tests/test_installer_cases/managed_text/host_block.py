@@ -72,12 +72,29 @@ class TestHostBlockRendering(unittest.TestCase):
 
         rendered = self._rendered()
 
-        for branch in ("**answer**", "**ticket**", "**fix**"):
+        for branch in (
+            "**answer**", "**single**", "**graph**", "**spec**", "**fix**",
+        ):
             self.assertEqual(
                 1,
                 rendered.count(branch),
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
+        for lane in (
+            "graph shape",
+            "oracle provenance",
+            "evidence in context",
+            "one ordinary ticket",
+            "pre-existing deterministic",
+            "authored-here",
+            "frozen root",
+            "same planner child",
+            "`ready` → `claim` → `packet`",
+            "known cause",
+            "unknown cause",
+            "install.py doctor",
+        ):
+            self.assertIn(lane, rendered)
         for gone in ("orch-task", "orch-deliver", "orch-compose"):
             self.assertNotIn(gone, rendered)
 
@@ -118,16 +135,18 @@ _HOST_BLOCK_DEMANDS = {
     "route smallest-first, each branch by its command": (
         "smallest-first",
         "**answer**",
-        "**ticket**",
+        "**single**",
+        "**graph**",
+        "**spec**",
         "**fix**",
-        "`tickets.py new`",
         "`orch-frontier`",
         "`orch-decompose`",
-        # The field the decompose branch is routed by, not the sentence
-        # stating what it is set to.
-        "`executor`",
         "`orch-spec`",
+        "`ready`",
+        "`claim`",
+        "`packet`",
         "{{ORCH_LIB}}/contracts/work-item.md",
+        "`install.py doctor`",
         "`tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run> "
         "--set failure=<the observed failure> --set workspace=<the tree>`",
     ),

@@ -1,0 +1,77 @@
+{
+  "schema": "orchflows.single-canary-manifest.v1",
+  "ticket": {
+    "path": "tickets/canary/repair.md",
+    "sha256": "fe367e970aedcd25c0b3c6b8374a5a377ec4c0205ea90e950f90c9583567f365",
+    "result_section_sha256": "282fd70a5c2c279a1b0609b68381bc8291543af6c850c8baa64d7883a897d209"
+  },
+  "spec": {
+    "path": "spec.md",
+    "sha256": "c7927ab371aeb1b83deb415d3dcdde3a8a7f5cc1b6a6a09b4fda2b10ad1f8226",
+    "kind": "ad-hoc-ticket-statement"
+  },
+  "replay_artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "7f006bbd0781916626ef731ce1033fb2c64241ae038da6cd08f3505eaf7aaa08"
+    },
+    {
+      "path": "admission-replay.json",
+      "sha256": "1dbd5319e42948e0b5985dc20ee7c3f00e879293a883e8e3f8d8b32f9f8a28f2"
+    },
+    {
+      "path": "counterfactual-replay.json",
+      "sha256": "c98bf7cc121ce644712f5e01ac403a2c01c620f37b1b9aa993f8c227c981e63a"
+    },
+    {
+      "path": "counterfactual-targets.json",
+      "sha256": "de79d48c0c8dc34567fa14b5808b084fe632270a49377780a33800d890d7d256"
+    },
+    {
+      "path": "golden.json",
+      "sha256": "22d4b0bcbb394bddb4240e23c78f36d424986e446931ddf2931fc5e17d927e47"
+    }
+  ],
+  "fixed_inputs": [
+    {
+      "path": "inputs/tickets/orch-install-catalog-diagnosis-20260825/investigate.md",
+      "sha256": "e0639da655d57a48b49236df3d5e554b16de8adbc7ed97bc063d340fa094db76",
+      "result_section_sha256": "625ca8aaa7a02c5d41fa1af42b9e605ad336097beadf229d5ff5886eaa496b9e"
+    },
+    {
+      "name": "workspace",
+      "type": "literal",
+      "value": "C:\\Users\\danhm\\.codex\\worktrees\\2cb3\\orchflows-public"
+    },
+    {
+      "path": "inputs/orch-fixture.SKILL.md",
+      "sha256": "19ce9674958043440d32003b110e7ea4d7bab8da71df1af04311c259b9ce9ebd",
+      "revision": "fa62ab22b32bd8f4e28c0766b91b9d4a2b863203"
+    },
+    {
+      "name": "integrated-baseline",
+      "type": "literal",
+      "value": "git:fa62ab22b32bd8f4e28c0766b91b9d4a2b863203"
+    }
+  ],
+  "oracle_artifacts": [
+    {
+      "source_path": "installer/foundation.py",
+      "archive_path": "oracles/installer/foundation.py.b64",
+      "encoding": "base64",
+      "decoded_sha256": "ab60b61dc666c12b6d7fa26c53d8fa485a0b6ed0182a381980af5124fa355165"
+    },
+    {
+      "source_path": "tests/test_installer_cases/planning/runtime.py",
+      "archive_path": "oracles/tests/test_installer_cases/planning/runtime.py.b64",
+      "encoding": "base64",
+      "decoded_sha256": "565600f1ece418c7cdfaa9053a498cfa7251c4c08bf7116f3f0e31ca48fe21fd"
+    },
+    {
+      "source_path": "tests/test_installer_cases/planning/scoped_hosts.py",
+      "archive_path": "oracles/tests/test_installer_cases/planning/scoped_hosts.py.b64",
+      "encoding": "base64",
+      "decoded_sha256": "5090d9d79880e93f25f73305509cad09cbf14dbdfd75adda9f96aa8bcfdc7119"
+    }
+  ]
+}

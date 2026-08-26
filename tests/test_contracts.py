@@ -14,6 +14,7 @@ from tests.test_contracts_cases.register import (  # noqa: F401
 )
 from tests.test_contracts_cases.rules import (  # noqa: F401
     ChainRoleLawTest,
+    ReviewBundleContractTest,
     TestSkillDescriptions,
     TestVerificationHomelessLaws,
     TestVisibilityChannelLaw,

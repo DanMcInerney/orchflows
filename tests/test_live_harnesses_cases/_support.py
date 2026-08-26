@@ -73,7 +73,9 @@ def _sha256(data: bytes) -> str:
 
 ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
 ROUTING_CASES = ROUTING_DIR / "cases.json"
-ROUTE_CLASSES = ("answer", "ticket", "fix", "build", "named")
+ROUTE_CLASSES = (
+    "answer", "single", "graph", "spec", "doctor", "fix", "build", "named",
+)
 CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
 LURE_WORDS = ("diagnose", "triage", "review", "worklog")
 

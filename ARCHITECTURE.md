@@ -1,7 +1,6 @@
 # Architecture
 
-Agent-facing cold ownership map. Ceiling: 850
-whitespace-delimited words. Terms are
+Ceiling: 850 whitespace-delimited words. Terms are
 [the vocabulary](docs/vocabulary.md)'s.
 
 ## Four tiers
@@ -30,22 +29,23 @@ whitespace-delimited words. Terms are
 - [`docs/`](docs/) owns on-demand reference. `vocabulary.md` owns
   library terms; `documentation.md` documentation design and the
   reading order; each remaining file its named subject.
-- [`scripts/`](scripts/) owns repository automation. Programs use Python 3.9+
-  on Windows and POSIX, no network at run time. An unprefixed family module is the public command
-  and import facade; same-family helpers own internal concerns.
-  `tickets_format.py` owns syntax, closed parsers, and the
-  installed pack mechanism registry; `tickets_markdown.py`
-  is its private byte-preserving mechanism; `tickets_inputs.py` typed
-  identity resolution; `tickets_scope.py` mutation/edge closure;
-  `tickets_admission.py` composes those into receipts lifecycle and packet
-  modules consume. `tickets_successor_context.py` owns optional Context-only
-  dependency digest hydration.
-  `tickets_project.py` owns run-project binding,
+- [`scripts/`](scripts/) owns repository automation. Programs use Python
+  3.9+, Windows and POSIX, then no network. An unprefixed family module is
+  the public command and import facade; same-family helpers own internal concerns.
+  `tickets_format.py` owns syntax, closed parsers, and the pack registry;
+  `tickets_markdown.py` byte preservation; `tickets_inputs.py` typed identity
+  resolution; `tickets_scope.py` mutation/edge closure; `tickets_admission.py`
+  receipt lifecycle. `tickets_successor_context.py` owns optional Context-only
+  dependency digest hydration. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
-  ceiling, `tickets_dispatch_gate.py` the gate family and
-  mutation plan, `cutcheck_pricing.py` cut pricing.
-  Cutcheck imports those owners, never the tickets facade; it and admission
-  never cross-import.
+  ceiling, `tickets_issue_render.py` issuance markdown and ceiling refusals,
+  `tickets_dispatch_gate.py` gate-only cut construction,
+  `tickets_gate_bundle.py` contract-owned ordered lens bundle validation,
+  `tickets_packet_receipts.py` one-shot packet claims, and
+  `tickets_gate_mutations.py` the gate mutation plan;
+  `cutcheck_pricing.py` owns pricing.
+  Cutcheck imports those owners directly, never the tickets facade;
+  admission and cutcheck never import each other.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   executable-source line ceilings.
