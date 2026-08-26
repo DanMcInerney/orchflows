@@ -141,11 +141,12 @@ verify re-runs the oracles.
   `## Risks`; `[]` fills an empty section so nothing is ambiguous.
   Hitting an excluded action means suspending with a `## Handoff` that
   a fresh context can resume from, not improvising.
-- **Conclusions travel forward.** At close an executor may file `## Context`:
+- **Conclusions travel forward.** At close an executor may file the optional
+  `## Context`:
   one to five non-empty `- state:` or `- watch:` conclusions, never work
   narrative. Dispatch inlines each dependency's Context so a fresh agent starts
-  from what matters. Existing `## Carry` remains legacy history; new tickets use
-  Context, and absence means omitting the section rather than adding filler.
+  from what matters. Context is the only ticket successor digest, and absence
+  means omitting the section rather than adding filler.
 - **Claims go stale.** Each ticket carries a `bound`; a claim past it
   with no motion is sent back to `pending` and recut before reclaim.
 - **Findings fork by severity.** Blocking defects go to `orch-repair`;

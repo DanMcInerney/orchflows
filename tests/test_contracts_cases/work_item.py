@@ -202,7 +202,7 @@ class TestWorkItemContract(unittest.TestCase):
         )
 
     def test_context_is_the_canonical_successor_digest(self):
-        contract = read("work-item.md")
+        contract = read_flat("work-item.md")
         delegation = read_at_flat("rules/delegation.md")
         public = (ROOT / "TICKETS.md").read_text(encoding="utf-8")
 
@@ -213,6 +213,8 @@ class TestWorkItemContract(unittest.TestCase):
         ):
             with self.subTest(surface=name):
                 self.assertIn("`## Context`", text)
+                self.assertNotIn("`## Carry`", text,
+                                 f"{name} still exposes Carry as a ticket successor digest")
 
         for token in (
             "one to five",
@@ -221,12 +223,10 @@ class TestWorkItemContract(unittest.TestCase):
             "optional",
             "omission",
             "T0 supersession",
-            "legacy `## Carry`",
+            "only ticket successor-digest spelling",
         ):
             with self.subTest(contract_token=token):
                 self.assertIn(token, contract)
-
-        self.assertNotIn("`## Carry` — optional", contract)
 
     def test_no_reference_to_the_dead_contracts(self):
         for name in (

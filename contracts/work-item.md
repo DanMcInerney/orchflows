@@ -48,7 +48,7 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 - `write_scope` — packet `authority`: exactly what this item may change, in the workspace semantics of the ticket's `pack`; a strict subset of the
   run's scope. Outside it sit the ticket's own `status` and its
   executor-owned sections — `## Result`, `## Verification`, `## Feedback`,
-  `## Risks`, `## Context`, legacy `## Carry`, and, suspending, `## Handoff`
+  `## Risks`, `## Context`, and, suspending, `## Handoff`
   — append-only under v2 and never in a generation or seal digest. A §10
   checker corrects inside
   this same `write_scope` ([rules/verification.md](../rules/verification.md)
@@ -116,11 +116,8 @@ Body sections, in order — completion test plus the packet's remaining parts:
   omitted. An identity or command appears only when it enables trust or
   re-check; work narrative never appears. Absence is omission, never an empty
   heading, `[]`, or filler. As an executor-owned section it is outside the
-  instruction ceiling. This T0 supersession makes Context the only canonical
-  new-work spelling. Legacy `## Carry` keeps its untyped meaning in existing
-  claimed, suspended, or terminal history: it is never renamed, rewritten, or
-  graded as Context, and remains fileable and preserved through recut with
-  explicit legacy provenance and deterministic precedence for mixed history.
+  instruction ceiling. This T0 supersession makes Context the only ticket
+  successor-digest spelling.
 - `## Handoff` — optional: the suspension, resumption, or escalation record —
   reason, remaining scope and known gaps, budget state — complete when a fresh
   agent can resume from it without the suspended agent's transcript, under
