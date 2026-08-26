@@ -132,7 +132,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         role_agent = install.render_claude_agent(
             "orch-worker", install.load_role_profiles()["orch-worker"]
         )
-        for anchor in ("exact named skill", "directly", "never redispatch"):
+        for anchor in (
+            "exact primary skill",
+            "each exact member",
+            "packet-stated ordered sequence",
+            "directly",
+            "never redispatch",
+        ):
             self.assertIn(anchor, role_agent)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
@@ -175,7 +181,14 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         role_agent = install.render_codex_agent(
             "orch-planner", install.load_role_profiles()["orch-planner"]
         )
-        for anchor in ("exact named skill", "directly", "never redispatch", "mismatched"):
+        for anchor in (
+            "exact primary skill",
+            "each exact member",
+            "packet-stated ordered sequence",
+            "directly",
+            "never redispatch",
+            "mismatched",
+        ):
             self.assertIn(anchor, role_agent)
 
     def test_custom_codex_routing_uses_the_resolved_native_binding(self):
