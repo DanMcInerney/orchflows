@@ -31,6 +31,10 @@ class ErrandCompositionTest(unittest.TestCase):
         self.assertIn("{{executor}}", text)
         self.assertIn("{{bound}}", text)
         self.assertIn("{{oracle_command}}", text)
+        self.assertEqual(["change:{{paths}}"], data["mutations"])
+        self.assertNotIn("{{mutations}}", text)
+        self.assertIn("provenance: pre-existing", text)
+        self.assertNotIn("{{oracle_provenance}}", text)
 
 
 if __name__ == "__main__":

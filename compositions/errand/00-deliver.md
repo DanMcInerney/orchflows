@@ -4,7 +4,7 @@ executor: {{executor}}
 pack: orch-code-pack
 depends_on: []
 write_scope: [{{paths}}]
-mutations: [{{mutations}}]
+mutations: [change:{{paths}}]
 isolation: {{isolation}}
 bound: {{bound}}
 ---
@@ -20,7 +20,7 @@ bound: {{bound}}
 
 ## Completion test
 
-- {{oracle_name}} passes for the delivered result | oracle: {{oracle_command}} | oracle_class: deterministic | provenance: {{oracle_provenance}}
+- {{oracle_name}} passes for the delivered result | oracle: {{oracle_command}} | oracle_class: deterministic | provenance: pre-existing
 
 ## Return fields
 
