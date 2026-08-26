@@ -49,6 +49,29 @@ class _PreviewProcess:
             self.process.communicate()
 
 
+class TestPreviewBindsWithoutResolving(unittest.TestCase):
+    def test_building_the_server_performs_no_reverse_lookup(self):
+        """``HTTPServer.server_bind`` reverse-resolves the address it binds,
+        once per server built. Where the resolver does not answer from a hosts
+        file it blocks: these cases cost 141s on a macOS runner against 1.0s
+        on Linux. The address is a literal and nothing reads the name it
+        would produce, so the query is pure latency.
+        """
+
+        def refuse(*_args, **_kwargs):
+            raise AssertionError("preview resolved a name while binding")
+
+        with mock.patch.object(socket, "getfqdn", refuse):
+            server = preview._PreviewServer(
+                ("127.0.0.1", 0), preview._handler_for("/page.html", b"<p>x</p>")
+            )
+            try:
+                self.assertEqual("127.0.0.1", server.server_address[0])
+                self.assertEqual(server.server_address[1], server.server_port)
+            finally:
+                server.server_close()
+
+
 class TestPreviewReadinessAndExactFile(unittest.TestCase):
     def test_missing_input_is_refused_before_readiness(self):
         with tempfile.TemporaryDirectory() as tmp:
