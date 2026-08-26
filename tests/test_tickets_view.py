@@ -192,6 +192,33 @@ class WorklogViewTest(unittest.TestCase):
             self.assertIn("every unit ticket is complete", goal)
             self.assertNotIn("the first unit", goal)
 
+    def test_a_research_goal_projects_its_four_dispatch_inputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            inputs = (
+                '- input: {"name":"evidence-store-root","type":"literal",'
+                '"value":"sink:evidence/testrun/R/"}\n'
+                '- input: {"name":"question","type":"literal",'
+                '"value":"Which source answers this?"}\n'
+                '- input: {"name":"source-policy","type":"literal",'
+                '"value":"primary evidence only"}\n'
+                '- input: {"name":"rigor-bar","type":"literal",'
+                '"value":"support each claim or record a gap"}'
+            )
+            research = ticket(
+                "R", executor="orch-investigate", pack="orch-research-pack",
+                objective="answer one bounded question",
+            ).replace("## Fixed inputs\n\nNone.",
+                      "## Fixed inputs\n\n" + inputs)
+            make_run(sink, {"R": research})
+            goal = self.render().split("## iterations")[0]
+            for field in (
+                "evidence-store-root", "question", "source-policy", "rigor-bar"
+            ):
+                self.assertIn(field, goal)
+            self.assertIn("Which source answers this?", goal)
+            self.assertIn("primary evidence only", goal)
+
     def template_run(self) -> dict:
         """An instantiated template: three top-level cuts and a chain, the
         shape `compositions/benchmaker` instantiates to."""
@@ -323,11 +350,8 @@ class WorklogViewTest(unittest.TestCase):
     def test_terminal_timing_is_durable_across_shapes_and_retries(self):
         shapes = (
             (
-                "root",
-                {
-                    "R": ticket("R", status="claimed", executor="orch-decompose"),
-                    "R.01": ticket("R.01", status="complete", deps="[R]"),
-                },
+                "single",
+                {"R": ticket("R", status="claimed", executor="orch-loop")},
                 "R",
                 "complete",
             ),

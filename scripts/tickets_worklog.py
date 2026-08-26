@@ -5,19 +5,19 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 if __package__:
-    from .tickets_format import FIELD_GLOSS_RE, FIELD_WORD_RE, PLACEHOLDER_RE, REQUIRED_FIELDS_CELL, REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE, TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8, _section_body, _sections, ticket_defects
+    from .tickets_format import FIELD_WORD_RE, PLACEHOLDER_RE, REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE, TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8, _section_body, _sections, ticket_defects
 else:
-    from tickets_format import FIELD_GLOSS_RE, FIELD_WORD_RE, PLACEHOLDER_RE, REQUIRED_FIELDS_CELL, REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE, TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8, _section_body, _sections, ticket_defects
+    from tickets_format import FIELD_WORD_RE, PLACEHOLDER_RE, REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE, TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8, _section_body, _sections, ticket_defects
 
 if __package__:
     from .tickets_input_producers import (
         PACKS_DIR, RESEARCH_PACK, _packs_root, _required_field_name,
-        _required_spec_fields, input_records,
+        _library_packs_root, _required_spec_fields, canonical_json, input_records,
     )
 else:
     from tickets_input_producers import (
         PACKS_DIR, RESEARCH_PACK, _packs_root, _required_field_name,
-        _required_spec_fields, input_records,
+        _library_packs_root, _required_spec_fields, canonical_json, input_records,
     )
 if __package__:
     from .tickets_store import NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root
@@ -341,6 +341,20 @@ def _quoted(body: str) -> list:
 def _claim_order(items: list) -> list:
     """Tickets in `claimed_at` order, the never-claimed last by id."""
     return sorted(items, key=lambda item: (not str(item.get('claimed_at') or '').strip(), str(item.get('claimed_at') or ''), item['id']))
+def _research_input_projection(root: dict) -> str:
+    """The research dispatch fields, unchanged, for the run goal view."""
+    if str(root.get('pack') or '').strip() != RESEARCH_PACK:
+        return ''
+    accepted = {
+        _required_field_name(field) for field in
+        _required_spec_fields(_library_packs_root(), RESEARCH_PACK)
+    }
+    records = [
+        record for record in input_records(
+            (root.get('sections') or {}).get('Fixed inputs', '')
+        ) if record.get('name') in accepted
+    ]
+    return '\n'.join('- input: ' + canonical_json(record) for record in records)
 def _on_offer(item: dict) -> str:
     """How long a ready, unclaimed item has been waiting to be taken up.
 
@@ -364,7 +378,11 @@ def _on_offer(item: dict) -> str:
 def _render_worklog(run: str, items: list, root: dict, kind: str='root') -> str:
     """The run view: contracts/worklog.md's fields, answered from tickets."""
     sections = root.get('sections') or {}
-    lines = [WORKLOG_RENDER_MARKER, '', f'# run {run}', '', f"Rendered from this run's tickets by `tickets.py worklog {run}`. The ticket directory is the state; this file is a view of it, and an edit made here is lost at the next render.", '', '## goal', '', f'{kind.capitalize()} ticket `{root["id"]}` — executor `{_executor_of(root) or "none"}`.', '', 'Objective:', '', *_quoted(sections.get('Objective')), '', 'Completion test:', '', *_quoted(sections.get('Completion test')), '', '## iterations', '']
+    lines = [WORKLOG_RENDER_MARKER, '', f'# run {run}', '', f"Rendered from this run's tickets by `tickets.py worklog {run}`. The ticket directory is the state; this file is a view of it, and an edit made here is lost at the next render.", '', '## goal', '', f'{kind.capitalize()} ticket `{root["id"]}` — executor `{_executor_of(root) or "none"}`.', '', 'Objective:', '', *_quoted(sections.get('Objective')), '', 'Completion test:', '', *_quoted(sections.get('Completion test')), '']
+    projection = _research_input_projection(root)
+    if projection:
+        lines.extend(['Research inputs:', '', *_quoted(projection), ''])
+    lines.extend(['## iterations', ''])
     for item in _claim_order(items):
         stamp = str(item.get('claimed_at') or '').strip()
         waiting = _on_offer(item) if not stamp and str(item.get('status') or '').strip() == 'ready' else ''
