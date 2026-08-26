@@ -118,8 +118,6 @@
     `orch-spec` and `orch-decompose` producers may opt into v2 while legacy
     producers remain v1. Existing v0 admission and migration
     behavior is preserved; v1 pending, receipt, cohort, ready, claim, and
-    packet semantics do not change. A named-field or enum change to the work
-    item or pack signature lands as explicit T0 supersession with
-    tests/pins.json re-pinned. The ordered lens bundle is an additive opt-in:
+    packet semantics do not change. The ordered lens bundle is an additive opt-in:
     v0 and v1 stay unchanged, and already sealed, claimed or terminal v2 cuts
     stay unchanged.

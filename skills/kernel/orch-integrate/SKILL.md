@@ -19,10 +19,8 @@ from `## Handoff`.
 
 The returning name must match `claimed_by`, `checked_by`, or the re-verifier
 named by `tickets.py packet --executor`; reject mismatches and expired claims.
-Reject a non-root carrying both `independence: gate` and `checked_by`. But
-on a root, `checked_by` is cut reader bookkeeping, never final checker
-acceptance: the composite gate decides authored acceptance. Confirm `changed_artifacts`,
-unchanged evidence, and, for required isolation, run `workspace.py check` from
+Confirm `changed_artifacts`, unchanged evidence, and, for required isolation,
+run `workspace.py check` from
 the integrating checkout (exit 6 is caller-vantage failure).
 
 Apply [result.md](../../../contracts/result.md)'s `return-size` crossing once:
@@ -30,7 +28,7 @@ Apply [result.md](../../../contracts/result.md)'s `return-size` crossing once:
 missing resolver inputs are `reject(caller)`; executor-authored invalid,
 unresolved, or oversized results are `reject(child)`. Record blame on the
 run-state channel; only this join calls `tickets.py set-status`. An accepted
-`orch-decompose` Result is `cut-accepted`: retain the root's live status.
+cut Result is `cut-accepted`: retain the root's live status.
 Accepting `<root>.gate.verify` performs the root's terminal status transition
 only from the required-check event identity in its Verification.
 An accepted defect set of `[]` from every critique feeding
@@ -41,11 +39,10 @@ improvement or successor candidates, never that repair.
 For v2, validate exactly one
 `- amendment-request: <canonical JSON record>` in a parked worker's Handoff,
 including all fields required by [delegation.md](../../../rules/delegation.md).
-Route it once per dispatch; neither worker nor join edits its parent. The
-caller applies [delegation.md](../../../rules/delegation.md) §14 through
+Route it once per dispatch. The caller applies
+[delegation.md](../../../rules/delegation.md) §14 through
 `tickets.py resume-generation`; resume only from its sealed generation or
-unchanged packet. The absence of v2 fields means v1; old free-form Handoffs and
-claimed or terminal v1 history retain their path.
+unchanged packet.
 
 Never: trust out-of-scope output, rerun covered oracles, or repair here.
 

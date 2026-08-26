@@ -37,10 +37,10 @@ searchable names.
 Stamp routing per [rules/topology.md](../../../rules/topology.md) 5a.
 Write it through
 `tickets.py new <run> <root-id> --executor orch-decompose --pack <the
-stamp> --independence gate …`; the root's `checked_by` is its cut-reader
-bookkeeping, never its final acceptance path.
+stamp> --independence gate …`.
 
-For every new root, opt into v2 through
+For every new root, opt into v2 under
+[topology](../../../rules/topology.md) §§8–§11 through
 `tickets.py stamp-generation <run> <root-id>`, which derives `root_generation`
 as `v2:root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
 that snapshot through `tickets.py draft-validate <run> <root-id>`, then
@@ -49,11 +49,10 @@ compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
 validated digest is sealed and eligible for `orch-decompose`; its
 `assignment_seal` records that exact assignment digest, and a post-seal
 assignment change is a new generation.
-Compatibility is closed: absence of v2 fields means v1, so legacy producers
-and existing v0/v1 tickets keep their prior admission and execution path.
 
-Never: stamp a pack the cut cannot share; leave an acceptance criterion
-oracle-less; restate standards an exemplar's owner already states.
+Never: stamp a pack the cut cannot share; violate
+[work-item.md](../../../contracts/work-item.md); restate
+standards an exemplar's owner already states.
 
 Return: the accepted root ticket's id and path, the durable `successors.md`
 identity (`[]` for one kind), and, after each predecessor resolves, the

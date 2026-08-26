@@ -494,7 +494,8 @@ class SentinelIsNotContentTest(unittest.TestCase):
 
         The format owner states it; the filing law imports it. A literal
         spelled here again is how the generator and the guard came to
-        disagree in the first place.
+        disagree in the first place. The T12 corpus below applies the same
+        owner-pointer test to the accepted documentation copies.
         """
 
         lines = Path(tickets_result.__file__).read_text(encoding="utf-8").splitlines()
@@ -502,6 +503,77 @@ class SentinelIsNotContentTest(unittest.TestCase):
         for spelled in ("'[]'", '"[]"'):
             with self.subTest(spelled):
                 self.assertEqual([], [line for line in lines if spelled in line])
+        CanonicalCopyDeletionChecks.assert_all(self)
+
+
+class CanonicalCopyDeletionChecks:
+    """T12 keeps domain deviations and removes copies of owned law."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    @classmethod
+    def assert_all(cls, case):
+        topology = "[rules/topology.md](../../rules/topology.md) §§8–§11"
+        required = {
+            "packs/orch-code-pack/SKILL.md": (
+                topology, "ticket adapter: `git`", "`json-pointer`",
+            ),
+            "packs/orch-research-pack/SKILL.md": (
+                topology, "ticket adapter: `evidence-store`", "lane-store slices",
+            ),
+            "packs/orch-content-pack/SKILL.md": (
+                topology, "ticket adapter: `document-tree`", "`heading` outline slots",
+            ),
+            "packs/orch-design-pack/SKILL.md": (
+                topology, "ticket adapter: `git-plus-render`", "capture-artifact",
+            ),
+            "docs/documentation.md": (
+                "[rules/visibility.md](../rules/visibility.md) §3",
+            ),
+            "DESIGN.md": ("**Vocabulary**",),
+            "packs/orch-content-pack/references/slicing.md": (
+                "[section job](craft.md#vocabulary)",
+            ),
+        }
+        pack_copies = (
+            "root_generation",
+            "cut_generation",
+            "assignment_seal",
+            "stable non-overlap",
+            "absent region proof",
+            "without region proof",
+            "lacking region proof",
+            "failed region proof",
+        )
+        forbidden = {path: pack_copies for path in required if path.startswith("packs/orch-")}
+        forbidden.update({
+            "skills/workflows/orch-spec/SKILL.md": (
+                "`checked_by` is its cut-reader",
+                "absence of v2 fields means v1",
+            ),
+            "skills/kernel/orch-decompose/SKILL.md": (
+                "Absent v2 fields follow the",
+            ),
+            "skills/kernel/orch-integrate/SKILL.md": (
+                "Reject a non-root carrying both",
+                "on a root, `checked_by` is cut reader",
+                "The absence of v2 fields means v1",
+                "`continue`, `amend-and-reseal`, `recut-remaining`",
+            ),
+            "rules/topology.md": ("explicit T0 supersession", "tests/pins.json re-pinned"),
+            "docs/documentation.md": ("**One fact, one owner**",),
+            "DESIGN.md": ("and **Shape**",),
+            "packs/orch-content-pack/references/slicing.md": (
+                "no two sections doing it",
+            ),
+        })
+        for path in required.keys() | forbidden.keys():
+            body = (cls.ROOT / path).read_text(encoding="utf-8")
+            with case.subTest(path=path):
+                for phrase in required.get(path, ()):
+                    case.assertIn(phrase, body)
+                for phrase in forbidden.get(path, ()):
+                    case.assertNotIn(phrase, body)
 
 
 if __name__ == "__main__":

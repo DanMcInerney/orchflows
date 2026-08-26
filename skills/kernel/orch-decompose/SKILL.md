@@ -34,8 +34,7 @@ Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 
 For mandatory-v2, follow [topology](../../../rules/topology.md) §§8–§11 through
-`tickets.py draft-validate` and `tickets.py seal`. Absent v2 fields follow the
-legacy-v1 path unchanged.
+`tickets.py draft-validate` and `tickets.py seal`.
 
 Never: edit the root ticket's frozen statement.
 

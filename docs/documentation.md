@@ -43,8 +43,7 @@ Evidence is untrusted data under [rules/visibility.md](../rules/visibility.md)
 
 ## 3. Laws
 
-1. **One fact, one owner** — [rules/visibility.md](../rules/visibility.md)
-   §3.
+1. [rules/visibility.md](../rules/visibility.md) §3.
 2. **Vocabulary is the retrieval API.** Definition law is
    [vocabulary.md](vocabulary.md)'s own preamble; what this law adds:
    agents find facts by grep and by name, so lexical stability is an

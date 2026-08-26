@@ -1,7 +1,7 @@
 # Content slicing: outline sections plus terminal edit
 
-Cut the spec into an outline whose sections partition the argument —
-each section one job the document needs done, no two sections doing it.
+Cut the spec into an outline whose sections partition the argument, each
+with one [section job](craft.md#vocabulary).
 
 - Each ticket: one outline slot and its role in the whole argument; its
   share of the fixed evidence; the root's exact audience; the voice contract; the citation policy;
