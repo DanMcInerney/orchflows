@@ -251,6 +251,15 @@ class TestRoutingGrading(unittest.TestCase):
         command = "python ~/.orchflows/bin/tickets.py new --run r --id A --executor orch-tdd"
         self.assertEqual("ticket", self._observed([_bash_use(command)]))
 
+    def test_errand_and_doctor_commands_grade_as_their_routes(self):
+        commands = (
+            ("errand", "python ~/.orchflows/bin/tickets.py errand --run r --id A"),
+            ("doctor", "python ~/.orchflows/lib/install.py doctor"),
+        )
+        for expected, command in commands:
+            with self.subTest(expected=expected):
+                self.assertEqual(expected, self._observed([_bash_use(command)]))
+
     def test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix(self):
         self.assertEqual("fix", self._observed([_skill_use("fix")]))
         posix = "tickets.py instantiate ~/.orchflows/lib/compositions/fix --run r"

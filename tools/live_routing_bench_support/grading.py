@@ -83,8 +83,13 @@ def _named_in(text: str) -> str | None:
 
 
 def _classify_bash(command: str) -> str | None:
-    if "tickets.py new" in command.replace("\\", "/"):
+    normalized = command.replace("\\", "/")
+    if "tickets.py new" in normalized:
         return "ticket"
+    if "tickets.py errand" in normalized:
+        return "errand"
+    if "install.py doctor" in normalized:
+        return "doctor"
     name = _named_in(command)
     return _classify_skill(name) if name else None
 
