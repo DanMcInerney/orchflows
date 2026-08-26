@@ -52,10 +52,10 @@ class TestResultClosedSet(unittest.TestCase):
     """contracts/work-item.md names exactly what an executor writes."""
 
     def test_the_writable_set_is_the_contracts_five(self):
-        # six since `Carry` joined the census; the method name is pinned by
+        # six including optional Context; the method name is pinned by
         # tests/serial_compat_manifest.json, which the join regenerates once
         self.assertEqual(
-            ("Result", "Verification", "Feedback", "Risks", "Carry", "Handoff"),
+            ("Result", "Verification", "Feedback", "Risks", "Context", "Handoff"),
             tickets_mod.EXECUTOR_SECTIONS,
         )
 
@@ -66,11 +66,13 @@ class TestResultClosedSet(unittest.TestCase):
                 _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
                 payload = run_cmd(
                     worktree, "result", "testrun", "T1",
-                    "--section", name, "--text", f"body for {name}",
+                    "--section", name, "--text",
+                    "- state: body for Context" if name == "Context" else f"body for {name}",
                 )
                 self.assertEqual(name, payload["result"]["section"], name)
                 text = (run_dir / "T1.md").read_text(encoding="utf-8")
-                self.assertEqual(f"body for {name}", tickets_mod._sections(text)[name])
+                expected = "- state: body for Context" if name == "Context" else f"body for {name}"
+                self.assertEqual(expected, tickets_mod._sections(text)[name])
 
     def test_a_cut_time_section_is_refused_and_the_set_is_named(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,6 +87,92 @@ class TestResultClosedSet(unittest.TestCase):
             for name in tickets_mod.EXECUTOR_SECTIONS:
                 self.assertIn(name, payload["error"])
             self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))
+
+
+class TestContextFilingContract(unittest.TestCase):
+    def test_context_accepts_one_to_five_state_or_watch_bullets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            body = "\n".join((
+                "- state: the decision is settled",
+                "- watch: rerun the exact check after a schema change",
+                "- state: artifact sha256:abc is the landed identity",
+                "- watch: upstream may invalidate the identity",
+                "- state: callers may rely on omission when absent",
+            ))
+            payload = run_cmd(
+                worktree, "result", "testrun", "T1",
+                "--section", "Context", "--text", body,
+            )
+            self.assertEqual("Context", payload["result"]["section"])
+            self.assertEqual(body, tickets_mod._sections(
+                (run_dir / "T1.md").read_text(encoding="utf-8")
+            )["Context"])
+
+    def test_every_malformed_context_is_refused_without_changing_bytes(self):
+        malformed = (
+            "",
+            "- state:",
+            "- watch:   ",
+            "- State: wrong case",
+            "- note: wrong label",
+            "  - state: nested",
+            "state: not a bullet",
+            "- state: one\ncontinuation prose",
+            "- state: one\n\n- watch: two",
+            "\n".join(f"- state: conclusion {number}" for number in range(6)),
+        )
+        for body in malformed:
+            with self.subTest(body=body), tempfile.TemporaryDirectory() as tmp:
+                tmp = Path(tmp)
+                _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+                ticket = run_dir / "T1.md"
+                before = ticket.read_bytes()
+                payload = run_cmd(
+                    worktree, "result", "testrun", "T1",
+                    "--section", "Context", "--text", body,
+                )
+                self.assertIn("Context", payload["error"])
+                self.assertEqual(before, ticket.read_bytes())
+
+    def test_append_validates_the_combined_context_atomically(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            first = "\n".join(f"- state: conclusion {number}" for number in range(4))
+            run_cmd(worktree, "result", "testrun", "T1", "--section", "Context", "--text", first)
+            accepted = run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Context",
+                "--text", "- watch: fifth conclusion", "--append",
+            )
+            self.assertEqual("append", accepted["result"]["mode"])
+            before = ticket.read_bytes()
+            refused = run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Context",
+                "--text", "- state: sixth conclusion", "--append",
+            )
+            self.assertIn("one to five", refused["error"])
+            self.assertEqual(before, ticket.read_bytes())
+
+    def test_context_is_the_only_successor_digest_filing_channel(self):
+        self.assertFalse(hasattr(tickets_mod, "LEGACY_EXECUTOR_SECTIONS"))
+        self.assertFalse(hasattr(tickets_mod, "FILEABLE_EXECUTOR_SECTIONS"))
+        self.assertNotIn("Carry", tickets_mod.EXECUTOR_SECTIONS_BY_KEY.values())
+        self.assertNotIn("Carry", tickets_mod.SECTION_ORDER)
+        self.assertNotIn("Carry", tickets_mod.OPTIONAL_SECTIONS)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
+            ticket = run_dir / "T1.md"
+            before = ticket.read_bytes()
+            refused = run_cmd(
+                worktree, "result", "testrun", "T1", "--section", "Carry",
+                "--text", "not a successor digest",
+            )
+            self.assertIn("not one of", refused["error"])
+            self.assertEqual(before, ticket.read_bytes())
 
 
 class TestResultBodySource(unittest.TestCase):
@@ -194,7 +282,8 @@ class TestResultRefusesTerminalStatus(unittest.TestCase):
             for name in tickets_mod.EXECUTOR_SECTIONS:
                 run_cmd(
                     worktree, "result", "testrun", "T1",
-                    "--section", name, "--text", f"body for {name}",
+                    "--section", name, "--text",
+                    "- state: body for Context" if name == "Context" else f"body for {name}",
                 )
             self.assertEqual(before, frontmatter_of(ticket))
             self.assertIn("status: claimed", ticket.read_text(encoding="utf-8"))
@@ -323,9 +412,10 @@ class TestResultSectionOrder(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
-            for name in ("Handoff", "Risks", "Verification"):
-                run_cmd(worktree, "result", "testrun", "T1", "--section", name, "--text", name)
+            for name in ("Handoff", "Context", "Risks", "Verification"):
+                body = "- state: Context" if name == "Context" else name
+                run_cmd(worktree, "result", "testrun", "T1", "--section", name, "--text", body)
             self.assertEqual(
-                ["Objective", "Verification", "Risks", "Handoff"],
+                ["Objective", "Verification", "Risks", "Context", "Handoff"],
                 headings_of((run_dir / "T1.md").read_text(encoding="utf-8")),
             )

@@ -63,7 +63,7 @@ Close this result through the composite gate without implementation padding.
 
 ## Return fields
 
-status; result; verification; feedback; risks; Carry
+status; result; verification; feedback; risks; Context
 
 ## Result
 
@@ -79,7 +79,7 @@ status; result; verification; feedback; risks; Carry
 
 []
 
-## Carry
+## Context
 
 []
 """
@@ -213,8 +213,8 @@ class GateOnlyLifecycleTest(unittest.TestCase):
             )
             self.assertNotIn(
                 "error",
-                dispatch("result", RUN, ROOT_ID, "--section", "Carry",
-                         "--text", "- gate: sealed composite family", "--append"),
+                dispatch("result", RUN, ROOT_ID, "--section", "Context",
+                         "--text", "- state: sealed composite family", "--append"),
             )
             self.assertNotIn(
                 "error", dispatch("set-status", RUN, ROOT_ID, "complete")
@@ -238,7 +238,7 @@ class GateOnlyLifecycleTest(unittest.TestCase):
 
             for section, text in (
                 ("Result", "code and library reviewed; one repair pass completed"),
-                ("Carry", "- repaired-identity: final-review-result"),
+                ("Context", "- state: final-review-result is the repaired identity"),
             ):
                 self.assertNotIn(
                     "error",

@@ -87,7 +87,11 @@
     `continue`, `amend-and-reseal`, `recut-remaining`, or
     `successor-or-new-root`; `tickets.py resume-generation` materializes the
     unchanged packet or the validated, sealed same-ticket authority change.
-15. Before ready, claim, or packet, the caller seals the assignment under
-    [work-item.md](../contracts/work-item.md#dispatch). Post-seal assignment
-    changes require a new generation; executor-owned sections remain
-    append-only outside the seal.
+15. Before a worker becomes ready, is claimed, or receives a packet, the
+    caller seals the exact validated assignment digest over objective,
+    inputs, authority, dependencies, acceptance, and executor, its
+    `sequence` included. Those fields are immutable after seal; any change
+    creates a new generation. The executor-owned `Result`, `Verification`,
+    `Feedback`, `Risks`, `Context` (`## Context`), and `Handoff` sections remain
+    append-only and outside the sealed assignment; `## Context` alone is the
+    optional successor digest.

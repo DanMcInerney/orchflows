@@ -2,14 +2,14 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ticket_defects
+    from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, successor_section_defects, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
     from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
 else:
-    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ticket_defects
+    from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, successor_section_defects, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
     from tickets_input_producers import render_ticket_inputs
@@ -29,7 +29,6 @@ AMEND_USAGE = 'amend <run> <id> --section <name> (--file <path> | --text <string
 RECUT_USAGE = 'recut <run> <id> --file <candidate>'
 def _distinct_gate_lenses(lenses: list) -> list:
     """Return ``lenses`` or refuse a repeated review identity.
-
     A second adversarial review is represented by another named lens. Two
     critique stubs with one label are one review identity written twice, not
     additional independence.
@@ -240,7 +239,6 @@ def _amend_under_run_lock(rest):
         return failure
     return {'amend': {'run': run, 'id': ticket_id, 'section': canonical, 'path': str(ticket_path)}}
 
-
 def _exact_run_snapshot(run_dir):
     texts = {}
     for path in sorted(run_dir.glob('*.md')):
@@ -249,7 +247,6 @@ def _exact_run_snapshot(run_dir):
             return (None, failure)
         texts[path.stem] = text
     return (texts, None)
-
 
 def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, door='amend'):
     """Write one replacement and invalidate every old/new cohort member."""
@@ -280,7 +277,6 @@ def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, 
         return {'error': f'unwritable ticket cohort: {error}'}
     return None
 
-
 def _cmd_recut(rest):
     probe = list(rest)
     _extract_flag(probe, '--file')
@@ -291,8 +287,6 @@ def _cmd_recut(rest):
             return _recut_under_run_lock(rest)
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
-
-
 def _recut_under_run_lock(rest):
     args = list(rest)
     candidate_path = _extract_flag(args, '--file')
@@ -369,6 +363,8 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
     data = _parse_frontmatter(text)
     if not data:
         return defects
+    if not issued:
+        defects.extend(successor_section_defects(_sections(text)))
     independence = 'checker'
     if 'independence' in data:
         independence = str(data.get('independence') or '').strip().strip('`').strip()

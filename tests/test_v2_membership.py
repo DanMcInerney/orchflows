@@ -348,12 +348,12 @@ class TheGateCompletesUnderV2(unittest.TestCase):
 
             carry_file = tmp / "root-carry.md"
             carry_file.write_text(
-                "- admission: root ready, claim, and packet used one receipt\n"
-                "- continuation: cut resealed before frontier\n",
+                "- state: admission: root ready, claim, and packet used one receipt\n"
+                "- state: continuation: cut resealed before frontier\n",
                 encoding="utf-8",
             )
             filed = run_cmd(
-                repo, "result", "testrun", "00-root", "--section", "Carry",
+                repo, "result", "testrun", "00-root", "--section", "Context",
                 "--file", str(carry_file), "--append",
             )
             self.assertNotIn("error", filed, filed)
@@ -375,7 +375,7 @@ class TheGateCompletesUnderV2(unittest.TestCase):
                 repo, "packet", "testrun", "00-root.01", "--reply-to", "outer",
                 "--by", "worker-lane",
             )["packet"]
-            self.assertIn("file `## Carry`", worker_packet["prompt"])
+            self.assertIn("file `## Context`", worker_packet["prompt"])
             checker_packet = run_cmd(
                 repo, "packet", "testrun", "00-root.01", "--reply-to", "outer",
                 "--executor", "orch-critique", "--by", "verifier-lane",
@@ -390,11 +390,11 @@ class TheGateCompletesUnderV2(unittest.TestCase):
 
             unit_carry = tmp / "unit-carry.md"
             unit_carry.write_text(
-                "- landed: lawful v2 member\n- verify: verifier-lane\n",
+                "- state: landed: lawful v2 member\n- state: verify: verifier-lane\n",
                 encoding="utf-8",
             )
             filed = run_cmd(
-                repo, "result", "testrun", "00-root.01", "--section", "Carry",
+                repo, "result", "testrun", "00-root.01", "--section", "Context",
                 "--file", str(unit_carry), "--append",
             )
             self.assertNotIn("error", filed, filed)
@@ -415,7 +415,7 @@ class TheGateCompletesUnderV2(unittest.TestCase):
                 repo, "packet", "testrun", "00-root.02", "--reply-to", "outer",
                 "--by", "worker-next",
             )["packet"]["prompt"]
-            self.assertIn("Carried context from 00-root.01 (complete)",
+            self.assertIn("Successor context from 00-root.01 (complete)",
                           successor_prompt)
             self.assertIn("landed: lawful v2 member", successor_prompt)
             self.assertIn("verify: verifier-lane", successor_prompt)

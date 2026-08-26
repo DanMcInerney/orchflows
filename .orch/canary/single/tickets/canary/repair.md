@@ -111,4 +111,3 @@ Checker carry: no code correction and no invalidated oracle entry. Reuse the thr
 ## Handoff
 
 []
-

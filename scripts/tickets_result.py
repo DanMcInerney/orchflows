@@ -11,9 +11,9 @@ try:
 except ImportError:
     msvcrt = None
 if __package__:
-    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size
+    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size, successor_context_defects
 else:
-    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size
+    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size, successor_context_defects
 if __package__:
     from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
 else:
@@ -227,6 +227,7 @@ def _result_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    sections = _sections(text)
     data = _parse_frontmatter(text)
     v2 = any(key in data for key in (
         'root_generation', 'cut_generation', 'ownership_regions', 'assignment_seal',
@@ -235,10 +236,17 @@ def _result_under_run_lock(rest):
     sentinel = prior == SECTION_SENTINEL
     if sentinel:
         prior, append = '', False
+    write_body, write_append = body, append
+    if canonical == 'Context':
+        if append and prior:
+            write_body, write_append = f'{prior}\n{body}', False
+        defects = successor_context_defects(write_body)
+        if defects:
+            return {'error': '; '.join(defects)}
     if v2 and replace and (not sentinel):
         return {'error': f"v2 executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
     try:
-        rendered = _write_section(text, canonical, body, append)
+        rendered = _write_section(text, canonical, write_body, write_append)
     except TicketFormatError as error:
         return {'error': f'{error}. ticket: {ticket_path}'}
     if prior and (not append) and (not replace):
