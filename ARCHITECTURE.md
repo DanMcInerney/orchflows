@@ -1,6 +1,6 @@
 # Architecture
 
-Cold ownership map for executing agents. Ceiling: 850
+Agent-facing cold ownership map. Ceiling: 850
 whitespace-delimited words. Terms are
 [the vocabulary](docs/vocabulary.md)'s.
 
@@ -10,9 +10,9 @@ whitespace-delimited words. Terms are
   owns one pure data shape, hash-pinned: a field or enum change breaks
   it even when the prose meaning holds.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
-  primitives calling no skill; `engines/` control flow; `workflows/`
-  domain-blind behavior; `instances/` domain executors and lenses;
-  `utilities/` generic leaf behavior. A package owns its `SKILL.md`,
+  skill-free primitives; `engines/` control flow; `workflows/`
+  domain-blind behavior; `instances/` domain executors/lenses;
+  `utilities/` generic leaves. A package owns its `SKILL.md`,
   `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.
@@ -21,8 +21,7 @@ whitespace-delimited words. Terms are
   vocabulary and domain-only shape.
 - **T3 — [`compositions/`](compositions/):** named workflow templates.
   Their ticket stubs follow the
-  [work-item contract](contracts/work-item.md), admitted through
-  `orch-build`.
+  [work-item contract](contracts/work-item.md) via `orch-build`.
 
 ## Cross-cutting owners
 
@@ -31,10 +30,10 @@ whitespace-delimited words. Terms are
 - [`docs/`](docs/) owns on-demand reference. `vocabulary.md` owns
   library terms; `documentation.md` documentation design and the
   reading order; each remaining file its named subject.
-- [`scripts/`](scripts/) owns repository automation. Programs use Python
-  3.9+ on Windows and POSIX, no network at run time. An unprefixed family
-  module is the public command and import facade; same-family helpers own internal
-  concerns. `tickets_format.py` owns syntax, closed parsers, and the
+- [`scripts/`](scripts/) owns repository automation. Programs use Python 3.9+
+  on Windows and POSIX, no network at run time. An unprefixed family module is the public command
+  and import facade; same-family helpers own internal concerns.
+  `tickets_format.py` owns syntax, closed parsers, and the
   installed pack mechanism registry; `tickets_markdown.py`
   is its private byte-preserving mechanism; `tickets_inputs.py` typed
   identity resolution; `tickets_scope.py` mutation/edge closure;
@@ -45,8 +44,8 @@ whitespace-delimited words. Terms are
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
   ceiling, `tickets_dispatch_gate.py` the gate family and
   mutation plan, `cutcheck_pricing.py` cut pricing.
-  Cutcheck imports those owners directly, never the tickets facade;
-  admission and cutcheck never import each other.
+  Cutcheck imports those owners, never the tickets facade; it and admission
+  never cross-import.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   executable-source line ceilings.
@@ -66,8 +65,8 @@ whitespace-delimited words. Terms are
   is the installation compatibility facade; [`installer/`](installer/) owns
   static support, `installer/runtime.py` the private runtime at
   `~/.orchflows/runtime`, and the planning/application/uninstall modules the
-  immutable frontend at `~/.orchflows/ui`. The user install is the only
-  installation scope, creating or reusing both; replacement is staged and
+  immutable frontend at `~/.orchflows/ui`. User installation is the sole scope,
+  creating or reusing both; replacement is staged and
   probed before an owned prior generation moves.
   [`requirements-runtime.in`](requirements-runtime.in)
   and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins
