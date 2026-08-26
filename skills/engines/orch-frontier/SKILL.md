@@ -24,13 +24,10 @@ packet for orch-critique then orch-repair, without evaluator redispatch.
 Dispatch gate.verify once in another fresh child at final identity; reuse
 neither context.
 
-V2 readiness/claim/packet require `root_generation`, `cut_generation`, and
-`assignment_seal` resolving to one sealed snapshot and validation receipt.
-Refuse draft/validated-only, stale, missing, mismatched, or substituted
-generations. An accepted amendment disposition runs `tickets.py
-resume-generation`, then recomputes the frontier; only its unchanged packet or
-newly sealed generation proceeds. The absence
-of v2 fields means v1. A root cut reader is the exception: take it with three
+Apply [topology](../../../rules/topology.md) §§8–§11 at readiness, claim, and
+packet. An accepted amendment disposition runs `tickets.py resume-generation`,
+then recomputes the frontier; only its admitted packet proceeds. A root cut
+reader is the exception: take it with three
 or more `<id>.NN` or after a cutcheck advisory;
 units stay `pending` until `checked_by` and this engine's `cutcheck.py`
 re-verification exits 0. Below that threshold cutcheck accepts the cut alone.

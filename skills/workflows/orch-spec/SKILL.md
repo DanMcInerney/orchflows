@@ -7,9 +7,10 @@ role: planner
 Require: the request as the packet's `objective`; the workspace or
 evidence it concerns as its `inputs`.
 
-Gather the facts the frozen statement depends on through
-`orch-investigate` — one bounded question: what exists, what
-constrains, what the request actually touches. Settle decisions only the
+Gather the facts the frozen statement depends on through `orch-investigate`,
+carrying its bounded question, `evidence-store-root`, `source-policy`,
+`rigor-bar`, and bound to answer one question: what exists, what constrains,
+what the request actually touches. Settle decisions only the
 user can make with the user, one question at a time, each answer
 recorded verbatim, without re-interviewing a settled one.
 

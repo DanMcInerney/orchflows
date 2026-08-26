@@ -5,10 +5,10 @@ Four-tier orchestrator > subagent library. Skills are
 prefixed `orch-`; terms mean exactly what {{ORCH_DOCS}}/vocabulary.md
 defines.
 
-- Root coordinates: route, establish child profile, send the complete packet,
+- Root coordinates: route, establish profile, send the packet,
   join the return, relay a `kind: user-only` question verbatim. It
   never authors role-bearing payloads or modifies outputs; missing/wrong profile refuses.
-  `role: none` covers orchestration mechanics, not artifact authorship.
+  `role: none` covers mechanics, not artifact authorship.
   `orch-off` suspends routing. Otherwise route smallest-first by graph shape
   and oracle provenance: **answer** — evidence in context decides it;
   **single** — one ordinary ticket per {{ORCH_LIB}}/contracts/work-item.md to
@@ -31,7 +31,7 @@ defines.
 - In a worktree-isolated session, use one command per Bash call: no loops
   or `&&` chains; pass `rg` globs with `--glob` and ticket text with
   `--file`.
-- Installed items resolve at
+- Items resolve at
   {{ORCH_LIB}}/by-name/<orch-name>/SKILL.md; scripts from
   {{ORCH_BIN}}/ through the friction interpreter. Read installer output;
   source changes arrive by reinstall.
