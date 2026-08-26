@@ -11,12 +11,15 @@ baseline, and the exact raw bytes of all three artifacts its accepted result
 named as oracle coverage. Raw oracle bytes are base64 archives so their Windows
 newline identities remain reproducible on every checkout.
 
-`admission-replay.json` records the actual read-only replay through the same
-canonical admission grader `orch-frontier` consumes. The replay contained one
-ticket, returned no findings, and reproduced the receipt in `golden.json`.
-Its boundary deliberately stops before worker dispatch: implementation writes
-and the accepted ticket's repository-level oracles were not rerun.
+`admission-replay.json` records the completed-ticket frontier replay boundary:
+the exact one-ticket snapshot is regraded through the canonical admission
+owner, then its terminal status, accepted Result identity, checker, criteria,
+and overall verdict are re-read and matched to `golden.json`. The source ticket
+is already terminal, so replay dispatches no worker and reruns no repository
+oracle; it does not substitute a new execution for the accepted one.
 
-`counterfactual-targets.json` freezes the correction ticket's target anchor.
-The regression derives targets and verdicts from these frozen records; it does
-not carry a second authored metrics model.
+`counterfactual-replay.json` is explicitly a deterministic model, not elapsed
+runtime evidence. It projects the accepted repair's mutations through the live
+errand derived-closure owner and places the one terminal suite event after that
+closure. `counterfactual-targets.json` freezes the root's observed baseline and
+limits; beside-tree mutants prove every limit can fail.

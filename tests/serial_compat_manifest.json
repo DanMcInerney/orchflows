@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3248,
+  "count": 3249,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -138,9 +138,9 @@
    "test_errand_composition.ErrandCompositionTest.test_the_delivery_stub_binds_the_code_pack_and_delivery_shape",
    "test_errand_composition.ErrandCompositionTest.test_the_named_composition_has_exactly_one_delivery_stub",
    "test_errand_counterfactual.ErrandCounterfactualTest.test_actual_frontier_admission_replay_matches_the_golden",
-   "test_errand_counterfactual.ErrandCounterfactualTest.test_counterfactual_targets_come_from_frozen_evidence",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_counterfactual_model_is_evidence_bound_and_meets_targets",
+   "test_errand_counterfactual.ErrandCounterfactualTest.test_counterfactual_mutants_fail_every_target_without_raising",
    "test_errand_counterfactual.ErrandCounterfactualTest.test_fixture_freezes_every_named_input_and_oracle_by_content",
-   "test_errand_counterfactual.ErrandCounterfactualTest.test_zero_closure_mutant_returns_false_without_raising",
    "test_errand_derived_closure.ErrandDerivedClosureTest.test_a_new_test_closes_over_the_serial_compat_manifest_and_step",
    "test_errand_derived_closure.ErrandDerivedClosureTest.test_an_incomplete_registry_entry_is_refused_before_expansion",
    "test_errand_derived_closure.ErrandDerivedClosureTest.test_an_ordinary_test_edit_does_not_change_membership",
@@ -2811,9 +2811,10 @@
    "tests.test_ui_cases.transcript_rendering.TestTranscriptDegradation.test_an_empty_transcript_names_a_diagnostic_rather_than_looking_healthy",
    "tests.test_ui_cases.transcript_rendering.TestTranscriptsAreReadOnly.test_exercising_every_route_writes_nothing_under_the_transcript_root",
    "tests.test_ui_cases.transcript_rendering.TestTranscriptsAreReadOnly.test_the_snapshot_would_notice_a_write",
-   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_composition_executor_sequence_is_projected_in_declared_order",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_canonical_sequence_is_projected_in_declared_order",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_duplicate_owner_identity_and_unknown_entry_are_closed_errors",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_escaping_file_and_directory_symlink_owners_are_rejected",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_list_valued_executor_is_rejected",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_owner_name_must_match_its_canonical_package",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_repository_catalog_is_derived_from_compositions_and_workflow_skills",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_uninstantiated_executor_slot_invents_no_skill_projection",
@@ -3251,7 +3252,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "506c16fe42b207a90455d1339377bfa44060d9bc22c95f290fb49145e84ae8ac"
+  "sha256": "30e667fa42bebadd074e6d9f1f503f4b03731599fd7cd2ed35fdde479b2fa032"
  },
  "mutation_owners": [
   {

@@ -1,6 +1,6 @@
 {
-  "schema": "orchflows.frontier-admission-replay.v1",
-  "boundary": "Read-only replay of the canonical frontier admission grade over exactly the frozen completed ticket; no worker was redispatched and no repository-level oracle was rerun.",
+  "schema": "orchflows.frontier-terminal-replay.v1",
+  "boundary": "Completed-ticket frontier replay: regrade the exact one-ticket snapshot, then match its terminal accepted Result and verdicts to golden; no worker is redispatched and no repository-level oracle is rerun.",
   "command": "uv run --no-project python -m unittest -v tests.test_errand_counterfactual.ErrandCounterfactualTest.test_actual_frontier_admission_replay_matches_the_golden",
   "ticket_count": 1,
   "ticket": "repair",
@@ -14,6 +14,18 @@
     "snapshot_ids": [
       "repair"
     ]
+  },
+  "terminal_actual": {
+    "checked_by": "orch-install-catalog-repair-20260825-repair-checker",
+    "criteria": {
+      "1": "PASS",
+      "2": "PASS",
+      "3": "PASS",
+      "4": "PASS"
+    },
+    "overall": "PASS",
+    "result_section_sha256": "282fd70a5c2c279a1b0609b68381bc8291543af6c850c8baa64d7883a897d209",
+    "status": "complete"
   },
   "matched_golden": true,
   "repository_oracles_rerun": false,

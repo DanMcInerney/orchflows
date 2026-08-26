@@ -7,9 +7,31 @@
   },
   "spec": {
     "path": "spec.md",
-    "sha256": "5d402cd648f21699a004a9b5fe91269974f2f61ca9ecd4a5c7022cd8123aa50e",
+    "sha256": "c7927ab371aeb1b83deb415d3dcdde3a8a7f5cc1b6a6a09b4fda2b10ad1f8226",
     "kind": "ad-hoc-ticket-statement"
   },
+  "replay_artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "8333a2a068c26c82087852cc5e14a53f483da1df2c6181c04f4a45d9c357c3b6"
+    },
+    {
+      "path": "admission-replay.json",
+      "sha256": "fdcd1f9c46f0e41782dac92a790beaf09fa9f8946ace3710acce884993b088de"
+    },
+    {
+      "path": "counterfactual-replay.json",
+      "sha256": "c9971f3bfa63d03ce89472fe99f63d033f9daf06b38036ab36676a6f6ca81e6f"
+    },
+    {
+      "path": "counterfactual-targets.json",
+      "sha256": "6cbaba0ebeaa3a39b3fe1fdf3032fd1892597050072f2b799f55b2cbe8f5171f"
+    },
+    {
+      "path": "golden.json",
+      "sha256": "48a2a9e539d12f64ee82efbe60a2fb4bdd35ee04a56f7cb0aaa264d6a759d3cb"
+    }
+  ],
   "fixed_inputs": [
     {
       "path": "inputs/tickets/orch-install-catalog-diagnosis-20260825/investigate.md",
