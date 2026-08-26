@@ -9,6 +9,8 @@ isolation: {{isolation}}
 bound: {{bound}}
 ---
 
+<!-- tickets.py errand materializes {{mutations}} and {{oracle_provenance}}. -->
+
 ## Objective
 
 {{simple_task}}

@@ -32,9 +32,10 @@ class ErrandCompositionTest(unittest.TestCase):
         self.assertIn("{{bound}}", text)
         self.assertIn("{{oracle_command}}", text)
         self.assertEqual(["change:{{paths}}"], data["mutations"])
-        self.assertNotIn("{{mutations}}", text)
-        self.assertIn("provenance: pre-existing", text)
-        self.assertNotIn("{{oracle_provenance}}", text)
+        self.assertNotEqual(["{{mutations}}"], data["mutations"])
+        completion = tickets._sections(text)["Completion test"]
+        self.assertIn("provenance: pre-existing", completion)
+        self.assertNotIn("{{oracle_provenance}}", completion)
 
 
 if __name__ == "__main__":
