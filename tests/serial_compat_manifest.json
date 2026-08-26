@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3198,
+  "count": 3202,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -35,6 +35,7 @@
    "test_canary_host.CanaryOracleSpellingTest.test_the_head_is_the_bare_interpreter_name",
    "test_command_surface.NamedOperatorsTest.test_each_required_operator_is_named_by_the_skill_that_requires_it",
    "test_command_surface.NamedOperatorsTest.test_orch_decompose_names_the_command_that_writes_the_composite_gate",
+   "test_command_surface.NamedOperatorsTest.test_orch_spec_routes_only_unresolved_roots_through_every_v2_door",
    "test_command_surface.NamedOperatorsTest.test_the_engine_that_refuses_an_unsealed_generation_names_the_seal",
    "test_command_surface.NamedOperatorsTest.test_the_v2_lifecycle_operators_are_all_reachable_by_name",
    "test_command_surface.ReissueRulingTest.test_the_compat_pin_names_the_surviving_surface_exactly",
@@ -902,6 +903,7 @@
    "test_v2_membership.TheDoorsRefuseDivergence.test_new_file_lands_a_drafting_member_that_matches",
    "test_v2_membership.TheDoorsRefuseDivergence.test_new_file_refuses_a_v1_member_under_a_sealed_v2_root",
    "test_v2_membership.TheGateCompletesUnderV2.test_a_v1_root_still_issues_a_v1_gate",
+   "test_v2_membership.TheGateCompletesUnderV2.test_same_planner_full_route_terminalizes_root_before_frontier",
    "test_v2_membership.TheGateCompletesUnderV2.test_the_family_is_sealed_at_the_next_generation",
    "test_v2_membership.TheVersionLaw.test_a_member_at_its_root_version_carries_no_divergence",
    "test_v2_membership.TheVersionLaw.test_a_v1_member_under_a_v2_root_diverges",
@@ -1156,6 +1158,7 @@
    "tests.test_contracts_cases.topology.V2GenerationTopologyContractTest.test_v0_and_v1_history_is_not_reinterpreted_during_v2_migration",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_architecture_and_pack_signature_own_lower_adapters",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_decomposer_cuts_one_cohort_with_typed_inputs_and_mutations",
+   "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_decomposer_names_version_aware_v1_and_v2_member_emission",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_fixed_inputs_and_return_size_have_canonical_grammars",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_fixed_inputs_forbid_an_unpinned_coordinate_by_citing_identity",
    "tests.test_contracts_cases.work_item.TestV1AdmissionContract.test_frontmatter_owns_admission_cohort_and_mutation_plan",
@@ -1598,6 +1601,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_a_role_bearing_route_requires_its_exact_role_skill_pair",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_an_off_enum_expected_route_is_refused",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_only_a_prompt_naming_orch_build_expects_the_build_route",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_catalog_counterfactual_uses_answer_then_one_known_cause_ticket",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCaseLoader.test_the_shipped_case_file_loads",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_at_least_four_distractors_borrow_a_lure_word",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingCases.test_case_ids_are_unique",
@@ -3201,7 +3205,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d57eac3ed5c880d0dfd7ad5dfd555b5d165683954e7ecb4cbdfa5c1eb9677719"
+  "sha256": "6eec7f420dfd1081c3f7d0370da71c972245d85e585097601c3decbce2d1f426"
  },
  "mutation_owners": [
   {
