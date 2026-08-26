@@ -27,11 +27,12 @@ the installer warns and exits successfully without writing anything.
   and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
   import line — idempotent, migrating any legacy inline marker block found
   there from an older install.
-- Codex (when a Codex CLI is on ``PATH``): prompts, five redirect skill stubs
-  (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``,
-  ``orch-frontier``, ``fix``, ``orch-build``, ``orch-investigate``) that
-  point at the library instead of
-  duplicating it, role agents, agent-limits config. ``CODEX_HOME`` replaces
+- Codex (when a Codex CLI is on ``PATH``): prompts and one exact redirect skill
+  stub per discovered canonical skill or composition
+  (``~/.codex/skills/<name>/SKILL.md``). Role-bearing redirects bind the
+  matching role profile and every redirect points at the library instead of
+  duplicating it. Codex also gets role agents and agent-limits config.
+  ``CODEX_HOME`` replaces
   ``~/.codex`` throughout, matching the CLI. The always-on layer
   stays an inline marker block upserted into ``~/.codex/AGENTS.md`` — a
   read-only probe (``codex debug prompt-input`` against a scratch repo,
@@ -151,7 +152,6 @@ from installer.foundation import (
     CODEX_LIMITS_START,
     CODEX_MAX_DEPTH,
     CODEX_MAX_THREADS,
-    CODEX_SKILL_REDIRECT_NAMES,
     HOST_BLOCK_TEMPLATE,
     MIN_PYTHON,
     PROFILES_MD,

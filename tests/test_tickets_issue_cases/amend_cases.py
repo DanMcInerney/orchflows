@@ -52,21 +52,6 @@ class AmendTest(unittest.TestCase):
             self.assertNotIn("error", payload)
             self.assertIn("triple", path.read_text(encoding="utf-8"))
 
-    def test_a_claimed_ticket_is_refused_and_left_exactly_as_it_was(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            path = self.place(tmp)
-            self.assertNotIn(
-                "error", run_cmd("claim", "testrun", "T1", "--by", "someone")
-            )
-            before = path.read_text(encoding="utf-8")
-            payload = run_cmd(
-                "amend", "testrun", "T1", "--section", "Objective", "--text", "no",
-            )
-            self.assertIn("error", payload)
-            self.assertIn("someone", payload["error"])
-            self.assertEqual(before, path.read_text(encoding="utf-8"))
-
     def test_a_never_claimed_complete_ticket_is_refused(self):
         """The claim is not the whole lifecycle.
 
@@ -187,7 +172,12 @@ class InstructionCeilingTest(unittest.TestCase):
             # words of them do not move the count.
             payload, path = self.place(
                 tmp,
-                ceiling_ticket(at, inputs="- " + " ".join(["identity"] * 400)),
+                ceiling_ticket(
+                    at,
+                    inputs='- input: {"name":"padding","type":"literal","value":"'
+                    + " ".join(["identity"] * 400)
+                    + '"}',
+                ),
             )
             self.assertNotIn("error", payload)
             self.assertTrue(path.is_file())

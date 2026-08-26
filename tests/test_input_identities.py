@@ -17,15 +17,14 @@ def canonical(value) -> str:
 
 
 def ticket(inputs, *, ticket_id="T", run="run", depends="[]", status="pending",
-           cohort="v1:ticket:T", executor="orch-tdd", pack="") -> str:
+           executor="orch-tdd", pack="") -> str:
     pack_line = f"pack: {pack}\n" if pack else ""
     return f"""---
 id: {ticket_id}
 run: {run}
 status: {status}
-cohort: {cohort}
 executor: {executor}
-{pack_line}admission: v1:pending
+{pack_line}admission: pending
 depends_on: {depends}
 ---
 

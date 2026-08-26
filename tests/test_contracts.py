@@ -19,18 +19,18 @@ from tests.test_contracts_cases.rules import (  # noqa: F401
     TestVerificationHomelessLaws,
     TestVisibilityChannelLaw,
     TestVocabularyDefinesShapeChange,
-    V2LifecycleRuleContractTest,
+    LifecycleRuleContractTest,
     VocabularyCutTermsTest,
 )
 from tests.test_contracts_cases.topology import (  # noqa: F401
     TopologyAtomTest,
-    V2GenerationTopologyContractTest,
+    GenerationTopologyContractTest,
 )
 from tests.test_contracts_cases.work_item import (  # noqa: F401
     TestWorkItemCitationLaws,
     TestWorkItemContract,
-    TestV1AdmissionContract,
-    WorkItemV2ContractTest,
+    AdmissionContractTest,
+    GenerationWorkItemContractTest,
 )
 
 

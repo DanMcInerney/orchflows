@@ -9,17 +9,15 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
 
 - `id` — lifecycle: unique within the run; stable once issued.
 - `run` — lifecycle: the owning run id.
-- `admission` — lifecycle: `v1:pending` at issue, then the portable `v1:<adapter>:sha256:<digest>` receipt for the exact cut/cohort snapshot.
+- `admission` — lifecycle: `pending` at issue, then the portable `<adapter>:sha256:<digest>` receipt for the exact sealed assignment snapshot.
   `scripts/tickets_lifecycle.py` owns the grade-then-swap protocol both `ready` and `claim` run; direct status writes create neither state.
-- `cohort` — v1 graph position and v1's alone: `v1:ticket:<id>`, `v1:root:<root>`, or `v1:batch:<digest>`, graded and sealed as one when a member goes live; amendment invalidates every unsealed member's receipt. A v2 ticket carries none.
-- `root_generation`, `cut_generation`, `ownership_regions`, `assignment_seal` — the v2 fields: content identities
-  `v2:root:<root-id>:<ordinal>:sha256:<digest>` and
-  `v2:cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
+- `root_generation`, `cut_generation`, `ownership_regions`, `assignment_seal` — generation and seal fields: content identities
+  `root:<root-id>:<ordinal>:sha256:<digest>` and
+  `cut:<root-id>:<ordinal>:sha256:<digest>`; canonical region records shaped
   `{"artifact":"<path>","merge_oracle":"<identity>","owner":"<ticket-id>","selector":{"kind":"<kind>","value":"<stable identity>"}}`;
   and `sha256:<digest>` over the validated assignment fields `objective`, `inputs`,
   `authority`, `dependencies`, `acceptance`, `executor`. Digests, selectors, seal,
-  and the migration under which the absence of all four v2 fields means v1 and no
-  v1 value is reinterpreted are [rules/topology.md](../rules/topology.md) §8–§11's.
+  are [rules/topology.md](../rules/topology.md) §8–§10's.
 - `status`: `pending` | `ready` | `claimed` | `suspended` | `complete` | `blocked` | `stalled` | `failed` | `limited` — lifecycle, transitions per
   `orch-frontier`: the first four live, `pending` and `suspended` the two
   non-terminal waits and a suspended ticket staying claimed, resumable from its
@@ -44,11 +42,11 @@ Frontmatter, mapped to packet parts, lifecycle, and graph position:
   run's scope. Outside it sit the ticket's own `status` and its
   executor-owned sections — `## Result`, `## Verification`, `## Feedback`,
   `## Risks`, `## Context`, and, suspending, `## Handoff`
-  — append-only under v2 and never in a generation or seal digest. A §10
+  — append-only after seal and never in a generation or seal digest. A §10
   checker corrects inside
   this same `write_scope` ([rules/verification.md](../rules/verification.md)
   §9); a root's cut instead.
-- `mutations` — v1 Git/design cut plan: `create:<file>`, `change:<file>`,
+- `mutations` — Git/design cut plan: `create:<file>`, `change:<file>`,
   `delete:<file>`, or `write:<prefix>/` nodes, each a repository-relative
   POSIX path without globs that fits `write_scope`.
 - `excluded_actions` — packet `authority`, optional: named actions this
@@ -140,14 +138,14 @@ deliver the return contract inside authority and bounds is the child's.
 
 A named-field or enum change to this contract or [pack-signature.md](pack-signature.md) lands as an explicit T0 supersession.
 The change updates its focused contract checks and re-pins the superseded
-canonical bytes in `tests/pins.json`; old admission versions retain their
-existing meaning and it never reinterprets claimed or terminal history. This
-one note governs both T0 shapes.
+canonical bytes in `tests/pins.json`. This one note governs both T0 shapes.
 
 ## Root ticket
 
-A ticket whose `executor` is `orch-decompose` and whose `pack` is stamped
-carries the run's frozen statement, whose one editor is
+A root ticket is the ticket named by a `root_generation`; its executor may be
+any exact skill lawfully bound to the packet. A direct root owns its complete
+artifact. A decomposed root uses `orch-decompose` as its executor and has a stamped pack,
+and carries the run's frozen statement, whose one editor is
 [docs/vocabulary.md](../docs/vocabulary.md)'s `spec` entry: objective,
 acceptance, evidence and exemplars by identity with each property an
 imitation must carry, affected surfaces from which disjoint child scopes are
@@ -155,7 +153,7 @@ cut, binding constraints every child inherits verbatim, bound. The stamped
 pack's `required_spec_fields` are entries of that `## Fixed inputs`; a
 criterion no oracle can check is a spec defect, not the decomposer's slack.
 
-Its subtree is `<id>.NN` unit tickets plus the gate stubs
+The decomposed root's subtree is `<id>.NN` unit tickets plus the gate stubs
 `<id>.gate.critique.<lens>`, `<id>.gate.repair`, and `<id>.gate.verify`,
 whose composite shape is [rules/topology.md](../rules/topology.md) §5's; a
 loop ticket's iterations are `<id>.iter.NN`, discovered scope a ticket that
@@ -171,7 +169,7 @@ law [rules/verification.md](../rules/verification.md) §10's, when one is
 staffed `orch-frontier`'s — which never satisfies the root result's
 outside-independence path, the run's one composite gate.
 
-An additive opt-in v2 root may carry this canonical Fixed-input record:
+A root may carry this canonical opt-in Fixed-input record:
 
 `- input: {"name":"ordered-lens-bundle","type":"literal","value":[{"evidence":["<identity-input-name>"],"identity":"<unique-lens-identity>"}]}`
 
@@ -187,8 +185,8 @@ tickets only under [rules/topology.md](../rules/topology.md) §3's coverage law.
 
 A composition is a template: a directory of ticket stubs plus the manifest
 `template.md`, canonical at `compositions/<name>/`, which
-`tickets.py instantiate <template> --run <run> --set k=v` writes into one
-run's ticket directory, all or none. What a stub is — keys, sections, `id`
+`tickets.py instantiate <template> --run <run> --set k=v` seals and writes into
+one run's ticket directory, all or none. What a stub is — keys, sections, `id`
 and `depends_on` edges, the single terminal stub, the acyclic graph, every
 `{{placeholder}}` instantiation must fill, every refusal it raises — is
 `scripts/tickets.py`'s `template_defects`, the manifest `tools/validate.py`'s,

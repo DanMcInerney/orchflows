@@ -215,39 +215,24 @@ parse_result_identity = _tickets_format_module.parse_result_identity
 parse_return_size = _tickets_format_module.parse_return_size
 ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
-ADMISSION_V2_PENDING = _tickets_admission_module.ADMISSION_V2_PENDING
-ADMISSION_VERSION = _tickets_admission_module.ADMISSION_VERSION
 ADAPTER_BY_PACK = _tickets_admission_module.ADAPTER_BY_PACK
 PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
 VCS_ACTION_TOKENS = _tickets_admission_module.VCS_ACTION_TOKENS
 adapter_id = _tickets_admission_module.adapter_id
 authority_findings = _tickets_admission_module.authority_findings
-batch_cohort = _tickets_admission_module.batch_cohort
-cohort_sealed = _tickets_admission_module.cohort_sealed
 grade_admission = _tickets_admission_module.grade_admission
 grade_result = _tickets_admission_module.grade_result
 is_receipt = _tickets_admission_module.is_receipt
-is_v1 = _tickets_admission_module.is_v1
-is_v2 = _tickets_admission_module.is_v2
-valid_cohort = _tickets_admission_module.valid_cohort
-relevant_snapshot_ids = _tickets_admission_module.relevant_snapshot_ids
-root_cohort = _tickets_admission_module.root_cohort
-ticket_cohort = _tickets_admission_module.ticket_cohort
 _GENERATION_EXPORTS = frozenset({
     "GenerationError", "append_amendment_request", "assignment_digest",
     "assignment_payload", "correction_decision", "draft_snapshot",
     "generation_identity", "generation_ordinal", "seal_assignments",
-    "validate_draft",
+    "seal_findings", "validate_draft",
 })
 
 
 def __getattr__(name):
-    """Load the additive v2 facade only when a caller asks for it.
-
-    Legacy standalone copies intentionally remain the closed v1 ticket
-    family; installed and package callers still receive the helper's exact
-    objects rather than wrappers.
-    """
+    """Load generation algebra only when a caller asks for it."""
     if name not in _GENERATION_EXPORTS:
         raise AttributeError(name)
     qualified = f"{__package__}.tickets_generations" if __package__ else "tickets_generations"

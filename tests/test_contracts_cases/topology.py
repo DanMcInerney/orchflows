@@ -163,8 +163,8 @@ class TopologyAtomTest(unittest.TestCase):
         )
 
 
-class V2GenerationTopologyContractTest(unittest.TestCase):
-    """Draft lifecycle, generation identity, regions, and migration law."""
+class GenerationTopologyContractTest(unittest.TestCase):
+    """Draft lifecycle, generation identity, and region law."""
 
     def clause(self, number):
         return read_clause_flat("rules/topology.md", number)
@@ -183,7 +183,7 @@ class V2GenerationTopologyContractTest(unittest.TestCase):
         text = self.clause(9)
         for token in (
             "`root_generation`", "`cut_generation`", "`assignment_seal`",
-            "`v2:<root|cut>:<root-id>:<ordinal>:sha256:<digest>`",
+            "`<root|cut>:<root-id>:<ordinal>:sha256:<digest>`",
             "frozen root assignment fields", "referenced root generation",
             "unit and gate assignment digests", "coverage-map digest",
             "ownership-region declarations", "merge-oracle identities",
@@ -202,18 +202,3 @@ class V2GenerationTopologyContractTest(unittest.TestCase):
             "string inequality",
         ):
             self.assertIn(token, text, f"topology.md §10 omits {token!r}")
-
-    def test_v0_and_v1_history_is_not_reinterpreted_during_v2_migration(self):
-        text = self.clause(11)
-        for token in (
-            "absence of v2 fields means v1", "no v1 value is reinterpreted",
-            "claimed or terminal", "never rewritten", "live v1 root",
-            "successor", "new v2 root", "pending or ready v1", "explicitly",
-            "v0", "admission", "migration", "v1 pending", "receipt", "cohort",
-            "ready", "claim", "packet", "T0 supersession",
-            # Plain text, not backticked: under validate_documented_paths
-            # a backticked path is a pointer that has to resolve in the
-            # installed tree, and tests/ ships nowhere.
-            "tests/pins.json",
-        ):
-            self.assertIn(token, text, f"topology.md §11 omits {token!r}")

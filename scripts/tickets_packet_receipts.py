@@ -7,12 +7,10 @@ import json
 import re
 
 if __package__:
-    from .tickets_admission import is_v2
     from .tickets_format import ROOT_EXECUTOR, _executor_of
     from .tickets_inputs import parse_input_records
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _runs_root
 else:
-    from tickets_admission import is_v2
     from tickets_format import ROOT_EXECUTOR, _executor_of
     from tickets_inputs import parse_input_records
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _runs_root
@@ -23,7 +21,7 @@ PACKET_CLAIMS_DIR = 'packet-claims'
 
 def _gate_only_bundle_claim(loaded: dict, text: str, run: str, cut_subtree) -> bool:
     """Whether this root claim is the opt-in zero-unit decomposition route."""
-    if _executor_of(loaded) != ROOT_EXECUTOR or not is_v2(loaded):
+    if _executor_of(loaded) != ROOT_EXECUTOR or not str(loaded.get('assignment_seal') or '').strip():
         return False
     records = parse_input_records(text)
     if records['findings'] or not any(

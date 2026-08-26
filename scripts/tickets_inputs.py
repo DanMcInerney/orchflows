@@ -28,19 +28,6 @@ else:  # installed flat beside tickets.py
 
 NAME_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-ADMITTED_PREFIXES = ("v1:", "v2:")
-
-
-def is_admitted(data: dict) -> bool:
-    """Whether this ticket was written on either side of the boundary.
-
-    Both graded versions are graded alike: the prefix names which admission
-    grammar produced the ticket, never how much of it is worth grading.  Only
-    the shape that predates the boundary -- no ``admission`` field at all --
-    is read as legacy, and that shape no CLI write path can still produce.
-    """
-
-    return str(data.get("admission") or "").startswith(ADMITTED_PREFIXES)
 OBJECT_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 TERMINAL = frozenset({"complete", "blocked", "stalled", "limited", "failed"})
 COMMON_KINDS = frozenset({"artifact", "ticket-section"})
@@ -306,8 +293,9 @@ def _ticket_section(identity, context):
             if str(_parse_frontmatter(text).get("status") or "") not in TERMINAL:
                 return (None, [_finding("ticket-result-not-terminal", str(ticket_id))], "")
         elif section == "Completion test":
-            cohort = str(_parse_frontmatter(siblings.get(owner, "")).get("cohort") or "")
-            root_id = cohort.removeprefix("v1:root:") if cohort.startswith("v1:root:") else ""
+            generation = str(_parse_frontmatter(siblings.get(owner, "")).get("root_generation") or "")
+            match = re.match(r"^root:([A-Za-z0-9][A-Za-z0-9._-]*):", generation)
+            root_id = match.group(1) if match else ""
             named_acceptance = ".gate." in owner and context.get("input_name") == "acceptance"
             if ticket_id != root_id and not named_acceptance:
                 return (None, [_finding("ticket-completion-owner-invalid", str(ticket_id))], "")
@@ -452,8 +440,6 @@ def grade_inputs(*, ticket_id, text, siblings, adapter_id, context=None) -> dict
     """Grade all records and return ordered portable codes plus fingerprint."""
 
     data = _parse_frontmatter(text)
-    if not is_admitted(data):
-        return {"findings": [], "fingerprint": "inputs:legacy-unadmitted"}
     parsed = parse_input_records(text)
     findings = list(parsed["findings"])
     records = parsed["records"]
@@ -500,4 +486,4 @@ def grade_inputs(*, ticket_id, text, siblings, adapter_id, context=None) -> dict
     }
 
 
-__all__ = ("grade_inputs", "is_admitted", "parse_input_records", "resolve_identity_payload", "section_body")
+__all__ = ("grade_inputs", "parse_input_records", "resolve_identity_payload", "section_body")

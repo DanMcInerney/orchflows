@@ -37,7 +37,7 @@ def authority_fixtures():
     return json.loads(FIXTURE.read_text(encoding="utf-8"))
 
 
-def ticket_text(authority, *, ticket_id="T1", status="pending", receipt="v1:pending"):
+def ticket_text(authority, *, ticket_id="T1", status="pending", receipt="pending"):
     scope = "\n".join(f"  - {value}" for value in authority["write_scope"])
     excluded = "\n".join(f"  - {value}" for value in authority["excluded_actions"])
     mutation = f"create:{authority['write_scope'][0]}"
@@ -46,7 +46,6 @@ id: {ticket_id}
 run: authority-fixture
 status: {status}
 admission: {receipt}
-cohort: v1:ticket:{ticket_id}
 executor: {authority['executor']}
 pack: {authority['pack']}
 independence: gate
@@ -92,10 +91,8 @@ status; result; changed_artifacts; verification; feedback; risks
 
 
 def finding_codes(text):
-    return {
-        item["code"]
-        for item in admission.grade_admission("T1", text, {"T1": text})["findings"]
-    }
+    data = ticket_format._parse_frontmatter(text)
+    return {item["code"] for item in admission.authority_findings("T1", data)}
 
 
 def git(cwd, *args, check=True):
@@ -268,31 +265,6 @@ class AdmissionAuthorityTest(unittest.TestCase):
             {"vcs.isolate", "vcs.commit", "vcs.open-pr"}, set(u1["excluded_actions"]),
         )
         self.assertIn("vcs-action-excluded", finding_codes(ticket_text(u1)))
-
-    def test_packet_uses_stored_authority_without_synthesizing_a_mode(self):
-        authority = self.base()
-        pending = ticket_text(authority)
-        receipt = admission.grade_admission("T1", pending, {"T1": pending})["receipt"]
-        claimed = ticket_text(authority, status="claimed", receipt=receipt)
-        with tempfile.TemporaryDirectory(prefix="authority-packet-") as raw:
-            tickets_root = Path(raw)
-            run = tickets_root / "authority-fixture"
-            run.mkdir()
-            path = run / "T1.md"
-            path.write_text(claimed, encoding="utf-8")
-            before = path.read_bytes()
-            with patch.object(packet, "_tickets_root", return_value=tickets_root):
-                payload = packet._packet_under_run_lock([
-                    "authority-fixture", "T1", "--reply-to", "join",
-                ])
-            self.assertNotIn("error", payload)
-            self.assertEqual(before, path.read_bytes())
-            prompt = payload["packet"]["prompt"]
-            self.assertNotIn("commit_authority", prompt)
-            self.assertNotIn("leave an anonymous", prompt.casefold())
-            stored = ticket_format._parse_frontmatter(path.read_text(encoding="utf-8"))
-            self.assertEqual(authority["excluded_actions"], stored["excluded_actions"])
-
 
 class SkillBoundaryTest(unittest.TestCase):
     def test_skill_names_ticket_local_commit_and_join_boundary(self):

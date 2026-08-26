@@ -24,15 +24,11 @@ packet for orch-critique then orch-repair, without evaluator redispatch.
 Dispatch gate.verify once in another fresh child at final identity; reuse
 neither context.
 
-V2 readiness/claim/packet require `root_generation`, `cut_generation`, and
+Readiness, claim, and packet require `root_generation`, `cut_generation`, and
 `assignment_seal` resolving to one sealed snapshot and validation receipt.
 Refuse draft/validated-only, stale, missing, mismatched, or substituted
 generations. An accepted `tickets.py amendment-request` disposition recomputes
-the frontier; only work newly sealed by `tickets.py seal` proceeds. The absence
-of v2 fields means v1. A root cut reader is the exception: take it with three
-or more `<id>.NN` or after a cutcheck advisory;
-units stay `pending` until `checked_by` and this engine's `cutcheck.py`
-re-verification exits 0. Below that threshold cutcheck accepts the cut alone.
+the frontier; only work newly sealed by `tickets.py seal` proceeds.
 Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
 A lane runs its ticket's own oracles, nothing wider. After every return is

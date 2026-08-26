@@ -228,10 +228,6 @@ def _result_under_run_lock(rest):
     if failure is not None:
         return failure
     sections = _sections(text)
-    data = _parse_frontmatter(text)
-    v2 = any(key in data for key in (
-        'root_generation', 'cut_generation', 'ownership_regions', 'assignment_seal',
-    ))
     prior = _section_body(text, canonical)
     sentinel = prior == SECTION_SENTINEL
     if sentinel:
@@ -243,15 +239,14 @@ def _result_under_run_lock(rest):
         defects = successor_context_defects(write_body)
         if defects:
             return {'error': '; '.join(defects)}
-    if v2 and replace and (not sentinel):
-        return {'error': f"v2 executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
+    if replace and (not sentinel):
+        return {'error': f"executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
     try:
         rendered = _write_section(text, canonical, write_body, write_append)
     except TicketFormatError as error:
         return {'error': f'{error}. ticket: {ticket_path}'}
     if prior and (not append) and (not replace):
-        remedy = 'Pass --append to add after it.' if v2 else 'Pass --append to add after it, or --replace to overwrite it deliberately.'
-        return {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. {remedy} ticket: {ticket_path}"}
+        return {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. Pass --append to add after it. ticket: {ticket_path}"}
     try:
         _write_text_atomically(ticket_path, rendered)
     except OSError as error:

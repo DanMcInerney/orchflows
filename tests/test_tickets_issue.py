@@ -11,7 +11,6 @@ from tests.test_tickets_issue_cases.console_cases import NarrowConsoleTest
 from tests.test_tickets_issue_cases.criterion_cases import CriterionDefectsTest
 from tests.test_tickets_issue_cases.defect_cases import (
     CriterionNestingTest,
-    PacketGradesEveryCriterionTest,
     TicketDefectsTest,
 )
 from tests.test_tickets_issue_cases.encoding_cases import NonUtf8BytesTest
@@ -21,11 +20,6 @@ from tests.test_tickets_issue_cases.refusal_cases import RefusalTextTest
 from tests.test_tickets_issue_cases.root_spec_cases import RootStubSpecFieldsTest
 from tests.test_tickets_issue_cases.surface_cases import SurfaceTest
 from tests.test_tickets_issue_cases.template_cases import InstantiateTest
-from tests.test_tickets_issue_cases.admission_producers import (
-    ProducerStampingTest,
-    V1ProducerTest,
-)
-from tests.test_tickets_issue_cases.admission_recut import RecutAndCohortTest
 from tests.test_tickets_issue_cases.generation_lifecycle import (
     CorrectionGenerationPolicyTest,
     DraftValidateSealLifecycleTest,

@@ -41,8 +41,7 @@ id: T
 run: testrun
 status: {status}
 executor: orch-investigate
-admission: v1:pending
-cohort: v1:ticket:T
+admission: pending
 depends_on: []
 write_scope: []
 bound: 55m

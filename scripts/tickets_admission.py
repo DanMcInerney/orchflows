@@ -48,9 +48,7 @@ else:
         _scope_entries,
         _sections,
     )
-ADMISSION_PENDING = "v1:pending"
-ADMISSION_VERSION = 1
-ADMISSION_V2_PENDING = "v2:pending"
+ADMISSION_PENDING = "pending"
 VCS_ACTION_TOKENS = frozenset({
     "vcs.isolate",
     "vcs.commit",
@@ -69,66 +67,11 @@ _VCS_PROSE_WORDS = (
     "pull request",
     "version control",
 )
-_COHORT_RE = re.compile(r"^v1:(?:ticket|root|batch):[A-Za-z0-9][A-Za-z0-9._-]*$")
-_RECEIPT_RE = re.compile(r"^v[12]:([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
+_RECEIPT_RE = re.compile(r"^([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 _PACK_ROW_RE = re.compile(r"^\|\s*(executor|assembly)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
 _SKILL_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
-_DYNAMIC_FIELDS = frozenset({
-    "status", "admission", "claimed_by", "claimed_at", "checked_by",
-    "workspace_branch", "workspace_baseline", "granted_scope", "granted_by",
-    "granted_at",
-})
-_TERMINAL = frozenset({"complete", "blocked", "stalled", "limited", "failed"})
-_TAKEN_UP = frozenset({"claimed", "suspended", *_TERMINAL})
-def _taken_up(data: dict) -> bool:
-    """Claimed, suspended, terminal, or carrying a released lease's claim."""
-    return (str(data.get("status") or "") in _TAKEN_UP
-            or bool(str(data.get("claimed_at") or "").strip()))
-_ROOT_COHORT_PREFIX = "v1:root:"
-def ticket_cohort(ticket_id: str) -> str:
-    return f"v1:ticket:{ticket_id}"
-def root_cohort(root_id: str) -> str:
-    return f"{_ROOT_COHORT_PREFIX}{root_id}"
-def batch_cohort(ticket_ids) -> str:
-    joined = "\0".join(sorted(str(value) for value in ticket_ids)).encode("utf-8")
-    return f"v1:batch:{hashlib.sha256(joined).hexdigest()[:12]}"
-def is_v1(data: dict) -> bool:
-    return str(data.get("admission") or "").startswith("v1:")
-
-
-def is_v2(data: dict) -> bool:
-    """Whether a producer explicitly opted this ticket into v2.
-
-    No legacy value is reinterpreted: one of the four public v2 fields is
-    required.  An admission receipt is a consequence, never a version flag.
-    """
-
-    return any(
-        key in data for key in (
-            "root_generation", "cut_generation", "ownership_regions", "assignment_seal",
-        )
-    )
-
-
 def is_receipt(value) -> bool:
     return bool(_RECEIPT_RE.fullmatch(str(value or "").strip()))
-
-
-def valid_cohort(value) -> bool:
-    """Whether ``value`` is a well-formed cohort identity.
-
-    A cohort is v1's freezing mechanism: `cohort_sealed` reads it, and a v1
-    receipt hashes its ticket- and batch-cohort siblings into itself.  A v2
-    ticket carries none.  It freezes a cut by its sealed generation instead
-    -- `assignment_payload` names no cohort among the sealed assignment
-    facets, and `_grade_v2_admission`'s `snapshot_ids` carry dependencies
-    only -- so a cohort stamped onto one would be a required-looking field
-    graded by nothing.  The ruling is enforced where the field is written,
-    at `tickets_issue.py`'s issuing sites; grading is unchanged in both
-    versions, and `tests/test_v2_cohort.py` holds both halves.
-    """
-
-    return bool(_COHORT_RE.fullmatch(str(value or "").strip()))
 
 
 def finding(code: str, field: str, detail: str) -> dict:
@@ -221,103 +164,16 @@ def _optional_probe(module_name: str, function_name: str, **kwargs) -> tuple:
     return (list(result.get("findings") or []), str(result.get("fingerprint") or f"{module_name}:empty"))
 
 
-def _canonical_cut(ticket_id: str, text: str, siblings: dict, adapter: str,
-                   input_fingerprint: str, scope_fingerprint: str) -> dict:
-    data = _parse_frontmatter(text)
-    sections = _sections(text)
-    fields = {
-        key: value for key, value in data.items()
-        if key not in _DYNAMIC_FIELDS
-    }
-    dependencies = []
-    for dependency in sorted(str(value) for value in (data.get("depends_on") or [])):
-        dependency_text = siblings.get(dependency, "")
-        dependency_data = _parse_frontmatter(dependency_text)
-        result = _sections(dependency_text).get("Result", "")
-        dependencies.append({
-            "id": dependency,
-            "status": dependency_data.get("status"),
-            "result_sha256": hashlib.sha256(result.encode("utf-8")).hexdigest(),
-        })
-    cohort = str(data.get("cohort") or "")
-    members = []
-    # Root-cohort sibling cuts stay lawfully correctable while this member
-    # runs (`cohort_sealed`), so they never enter its receipt: only ticket and batch cohorts, which freeze together, hash together.
-    for sibling_id in () if cohort.startswith(_ROOT_COHORT_PREFIX) else sorted(siblings):
-        sibling_text = siblings[sibling_id]
-        sibling_data = _parse_frontmatter(sibling_text)
-        if str(sibling_data.get("cohort") or "") != cohort:
-            continue
-        sibling_sections = _sections(sibling_text)
-        member_cut = {
-            "id": sibling_id,
-            "fields": {
-                key: value for key, value in sibling_data.items()
-                if key not in _DYNAMIC_FIELDS
-            },
-            "sections": {name: sibling_sections.get(name, "") for name in CUT_SECTIONS},
-        }
-        members.append(hashlib.sha256(_canonical_json(member_cut)).hexdigest())
-    return {
-        "version": ADMISSION_VERSION,
-        "adapter": adapter,
-        "ticket": ticket_id,
-        "fields": fields,
-        "sections": {name: sections.get(name, "") for name in CUT_SECTIONS},
-        "dependencies": dependencies,
-        "cohort_members": members,
-        "input_fingerprint": input_fingerprint,
-        "scope_fingerprint": scope_fingerprint,
-    }
-
-
 def _canonical_json(value) -> bytes:
     return canonical_json(value).encode("utf-8")
 
 
-def relevant_snapshot_ids(ticket_id: str, text: str, siblings: dict) -> list:
-    data = _parse_frontmatter(text)
-    cohort = str(data.get("cohort") or "")
-    ids = {ticket_id, *(str(value) for value in (data.get("depends_on") or []))}
-    ids.update(
-        sibling_id for sibling_id, sibling_text in siblings.items()
-        if cohort and str(_parse_frontmatter(sibling_text).get("cohort") or "") == cohort
-    )
-    return sorted(ids)
-
-
-def cohort_sealed(ticket_id: str, text: str, siblings: dict) -> bool:
-    """Whether this ticket's cut is frozen by the cohort it belongs to.
-
-    A `v1:root:` cohort is judged on the graded member alone: its members
-    run on a rolling frontier while the decomposer is still cutting, and a
-    member nobody has taken up is reachable by nobody, since a running
-    sibling never depends on one -- an incomplete dependency is refused
-    admission. Its own state seals it, a lease's leftover claim included;
-    `v1:ticket:` and `v1:batch:` still seal on any other member.
-    """
-    data = _parse_frontmatter(text)
-    cohort = str(data.get("cohort") or "")
-    if not cohort:
-        return False
-    if cohort.startswith(_ROOT_COHORT_PREFIX):
-        return _taken_up(data)
-    for sibling_id, sibling_text in siblings.items():
-        if sibling_id == ticket_id:
-            continue
-        sibling = _parse_frontmatter(sibling_text)
-        if str(sibling.get("cohort") or "") == cohort and _taken_up(sibling):
-            return True
-    return False
-
-
 def _shared_grade(ticket_id: str, text: str, siblings: dict, context: dict,
                   data: dict, findings: list) -> tuple:
-    """The dependency, authority and lower-validator grade both versions run.
+    """The dependency, authority and lower-validator grade.
 
-    ``findings`` carries the version's own prefix in and is extended in
-    place, so a version keeps its findings without keeping a second copy of
-    this block.  Order never matters to a caller: ``_ordered`` sorts.  The
+    ``findings`` is extended in place. Order never matters to a caller:
+    ``_ordered`` sorts. The
     return is ``(adapter, dependencies, ordered, input_fp, scope_fp)``.
     """
 
@@ -342,40 +198,18 @@ def _shared_grade(ticket_id: str, text: str, siblings: dict, context: dict,
 
 
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
-    """Grade one exact snapshot and return ordered findings plus its receipt."""
+    """Grade one exact sealed snapshot and return its portable receipt."""
 
     context = dict(context or {})
     data = _parse_frontmatter(text)
-    if is_v2(data):
-        return _grade_v2_admission(ticket_id, text, siblings, context)
-    findings = []
-    cohort = str(data.get("cohort") or "").strip()
-    if not _COHORT_RE.fullmatch(cohort):
-        findings.append(finding("cohort-invalid", "cohort", "expected v1:<ticket|root|batch>:<id-segment>"))
-    adapter, _, ordered, input_fingerprint, scope_fingerprint = _shared_grade(ticket_id, text, siblings, context, data, findings)
-    receipt = ADMISSION_PENDING
-    if not ordered:
-        payload = _canonical_cut(ticket_id, text, siblings, adapter, input_fingerprint, scope_fingerprint)
-        receipt = f"v1:{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
-    return {
-        "adapter": adapter, "findings": ordered, "receipt": receipt,
-        "snapshot_ids": relevant_snapshot_ids(ticket_id, text, siblings),
-        "input_fingerprint": input_fingerprint, "scope_fingerprint": scope_fingerprint,
-    }
-
-
-def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict) -> dict:
-    """Grade the exact sealed v2 assignment without changing v1 semantics."""
-
     if __package__:
-        from .tickets_generations import GENERATION_RE, assignment_digest, v2_seal_findings
+        from .tickets_generations import GENERATION_RE, assignment_digest, seal_findings
     else:
         module = __import__("tickets_generations")
         GENERATION_RE = module.GENERATION_RE
         assignment_digest = module.assignment_digest
-        v2_seal_findings = module.v2_seal_findings
-    data = _parse_frontmatter(text)
-    findings = list(v2_seal_findings(ticket_id, text))
+        seal_findings = module.seal_findings
+    findings = list(seal_findings(ticket_id, text))
     sealed_record = None
     runs_root = context.get("runs_root")
     run = str(data.get("run") or context.get("run") or "")
@@ -411,10 +245,10 @@ def _grade_v2_admission(ticket_id: str, text: str, siblings: dict, context: dict
             if seals.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed run state does not bind this assignment digest"))
     adapter, dependencies, ordered, input_fingerprint, scope_fingerprint = _shared_grade(ticket_id, text, siblings, context, data, findings)
-    receipt = ADMISSION_V2_PENDING
+    receipt = ADMISSION_PENDING
     if not ordered:
         payload = {"assignment": assignment_digest(ticket_id, text), "sealed_state": sealed_record}
-        receipt = f"v2:{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
+        receipt = f"{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
     return {
         "adapter": adapter, "findings": ordered, "receipt": receipt,
         "snapshot_ids": sorted({ticket_id, *dependencies}),
@@ -501,9 +335,8 @@ def grade_result(ticket_id: str, text: str, siblings: dict, context=None) -> dic
 
 
 __all__ = (
-    "ADMISSION_PENDING", "ADMISSION_V2_PENDING", "ADMISSION_VERSION", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
+    "ADMISSION_PENDING", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
     "PLAIN_ADAPTER", "VCS_ACTION_TOKENS", "TDD_FORBIDDEN_ACTIONS",
-    "ticket_cohort", "root_cohort", "batch_cohort", "adapter_id", "is_v1", "is_v2",
-    "is_receipt", "valid_cohort", "finding", "authority_findings", "relevant_snapshot_ids",
-    "cohort_sealed", "grade_admission", "grade_result",
+    "adapter_id", "is_receipt", "finding", "authority_findings",
+    "grade_admission", "grade_result",
 )

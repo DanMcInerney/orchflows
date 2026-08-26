@@ -50,7 +50,7 @@ Add `double(n)`.
 
 ## Fixed inputs
 
-None.
+- input: {{"name":"none","type":"literal","value":null}}
 
 ## Completion test
 
@@ -167,7 +167,7 @@ claimed_at:
 """
 
 
-def ceiling_ticket(total, inputs="None.", executor="orch-investigate", ticket_id="T1"):
+def ceiling_ticket(total, inputs='- input: {"name":"none","type":"literal","value":null}', executor="orch-investigate", ticket_id="T1"):
     """One ticket whose instruction is exactly ``total`` words.
 
     The objective takes whatever the excluded actions, the criterion and the
@@ -231,7 +231,7 @@ bound: 30m
 
 ## Fixed inputs
 
-None.
+- input: {{"name":"none","type":"literal","value":null}}
 
 ## Completion test
 

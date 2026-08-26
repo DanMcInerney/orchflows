@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 if __package__:
-    from .tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
+    from .tickets_admission import VCS_ACTION_TOKENS, grade_result
     from .tickets_commands import LINT_USAGE
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, effective_write_scope, instruction_words, parse_canonical_json
@@ -28,7 +28,7 @@ if __package__:
     from .tickets_scope import path_covers
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root, _write_text_atomically
 else:
-    from tickets_admission import VCS_ACTION_TOKENS, cohort_sealed, grade_result
+    from tickets_admission import VCS_ACTION_TOKENS, grade_result
     from tickets_commands import LINT_USAGE
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import GATE_ID_MARKER, INSTRUCTION_BUDGET, ORACLE_RE, ROOT_EXECUTOR, _criteria, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _whole_suite, canonical_json, effective_write_scope, instruction_words, parse_canonical_json
@@ -390,7 +390,7 @@ def _rewritable(text: str, path: Path, ticket_id: str = '', siblings=None):
 
     Refuses exactly where ``amend`` refuses a cut-time rewrite, because this
     is one: a claim, a status outside ``AMENDABLE_STATUSES``, an immutable
-    ``checked_by``, a sealed cohort, and the v2 ``assignment_seal`` computed
+    ``checked_by``, and the ``assignment_seal`` computed
     over the very authority fields ``--fix`` writes.
     """
     data = _parse_frontmatter(text)
@@ -403,8 +403,6 @@ def _rewritable(text: str, path: Path, ticket_id: str = '', siblings=None):
         return {'error': f'{path} has an immutable checked_by cut reader: --fix refuses the cut-time rewrite `amend` refuses here', 'exit_code': 2}
     if str(data.get('assignment_seal') or '').strip():
         return {'error': f'{path} carries an assignment_seal: --fix writes the authority fields the seal is computed over, and cannot reseal them', 'exit_code': 2}
-    if cohort_sealed(str(ticket_id or data.get('id') or ''), text, dict(siblings or {})):
-        return {'error': f'{path} belongs to a sealed cohort: --fix refuses the cut-time rewrite `amend` refuses here', 'exit_code': 2}
     return None
 
 

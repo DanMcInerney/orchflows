@@ -271,12 +271,6 @@ class ReviewBundleContractTest(unittest.TestCase):
             for token in tokens:
                 self.assertIn(token, entry, f"{term} omits {token!r}")
 
-    def test_migration_preserves_legacy_and_already_sealed_v2_history(self):
-        text = read_clause_flat("rules/topology.md", 11)
-        for token in ("additive opt-in", "ordered lens bundle", "v0", "v1",
-                      "already sealed", "claimed or terminal v2", "unchanged"):
-            self.assertIn(token, text, f"topology.md §11 omits {token!r}")
-
     def test_architecture_names_the_runtime_owner_without_moving_t0_shape(self):
         text = read_at_flat("ARCHITECTURE.md")
         for token in ("tickets_dispatch_gate.py", "gate-only cut",
@@ -349,7 +343,7 @@ class TestSkillDescriptions(unittest.TestCase):
             )
 
 
-class V2LifecycleRuleContractTest(unittest.TestCase):
+class LifecycleRuleContractTest(unittest.TestCase):
     """Caller authority, sealed assignment, and amendment ownership."""
 
     def vocabulary_entry(self, term):
@@ -360,7 +354,7 @@ class V2LifecycleRuleContractTest(unittest.TestCase):
         )
         return flat.split(term, 1)[1].split(" - **", 1)[0]
 
-    def test_vocabulary_owns_the_v2_lifecycle_terms(self):
+    def test_vocabulary_owns_the_lifecycle_terms(self):
         expected = {
             "**semantic root**": (
                 "executable delivery contract", "caller", "deterministic",

@@ -110,14 +110,7 @@ def render_inputs(body, values, dependencies, pack):
                 return (None, f"Fixed input template record {position} is invalid JSON: {error}")
             record = replace_placeholders(record, values)
         else:
-            prose = " ".join(
-                line.strip().removeprefix("- ").strip() for line in group
-            ).strip()
-            name = "none" if prose == "None." else f"legacy-input-{position}"
-            record = {
-                "name": name, "type": "literal",
-                "value": None if prose == "None." else replace_placeholders(prose, values),
-            }
+            return (None, f"Fixed input template record {position} must be one canonical '- input: <json>' line")
         name = record.get("name") if isinstance(record, dict) else None
         variant = record.get("type") if isinstance(record, dict) else None
         expected = ({"name", "type", "value"} if variant == "literal" else

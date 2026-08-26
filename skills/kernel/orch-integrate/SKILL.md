@@ -35,14 +35,13 @@ An accepted defect set of `[]` from every critique feeding
 status, without dispatch. Accepted non-blocking findings go to the run's
 improvement or successor candidates, never that repair.
 
-For v2, validate exactly one
+Validate exactly one
 `- amendment-request: <canonical JSON record>` in a parked worker's Handoff,
 including all fields required by [delegation.md](../../../rules/delegation.md).
 Route it once per dispatch; neither worker nor join edits its parent. The
 caller records `continue`, `amend-and-reseal`, `recut-remaining`, or
 `successor-or-new-root`; resume only from the resulting sealed generation or
-unchanged packet. The absence of v2 fields means v1; old free-form Handoffs and
-claimed or terminal v1 history retain their path.
+unchanged packet.
 
 Never: trust out-of-scope output, rerun covered oracles, or repair here.
 

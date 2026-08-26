@@ -166,33 +166,5 @@ class MigrateStateFacadeCompatibilityTest(unittest.TestCase):
         )
 
 
-class V2ProducerMigrationTest(unittest.TestCase):
-    """New cut producers opt in while dispatch and legacy paths stay exact."""
-
-    def test_v2_cut_producers_and_consumers_share_one_sealed_generation_contract(self):
-        from scripts.tickets_dispatch import _dispatch
-        from scripts.tickets_format import _parse_frontmatter
-        from tests.test_tickets_issue_cases.generation_lifecycle import snapshot
-
-        with tempfile.TemporaryDirectory() as directory:
-            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
-                run_dir = Path(directory) / "tickets" / "run"
-                run_dir.mkdir(parents=True)
-                for ticket_id, text in snapshot().items():
-                    (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
-                validation = _dispatch(["draft-validate", "run", "00-root"])
-                cut = validation["draft_validation"]["cut_generation"]
-                self.assertNotIn("error", _dispatch(["seal", "run", "00-root", "--cut-generation", cut]))
-                for ticket_id in ("00-root", "00-root.01"):
-                    data = _parse_frontmatter((run_dir / f"{ticket_id}.md").read_text(encoding="utf-8"))
-                    self.assertEqual(cut, data["cut_generation"])
-                    self.assertTrue(data["assignment_seal"].startswith("sha256:"))
-                ready = _dispatch(["ready", "--run", "run"])
-                self.assertIn("00-root.01", {item["id"] for item in ready["ready"]})
-
-                legacy = snapshot()["00-root.01"].replace("admission: v2:pending", "admission: v1:pending").replace("ownership_regions: []\n", "")
-                self.assertFalse(tickets.is_v2(_parse_frontmatter(legacy)))
-
-
 if __name__ == "__main__":
     unittest.main()

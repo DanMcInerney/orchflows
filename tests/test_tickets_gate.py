@@ -4,8 +4,8 @@ A gate is the last door a delivery passes before terminal, so a stub that
 lost the root's isolation, exclusions or fixed inputs would grade the work
 with less authority than the work itself was granted. These cases pin the
 three halves of that: the authority is inherited byte-for-byte, only
-gate-specific records are added beside it, and each stub issues in its own
-cohort rather than the root's.
+gate-specific records are added beside it, and each stub inherits the root
+generation until the completed graph is sealed.
 
 The sink idiom (a temporary ``ORCHFLOWS_STATE_HOME``) is restated here
 rather than imported, the same convention `tests/test_tickets_view.py`
@@ -55,7 +55,8 @@ ROOT_TICKET = """---
 id: R
 run: testrun
 status: claimed
-cohort: v1:root:R
+admission: pending
+root_generation: root:R:1:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 executor: orch-decompose
 pack: orch-code-pack
 independence: gate
@@ -96,7 +97,8 @@ UNIT_TICKET = """---
 id: {tid}
 run: testrun
 status: complete
-cohort: v1:root:R
+admission: pending
+root_generation: root:R:1:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 executor: orch-tdd
 pack: orch-code-pack
 independence: checker
@@ -393,59 +395,6 @@ class GateAddsOnlyItsOwnRecordsTest(unittest.TestCase):
                     self.assertEqual(
                         "a" * 40, baselines[0]["identity"]["revision"]
                     )
-
-
-class GateStubsIssueInTheirOwnCohortTest(unittest.TestCase):
-    """A gate stub holds a broad write grant and the root holds one too.
-
-    Under same-cohort sole-owner closure those two collide, and the escape
-    was a hand edit moving a stub out of the root's cohort. Each stub is
-    issued in its own cohort instead, so the collision never forms.
-    """
-
-    def test_each_stub_names_its_own_ticket_cohort(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            run_dir = make_run(use_sink(Path(tmp)), root_text())
-            payload = gate()
-            self.assertNotIn("error", payload)
-            for path in payload["gate"]["paths"]:
-                stub_id = Path(path).stem
-                cohort = tickets_mod._parse_frontmatter(
-                    Path(path).read_text(encoding="utf-8")
-                ).get("cohort")
-                with self.subTest(stub=stub_id):
-                    self.assertEqual(f"v1:ticket:{stub_id}", cohort)
-
-    def test_no_stub_sits_in_the_roots_cohort(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            run_dir = make_run(use_sink(Path(tmp)), root_text())
-            payload = gate()
-            self.assertNotIn("error", payload)
-            root_cohort = tickets_mod._parse_frontmatter(
-                (run_dir / "R.md").read_text(encoding="utf-8")
-            ).get("cohort")
-            self.assertEqual("v1:root:R", root_cohort)
-            for path in payload["gate"]["paths"]:
-                with self.subTest(stub=Path(path).stem):
-                    self.assertNotEqual(
-                        root_cohort,
-                        tickets_mod._parse_frontmatter(
-                            Path(path).read_text(encoding="utf-8")
-                        ).get("cohort"),
-                    )
-
-    def test_the_three_stubs_do_not_share_one_cohort_with_each_other(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            make_run(use_sink(Path(tmp)), root_text())
-            payload = gate()
-            self.assertNotIn("error", payload)
-            cohorts = [
-                tickets_mod._parse_frontmatter(
-                    Path(path).read_text(encoding="utf-8")
-                ).get("cohort")
-                for path in payload["gate"]["paths"]
-            ]
-            self.assertEqual(len(cohorts), len(set(cohorts)))
 
 
 class GateGradesWhatItIsAboutToWriteTest(unittest.TestCase):

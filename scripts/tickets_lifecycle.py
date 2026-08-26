@@ -16,10 +16,10 @@ if __package__:
 else:
     from tickets_worklog import _run_goal, _run_tickets
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, grade_result, is_receipt, is_v1, is_v2
+    from .tickets_admission import ADMISSION_PENDING, grade_result, is_receipt
     from .tickets_context import graded_admission, run_snapshot
 else:
-    from tickets_admission import ADMISSION_PENDING, grade_result, is_receipt, is_v1, is_v2
+    from tickets_admission import ADMISSION_PENDING, grade_result, is_receipt
     from tickets_context import graded_admission, run_snapshot
 if __package__:
     from .tickets_packet import _claim_is_stale
@@ -72,7 +72,7 @@ def _admit_ready_cas(run: str, ticket_id: str, prior_text: str, snapshot: dict, 
     try:
         with _run_lock(run):
             if not _snapshot_matches(run_dir, snapshot, grade.get('snapshot_ids') or [ticket_id]):
-                return {'error': 'ticket, dependencies, or cohort changed since admission grade; lost the ready race'}
+                return {'error': 'ticket or dependencies changed since admission grade; lost the ready race'}
             updated = _set_frontmatter_field(prior_text, 'admission', grade['receipt'])
             updated = _set_frontmatter_field(updated, 'status', 'ready')
             _write_text_atomically(ticket_path, updated)
@@ -94,34 +94,9 @@ def _cmd_list(rest):
             items.append(loaded.get('summary') or loaded)
     return {'tickets': items}
 def _unchecked_cut(ticket_id: str, tickets: dict) -> str:
-    """The root of this item's cut while that cut is still unchecked.
-
-    A cut is checked before its first unit is dispatched, and `ready` is
-    the step that makes a dispatch possible -- so this is where the order
-    is kept. After it, the cut checker's own corrections are gone: `amend`
-    and `recut` are refused once an item leaves the amendable statuses,
-    and `scripts/tickets_packet.py` turns the cut-checker packet away
-    outright with nothing left for that child to correct. Enforcing it
-    there alone reported the loss; enforcing it here prevents it.
-
-    Held items are the root's own subtree only. An ad-hoc set has no root
-    and waits for nothing, and the root itself is never held -- its
-    `checked_by` is the very thing this waits for.
-
-    A v2 cut is never held here, because under v2 the same question has a
-    different answer: `draft-validate` and `seal` are what say a cut has
-    been graded whole, admission refuses an unsealed member outright, and
-    `checked_by` on a v2 root is the cut reader's bookkeeping beside that
-    seal rather than the gate in front of it. Holding both would put two
-    gates on one cut and stall every sealed run behind the older one.
-    """
-    root_id = str(ticket_id).split('.', 1)[0]
-    root = tickets.get(root_id)
-    if root_id == ticket_id or not isinstance(root, dict) or 'error' in root:
-        return ''
-    if _executor_of(root) != ROOT_EXECUTOR or is_v2(root):
-        return ''
-    return '' if str(root.get(CHECKED_BY_KEY) or '').strip() else root_id
+    """Sealed cut validation is the sole pre-dispatch cut check."""
+    del ticket_id, tickets
+    return ''
 
 
 def _cmd_ready(rest):
@@ -149,9 +124,8 @@ def _cmd_ready(rest):
             dangling = facts['dangling']
             ticket_id = str(data.get('id') or '')
             text = snapshot.get(ticket_id)
-            versioned = text is not None and (is_v1(_parse_frontmatter(text)) or is_v2(_parse_frontmatter(text)))
             status = data.get('status')
-            if dangling and not (versioned and status in ('pending', 'ready')):
+            if dangling and status not in ('pending', 'ready'):
                 skipped.append({'id': data['id'], 'reason': 'depends_on names no ticket in this run: ' + ', '.join((str(dep) for dep in dangling))})
                 continue
             if not facts['status_valid']:
@@ -162,10 +136,10 @@ def _cmd_ready(rest):
                 skipped.append({'id': ticket_id, 'reason': f"cut root '{unchecked}' carries no {CHECKED_BY_KEY}: a cut is checked before its first unit is dispatched, and readiness is what makes a dispatch possible. `check` the root first"})
                 continue
             deps_complete = facts['dependencies_complete']
-            if not deps_complete and not (versioned and status in ('pending', 'ready')):
+            if not deps_complete and status not in ('pending', 'ready'):
                 continue
             eligible = False
-            if versioned and status in ('pending', 'ready'):
+            if text is not None and status in ('pending', 'ready'):
                 if read_failures:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused: run snapshot is not closed', 'failures': read_failures})
                     continue
@@ -182,28 +156,12 @@ def _cmd_ready(rest):
                     data['summary']['status'] = 'ready'
                     data['summary']['admission'] = grade['receipt']
                 eligible = True
-            elif versioned and status == 'claimed':
+            elif text is not None and status == 'claimed':
                 stale, unreadable = _claim_is_stale(data['path'], text, data, now)
                 if stale:
-                    skipped.append({'id': ticket_id, 'reason': refusal('stale v1 claim', 'claim', 'claimed')})
+                    skipped.append({'id': ticket_id, 'reason': refusal('stale claim', 'claim', 'claimed')})
                 elif unreadable:
                     skipped.append({'id': ticket_id, 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
-            elif status == 'ready':
-                # Listing preserves the observable historical queue; claim is
-                # the admission boundary and refuses this v0 item until recut.
-                eligible = True
-            elif status == 'pending':
-                skipped.append({'id': ticket_id, 'reason': refusal('pending legacy ticket requires `recut` before v1 admission', 'recut', 'pending')})
-            elif status == 'claimed':
-                text, failure = _read_utf8(data['path'])
-                if failure is not None:
-                    skipped.append({'id': data['id'], 'reason': f"claimed, and unreadable at the moment its claim was graded: {failure['error']}"})
-                    continue
-                stale, unreadable = _claim_is_stale(data['path'], text, data, now)
-                if unreadable:
-                    skipped.append({'id': data['id'], 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
-                elif stale:
-                    skipped.append({'id': ticket_id, 'reason': refusal('stale legacy claim', 'recut', 'claimed')})
             if eligible:
                 ready_items.append(data['summary'])
     return {'ready': ready_items, 'skipped': skipped}
@@ -243,8 +201,8 @@ def _grant_under_run_lock(rest):
     status = str(data.get('status') or '').strip().strip('`').strip()
     if status not in GRANTABLE_STATUSES:
         return {'error': refusal(f"ticket is not claimed (status '{status}')", 'grant', status, note=f"A grant widens the authority of an item already being worked. Before a claim the cut owns the scope — re-place the ticket through `new --file` — and after a terminal status the verdict was already read against the authority the work was done under. ticket: {ticket_path}")}
-    if is_v2(data):
-        return {'error': 'a sealed v2 assignment cannot widen authority in place: suspend it and create a newly validated generation'}
+    if str(data.get('assignment_seal') or '').strip():
+        return {'error': 'a sealed assignment cannot widen authority in place: suspend it and create a newly validated generation'}
     original_scope = _scope_entries(data.get('write_scope'))
     new_paths = [
         entry for entry in entries
@@ -254,9 +212,9 @@ def _grant_under_run_lock(rest):
             for scope in original_scope if scope.strip()
         )
     ]
-    if is_v1(data) and 'mutations' in data and new_paths:
+    if 'mutations' in data and new_paths:
         sealed = sealed_after_release(data.get('id') or ticket_id, text, _run_snapshot(ticket_path.parent)[0])
-        return {'error': refusal('a v1 ticket carrying a planned mutation vector cannot widen operation authority from path-only grant input: ' + ', '.join(new_paths) + '; the widened operation needs an explicit mutation vector written at cut time', 'recut', status, note='Or suspend the item and let the join open a successor ticket.', sealed=sealed)}
+        return {'error': refusal('a ticket carrying a planned mutation vector cannot widen operation authority from path-only grant input: ' + ', '.join(new_paths) + '; the widened operation needs an explicit mutation vector written at cut time', 'recut', status, note='Or suspend the item and let the join open a successor ticket.', sealed=sealed)}
     granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
     for entry in entries:
         if entry not in granted:

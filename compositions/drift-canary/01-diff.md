@@ -19,10 +19,8 @@ frozen one is recorded where `orch-self-improve` reads it.
 
 ## Fixed inputs
 
-- 00-run's `## Result` — each item's result identity and the binding it
-  ran under.
-- {{canary_set}}'s `golden.json` — the oracle every verdict, disposition
-  and score card is read against.
+- input: {"identity":{"kind":"ticket-section","run":"{{run}}","section":"Result","ticket":"00-run"},"name":"canary-results","type":"identity"}
+- input: {"name":"canary-set","type":"literal","value":"{{canary_set}}"}
 
 ## Completion test
 

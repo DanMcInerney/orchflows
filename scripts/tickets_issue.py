@@ -4,22 +4,35 @@ from datetime import datetime, timezone
 if __package__:
     from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, successor_section_defects, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
-    from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
+    from .tickets_admission import ADMISSION_PENDING
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
-    from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
+    from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, refusal; from .tickets_emission import grade_run_emission
 else:
     from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, successor_section_defects, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
-    from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
+    from tickets_admission import ADMISSION_PENDING
     from tickets_input_producers import render_ticket_inputs
     from tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
-    from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from tickets_emission import grade_run_emission
+    from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, refusal; from tickets_emission import grade_run_emission
 AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
-def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
-def _invalidate_assignment(text): data = _parse_frontmatter(text); text = _set_frontmatter_field(text, 'admission', _pending_admission(data)); return _remove_frontmatter_field(text, 'assignment_seal') if is_v2(data) else text
-def _cohort_field(text, cohort): return _set_frontmatter_field(text, 'cohort', cohort) if cohort else _remove_frontmatter_field(text, 'cohort')
-NEW_USAGE = 'new <run> <id> --executor E [--sequence E[,E...]] --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
+def _pending_admission(data=None):
+    del data
+    return ADMISSION_PENDING
+def _invalidate_assignment(text):
+    data = _parse_frontmatter(text)
+    root_generation = str(data.get('root_generation') or '')
+    text = _set_frontmatter_field(text, 'admission', ADMISSION_PENDING)
+    for field in ('cut_generation', 'assignment_seal'):
+        text = _remove_frontmatter_field(text, field)
+    # A root assignment change opens a new root generation; a cut member
+    # retains the root identity it is being drafted under.
+    if root_generation.startswith(f'root:{data.get("id")}:'):
+        text = _remove_frontmatter_field(text, 'root_generation')
+    return text
+def _assignment_sealed(text):
+    return bool(str(_parse_frontmatter(text).get('assignment_seal') or '').strip())
+NEW_USAGE = 'new <run> <id> --executor E [--sequence E[,E...]] --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--return-fields TEXT] | new <run> [<id>] --file <path>'
 NEW_DEFAULT_BOUND = f'{DEFAULT_BOUND_MINUTES}m'
 NEW_DEFAULT_INPUTS = '- input: {"name":"none","type":"literal","value":null}'
 NEW_DEFAULT_RETURN_FIELDS = 'status; result (what changed, by identity); verification; feedback; risks'
@@ -74,7 +87,6 @@ def _cmd_new(rest):
     profile = _extract_flag(args, '--profile')
     independence = _extract_flag(args, '--independence')
     isolation = _extract_flag(args, '--isolation')
-    cohort = _extract_flag(args, '--cohort')
     return_fields = _extract_flag(args, '--return-fields')
     stray = next((arg for arg in args if arg.startswith('-')), None)
     if stray is not None:
@@ -85,7 +97,7 @@ def _cmd_new(rest):
             return {'error': f'--file places a ticket already written; it takes none of {supplied}. usage: {NEW_USAGE}'}
         if not 1 <= len(args) <= 2:
             return {'error': f'usage: {NEW_USAGE}'}
-        return _place_ticket(args[0], file_arg, args[1] if len(args) == 2 else None, cohort)
+        return _place_ticket(args[0], file_arg, args[1] if len(args) == 2 else None)
     if len(args) != 2:
         return {'error': f'usage: {NEW_USAGE}'}
     run, ticket_id = args
@@ -99,18 +111,19 @@ def _cmd_new(rest):
     for flag, value, allowed in (('--independence', independence, INDEPENDENCE_VALUES), ('--isolation', isolation, ISOLATION_VALUES)):
         if value is not None and value.strip() not in allowed:
             return {'error': f"{flag} '{value}' is not one of {list(allowed)} (contracts/work-item.md)"}
-    cohort = cohort or ticket_cohort(ticket_id)
-    if not valid_cohort(cohort):
-        return {'error': f"--cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     dependencies = _split_commas(depends_on)
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'cohort': cohort, 'executor': executor, 'sequence': _split_commas(sequence) or None, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'executor': executor, 'sequence': _split_commas(sequence) or None, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
     fields['admission'] = _pending_admission(fields)
-    sections = [('Objective', objective), ('Fixed inputs', '\n'.join((_input_record(item, position) for position, item in enumerate(inputs, start=1))) or NEW_DEFAULT_INPUTS), ('Completion test', '\n'.join((f'- {item}' for item in criteria))), ('Return fields', return_fields or NEW_DEFAULT_RETURN_FIELDS), ('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
+    try:
+        fixed_inputs = '\n'.join(_input_record(item, position) for position, item in enumerate(inputs, start=1)) or NEW_DEFAULT_INPUTS
+    except ValueError as error:
+        return {'error': str(error)}
+    sections = [('Objective', objective), ('Fixed inputs', fixed_inputs), ('Completion test', '\n'.join((f'- {item}' for item in criteria))), ('Return fields', return_fields or NEW_DEFAULT_RETURN_FIELDS), ('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
     text, input_error = render_ticket_inputs(_render_ticket(fields, sections), run)
     if input_error is not None:
         return {'error': input_error}
     return _issue_ticket(run, ticket_id, text)
-def _place_ticket(run: str, source: str, declared_id=None, cohort=None):
+def _place_ticket(run: str, source: str, declared_id=None):
     """``new --file``: one already-written ticket, validated and placed.
 
     ``declared_id`` is the id the caller stated on the line. The file's own
@@ -128,6 +141,8 @@ def _place_ticket(run: str, source: str, declared_id=None, cohort=None):
     ticket_id = data.get('id') if isinstance(data.get('id'), str) else None
     if not ticket_id:
         return {'error': f"ticket file {source} names no 'id' in its frontmatter"}
+    if 'admission' in data:
+        return {'error': f"ticket file {source} must omit the issue-time lifecycle field 'admission'"}
     invalid = _segment_error('ticket id', ticket_id)
     if invalid is not None:
         return invalid
@@ -136,14 +151,8 @@ def _place_ticket(run: str, source: str, declared_id=None, cohort=None):
     declared = data.get('run')
     if isinstance(declared, str) and declared.strip() and (declared.strip() != run):
         return {'error': f"ticket file {source} names run '{declared.strip()}', placed into run '{run}': one ticket belongs to one run"}
-    if cohort is not None and is_v2(data):
-        return {'error': f"a v2 ticket is frozen by its generation seal, not by a cohort: --cohort '{cohort}' names a v1 mechanism it does not have"}
-    cohort = '' if is_v2(data) else cohort or ticket_cohort(ticket_id)
-    if cohort and not valid_cohort(cohort):
-        return {'error': f"--cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     text = _set_frontmatter_field(text, 'status', 'pending')
-    text = _set_frontmatter_field(text, 'admission', _pending_admission(data))
-    text = _cohort_field(text, cohort)
+    text = _invalidate_assignment(text)
     text = _set_frontmatter_field(text, 'claimed_by', '')
     text = _set_frontmatter_field(text, 'claimed_at', '')
     text, input_error = render_ticket_inputs(text, run)
@@ -218,8 +227,8 @@ def _amend_under_run_lock(rest):
         return {'error': cut_refusal(f'ticket {run}/{ticket_id} {held}: its cut-time sections are frozen while an executor works against them (rules/verification.md §3)', 'amend', status, ticket_id, text, snapshot, note=CUT_QUEUE_NOTE)}
     if str(frontmatter.get('checked_by') or '').strip():
         return {'error': f"ticket {run}/{ticket_id} has an immutable checked_by cut reader: further cut-time amendment is refused"}
-    if cohort_sealed(ticket_id, text, snapshot):
-        return {'error': refusal(f'ticket {run}/{ticket_id} belongs to a sealed cohort', 'amend', status, note=CUT_QUEUE_NOTE, sealed=True)}
+    if _assignment_sealed(text):
+        return {'error': refusal(f'ticket {run}/{ticket_id} has a sealed assignment', 'amend', status, note=CUT_QUEUE_NOTE, sealed=True)}
     try:
         rendered = _write_section(text, canonical, body)
     except TicketFormatError as error:
@@ -230,11 +239,9 @@ def _amend_under_run_lock(rest):
     over = _ceiling_error(f'the amended ticket {run}/{ticket_id}', ticket_id, rendered)
     if over is not None:
         return over
-    cohort = '' if is_v2(frontmatter) else str(frontmatter.get('cohort') or '').strip() or ticket_cohort(ticket_id)
     rendered = _set_frontmatter_field(rendered, 'status', 'pending')
     rendered = _invalidate_assignment(rendered)
-    rendered = _cohort_field(rendered, cohort)
-    failure = _replace_and_invalidate(ticket_path.parent, snapshot, ticket_id, rendered, {cohort} - {''}, 'amend')
+    failure = _replace_and_invalidate(ticket_path.parent, snapshot, ticket_id, rendered, 'amend')
     if failure is not None:
         return failure
     return {'amend': {'run': run, 'id': ticket_id, 'section': canonical, 'path': str(ticket_path)}}
@@ -248,18 +255,14 @@ def _exact_run_snapshot(run_dir):
         texts[path.stem] = text
     return (texts, None)
 
-def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, door='amend'):
-    """Write one replacement and invalidate every old/new cohort member."""
+def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, door='amend'):
+    """Write one replacement and invalidate its unsealed assignment."""
     if (refusal := grade_run_emission(door, run_dir.name, run_dir, {ticket_id: replacement}, repairs=True)) is not None: return refusal
     updates = {}
     for member_id, prior in snapshot.items():
-        data = _parse_frontmatter(prior)
-        if member_id != ticket_id and str(data.get('cohort') or '') not in cohorts:
+        if member_id != ticket_id:
             continue
-        source = replacement if member_id == ticket_id else prior
-        status = str(data.get('status') or '')
-        if member_id != ticket_id and status not in AMENDABLE_STATUSES:
-            continue
+        source = replacement
         source = _set_frontmatter_field(source, 'status', 'pending')
         source = _invalidate_assignment(source)
         updates[member_id] = source
@@ -274,7 +277,7 @@ def _replace_and_invalidate(run_dir, snapshot, ticket_id, replacement, cohorts, 
                 _write_text_atomically(run_dir / f'{member_id}.md', snapshot[member_id])
             except OSError:
                 pass
-        return {'error': f'unwritable ticket cohort: {error}'}
+        return {'error': f'unwritable ticket: {error}'}
     return None
 
 def _cmd_recut(rest):
@@ -315,23 +318,18 @@ def _recut_under_run_lock(rest):
         return {'error': cut_refusal(f"ticket {run}/{ticket_id} is '{status}'", 'recut', status, ticket_id, current, snapshot)}
     if str(current_data.get('checked_by') or '').strip():
         return {'error': f"ticket {run}/{ticket_id} has an immutable checked_by cut reader: recut is refused"}
-    if cohort_sealed(ticket_id, current, snapshot):
-        return {'error': refusal(f'ticket {run}/{ticket_id} belongs to a sealed cohort', 'recut', status, sealed=True)}
+    if _assignment_sealed(current):
+        return {'error': refusal(f'ticket {run}/{ticket_id} has a sealed assignment', 'recut', status, sealed=True)}
     candidate, failure = _read_utf8(candidate_path, 'recut candidate')
     if failure is not None:
         return failure
     candidate_data = _parse_frontmatter(candidate)
     if str(candidate_data.get('id') or '').strip() != ticket_id or str(candidate_data.get('run') or '').strip() != run:
         return {'error': f'recut candidate must preserve id {ticket_id!r} and run {run!r}'}
-    old_cohort = str(current_data.get('cohort') or '').strip()
-    new_cohort = '' if is_v2(candidate_data) else str(candidate_data.get('cohort') or '').strip() or old_cohort or ticket_cohort(ticket_id)
-    if new_cohort and not valid_cohort(new_cohort):
-        return {'error': f"candidate cohort '{new_cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     for key in ('checked_by', 'workspace_branch', 'workspace_baseline', 'granted_scope', 'granted_by', 'granted_at'):
         candidate = _remove_frontmatter_field(candidate, key)
     candidate = _set_frontmatter_field(candidate, 'status', 'pending')
-    candidate = _set_frontmatter_field(candidate, 'admission', _pending_admission(candidate_data))
-    candidate = _cohort_field(candidate, new_cohort)
+    candidate = _invalidate_assignment(candidate)
     candidate = _set_frontmatter_field(candidate, 'claimed_by', '')
     candidate = _set_frontmatter_field(candidate, 'claimed_at', '')
     candidate, input_error = render_ticket_inputs(candidate, run)
@@ -347,10 +345,10 @@ def _recut_under_run_lock(rest):
     over = _ceiling_error(f'the recut ticket {run}/{ticket_id}', ticket_id, candidate)
     if over is not None:
         return over
-    failure = _replace_and_invalidate(target.parent, snapshot, ticket_id, candidate, {value for value in (old_cohort, new_cohort) if value}, 'recut')
+    failure = _replace_and_invalidate(target.parent, snapshot, ticket_id, candidate, 'recut')
     if failure is not None:
         return failure
-    return {'recut': {'run': run, 'id': ticket_id, 'path': str(target), 'cohort': new_cohort or None, 'status': 'pending', 'admission': _pending_admission(candidate_data)}}
+    return {'recut': {'run': run, 'id': ticket_id, 'path': str(target), 'status': 'pending', 'admission': ADMISSION_PENDING}}
 def _issue_defects(text: str, *, issued: bool=False) -> list:
     """Contract and pre-dispatch defects in one ticket being issued.
 

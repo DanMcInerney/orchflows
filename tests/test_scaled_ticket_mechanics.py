@@ -89,7 +89,7 @@ class OrdinaryNewAuthoringTest(unittest.TestCase):
                 ],
                 data["write_scope"],
             )
-            self.assertEqual("v1:pending", data["admission"])
+            self.assertEqual("pending", data["admission"])
             self.assertEqual("pending", data["status"])
             self.assertIn(criterion, text)
 

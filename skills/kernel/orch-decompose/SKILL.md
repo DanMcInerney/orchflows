@@ -10,12 +10,10 @@ pack slicing and oracle_policy. Reject missing parts by name.
 Goal: minimize critical path; every item an atom under
 [topology](../../../rules/topology.md) §3.
 
-Emit [work items](../../../contracts/work-item.md) as `<root>.NN` by frozen root version:
-
-| root version | ticket source | `root_generation` | `cohort` | issue command |
-| --- | --- | --- | --- | --- |
-| `mandatory-v2` | candidate file | exact inherited | absent | `tickets.py new <run> --file <candidate>` |
-| `legacy-v1` | arguments | absent | `v1:root:<root>` | `tickets.py new <run> <id> --cohort v1:root:<root>` |
+Emit [work items](../../../contracts/work-item.md) as `<root>.NN` from candidate
+files through `tickets.py new <run> --file <candidate>`. Each candidate carries
+the root's exact inherited `root_generation`; the completed cut gets one new
+validated cut generation and assignment seal.
 
 Carry exact parameters as canonical JSON `--input`, the stamped workspace cell, and `mutations` via
 `--mutation`. Give each item an observable objective, write scope (siblings
@@ -27,15 +25,13 @@ named §4 assembly. Declared `isolation: required`, a cut takes no workspace.
 
 Run `cutcheck.py` on the cut revision; amend defects and re-run to 0. The
 [cut lens](references/cut-lens.md) judges advisories and undecidable matters.
-Then write one composite gate through `tickets.py gate`: one critique per
-unique lens, feeding one repair and one verification over run scope.
-
 Map every acceptance criterion to an item, the gate, or uncovered
 remainder at `<state-root>/runs/<run>/<root>.coverage.md`.
 
-For mandatory-v2, follow [topology](../../../rules/topology.md) §§8–§11 through
-`tickets.py draft-validate` and `tickets.py seal`. Absent v2 fields follow the
-legacy-v1 path unchanged.
+Then write one composite gate through `tickets.py gate`: one critique per
+unique lens, feeding one repair and one verification over run scope. Follow
+[topology](../../../rules/topology.md) §§8–§10 through `tickets.py
+draft-validate` and `tickets.py seal` over the complete cut.
 
 Never: edit the root ticket's frozen statement.
 

@@ -17,11 +17,11 @@ from pathlib import Path
 if __package__:
     from . import tickets_store as _store
     from .tickets_format import _parse_frontmatter, _scope_entries, adapter_id as _adapter_of, parse_mutations
-    from .tickets_inputs import TERMINAL, is_admitted, parse_input_records
+    from .tickets_inputs import TERMINAL, parse_input_records
 else:  # flat installed script family
     import tickets_store as _store
     from tickets_format import _parse_frontmatter, _scope_entries, adapter_id as _adapter_of, parse_mutations
-    from tickets_inputs import TERMINAL, is_admitted, parse_input_records
+    from tickets_inputs import TERMINAL, parse_input_records
 
 
 MANIFEST_PATH = ".orchflows/scope-edges.json"
@@ -159,13 +159,10 @@ def _plan_covers(plan, required):
 def unplanned_mutations(data, actual):
     """Actual ``(operation, path)`` rows outside one admitted plan.
 
-    V0 retains its path-only grant at the join.  Admission owns malformed or
-    absent plans in either graded version; if one nevertheless reaches the
+    Admission owns malformed or absent plans; if one nevertheless reaches the
     join, no actual mutation is silently authorized.
     """
 
-    if not is_admitted(data):
-        return []
     parsed, defects = parse_mutations(data)
     plans = [(item["operation"], item["path"]) for item in parsed]
     if "mutations" not in data or defects:
@@ -237,30 +234,17 @@ def _cycle_nodes(graph):
     return sorted(cycles)
 
 
-ROOT_COHORT_PREFIX = "v1:root:"
-ROOT_GENERATION_SUBJECT_RE = re.compile(r"^v2:root:([A-Za-z0-9][A-Za-z0-9._-]*):")
+ROOT_GENERATION_SUBJECT_RE = re.compile(r"^root:([A-Za-z0-9][A-Za-z0-9._-]*):")
 GATE_INFIX = ".gate."
-V2_FIELDS = ("root_generation", "cut_generation", "ownership_regions", "assignment_seal")
 
 
 def _closure_key(ticket_id, data):
     """The cut whose mutation plans this ticket is graded against.
 
-    A stamped cohort names that cut and keeps naming it, so every grouping a
-    cohort ever decided is exactly what it was.  A v2 ticket stamps none --
-    v2 freezes a cut by its sealed generation, not by a cohort string -- and
-    reading the absent field as ``""`` made every cohortless v2 ticket in a
-    run one closure, so a lawful ticket inherited its siblings' mutation
-    findings and was refused admission for another ticket's defect.  A sealed
-    v2 ticket is therefore grouped by ``cut_generation``; one not yet sealed
-    names no cut at all, so its closure is itself.  The version test repeats
-    ``tickets_admission.is_v2`` rather than importing it because admission
-    composes this module, and the dependency runs one way.
+    A sealed ticket is grouped by ``cut_generation``; one not yet sealed names
+    no cut at all, so its closure is itself.
     """
 
-    cohort = str(data.get("cohort") or "")
-    if cohort or not any(key in data for key in V2_FIELDS):
-        return f"cohort:{cohort}"
     generation = str(data.get("cut_generation") or "")
     return f"cut:{generation}" if generation else f"unsealed:{ticket_id}"
 
@@ -276,16 +260,13 @@ def _companion_owners(data, members):
     so a root graded alone still owns what it plans.  That reinstatement is
     reported beside the set: only there is an owner pair the umbrella itself.
 
-    A v1 decomposition stamps every member with the root's cohort; a sealed v2
-    cut stamps none and freezes the root in ``root_generation`` instead, so
-    reading the cohort alone left a v2 root unnamed and eligible, making both
-    misreadings above.  Only its subject is read here -- whether the identity
-    is well formed is ``tickets_generations``'s -- and never split by position.
+    The sealed cut freezes its root in ``root_generation``. Only its subject is
+    read here -- whether the identity is well formed is
+    ``tickets_generations``'s -- and never split by position.
     """
 
-    cohort = str(data.get("cohort") or "")
     sealed = ROOT_GENERATION_SUBJECT_RE.match(str(data.get("root_generation") or ""))
-    root_id = cohort[len(ROOT_COHORT_PREFIX):] if cohort.startswith(ROOT_COHORT_PREFIX) else (sealed.group(1) if sealed else "")
+    root_id = sealed.group(1) if sealed else ""
     units = {
         member_id for member_id in members
         if member_id != root_id and GATE_INFIX not in member_id
@@ -326,7 +307,7 @@ def grade_closure(ticket_id, text, siblings, edges):
             # or research member charged every git member a law its pack never
             # imposed, at a door that refuses rather than defers.
             if _adapter_of(data.get("pack")) in GIT_ADAPTERS:
-                findings.append(_finding("mutation-plan-missing", f"{member_id}.mutations", "v1 Git/design ticket requires an explicit list"))
+                findings.append(_finding("mutation-plan-missing", f"{member_id}.mutations", "Git/design ticket requires an explicit list"))
             plans[member_id] = ()
             continue
         parsed, defects = parse_mutations(data)
@@ -484,8 +465,6 @@ def grade_scope(*, ticket_id, text, siblings, adapter_id, context=None):
         "findings": [], "fingerprint": f"scope:direct-only:{adapter_id}",
         "mode": "direct-only", "authorized_scope": _scope_entries(data.get("write_scope")),
     }
-    if not is_admitted(data):
-        return direct
     if adapter_id not in GIT_ADAPTERS:
         return direct
 

@@ -1,4 +1,4 @@
-"""The v2 gate-only route has one decomposition dispatch and no padding.
+"""The gate-only route has one decomposition dispatch and no padding.
 
 The production fixture crosses the real generation, claim, packet, result,
 status, and ready doors.  The small trace validator is also exercised against
@@ -32,7 +32,7 @@ ROOT_TICKET = """---
 id: 00-root
 run: gate-only
 status: pending
-admission: v2:pending
+admission: pending
 executor: orch-decompose
 pack: orch-code-pack
 independence: gate

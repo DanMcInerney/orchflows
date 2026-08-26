@@ -55,8 +55,8 @@ STUB = """---
 id: {tid}
 run: r
 status: pending
-admission: v1:pending
-cohort: v1:ticket:{tid}
+admission: pending
+root_generation: root:{root}:1:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 executor: {ex}
 {packline}independence: {ind}
 depends_on: []
@@ -130,7 +130,7 @@ def cut(cases):
         for tid, executor, pack, independence in cases:
             run_dir.joinpath(f"{tid}.md").write_text(STUB.format(
                 tid=tid, ex=executor, packline=f"pack: {pack}\n" if pack else "",
-                ind=independence, head=head), encoding="utf-8")
+                ind=independence, head=head, root="00-root"), encoding="utf-8")
         yield repo, run_dir
 
 

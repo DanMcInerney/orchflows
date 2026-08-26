@@ -33,10 +33,8 @@ if __package__:
 else:
     from tickets_worklog import _run_tickets
 if __package__:
-    from .tickets_admission import is_v1, is_v2
     from .tickets_context import graded_admission, run_snapshot
 else:
-    from tickets_admission import is_v1, is_v2
     from tickets_context import graded_admission, run_snapshot
 if __package__:
     from .tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
@@ -345,20 +343,16 @@ def _packet_under_run_lock(rest):
     status = str(loaded.get('status') or '').strip().strip('`').strip()
     if status not in CHECKABLE_STATUSES:
         return {'error': f"ticket is not claimed (status '{status}'): packet emission requires an admitted claim"}
-    # A claim taken up before the admission boundary existed carries no
-    # receipt to name, and its dispatch says exactly that.
-    admission = 'legacy-unadmitted'
-    if is_v1(loaded) or is_v2(loaded):
-        snapshot, sibling_failures = run_snapshot(ticket_path.parent)
-        if sibling_failures:
-            return sibling_failures[0][1]
-        grade = graded_admission(ticket_id, text, snapshot, run)
-        if grade['findings']:
-            return {'error': 'packet admission grade failed', 'findings': grade['findings']}
-        stored = str(loaded.get('admission') or '')
-        if stored != grade['receipt']:
-            return {'error': f'ticket has no current admission receipt: stored {stored or "<missing>"}, current {grade["receipt"]}'}
-        admission = stored
+    snapshot, sibling_failures = run_snapshot(ticket_path.parent)
+    if sibling_failures:
+        return sibling_failures[0][1]
+    grade = graded_admission(ticket_id, text, snapshot, run)
+    if grade['findings']:
+        return {'error': 'packet admission grade failed', 'findings': grade['findings']}
+    stored = str(loaded.get('admission') or '')
+    if stored != grade['receipt']:
+        return {'error': f'ticket has no current admission receipt: stored {stored or "<missing>"}, current {grade["receipt"]}'}
+    admission = stored
     sections = _sections(text)
     executor = (loaded.get('executor') or '').strip().strip('`')
     missing = []

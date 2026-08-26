@@ -11,9 +11,6 @@ WRITE_SCOPE_KEY = "write_scope"
 UNGRADABLE_IN_SCOPE = (" ", "\t", "(", ")")
 SPACING = (" ", "\t")
 CONTRACT = "contracts/work-item.md"
-PLANLESS_GRANT_STATUSES = frozenset({
-    "claimed", "suspended", "complete", "blocked", "stalled", "limited", "failed",
-})
 
 
 def _exists_as_path(entry: str, root) -> bool:
@@ -131,11 +128,7 @@ def _actual_mutations(name_status: str) -> list:
 
 
 def _operation_plan_required(data) -> bool:
-    """Whether the join grades operations in addition to path authority.
+    """Whether the join grades operations in addition to path authority."""
 
-    A plan, once declared, is always exact.  The migration exception is only
-    an already claimed or terminal ticket with no plan; pending and ready v1
-    tickets must be re-cut before admission rather than grandfathered here.
-    """
-
-    return "mutations" in data or str(data.get("status") or "") not in PLANLESS_GRANT_STATUSES
+    del data
+    return True

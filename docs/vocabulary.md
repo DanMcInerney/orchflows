@@ -112,15 +112,15 @@ that needs a different meaning needs a different word.
   scope, oracles reading nothing a sibling writes, an instruction
   inside the stub ceiling. Law, and what lies either side of it, in
   `rules/topology.md` §3.
-- **root ticket** — a ticket whose executor is `orch-decompose`; its
-  subtree is any `<id>.NN` unit tickets plus `<id>.gate.*`, checked before
-  its first unit is promoted; it completes when
+- **root ticket** — the ticket named by a `root_generation`, directly bound to
+  any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
+  any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
   `<id>.gate.verify` completes. A successor root lives in a successor run
   opened after this root's result identity resolves and cites that identity
   among its own fixed inputs; the predecessor run's durable `successors.md`
   names the planned root until `orch-spec` materializes it on the frontier's
   completion trigger.
-- **gate-only cut** — a v2 root cut with zero unit tickets because its
+- **gate-only cut** — a decomposed root cut with zero unit tickets because its
   coverage map assigns every root criterion to the composite gate; it is
   not padding, per `rules/topology.md` §3.
 - **template** — a directory of ticket stubs plus its `template.md`

@@ -8,11 +8,10 @@ around every refusal `new` applies to the same bytes. This writes it
 instead, and writes it through `new --file`, so the successor is admitted
 exactly as an issued ticket is.
 
-What is dropped is lifecycle: a claim, a checker's pass, a workspace, the
-v2 generation and seal fields, and the cohort, which names a set of items
-cut together in one run and cannot follow one member into another. What is
+What is dropped is lifecycle: admission, a claim, a checker's pass, a
+workspace, and the generation and seal fields. What is
 kept is the cut. What is added is one fixed input naming the predecessor's
-cited section by identity and digest, so the successor's reader can reach
+cited Context by identity and digest, so the successor's reader can reach
 what the blocked item actually said without the run that said it being
 open. The source is never written.
 """
@@ -21,18 +20,16 @@ import hashlib
 import tempfile
 from pathlib import Path
 if __package__:
-    from .tickets_admission import batch_cohort, root_cohort, ticket_cohort, valid_cohort
     from .tickets_commands import REISSUE_USAGE
-    from .tickets_transitions import LEASE_FIELDS, stamp
+    from .tickets_transitions import LEASE_FIELDS
     from .tickets_format import EXECUTOR_SECTIONS_BY_KEY, ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _scope_entries, _sections, _set_frontmatter_field, _split_commas, _write_section, canonical_json, parse_canonical_json
     from .tickets_inputs import section_body
     from .tickets_issue import _place_ticket
     from .tickets_lint import _cmd_lint
     from .tickets_store import NO_SINK_ERROR, _load_ticket, _segment_error, _tickets_root
 else:
-    from tickets_admission import batch_cohort, root_cohort, ticket_cohort, valid_cohort
     from tickets_commands import REISSUE_USAGE
-    from tickets_transitions import LEASE_FIELDS, stamp
+    from tickets_transitions import LEASE_FIELDS
     from tickets_format import EXECUTOR_SECTIONS_BY_KEY, ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _scope_entries, _sections, _set_frontmatter_field, _split_commas, _write_section, canonical_json, parse_canonical_json
     from tickets_inputs import section_body
     from tickets_issue import _place_ticket
@@ -43,20 +40,14 @@ else:
 # successor has had none. `claimed_by` and `claimed_at` are blanked rather
 # than removed because `new` writes them empty and a reader distinguishes an
 # unclaimed ticket from one whose claim field is missing.
-LIFECYCLE_FIELDS = ('checked_by', 'workspace_branch', 'workspace_baseline',
+LIFECYCLE_FIELDS = ('admission', 'checked_by', 'workspace_branch', 'workspace_baseline',
                     'root_generation', 'cut_generation', 'ownership_regions',
                     'assignment_seal')
 BLANKED_FIELDS = LEASE_FIELDS
-# The stamp is the table's row, read once. Version 1 is not a default here
-# but a consequence: `LIFECYCLE_FIELDS` removes all four fields `is_v2`
-# reads, so a successor is a v1 producer however its predecessor was
-# opted in, and the row that stamps it has to be the v1 row.
-STAMP = stamp('stamp', 1)
 # `amend` and `recut` own a cut nobody has taken up yet; this owns the one
 # that has been. The two are refused here so the cheaper repair is not
 # reached for by writing a second ticket.
 AMENDABLE_SOURCE = frozenset({'pending', 'ready'})
-CITE_SECTIONS = {'result': 'Result', 'handoff': 'Handoff'}
 PREDECESSOR = 'predecessor'
 INPUT_PREFIX = '- input: '
 # The neutral file operation: a widened path is authority the caller is
@@ -98,22 +89,6 @@ def _assign(text: str, key: str, value: str) -> str:
 
 def _list_value(entries) -> str:
     return '[' + ', '.join(entries) + ']'
-
-
-def _fresh_cohort(source_cohort: str, new_id: str) -> str:
-    """A cohort of the source's shape, naming the successor.
-
-    A cohort is a set of items cut together in one run, and no member of the
-    old run is in the new one; the shape is kept because it is a statement
-    about how the item is sealed, and the identity is the successor's own.
-    """
-    parts = str(source_cohort or '').split(':')
-    kind = parts[1] if len(parts) >= 3 else 'ticket'
-    if kind == 'root':
-        return root_cohort(new_id)
-    if kind == 'batch':
-        return batch_cohort([new_id])
-    return ticket_cohort(new_id)
 
 
 def _input_names(body: str) -> set:
@@ -171,24 +146,21 @@ def _settings(entries) -> tuple:
                 f"--set '{key}' names the executor-owned section '{section}': reissue carries the cut "
                 'forward and what an executor writes is `result`\'s, in either direction'
             ))
+        if key in LIFECYCLE_FIELDS or key in BLANKED_FIELDS or key in ('status', 'run', 'id'):
+            return (None, _refusal(f"--set '{key}' names issue-time lifecycle owned by the ticket commands"))
         fields.append((key, value.strip()))
     return (fields, None)
 
 
-def _cited_section(text: str, cite, run: str, ticket_id: str) -> tuple:
-    """``(section, digest, refusal)`` for the section the successor cites."""
+def _cited_context(text: str, run: str, ticket_id: str) -> tuple:
+    """``(digest, refusal)`` for the predecessor's canonical Context."""
     sections = _sections(text)
-    if cite is None:
-        section = 'Handoff' if 'Handoff' in sections else 'Result'
-    else:
-        section = CITE_SECTIONS.get(str(cite).strip().lower())
-        if section is None:
-            return (None, None, _refusal(f"--cite '{cite}' is not one of {sorted(CITE_SECTIONS)}. usage: {REISSUE_USAGE}"))
+    section = 'Context'
     if section not in sections:
-        return (None, None, _refusal(
+        return (None, _refusal(
             f'{run}/{ticket_id} has no ## {section} section: a successor cites what the superseded item said'
         ))
-    return (section, hashlib.sha256(section_body(text, section).encode('utf-8')).hexdigest(), None)
+    return (hashlib.sha256(section_body(text, section).encode('utf-8')).hexdigest(), None)
 
 
 def _successor(text: str, data: dict, plan: dict) -> str:
@@ -199,9 +171,7 @@ def _successor(text: str, data: dict, plan: dict) -> str:
         text = _assign(text, key, '')
     text = _assign(text, 'id', plan['id'])
     text = _assign(text, 'run', plan['run'])
-    text = _assign(text, 'status', STAMP.status)
-    text = _assign(text, 'admission', STAMP.admission)
-    text = _assign(text, 'cohort', plan['cohort'])
+    text = _assign(text, 'status', 'pending')
     if plan['added']:
         scope = _scope_entries(data.get('write_scope'))
         mutations = _scope_entries(data.get('mutations'))
@@ -218,13 +188,13 @@ def _successor(text: str, data: dict, plan: dict) -> str:
     return _with_predecessor(text, plan['from_run'], plan['from_id'], plan['cite'], plan['sha256'])
 
 
-def _place(new_run: str, new_id: str, cohort: str, text: str) -> dict:
+def _place(new_run: str, new_id: str, text: str) -> dict:
     """Land the successor through `new --file`, and leave no draft behind."""
     handle = tempfile.NamedTemporaryFile('wb', suffix='.md', delete=False)
     try:
         with handle:
             handle.write(text.encode('utf-8'))
-        return _place_ticket(new_run, handle.name, new_id, cohort)
+        return _place_ticket(new_run, handle.name, new_id)
     finally:
         try:
             Path(handle.name).unlink()
@@ -238,7 +208,6 @@ def _cmd_reissue(rest) -> dict:
     declared_id = _extract_flag(args, '--id')
     settings = _extract_all(args, '--set')
     added = _extract_all(args, '--add-scope')
-    cite = _extract_flag(args, '--cite')
     stray = next((arg for arg in args if arg.startswith('-')), None)
     if stray is not None:
         return _refusal(f'reissue does not accept {stray}. usage: {REISSUE_USAGE}')
@@ -268,7 +237,7 @@ def _cmd_reissue(rest) -> dict:
     fields, refusal = _settings(settings)
     if refusal is not None:
         return refusal
-    section, digest, refusal = _cited_section(text, cite, run, ticket_id)
+    digest, refusal = _cited_context(text, run, ticket_id)
     if refusal is not None:
         return refusal
     if _executor_of(data) == ROOT_EXECUTOR:
@@ -278,19 +247,16 @@ def _cmd_reissue(rest) -> dict:
                 f"run '{new_run}' already has root ticket '{holder}': one physical run has one root, "
                 'so a superseded root is reissued into a run of its own. Nothing was written'
             )
-    cohort = dict(fields).get('cohort') or _fresh_cohort(str(data.get('cohort') or ''), new_id)
-    if not valid_cohort(cohort):
-        return _refusal(f"cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>")
     plan = {
-        'run': new_run, 'id': new_id, 'cohort': cohort, 'fields': fields,
+        'run': new_run, 'id': new_id, 'fields': fields,
         'added': [path for entry in added for path in _split_commas(entry)],
-        'from_run': run, 'from_id': ticket_id, 'cite': section, 'sha256': digest,
+        'from_run': run, 'from_id': ticket_id, 'cite': 'Context', 'sha256': digest,
     }
     try:
         successor = _successor(text, data, plan)
     except ValueError as error:
         return _refusal(f'{run}/{ticket_id} cannot be rewritten: {error}')
-    placed = _place(new_run, new_id, cohort, successor)
+    placed = _place(new_run, new_id, successor)
     if 'error' in placed:
         # Admission grades before it creates anything, so a successor `new`
         # refuses is a successor nobody wrote: it exits where the refusals
@@ -302,7 +268,7 @@ def _cmd_reissue(rest) -> dict:
         'reissue': {
             'run': new_run, 'id': new_id, 'path': placed['new']['path'],
             'supersedes': {'run': run, 'id': ticket_id, 'status': status},
-            'cite': section, 'sha256': digest, 'cohort': cohort,
+            'cite': 'Context', 'sha256': digest,
             'added_scope': plan['added'], 'set': [key for key, _ in fields],
             **({'lint': report['lint']} if 'lint' in report else {'lint_error': report.get('error')}),
         },
@@ -310,4 +276,4 @@ def _cmd_reissue(rest) -> dict:
     }
 
 
-__all__ = ('REISSUE_USAGE', '_cmd_reissue', '_fresh_cohort')
+__all__ = ('REISSUE_USAGE', '_cited_context', '_cmd_reissue')

@@ -56,17 +56,8 @@ def _input_record(value: str, position: int = 1) -> str:
         stripped = stripped[len("input: ") :]
     try:
         json.loads(stripped)
-    except json.JSONDecodeError:
-        stripped = json.dumps(
-            {
-                "name": f"legacy-input-{position}",
-                "type": "literal",
-                "value": stripped,
-            },
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        )
+    except json.JSONDecodeError as error:
+        raise ValueError(f"input {position} must be a canonical JSON record: {error}") from error
     return f"- input: {stripped}"
 
 

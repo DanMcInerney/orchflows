@@ -44,17 +44,15 @@ When one executor plus the mandatory `orch-integrate` join owns the whole
 outcome, bind that executor in the root itself rather than `orch-decompose`,
 with its own completion test and write scope.
 
-For every new root, opt into v2 through
+For every new root, open the generation lifecycle through
 `tickets.py stamp-generation <run> <root-id>`, which derives `root_generation`
-as `v2:root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
+as `root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
 that snapshot through `tickets.py draft-validate <run> <root-id>`, then
 compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
 <run> <root-id> --cut-generation <validated cut_generation>`. Only that
-validated digest is sealed and eligible for `orch-decompose`; its
+validated digest is sealed and eligible for dispatch; its
 `assignment_seal` records that exact assignment digest, and a post-seal
 assignment change is a new generation.
-Compatibility is closed: absence of v2 fields means v1, so legacy producers
-and existing v0/v1 tickets keep their prior admission and execution path.
 
 Never: stamp a pack the cut cannot share; leave an acceptance criterion
 oracle-less; restate standards an exemplar's owner already states.
