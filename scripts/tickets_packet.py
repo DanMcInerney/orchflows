@@ -421,8 +421,8 @@ def _packet_under_run_lock(rest):
         # §4); the block prices what a chain can never buy — its own
         # acceptance (tickets_sequence.py).
         prompt.extend(sequence_block(loaded))
-        # Each dependency's canonical Context (or explicit legacy Carry),
-        # inlined rather than pointed at: the predecessor's digest is exactly
+        # Each dependency's optional Context, inlined rather than pointed at:
+        # the predecessor's digest is exactly
         # what a fresh executor would otherwise re-gather.
         prompt.extend(successor_context_block(loaded, ticket_path))
     # Where the store is, said beside the path that came out of it: a fork

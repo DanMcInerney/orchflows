@@ -1,4 +1,4 @@
-"""Successor ``## Context`` hydration and legacy ``## Carry`` provenance."""
+"""Successor ``## Context`` hydration."""
 
 import tempfile
 import unittest
@@ -8,7 +8,6 @@ from tests.test_tickets_cases.common import run_cmd, use_sink
 
 
 CONTEXT_BODY = "- state: parser v2 landed at abc123.\n- watch: re-run parser smoke after grammar changes."
-LEGACY_BODY = "- parser v1 landed.\n- bare python is a Store stub."
 
 DEP_TICKET = """---
 id: D1
@@ -92,12 +91,10 @@ status, changed_artifacts, verification.
 """
 
 
-def dependency(*, status="complete", context=None, carry=None):
+def dependency(*, status="complete", context=None):
     sections = ""
     if context is not None:
         sections += f"\n## Context\n\n{context}\n"
-    if carry is not None:
-        sections += f"\n## Carry\n\n{carry}\n"
     return DEP_TICKET.format(status=status, sections=sections)
 
 
@@ -129,26 +126,19 @@ class TestSuccessorContextHydration(unittest.TestCase):
                 line,
             )
 
-    def test_legacy_carry_is_hydrated_with_explicit_provenance(self):
+    def test_non_context_section_is_ignored_and_complete_dependency_uses_result(self):
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
-            make_repo(tmp, ("T1", SUCCESSOR_TICKET), ("D1", dependency(carry=LEGACY_BODY)))
-            prompt = packet_prompt(tmp)
-            self.assertIn("Legacy `## Carry` context from D1 (complete):", prompt)
-            self.assertIn("- parser v1 landed. - bare python is a Store stub.", prompt)
-
-    def test_context_wins_deterministically_in_mixed_history(self):
-        with tempfile.TemporaryDirectory() as raw:
-            tmp = Path(raw)
-            make_repo(
-                tmp,
-                ("T1", SUCCESSOR_TICKET),
-                ("D1", dependency(context=CONTEXT_BODY, carry="legacy must not win")),
+            historical = dependency().replace(
+                "\n## Verification\n",
+                "\n## Carry\n\n- state: must not hydrate.\n\n## Verification\n",
             )
+            run_dir = make_repo(tmp, ("T1", SUCCESSOR_TICKET), ("D1", historical))
             prompt = packet_prompt(tmp)
-            self.assertIn("Successor context from D1 (complete):", prompt)
-            self.assertNotIn("legacy must not win", prompt)
-            self.assertNotIn("Legacy `## Carry` context", prompt)
+            self.assertIn("filed no `## Context`", prompt)
+            self.assertIn("`## Result`", prompt)
+            self.assertIn(str(run_dir / "D1.md"), prompt)
+            self.assertNotIn("must not hydrate", prompt)
 
     def test_complete_absence_points_to_result_and_nonterminal_absence_is_silent(self):
         with tempfile.TemporaryDirectory() as raw:

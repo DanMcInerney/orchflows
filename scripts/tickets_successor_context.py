@@ -1,9 +1,8 @@
-"""Successor context inlined from canonical Context or explicit legacy Carry.
+"""Successor context inlined from optional canonical Context.
 
 This data is useful but non-authoritative: a missing or unreadable sibling
 costs only its context line, never the packet built from the successor's own
-fixed inputs.  Mixed historical tickets prefer canonical ``## Context``
-without rewriting either section.
+fixed inputs.
 """
 from __future__ import annotations
 
@@ -29,10 +28,8 @@ def _body(sections: dict, name: str) -> str:
 def successor_context_block(loaded: dict, ticket_path) -> list:
     """Hydrate dependency conclusions in declared order.
 
-    Canonical Context wins over legacy Carry when both exist.  Legacy bytes
-    remain readable with their provenance named.  A complete dependency with
-    neither section points at Result; other absent or unreadable dependencies
-    contribute no line.
+    A complete dependency without Context points at Result; other absent or
+    unreadable dependencies contribute no line.
     """
 
     lines = []
@@ -47,15 +44,10 @@ def successor_context_block(loaded: dict, ticket_path) -> list:
         status = str(_parse_frontmatter(text).get("status") or "").strip().strip("`").strip()
         sections = _sections(text)
         context = _body(sections, "Context")
-        carry = _body(sections, "Carry")
         display_status = status or "unstated"
         if context:
             lines.append(
                 f"Successor context from {dep_id} ({display_status}): {_flattened(context)}"
-            )
-        elif carry:
-            lines.append(
-                f"Legacy `## Carry` context from {dep_id} ({display_status}): {_flattened(carry)}"
             )
         elif status == "complete":
             lines.append(
