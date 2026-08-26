@@ -13,10 +13,7 @@ ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
 re = __dep_common.re
 
-NAME_CHECKED_DIRS = ()
-# Every shipped prose tree is recursive. A stub, nested guide, contract
-# reference, pack craft file, or skill reference can call a skill by name;
-# directory depth cannot change whether that call edge resolves.
+# Every shipped prose tree is recursive; depth does not change a call edge.
 NAME_CHECKED_TREES = (
     "rules", "docs", "contracts", "templates", "compositions", "packs", "skills"
 )
@@ -65,10 +62,6 @@ def validate_names(packages, diag: Diagnostics) -> None:
         return
     known = {pkg["path"].name for pkg in packages} | set(ROLE_PROFILES)
     paths = []
-    for directory in NAME_CHECKED_DIRS:
-        node = ROOT / directory
-        if node.is_dir():
-            paths.extend(sorted(node.rglob("*.md")))
     for directory in NAME_CHECKED_TREES:
         node = ROOT / directory
         if node.is_dir():
@@ -138,7 +131,7 @@ def validate_unique_names(packages, diag: Diagnostics) -> None:
             seen[name] = pkg["skill_md"]
 
 __all__ = (
-    'NAME_CHECKED_DIRS', 'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
+    'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
     'NAME_CHECK_MARKER', 'LENS_ROW_RE', 'LENS_ANCHOR_RE', 'HEADING_RE',
     '_heading_slugs', 'validate_names', 'validate_lens_anchor', 'validate_unique_names',
 )

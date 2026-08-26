@@ -110,30 +110,27 @@ def _t0_shape(text: str) -> tuple:
     return tuple(sorted(fields)), tuple(sorted(enums))
 
 
+def _git(*args, text=False):
+    try:
+        return subprocess.run(
+            ["git", *args], cwd=ROOT, capture_output=True, check=True, text=text
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def _historical_contract_text(path, digest: str):
     """Find the Git version whose normalized bytes produced `digest`."""
 
     relative = path.relative_to(ROOT).as_posix()
-    try:
-        history = subprocess.run(
-            ["git", "log", "--format=%H", "--", relative],
-            cwd=ROOT,
-            capture_output=True,
-            check=True,
-            text=True,
-        ).stdout.splitlines()
-    except (OSError, subprocess.CalledProcessError):
+    history = _git("log", "--format=%H", "--", relative, text=True)
+    if history is None:
         return None
-    for revision in history[:100]:
-        try:
-            data = subprocess.run(
-                ["git", "show", f"{revision}:{relative}"],
-                cwd=ROOT,
-                capture_output=True,
-                check=True,
-            ).stdout.replace(b"\r\n", b"\n")
-        except (OSError, subprocess.CalledProcessError):
+    for revision in history.splitlines()[:100]:
+        data = _git("show", f"{revision}:{relative}")
+        if data is None:
             continue
+        data = data.replace(b"\r\n", b"\n")
         if hashlib.sha256(data).hexdigest() == digest:
             return data.decode("utf-8-sig")
     return None

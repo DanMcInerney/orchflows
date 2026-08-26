@@ -192,24 +192,13 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
 
 def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
-    operative_lines = []
-    fenced = False
-    for line in body.splitlines():
-        if line.strip().startswith(("```", "~~~")):
-            fenced = not fenced
-            continue
-        if not fenced:
-            operative_lines.append(line)
-    operative = "\n".join(operative_lines)
+    operative = re.sub(r"(?ms)^(```|~~~).*?^\1[^\n]*$", "", body)
     if pkg["is_pack"]:
         for label in ("Require:", "Never:", "Return:"):
             if label in operative:
                 diag.error(file_label, f"pack body must not contain '{label}' (packs carry no control flow)")
-        if re.search(
-            r"\bif\b[^.\n]{0,160}\bthen\b|\b(?:delegate|dispatch|spawn)\b|\b(?:stop|park|refuse)\b",
-            operative,
-            re.IGNORECASE,
-        ):
+        flow = r"\bif\b[^.\n]{0,160}\bthen\b|\b(?:delegate|dispatch|spawn|stop|park|refuse)\b"
+        if re.search(flow, operative, re.IGNORECASE):
             diag.error(file_label, "pack body carries control flow; packs provide data only")
         return
     require = REQUIRE_RE.search(operative)

@@ -149,15 +149,8 @@ def _carriage_item_carried(item: str, target_stems: set):
         matched = [n for n in nouns if _carriage_stem_variants(n) & target_stems]
         if not matched:
             return False, nouns[-1]
-        # One incidental adjective or middle noun does not identify a
-        # multiword carrier. The head noun, two independent terms, or the
-        # explicit caller marker does.
-        if (
-            len(nouns) > 1
-            and len(set(matched)) < 2
-            and matched[0] != nouns[-1]
-            and matched[0] != "caller"
-        ):
+        # One incidental middle term does not identify a multiword carrier.
+        if len(nouns) > 1 and len(set(matched)) < 2 and matched[0] not in (nouns[-1], "caller"):
             return False, nouns[-1]
     return True, last_noun
 

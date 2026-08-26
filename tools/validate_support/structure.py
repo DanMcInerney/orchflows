@@ -25,8 +25,7 @@ sys = __dep_common.sys
 re = __dep_common.re
 
 ENVELOPE_CARRIER_RE = re.compile(
-    r"^\s*(?:the\s+)?(?:completed|finished)\s+(?:ticket|work[- ]item)\b",
-    re.IGNORECASE,
+    r"^\s*(?:the\s+)?(?:completed|finished)\s+(?:ticket|work[- ]item)\b", re.IGNORECASE
 )
 ENVELOPE_FIELD_LEAD_RE = re.compile(r"^\s*status\s*[,;—-]", re.IGNORECASE)
 
@@ -118,10 +117,8 @@ def validate_call_graph(packages, diag: Diagnostics) -> None:
         if pkg["kind"] in ("kernel", "utilities") and graph.get(pkg["path"].name):
             called = ", ".join(sorted(graph[pkg["path"].name]))
             tier = "kernel" if pkg["kind"] == "kernel" else "utility"
-            diag.error(
-                rel(pkg["skill_md"]),
-                f"{tier} skill has call edges ({called}); {tier} skills are primitives and call no skill",
-            )
+            diag.error(rel(pkg["skill_md"]),
+                       f"{tier} skill has call edges ({called}); {tier} skills are primitives and call no skill")
 
 
 def _envelope_first_clause(body: str):
@@ -146,9 +143,7 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
     """contracts/result.md: every bound dispatchable unit leads its
     Return: with status, result identity, and verification."""
     bound = set(ENVELOPE_UNITS)
-    for pack in packages:
-        if not pack["is_pack"]:
-            continue
+    for pack in (pkg for pkg in packages if pkg["is_pack"]):
         for pattern in (PACK_EXECUTOR_RE, PACK_ASSEMBLY_RE):
             bound.update(pattern.findall(pack.get("body") or ""))
     for pkg in packages:
@@ -166,11 +161,8 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
                 "and names no work-item carrier",
             )
         elif not ENVELOPE_CARRIER_RE.search(clause) and not ENVELOPE_FIELD_LEAD_RE.search(clause):
-            diag.error(
-                rel(pkg["skill_md"]),
-                "Return does not lead with structured result-envelope fields per "
-                "contracts/result.md",
-            )
+            diag.error(rel(pkg["skill_md"]),
+                       "Return does not lead with structured result-envelope fields per contracts/result.md")
 
 
 def discover_templates(manifest_name: str):
