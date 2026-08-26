@@ -17,6 +17,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts import tickets_packet
 from tests.test_tickets_cases.common import run_cmd, run_full, use_sink
 
 REFUSAL = "checker not required: every criterion carries provenance: pre-existing"
@@ -504,6 +505,78 @@ class TestCheckerNotDispatchedWhenSectionTenExempts(unittest.TestCase):
             payload = self.packet(tmp, "--executor", "orch-critique")
             self.assertNotIn(REFUSAL, payload.get("error", ""), payload)
             self.assertIn("subtree ticket yet", payload["error"])
+
+
+class TestContentAudienceCarriage(unittest.TestCase):
+    """A content section or terminal edit carries the root reader exactly."""
+
+    ROOT = """---
+id: 00-root
+run: content-run
+status: claimed
+executor: orch-decompose
+pack: orch-content-pack
+depends_on: []
+write_scope: [Introduction]
+bound: 30m
+root_generation: v2:root:00-root:1:sha256:{digest}
+cut_generation: v2:cut:00-root:1:sha256:{digest}
+ownership_regions: []
+assignment_seal: sha256:{digest}
+---
+
+## Objective
+
+Produce one document.
+
+## Fixed inputs
+
+- input: {{"name":"audience","type":"literal","value":"operators"}}
+
+## Completion test
+
+- the document works | oracle: review | oracle_class: judged | provenance: authored-here
+
+## Return fields
+
+status.
+""".format(digest="0" * 64)
+
+    ITEM = ROOT.replace("id: 00-root", "id: 00-root.01").replace(
+        "executor: orch-decompose", "executor: orch-draft"
+    ).replace("status: claimed", "status: claimed", 1)
+
+    def defect(self, audience_line):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            root = run / "00-root.md"
+            item = run / "00-root.01.md"
+            root.write_text(self.ROOT, encoding="utf-8")
+            item.write_text(
+                self.ITEM.replace(
+                    '- input: {"name":"audience","type":"literal","value":"operators"}',
+                    audience_line,
+                ),
+                encoding="utf-8",
+            )
+            loaded = {"id": "00-root.01", "executor": "orch-draft", "pack": "orch-content-pack"}
+            return tickets_packet._content_audience_defect(
+                item, loaded, item.read_text(encoding="utf-8")
+            )
+
+    def test_a_matching_root_audience_is_carried(self):
+        self.assertIsNone(
+            self.defect('- input: {"name":"audience","type":"literal","value":"operators"}')
+        )
+
+    def test_a_missing_audience_is_refused(self):
+        self.assertIn("missing", self.defect("None.") or "")
+
+    def test_an_altered_audience_is_refused(self):
+        self.assertIn(
+            "does not match",
+            self.defect('- input: {"name":"audience","type":"literal","value":"executives"}') or "",
+        )
 
 
 if __name__ == "__main__":

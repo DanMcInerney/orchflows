@@ -5,10 +5,10 @@ role: worker
 ---
 
 Require: one claimed content ticket naming its outline slot, voice
-contract, citation policy, length bound, and fixed evidence.
+contract, audience, citation policy, length bound, and fixed evidence.
 
 Write the section so every claim traces to the fixed evidence, holding
-the voice contract and the slot's section job per the stamped pack's
+the voice contract for the stated audience and the slot's section job per the stamped pack's
 craft. Cite per the citation policy, marking an unsupportable claim as
 it prescribes and writing around it, never smoothing.
 

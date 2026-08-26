@@ -42,6 +42,10 @@ if __package__:
     from .tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
 else:
     from tickets_packet_receipts import PACKET_CLAIMS_DIR, _consume_gate_only_bundle_claim
+if __package__:
+    from .tickets_inputs import parse_input_records
+else:
+    from tickets_inputs import parse_input_records
 
 PACKET_SECTIONS = (('objective', 'Objective'), ('inputs', 'Fixed inputs'), ('return_contract', 'Return fields'))
 CHECKER_EXECUTOR = 'orch-critique'
@@ -56,6 +60,9 @@ CHECKER_INDEPENDENCE = 'checker'
 PRE_EXISTING_PROVENANCE = 'pre-existing'
 CHECKER_NOT_REQUIRED = 'checker not required: every criterion carries provenance: pre-existing'
 _SHELL_SAFE_TOKEN = re.compile(r'^[A-Za-z0-9_./:\\=-]+$')
+CONTENT_PACK = 'orch-content-pack'
+CONTENT_EXECUTORS = frozenset({'orch-draft', 'orch-edit'})
+AUDIENCE_INPUT = 'audience'
 
 
 def _command_text(*arguments) -> str:
@@ -70,6 +77,57 @@ def _command_text(*arguments) -> str:
 
         return '& ' + ' '.join(quote(value) for value in values)
     return shlex.join(values)
+
+
+def _named_input(text: str, name: str):
+    """One parsed fixed-input record by name, or ``None``.
+
+    Admission owns the complete input-schema grade. Packet emission needs
+    only this exact-carriage reading, so malformed input remains admission's
+    refusal rather than acquiring a second vocabulary here.
+    """
+
+    parsed = parse_input_records(text)
+    return next(
+        (record for record in parsed['records'] if record.get('name') == name),
+        None,
+    )
+
+
+def _root_ticket_id(loaded: dict) -> str:
+    generation = str(loaded.get('root_generation') or '')
+    match = re.match(r'^v2:root:([^:]+):\d+:sha256:[0-9a-f]{64}$', generation)
+    if match:
+        return match.group(1)
+    return str(loaded.get('id') or '').split('.', 1)[0]
+
+
+def _content_audience_defect(ticket_path: Path, loaded: dict, text: str):
+    """Refuse a content unit whose reader is absent or changed from root.
+
+    The root freezes ``audience``. A section or terminal edit is downstream
+    of that choice, so packet emission compares the canonical input records;
+    executor prose cannot repair a field the packet never carried.
+    """
+
+    if str(loaded.get('pack') or '').strip() != CONTENT_PACK:
+        return None
+    if str(loaded.get('executor') or '').strip().strip('`') not in CONTENT_EXECUTORS:
+        return None
+    carried = _named_input(text, AUDIENCE_INPUT)
+    if carried is None:
+        return 'content packet is missing the root audience fixed input'
+    root_id = _root_ticket_id(loaded)
+    root_path = ticket_path.parent / f'{root_id}.md'
+    root_text, failure = _read_utf8(root_path)
+    if failure is not None:
+        return f'content packet cannot read its root audience: {root_path}'
+    frozen = _named_input(root_text, AUDIENCE_INPUT)
+    if frozen is None:
+        return f'content root {root_id} is missing its audience fixed input'
+    if carried != frozen:
+        return f'content packet audience does not match root {root_id}'
+    return None
 CUT_LENS_PARTS = ('skills', 'kernel', 'orch-decompose', 'references', 'cut-lens.md')
 SOURCE_SIZE_PARTS = ('tools', 'check_source_sizes.py')
 
@@ -380,6 +438,10 @@ def _packet_under_run_lock(rest):
         missing.extend(criterion_defects(completion))
     if missing:
         return {'error': 'packet incomplete: ' + '; '.join(missing)}
+    if is_v2(loaded):
+        audience_defect = _content_audience_defect(ticket_path, loaded, text)
+        if audience_defect is not None:
+            return {'error': audience_defect}
     if further is not None:
         status = str(loaded.get('status') or '').strip().strip('`').strip()
         if status not in CHECKABLE_STATUSES:
