@@ -2,6 +2,7 @@
 """Serve one rendered visualization once on an ephemeral loopback port."""
 
 import json
+import socketserver
 import sys
 import time
 import urllib.parse
@@ -13,6 +14,22 @@ TIMEOUT_SECONDS = 60
 
 
 class _PreviewServer(HTTPServer):
+    def server_bind(self):
+        """Bind without the reverse lookup ``HTTPServer`` does for its name.
+
+        ``HTTPServer.server_bind`` calls ``socket.getfqdn`` on the address it
+        binds. That is a reverse DNS query, and where the resolver does not
+        answer from a hosts file it blocks: on a macOS runner the preview
+        cases cost 141s against 1.0s on Linux and 1.4s on Windows, one stall
+        per server built. The address here is a literal loopback one and
+        nothing reads ``server_name``, so the query buys nothing at any
+        speed. Preview holds the port for one GET; a resolver's timeout is
+        not a cost it can carry.
+        """
+
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+
     def __init__(self, address, handler):
         super().__init__(address, handler)
         self.successful_get = False

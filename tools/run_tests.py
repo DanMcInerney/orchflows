@@ -34,12 +34,16 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TESTS_DIR = ROOT / "tests"
 CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
 TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
-DEFAULT_COLD_ORDER = (
-    "tests.test_installer_planning", "tests.test_installer_shared",
-    "tests.test_cutcheck", "tests.test_tickets",
-    "tests.test_workspace", "tests.test_installer_hosts",
-    "tests.test_installer_receipt", "tests.test_validate",
-)
+# Cold-checkout order: the modules whose *worst* matrix leg is expensive,
+# that leg's duration descending. Worst and not typical -- the long pole
+# moves by leg (visualize_scripts on macOS, serial_compat on 3.9) and
+# starting a module early costs nothing on a leg where it is cheap. Read
+# off the timing artifacts CI uploads; a leg with a cache never reads it.
+DEFAULT_COLD_ORDER = tuple("tests.test_" + _name for _name in (
+    "visualize_scripts", "installer_planning", "workspace", "serial_compat",
+    "installer_shared", "cutcheck", "tickets", "validate", "ui",
+    "run_required", "affected_tests", "cell_linter",
+))
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
     os.path.normcase(os.path.abspath(str(ROOT / relative)))
     for relative in (".", "scripts", "benchmarks/benchmaker/tools",
@@ -401,14 +405,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="worker processes (default: CPU count); -j 1 runs modules one at a time in order",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose child test output")
-    parser.add_argument(
-        "--no-cache",
-        action="store_true",
-        help="ignore the duration cache: use cold-checkout scheduling",
-    )
+    parser.add_argument("--no-cache", action="store_true",
+                        help="ignore the duration cache: use cold-checkout scheduling")
     parser.add_argument(
         "--tests-dir", default=str(DEFAULT_TESTS_DIR), help="directory of test_*.py (default: tests/)"
     )
+    parser.add_argument("--shard", metavar="K-of-N", help="run only this shard of the scheduled order")
     parser.add_argument("--scope", help="run only the modules PATH[,PATH] affects (affected_tests.py)")
     parser.add_argument("--timing-file", help="write a machine-readable suite timing record")
     child = parser.add_argument_group("child mode (internal)")
@@ -458,7 +460,8 @@ def main(argv=None) -> int:
     # The cache is gitignored, so CI uses the repository's cold-start priors
     # while a local checkout that has run once schedules from measured time.
     # `--no-cache` is how a local run reproduces CI's co-scheduling.
-    ordered = schedule(selected, {} if args.no_cache else load_times(), tests_dir)
+    ordered = run_tests_scope.shard(
+        args.shard, schedule(selected, {} if args.no_cache else load_times(), tests_dir))
     jobs = min(args.jobs, len(ordered))
     print("running %d modules across %d workers" % (len(ordered), jobs))
     started = time.monotonic()

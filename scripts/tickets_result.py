@@ -15,9 +15,9 @@ if __package__:
 else:
     from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size
 if __package__:
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
 else:
-    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
+    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_markdown import SECTION_SENTINEL
 else:
@@ -282,8 +282,8 @@ def _append_one_line(path: Path, block: str) -> None:
     never ran.
 
     So Windows locks and POSIX does not, and byte zero is the mutex: every
-    appender contends on the same byte. ``LK_LOCK`` is a mandatory range
-    lock, not an advisory one, so an append blocks another append and also
+    appender contends on the same byte. Every ``msvcrt`` mode is a mandatory
+    range lock, not an advisory one, so an append blocks another append and
     any reader that touches byte zero -- which on this file is every reader,
     since they all read from the start. A reader refused here retries; it has
     not found the file unreadable. Nothing here read-modify-writes. The lock
@@ -294,7 +294,13 @@ def _append_one_line(path: Path, block: str) -> None:
             handle.write(block)
             return
         handle.seek(0)
-        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        # `_lock_windows_byte`, not `LK_LOCK`: that mode stops retrying after
+        # ten attempts and then raises, and eight appenders contending on one
+        # runner outlast it -- a note refused as `unwritable run state:
+        # [Errno 13] Permission denied` on a job that had passed the run
+        # before. The run lock left this mode for the same reason; this was
+        # the last site still on it.
+        _lock_windows_byte(handle)
         try:
             handle.write(block)
             handle.flush()
