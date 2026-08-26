@@ -11,8 +11,11 @@ Goal: minimize critical path; every item an atom under
 [topology](../../../rules/topology.md) §3.
 
 Emit [work items](../../../contracts/work-item.md) as `<root>.NN` by frozen root version:
-- `mandatory-v2`: `candidate-file`; `root_generation: inherited`; `cohort: absent`; `tickets.py new <run> --file <candidate>`.
-- `legacy-v1`: `tickets.py new <run> <id> --cohort v1:root:<root>`.
+
+| root version | ticket source | `root_generation` | `cohort` | issue command |
+| --- | --- | --- | --- | --- |
+| `mandatory-v2` | candidate file | exact inherited | absent | `tickets.py new <run> --file <candidate>` |
+| `legacy-v1` | arguments | absent | `v1:root:<root>` | `tickets.py new <run> <id> --cohort v1:root:<root>` |
 
 Carry exact parameters as canonical JSON `--input`, the stamped workspace cell, and `mutations` via
 `--mutation`. Give each item an observable objective, write scope (siblings

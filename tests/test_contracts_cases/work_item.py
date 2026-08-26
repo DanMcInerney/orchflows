@@ -327,25 +327,27 @@ class TestV1AdmissionContract(unittest.TestCase):
         lines = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(
             encoding="utf-8"
         ).splitlines()
-        emissions = {
-            label: next((line for line in lines if line.startswith(f"- `{label}`:")), "")
-            for label in ("mandatory-v2", "legacy-v1")
-        }
-        self.assertTrue(emissions["mandatory-v2"])
-        self.assertTrue(emissions["legacy-v1"])
-        v2, v1 = emissions["mandatory-v2"], emissions["legacy-v1"]
-        for token in (
-            "`candidate-file`",
-            "`root_generation: inherited`",
-            "`cohort: absent`",
-            "`tickets.py new <run> --file <candidate>`",
-        ):
-            with self.subTest(version="v2", token=token):
-                self.assertIn(token, v2)
-        self.assertNotIn("never", v2.lower())
-        self.assertNotIn("--cohort", v2)
-        self.assertIn(
-            "`tickets.py new <run> <id> --cohort v1:root:<root>`", v1
+        rows = {}
+        for line in lines:
+            if line.startswith(("| `mandatory-v2` |", "| `legacy-v1` |")):
+                cells = [cell.strip() for cell in line.strip("|").split("|")]
+                rows[cells[0].strip("`")] = cells[1:]
+        self.assertEqual(
+            {
+                "mandatory-v2": [
+                    "candidate file",
+                    "exact inherited",
+                    "absent",
+                    "`tickets.py new <run> --file <candidate>`",
+                ],
+                "legacy-v1": [
+                    "arguments",
+                    "absent",
+                    "`v1:root:<root>`",
+                    "`tickets.py new <run> <id> --cohort v1:root:<root>`",
+                ],
+            },
+            rows,
         )
 
     def test_result_clause_shape_and_actual_enforcement_have_distinct_owners(self):
