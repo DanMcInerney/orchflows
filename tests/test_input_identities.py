@@ -9,7 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts import cutcheck_ticket, tickets_dispatch, tickets_input_producers, tickets_inputs
+from scripts import tickets_dispatch, tickets_input_producers, tickets_inputs
+from tests.test_cutcheck_cases.fixed_input_oracle import InputRecordCutcheckCases
 
 
 def canonical(value) -> str:
@@ -58,7 +59,10 @@ def record(name, *, value=None, identity=None) -> str:
     return "- input: " + canonical(value)
 
 
-class InputRecordTest(unittest.TestCase):
+class InputRecordTest(InputRecordCutcheckCases, unittest.TestCase):
+    record = staticmethod(record)
+    ticket = staticmethod(ticket)
+
     def grade(self, lines, adapter="plain-artifact", **context):
         text = ticket(lines)
         return tickets_inputs.grade_inputs(
@@ -235,37 +239,6 @@ class InputRecordTest(unittest.TestCase):
                     if item["type"] == "literal"
                 }
                 self.assertEqual("sink:documents/run/", literals.get("document-root"))
-
-    def test_cutcheck_renders_the_shared_input_codes_unchanged(self):
-        revision = tickets_input_producers.git_head()
-        inputs = "\n".join((
-            record("baseline", identity={"kind": "git-tree", "repo": "run-project", "revision": revision}),
-            record("missing", identity={"kind": "git-path", "path": "absent-input-identity", "repo": "run-project", "revision": revision}),
-        ))
-        text = ticket(inputs, pack="orch-code-pack")
-        expected = [item["code"] for item in tickets_inputs.grade_inputs(
-            ticket_id="T", text=text, siblings={"T": text}, adapter_id="git",
-        )["findings"]]
-        rendered = cutcheck_ticket._policy_findings("T", text, {"T": text}, revision, revision)
-        actual = [item[2] for item in rendered if item[2] in expected]
-        self.assertEqual(expected, actual)
-
-    def test_cutcheck_reports_pending_dependency_as_advisory(self):
-        revision = tickets_input_producers.git_head()
-        predecessor = ticket("", ticket_id="P")
-        dependent = ticket(
-            record("predecessor", identity={
-                "kind": "ticket-section", "run": "run", "section": "Result", "ticket": "P",
-            }),
-            ticket_id="D", depends="[P]",
-        )
-        rendered = cutcheck_ticket._policy_findings(
-            "D", dependent, {"D": dependent, "P": predecessor}, revision, revision,
-        )
-        codes = [item[2] for item in rendered]
-        self.assertIn("ticket-result-not-terminal", codes)
-        self.assertIn("ticket-result-not-terminal", cutcheck_ticket._contract.ADVISORY)
-
 
 class ResolverFixture(unittest.TestCase):
     def setUp(self):
