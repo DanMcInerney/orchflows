@@ -29,7 +29,8 @@ if __package__:
     from .tickets_transitions import declared_version
     from .tickets_commands import GATE_USAGE
     from .tickets_emission import grade_run_emission
-    from .tickets_format import ADAPTER_BY_PACK, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from .tickets_format import ADAPTER_BY_PACK, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _criteria, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from .tickets_generations import _coverage_map
     from .tickets_gate_mutations import _canonical_gate_mutation_plan
     from .tickets_input_producers import GIT_PACKS, git_head, input_groups, render_ticket_inputs
     from .tickets_issue import GATE_ID_MARKER, NEW_DEFAULT_BOUND, _distinct_gate_lenses, _render_ticket
@@ -41,7 +42,8 @@ else:
     from tickets_transitions import declared_version
     from tickets_commands import GATE_USAGE
     from tickets_emission import grade_run_emission
-    from tickets_format import ADAPTER_BY_PACK, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from tickets_format import ADAPTER_BY_PACK, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, ROOT_EXECUTOR, parse_canonical_json, _criteria, _executor_of, _extract_flag, _split_commas, ticket_defects
+    from tickets_generations import _coverage_map
     from tickets_gate_mutations import _canonical_gate_mutation_plan
     from tickets_input_producers import GIT_PACKS, git_head, input_groups, render_ticket_inputs
     from tickets_issue import GATE_ID_MARKER, NEW_DEFAULT_BOUND, _distinct_gate_lenses, _render_ticket
@@ -230,18 +232,17 @@ def _gate_input(name: str, *, literal=None, run: str='', ticket: str='', section
         record = {'name': name, 'type': 'literal', 'value': literal}
     return '- input: ' + json.dumps(record, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
 def _ordered_lens_bundle(value) -> list:
-    """The ordered, nonempty, identity-unique bundle an opt-in names.
-
-    Unlike ``_split_commas``, this parser keeps empty positions observable:
-    dropping one would turn ``code,,library`` into a different bundle.  Lens
-    identity is case-insensitive, as it is for the ordinary gate family, but
-    spelling and order are preserved in the returned value so the sealed
-    assignment records exactly what the caller requested.
-    """
     lenses = [part.strip() for part in str(value or '').split(',')]
     if not lenses or any(not lens for lens in lenses):
         raise ValueError('ordered lens bundle must not contain an empty lens identity')
     return _distinct_gate_lenses(lenses)
+def _gate_complete_coverage(root: dict, coverage: str) -> bool:
+    rows = []
+    for line in str(coverage or '').splitlines():
+        cells = [cell.strip().strip('`') for cell in line.strip().strip('|').split('|')]
+        if len(cells) >= 2 and cells[0].isdigit(): rows.append((int(cells[0]), cells[1]))
+    criteria = _criteria((root.get('sections') or {}).get('Completion test', ''))
+    return bool(criteria) and rows == [(number, 'gate') for number in range(1, len(criteria) + 1)]
 def _input_name(prefix: str, value: str, position: int) -> str:
     slug = re.sub(r'[^a-z0-9]+', '-', str(value).lower()).strip('-')
     return f'{prefix}-{slug or position}'
@@ -278,33 +279,13 @@ def _gate_body(kind: str, root_id: str, lens: str, scope: list, acceptance_id: s
     repair_id = repaired_by or GATE_REPAIR_ID.format(root=root_id); inputs = [_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'), _gate_input('repair-result', run=run, ticket=repair_id, section='Result'), _gate_input('mutation-plan-paths', literal=mutation_plan)]
     return [('Objective', f"`{acceptance_id}`'s acceptance is decided at the revision `{repair_id}` left: one verdict per criterion, from the oracle that criterion names."), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', acceptance), ('Return fields', "status; verification — one verdict per criterion with the oracle's output; result; feedback; risks")]
 def _ordered_bundle_sections(root_id: str, lenses: list, scope: list, acceptance_id: str, acceptance: str, units: list, run: str='') -> list:
-    """One closer packet that critiques in bundle order, then repairs.
-
-    The list is one canonical literal rather than one record per lens.  Its
-    order consequently belongs to ``assignment_payload``'s sealed Fixed
-    inputs and cannot be re-sorted between draft validation and dispatch.
-    """
+    """One closer packet whose canonical literal seals the lens order."""
     inputs = [_gate_input('ordered-lens-bundle', literal=list(lenses))]
-    inputs.extend(
-        _gate_input(_input_name('unit-result', unit, position), run=run, ticket=unit, section='Result')
-        for position, unit in enumerate(units, start=1)
-    )
+    inputs.extend(_gate_input(_input_name('unit-result', unit, position), run=run, ticket=unit, section='Result') for position, unit in enumerate(units, start=1))
     inputs.append(_gate_input('acceptance', run=run, ticket=acceptance_id, section='Completion test'))
     named = ', '.join(f'`{lens}`' for lens in lenses)
-    objective = (
-        f"Every defect in `{root_id}`'s delivered result found by the ordered lens bundle "
-        f"{named} is reported by identity with its evidence, applying each lens in the stated "
-        "order as an open search over what the subtree produced. Then, as this chain's second "
-        "skill, every accepted blocking finding is repaired inside this ticket's own write scope "
-        "or declined with a stated reason, every accepted non-blocking finding is queued as "
-        "candidate scope per verification §9, and nothing outside that scope changes."
-    )
-    criteria = [
-        "- every finding names the artifact identity it was found at, the lens that found it, and the evidence that shows it | oracle: this ticket's `## Result` read under the `ordered-lens-bundle` in its stated order | oracle_class: judged | provenance: pre-existing",
-        "- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing",
-        "- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: this ticket's own ranked findings against its `## Result` | oracle_class: deterministic | provenance: pre-existing",
-        "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing",
-    ]
+    objective = (f"Every defect in `{root_id}`'s delivered result found by the ordered lens bundle {named} is reported by identity with its evidence, applying each lens in the stated order as an open search over what the subtree produced. Then, as this chain's second skill, every accepted blocking finding is repaired inside this ticket's own write scope or declined with a stated reason, every accepted non-blocking finding is queued as candidate scope per verification §9, and nothing outside that scope changes.")
+    criteria = ["- every finding names the artifact identity it was found at, the lens that found it, and the evidence that shows it | oracle: this ticket's `## Result` read under the `ordered-lens-bundle` in its stated order | oracle_class: judged | provenance: pre-existing", "- every `## Result` named in the fixed inputs was read | oracle: this ticket's `## Result` against that list | oracle_class: deterministic | provenance: pre-existing", "- every accepted blocking finding is repaired or declined with a stated reason, and every accepted non-blocking finding is queued as candidate scope | oracle: this ticket's own ranked findings against its `## Result` | oracle_class: deterministic | provenance: pre-existing", "- nothing outside the write scope changed | oracle: `git status --porcelain` in the run's workspace | oracle_class: deterministic | provenance: pre-existing"]
     returns = "status; result — ranked findings in ordered-lens-bundle order, each with its lens, artifact identity and evidence, then each finding's disposition and the changed artifact by identity; verification; feedback; risks"
     return [('Objective', objective), ('Fixed inputs', '\n'.join(inputs)), ('Completion test', '\n'.join(criteria)), ('Return fields', returns)] + GATE_EXECUTOR_SECTIONS
 def _cmd_gate(rest, head_probe=None):
@@ -398,7 +379,16 @@ def _gate_under_run_lock(rest, head_probe=None):
     if mutation_error is not None:
         return {'error': mutation_error + '. Nothing was written'}
     if not units:
-        return {'error': f"root ticket '{root_id}' has no `{root_id}.` subtree ticket yet: a gate closes over a cut subtree, so there is nothing here for a critique to read"}
+        if not bundle_present:
+            return {'error': f"root ticket '{root_id}' has no `{root_id}.` subtree ticket yet: a gate closes over a cut subtree, so there is nothing here for a critique to read"}
+        if declared_version(root) != 2:
+            return {'error': f"root ticket '{root_id}' has no implementation members: a gate-only ordered lens bundle requires a v2 root. Nothing was written"}
+        try:
+            coverage = _coverage_map(run, root_id)
+        except ValueError as error:
+            return {'error': str(error) + '. Nothing was written'}
+        if not _gate_complete_coverage(root, coverage):
+            return {'error': f"root ticket '{root_id}' has no implementation members: its coverage map must assign every root criterion exactly once to gate. Nothing was written"}
     acceptance_id = acceptance_from or root_id
     source = by_id.get(acceptance_id)
     if source is None:
@@ -515,6 +505,6 @@ __all__ = (
     'PACK_WIDENINGS', '_cmd_gate', '_critique_pack', '_gate_body', '_gate_input',
     '_gate_sections', '_gate_stub', '_gate_under_run_lock',
     '_inherited_input_lines', '_input_name', '_is_record', '_listed_items',
-    '_ordered_bundle_sections', '_ordered_lens_bundle', '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
+    '_gate_complete_coverage', '_ordered_bundle_sections', '_ordered_lens_bundle', '_pack_domain', '_pack_for_domain', '_pack_widens', '_record_names',
     '_stub_pack_ceiling', '_with_inherited_inputs',
 )
