@@ -18,7 +18,7 @@ bound: {{bound}}
 ## Fixed inputs
 
 - input: {"name":"simple-task","type":"literal","value":"{{simple_task}}"}
-- input: {"name":"{{oracle_name}}","type":"literal","value":"{{oracle_command}}"}
+- input: {"name":"oracle-command","type":"literal","value":"{{oracle_command}}"}
 
 ## Completion test
 
