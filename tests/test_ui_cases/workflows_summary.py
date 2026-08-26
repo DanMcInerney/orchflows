@@ -15,6 +15,7 @@ MANIFEST = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 EXPECTED_WORKFLOWS = {
     "benchmaker",
     "drift-canary",
+    "errand",
     "evolve",
     "fix",
     "orch-build",
@@ -40,8 +41,12 @@ class WorkflowSummaryManifestTests(unittest.TestCase):
         for workflow_id, summary in manifest["workflows"].items():
             with self.subTest(workflow=workflow_id):
                 self.assertEqual({"nodes", "edges"}, set(summary))
-                self.assertGreaterEqual(len(summary["nodes"]), 2)
-                self.assertTrue(summary["edges"])
+                if workflow_id == "errand":
+                    self.assertEqual(1, len(summary["nodes"]))
+                    self.assertFalse(summary["edges"])
+                else:
+                    self.assertGreaterEqual(len(summary["nodes"]), 2)
+                    self.assertTrue(summary["edges"])
                 for node in summary["nodes"]:
                     self.assertEqual({"id", "label"}, set(node))
                 for edge in summary["edges"]:
