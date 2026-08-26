@@ -20,6 +20,13 @@ SKIPPED = __dep_common.SKIPPED
 TEMPLATE_ENTRY_VALUES = __dep_common.TEMPLATE_ENTRY_VALUES
 TICKET_FILING_RE = __dep_common.TICKET_FILING_RE
 sys = __dep_common.sys
+re = __dep_common.re
+
+ENVELOPE_CARRIER_RE = re.compile(
+    r"^\s*(?:the\s+)?(?:completed|finished)\s+(?:ticket|work[- ]item)\b",
+    re.IGNORECASE,
+)
+ENVELOPE_FIELD_LEAD_RE = re.compile(r"^\s*status\s*[,;—-]", re.IGNORECASE)
 
 from tools.validate_support import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
@@ -104,11 +111,15 @@ def validate_call_graph(packages, diag: Diagnostics) -> None:
         name_to_file = {pkg["path"].name: pkg["skill_md"] for pkg in packages}
         label = rel(name_to_file[cycle[0]]) if cycle[0] in name_to_file else "call-graph"
         diag.error(label, f"call graph cycle: {' -> '.join(cycle)}")
-    # composition rule 1: kernel skills are always primitives (zero call edges).
+    # composition rule 1: kernel and utility skills are primitives.
     for pkg in packages:
-        if pkg["kind"] == "kernel" and graph.get(pkg["path"].name):
+        if pkg["kind"] in ("kernel", "utilities") and graph.get(pkg["path"].name):
             called = ", ".join(sorted(graph[pkg["path"].name]))
-            diag.error(rel(pkg["skill_md"]), f"kernel skill has call edges ({called}); kernel skills call no skill")
+            tier = "kernel" if pkg["kind"] == "kernel" else "utility"
+            diag.error(
+                rel(pkg["skill_md"]),
+                f"{tier} skill has call edges ({called}); {tier} skills are primitives and call no skill",
+            )
 
 
 def _envelope_first_clause(body: str):
@@ -124,7 +135,7 @@ def _envelope_missing(clause: str) -> list:
     """The envelope fields whose vocabulary the first clause lacks; []
     when the clause instead names the work-item carrier, whose T0 shape
     carries all three fields."""
-    if TICKET_FILING_RE.search(clause):
+    if ENVELOPE_CARRIER_RE.search(clause):
         return []
     return [label for label, pattern in ENVELOPE_VOCAB_RES if not pattern.search(clause)]
 
@@ -133,7 +144,7 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
     """contracts/result.md: every bound dispatchable unit leads its
     Return: with status, result identity, and verification."""
     for pkg in packages:
-        if pkg["path"].name not in ENVELOPE_UNITS:
+        if pkg["path"].name not in ENVELOPE_UNITS and pkg["kind"] != "instances":
             continue
         clause = _envelope_first_clause(pkg["body"])
         if clause is None:
@@ -145,6 +156,12 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
                 "Return does not lead with the result envelope per contracts/result.md: "
                 f"first clause carries no {', '.join(missing)} vocabulary "
                 "and names no work-item carrier",
+            )
+        elif not ENVELOPE_CARRIER_RE.search(clause) and not ENVELOPE_FIELD_LEAD_RE.search(clause):
+            diag.error(
+                rel(pkg["skill_md"]),
+                "Return does not lead with structured result-envelope fields per "
+                "contracts/result.md",
             )
 
 

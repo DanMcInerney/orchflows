@@ -107,6 +107,87 @@ class TestPrivateReferenceAdmission(_IsolatedTree):
         self.assertTrue(finding.startswith("ERROR "), finding)
 
 
+class TestStructuralAdmissionMutants(_IsolatedTree):
+    def _write_skill(self, name, body, tier="instances", role="worker"):
+        path = self.tmp_path / "skills" / tier / name
+        path.mkdir(parents=True)
+        (path / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: synthetic skill\nrole: {role}\n---\n{body}",
+            encoding="utf-8",
+        )
+
+    def _write_pack(self, name, body):
+        path = self.tmp_path / "packs" / name
+        path.mkdir(parents=True)
+        (path / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: synthetic pack\n---\n{body}",
+            encoding="utf-8",
+        )
+
+    def test_labels_in_a_fence_do_not_satisfy_skill_anatomy(self):
+        self._write_skill(
+            "orch-fenced",
+            "```text\nRequire: example.\nNever: example.\nReturn: example.\n```\nDo work.\n",
+        )
+        result = self._run()
+        self.assertIn("skill body missing ordered Require/procedure/Never/Return anatomy", result.stdout)
+
+    def test_a_return_must_be_the_terminal_paragraph(self):
+        self._write_skill(
+            "orch-after-return",
+            "Require: input.\n\nDo work.\n\nNever: skip.\n\nReturn: the completed ticket.\n\nDo more work.\n",
+        )
+        result = self._run()
+        self.assertIn("Return must be the terminal paragraph", result.stdout)
+
+    def test_a_utility_call_edge_is_primitive_impurity(self):
+        self._write_skill(
+            "orch-target", "Require: input.\nNever: skip.\nReturn: the completed ticket.\n"
+        )
+        self._write_skill(
+            "orch-helper",
+            "Require: input.\nCall `orch-target`.\nNever: skip.\nReturn: the completed ticket.\n",
+            tier="utilities",
+        )
+        result = self._run()
+        self.assertIn("utility skills are primitives", result.stdout)
+
+    def test_pack_control_flow_is_rejected(self):
+        self._write_pack(
+            "orch-flow-pack",
+            "If evidence is absent, then delegate and stop.\n",
+        )
+        result = self._run()
+        self.assertIn("pack body carries control flow", result.stdout)
+
+    def test_duplicate_pack_cell_rows_are_rejected(self):
+        rows = "\n".join(
+            f"| {cell} | binding |" for cell in validate.PACK_SIGNATURE_CELLS
+        )
+        self._write_pack(
+            "orch-duplicate-pack",
+            "| cell | binding |\n| --- | --- |\n" + rows + "\n| executor | other |\n",
+        )
+        result = self._run()
+        self.assertIn("pack signature table repeats cell(s): executor", result.stdout)
+
+    def test_a_new_executor_is_not_outside_envelope_admission(self):
+        self._write_skill(
+            "orch-new-executor", "Require: input.\nNever: skip.\nReturn: assumptions.\n"
+        )
+        result = self._run()
+        self.assertIn("does not lead with the result envelope", result.stdout)
+
+    def test_envelope_words_in_a_sentence_are_not_an_envelope(self):
+        self._write_skill(
+            "orch-prose-envelope",
+            "Require: input.\nNever: skip.\n"
+            "Return: the ticket has status, result identity, and verification.\n",
+        )
+        result = self._run()
+        self.assertIn("does not lead with structured result-envelope fields", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
 
