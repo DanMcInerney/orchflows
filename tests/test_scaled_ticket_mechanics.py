@@ -9,6 +9,24 @@ from pathlib import Path
 from unittest import mock
 
 from scripts import tickets
+from scripts import tickets_commands
+
+
+ROOT = Path(__file__).resolve().parents[1]
+LEGACY_ERRAND_FLAGS = {
+    "--authored-here-oracle",
+    "--born-red-oracle",
+    "--oracle",
+    "--oracle-authored-here",
+    "--oracle-born-red",
+    "--oracle-provenance",
+    "--path",
+    "--paths",
+    "--pre-existing-oracle",
+    "--provenance",
+    "--simple-task",
+    "--task",
+}
 
 
 class OrdinaryNewAuthoringTest(unittest.TestCase):
@@ -67,6 +85,30 @@ class OrdinaryNewAuthoringTest(unittest.TestCase):
             self.assertEqual("v1:pending", data["admission"])
             self.assertEqual("pending", data["status"])
             self.assertIn(criterion, text)
+
+
+class RemovedErrandSurfaceTest(unittest.TestCase):
+    def test_no_command_module_facade_flag_or_architecture_owner_survives(self):
+        self.assertFalse((ROOT / "scripts" / "tickets_errand.py").exists())
+        self.assertNotIn("errand", tickets.SUBCOMMAND_USAGE)
+        self.assertNotIn("errand", tickets.SUBCOMMAND_SUMMARY)
+        self.assertEqual(
+            {"error": "unknown subcommand: errand"}, tickets._dispatch(["errand"])
+        )
+        self.assertFalse(hasattr(tickets, "_cmd_errand"))
+        self.assertFalse(hasattr(tickets, "issue_admitted_ticket"))
+        self.assertTrue(LEGACY_ERRAND_FLAGS.isdisjoint(tickets_commands.VALUE_FLAGS))
+        for relative in (
+            "scripts/tickets.py",
+            "scripts/tickets_commands.py",
+            "scripts/tickets_dispatch.py",
+            "scripts/tickets_issue.py",
+            "ARCHITECTURE.md",
+        ):
+            with self.subTest(relative=relative):
+                text = (ROOT / relative).read_text(encoding="utf-8")
+                self.assertNotIn("tickets_errand", text)
+                self.assertNotIn("issue_admitted_ticket", text)
 
 
 if __name__ == "__main__":

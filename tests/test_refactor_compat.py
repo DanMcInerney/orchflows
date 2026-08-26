@@ -42,7 +42,6 @@ class TicketsFacadeCompatibilityTest(unittest.TestCase):
         "check",
         "claim",
         "draft-validate",
-        "errand",
         "gate",
         "grant",
         "improvement",
