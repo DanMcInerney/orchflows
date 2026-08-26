@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3213,
+  "count": 3210,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -673,9 +673,8 @@
    "test_tickets_context.TestPrimaryCloseGuidance.test_primary_close_requests_only_terse_state_watch_context",
    "test_tickets_context.TestSuccessorContextHydration.test_canonical_context_is_flattened_with_status",
    "test_tickets_context.TestSuccessorContextHydration.test_complete_absence_points_to_result_and_nonterminal_absence_is_silent",
-   "test_tickets_context.TestSuccessorContextHydration.test_context_wins_deterministically_in_mixed_history",
    "test_tickets_context.TestSuccessorContextHydration.test_dependency_order_is_preserved_and_unreadable_siblings_are_silent",
-   "test_tickets_context.TestSuccessorContextHydration.test_legacy_carry_is_hydrated_with_explicit_provenance",
+   "test_tickets_context.TestSuccessorContextHydration.test_non_context_section_is_ignored_and_complete_dependency_uses_result",
    "test_tickets_emitters.EmissionLawPartition.test_a_dependency_that_has_not_run_yet_is_deferred",
    "test_tickets_emitters.EmissionLawPartition.test_a_finding_code_the_law_does_not_know_refuses",
    "test_tickets_emitters.EmissionLawPartition.test_an_emitter_owned_finding_is_refused",
@@ -2163,8 +2162,8 @@
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_an_unreadable_ticket_is_named_with_its_reason",
    "tests.test_tickets_cases.readiness.TestReadyReportsWhatItCouldNotGrade.test_the_flat_ticket_family_needs_no_ui_reader_module",
    "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_append_validates_the_combined_context_atomically",
-   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_carry_is_legacy_only_and_dual_section_creation_is_refused",
    "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_context_accepts_one_to_five_state_or_watch_bullets",
+   "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_context_is_the_only_successor_digest_filing_channel",
    "tests.test_tickets_cases.result_crossing.TestContextFilingContract.test_every_malformed_context_is_refused_without_changing_bytes",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_an_unreadable_body_file_is_an_error_not_a_traceback",
    "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_both_file_and_text_is_an_error",
@@ -2255,8 +2254,6 @@
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_amend_refuses_a_checked_or_sealed_cohort_without_changing_bytes",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_new_issuance_omits_optional_successor_context",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_converts_v0_and_preserves_executor_sections",
-   "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_preserves_legacy_carry_and_canonical_context",
-   "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_refuses_to_invent_carry_or_create_a_new_dual_section",
    "tests.test_tickets_issue_cases.admission_recut.RecutAndCohortTest.test_recut_rejects_a_ticket_id_that_traverses_into_another_run",
    "tests.test_tickets_issue_cases.amend_cases.AmendTest.test_a_claimed_ticket_is_refused_and_left_exactly_as_it_was",
    "tests.test_tickets_issue_cases.amend_cases.AmendTest.test_a_cut_time_section_is_replaced_on_an_unclaimed_ticket",
@@ -3216,7 +3213,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "544ef71ac2cfa0610170d24c73e56e84dd4d27f08681833b8674924764bb7efd"
+  "sha256": "49b7abec1184130541fda315218595294964dcb17d715c5e686704502180c072"
  },
  "mutation_owners": [
   {
