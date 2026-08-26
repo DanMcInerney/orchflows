@@ -1,54 +1,54 @@
 #!/usr/bin/env python3
-"""Install orchflows for Claude Code and/or Codex from a git clone.
+"""Install orchflows for Claude Code, Codex and Grok Build from a git clone.
 
-Cross-platform (Windows + POSIX), pathlib throughout, never
-symlinks. User scope is primary and auto-detects which host(s) to
-configure: the Claude half runs only when a Claude CLI is on ``PATH``, and
-the Codex half only when a Codex CLI is on ``PATH``. If neither is found,
-the installer warns and exits successfully without writing anything.
+Cross-platform (Windows + POSIX), pathlib throughout, never symlinks. User
+scope is primary and auto-detects its hosts: a host's half runs only when its
+own CLI is on ``PATH``, and if none is found it warns and exits successfully
+without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
+``GROK_HOME`` each replace their host's default home, matching that CLI.
 
-- ``~/.orchflows/`` (private Python runtime, library, scripts, receipt, the rendered
-  ``host-block.md``). The library also carries a flat, host-agnostic
+- ``~/.orchflows/`` (private Python runtime, library, scripts, receipt, the
+  rendered ``host-block.md``). The library also carries a flat, host-agnostic
   ``lib/by-name/<orch-name>/SKILL.md`` index: one deterministic path per
-  canonical package (every skill tier plus packs), each a redirect pointer
-  to its tiered source so a name resolves without guessing a sublayer. The
+  canonical package (every skill tier plus packs), each a redirect pointer to
+  its tiered source so a name resolves without guessing a sublayer. The
   pointer never copies the body, so it carries no relative links — an agent
-  follows it to the tiered file, where every ``references/`` and
-  ``../../../`` link resolves from its authored location.
-- Claude Code (when a Claude CLI is on ``PATH``): ``~/.claude/skills/<name>/SKILL.md``
-  adapter stubs (frontmatter plus an ``@``-include of the library body),
-  role agents, concurrency setting. Compositions (the template directories
+  follows it to the tiered file, where every ``references/`` and ``../../../``
+  link resolves from its authored location.
+- Claude Code — ``~/.claude/skills/<name>/SKILL.md`` adapter stubs
+  (frontmatter plus an ``@``-include of the library body), role agents,
+  concurrency setting. Compositions (the template directories
   ``compositions/<name>/``, invocable by name whatever their ``entry``) get
   the same by-name entries and Codex prompts as skills, and an adapter stub
   carrying the instantiate command rather than an ``@``-include, since a
-  template is a directory and ``@`` includes a file. ``CLAUDE_CONFIG_DIR`` replaces ``~/.claude``
-  throughout, matching the CLI. The always-on instruction layer is
-  rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned)
-  and referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>``
-  import line — idempotent, migrating any legacy inline marker block found
-  there from an older install.
-- Codex (when a Codex CLI is on ``PATH``): prompts, five redirect skill stubs
-  (``~/.codex/skills/<name>/SKILL.md`` for ``orch-spec``,
-  ``orch-frontier``, ``fix``, ``orch-build``, ``orch-investigate``) that
-  point at the library instead of
-  duplicating it, role agents, agent-limits config. ``CODEX_HOME`` replaces
-  ``~/.codex`` throughout, matching the CLI. The always-on layer
-  stays an inline marker block upserted into ``~/.codex/AGENTS.md`` — a
-  read-only probe (``codex debug prompt-input`` against a scratch repo,
-  installed CLI 0.144.0) found ``@file`` imports do not expand there, so
-  Codex keeps the proven marker-block mechanism rather than migrating to
-  an import line. A preflight warns (never edits or deletes) if
-  ``~/.codex/hooks.json`` references a now-missing orchflows path.
+  template is a directory and ``@`` includes a file. The always-on layer is
+  rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned) and
+  referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>`` import
+  line — idempotent, migrating any legacy inline marker block from an older
+  install.
+- Codex — five redirect skill stubs (``~/.codex/skills/<name>/SKILL.md`` for
+  ``orch-spec``, ``orch-frontier``, ``fix``, ``orch-build``,
+  ``orch-investigate``) that point at the library instead of duplicating it,
+  plus prompts, role agents, agent-limits config. The always-on layer stays an
+  inline marker block upserted into ``~/.codex/AGENTS.md`` — a read-only probe
+  (``codex debug prompt-input`` against a scratch repo, installed CLI 0.144.0)
+  found ``@file`` imports do not expand there, so Codex keeps the proven
+  marker-block mechanism rather than migrating to an import line. A preflight
+  warns (never edits or deletes) if ``~/.codex/hooks.json`` names a
+  now-missing orchflows path.
+- Grok Build — full-body skills at ``~/.grok/skills/<name>/SKILL.md``, role
+  agents under ``~/.grok/agents/``, and the ``[subagents]`` block of
+  ``~/.grok/config.toml``. The always-on layer is one whole installer-owned
+  file, ``~/.grok/rules/orchflows.md``.
 
 Installation has one scope: user. Legacy project receipts remain accepted by
-``--project PATH --uninstall`` only, so installations created by older
-versions can still be cleaned up conservatively without recreating project
-artifacts.
+``--project PATH --uninstall`` only, so older versions' installations can
+still be cleaned up conservatively without recreating project artifacts.
 
 The receipt records ``source_commit`` (the installed-from repo's git HEAD,
-read from a clone or a worktree checkout); a rerun whose HEAD has moved
-prints the drift, and a null commit says on stderr which read came up empty.
-A receipt that will not read is refused, never overwritten as if absent.
+read from a clone or a worktree checkout); a rerun whose HEAD has moved prints
+the drift, and a null commit says on stderr which read came up empty. A
+receipt that will not read is refused, never overwritten as if absent.
 
 ``--dry-run`` builds and prints the exact same plan an install would apply,
 including whether the private runtime would be created, reused or repaired,
