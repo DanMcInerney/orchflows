@@ -14,6 +14,17 @@ class RuntimeVenvTests(unittest.TestCase):
         self.home.mkdir()
         self.project_runtime = self.root / "project" / ".venv"
 
+    def use_copied_runtime_builds(self):
+        """Grade lifecycle policy over a copy of a real runtime, not a build.
+
+        Every case that calls this asks the installer for a runtime only so
+        that it has one to reuse, repair, refuse or retain. See the helper.
+        """
+
+        patcher = copied_runtime_builds()
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_user_install_uses_private_runtime_when_project_venv_is_active(self):
         install.venv.EnvBuilder(symlinks=os.name != "nt", with_pip=False).create(
             self.project_runtime
@@ -51,6 +62,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertNotIn(str(self.project_runtime), rendered)
 
     def test_user_install_reuses_healthy_private_runtime(self):
+        self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             install.apply_plan(install.build_plan("user", None))
             marker = install.private_runtime_home() / "reuse-marker"
@@ -79,6 +91,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertFalse(runtime_python.resolve().is_relative_to(runtime_home.resolve()))
 
     def test_user_install_repairs_an_unhealthy_private_runtime(self):
+        self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             install.apply_plan(install.build_plan("user", None))
             runtime_home = install.private_runtime_home()
@@ -107,6 +120,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertEqual([], list(self.home.iterdir()))
 
     def test_failed_repair_preserves_the_previous_runtime(self):
+        self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             install.apply_plan(install.build_plan("user", None))
             runtime_home = install.private_runtime_home()
@@ -137,6 +151,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertEqual("keep", marker.read_text(encoding="utf-8"))
 
     def test_rendered_friction_command_executes_from_a_spaced_home(self):
+        self.use_copied_runtime_builds()
         spaced_home = self.root / "home with spaces"
         spaced_home.mkdir()
         with patch.object(install.Path, "home", return_value=spaced_home), mock_host_clis("codex"):
@@ -170,6 +185,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertEqual("friction logged", completed.stdout.strip())
 
     def test_dry_run_reports_create_reuse_and_repair(self):
+        self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             self.assertEqual("create", install.build_plan("user", None).runtime_action)
             install.apply_plan(install.build_plan("user", None))
@@ -182,6 +198,7 @@ class RuntimeVenvTests(unittest.TestCase):
             self.assertEqual("repair", install.build_plan("user", None).runtime_action)
 
     def test_failed_first_install_leaves_runtime_discoverable_to_uninstall(self):
+        self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             plan = install.build_plan("user", None)
             real_create = install._create_private_runtime
@@ -202,6 +219,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.assertIn("retained", manual[str(runtime_home)])
 
     def test_update_and_uninstall_follow_the_private_runtime_policy(self):
+        self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             first = install.apply_plan(install.build_plan("user", None))
             runtime_home = install.private_runtime_home()
