@@ -34,6 +34,25 @@ ERRAND_USAGE = (
 )
 ORACLE_NAME_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 SKILL_NAME_RE = re.compile(r"^orch-[a-z][a-z-]*$")
+DERIVED_ARTIFACT_REGISTRY = (
+    {
+        "artifact": "tests/serial_compat_manifest.json",
+        "invalidations": (
+            {"operation": "create", "prefix": "tests/", "suffix": ".py"},
+            {"operation": "delete", "prefix": "tests/", "suffix": ".py"},
+            {"operation": "write", "prefix": "tests/", "suffix": ""},
+        ),
+        "mutation": "change:tests/serial_compat_manifest.json",
+        "step": {
+            "name": "serial-compat-regeneration",
+            "command": "uv run --no-project python tools/run_serial_compat.py --write-manifest",
+            "oracle": "uv run --no-project python tools/run_serial_compat.py",
+        },
+    },
+)
+_REGISTRY_KEYS = frozenset({"artifact", "invalidations", "mutation", "step"})
+_INVALIDATION_KEYS = frozenset({"operation", "prefix", "suffix"})
+_STEP_KEYS = frozenset({"name", "command", "oracle"})
 
 
 def _mutation(value: str) -> str:
@@ -51,6 +70,89 @@ def _mutation(value: str) -> str:
     if operation == "write":
         path = path.rstrip("/") + "/"
     return f"{operation}:{path}"
+
+
+def _registry_entries() -> tuple:
+    entries, artifacts, steps = [], set(), set()
+    for position, entry in enumerate(DERIVED_ARTIFACT_REGISTRY, start=1):
+        if not isinstance(entry, dict) or set(entry) != _REGISTRY_KEYS:
+            raise ValueError(
+                f"incomplete derived-artifact registry entry {position}: "
+                f"expected {sorted(_REGISTRY_KEYS)}"
+            )
+        artifact = entry["artifact"]
+        mutation = entry["mutation"]
+        invalidations = entry["invalidations"]
+        step = entry["step"]
+        complete = (
+            isinstance(artifact, str) and artifact
+            and artifact not in artifacts
+            and isinstance(mutation, str)
+            and mutation.split(":", 1)[-1] == artifact
+            and isinstance(invalidations, (tuple, list)) and invalidations
+            and all(
+                isinstance(rule, dict) and set(rule) == _INVALIDATION_KEYS
+                and rule["operation"] in MUTATION_OPERATIONS
+                and isinstance(rule["prefix"], str)
+                and isinstance(rule["suffix"], str)
+                for rule in invalidations
+            )
+            and isinstance(step, dict) and set(step) == _STEP_KEYS
+            and ORACLE_NAME_RE.fullmatch(str(step["name"]))
+            and step["name"] not in steps
+            and all(isinstance(step[key], str) and step[key] for key in ("command", "oracle"))
+        )
+        if not complete:
+            raise ValueError(
+                f"incomplete derived-artifact registry entry {position}: "
+                "artifact, invalidations, mutation, and named deterministic step must close"
+            )
+        artifacts.add(artifact)
+        steps.add(step["name"])
+        entries.append(entry)
+    return tuple(entries)
+
+
+def _invalidated(mutation: str, rules) -> bool:
+    operation, path = mutation.split(":", 1)
+    return any(
+        operation == rule["operation"]
+        and path.startswith(rule["prefix"])
+        and path.endswith(rule["suffix"])
+        for rule in rules
+    )
+
+
+def derived_closure(mutations) -> dict:
+    """Expand generator-owned invalidations through the closed registry."""
+    entries = _registry_entries()
+    closed = []
+    for value in mutations:
+        rendered = _mutation(value)
+        if rendered not in closed:
+            closed.append(rendered)
+    regeneration_steps = []
+    changed = True
+    while changed:
+        changed = False
+        for entry in entries:
+            if not any(_invalidated(mutation, entry["invalidations"]) for mutation in closed):
+                continue
+            if entry["mutation"] not in closed:
+                closed.append(entry["mutation"])
+                changed = True
+            if entry["step"] not in regeneration_steps:
+                regeneration_steps.append(dict(entry["step"]))
+    write_scope = []
+    for mutation in closed:
+        path = mutation.split(":", 1)[1]
+        if path not in write_scope:
+            write_scope.append(path)
+    return {
+        "write_scope": write_scope,
+        "mutations": closed,
+        "regeneration_steps": regeneration_steps,
+    }
 
 
 def _caller_is_isolated() -> bool:
@@ -157,19 +259,12 @@ def _cmd_errand(rest):
     names = [item["name"] for item in oracles]
     if len(set(names)) != len(names):
         return {"error": "errand oracle names must be unique"}
-    normalized_mutations = []
-    for value in mutations:
-        try:
-            rendered = _mutation(value)
-        except OSError as error:
-            return {"error": str(error)}
-        if rendered not in normalized_mutations:
-            normalized_mutations.append(rendered)
-    write_scope = []
-    for mutation in normalized_mutations:
-        path = mutation.split(":", 1)[1]
-        if path not in write_scope:
-            write_scope.append(path)
+    try:
+        closure = derived_closure(mutations)
+    except (OSError, ValueError) as error:
+        return {"error": str(error)}
+    normalized_mutations = closure["mutations"]
+    write_scope = closure["write_scope"]
     fields = {
         "id": ticket_id,
         "run": run,
@@ -191,11 +286,16 @@ def _cmd_errand(rest):
     inputs = [
         "- input: " + canonical_json({"name": "simple-task", "type": "literal", "value": task}),
         *("- input: " + canonical_json({"name": item["name"], "type": "literal", "value": item["command"]}) for item in oracles),
+        *("- input: " + canonical_json({"name": item["name"], "type": "literal", "value": item["command"]}) for item in closure["regeneration_steps"]),
     ]
     criteria = [
         f'- {item["name"]} passes for the delivered result | oracle: `{item["command"]}` | oracle_class: deterministic | provenance: {item["provenance"]}'
         for item in oracles
     ]
+    criteria.extend(
+        f'- {item["name"]} is current after its named regeneration step | oracle: `{item["oracle"]}` | oracle_class: deterministic | provenance: pre-existing'
+        for item in closure["regeneration_steps"]
+    )
     sections = [
         ("Objective", str(task).strip()),
         ("Fixed inputs", "\n".join(inputs)),
@@ -210,4 +310,7 @@ def _cmd_errand(rest):
     return issue_admitted_ticket(run, ticket_id, text)
 
 
-__all__ = ("ERRAND_USAGE", "_cmd_errand")
+__all__ = (
+    "DERIVED_ARTIFACT_REGISTRY", "ERRAND_USAGE", "derived_closure",
+    "_cmd_errand",
+)
