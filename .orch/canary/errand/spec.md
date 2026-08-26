@@ -1,0 +1,9 @@
+# Frozen ad-hoc statement\n
+## Objective\n\nThe canonical installer generates a first-class Codex skill redirect for `orch-investigate` alongside the existing four redirects, guarded by a regression test that fails under the old four-name policy.
+## Fixed inputs\n\n- input: {"identity":{"kind":"ticket-section","run":"orch-install-catalog-diagnosis-20260825","section":"Result","sha256":"625ca8aaa7a02c5d41fa1af42b9e605ad336097beadf229d5ff5886eaa496b9e","ticket":"investigate"},"name":"accepted-defect-set","type":"identity"}
+- input: {"name":"workspace","type":"literal","value":"C:\\Users\\danhm\\.codex\\worktrees\\2cb3\\orchflows-public"}
+## Completion test\n\n- affected installer tests PASS and include a regression assertion that the generated Codex skill targets contain `orch-investigate` while preserving `orch-spec`, `orch-frontier`, `fix`, and `orch-build` | oracle: `uv run --no-project python tools/run_tests.py --scope installer/foundation.py tests/test_installer_cases/` | oracle_class: deterministic | provenance: authored-here
+- library validation PASSes after the redirect-policy change | oracle: `uv run --no-project python tools/validate.py` | oracle_class: deterministic | provenance: pre-existing
+- installer dry-run PASSes and resolves the updated canonical plan without writing user files | oracle: `uv run --no-project python install.py --dry-run` | oracle_class: deterministic | provenance: pre-existing
+- the patch is the smallest coherent repair and changes no behavior outside first-class Codex exposure of `orch-investigate` and its regression expectations | oracle: independent library-lens critique of the diff against the accepted defect set | oracle_class: judged | provenance: authored-here
+## Return fields\n\nstatus; changed_artifacts; per-finding disposition with rerun evidence; result identity; verification; feedback; risks; queued scope

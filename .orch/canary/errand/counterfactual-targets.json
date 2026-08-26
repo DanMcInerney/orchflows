@@ -1,0 +1,17 @@
+{
+  "schema": "orchflows.errand-counterfactual-targets.v1",
+  "provenance": "errand-catalog-redirect-fixture#Fixed inputs/frozen-counterfactual",
+  "observed": {
+    "agent_contexts": 21,
+    "full_suite_runs": 5,
+    "runs": 7,
+    "wall_minutes": 170
+  },
+  "targets": {
+    "agent_contexts_max": 2,
+    "derived_closure_in_ticket": true,
+    "full_suite_runs": 1,
+    "runs": 1,
+    "wall_minutes_max": 30
+  }
+}
