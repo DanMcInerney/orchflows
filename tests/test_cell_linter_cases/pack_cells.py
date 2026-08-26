@@ -216,13 +216,72 @@ class TestAssemblyForm(_IsolatedTree):
         self.assertNotIn("assembly cell", result.stdout)
 
 
-class V2WorkspaceBindingTest(unittest.TestCase):
-    EXPECTED = {"orch-code-pack": ("`orch-tdd`", "`git`", ("git:", "identities: revisions", "authority: paths", "isolation: branch or worktree"), "absent region proof"), "orch-content-pack": ("`orch-draft`", "`document-tree`", ("document tree:", "identities are document revisions", "isolation is a run-scoped directory", "write scopes are outline slots"), "without region proof"), "orch-design-pack": ("`orch-render`", "`git-plus-render`", ("git plus render:", "identities: [view identity]", "authority: paths", "golden captures:", "run captures: outside write scope"), "failed region proof"), "orch-research-pack": ("`orch-investigate`", "`evidence-store`", ("evidence store:", "identities are [evidence packets]", "isolation is a run-scoped directory", "write scopes are lane stores"), "lacking region proof")}
-    def test_every_shipped_workspace_binds_v2_without_replacing_legacy_meaning(self):
-        packs = {path.parent.name: dict(re.findall(r"^\| ([a-z_]+) \| (.+?) \|\s*$", path.read_text(encoding="utf-8"), re.M)) for path in sorted((ROOT / "packs").glob("*/SKILL.md"))}
+class CurrentWorkspaceBindingTest(unittest.TestCase):
+    EXPECTED = {
+        "orch-code-pack": (
+            "`orch-tdd`", "`git`",
+            ("git:", "identities: revisions", "authority: paths", "isolation: branch or worktree"),
+            "absent region proof",
+        ),
+        "orch-content-pack": (
+            "`orch-draft`", "`document-tree`",
+            (
+                "document tree:", "identities are document revisions",
+                "isolation is a run-scoped directory",
+                "write scopes are a whole document for one direct owner or outline slots for a genuine cut",
+            ),
+            "without region proof",
+        ),
+        "orch-design-pack": (
+            "`orch-render`", "`git-plus-render`",
+            (
+                "git plus render:", "identities: [view identity]", "authority: paths",
+                "golden captures:", "run captures: outside write scope",
+            ),
+            "failed region proof",
+        ),
+        "orch-research-pack": (
+            "`orch-investigate`", "`evidence-store`",
+            (
+                "evidence store:", "identities are [evidence packets]",
+                "isolation is a run-scoped directory", "write scopes are lane stores",
+            ),
+            "lacking region proof",
+        ),
+    }
+
+    def test_every_shipped_workspace_binds_the_current_ticket_protocol(self):
+        packs = {
+            path.parent.name: dict(
+                re.findall(
+                    r"^\| ([a-z_]+) \| (.+?) \|\s*$",
+                    path.read_text(encoding="utf-8"),
+                    re.M,
+                )
+            )
+            for path in sorted((ROOT / "packs").glob("*/SKILL.md"))
+        }
         self.assertEqual(set(self.EXPECTED), set(packs))
-        for pack, (executor, adapter, legacy, fallback) in self.EXPECTED.items():
-            cells = packs[pack]; workspace = cells["workspace"]; self.assertEqual(executor, cells["executor"]); self.assertIn("ticket adapter: %s" % adapter, workspace); [self.assertIn(fragment, workspace) for fragment in legacy]; [self.assertIn(field, workspace) for field in ("root_generation", "cut_generation", "assignment_seal", "ownership_regions")]; self.assertRegex(workspace, r"ownership_regions: (?:`(?:symbol|heading|json-pointer)`|adapter-equivalent)"); self.assertIn(fallback, workspace); self.assertIn("merge oracle:", workspace); self.assertIn("stable non-overlap at a pinned identity", workspace)
+        for pack, (executor, adapter, substrate, refusal) in self.EXPECTED.items():
+            with self.subTest(pack=pack):
+                cells = packs[pack]
+                workspace = cells["workspace"]
+                self.assertEqual(executor, cells["executor"])
+                self.assertIn("ticket adapter: %s" % adapter, workspace)
+                for fragment in substrate:
+                    self.assertIn(fragment, workspace)
+                for field in (
+                    "root_generation", "cut_generation", "assignment_seal", "ownership_regions",
+                ):
+                    self.assertIn(field, workspace)
+                self.assertRegex(
+                    workspace,
+                    r"ownership_regions: (?:`(?:symbol|heading|json-pointer)`|adapter-equivalent)",
+                )
+                self.assertIn(refusal, workspace)
+                self.assertIn("merge oracle:", workspace)
+                self.assertIn("stable non-overlap at a pinned identity", workspace)
+
 
 class TestCellClauseSplitter(unittest.TestCase):
     def test_a_semicolon_cuts_one_bullet_into_two_clauses(self):

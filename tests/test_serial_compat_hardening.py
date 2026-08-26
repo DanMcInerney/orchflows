@@ -108,8 +108,8 @@ class TestManifestHardening(unittest.TestCase):
             for entry in entries if entry.get("allowed_seams")
         }
         self.assertEqual({
-            "tests.test_tickets_cases.run_state_artifacts": ["environment"],
-            "tests.test_tickets_cases.identity_core": ["environment"],
+            "tests.test_tickets_issue_cases.new_cases": ["environment"],
+            "tests.test_workspace_cases.start_cases": ["environment"],
             "tests.test_ui_cases.http_server": ["module-cache"],
         }, allowed)
 

@@ -25,15 +25,13 @@ from scripts.tickets_generations import assignment_payload
 CHAIN_TICKET = """---
 id: G1
 run: testrun
-status: claimed
+status: pending
 executor: orch-critique
 sequence: [orch-critique, orch-repair]
-pack: orch-code-pack
 depends_on: []
-write_scope: scratch/g1.txt
+write_scope: []
+isolation: none
 bound: 30m
-claimed_by: gate-a
-claimed_at: 2099-01-01T00:00:00Z
 ---
 
 ## Objective
@@ -42,7 +40,7 @@ Review the result set, then repair the accepted findings.
 
 ## Fixed inputs
 
-None.
+- input: {"name":"none","type":"literal","value":null}
 
 ## Completion test
 
@@ -77,9 +75,24 @@ def graded(sequence, executor="orch-critique"):
 def make_repo(tmp: Path, *tickets) -> Path:
     (tmp / ".git").mkdir()
     run_dir = use_sink(tmp) / "tickets" / "testrun"
-    run_dir.mkdir(parents=True)
     for name, body in tickets:
-        (run_dir / f"{name}.md").write_text(body, encoding="utf-8")
+        source = tmp / f"{name}.md"
+        source.write_text(body, encoding="utf-8")
+        issued = run_cmd(tmp, "new", "testrun", name, "--file", str(source))
+        assert "error" not in issued, issued
+        stamped = run_cmd(tmp, "stamp-generation", "testrun", name)
+        assert "error" not in stamped, stamped
+        validated = run_cmd(tmp, "draft-validate", "testrun", name)
+        assert "error" not in validated, validated
+        cut = validated["draft_validation"]["cut_generation"]
+        sealed = run_cmd(
+            tmp, "seal", "testrun", name, "--cut-generation", cut,
+        )
+        assert "error" not in sealed, sealed
+        ready = run_cmd(tmp, "ready", "--run", "testrun")
+        assert "error" not in ready, ready
+        claimed = run_cmd(tmp, "claim", "testrun", name, "--by", "gate-a")
+        assert "error" not in claimed, claimed
     return run_dir
 
 

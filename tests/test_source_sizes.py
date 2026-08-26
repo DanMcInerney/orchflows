@@ -65,6 +65,18 @@ class SourceSizeCheckerTest(unittest.TestCase):
                 self.assertEqual(sizes.main([str(rejected)]), 1)
             self.assertIn("rejected.py: 511 physical lines", stdout.getvalue())
 
+    def test_an_oversized_test_warns_without_blocking(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            test_file = root / "tests" / "test_large.py"
+            test_file.parent.mkdir()
+            test_file.write_bytes(b"line\n" * 501)
+            stdout = io.StringIO()
+            with mock.patch.object(sizes, "ROOT", root), contextlib.redirect_stdout(stdout):
+                self.assertEqual(sizes.main([str(test_file)]), 0)
+            self.assertIn("WARN tests", stdout.getvalue())
+            self.assertIn("source-size policy: PASS", stdout.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

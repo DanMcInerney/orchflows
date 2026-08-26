@@ -18,7 +18,7 @@ class TestCodexRedirectManifestRegression(unittest.TestCase):
 
         self.assertIn(
             "test_installer.TestClaudeAdapterSet."
-            "test_the_shared_four_and_codex_redirect_names_are_explicit",
+            "test_installer_description_says_codex_redirects_every_canonical_name",
             identities,
         )
         self.assertIn(

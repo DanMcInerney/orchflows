@@ -48,6 +48,7 @@ def _canonical_admission_replay() -> dict:
             "run": "orch-install-catalog-repair-20260825",
             "ticket_id": "repair",
             "tickets_root": str((FIXTURE / "inputs" / "tickets").resolve()),
+            "runs_root": str((FIXTURE / "runs").resolve()),
             "project_root": str(ROOT),
         },
     )

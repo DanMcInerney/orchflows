@@ -140,6 +140,12 @@ def dispatch(*args) -> dict:
 
 
 def seal() -> str:
+    root_path = Path(os.environ[STATE_HOME_ENV_VAR]) / "tickets" / RUN / f"{ROOT_ID}.md"
+    root = tickets_mod._parse_frontmatter(root_path.read_text(encoding="utf-8"))
+    if not root.get("root_generation"):
+        stamped = dispatch("stamp-generation", RUN, ROOT_ID)
+        if "error" in stamped:
+            raise AssertionError(stamped)
     validation = dispatch("draft-validate", RUN, ROOT_ID)
     if "error" in validation:
         raise AssertionError(validation)

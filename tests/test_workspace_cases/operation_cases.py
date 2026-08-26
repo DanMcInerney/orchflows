@@ -23,9 +23,10 @@ def operation_fixture(tmp, ticket_id, mutations, *, include_plan=True,
         (workspace.ISOLATION_KEY, "required"),
         (workspace.BRANCH_KEY, f"{ticket_id}-branch"),
     ]
-    extra.append(("admission", "pending"))
     if include_plan:
         extra.append(("mutations", f"[{', '.join(mutations)}]"))
+    else:
+        extra.append(("mutations", "[]"))
     path = make_ticket(run_dir, ticket_id, scope=("scratch",), extra=extra)
     if status != "claimed":
         text = path.read_text(encoding="utf-8")
@@ -88,8 +89,8 @@ class TestJoinGradesActualOperations(unittest.TestCase):
             self.assertEqual(workspace.EXIT_SCOPE_BREACH, done.returncode, done.stdout)
             self.assertEqual(["scratch/change.txt"], payload_of(done)["dirty"])
 
-    def test_pending_or_ready_ticket_without_a_plan_is_refused(self):
-        for status in ("pending", "ready"):
+    def test_every_lifecycle_position_with_an_empty_plan_is_refused(self):
+        for status in ("claimed", "pending", "ready"):
             with self.subTest(status=status), tempfile.TemporaryDirectory() as raw:
                 ticket_id = f"T-unclaimed-{status}"
                 main, base = operation_fixture(

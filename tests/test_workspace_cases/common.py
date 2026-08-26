@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.tickets as tickets  # noqa: E402  the grant key's one owner
+import scripts.tickets_generations as generations  # noqa: E402
 import scripts.workspace as workspace  # noqa: E402
 import scripts.workspace_git as workspace_git  # noqa: E402  the ticket stamp's writer
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
@@ -101,9 +102,34 @@ def make_ticket(run_dir: Path, tid: str, *, scope=("scratch",), extra=()) -> Pat
     lines += [f"  - {entry}" for entry in scope]
     lines += ["bound: 30m"]
     lines += [f"{key}: {value}" for key, value in extra]
-    lines += ["---", "", "## Objective", "", "Fixture ticket.", ""]
+    if not any(key == "mutations" for key, _ in extra):
+        plans = []
+        for entry in scope:
+            normalized = str(entry).replace("\\", "/").rstrip("/")
+            if Path(normalized).is_absolute():
+                normalized = Path(normalized).name
+            plans.append(f"write:{normalized}/")
+        lines += [f"mutations: [{', '.join(plans)}]"]
+    lines += [
+        "ownership_regions: []",
+        "---", "", "## Objective", "", "Fixture ticket.", "",
+        "## Fixed inputs", "",
+        '- input: {"name":"none","type":"literal","value":null}', "",
+        "## Completion test", "",
+        "- workspace behavior matches the case oracle | oracle: the case assertion | oracle_class: deterministic | provenance: authored-here", "",
+        "## Return fields", "", "status; result; verification; feedback; risks", "",
+        "## Result", "", "", "## Verification", "", "",
+        "## Feedback", "", "[]", "", "## Risks", "", "[]", "",
+    ]
+    text = "\n".join(lines)
+    text = tickets._set_frontmatter_field(text, "admission", "pending")
+    draft = generations.draft_snapshot(tid, {tid: text}, member_ids=[])
+    receipt = generations.validate_draft(tid, {tid: text}, draft, member_ids=[])
+    text = generations.seal_assignments(
+        tid, {tid: text}, draft, receipt, member_ids=[],
+    )[tid]
     path = run_dir / f"{tid}.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text(text, encoding="utf-8")
     return path
 
 

@@ -62,7 +62,7 @@ class TestNoTempTreeIsDeletedWhileItIsTheCwd(unittest.TestCase):
                     offenders.append(f"{path.name}:{node.lineno}")
         self.assertEqual([], offenders, "chdir inside a self-deleting temp tree")
 class TestEveryCaseClassIsRegistered(unittest.TestCase):
-    """No `tests/test_*_cases/` TestCase is dropped by its own shard family."""
+    """No active case-family TestCase is dropped by its own shard family."""
 
     @classmethod
     def setUpClass(cls):

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2686,
+  "count": 2683,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -8,7 +8,7 @@
    "test_affected_tests.TestDiscoveryCache.test_the_record_is_runtime_state_and_never_a_repository_artifact",
    "test_affected_tests.TestLiveFacadeMappings.test_neither_owner_selects_the_whole_suite",
    "test_affected_tests.TestLiveFacadeMappings.test_the_issue_owner_selects_its_own_admission_suite",
-   "test_affected_tests.TestLiveFacadeMappings.test_the_lint_owner_selects_its_own_namesake_suite",
+   "test_affected_tests.TestLiveFacadeMappings.test_the_lint_owner_selects_the_current_protocol_suite",
    "test_affected_tests.TestMeasuredImportEdges.test_a_file_reached_only_through_a_facade_selects_its_shard",
    "test_affected_tests.TestMeasuredImportEdges.test_a_file_reached_only_through_a_relative_import_selects_its_shard",
    "test_affected_tests.TestMeasuredImportEdges.test_a_shard_reaching_none_of_the_targets_is_never_selected",
@@ -591,6 +591,7 @@
    "test_skill_fork_governance.TheSweptPopulationIsReal.test_the_population_spans_every_tier",
    "test_source_sizes.SourceSizeCheckerTest.test_510_lines_pass_and_511_lines_fail",
    "test_source_sizes.SourceSizeCheckerTest.test_all_six_executable_suffixes_are_owned",
+   "test_source_sizes.SourceSizeCheckerTest.test_an_oversized_test_warns_without_blocking",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
    "test_source_sizes.SourceSizeCheckerTest.test_git_reader_is_nul_safe_and_keeps_hidden_paths",
    "test_super_research_runner.SuperResearchRunnerTests.test_accepts_module_and_class_selectors",
@@ -890,10 +891,6 @@
    "tests.test_carriage_cases.script_ownership.ScriptOwnershipTest.test_verification_guardrail_owner_paths_are_pinned",
    "tests.test_carriage_cases.subcommand_reach.SubcommandReachTest.test_a_subcommand_with_neither_caller_nor_status_fails_the_check",
    "tests.test_carriage_cases.subcommand_reach.SubcommandReachTest.test_every_subcommand_is_called_by_a_skill_or_recorded_operator_only",
-   "tests.test_carriage_cases.verification_flow.CutCheckOrderingTest.test_an_engine_and_a_contract_without_the_clause_fail_the_check",
-   "tests.test_carriage_cases.verification_flow.CutCheckOrderingTest.test_the_contract_does_not_restate_the_staffing_threshold",
-   "tests.test_carriage_cases.verification_flow.CutCheckOrderingTest.test_the_contract_points_a_root_ticket_at_its_cut_reader",
-   "tests.test_carriage_cases.verification_flow.CutCheckOrderingTest.test_the_engine_holds_the_units_until_the_cut_is_checked",
    "tests.test_carriage_cases.verification_flow.ReverificationSplitTest.test_a_rule_and_an_engine_without_the_split_fail_the_check",
    "tests.test_carriage_cases.verification_flow.ReverificationSplitTest.test_contradictory_checker_and_second_gate_paths_fail_the_guardrail",
    "tests.test_carriage_cases.verification_flow.ReverificationSplitTest.test_successor_owner_and_trigger_cannot_be_replaced_by_return_only_prose",
@@ -902,6 +899,7 @@
    "tests.test_carriage_cases.verification_flow.ReverificationSplitTest.test_workflows_carry_successor_runs_selected_independence_and_single_gate",
    "tests.test_carriage_cases.verification_flow.TipCheckTest.test_an_engine_without_the_clause_fails_the_check",
    "tests.test_carriage_cases.verification_flow.TipCheckTest.test_the_engine_runs_the_required_checks_once_on_the_tip",
+   "tests.test_cell_linter_cases.pack_cells.CurrentWorkspaceBindingTest.test_every_shipped_workspace_binds_the_current_ticket_protocol",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_every_allowlisted_clause_is_in_the_form_the_matcher_compares",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_the_real_tree_carries_no_unallowed_verbatim_duplication",
    "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_backticked_none_is_rejected",
@@ -926,7 +924,6 @@
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_near_duplicate_clauses_warn_naming_both_sites",
    "tests.test_cell_linter_cases.pack_cells.TestCellDuplication.test_unrelated_clauses_are_not_reported",
    "tests.test_cell_linter_cases.pack_cells.TestMandatedEchoExemption.test_the_craft_opener_the_assembly_form_and_the_oracle_enums_are_exempt",
-   "tests.test_cell_linter_cases.pack_cells.V2WorkspaceBindingTest.test_every_shipped_workspace_binds_v2_without_replacing_legacy_meaning",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_a_count_above_the_ceiling_fails",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_ceiling",
    "tests.test_cell_linter_cases.warning_ratchets.WarningCeilingTest.test_the_tree_holds_at_or_under_the_cross_tier_ceiling",
@@ -2628,9 +2625,9 @@
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_an_absolute_scope_entry_outside_the_repository_is_refused_by_name",
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_check_passes_after_the_linked_tree_is_removed",
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_the_same_scope_entry_takes_its_own_segment",
+   "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_every_lifecycle_position_with_an_empty_plan_is_refused",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_exact_create_change_and_delete_plan_passes",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_operation_mismatch_refuses_even_when_the_path_is_authorized",
-   "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_pending_or_ready_ticket_without_a_plan_is_refused",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_still_present_isolated_worktree_must_have_no_dirty_oracle_bytes",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_write_prefix_covers_every_actual_operation_below_it",
    "tests.test_workspace_cases.prepare.TestAbsoluteScopeEntriesAreCanonicalised.test_a_nested_workspace_is_the_same_grant_from_either_side",
@@ -2689,7 +2686,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "6983c3a6df4591c8ef0bb602d3566b70f913a8389cd503be06e6e9c168f1a5bd"
+  "sha256": "73011f171d48cddf3723977018abd8fa4b554cc9662c27de5108c6a0b11b220c"
  },
  "mutation_owners": [
   {
@@ -3322,6 +3319,14 @@
   {
    "module": "tests.test_gate_only_lifecycle",
    "owner": "fixture",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_gate_only_lifecycle",
+   "owner": "seal",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
@@ -4545,6 +4550,14 @@
   },
   {
    "module": "tests.test_source_sizes",
+   "owner": "SourceSizeCheckerTest.test_an_oversized_test_warns_without_blocking",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_source_sizes",
    "owner": "SourceSizeCheckerTest.test_git_reader_is_nul_safe_and_keeps_hidden_paths",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -4671,6 +4684,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_static_tree_invariants_cases._registration",
+   "owner": "survey",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "module-cache"
    ]
   },
   {
@@ -4805,6 +4826,7 @@
   {
    "module": "tests.test_ticket_protocol",
    "owner": "RegistryClosureTest.test_every_emitted_executor_has_an_exact_role_matched_codex_skill",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
@@ -4812,6 +4834,7 @@
   {
    "module": "tests.test_ticket_protocol",
    "owner": "TicketRun.call",
+   "restoration": "sharded-module-guard",
    "seams": [
     "environment"
    ]
@@ -5962,8 +5985,8 @@
     "ticket-contention",
     "process"
    ],
-   "id": "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_concurrent_notes_all_land_whole",
-   "module": "tests.test_tickets_cases.run_state_artifacts"
+   "id": "tests.test_tickets_issue_cases.new_cases.NewTest.test_concurrent_root_creators_leave_exactly_one_root",
+   "module": "tests.test_tickets_issue_cases.new_cases"
   },
   {
    "allowed_seams": [
@@ -5973,8 +5996,8 @@
     "workspace-state",
     "git-process"
    ],
-   "id": "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_real_git_worktree_appends_to_the_same_project",
-   "module": "tests.test_tickets_cases.identity_core"
+   "id": "tests.test_workspace_cases.start_cases.TestStartRecordsWhatItObserved.test_from_a_linked_worktree_it_writes_the_main_root_ticket_only",
+   "module": "tests.test_workspace_cases.start_cases"
   },
   {
    "categories": [

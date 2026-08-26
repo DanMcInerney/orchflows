@@ -33,12 +33,9 @@ from scripts import tickets as tickets_mod
 from scripts import tickets_ceiling, tickets_format, tickets_transitions
 from scripts import tickets_markdown, tickets_packet, tickets_result
 from scripts.tickets_dispatch import _dispatch
-from tests.test_lifecycle_table import chain_commands, commands_named
-from tests.test_tickets_cases.common import run_cmd
 from tests.test_tickets_issue_cases.common import ceiling_ticket
 from tests.test_tickets_issue_cases.generation_lifecycle import snapshot
 
-AMEND = ("amend", "testrun", "T1", "--section", "Objective", "--text", "A new objective.")
 CRITERION = "holds | oracle: `true` | oracle_class: deterministic | provenance: authored-here"
 
 
@@ -194,6 +191,8 @@ class SentinelIsNotContentTest(unittest.TestCase):
         run_dir.mkdir(parents=True)
         for ticket_id, value in snapshot().items():
             (run_dir / f"{ticket_id}.md").write_text(value, encoding="utf-8")
+        stamped = _dispatch(["stamp-generation", "run", "00-root"])
+        self.assertNotIn("error", stamped, stamped)
         drafted = _dispatch(["draft-validate", "run", "00-root"])
         _dispatch(["seal", "run", "00-root", "--cut-generation",
                    drafted["draft_validation"]["cut_generation"]])

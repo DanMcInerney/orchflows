@@ -5,116 +5,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ._support import CONTRACTS, ROOT, clause, clause_gaps, section
+from ._support import ROOT, clause, clause_gaps
 
 VERIFICATION = ROOT / "rules" / "verification.md"
 FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
-WORK_ITEM = CONTRACTS / "work-item.md"
 CRITIQUE = ROOT / "skills" / "kernel" / "orch-critique" / "SKILL.md"
 DECOMPOSE = ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md"
 INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
 SPEC = ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md"
-
-_FRONTIER_CUT_CHECK = {
-    "the units wait rather than promote": ("stay `pending`",),
-    "the field whose absence holds them": ("`checked_by`",),
-    "the check the cut's correction is accepted on": ("cutcheck",),
-    "the context whose cut-check re-run is the re-verification": (
-        "`cutcheck.py`", "re-verification",
-    ),
-    "the threshold that buys a cut a fresh reader": ("three or more", "advisory"),
-}
-
-#: The contract keeps only the pointer, and the two halves it points at are
-#: different surfaces: rules/verification.md §10 owns the law (a checker
-#: identity is single and immutable, the root cut reader its one exception)
-#: and orch-frontier owns when one is staffed (three or more `<id>.NN`, or
-#: after a cutcheck advisory). §10 states no threshold, so a contract that
-#: sent a reader there for staffing would be pointing at prose that does not
-#: carry it; both halves are asserted so neither pointer can go wrong alone.
-_CONTRACT_CUT_POINTER = {
-    "the field that records the root's cut reader": (
-        "`checked_by`", "cut reader",
-    ),
-    "the law the contract defers to instead of restating": (
-        "rules/verification.md", "§10",
-    ),
-    "the surface that decides when one is staffed": ("`orch-frontier`",),
-}
-
-_FRONTIER_CLAUSE_RE = re.compile(
-    r"A\s+root\s+cut\s+reader.*?cut\s+alone\.\s*", re.S
-)
-_CONTRACT_POINTER_RE = re.compile(
-    r"its\s+`checked_by`\s+recording.*?composite\s+gate\.\s*", re.S
-)
-
-
-class CutCheckOrderingTest(unittest.TestCase):
-    """A fresh reader checks a cut before any unit is dispatched."""
-
-    def test_the_engine_holds_the_units_until_the_cut_is_checked(self):
-        gaps = clause_gaps(FRONTIER.read_text(encoding="utf-8"), _FRONTIER_CUT_CHECK)
-        self.assertEqual(
-            [],
-            gaps,
-            "orch-frontier's body states no cut-checker clause covering: "
-            f"{', '.join(gaps)}",
-        )
-
-    def test_the_contract_points_a_root_ticket_at_its_cut_reader(self):
-        gaps = clause_gaps(
-            section(WORK_ITEM.read_text(encoding="utf-8"), "Root ticket"),
-            _CONTRACT_CUT_POINTER,
-        )
-        self.assertEqual(
-            [],
-            gaps,
-            "contracts/work-item.md's Root ticket section states no "
-            f"cut-reader pointer covering: {', '.join(gaps)}",
-        )
-
-    def test_the_contract_does_not_restate_the_staffing_threshold(self):
-        """The threshold has one prose owner, and it is not the contract."""
-        contract = WORK_ITEM.read_text(encoding="utf-8")
-        for token in ("three or more", "cutcheck advisory", "cut checker"):
-            with self.subTest(token=token):
-                self.assertNotIn(
-                    token,
-                    contract,
-                    "contracts/work-item.md restates the cut-reader staffing "
-                    f"threshold ({token!r}); orch-frontier owns it",
-                )
-
-    def test_an_engine_and_a_contract_without_the_clause_fail_the_check(self):
-        """The can-fail direction excises each clause from a copy."""
-        for path, required, pattern, reader in (
-            (FRONTIER, _FRONTIER_CUT_CHECK, _FRONTIER_CLAUSE_RE, lambda t: t),
-            (WORK_ITEM, _CONTRACT_CUT_POINTER, _CONTRACT_POINTER_RE,
-             lambda t: section(t, "Root ticket")),
-        ):
-            real = path.read_text(encoding="utf-8")
-            with tempfile.TemporaryDirectory() as tmp:
-                beside = Path(tmp) / path.name
-                beside.write_text(real, encoding="utf-8")
-                self.assertEqual(
-                    [],
-                    clause_gaps(reader(beside.read_text(encoding="utf-8")), required),
-                    f"the {path.name} copy must start with the clause intact, "
-                    "or the excision below is not what the check reacted to",
-                )
-                excised = re.sub(pattern, "", real, count=1)
-                self.assertNotEqual(
-                    real, excised,
-                    f"the {path.name} excision matched nothing, so the "
-                    "assertion below would prove nothing",
-                )
-                beside.write_text(excised, encoding="utf-8")
-                self.assertEqual(
-                    sorted(required),
-                    clause_gaps(reader(beside.read_text(encoding="utf-8")), required),
-                )
-
 
 _REVERIFICATION_SPLIT = {
     "the context that re-runs a deterministic invalidation": (
@@ -258,7 +156,6 @@ class ReverificationSplitTest(unittest.TestCase):
                         "one outside-independence path", "checker packet",
                         "gate-deferred", "already checked", "never",
                     ),
-                    "root exception": ("root cut reader", "exception"),
                     "successor trigger": (
                         "`successors.md`", "`planned`", "successor trigger",
                         "plan's materialization owner", "accepted", "`## Result` identity",

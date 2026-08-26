@@ -6,6 +6,7 @@ Runs on the isolated tmp-tree harness tests/test_validator.py owns, so
 every check is exercised at the real ROOT-relative seam.
 """
 import contextlib
+import json
 import os
 import sys
 import tempfile
@@ -40,6 +41,17 @@ MINIMAL_SKILL = (
 )
 
 
+def literal_input(name, value):
+    """One current-protocol literal Fixed-input record."""
+
+    return "- input: " + json.dumps(
+        {"name": name, "type": "literal", "value": value},
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ) + "\n"
+
+
 def template_md(
     name="demo",
     entry="named",
@@ -65,7 +77,7 @@ def _section_body(section, criteria):
     if section == "Objective":
         return "one repaired tree at {{target}}.\n"
     if section == "Fixed inputs":
-        return "- the defect report\n"
+        return literal_input("defect", "the defect report")
     if section == "Completion test":
         return "".join(f"- {criterion}\n" for criterion in criteria)
     if section == "Return fields":

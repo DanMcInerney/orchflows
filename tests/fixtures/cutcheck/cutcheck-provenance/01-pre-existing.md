@@ -1,7 +1,7 @@
 ---
 id: 01-pre-existing
 run: cutcheck-provenance
-status: issued
+status: pending
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
@@ -11,6 +11,12 @@ write_scope:
   - install.py
 excluded_actions:
   - editing scripts/tickets.py
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:01-pre-existing:1:sha256:46447722b3db35a0defb7451fd0414c52484a1f5ba6baa98067eb1998742202b
+cut_generation: cut:01-pre-existing:1:sha256:9408cbd3ae1257bdb417fc2c3b4c89c42bc6196d1016fbe95248374ed746b68a
+assignment_seal: sha256:ce4d2cd07baec449220db81eefcf360a6b2a063e71f45502c135b4140d11c343
 ---
 ## Objective
 
@@ -20,7 +26,7 @@ discrimination alone.
 
 ## Fixed inputs
 
-- Baseline: the revision cutcheck is invoked with.
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"462ef52aab37655260bdc9f9f98be4ed2601af2d"},"name":"baseline","type":"identity"}
 
 ## Completion test
 

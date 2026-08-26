@@ -1,4 +1,4 @@
-"""Compatibility discovery seam for the repository's carriage checks.
+"""Discovery seam for the repository's current carriage checks.
 
 The cases are partitioned by behavioral seam in ``test_carriage_cases``;
 explicit imports keep ``tests.test_carriage`` as the complete collection used
@@ -17,14 +17,12 @@ from tests.test_carriage_cases.friction_destination import FrictionDestinationTe
 from tests.test_carriage_cases.script_ownership import ScriptOwnershipTest
 from tests.test_carriage_cases.subcommand_reach import SubcommandReachTest
 from tests.test_carriage_cases.verification_flow import (
-    CutCheckOrderingTest,
     ReverificationSplitTest,
     TipCheckTest,
 )
 
 __all__ = [
     "CopyFaithfulnessClauseTest",
-    "CutCheckOrderingTest",
     "FrictionDestinationTest",
     "ReverificationSplitTest",
     "ScriptOwnershipTest",

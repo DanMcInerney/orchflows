@@ -7,8 +7,8 @@ spec workflow. This module pins the ceiling that keeps the contract
 shape-only, and pins each relocated passage to exactly one owner.
 
 The table is complete. Half of it landed with the item that authored
-this module; the other half — the staleness timer, the cut-reader
-staffing rule, the successors prose, and the line ceiling itself —
+this module; the other half — the staleness timer, the successors prose,
+and the line ceiling itself —
 landed with 00-root.11, which also amended the assertions in
 tests/test_contracts_cases/work_item.py,
 tests/test_contracts_cases/rules.py, and
@@ -26,7 +26,6 @@ ROOT = Path(__file__).resolve().parents[1]
 WORK_ITEM = ROOT / "contracts" / "work-item.md"
 PACK_SIGNATURE = ROOT / "contracts" / "pack-signature.md"
 VERIFICATION = ROOT / "rules" / "verification.md"
-FRONTIER = ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
 SPEC = ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md"
 PROJECT = ROOT / "scripts" / "tickets_project.py"
 BOUND = ROOT / "scripts" / "tickets_bound.py"
@@ -63,14 +62,6 @@ RELOCATIONS = {
         "owner": BOUND,
         "owner_carries": ("wall clock", "60 minutes", "`## Result`"),
     },
-    # The contract keeps a pointer at rules/verification.md §10, which owns
-    # the root cut reader as §10's distinct exception; the threshold that
-    # staffs one is orch-frontier's and stays there.
-    "cut-reader staffing": {
-        "gone_from_contract": ("three or more", "cut checker", "advisory"),
-        "owner": FRONTIER,
-        "owner_carries": ("three or more", "cut reader", "advisory"),
-    },
 }
 
 #: Every passage's contract-side deletion has landed.
@@ -83,8 +74,6 @@ OWNED_ELSEWHERE = tuple(RELOCATIONS)
 #: The staleness timer's owner is a script, so its sole-owner check is the
 #: one below rather than a row here: `prose_surfaces()` reads markdown.
 SOLE_PROSE_OWNER = {
-    "after a cutcheck advisory": FRONTIER,
-    "three or more": FRONTIER,
     "is that artifact's sole writer": SPEC,
 }
 
