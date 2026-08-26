@@ -46,12 +46,10 @@ def _packs_root(directory):
 
 def _library_packs_root():
     """The source or installed library's pack directory."""
-
     library = Path(__file__).resolve().parent.parent
-    for candidate in (library / PACKS_DIR, library / "lib" / PACKS_DIR):
-        if candidate.is_dir():
-            return candidate
-    return None
+    return next((path for path in (
+        library / PACKS_DIR, library / "lib" / PACKS_DIR
+    ) if path.is_dir()), None)
 
 
 def _required_spec_fields(packs_root, pack: str) -> list:
@@ -101,10 +99,9 @@ def input_records(body: str) -> list:
 
 
 def _expand_default(template: str, values: dict) -> str:
-    rendered = template
     for name in ("run", "ticket", "objective"):
-        rendered = rendered.replace("{" + name + "}", str(values.get(name) or ""))
-    return rendered
+        template = template.replace("{" + name + "}", str(values.get(name) or ""))
+    return template
 
 
 def _carry_research_fields(records: list, names: set, values: dict):
@@ -115,29 +112,25 @@ def _carry_research_fields(records: list, names: set, values: dict):
     no defaults are substituted into a specification route.
     """
 
+    literals = {
+        item.get("name"): item.get("value") for item in records
+        if isinstance(item, dict) and item.get("type") == "literal"
+    }
     if values.get("executor") == "orch-investigate":
-        for name, template in _direct_research_defaults():
-            if name not in names:
-                records.append({
-                    "name": name, "type": "literal",
-                    "value": _expand_default(template, values),
-                })
-                names.add(name)
-    elif values.get("executor") == ROOT_EXECUTOR:
-        literals = {
-            item.get("name"): item.get("value") for item in records
-            if isinstance(item, dict) and item.get("type") == "literal"
-        }
-        if "sources" in literals and "rigor" in literals:
-            carried = {
-                "question": values.get("objective"),
-                "source-policy": literals["sources"],
-                "rigor-bar": literals["rigor"],
-            }
-            for name, value in carried.items():
-                if name not in names:
-                    records.append({"name": name, "type": "literal", "value": value})
-                    names.add(name)
+        carried = [
+            (name, _expand_default(template, values))
+            for name, template in _direct_research_defaults()
+        ]
+    elif values.get("executor") == ROOT_EXECUTOR and {"sources", "rigor"} <= literals.keys():
+        carried = [("question", values.get("objective")),
+                   ("source-policy", literals["sources"]),
+                   ("rigor-bar", literals["rigor"])]
+    else:
+        carried = []
+    for name, value in carried:
+        if name not in names:
+            records.append({"name": name, "type": "literal", "value": value})
+            names.add(name)
 
 
 def replace_placeholders(value, values):
