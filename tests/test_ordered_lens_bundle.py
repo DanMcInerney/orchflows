@@ -33,7 +33,7 @@ EXPECTED_BUNDLE = [
 def _complete(ticket_id: str, result: str) -> None:
     for section, text in (
         ("Result", result),
-        ("Carry", "- final-identity: ordered-bundle-result"),
+        ("Context", "- state: ordered-bundle-result is the final identity"),
     ):
         value = dispatch(
             "result", RUN, ticket_id, "--section", section,

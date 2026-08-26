@@ -1,9 +1,4 @@
-"""`tickets.py lint`: every grader at once, and `--fix` on the syntactic half.
-
-Mostly one module: this shard's cases are one subject, and the tables case
-is here because the tables and the subcommand that extends them land
-together. Family 3's two-reader law is the exception, in a case module.
-"""
+"""`tickets.py lint` behavior, repair, and shared-reader coverage."""
 
 import json
 import subprocess
@@ -17,20 +12,12 @@ from scripts.tickets_store import _runs_root
 from tests.test_tickets_issue_cases.generation_lifecycle import ticket as v2_ticket
 from tests.test_tickets_lint_cases.family3 import *  # noqa: F401,F403  family 3's two-reader law
 
-# Two readings of one frozen ticket used to disagree; both halves land in the
-# three classes at the foot of this module. Lint graded with no context, so the
-# sealed run-state record could never be found and every sealed root reported
-# `seal-state-unavailable` while `ready` admitted it clean; and lint said
-# nothing on an exclusion contradicting its own write scope, which `cutcheck`
-# family 3 reports on the cut -- by which time the root is sealed.
 SEAL_STATE_CODES = {
     "seal-state-unavailable", "seal-state-missing", "seal-state-mismatch",
     "validation-receipt-mismatch", "sealed-assignment-mismatch",
 }
 CONTRADICTED = "vcs.integrate, vcs.push, vcs.open-pr, never write scratch/T1.txt"
 
-# One narrowed oracle: `python -m unittest` alone is the whole-suite finding,
-# and a draft meant to carry exactly five defects may not carry a sixth.
 NARROW_ORACLE = "`python -m unittest tests.test_thing.CaseTest.test_one`"
 GOOD_CRITERION_NARROW = (
     f"the artifact has the requested value | oracle: {NARROW_ORACLE} "
@@ -86,8 +73,6 @@ status; result; changed_artifacts; verification; feedback; risks
 """
 
 CANONICAL_SECOND_INPUT = '{"name":"question","type":"literal","value":"fixed"}'
-# The same record with its keys out of canonical order: the one defect the
-# normaliser is allowed to repair on its own.
 NONCANONICAL_SECOND_INPUT = '{"type":"literal","name":"question","value":"fixed"}'
 
 
@@ -101,11 +86,6 @@ def draft(baseline, *, tid="T1", isolation="required",
     )
 
 
-# The five defects the item's completion test names, as one set of overrides
-# rather than two copies of it. Three are syntactic -- keys out of canonical
-# order, `isolation: none` under `orch-tdd`, an exclusion written as prose --
-# and two are decisions nothing may rewrite: an instruction over the ceiling,
-# and a criterion naming no oracle class.
 FIVE_DEFECTS = {
     "isolation": "none",
     "excluded": "vcs.integrate, do not push to the remote",
@@ -126,6 +106,19 @@ def _instruction_words(baseline, tid):
     import scripts.tickets_format as fmt
 
     return fmt.instruction_words(draft(baseline, tid=tid, objective=UNPADDED_OBJECTIVE, **FIVE_DEFECTS))
+
+
+def draft_at_instruction_limit(baseline, words):
+    """A clean draft whose four counted fields total exactly ``words``."""
+    base = draft(baseline, objective=UNPADDED_OBJECTIVE)
+    objective_words = words - _instruction_words_for_text(base) + len(UNPADDED_OBJECTIVE.split())
+    return draft(baseline, objective=" ".join(["word"] * objective_words))
+
+
+def _instruction_words_for_text(text):
+    import scripts.tickets_format as fmt
+
+    return fmt.instruction_words(text)
 
 
 class LintFixture(unittest.TestCase):
@@ -177,6 +170,28 @@ class LintDraftTest(LintFixture):
         self.assertIn("320-word instruction", finding["message"])
         self.assertIn("20 over the 300-word ceiling", finding["message"])
         self.assertEqual("semantic", finding["kind"])
+
+    def test_context_is_outside_the_300_word_instruction_budget(self):
+        context = (
+            "## Context\n\n"
+            "- state: The successor may rely on the settled boundary.\n"
+            "- watch: Re-check the named oracle if that boundary changes.\n\n"
+        )
+        at_limit = draft_at_instruction_limit(self.baseline, 300).replace(
+            "## Completion test\n", context + "## Completion test\n", 1)
+        self.assertEqual(300, _instruction_words_for_text(at_limit))
+        self.assertNotIn(
+            "instruction-ceiling",
+            self.codes(self.lint("--file", str(self.write_draft(at_limit, "at-limit.md")))),
+        )
+
+        over_limit = draft_at_instruction_limit(self.baseline, 301).replace(
+            "## Completion test\n", context + "## Completion test\n", 1)
+        self.assertEqual(301, _instruction_words_for_text(over_limit))
+        self.assertIn(
+            "instruction-ceiling",
+            self.codes(self.lint("--file", str(self.write_draft(over_limit, "over-limit.md")))),
+        )
 
     def test_a_clean_draft_exits_zero_with_no_finding(self):
         path = self.write_draft(draft(self.baseline))
@@ -276,11 +291,6 @@ class LintFixTest(LintFixture):
         self.assertEqual(claimed, path.read_text(encoding="utf-8"))
 
     def test_fix_refuses_every_cut_time_freeze_amend_refuses(self):
-        """`--fix` is a cut-time rewrite, so it stops where `amend` stops.
-
-        Each of these is unclaimed and `pending`, so both status guards pass
-        and the ticket is one `amend` refuses on its own separate terms.
-        """
         frozen = (
             ("checked_by: some_checker", "has an immutable checked_by"),
             ("assignment_seal: v2:sha256:deadbeef", "carries an assignment_seal"),
@@ -339,13 +349,6 @@ class LintTicketTest(LintFixture):
         self.assertIsNone(finding["fix"])
 
     def test_a_checked_ticket_lints_clean(self):
-        """`check` writes `checked_by`; the issued form may not call that a defect.
-
-        `new`'s grader refuses `checked_by` because an unissued ticket
-        carrying it would suppress the checker before dispatch. Once
-        `check` has written it the same field is the lawful record, and
-        `lint <run> <id>` reads issued tickets only.
-        """
         text = (draft(self.baseline)
                 .replace("independence: gate", "independence: checker")
                 .replace("status: pending", "status: complete")
@@ -399,8 +402,6 @@ class LintTicketTest(LintFixture):
 
 
 class SealedRootLintTest(LintFixture):
-    """Lint reads a sealed v2 root the way `ready` and `claim` read it."""
-
     def test_a_sealed_cut_is_graded_against_its_run_state_record(self):
         """Threading the context is not silencing the finding: a record
         naming another cut still fails."""
@@ -424,8 +425,6 @@ class SealedRootLintTest(LintFixture):
 
 
 class ScopeContradictionLintTest(LintFixture):
-    """Family 3's judgment, surfaced while the text can still be changed."""
-
     def test_an_exclusion_naming_a_granted_path_is_reported(self):
         path = self.write_draft(draft(self.baseline, excluded=CONTRADICTED))
         payload = self.lint("--file", str(path))

@@ -91,5 +91,6 @@
     inputs, authority, dependencies, acceptance, and executor, its
     `sequence` included. Those fields are immutable after seal; any change
     creates a new generation. The executor-owned `Result`, `Verification`,
-    `Feedback`, `Risks`, `Carry`, and `Handoff` sections remain append-only
-    and outside the sealed assignment.
+    `Feedback`, `Risks`, `Context` (`## Context`), and `Handoff` sections remain
+    append-only and outside the sealed assignment; `## Context` alone is the
+    optional successor digest.

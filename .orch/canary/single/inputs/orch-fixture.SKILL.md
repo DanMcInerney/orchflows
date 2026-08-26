@@ -23,4 +23,3 @@ unaccepted result; edit the source run's records.
 
 Return: fixture path, what it proves, golden verdicts, and the
 admission replay evidence.
-

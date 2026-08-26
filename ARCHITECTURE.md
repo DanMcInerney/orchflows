@@ -9,9 +9,9 @@ Ceiling: 850 whitespace-delimited words. Terms are
   owns one pure data shape, hash-pinned: a field or enum change breaks
   it even when the prose meaning holds.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
-  primitives calling no skill; `engines/` control flow; `workflows/`
-  domain-blind behavior; `instances/` domain executors and lenses;
-  `utilities/` generic leaf behavior. A package owns its `SKILL.md`,
+  skill-free primitives; `engines/` control flow; `workflows/`
+  domain-blind behavior; `instances/` domain executors/lenses;
+  `utilities/` generic leaves. A package owns its `SKILL.md`,
   `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.
@@ -20,8 +20,7 @@ Ceiling: 850 whitespace-delimited words. Terms are
   vocabulary and domain-only shape.
 - **T3 — [`compositions/`](compositions/):** named workflow templates.
   Their ticket stubs follow the
-  [work-item contract](contracts/work-item.md), admitted through
-  `orch-build`.
+  [work-item contract](contracts/work-item.md) via `orch-build`.
 
 ## Cross-cutting owners
 
@@ -36,7 +35,8 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `tickets_format.py` owns syntax, closed parsers, and the pack registry;
   `tickets_markdown.py` byte preservation; `tickets_inputs.py` typed identity
   resolution; `tickets_scope.py` mutation/edge closure; `tickets_admission.py`
-  receipt lifecycle. `tickets_project.py` owns run-project binding,
+  receipt lifecycle. `tickets_successor_context.py` owns optional Context-only
+  dependency digest hydration. `tickets_project.py` owns run-project binding,
   `tickets_emission.py` emission grading, `tickets_ceiling.py` instruction
   ceiling, `tickets_issue_render.py` issuance markdown and ceiling refusals,
   `tickets_dispatch_gate.py` gate-only cut construction,
@@ -65,8 +65,8 @@ Ceiling: 850 whitespace-delimited words. Terms are
   is the installation compatibility facade; [`installer/`](installer/) owns
   static support, `installer/runtime.py` the private runtime at
   `~/.orchflows/runtime`, and the planning/application/uninstall modules the
-  immutable frontend at `~/.orchflows/ui`. The user install is the only
-  installation scope, creating or reusing both; replacement is staged and
+  immutable frontend at `~/.orchflows/ui`. User installation is the sole scope,
+  creating or reusing both; replacement is staged and
   probed before an owned prior generation moves.
   [`requirements-runtime.in`](requirements-runtime.in)
   and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins

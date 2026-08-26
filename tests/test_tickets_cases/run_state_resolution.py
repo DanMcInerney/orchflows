@@ -65,7 +65,7 @@ class TestRunStateRootResolution(unittest.TestCase):
                  "importlib", "json",
                  "msvcrt", "pathlib", "re", "scripts", "shlex", "state_root", "sys",
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
-                 "tickets_carry", "tickets_ceiling", "tickets_commands", "tickets_lint",
+                 "tickets_successor_context", "tickets_ceiling", "tickets_commands", "tickets_lint",
                  "tickets_sequence",
                  "tickets_project", "tickets_issue", "tickets_issue_render", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
@@ -254,6 +254,15 @@ class TestUnterminatedFenceIsReported(unittest.TestCase):
     and create a second one -- leaving two `## Result` headings that
     `_sections` resolves to neither, since the fence swallows both. The file
     is corrupt input at that point: the only safe write is none, reported."""
+
+    def test_successor_context_helper_keeps_unreadable_dependencies_non_authoritative(self):
+        """The packet's context seam may lose a sibling, never the packet."""
+
+        from scripts.tickets_successor_context import successor_context_block
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ticket = Path(tmp) / "T1.md"
+            self.assertEqual([], successor_context_block({"depends_on": ["missing"]}, ticket))
 
     def test_an_unterminated_fence_in_an_earlier_section_is_reported_not_duplicated(self):
         with tempfile.TemporaryDirectory() as tmp:

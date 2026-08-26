@@ -63,6 +63,9 @@ class RecutAndCohortTest(unittest.TestCase):
         self.run_dir.mkdir(parents=True)
         current = GOOD_TICKET.replace("status: ready", "status: pending").replace("## Result\n", "## Result\n\nold result\n")
         current = current.replace("## Verification\n", "## Verification\n\nold verification\n")
+        current = tickets_mod._write_section(
+            current, "Context", "- state: canonical conclusion"
+        )
         target = self.run_dir / "T1.md"
         target.write_text(current, encoding="utf-8")
         candidate = self.tmp / "candidate.md"
@@ -76,6 +79,32 @@ class RecutAndCohortTest(unittest.TestCase):
         self.assertIn("Corrected cut.", text)
         self.assertIn("old result", tickets_mod._sections(text)["Result"])
         self.assertIn("old verification", tickets_mod._sections(text)["Verification"])
+        self.assertEqual(
+            "- state: canonical conclusion", tickets_mod._sections(text)["Context"]
+        )
+
+    def test_new_issuance_omits_optional_successor_context(self):
+        issue_v1("T1", "v1:ticket:T1")
+        sections = tickets_mod._sections(
+            (self.run_dir / "T1.md").read_text(encoding="utf-8")
+        )
+        self.assertNotIn("Context", sections)
+        candidate = self.tmp / "malformed-context.md"
+        candidate.write_text(
+            tickets_mod._write_section(
+                GOOD_TICKET.replace("id: T1", "id: T2"), "Context", "[]"
+            ),
+            encoding="utf-8",
+        )
+        payload = run_cmd("new", "testrun", "--file", candidate)
+        self.assertIn("Context", payload["error"])
+        self.assertFalse((self.run_dir / "T2.md").exists())
+
+        source = (ROOT / "scripts" / "tickets_issue.py").read_text(encoding="utf-8")
+        legacy_heading = "Car" + "ry"
+        self.assertNotIn(f"'{legacy_heading}'", source)
+        self.assertNotIn("FILEABLE_EXECUTOR_SECTIONS", source)
+        self.assertNotIn("allow_legacy_" + legacy_heading.lower(), source)
 
     def test_recut_rejects_a_ticket_id_that_traverses_into_another_run(self):
         foreign = self.sink / "tickets" / "other"
