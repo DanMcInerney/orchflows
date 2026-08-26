@@ -20,14 +20,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-
 if __name__ == "test_tickets_view": sys.modules["tests.test_tickets_view"] = sys.modules[__name__]
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import scripts.tickets as tickets_mod  # noqa: E402
-
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
 FIX_TEMPLATE = ROOT / "compositions" / "fix"
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
@@ -81,7 +79,6 @@ status; result.
 []
 """
 
-
 def use_sink(tmp: Path) -> Path:
     """Point ``ORCHFLOWS_STATE_HOME`` at a sink under this test's tempdir.
 
@@ -89,28 +86,22 @@ def use_sink(tmp: Path) -> Path:
     the floor at a temporary directory regardless, so the worst a stale
     value can do is fail a test, never reach the real sink.
     """
-
     sink = (tmp / "state-sink").resolve()
     os.environ[STATE_HOME_ENV_VAR] = str(sink)
     return sink
 
-
 def run_cmd(*args):
     """One dispatch in this process, as the payload a reader of stdout gets."""
-
     payload = tickets_mod._dispatch([str(arg) for arg in args])
     return json.loads(json.dumps(payload, ensure_ascii=False))
 
-
 def run_full(cwd: Path, *args):
     """A real process: exit code and one JSON document on stdout."""
-
     return subprocess.run(
         [sys.executable, str(TICKETS_PY), *[str(a) for a in args]],
         capture_output=True, text=True, encoding="utf-8",
         errors="replace", cwd=str(cwd),
     )
-
 
 def ticket(tid: str, *, status: str = "complete", executor: str = "orch-tdd",
            deps: str = "[]", claimed_at: str = "", claimed_by: str = "agent-a",
@@ -129,7 +120,6 @@ def ticket(tid: str, *, status: str = "complete", executor: str = "orch-tdd",
         )
     return text
 
-
 def make_run(sink: Path, tickets: dict) -> Path:
     run_dir = sink / "tickets" / "testrun"
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -137,10 +127,8 @@ def make_run(sink: Path, tickets: dict) -> Path:
         (run_dir / f"{tid}.md").write_text(text, encoding="utf-8")
     return run_dir
 
-
 def three_ticket_run() -> dict:
     """A root ticket, two units under it, and a gate the second feeds."""
-
     return {
         "R": ticket(
             "R", status="claimed", executor="orch-decompose",
@@ -164,11 +152,9 @@ def three_ticket_run() -> dict:
         ),
     }
 
-
 class WorklogViewTest(unittest.TestCase):
     """`worklog <run>` renders the run from its tickets: goal, iterations,
     failed approaches, queued scope, terminal."""
-
     def render(self, *extra) -> str:
         payload = run_cmd("worklog", "testrun", *extra)
         self.assertNotIn("error", payload)
@@ -244,7 +230,6 @@ class WorklogViewTest(unittest.TestCase):
         template's done check. `_root_ticket` took the alphabetically-first
         decomposer, which for a template with several cuts is a stub in the
         middle of the graph — so the rendered goal was never the run's."""
-
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             make_run(sink, self.template_run())
@@ -330,7 +315,6 @@ class WorklogViewTest(unittest.TestCase):
         A `claimed` root is a run that has not exited, and rendering that
         lifecycle state here answers "how did this run end" with a state
         no reader may act on."""
-
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             make_run(sink, three_ticket_run())
@@ -390,7 +374,6 @@ class WorklogViewTest(unittest.TestCase):
         one nothing depends on, so its `## Objective` and its done-check
         (`## Completion test`) are the goal, and its own `stalled` exit is
         the run's."""
-
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             make_run(sink, {
@@ -414,11 +397,9 @@ class WorklogViewTest(unittest.TestCase):
             self.assertIn("error", payload)
             self.assertIn("testrun", payload["error"])
 
-
 class WorklogWriteTest(unittest.TestCase):
     """`--write` puts the view where contracts/worklog.md's readers look,
     and never over a file it did not render."""
-
     def worklog_path(self, sink: Path) -> Path:
         return sink / "runs" / "testrun" / "worklog.md"
 
@@ -437,7 +418,6 @@ class WorklogWriteTest(unittest.TestCase):
     def test_a_note_and_the_rendered_view_are_two_files_in_one_run(self):
         """F1's split: `run-state --note` has its own file, so the view
         `--write` lands is never a file some other writer owns."""
-
         with tempfile.TemporaryDirectory() as tmp:
             sink = use_sink(Path(tmp))
             make_run(sink, three_ticket_run())
@@ -489,11 +469,9 @@ class WorklogWriteTest(unittest.TestCase):
             run_cmd("worklog", "testrun")
             self.assertFalse(self.worklog_path(sink).exists())
 
-
 class WorklogRendersTheLiveTemplateTest(unittest.TestCase):
     """The view against a real instantiated template rather than a fixture
     built to suit it: `compositions/fix`, four stubs, one chain."""
-
     def test_the_fix_template_renders_every_section(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -527,8 +505,6 @@ class WorklogRendersTheLiveTemplateTest(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stdout)
             self.assertIn("## goal", json.loads(result.stdout)["worklog"]["markdown"])
 
-
 from tests.test_tickets_view_cases.gate_stubs import GateStubsTest  # noqa: E402,F401
-
 if __name__ == "__main__":
     unittest.main()
