@@ -342,6 +342,12 @@ def _main_impl(argv=None) -> int:
     args = parser.parse_args(argv)
 
     if args.pin:
+        diag = Diagnostics()
+        validate_pin_supersessions(diag)
+        if diag.has_errors:
+            for line in diag.lines():
+                print(line)
+            return 1
         pins = write_pins()
         print(f"wrote {len(pins)} pin(s) to {rel(PINS_FILE)}")
         return 0

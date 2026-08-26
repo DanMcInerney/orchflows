@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+
 from tools.validate_support import common as __dep_common
 BOUND_TERM_RE = __dep_common.BOUND_TERM_RE
 LOOP_TRIGGER_RE = __dep_common.LOOP_TRIGGER_RE
@@ -11,6 +13,7 @@ SKIPPED = __dep_common.SKIPPED
 TERMINAL_TERM_RE = __dep_common.TERMINAL_TERM_RE
 hashlib = __dep_common.hashlib
 json = __dep_common.json
+re = __dep_common.re
 
 from tools.validate_support import packages as __dep_packages
 CONTRACTS_DIR = __dep_packages.CONTRACTS_DIR
@@ -87,6 +90,82 @@ def write_pins() -> dict:
     # differ from every other host's pin file.
     PINS_FILE.write_bytes((json.dumps(pins, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     return pins
+
+
+T0_FIELD_RE = re.compile(
+    r"(?m)^\s*(?:[-*]\s+)?`([a-z][a-z0-9_]*)`\s*(?:—|-)"
+)
+T0_TABLE_FIELD_RE = re.compile(r"(?m)^\|\s*([a-z][a-z0-9_]*)\s*\|")
+
+
+def _t0_shape(text: str) -> tuple:
+    """The named-field surface whose change requires supersession."""
+
+    fields = set(T0_FIELD_RE.findall(text))
+    fields.update(T0_TABLE_FIELD_RE.findall(text))
+    enums = set()
+    for line in text.splitlines():
+        if re.search(r"\b(?:one of|enum|values?)\b", line, re.IGNORECASE):
+            enums.update(re.findall(r"`([a-z][a-z0-9_-]*)`", line))
+    return tuple(sorted(fields)), tuple(sorted(enums))
+
+
+def _historical_contract_text(path, digest: str):
+    """Find the Git version whose normalized bytes produced `digest`."""
+
+    relative = path.relative_to(ROOT).as_posix()
+    try:
+        history = subprocess.run(
+            ["git", "log", "--format=%H", "--", relative],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+            text=True,
+        ).stdout.splitlines()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    for revision in history[:100]:
+        try:
+            data = subprocess.run(
+                ["git", "show", f"{revision}:{relative}"],
+                cwd=ROOT,
+                capture_output=True,
+                check=True,
+            ).stdout.replace(b"\r\n", b"\n")
+        except (OSError, subprocess.CalledProcessError):
+            continue
+        if hashlib.sha256(data).hexdigest() == digest:
+            return data.decode("utf-8-sig")
+    return None
+
+
+def validate_pin_supersessions(diag: Diagnostics) -> None:
+    """Refuse a T0 shape re-pin without a record citing the old pin."""
+
+    if not PINS_FILE.is_file():
+        return
+    try:
+        recorded = json.loads(PINS_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return
+    current = compute_pins()
+    corpus = "\n".join(_read_source(path) for path in sorted(CONTRACTS_DIR.glob("*.md")))
+    for name, old_digest in recorded.items():
+        path = CONTRACTS_DIR / name
+        if name not in current or current[name] == old_digest or not path.is_file():
+            continue
+        before = _historical_contract_text(path, old_digest)
+        if before is not None and _t0_shape(before) == _t0_shape(_read_source(path)):
+            continue
+        record = re.compile(
+            rf"(?im)^.*T0\s+supersess\w*.*sha256:{re.escape(old_digest)}.*$"
+        )
+        if not record.search(corpus):
+            diag.error(
+                rel(path),
+                "named-field or enum change requires an explicit T0 supersession "
+                f"record citing sha256:{old_digest} before pins are rewritten",
+            )
 
 
 # --- Markdown links resolve (docs/documentation.md law 5) ---------------
@@ -185,5 +264,6 @@ def validate_pins(diag: Diagnostics) -> None:
 
 __all__ = (
     'validate_loop_lint', 'validate_cross_package_links', 'compute_pins', 'write_pins',
-    'LINKED_MD_ROOTS', '_linked_markdown_files', 'validate_markdown_links', 'validate_pins',
+    'validate_pin_supersessions', 'LINKED_MD_ROOTS', '_linked_markdown_files',
+    'validate_markdown_links', 'validate_pins',
 )
