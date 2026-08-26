@@ -7,6 +7,7 @@ from .foundation import (
     _claude_settings_path,
     _codex_agents_path,
     _codex_config_path,
+    _grok_config_path,
 )
 from .models import Plan
 from .planning import plan_entry_count
@@ -17,6 +18,7 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     print(f"scope: {plan.scope}")
     print(f"detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
     print(f"detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
+    print(f"detected grok CLI: {'yes' if plan.grok_enabled else 'no'}")
     print(f"source commit: {source_commit or 'unknown'}")
     print(f"library home: {plan.lib_home}")
     print(f"bin dir: {plan.bin_dir}")
@@ -72,12 +74,23 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
     for pair in plan.codex_agents:
         print(f"  write: {pair[0]}")
     print()
+    print(f"Grok skills ({len(plan.grok_skills)}):")
+    for pair in plan.grok_skills:
+        print(f"  write: {pair[0]}")
+    print()
+    print(f"Grok role agents ({len(plan.grok_agents)}):")
+    for pair in plan.grok_agents:
+        print(f"  write: {pair[0]}")
+    print()
     print(f"host configuration files ({len(plan.configs)}):")
     for config in plan.configs:
         print(f"  {config.label}: {config.dest}")
     print()
     if plan.host_block is not None:
         print(f"host instruction file: {plan.host_block.dest}")
+        print()
+    if plan.grok_rules is not None:
+        print(f"Grok instruction file: {plan.grok_rules.dest}")
         print()
     print(f"managed blocks ({len(plan.blocks)}):")
     for block in plan.blocks:
@@ -108,6 +121,7 @@ def print_summary(plan: Plan) -> None:
     if plan.scope == "user":
         print(f"  detected Claude Code CLI: {'yes' if plan.claude_enabled else 'no'}")
         print(f"  detected Codex CLI: {'yes' if plan.codex_enabled else 'no'}")
+        print(f"  detected grok CLI: {'yes' if plan.grok_enabled else 'no'}")
         print(f"  private runtime: {private_runtime_home()}")
     print(f"  library:     {plan.lib_home}  ({len(plan.lib_copies)} files)")
     if plan.by_name:
@@ -126,5 +140,13 @@ def print_summary(plan: Plan) -> None:
             f"{len(plan.codex_agents)} role agent(s); "
             f"instruction block in {_codex_agents_path(plan.scope, plan.project_root)}; "
             f"settings in {_codex_config_path(plan.scope, plan.project_root)}"
+        )
+    if plan.grok_enabled:
+        grok_rules_dest = plan.grok_rules.dest if plan.grok_rules is not None else "(none)"
+        print(
+            f"  Grok:        {len(plan.grok_skills)} skill(s), "
+            f"{len(plan.grok_agents)} role agent(s); "
+            f"instruction file {grok_rules_dest}; "
+            f"settings in {_grok_config_path()}"
         )
     print(f"  receipt:     {plan.receipt_path}")

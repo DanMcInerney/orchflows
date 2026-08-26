@@ -14,6 +14,8 @@ from .foundation import (
     _claude_scope_home,
     _codex_agents_dir,
     _codex_user_home,
+    _grok_agents_dir,
+    _grok_skills_dir,
 )
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
@@ -219,6 +221,7 @@ def _diverged_role_agents(plan: Plan, old_receipt: dict | None) -> list:
     for kind, files in (
         ("claude-agent", plan.claude_agents),
         ("codex-agent", plan.codex_agents),
+        ("grok-agent", plan.grok_agents),
     ):
         for path, desired in files:
             if not path.exists() and not path.is_symlink():
@@ -363,9 +366,18 @@ def apply_plan(
             dest.write_text(content, encoding="utf-8")
             written_files.append(_installed_file(dest, "codex-skill", action))
 
+        grok_skills_dir = _grok_skills_dir()
+        _remove_stale(old_receipt, "grok-skill", {str(dest) for dest, _ in plan.grok_skills}, grok_skills_dir)
+        for dest, content in plan.grok_skills:
+            action = install_action(dest, "grok-skill", dest.is_file())
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(content, encoding="utf-8")
+            written_files.append(_installed_file(dest, "grok-skill", action))
+
         for kind, files, boundary in (
             ("claude-agent", plan.claude_agents, _claude_agents_dir(plan.scope, plan.project_root)),
             ("codex-agent", plan.codex_agents, _codex_agents_dir(plan.scope, plan.project_root)),
+            ("grok-agent", plan.grok_agents, _grok_agents_dir()),
         ):
             _remove_stale(old_receipt, kind, {str(dest) for dest, _ in files}, boundary)
             for dest, content in files:
@@ -384,12 +396,17 @@ def apply_plan(
             config.dest.write_text(config.content, encoding="utf-8")
             written_files.append(_installed_file(config.dest, config.kind, action, details))
 
-        if plan.host_block is not None:
-            host_block = plan.host_block
-            action = install_action(host_block.dest, host_block.kind, host_block.dest.is_file())
-            host_block.dest.parent.mkdir(parents=True, exist_ok=True)
-            host_block.dest.write_text(host_block.content, encoding="utf-8")
-            written_files.append(_installed_file(host_block.dest, host_block.kind, action))
+        # The host block as a whole installer-owned file: Claude's
+        # ``~/.orchflows/host-block.md``, which an import line points at, and
+        # Grok's ``$GROK_HOME/rules/orchflows.md``, which Grok loads because
+        # it is there. Same write, so the same loop.
+        for managed in (plan.host_block, plan.grok_rules):
+            if managed is None:
+                continue
+            action = install_action(managed.dest, managed.kind, managed.dest.is_file())
+            managed.dest.parent.mkdir(parents=True, exist_ok=True)
+            managed.dest.write_text(managed.content, encoding="utf-8")
+            written_files.append(_installed_file(managed.dest, managed.kind, action))
 
     for _, dest in plan.lib_copies:
         action = install_action(dest, "lib", str(dest.resolve()) in old_lib_files)
@@ -447,6 +464,8 @@ def apply_plan(
         extra_dirs.append(str(_claude_agents_dir(plan.scope, plan.project_root)))
     if plan.codex_agents:
         extra_dirs.append(str(_codex_agents_dir(plan.scope, plan.project_root)))
+    if plan.grok_agents:
+        extra_dirs.append(str(_grok_agents_dir()))
 
     receipt = {
         "version": 4,

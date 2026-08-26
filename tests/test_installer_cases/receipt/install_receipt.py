@@ -218,3 +218,199 @@ class TestInstallReceipt(unittest.TestCase):
 
             self.assertFalse(old_agent.exists())
             self.assertEqual('name = "orch_worker"\n', new_agent.read_text(encoding="utf-8"))
+
+    # --- Grok ------------------------------------------------------------
+    #
+    # On this class rather than a Grok class of its own. Nothing under
+    # ``tests/test_installer_cases/`` is discovered: a class reaches the
+    # suite only by explicit class-name import in a shard module, and
+    # ``tests.test_run_tests`` holds every declared class name against the
+    # loaded one, so a new class here would be declared and never loaded.
+
+    @staticmethod
+    def _no_runtime_build():
+        """Plan the install with ``runtime_action`` ``None``.
+
+        The private runtime is an ``ensurepip`` plus a hash-locked dependency
+        install, and it lands under ``~/.orchflows``, which is not what any
+        case below reads. The runtime's own lifecycle is graded by the cases
+        that build one for real.
+        """
+
+        return patch.object(install, "private_runtime_action", return_value=None)
+
+    def test_a_grok_install_writes_the_planned_surface_and_records_its_kind(self):
+        """Every planned Grok artifact lands under ``GROK_HOME``, nothing else
+        does, and each is recorded under a kind of Grok's own.
+
+        The kinds cannot be the Claude and Codex ones they resemble:
+        ``_remove_stale`` sweeps by kind against the plan's wanted paths, so a
+        Grok skill filed as an ``adapter`` would be deleted by the very next
+        install as a stale Claude adapter.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            home.mkdir()
+            with isolated_grok_home(root) as grok_home, patch.object(
+                install.Path, "home", return_value=home
+            ), mock_host_clis("grok"), self._no_runtime_build():
+                plan = install.build_plan("user", None)
+                receipt = install.apply_plan(plan)
+
+            configs = [entry for entry in plan.configs if entry.kind == "grok-config"]
+            self.assertEqual(1, len(configs))
+            self.assertIsNotNone(plan.grok_rules)
+            planned = dict(plan.grok_skills + plan.grok_agents)
+            planned[plan.grok_rules.dest] = plan.grok_rules.content
+            planned[configs[0].dest] = configs[0].content
+
+            self.assertEqual(
+                set(planned), {path for path in grok_home.rglob("*") if path.is_file()}
+            )
+            for dest, content in planned.items():
+                self.assertEqual(content, dest.read_text(encoding="utf-8"))
+
+            expected = {str(dest): "grok-skill" for dest, _ in plan.grok_skills}
+            expected.update({str(dest): "grok-agent" for dest, _ in plan.grok_agents})
+            expected[str(plan.grok_rules.dest)] = "grok-rules"
+            expected[str(configs[0].dest)] = "grok-config"
+            recorded = {entry["path"]: entry["kind"] for entry in receipt["files"]}
+            self.assertEqual(
+                expected,
+                {path: kind for path, kind in recorded.items() if path in expected},
+            )
+            for entry in receipt["files"]:
+                self.assertEqual(digest(Path(entry["path"])), entry["sha256"])
+
+    def test_reinstall_removes_a_receipt_owned_grok_artifact_the_plan_dropped(self):
+        """A canonical name that goes away leaves no Grok file behind, and a
+        file the receipt never claimed stays exactly where the user put it."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with isolated_grok_home(root) as grok_home:
+                stale_skill = grok_home / "skills" / "orch-gone" / "SKILL.md"
+                stale_agent = grok_home / "agents" / "orch-gone.md"
+                mine = grok_home / "skills" / "handwritten" / "SKILL.md"
+                for path in (stale_skill, stale_agent, mine):
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text("before\n", encoding="utf-8")
+                receipt_path = root / ".orchflows" / "receipt.json"
+                receipt_path.parent.mkdir(parents=True)
+                receipt_path.write_text(
+                    json.dumps(
+                        {
+                            "files": [
+                                {
+                                    "path": str(stale_skill),
+                                    "kind": "grok-skill",
+                                    "sha256": digest(stale_skill),
+                                },
+                                {
+                                    "path": str(stale_agent),
+                                    "kind": "grok-agent",
+                                    "sha256": digest(stale_agent),
+                                },
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                kept_skill = grok_home / "skills" / "orch-here" / "SKILL.md"
+                kept_agent = grok_home / "agents" / "orch-worker.md"
+                plan = self._role_agent_plan(
+                    root,
+                    receipt_path=receipt_path,
+                    grok_skills=[(kept_skill, "here\n")],
+                    grok_agents=[(kept_agent, "worker\n")],
+                )
+
+                install.apply_plan(plan)
+
+                self.assertFalse(stale_skill.exists())
+                self.assertFalse(stale_skill.parent.exists())
+                self.assertFalse(stale_agent.exists())
+                self.assertEqual("here\n", kept_skill.read_text(encoding="utf-8"))
+                self.assertEqual("worker\n", kept_agent.read_text(encoding="utf-8"))
+                self.assertEqual("before\n", mine.read_text(encoding="utf-8"))
+
+    def test_enabling_grok_leaves_every_claude_and_codex_write_byte_identical(self):
+        """The third host adds files; it moves and rewrites none.
+
+        Both halves install into the same absolute home, the first one
+        removed before the second runs, so the comparison is of bytes rather
+        than of bytes modulo a root path -- two fake homes at different paths
+        could not be compared at all, since an adapter body names its own
+        library home.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            censuses = []
+            for hosts in (("claude", "codex"), ("claude", "codex", "grok")):
+                if home.exists():
+                    shutil.rmtree(home)
+                home.mkdir()
+                with isolated_grok_home(root) as grok_home, patch.object(
+                    install.Path, "home", return_value=home
+                ), mock_host_clis(*hosts), self._no_runtime_build():
+                    plan = install.build_plan("user", None)
+                    install.apply_plan(plan)
+                censuses.append(
+                    {
+                        str(path.relative_to(home)): digest(path)
+                        for directory in (home / ".claude", home / ".codex")
+                        for path in sorted(directory.rglob("*"))
+                        if path.is_file()
+                    }
+                )
+                self.assertEqual(
+                    "grok" in hosts,
+                    any(path.is_file() for path in grok_home.rglob("*")),
+                )
+            without, with_grok = censuses
+            self.assertTrue(without)
+            self.assertEqual(without, with_grok)
+
+    def test_the_printed_plan_and_summary_report_the_grok_surface(self):
+        """``--dry-run`` and the install summary say what lands on Grok.
+
+        A host whose surface is planned and applied but never named reads, to
+        the one person who has to check it, exactly like a host that was
+        never installed.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            home.mkdir()
+            with isolated_grok_home(root) as grok_home, patch.object(
+                install.Path, "home", return_value=home
+            ), mock_host_clis("grok"), self._no_runtime_build():
+                plan = install.build_plan("user", None)
+                printed = io.StringIO()
+                with redirect_stdout(printed):
+                    install.print_plan(plan)
+                    install.print_summary(plan)
+
+            text = printed.getvalue()
+            self.assertIn("detected grok CLI: yes", text)
+            self.assertIn(str(plan.grok_rules.dest), text)
+            self.assertIn(str(plan.grok_agents[0][0]), text)
+            self.assertIn(f"Grok skills ({len(plan.grok_skills)})", text)
+            self.assertIn(str(grok_home / "skills"), text)
+
+        with tempfile.TemporaryDirectory() as other:
+            second = Path(other) / "home"
+            second.mkdir()
+            with isolated_grok_home(Path(other)), patch.object(
+                install.Path, "home", return_value=second
+            ), mock_host_clis("claude"), self._no_runtime_build():
+                quiet = io.StringIO()
+                with redirect_stdout(quiet):
+                    install.print_plan(install.build_plan("user", None))
+        self.assertIn("detected grok CLI: no", quiet.getvalue())
+        self.assertIn("Grok skills (0)", quiet.getvalue())
