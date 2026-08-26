@@ -27,6 +27,7 @@ from tests.test_validator_cases.repo_and_frontmatter import (
     TestPinFlagRoundTrip,
     TestValidatorAgainstRepo,
 )
+import tools.validate as validate
 
 
 class TestRecursiveNameResolution(_IsolatedTree):
@@ -58,6 +59,26 @@ class TestRecursiveNameResolution(_IsolatedTree):
                     f"ERROR {relative}: `orch-missing` names no package",
                     result.stdout.replace("\\", "/"),
                 )
+
+
+class TestMarkdownAnchors(_IsolatedTree):
+    def test_a_link_to_a_missing_heading_is_an_error(self):
+        for root in validate.LINKED_MD_ROOTS:
+            (self.tmp_path / root).mkdir(exist_ok=True)
+        (self.tmp_path / "docs" / "target.md").write_text(
+            "# Present heading\n", encoding="utf-8"
+        )
+        (self.tmp_path / "docs" / "source.md").write_text(
+            "See [missing](target.md#absent-heading).\n", encoding="utf-8"
+        )
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn(
+            "markdown anchor does not resolve: target.md#absent-heading",
+            result.stdout,
+        )
 
 
 if __name__ == "__main__":

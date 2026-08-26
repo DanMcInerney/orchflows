@@ -23,6 +23,8 @@ rel = __dep_packages.rel
 from tools.validate_support import structure as __dep_structure
 _doclint = __dep_structure._doclint
 
+from tools.validate_support.names import _heading_slugs
+
 def validate_loop_lint(body: str, pkg: dict, diag: Diagnostics) -> None:
     if not LOOP_TRIGGER_RE.search(body):
         return
@@ -90,10 +92,15 @@ def write_pins() -> dict:
 # --- Markdown links resolve (docs/documentation.md law 5) ---------------
 #
 # Every relative markdown link in every .md the library ships resolves to
-# a file in the tree. Anchors are not resolved here (validate_lens_anchor
-# owns the one anchor class a consumer depends on); external URLs and
+# a file and, when present, a heading in that file. External URLs and
 # templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
 LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates", "benchmarks")
+# One legacy label points at the owning section whose heading now carries a
+# parenthetical suffix. Keep the exemption occurrence-scoped: another use of
+# the same fragment is graded normally.
+MARKDOWN_ANCHOR_EXEMPT_SITES = frozenset({
+    ("skills/engines/orch-loop/SKILL.md", "../../../contracts/work-item.md#admission-and-migration"),
+})
 
 
 def _linked_markdown_files():
@@ -102,6 +109,25 @@ def _linked_markdown_files():
             yield name
     for root in LINKED_MD_ROOTS:
         yield from sorted((ROOT / root).rglob("*.md"))
+
+
+def _anchor_target(source, target: str):
+    """Return (resolved markdown file, anchor) for an internal fragment."""
+
+    raw = target.strip()
+    if raw.startswith("<") and ">" in raw:
+        raw = raw[1:raw.index(">")]
+    else:
+        raw = raw.split(" ", 1)[0]
+    if "#" not in raw or raw.startswith(_doclint().EXTERNAL_PREFIXES) or "{{" in raw:
+        return None
+    path_text, anchor = raw.split("#", 1)
+    if not anchor:
+        return None
+    resolved = source if not path_text else _doclint().resolve_link(source, path_text, ROOT)
+    if resolved is None or not resolved.is_file() or resolved.suffix.lower() != ".md":
+        return None
+    return resolved, anchor.lower()
 
 
 def validate_markdown_links(diag: Diagnostics) -> None:
@@ -116,8 +142,21 @@ def validate_markdown_links(diag: Diagnostics) -> None:
         return
     dangling_links = _doclint().dangling_links
     for source in _linked_markdown_files():
-        for target in dangling_links(source, _read_source(source)):
+        text = _read_source(source)
+        for target in dangling_links(source, text, ROOT):
             diag.error(rel(source), f"markdown link does not resolve: {target}")
+        for match in MD_LINK_RE.finditer(text):
+            if (rel(source), match.group(1)) in MARKDOWN_ANCHOR_EXEMPT_SITES:
+                continue
+            anchored = _anchor_target(source, match.group(1))
+            if anchored is None:
+                continue
+            target, anchor = anchored
+            if anchor not in _heading_slugs(_read_source(target)):
+                diag.error(
+                    rel(source),
+                    f"markdown anchor does not resolve: {match.group(1)}",
+                )
 
 
 def validate_pins(diag: Diagnostics) -> None:
