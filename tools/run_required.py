@@ -7,7 +7,7 @@ has already been proved green. Stdlib only, Python 3.9+, POSIX and Windows.
 
 Usage:
     python tools/run_required.py [--repo DIR] [--python EXE]
-                                 [--no-cache] [--format text|json]
+                                 [--no-cache] [--format text|json] [--run ID]
 
 Exit 0 when all five exit 0, 1 when any does not, 2 on refusal.
 """
@@ -15,10 +15,14 @@ Exit 0 when all five exit 0, 1 when any does not, 2 on refusal.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 _FACADE_ROOT = Path(__file__).resolve().parent.parent
@@ -26,10 +30,13 @@ if str(_FACADE_ROOT) not in sys.path:
     sys.path.insert(0, str(_FACADE_ROOT))
 
 from tools.run_required_support import cache, execution, identity  # noqa: E402
+from scripts import state_root  # noqa: E402
 
 ROOT = _FACADE_ROOT
 RECORD_KIND = "required-check-run/v1"
+EVENT_KIND = "required-check-event/v1"
 REFUSAL_KIND = "required-check-refusal/v1"
+RUN_ID = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 
 # `AGENTS.md`'s five, in `AGENTS.md`'s order. `cheap` is what may share a
 # phase: the two long checks each want the whole machine, so they are run
@@ -95,6 +102,10 @@ def parse_args(argv=None):
     parser.add_argument(
         "--format", choices=("text", "json"), default="text",
         help="text for a reader, json for the record itself",
+    )
+    parser.add_argument(
+        "--run",
+        help="persist a content-addressed red-or-green event for this run",
     )
     return parser.parse_args(argv)
 
@@ -222,6 +233,38 @@ def key_for(tree: str, working: str, planned, interpreter: str, version: str) ->
     ])
 
 
+def persist_event(payload: dict, run: str, repo: Path) -> str:
+    """Persist the exact terminal evidence before a caller reads its exit."""
+
+    if RUN_ID.fullmatch(run or "") is None:
+        raise Refusal("--run is not a valid run id: {0}".format(run))
+    project = state_root.find_repo_root(repo) or repo
+    record = dict(payload, event_identity=None)
+    event = {
+        "kind": EVENT_KIND,
+        "project": str(project),
+        "record": record,
+        "run": run,
+    }
+    raw = (json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    digest = hashlib.sha256(raw).hexdigest()
+    directory = state_root.runs_root() / run / "required-check-events"
+    path = directory / (digest + ".json")
+    try:
+        if path.is_file():
+            if path.read_bytes() != raw:
+                raise Refusal("content-addressed required-check event collision")
+            return "sha256:" + digest
+        directory.mkdir(parents=True, exist_ok=True)
+        handle, temporary = tempfile.mkstemp(dir=str(directory), suffix=".tmp")
+        with os.fdopen(handle, "wb") as stream:
+            stream.write(raw)
+        os.replace(temporary, str(path))
+    except OSError as error:
+        raise Refusal("required-check event is not durable: {0}".format(error))
+    return "sha256:" + digest
+
+
 def _run(args) -> int:
     repo = Path(args.repo).resolve()
     if not repo.is_dir():
@@ -243,6 +286,9 @@ def _run(args) -> int:
         stored = cache.load(repo, key)
         if stored is not None:
             served = cache.serve(stored)
+            served["event_identity"] = (
+                persist_event(served, args.run, repo) if args.run else None
+            )
             report([], served, args.format)
             return 0
 
@@ -255,9 +301,12 @@ def _run(args) -> int:
         "dirty": dirty,
         "commands": records,
         "exit": 0 if all(r["exit_status"] == 0 for r in records) else 1,
+        "event_identity": None,
     }
+    if args.run:
+        payload["event_identity"] = persist_event(payload, args.run, repo)
     if _storable(args, repo, skip, tree, working, dirty, payload):
-        cache.store(repo, key, payload)
+        cache.store(repo, key, dict(payload, event_identity=None))
     report(outcomes, payload, args.format)
     return payload["exit"]
 

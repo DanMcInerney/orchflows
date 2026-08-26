@@ -37,10 +37,10 @@ re-verification exits 0. Below that threshold cutcheck accepts the cut alone.
 Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
 A lane runs its ticket's own oracles, nothing wider. After every return is
-integrated and its required checker or run gate is closed, run the standards
-owner's required checks exactly once at the accepted terminal identity and
-record its revision, not per merge batch. A red terminal suite blocks
-completion.
+integrated and its required checker or run gate is accepted, invoke the
+standards owner's `run_required.py --run <run> --format json` exactly once at
+that identity. File its `event_identity` in gate.verify Verification before
+the join sets gate.verify and the root `complete` on green or `failed` on red.
 
 Watch per [profiles](references/profiles.md); recompute on results, tickets,
 suspensions, or stale claims. `bound-check` parks overdue work without

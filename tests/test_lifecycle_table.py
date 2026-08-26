@@ -24,6 +24,8 @@ consumers are graded together here without a second copy of either.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import tempfile
 import unittest
@@ -600,6 +602,24 @@ class LifecycleCommandsTest(unittest.TestCase):
 
             early = run_cmd(tmp, "set-status", "run", "00-root", "complete")
             self.assertIn("gate.verify", early["error"])
+            missing = run_cmd(
+                tmp, "set-status", "run", "00-root.gate.verify", "complete"
+            )
+            self.assertIn("required-check event", missing["error"])
+            event = {"run": "run", "record": {"exit": 0}}
+            raw_event = (json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+            event_digest = hashlib.sha256(raw_event).hexdigest()
+            event_dir = use_sink(tmp) / "runs" / "run" / "required-check-events"
+            event_dir.mkdir(parents=True)
+            (event_dir / f"{event_digest}.json").write_bytes(raw_event)
+            gate_path = run_dir / "00-root.gate.verify.md"
+            gate_path.write_text(
+                gate_path.read_text(encoding="utf-8").replace(
+                    "## Verification\n\n",
+                    "## Verification\n\n- required-check-event: sha256:" + event_digest + "\n",
+                ),
+                encoding="utf-8",
+            )
             accepted = run_cmd(
                 tmp, "set-status", "run", "00-root.gate.verify", "complete"
             )

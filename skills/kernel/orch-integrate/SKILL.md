@@ -31,7 +31,8 @@ missing resolver inputs are `reject(caller)`; executor-authored invalid,
 unresolved, or oversized results are `reject(child)`. Record blame on the
 run-state channel; only this join calls `tickets.py set-status`. An accepted
 `orch-decompose` Result is `cut-accepted`: retain the root's live status.
-Accepting `<root>.gate.verify` performs the root's terminal status transition.
+Accepting `<root>.gate.verify` performs the root's terminal status transition
+only from the required-check event identity in its Verification.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here by filing the empty result and
 status, without dispatch. Accepted non-blocking findings go to the run's

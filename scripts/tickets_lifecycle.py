@@ -1,6 +1,8 @@
 """Ticket lifecycle support."""
 
 from __future__ import annotations
+import hashlib
+import json
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 if __package__:
@@ -8,9 +10,9 @@ if __package__:
 else:
     from tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _runs_root, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
-    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _runs_root, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
@@ -40,6 +42,35 @@ SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 RESULT_GRADE_USAGE = 'result-grade <run> <id>'
 GRANT_USAGE = 'grant <run> <id> --write-scope <path>[,<path>] --by <name>'
 GRANTED_BY_KEY = 'granted_by'
+REQUIRED_EVENT_PREFIX = '- required-check-event: sha256:'
+
+
+def _required_check_event(run: str, ticket_text: str, status: str):
+    lines = [
+        line.strip() for line in _sections(ticket_text).get('Verification', '').splitlines()
+        if line.strip().startswith(REQUIRED_EVENT_PREFIX)
+    ]
+    if len(lines) != 1:
+        return {'error': 'gate.verify terminalization requires exactly one required-check event identity in Verification'}
+    digest = lines[0][len(REQUIRED_EVENT_PREFIX):]
+    if len(digest) != 64 or any(character not in '0123456789abcdef' for character in digest):
+        return {'error': 'required-check event identity is malformed'}
+    root = _runs_root()
+    if root is None:
+        return {'error': NO_SINK_ERROR}
+    path = root / run / 'required-check-events' / f'{digest}.json'
+    try:
+        raw = path.read_bytes()
+        event = json.loads(raw)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        return {'error': f'required-check event is unavailable: {error}'}
+    if not isinstance(event, dict) or hashlib.sha256(raw).hexdigest() != digest or event.get('run') != run:
+        return {'error': 'required-check event identity does not match its bytes or run'}
+    record = event.get('record') if isinstance(event, dict) else None
+    exit_status = record.get('exit') if isinstance(record, dict) else None
+    if (status == 'complete' and exit_status != 0) or (status == 'failed' and exit_status == 0):
+        return {'error': f"required-check event exit {exit_status!r} cannot terminalize gate.verify as {status}"}
+    return None
 GRANTED_AT_KEY = 'granted_at'
 CHECK_USAGE = 'check <run> <id> --by <name>'
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
@@ -423,6 +454,10 @@ def _set_status_under_run_lock(rest):
         ticket_id == gate_verify_id and status in TERMINAL_STATES
         and root_item is not None
     )
+    if cascaded_root and status in {'complete', 'failed'}:
+        event_refusal = _required_check_event(run, text, status)
+        if event_refusal is not None:
+            return event_refusal
     terminal_transition = False
     terminal_now = False
     terminal_id = ticket_id
