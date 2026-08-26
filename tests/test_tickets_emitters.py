@@ -329,19 +329,11 @@ class InstantiateGradesItsEmission(unittest.TestCase):
         """
 
         placeholders = {
-            "bound": "30m",
-            "brief_bound": "30m",
-            "executor": "orch-tdd",
-            "isolation": "required",
-            "mutations": "change:scripts/a.py",
-            "oracle_command": "uv run --no-project python -m unittest tests.test_templates",
-            "oracle_name": "the named fixture oracle",
-            "oracle_provenance": "pre-existing",
-            "paths": "scripts/a.py",
-            "simple_task": "Deliver one simple code change.",
-            "skill": "orch-tdd",
-            "target": "scripts/a.py",
-            "window": "the last seven days",
+            "bound": "30m", "brief_bound": "30m", "executor": "orch-tdd",
+            "isolation": "required", "mutations": "change:scripts/a.py",
+            "oracle_command": "uv run --no-project python -m unittest tests.test_templates", "oracle_name": "the named fixture oracle",
+            "oracle_provenance": "pre-existing", "paths": "scripts/a.py", "simple_task": "Deliver one simple code change.",
+            "skill": "orch-tdd", "target": "scripts/a.py", "window": "the last seven days",
         }
         for directory in sorted(p for p in COMPOSITIONS.iterdir()
                                 if p.is_dir() and p.name != "references"):
