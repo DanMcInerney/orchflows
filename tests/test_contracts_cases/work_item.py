@@ -324,21 +324,26 @@ class TestV1AdmissionContract(unittest.TestCase):
         self.assertNotIn("--mutation create|change|delete|write", text)
 
     def test_decomposer_names_version_aware_v1_and_v2_member_emission(self):
-        text = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(
+        lines = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(
             encoding="utf-8"
-        )
-        self.assertIn("Mandatory-v2 roots", text)
-        self.assertIn("Legacy-v1 roots", text)
-        v2 = text.split("Mandatory-v2 roots", 1)[1].split("Legacy-v1 roots", 1)[0]
-        v1 = text.split("Legacy-v1 roots", 1)[1].split("Pass exact", 1)[0]
+        ).splitlines()
+        emissions = {
+            label: next((line for line in lines if line.startswith(f"- `{label}`:")), "")
+            for label in ("mandatory-v2", "legacy-v1")
+        }
+        self.assertTrue(emissions["mandatory-v2"])
+        self.assertTrue(emissions["legacy-v1"])
+        v2, v1 = emissions["mandatory-v2"], emissions["legacy-v1"]
         for token in (
-            "candidate files",
+            "`candidate-file`",
+            "`root_generation: inherited`",
+            "`cohort: absent`",
             "`tickets.py new <run> --file <candidate>`",
-            "exact inherited `root_generation`",
-            "no `cohort`",
         ):
             with self.subTest(version="v2", token=token):
                 self.assertIn(token, v2)
+        self.assertNotIn("never", v2.lower())
+        self.assertNotIn("--cohort", v2)
         self.assertIn(
             "`tickets.py new <run> <id> --cohort v1:root:<root>`", v1
         )
