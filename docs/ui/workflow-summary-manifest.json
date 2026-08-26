@@ -59,12 +59,6 @@
         {"source": "compare", "target": "report", "kind": "sequence"}
       ]
     },
-    "errand": {
-      "nodes": [
-        {"id": "deliver", "label": "Deliver one bounded errand"}
-      ],
-      "edges": []
-    },
     "renovate": {
       "nodes": [
         {"id": "audit", "label": "Audit the workspace"},
@@ -104,12 +98,12 @@
         {"id": "route", "label": "Route existing machinery"},
         {"id": "shape", "label": "Shape the scoped item"},
         {"id": "admit", "label": "Run admission checks"},
-        {"id": "critique", "label": "Critique independently"}
+        {"id": "return", "label": "Return acceptance lens"}
       ],
       "edges": [
         {"source": "route", "target": "shape", "kind": "branch"},
         {"source": "shape", "target": "admit", "kind": "sequence"},
-        {"source": "admit", "target": "critique", "kind": "sequence"}
+        {"source": "admit", "target": "return", "kind": "sequence"}
       ]
     },
     "orch-eval-design": {

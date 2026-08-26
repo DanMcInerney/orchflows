@@ -88,13 +88,16 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("ad-hoc ticket", delegation)
         self.assertNotRegex(delegation, re.compile(r"inline fallback", re.I))
         for anchor in (
-            "one matching planner child",
-            "packet-stated",
-            "dispatch-only",
-            "`orch-spec` then `orch-decompose`",
-            "outer join",
+            "**answer**",
+            "**single**",
+            "**graph**",
+            "**spec**",
+            "one same planner child",
+            "`ready` → `claim` → `packet`",
+            "outer coordinator",
         ):
             self.assertIn(anchor, collapsed_host)
+        self.assertNotIn("**errand**", collapsed_host)
         self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 

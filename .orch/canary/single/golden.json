@@ -1,5 +1,5 @@
 {
-  "schema": "orchflows.errand-canary-golden.v1",
+  "schema": "orchflows.single-canary-golden.v1",
   "item": "catalog-redirect-repair",
   "admission": {
     "adapter": "plain-artifact",

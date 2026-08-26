@@ -55,16 +55,16 @@ memorize.
     > research the top three auth libraries, then integrate the winner
     # two root tickets, the second waiting on the first, automatically
 
-Small requests stay small — a one-line question costs a one-line
-answer. Big requests get real project structure. Nothing marks "done"
-except an external check passing.
+Small requests stay small; medium and large work earn structure only when
+their graph does. Those sizes are explanatory, never fields on the work.
+Nothing marks "done" except an external check passing.
 
 ## More ways to use it
 
-Routing has three branches — answer, ticket, fix — and picks the
-smallest one that can prove it's done. A one-line question costs a
-one-line answer; anything else becomes a ticket, and anything too big
-for one worker becomes a root ticket that cuts itself into the rest.
+Routing projects four shapes: `answer` when evidence already decides,
+`single` for one ordinary ticket, `graph` for a frozen root that needs
+decomposition, and `spec` when that root must first be settled. Known-cause
+work enters the smallest of those shapes; an unknown-cause failure uses fix.
 Everything else runs only when you name it, so the routing table never
 grows as the library does. The table is installed at
 `~/.orchflows/host-block.md`, the one surface every turn already pays

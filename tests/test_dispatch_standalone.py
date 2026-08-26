@@ -131,6 +131,7 @@ class StandaloneDispatchTest(unittest.TestCase):
         self.assertIn("_cmd_reissue", self.report["needed"])
         self.assertIn("_cmd_bound_check", self.report["needed"])
         self.assertIn("_cmd_lint", self.report["needed"])
+        self.assertNotIn("errand", self.report["commands"])
         self.assertEqual([], self.report["missing"])
 
     def test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty(self):

@@ -1,4 +1,4 @@
-# Catalog redirect errand canary
+# Catalog redirect single-work canary
 
 Boundary: this item proves that the completed, independently accepted catalog-redirect repair remains content-identical and receives the same one-ticket canonical frontier admission receipt and golden PASS verdicts.
 
@@ -19,7 +19,8 @@ is already terminal, so replay dispatches no worker and reruns no repository
 oracle; it does not substitute a new execution for the accepted one.
 
 `counterfactual-replay.json` is explicitly a deterministic model, not elapsed
-runtime evidence. It projects the accepted repair's mutations through the live
-errand derived-closure owner and places the one terminal suite event after that
-closure. `counterfactual-targets.json` freezes the root's observed baseline and
-limits; beside-tree mutants prove every limit can fail.
+runtime evidence. It projects the accepted repair as one ordinary ticket with
+its provenance-required checker and one terminal suite event.
+`counterfactual-targets.json` freezes the root's observed baseline and the
+one-run, two-context, one-suite, 30-minute limits; beside-tree mutants prove
+every limit can fail.

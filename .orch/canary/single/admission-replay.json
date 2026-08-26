@@ -1,7 +1,7 @@
 {
   "schema": "orchflows.frontier-terminal-replay.v1",
   "boundary": "Completed-ticket frontier replay: regrade the exact one-ticket snapshot, then match its terminal accepted Result and verdicts to golden; no worker is redispatched and no repository-level oracle is rerun.",
-  "command": "uv run --no-project python -m unittest -v tests.test_errand_counterfactual.ErrandCounterfactualTest.test_actual_frontier_admission_replay_matches_the_golden",
+  "command": "uv run --no-project python -m unittest -v tests.test_routing_counterfactual.RoutingCounterfactualTest.test_actual_frontier_admission_replay_matches_the_golden",
   "ticket_count": 1,
   "ticket": "repair",
   "run": "orch-install-catalog-repair-20260825",

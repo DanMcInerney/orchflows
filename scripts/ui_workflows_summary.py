@@ -14,7 +14,6 @@ SUMMARY_SCHEMA = "orchflows.workflow-summary.v1"
 CANONICAL_WORKFLOW_IDS = frozenset({
     "benchmaker",
     "drift-canary",
-    "errand",
     "evolve",
     "fix",
     "orch-build",

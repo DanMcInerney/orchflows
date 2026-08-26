@@ -365,12 +365,12 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
 
         project_build = by_id["build-project-custom-skill"]
         self.assertIn("project-scope custom skill", project_build["prompt"])
-        self.assertEqual("errand", project_build["expected"])
+        self.assertEqual("single", project_build["expected"])
         project_composition = by_id["build-project-custom-composition"]
         self.assertIn(
             "project-scope custom composition", project_composition["prompt"]
         )
-        self.assertEqual("errand", project_composition["expected"])
+        self.assertEqual("single", project_composition["expected"])
 
     def test_project_build_scope_remains_a_distinct_custom_item_landing_zone(self):
         scopes = (

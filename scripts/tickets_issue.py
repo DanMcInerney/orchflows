@@ -5,7 +5,6 @@ if __package__:
     from .tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ticket_defects
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from .tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
-    from .tickets_context import graded_admission, run_snapshot
     from .tickets_input_producers import render_ticket_inputs
     from .tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
     from .tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from .tickets_emission import grade_run_emission
@@ -13,7 +12,6 @@ else:
     from tickets_format import CUT_SECTIONS, CUT_SECTIONS_BY_KEY, DEFAULT_BOUND_MINUTES, EXECUTOR_SECTIONS, GATE_ID_MARKER, REQUIRED_ISOLATION, ROOT_EXECUTOR, TicketFormatError, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _remove_frontmatter_field, _sections, _set_frontmatter_field, _split_commas, _write_section, ticket_defects
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket, _run_lock, _segment_error, _tickets_root, _write_identity, _write_text_atomically
     from tickets_admission import cohort_sealed, is_v2, ticket_cohort, valid_cohort
-    from tickets_context import graded_admission, run_snapshot
     from tickets_input_producers import render_ticket_inputs
     from tickets_issue_render import _ceiling_error, _frontmatter_list, _input_record, _render_ticket
     from tickets_transitions import CUT_QUEUE_NOTE, cut_refusal, pending_admission, refusal; from tickets_emission import grade_run_emission
@@ -21,7 +19,7 @@ AMENDABLE_STATUSES = frozenset({'pending', 'ready'})
 def _pending_admission(data): return pending_admission(2 if is_v2(data) else 1)
 def _invalidate_assignment(text): data = _parse_frontmatter(text); text = _set_frontmatter_field(text, 'admission', _pending_admission(data)); return _remove_frontmatter_field(text, 'assignment_seal') if is_v2(data) else text
 def _cohort_field(text, cohort): return _set_frontmatter_field(text, 'cohort', cohort) if cohort else _remove_frontmatter_field(text, 'cohort')
-NEW_USAGE = 'new <run> <id> --executor E --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
+NEW_USAGE = 'new <run> <id> --executor E [--sequence E[,E...]] --objective TEXT --criterion C [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]] [--mutation create|change|delete|write:path ...] [--bound B] [--pack P] [--input JSON ...] [--excluded X ...] [--profile P] [--independence gate|checker] [--isolation required|none] [--cohort v1:<ticket|root|batch>:<id>] [--return-fields TEXT] | new <run> [<id>] --file <path> [--cohort v1:<ticket|root|batch>:<id>]'
 NEW_DEFAULT_BOUND = f'{DEFAULT_BOUND_MINUTES}m'
 NEW_DEFAULT_INPUTS = '- input: {"name":"none","type":"literal","value":null}'
 NEW_DEFAULT_RETURN_FIELDS = 'status; result (what changed, by identity); verification; feedback; risks'
@@ -64,6 +62,7 @@ def _cmd_new(rest):
     args = list(rest)
     file_arg = _extract_flag(args, '--file')
     executor = _extract_flag(args, '--executor')
+    sequence = _extract_flag(args, '--sequence')
     objective = _extract_flag(args, '--objective')
     criteria = _extract_all(args, '--criterion')
     depends_on = _extract_flag(args, '--depends-on')
@@ -82,7 +81,7 @@ def _cmd_new(rest):
     if stray is not None:
         return {'error': f'new does not accept {stray}. usage: {NEW_USAGE}'}
     if file_arg is not None:
-        supplied = [name for name, value in (('--executor', executor), ('--objective', objective), ('--criterion', criteria or None), ('--depends-on', depends_on), ('--write-scope', write_scope), ('--mutation', mutations or None), ('--bound', bound), ('--pack', pack), ('--input', inputs or None), ('--excluded', excluded or None), ('--profile', profile), ('--independence', independence), ('--isolation', isolation), ('--return-fields', return_fields)) if value is not None]
+        supplied = [name for name, value in (('--executor', executor), ('--sequence', sequence), ('--objective', objective), ('--criterion', criteria or None), ('--depends-on', depends_on), ('--write-scope', write_scope), ('--mutation', mutations or None), ('--bound', bound), ('--pack', pack), ('--input', inputs or None), ('--excluded', excluded or None), ('--profile', profile), ('--independence', independence), ('--isolation', isolation), ('--return-fields', return_fields)) if value is not None]
         if supplied:
             return {'error': f'--file places a ticket already written; it takes none of {supplied}. usage: {NEW_USAGE}'}
         if not 1 <= len(args) <= 2:
@@ -105,7 +104,7 @@ def _cmd_new(rest):
     if not valid_cohort(cohort):
         return {'error': f"--cohort '{cohort}' is not v1:<ticket|root|batch>:<id-segment>"}
     dependencies = _split_commas(depends_on)
-    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'cohort': cohort, 'executor': executor, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
+    fields = {'id': ticket_id, 'run': run, 'status': 'pending', 'admission': None, 'cohort': cohort, 'executor': executor, 'sequence': _split_commas(sequence) or None, 'pack': pack, 'independence': independence, 'depends_on': dependencies, 'write_scope': _split_commas(write_scope), 'mutations': mutations, 'excluded_actions': excluded or None, 'isolation': isolation, 'bound': bound or NEW_DEFAULT_BOUND, 'claimed_by': '', 'claimed_at': '', 'profile': profile}
     fields['admission'] = _pending_admission(fields)
     sections = [('Objective', objective), ('Fixed inputs', '\n'.join((_input_record(item, position) for position, item in enumerate(inputs, start=1))) or NEW_DEFAULT_INPUTS), ('Completion test', '\n'.join((f'- {item}' for item in criteria))), ('Return fields', return_fields or NEW_DEFAULT_RETURN_FIELDS), ('Result', ''), ('Verification', ''), ('Feedback', '[]'), ('Risks', '[]')]
     text, input_error = render_ticket_inputs(_render_ticket(fields, sections), run)
@@ -435,69 +434,3 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         ticket_path.unlink(missing_ok=True)
         return {'error': f'unwritable ticket: {error}'}
     return {'new': {'run': run, 'id': ticket_id, 'path': str(ticket_path), 'status': _parse_frontmatter(text).get('status')}}
-
-
-def issue_admitted_ticket(run: str, ticket_id: str, text: str):
-    """Atomically issue one already-graded ticket at ``ready``.
-
-    ``new`` deliberately exposes the pending cut so a decomposer may amend a
-    cohort before admission.  A one-shot errand has no such interval: its
-    complete cut is one ticket, so the issue and admission receipts either
-    land together or neither lands.  The shape, emission and identity work
-    remain this module's; the receipt is still the admission owner's exact
-    grade over the prospective closed snapshot.
-    """
-    defects = _issue_defects(text)
-    if defects:
-        return {'error': f'ticket {run}/{ticket_id} is off contract (contracts/work-item.md): ' + '; '.join(defects)}
-    over = _ceiling_error(f'ticket {run}/{ticket_id}', ticket_id, text)
-    if over is not None:
-        return over
-    if GATE_ID_MARKER in ticket_id:
-        return {'error': f"ticket id '{ticket_id}' is reserved for `tickets.py gate`; errand cannot assemble a gate family"}
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
-    try:
-        with _run_lock(run):
-            if ticket_path.exists():
-                return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
-            snapshot, unreadable = run_snapshot(ticket_path.parent)
-            if unreadable:
-                return {'error': f'admission refused: run snapshot is not closed: {unreadable[0][1]["error"]}'}
-            if (refusal := grade_run_emission('new', run, ticket_path.parent, {ticket_id: text})) is not None:
-                return refusal
-            data = _parse_frontmatter(text)
-            if _executor_of(data) == ROOT_EXECUTOR:
-                return {'error': 'errand issues a delivery ticket, never a root ticket'}
-            prospective = dict(snapshot)
-            prospective[ticket_id] = text
-            grade = graded_admission(ticket_id, text, prospective, run)
-            if grade['findings']:
-                return {'error': 'admission refused', 'findings': grade['findings']}
-            admitted = _set_frontmatter_field(text, 'admission', grade['receipt'])
-            admitted = _set_frontmatter_field(admitted, 'status', 'ready')
-            identity_dir, identity, refusal = _identity_update(run, datetime.now(timezone.utc))
-            if refusal is not None:
-                return refusal
-            ticket_path.parent.mkdir(parents=True, exist_ok=True)
-            _create_text_exclusively(ticket_path, admitted)
-            try:
-                if identity is not None:
-                    identity_dir.mkdir(parents=True, exist_ok=True)
-                    _write_identity(identity_dir, identity)
-            except OSError:
-                ticket_path.unlink(missing_ok=True)
-                raise
-    except FileExistsError:
-        return {'error': f"ticket id '{ticket_id}' is already issued in run '{run}': {ticket_path}. An id is stable once issued (contracts/work-item.md)"}
-    except OSError as error:
-        ticket_path.unlink(missing_ok=True)
-        return {'error': f'unwritable ticket: {error}'}
-    return {
-        'errand': {
-            'run': run, 'ids': [ticket_id], 'paths': [str(ticket_path)],
-            'status': 'ready', 'admission': grade['receipt'],
-        }
-    }
