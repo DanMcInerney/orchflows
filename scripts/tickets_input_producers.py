@@ -4,27 +4,140 @@ from __future__ import annotations
 
 import re
 import subprocess
+from pathlib import Path
 
 if __package__:
     from . import tickets_store as _store
     from .tickets_format import (
-        PLACEHOLDER_RE, canonical_json, parse_canonical_json,
-        _parse_frontmatter, _sections, _write_section,
+        FIELD_GLOSS_RE, PLACEHOLDER_RE, REQUIRED_FIELDS_CELL,
+        ROOT_EXECUTOR, canonical_json, parse_canonical_json,
+        _parse_frontmatter, _read_utf8, _sections, _write_section,
     )
 else:
     import tickets_store as _store
     from tickets_format import (
-        PLACEHOLDER_RE, canonical_json, parse_canonical_json,
-        _parse_frontmatter, _sections, _write_section,
+        FIELD_GLOSS_RE, PLACEHOLDER_RE, REQUIRED_FIELDS_CELL,
+        ROOT_EXECUTOR, canonical_json, parse_canonical_json,
+        _parse_frontmatter, _read_utf8, _sections, _write_section,
     )
 
 
 GIT_PACKS = frozenset({"orch-code-pack", "orch-design-pack"})
+PACKS_DIR = "packs"
+RESEARCH_PACK = "orch-research-pack"
+DIRECT_DEFAULT = "direct default "
 INPUT_NAME_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 ROOT_BY_PACK = {
     "orch-content-pack": ("document-root", "project", ("workspace", "package")),
     "orch-research-pack": ("evidence-store-root", "sink", ("package", "workspace")),
 }
+
+
+def _packs_root(directory):
+    """The ``packs/`` owned by ``directory``'s repository, or None."""
+
+    directory = Path(directory).resolve()
+    for parent in (directory, *directory.parents):
+        candidate = parent / PACKS_DIR
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _library_packs_root():
+    """The source or installed library's pack directory."""
+
+    library = Path(__file__).resolve().parent.parent
+    for candidate in (library / PACKS_DIR, library / "lib" / PACKS_DIR):
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _required_spec_fields(packs_root, pack: str) -> list:
+    """The stamped pack's semicolon-separated required field clauses."""
+
+    if packs_root is None:
+        return []
+    text, failure = _read_utf8(Path(packs_root) / pack / "SKILL.md", f"pack {pack}")
+    if failure is not None:
+        return []
+    for line in text.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0] == REQUIRED_FIELDS_CELL:
+            return [field.strip() for field in cells[1].split(";") if field.strip()]
+    return []
+
+
+def _required_field_name(field: str) -> str:
+    return FIELD_GLOSS_RE.split(field, 1)[0].strip()
+
+
+def _direct_research_defaults() -> list:
+    """Ordered ``(field, template)`` defaults read from the research pack."""
+
+    defaults = []
+    for field in _required_spec_fields(_library_packs_root(), RESEARCH_PACK):
+        parts = FIELD_GLOSS_RE.split(field, 1)
+        if len(parts) == 2 and parts[1].startswith(DIRECT_DEFAULT):
+            defaults.append((parts[0].strip(), parts[1][len(DIRECT_DEFAULT):].strip()))
+    return defaults
+
+
+def input_records(body: str) -> list:
+    """Canonical literal/identity records in one Fixed inputs body."""
+
+    records = []
+    for group in input_groups(body):
+        if not group or not group[0].startswith("- input: "):
+            continue
+        try:
+            record = parse_canonical_json(group[0][len("- input: "):])
+        except ValueError:
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    return records
+
+
+def _expand_default(template: str, values: dict) -> str:
+    rendered = template
+    for name in ("run", "ticket", "objective"):
+        rendered = rendered.replace("{" + name + "}", str(values.get(name) or ""))
+    return rendered
+
+
+def _carry_research_fields(records: list, names: set, values: dict):
+    """Add pack-owned defaults to a direct research ticket.
+
+    The shipped benchmaker root predates the canonical names. Its explicit
+    ``sources`` and ``rigor`` values are carried once under their pack names;
+    no defaults are substituted into a specification route.
+    """
+
+    if values.get("executor") == "orch-investigate":
+        for name, template in _direct_research_defaults():
+            if name not in names:
+                records.append({
+                    "name": name, "type": "literal",
+                    "value": _expand_default(template, values),
+                })
+                names.add(name)
+    elif values.get("executor") == ROOT_EXECUTOR:
+        literals = {
+            item.get("name"): item.get("value") for item in records
+            if isinstance(item, dict) and item.get("type") == "literal"
+        }
+        if "sources" in literals and "rigor" in literals:
+            carried = {
+                "question": values.get("objective"),
+                "source-policy": literals["sources"],
+                "rigor-bar": literals["rigor"],
+            }
+            for name, value in carried.items():
+                if name not in names:
+                    records.append({"name": name, "type": "literal", "value": value})
+                    names.add(name)
 
 
 def replace_placeholders(value, values):
@@ -133,6 +246,11 @@ def render_inputs(body, values, dependencies, pack):
     if not records:
         records.append({"name": "none", "type": "literal", "value": None})
         names.add("none")
+    if pack == RESEARCH_PACK:
+        _carry_research_fields(records, names, values)
+        if len(records) > 1 and "none" in names:
+            records = [item for item in records if item.get("name") != "none"]
+            names.remove("none")
     root_error = adapter_root(records, names, pack, values)
     if root_error is not None:
         return (None, root_error)
@@ -183,6 +301,12 @@ def render_stub(text, values):
         lambda match: values.get(match.group(1), match.group(0)), masked
     )
     data = _parse_frontmatter(rendered)
+    values = dict(values)
+    values.update({
+        "executor": str(data.get("executor") or "").strip().strip("`"),
+        "objective": _sections(rendered).get("Objective", "").strip(),
+        "ticket": str(data.get("id") or "").strip(),
+    })
     inputs, error = render_inputs(
         body, values, data.get("depends_on") or [], str(data.get("pack") or "")
     )
@@ -203,7 +327,12 @@ def render_ticket_inputs(text, run, inherited_inputs="", baseline=None):
     baseline = baseline or git_head()
     if pack in GIT_PACKS and baseline is None:
         return (None, f"{pack} input rendering cannot resolve the run-project HEAD")
-    values = {"run": run}
+    values = {
+        "run": run,
+        "executor": str(data.get("executor") or "").strip().strip("`"),
+        "objective": _sections(text).get("Objective", "").strip(),
+        "ticket": str(data.get("id") or "").strip(),
+    }
     if baseline is not None:
         values["baseline"] = baseline
     for group in input_groups(inherited_inputs):
@@ -245,5 +374,6 @@ def baseline_input_record(revision):
 
 __all__ = (
     "baseline_input_record", "canonical_input_record", "canonical_json",
-    "git_head", "render_inputs", "render_stub", "render_ticket_inputs",
+    "git_head", "input_records", "render_inputs", "render_stub",
+    "render_ticket_inputs",
 )

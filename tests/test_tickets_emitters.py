@@ -296,6 +296,62 @@ class NewGradesItsEmission(unittest.TestCase):
             self.assertTrue((run_dir_of() / "10-ok.md").exists())
 
 
+class ResearchFieldsAtAdmission(unittest.TestCase):
+    """The research pack's four inputs exist before its worker is sent."""
+
+    FIELDS = {
+        "evidence-store-root": "sink:evidence/testrun/10-research/",
+        "question": "Which primary evidence answers this bounded question?",
+        "source-policy": "primary evidence only",
+        "rigor-bar": (
+            "each load-bearing claim has primary evidence or is an explicit gap"
+        ),
+    }
+
+    def test_direct_research_issue_carries_the_pack_defaults(self):
+        with workspace() as (tmp, repo, head):
+            payload = run_cmd(
+                repo, "new", "testrun", "10-research",
+                "--executor", "orch-investigate",
+                "--objective", self.FIELDS["question"],
+                "--criterion", "every finding cites its source | oracle: the "
+                               "evidence packet | oracle_class: evidence | "
+                               "provenance: authored-here",
+                "--pack", "orch-research-pack",
+                "--write-scope", "evidence/testrun/10-research/",
+                "--mutation", "write:evidence/testrun/10-research/",
+                "--isolation", "required",
+            )
+            self.assertNotIn("error", payload)
+            text = (run_dir_of() / "10-research.md").read_text(encoding="utf-8")
+            records = [json.loads(line.removeprefix("- input: ")) for line in
+                       text.splitlines() if line.startswith("- input: ")]
+            self.assertEqual(self.FIELDS, {
+                record["name"]: record["value"] for record in records
+            })
+
+    def test_each_missing_research_field_is_an_admission_defect(self):
+        records = [
+            "- input: " + json.dumps(
+                {"name": name, "type": "literal", "value": value},
+                separators=(",", ":"), sort_keys=True,
+            )
+            for name, value in self.FIELDS.items()
+        ]
+        complete = stub("R", executor="orch-decompose").replace(
+            "executor: orch-decompose",
+            "executor: orch-decompose\npack: orch-research-pack",
+        ).replace(PLAIN_INPUT, "\n".join(records))
+        self.assertIsNone(tickets_mod._spec_field_defect(complete, ROOT))
+        for missing, record in zip(self.FIELDS, records):
+            with self.subTest(missing=missing):
+                defect = tickets_mod._spec_field_defect(
+                    complete.replace(record + "\n", ""), ROOT
+                )
+                self.assertIsNotNone(defect)
+                self.assertIn(missing, defect)
+
+
 class InstantiateGradesItsEmission(unittest.TestCase):
     def test_instantiate_refuses_stubs_the_next_door_refuses(self):
         """Nothing may be written when the grade is a later refusal."""

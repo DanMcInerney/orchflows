@@ -9,7 +9,16 @@ if __package__:
 else:
     from tickets_format import FIELD_GLOSS_RE, FIELD_WORD_RE, PLACEHOLDER_RE, REQUIRED_FIELDS_CELL, REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE, TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8, _section_body, _sections, ticket_defects
 
-PACKS_DIR = 'packs'
+if __package__:
+    from .tickets_input_producers import (
+        PACKS_DIR, RESEARCH_PACK, _packs_root, _required_field_name,
+        _required_spec_fields, input_records,
+    )
+else:
+    from tickets_input_producers import (
+        PACKS_DIR, RESEARCH_PACK, _packs_root, _required_field_name,
+        _required_spec_fields, input_records,
+    )
 if __package__:
     from .tickets_store import NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root
 else:
@@ -21,34 +30,6 @@ WORKLOG_SECTIONS = ('goal', 'iterations', 'failed approaches', 'queued scope', '
 ITERATION_ID_RE = re.compile('^.+\\.iter\\.\\d+$')
 GATE_VERIFY_SUFFIX = '.gate.verify'
 WORKLOG_USAGE = 'worklog <run> [--write]'
-def _packs_root(directory):
-    """The `packs/` beside this template's tree, or None.
-
-    None is the ordinary answer for an installed copy of this script: it
-    runs against a target repository that carries no `packs/` at all, and a
-    pack it cannot read is not a defect in the stub.
-    """
-    directory = Path(directory).resolve()
-    for parent in (directory, *directory.parents):
-        candidate = parent / PACKS_DIR
-        if candidate.is_dir():
-            return candidate
-    return None
-def _required_spec_fields(packs_root, pack: str) -> list:
-    """The stamped pack's `required_spec_fields` cell, as its field names.
-
-    contracts/pack-signature.md makes the cell a `;`-separated list, and
-    contracts/work-item.md makes each entry an entry of the root ticket's
-    `## Fixed inputs`.
-    """
-    text, failure = _read_utf8(packs_root / pack / 'SKILL.md', f'pack {pack}')
-    if failure is not None:
-        return []
-    for line in text.splitlines():
-        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
-        if len(cells) >= 2 and cells[0] == REQUIRED_FIELDS_CELL:
-            return [field.strip() for field in cells[1].split(';') if field.strip()]
-    return []
 def _spec_field_defect(text: str, directory):
     """The root stub's `## Fixed inputs` against its pack's required fields.
 
@@ -77,9 +58,23 @@ def _spec_field_defect(text: str, directory):
     fields = _required_spec_fields(packs_root, pack)
     if not fields:
         return None
-    mentioned = set(FIELD_WORD_RE.findall(_section_body(text, 'Fixed inputs').lower()))
+    inputs = _section_body(text, 'Fixed inputs')
+    if pack == RESEARCH_PACK:
+        required = {_required_field_name(field) for field in fields}
+        present = {
+            str(record.get('name') or '') for record in input_records(inputs)
+        }
+        if present & required:
+            missing = sorted(required - present)
+            if missing:
+                return (f"root stub stamps {pack} and its `## Fixed inputs` omit "
+                        f"required fields ({'; '.join(missing)}); orch-decompose "
+                        "refuses a root ticket that lacks them "
+                        "(contracts/work-item.md)")
+            return None
+    mentioned = set(FIELD_WORD_RE.findall(inputs.lower()))
     for field in fields:
-        name = FIELD_GLOSS_RE.split(field, 1)[0]
+        name = _required_field_name(field)
         if mentioned & set(FIELD_WORD_RE.findall(name.lower())):
             return None
     return f"root stub stamps {pack} and its `## Fixed inputs` name none of the fields that pack requires ({'; '.join(fields)}); orch-decompose refuses a root ticket that lacks them (contracts/work-item.md)"

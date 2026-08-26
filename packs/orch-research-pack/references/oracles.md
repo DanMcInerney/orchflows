@@ -7,4 +7,4 @@
 | coverage | every acceptance sub-question answered or an explicit gap | evidence | authored-here |
 | contradiction handling | the disagreement register against the evidence packets | judged | authored-here |
 | independence | converging claims trace to sources with no shared upstream, per the claim-to-source trace | evidence | authored-here |
-| rigor | the spec's rigor bar | judged | authored-here |
+| rigor | the ticket's `rigor-bar` input | judged | authored-here |
