@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 3211,
+  "count": 3213,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -745,6 +745,7 @@
    "test_tickets_lint.LintDraftTest.test_a_whole_suite_oracle_is_reported_as_a_warning",
    "test_tickets_lint.LintDraftTest.test_an_executor_named_on_the_command_line_is_graded",
    "test_tickets_lint.LintDraftTest.test_an_unreadable_draft_is_exit_two",
+   "test_tickets_lint.LintDraftTest.test_context_is_outside_the_300_word_instruction_budget",
    "test_tickets_lint.LintDraftTest.test_five_defects_are_reported_in_one_call",
    "test_tickets_lint.LintDraftTest.test_the_ceiling_finding_names_its_count_and_its_overage",
    "test_tickets_lint.LintFixTest.test_fix_clears_the_three_syntactic_findings_and_leaves_the_two",
@@ -1164,6 +1165,7 @@
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_absorbs_the_four_supersession_sections",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_body_sections_are_listed_in_contract_order",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_carries_no_compatibility_floor",
+   "tests.test_contracts_cases.work_item.TestWorkItemContract.test_context_is_the_canonical_successor_digest",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_dispatch_section_names_the_six_packet_parts",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_executor_form_admits_a_tested_script",
    "tests.test_contracts_cases.work_item.TestWorkItemContract.test_lists_all_body_section_headers",
@@ -3214,7 +3216,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5dde139abeeab9eaeb0afdbb94659599de335a96856852b670ce5dac69d53a83"
+  "sha256": "544ef71ac2cfa0610170d24c73e56e84dd4d27f08681833b8674924764bb7efd"
  },
  "mutation_owners": [
   {
