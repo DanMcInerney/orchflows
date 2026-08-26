@@ -35,10 +35,15 @@ cutcheck advisory; units stay `pending` until `checked_by` and this engine's
 the cut alone.
 Accept every return once through `orch-integrate`; `suspended` parks, any other
 grades isolation and integrates per its pack, conflicts through its binding.
-After each merge batch run the standards owner's required checks on the
-integrated tip, the run's notes carrying the tip's revision. A lane runs its
-ticket's own oracles, nothing wider; its green is provisional until the tip's,
-and a red tip blocks the next dispatch but its repair's.
+An errand run authored through `tickets.py errand` runs the ticket's scoped
+oracles and its one lawful checker, nothing wider. Once every return is
+integrated and derived closure is closed, run the standards owner's required
+checks exactly once at the accepted terminal identity and record its revision.
+For every non-errand run, keep the existing policy: After each merge batch run
+the standards owner's required checks on the integrated tip, the run's notes
+carrying the tip's revision. A lane runs its ticket's own oracles, nothing
+wider; its green is provisional until the tip's, and a red tip blocks the next
+dispatch but its repair's.
 
 Watch per [profiles](references/profiles.md); recompute on results, tickets,
 suspensions, stale claims. Re-check through `bound-check`: overdue without
