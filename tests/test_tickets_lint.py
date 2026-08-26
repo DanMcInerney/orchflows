@@ -7,6 +7,8 @@ together. Family 3's two-reader law is the exception, in a case module.
 
 import json
 import subprocess
+import unittest
+from pathlib import Path
 from unittest import mock
 
 from tests.test_tickets_issue_cases.common import *  # noqa: F401,F403
@@ -16,6 +18,35 @@ from tests.test_tickets_cases.admission_v1 import initialize_git_fixture
 from scripts.tickets_store import _runs_root
 from tests.test_tickets_issue_cases.generation_lifecycle import ticket as v2_ticket
 from tests.test_tickets_lint_cases.family3 import *  # noqa: F401,F403  family 3's two-reader law
+
+
+class DesignPackInputContractTest(unittest.TestCase):
+    REQUIRED_FIELDS = (
+        "build command", "typecheck command", "standards-shape command",
+        "render command", "capture command", "diff command",
+        "greenfield discriminator",
+    )
+
+    def _is_complete(self, text):
+        return all(field in text for field in self.REQUIRED_FIELDS)
+
+    def test_design_spec_requires_each_oracle_command_and_greenfield_discriminator(self):
+        text = Path("packs/orch-design-pack/SKILL.md").read_text(encoding="utf-8")
+        cell = next(
+            line.lower() for line in text.splitlines()
+            if line.startswith("| required_spec_fields |")
+        )
+        self.assertTrue(self._is_complete(cell))
+        for field in self.REQUIRED_FIELDS:
+            with self.subTest(field=field):
+                self.assertFalse(self._is_complete(cell.replace(field, "", 1)))
+
+    def test_design_slices_are_callable_views(self):
+        slicing = Path(
+            "packs/orch-design-pack/references/slicing.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Every ticket names one callable view", slicing)
+        self.assertNotIn("token set alone opens", slicing)
 
 # Two readings of one frozen ticket used to disagree; both halves land in the
 # three classes at the foot of this module. Lint graded with no context, so the
