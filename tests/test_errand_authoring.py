@@ -6,8 +6,9 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from scripts import tickets
+from scripts import tickets, tickets_errand
 from tests.test_tickets_cases.common import repo_root_of, use_sink
 
 
@@ -80,6 +81,30 @@ class ErrandAuthoringTest(unittest.TestCase):
             ["job.md"],
             sorted(path.name for path in (self.sink / "tickets" / "run").glob("*.md")),
         )
+
+    def test_tdd_errand_requires_its_own_workspace_from_either_checkout_kind(self):
+        for caller_is_isolated in (False, True):
+            with self.subTest(caller_is_isolated=caller_is_isolated):
+                ticket_id = f"isolated-{str(caller_is_isolated).lower()}"
+                with mock.patch.object(
+                    tickets_errand,
+                    "_caller_is_isolated",
+                    return_value=caller_is_isolated,
+                ):
+                    payload = dispatch(
+                        self.repo,
+                        "errand", "run", ticket_id,
+                        "--task", "Add the small formatter.",
+                        "--executor", "orch-tdd",
+                        "--path", "scripts/formatter.py",
+                        "--bound", "20m",
+                        "--pre-existing-oracle", "unit=uv run --no-project python -m unittest -v tests.test_formatter",
+                    )
+                self.assertNotIn("error", payload, payload)
+                data = tickets._parse_frontmatter(
+                    ticket_text(self.sink, ticket_id=ticket_id)
+                )
+                self.assertEqual("required", data["isolation"])
 
     def test_an_ordered_sequence_keeps_its_head_as_executor(self):
         payload = dispatch(

@@ -278,7 +278,7 @@ def _cmd_errand(rest):
         "depends_on": [],
         "write_scope": write_scope,
         "mutations": normalized_mutations,
-        "isolation": "required" if _caller_is_isolated() else "none",
+        "isolation": "required" if executor == "orch-tdd" or _caller_is_isolated() else "none",
         "bound": bound,
         "claimed_by": "",
         "claimed_at": "",
