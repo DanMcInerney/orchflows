@@ -17,6 +17,28 @@ SUMMARY = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 
 
 class WorkflowCatalogTests(unittest.TestCase):
+    def test_uninstantiated_executor_slot_invents_no_skill_projection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write(
+                root / "compositions" / "errand" / "template.md",
+                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+            )
+            self._write(
+                root / "compositions" / "errand" / "00-deliver.md",
+                "---\nid: 00-deliver\nexecutor: {{executor}}\n"
+                "depends_on: []\nbound: {{bound}}\n---\n",
+            )
+
+            detail = compositions.project_composition(root, "errand")
+
+        self.assertEqual(
+            ["workflow:errand", "work:errand/00-deliver"],
+            [node["id"] for node in detail["nodes"]],
+        )
+        self.assertEqual([], detail["edges"])
+        self.assertEqual([], detail["diagnostics"])
+
     def test_composition_executor_sequence_is_projected_in_declared_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

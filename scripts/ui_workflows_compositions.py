@@ -48,10 +48,13 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
     fields = _fields(root, path)
     stub_id = fields.get("id")
     executor = fields.get("executor")
-    executors = executor if isinstance(executor, list) else [executor]
+    executor_is_slot = executor == "{{executor}}"
+    executors = [] if executor_is_slot else (
+        executor if isinstance(executor, list) else [executor]
+    )
     try:
         identity.work_node_id(workflow, stub_id)
-        if not executors:
+        if not executors and not executor_is_slot:
             raise identity.WorkflowIdentityError("executor sequence is empty")
         for member in executors:
             identity.skill_node_id(member)
