@@ -187,6 +187,21 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         result = self._run()
         self.assertIn("does not lead with structured result-envelope fields", result.stdout)
 
+    def test_one_unrelated_shared_stem_does_not_carry_an_input(self):
+        self._write_skill(
+            "orch-callee",
+            "Require: a distinctive telemetry beacon.\n\nNever: skip.\n\n"
+            "Return: the completed ticket.\n",
+        )
+        self._write_skill(
+            "orch-caller",
+            "Require: a work order.\n\nInspect telemetry, then call `orch-callee`.\n\n"
+            "Never: skip.\n\nReturn: the completed ticket.\n",
+        )
+        result = self._run()
+        self.assertIn("Require item 'a distinctive telemetry beacon.", result.stdout)
+        self.assertIn("not carried", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
