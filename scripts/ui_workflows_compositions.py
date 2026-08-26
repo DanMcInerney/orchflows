@@ -48,9 +48,13 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
     fields = _fields(root, path)
     stub_id = fields.get("id")
     executor = fields.get("executor")
+    executors = executor if isinstance(executor, list) else [executor]
     try:
         identity.work_node_id(workflow, stub_id)
-        identity.skill_node_id(executor)
+        if not executors:
+            raise identity.WorkflowIdentityError("executor sequence is empty")
+        for member in executors:
+            identity.skill_node_id(member)
     except identity.WorkflowIdentityError as error:
         raise WorkflowCompositionError("composition has a malformed work stub") from error
     dependencies = fields.get("depends_on")
@@ -62,14 +66,14 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
         except identity.WorkflowIdentityError as error:
             raise WorkflowCompositionError("composition has a malformed dependency") from error
     bound = fields.get("bound")
-    if executor == "orch-loop" and (
+    if executors == ["orch-loop"] and (
         not isinstance(bound, str) or not bound or bound != bound.strip()
     ):
         raise WorkflowCompositionError("loop work must declare its bound")
     installed_path = f"lib/compositions/{workflow}/{path.name}"
     return {
         "id": stub_id,
-        "executor": executor,
+        "executors": executors,
         "depends_on": dependencies,
         "bound": bound,
         "installed_path": installed_path,
@@ -167,6 +171,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
 
     skill_paths, duplicate_skills = _skill_index(root)
     edges = {}
+    executor_positions = {}
     declared_work = {
         identity.work_node_id(workflow_id, stub["id"]) for stub in stubs
     }
@@ -179,22 +184,23 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
             if dependency_id not in declared_work:
                 diagnose("dangling-edge", edge["id"])
 
-        executor = stub["executor"]
-        executor_id = identity.skill_node_id(executor)
-        if executor_id not in nodes:
-            node = {"id": executor_id, "kind": "skill", "label": executor}
-            installed_path = skill_paths.get(executor)
-            if installed_path is None:
-                diagnose("unresolved-reference", executor_id)
-            else:
-                node["source_id"] = identity.source_id(installed_path)
-            nodes[executor_id] = node
-        if executor in duplicate_skills:
-            diagnose("duplicate-node", executor_id)
-        edge = _edge("executor", work_id, executor_id, "executes with")
-        edges.setdefault(edge["id"], edge)
+        for position, executor in enumerate(stub["executors"]):
+            executor_id = identity.skill_node_id(executor)
+            if executor_id not in nodes:
+                node = {"id": executor_id, "kind": "skill", "label": executor}
+                installed_path = skill_paths.get(executor)
+                if installed_path is None:
+                    diagnose("unresolved-reference", executor_id)
+                else:
+                    node["source_id"] = identity.source_id(installed_path)
+                nodes[executor_id] = node
+            if executor in duplicate_skills:
+                diagnose("duplicate-node", executor_id)
+            edge = _edge("executor", work_id, executor_id, "executes with")
+            edges.setdefault(edge["id"], edge)
+            executor_positions.setdefault(edge["id"], position)
 
-        if executor == "orch-loop":
+        if stub["executors"] == ["orch-loop"]:
             edge = _edge(
                 "loop",
                 work_id,
@@ -208,7 +214,10 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
     )
     ordered_edges = sorted(
         edges.values(),
-        key=lambda edge: (edge["from"], edge["kind"], edge["to"], edge["id"]),
+        key=lambda edge: (
+            edge["from"], edge["kind"], executor_positions.get(edge["id"], 0),
+            edge["to"], edge["id"],
+        ),
     )
     return {
         "schema": DETAIL_SCHEMA,

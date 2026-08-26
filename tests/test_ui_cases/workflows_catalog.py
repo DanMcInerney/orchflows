@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 from scripts import ui_workflows_catalog as catalog
+from scripts import ui_workflows_compositions as compositions
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +17,37 @@ SUMMARY = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 
 
 class WorkflowCatalogTests(unittest.TestCase):
+    def test_composition_executor_sequence_is_projected_in_declared_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write(
+                root / "compositions" / "errand" / "template.md",
+                "---\nname: errand\ndescription: Deliver one errand.\nentry: named\n---\n",
+            )
+            self._write(
+                root / "compositions" / "errand" / "00-deliver.md",
+                "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-build]\n"
+                "depends_on: []\nbound: 30m\n---\n",
+            )
+            for name in ("orch-tdd", "orch-build"):
+                self._write(
+                    root / "skills" / "instances" / name / "SKILL.md",
+                    f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
+                )
+
+            detail = compositions.project_composition(root, "errand")
+
+        executor_edges = [
+            edge for edge in detail["edges"] if edge["kind"] == "executor"
+        ]
+        self.assertEqual(
+            ["skill:orch-tdd", "skill:orch-build"],
+            [edge["to"] for edge in executor_edges],
+        )
+        self.assertEqual(executor_edges, [
+            edge for edge in detail["relations"] if edge["kind"] == "executor"
+        ])
+
     def test_escaping_file_and_directory_symlink_owners_are_rejected(self):
         for link_kind in ("file", "directory"):
             with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
@@ -126,6 +158,11 @@ class WorkflowCatalogTests(unittest.TestCase):
             encoding="utf-8",
         )
         return path
+
+    @staticmethod
+    def _write(path: Path, text: str) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
 
     @staticmethod
     def _summary() -> dict:
