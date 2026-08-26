@@ -72,21 +72,24 @@ class TestHostBlockRendering(unittest.TestCase):
 
         rendered = self._rendered()
 
-        for branch in ("**answer**", "**errand**", "**ticket**", "**fix**"):
+        for branch in (
+            "**answer**", "**single**", "**graph**", "**spec**", "**fix**",
+        ):
             self.assertEqual(
                 1,
                 rendered.count(branch),
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
         for lane in (
-            "semantic-root/graph shape",
+            "graph shape",
             "oracle provenance",
-            "explanation-only",
-            "one executor",
+            "evidence in context",
+            "one ordinary ticket",
             "pre-existing deterministic",
             "authored-here",
-            "independent atoms",
-            "matching planner child",
+            "frozen root",
+            "same planner child",
+            "`ready` → `claim` → `packet`",
             "known cause",
             "unknown cause",
             "install.py doctor",
@@ -132,16 +135,16 @@ _HOST_BLOCK_DEMANDS = {
     "route smallest-first, each branch by its command": (
         "smallest-first",
         "**answer**",
-        "**errand**",
-        "**ticket**",
+        "**single**",
+        "**graph**",
+        "**spec**",
         "**fix**",
-        "`tickets.py errand`",
         "`orch-frontier`",
         "`orch-decompose`",
-        # The field the decompose branch is routed by, not the sentence
-        # stating what it is set to.
-        "`executor`",
         "`orch-spec`",
+        "`ready`",
+        "`claim`",
+        "`packet`",
         "{{ORCH_LIB}}/contracts/work-item.md",
         "`install.py doctor`",
         "`tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run> "

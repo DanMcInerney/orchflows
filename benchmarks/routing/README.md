@@ -1,15 +1,15 @@
 # Routing benchmark
 
 Measures how often a fresh repository session routes a real user prompt to the
-wrong lane. `cases.json` holds 33 prompts routed to `answer`, `ticket`, `fix`,
-`build`, or `named:<name>`; six are distractors whose route stays one of the
-first three. `build` requires naming `orch-build`. It decides SPEC §7.2: all
+wrong lane. `cases.json` holds 38 prompts routed to `answer`, `single`, `graph`,
+`spec`, `fix`, `build`, or `named:<name>`; six are distractors. `build` requires
+naming `orch-build`. It decides SPEC §7.2: all
 Claude skill adapters, or the four both hosts expose, installed into separate
 throwaway homes (`--claude-adapters`).
 
 The 2026-08-25 Codex-catalog counterfactual pairs an `answer` for explanation
-with one known-cause `ticket` containing all coupled and derived consequences;
-it uses no spec, decompose, or fix workflow.
+with one known-cause `single` ticket containing all coupled and derived
+consequences; it uses no spec, decompose, or fix workflow.
 
     python tools/live_routing_bench.py --adapters both --repeat 3         --max-budget-usd 5 --out routing-bench.json
 

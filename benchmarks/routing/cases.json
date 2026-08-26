@@ -58,78 +58,85 @@
   {
     "id": "ticket-ui-json-flag",
     "prompt": "add a --json flag to scripts/ui.py",
-    "expected": "errand",
-    "note": "A bounded change with an obvious oracle; the errand lane gives it one executor.",
+    "expected": "single",
+    "note": "A bounded change with an obvious oracle needs one ordinary ticket and one executor.",
     "distractor": false
   },
   {
     "id": "ticket-friction-quiet",
     "prompt": "add a --quiet flag to scripts/friction.py so it stops printing the confirmation line",
-    "expected": "errand",
-    "note": "Bounded, single-file, testable; the errand lane needs no diagnosis.",
+    "expected": "single",
+    "note": "Bounded, single-file, and testable work needs one ordinary ticket and no diagnosis.",
     "distractor": false
   },
   {
     "id": "ticket-vocabulary-entry",
     "prompt": "add a docs/vocabulary.md entry for 'terminal ticket'",
-    "expected": "errand",
-    "note": "A documentation change with a named home and one executor is an errand.",
+    "expected": "single",
+    "note": "A documentation change with a named home and one executor is single work.",
     "distractor": false
   },
   {
     "id": "ticket-refusal-test",
     "prompt": "write a unit test proving tickets.py refuses a status that isn't in the enum",
-    "expected": "errand",
-    "note": "A born-red test with one executor uses the errand worker rung.",
+    "expected": "single",
+    "note": "A born-red test with one executor uses one ordinary ticket.",
     "distractor": false
   },
   {
     "id": "ticket-readme-drift",
     "prompt": "the README still describes the old install steps -- bring it in line with install.py",
-    "expected": "errand",
-    "note": "Known cause and bounded edit enter errand; nothing remains to diagnose.",
+    "expected": "single",
+    "note": "Known cause and bounded edit enter single work; nothing remains to diagnose.",
     "distractor": false
   },
   {
     "id": "ticket-codex-catalog-gap",
     "prompt": "orch-investigate is missing from the Codex catalog because CODEX_SKILL_REDIRECT_NAMES omits it; add it and update the coupled help, tests, and derived manifests",
-    "expected": "errand",
-    "note": "The known cause makes this one ordered errand; coupled help, tests, and derived consequences stay inside it, with no spec, decompose, or fix workflow.",
+    "expected": "single",
+    "note": "The known cause makes this one ordinary ticket; coupled help, tests, and derived consequences stay inside it, with no spec, decompose, or fix workflow.",
     "distractor": false
   },
   {
     "id": "ticket-lure-review",
     "prompt": "review scripts/state_root.py and delete the dead branches you find",
-    "expected": "errand",
-    "note": "Distractor: 'review' is a lens name, but the bounded code deliverable is an errand.",
+    "expected": "single",
+    "note": "Distractor: 'review' is a lens name, but the bounded code deliverable is single work.",
     "distractor": true
   },
   {
     "id": "ticket-lure-worklog",
     "prompt": "add a tickets.py worklog subcommand that renders the view",
-    "expected": "errand",
-    "note": "Distractor: 'worklog' again, this time as a one-executor errand.",
+    "expected": "single",
+    "note": "Distractor: 'worklog' again, this time as one-executor work.",
     "distractor": true
   },
   {
-    "id": "errand-pre-existing-deterministic",
-    "prompt": "update the host help for the accepted errand command; the existing routing tests are the oracle",
-    "expected": "errand",
-    "note": "One bounded change with a pre-existing deterministic oracle uses one errand worker.",
+    "id": "single-pre-existing-deterministic",
+    "prompt": "update the host help for an accepted command; the existing routing tests are the oracle",
+    "expected": "single",
+    "note": "One bounded change with a pre-existing deterministic oracle uses one worker.",
     "distractor": false
   },
   {
-    "id": "errand-authored-here",
-    "prompt": "add a --compact option to the errand command and write its regression test",
-    "expected": "errand",
-    "note": "One bounded change authors its oracle in the claim, so errand adds at most the same claim's checker.",
+    "id": "single-authored-here",
+    "prompt": "add a --compact option to an existing command and write its regression test",
+    "expected": "single",
+    "note": "One bounded change authors its oracle in the claim, so frontier adds only the same claim's checker.",
     "distractor": false
   },
   {
     "id": "ticket-independent-atoms",
     "prompt": "add independent Python and web clients for the same frozen protocol",
-    "expected": "ticket",
-    "note": "Independent atoms require one planner context to specify if needed, decompose, and hand the root graph to frontier.",
+    "expected": "graph",
+    "note": "The frozen protocol gives one planner a root to decompose before the outer coordinator starts frontier.",
+    "distractor": false
+  },
+  {
+    "id": "ticket-uncertain-root",
+    "prompt": "design and implement a replacement for the workflow state model; the user-visible contract is not settled yet",
+    "expected": "spec",
+    "note": "The semantic root is unresolved, so one planner carries spec through the canonical root packet into decomposition before outer frontier.",
     "distractor": false
   },
   {
@@ -187,7 +194,7 @@
     "expected": "build",
     "required_role": "worker",
     "required_skill": "orch-build",
-    "note": "Names orch-build outright, which is the only thing that makes build a route: the host block routes an unnamed request to answer, ticket or fix.",
+    "note": "Names orch-build outright, which is the only thing that makes build a route: unnamed delivery uses answer, single, graph, spec, or fix.",
     "distractor": false
   },
   {
@@ -202,29 +209,29 @@
   {
     "id": "build-migration-pack",
     "prompt": "create a new domain pack for database-migration deliverables",
-    "expected": "errand",
-    "note": "A bounded canonical item whose prompt names no skill uses the errand lane; its executor may invoke the existing build machinery.",
+    "expected": "single",
+    "note": "A bounded canonical item whose prompt names no skill uses one ordinary ticket; its executor may invoke the existing build machinery.",
     "distractor": false
   },
   {
     "id": "build-project-custom-skill",
     "prompt": "make a project-scope custom skill for our deploy checklist",
-    "expected": "errand",
-    "note": "The project-scoped item is one bounded delivery; the errand executor reaches the existing build owner.",
+    "expected": "single",
+    "note": "The project-scoped item is one bounded delivery; its executor reaches the existing build owner.",
     "distractor": false
   },
   {
     "id": "build-project-custom-composition",
     "prompt": "make a project-scope custom composition for our release workflow",
-    "expected": "errand",
-    "note": "Project composition is a build scope, not an install scope, and one bounded delivery is an errand.",
+    "expected": "single",
+    "note": "Project composition is a build scope, not an install scope, and one bounded delivery is single work.",
     "distractor": false
   },
   {
     "id": "build-benchmark-contract",
     "prompt": "add a new contract for benchmark manifests under contracts/",
-    "expected": "errand",
-    "note": "A bounded T0 addition whose prompt names no skill is authored as an errand; naming orch-build remains a direct named route.",
+    "expected": "single",
+    "note": "A bounded T0 addition whose prompt names no skill is authored as one ordinary ticket; naming orch-build remains a direct named route.",
     "distractor": false
   },
   {

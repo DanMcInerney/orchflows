@@ -8,7 +8,9 @@ from ._support import *
 
 ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
 ROUTING_CASES = ROUTING_DIR / "cases.json"
-ROUTE_CLASSES = ("answer", "errand", "ticket", "doctor", "fix", "build", "named")
+ROUTE_CLASSES = (
+    "answer", "single", "graph", "spec", "doctor", "fix", "build", "named",
+)
 CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
 ROLE_SKILL_KEYS = {"required_role", "required_skill"}
 # A deleted or never-routed name whose surface words a prompt can borrow
@@ -68,17 +70,14 @@ class TestRoutingCases(unittest.TestCase):
 
         `build` is not a routed class the block decides — it is one named
         skill, and a prompt reaches it only by saying `orch-build`. Two
-        cases say it: one new item, one amendment. Padding the class would
-        mean inventing prompts whose honest route is `ticket`, which is what
-        the five it replaced were doing.
-
-        The graph-shaped `ticket` and dispatch-bootstrap `doctor` lanes each
-        have one producer case; the one-executor cases live under `errand`.
+        cases say it: one new item, one amendment. The `graph`, `spec`, and
+        dispatch-bootstrap `doctor` lanes each need only one discriminating
+        producer case; bounded one-executor cases live under `single`.
         """
 
         counts = collections.Counter(self._class_of(case) for case in self.cases)
         self.assertEqual(set(ROUTE_CLASSES), set(counts))
-        floors = {"build": 2, "ticket": 1, "doctor": 1}
+        floors = {"build": 2, "graph": 1, "spec": 1, "doctor": 1}
         for route_class in ROUTE_CLASSES:
             with self.subTest(route_class=route_class):
                 self.assertGreaterEqual(
@@ -98,7 +97,7 @@ class TestRoutingCases(unittest.TestCase):
                 # The whole point: the surface word is a lure, and the
                 # correct route is still one of the ordinary routed classes.
                 self.assertIn(
-                    self._class_of(case), ("answer", "errand", "ticket", "fix")
+                    self._class_of(case), ("answer", "single", "graph", "spec", "fix")
                 )
 
     def test_no_routed_case_reads_as_an_instruction_to_the_grader(self):
@@ -252,23 +251,23 @@ class TestRoutingGrading(unittest.TestCase):
         self.assertEqual("failed", graded["status"])
         self.assertIn("primary_skill_redispatched", graded["reasons"])
 
-    def test_the_two_ticket_skills_grade_as_ticket(self):
-        for skill in ("orch-frontier", "orch-spec"):
+    def test_routing_skills_grade_as_their_graph_shapes(self):
+        expected = {
+            "orch-frontier": "single",
+            "orch-decompose": "graph",
+            "orch-spec": "spec",
+        }
+        for skill, route in expected.items():
             with self.subTest(skill=skill):
-                self.assertEqual("ticket", self._observed([_skill_use(skill)]))
+                self.assertEqual(route, self._observed([_skill_use(skill)]))
 
-    def test_issuing_a_ticket_from_bash_grades_as_ticket(self):
+    def test_issuing_a_ticket_from_bash_grades_as_single(self):
         command = "python ~/.orchflows/bin/tickets.py new --run r --id A --executor orch-tdd"
-        self.assertEqual("ticket", self._observed([_bash_use(command)]))
+        self.assertEqual("single", self._observed([_bash_use(command)]))
 
-    def test_errand_and_doctor_commands_grade_as_their_routes(self):
-        commands = (
-            ("errand", "python ~/.orchflows/bin/tickets.py errand --run r --id A"),
-            ("doctor", "python ~/.orchflows/lib/install.py doctor"),
-        )
-        for expected, command in commands:
-            with self.subTest(expected=expected):
-                self.assertEqual(expected, self._observed([_bash_use(command)]))
+    def test_doctor_command_grades_as_its_route(self):
+        command = "python ~/.orchflows/lib/install.py doctor"
+        self.assertEqual("doctor", self._observed([_bash_use(command)]))
 
     def test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix(self):
         self.assertEqual("fix", self._observed([_skill_use("fix")]))
@@ -373,7 +372,7 @@ class TestRoutingGrading(unittest.TestCase):
             _skill_use("orch-frontier", tool_id="t2"),
         ]
         graded = routing_live.grade_transcript(_stream(events))
-        self.assertEqual("ticket", graded["observed"])
+        self.assertEqual("single", graded["observed"])
         self.assertEqual(2, graded["turns"])
 
     def test_the_first_route_bearing_event_decides_it(self):
@@ -383,7 +382,7 @@ class TestRoutingGrading(unittest.TestCase):
             _bash_use("tickets.py new --id A"),
             _skill_use("evolve", tool_id="t2"),
         ]
-        self.assertEqual("ticket", self._observed(reversed_events))
+        self.assertEqual("single", self._observed(reversed_events))
 
     def test_a_text_answer_after_a_skill_never_overrides_the_skill(self):
         events = [_skill_use("fix"), _parent_text("ROUTE: answer")]
@@ -437,7 +436,7 @@ class TestRoutingCaseLoader(unittest.TestCase):
         return path
 
     def test_only_a_prompt_naming_orch_build_expects_the_build_route(self):
-        """The host block routes unnamed requests to answer, ticket, or fix.
+        """The host block routes unnamed requests by graph shape or to fix.
         Prompts expecting `build` without naming `orch-build` measured an invention."""
 
         cases = json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
@@ -450,9 +449,9 @@ class TestRoutingCaseLoader(unittest.TestCase):
         for case in cases:
             if case["expected"] != "build":
                 self.assertNotIn("orch-build", case["prompt"], case["id"])
-        self.assertEqual(37, len(cases))
+        self.assertEqual(38, len(cases))
 
-    def test_the_catalog_counterfactual_uses_answer_then_one_known_cause_errand(self):
+    def test_the_catalog_counterfactual_uses_answer_then_one_single_ticket(self):
         cases = {
             case["id"]: case
             for case in json.loads(ROUTING_CASES.read_text(encoding="utf-8"))
@@ -463,10 +462,10 @@ class TestRoutingCaseLoader(unittest.TestCase):
         self.assertIn("explanation only", explanation["note"])
 
         implementation = cases["ticket-codex-catalog-gap"]
-        self.assertEqual("errand", implementation["expected"])
+        self.assertEqual("single", implementation["expected"])
         for expectation in (
             "known cause",
-            "one ordered errand",
+            "one ordinary ticket",
             "derived consequences",
         ):
             with self.subTest(expectation=expectation):
