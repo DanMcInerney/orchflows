@@ -85,7 +85,8 @@
     `cut-generation`, `change-kind`, `target-fields`, `reason`,
     `evidence-identities`, and `bound-state`. The caller alone disposes it as
     `continue`, `amend-and-reseal`, `recut-remaining`, or
-    `successor-or-new-root`.
+    `successor-or-new-root`; `tickets.py resume-generation` materializes the
+    unchanged packet or the validated, sealed same-ticket authority change.
 15. Before a worker becomes ready, is claimed, or receives a packet, the
     caller seals the exact validated assignment digest over objective,
     inputs, authority, dependencies, acceptance, and executor, its

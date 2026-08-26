@@ -314,6 +314,82 @@ class DraftValidateTest(unittest.TestCase):
                         "--cut-generation", live["draft_validation"]["cut_generation"]))
 
 
+class ResumeGenerationTest(unittest.TestCase):
+    """A caller can dispose one parked authority amendment durably."""
+
+    def test_amend_and_reseal_resumes_the_same_ticket_in_a_new_generation(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            baseline = initialize_git_fixture(tmp)
+            run_dir = use_sink(tmp) / "tickets" / "run"
+            run_dir.mkdir(parents=True)
+            for ticket_id, text in generation_lifecycle.snapshot().items():
+                text = text.replace("02621f7005b0b4d37fa59b0d450ff742d9c1bfbd", baseline)
+                (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+
+            validated = run_cmd(tmp, "draft-validate", "run", "00-root")
+            cut = validated["draft_validation"]["cut_generation"]
+            self.assertNotIn(
+                "error", run_cmd(tmp, "seal", "run", "00-root", "--cut-generation", cut)
+            )
+            ready = run_cmd(tmp, "ready", "--run", "run")
+            self.assertIn("00-root.01", {item["id"] for item in ready["ready"]}, ready)
+            claim = run_cmd(tmp, "claim", "run", "00-root.01", "--by", "worker-a")
+            self.assertNotIn("error", claim, claim)
+            worker = tickets_format._parse_frontmatter(
+                (run_dir / "00-root.01.md").read_text(encoding="utf-8")
+            )
+            request = {
+                "bound-state": "within",
+                "change-kind": "authority",
+                "cut-generation": worker["cut_generation"],
+                "evidence-identities": ["sha256:" + "1" * 64],
+                "parent-ticket": "00-root",
+                "reason": "one additional output is required",
+                "request-id": "request-1",
+                "requester-ticket": "00-root.01",
+                "root-generation": worker["root_generation"],
+                "target-fields": ["mutations", "write_scope"],
+            }
+            parked = run_cmd(
+                tmp, "amendment-request", "run", "00-root.01", "--record",
+                tickets_generations.canonical_json(request),
+            )
+            self.assertNotIn("error", parked, parked)
+            self.assertEqual("suspended", parked["amendment_request"]["status"])
+            disposition = {
+                "amendments": {
+                    "mutations": ["change:scripts/example.py", "create:scripts/extra.py"],
+                    "write_scope": ["scripts/example.py", "scripts/extra.py"],
+                },
+                "disposition": "amend-and-reseal",
+                "request-id": "request-1",
+            }
+            resumed = run_cmd(
+                tmp, "resume-generation", "run", "00-root.01", "--record",
+                tickets_generations.canonical_json(disposition),
+            )
+            self.assertNotIn("error", resumed)
+            self.assertIn(":2:sha256:", resumed["resume_generation"]["cut_generation"])
+            changed = (run_dir / "00-root.01.md").read_text(encoding="utf-8")
+            data = tickets_format._parse_frontmatter(changed)
+            self.assertEqual("suspended", data["status"])
+            self.assertEqual("worker-a", data["claimed_by"])
+            self.assertEqual(["scripts/example.py", "scripts/extra.py"], data["write_scope"])
+            self.assertEqual([], tickets_generations.v2_seal_findings("00-root.01", changed))
+
+    def test_resume_rejects_an_assignment_field_the_request_did_not_name(self):
+        record = {
+            "amendments": {"excluded_actions": ["new exclusion"]},
+            "disposition": "amend-and-reseal",
+            "request-id": "request-1",
+        }
+        result = tickets_generations._validate_resume_record(
+            record, {"request-id": "request-1", "target-fields": ["write_scope"]}
+        )
+        self.assertIn("target-fields", result)
+
+
 class LifecycleCommandsTest(unittest.TestCase):
     """The live commands, and the sequences their refusals now name."""
 

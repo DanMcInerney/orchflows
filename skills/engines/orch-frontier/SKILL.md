@@ -27,8 +27,9 @@ neither context.
 V2 readiness/claim/packet require `root_generation`, `cut_generation`, and
 `assignment_seal` resolving to one sealed snapshot and validation receipt.
 Refuse draft/validated-only, stale, missing, mismatched, or substituted
-generations. An accepted `tickets.py amendment-request` disposition recomputes
-the frontier; only work newly sealed by `tickets.py seal` proceeds. The absence
+generations. An accepted amendment disposition runs `tickets.py
+resume-generation`, then recomputes the frontier; only its unchanged packet or
+newly sealed generation proceeds. The absence
 of v2 fields means v1. A root cut reader is the exception: take it with three
 or more `<id>.NN` or after a cutcheck advisory;
 units stay `pending` until `checked_by` and this engine's `cutcheck.py`

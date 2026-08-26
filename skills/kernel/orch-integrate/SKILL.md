@@ -41,8 +41,8 @@ For v2, validate exactly one
 `- amendment-request: <canonical JSON record>` in a parked worker's Handoff,
 including all fields required by [delegation.md](../../../rules/delegation.md).
 Route it once per dispatch; neither worker nor join edits its parent. The
-caller records `continue`, `amend-and-reseal`, `recut-remaining`, or
-`successor-or-new-root`; resume only from the resulting sealed generation or
+caller applies [delegation.md](../../../rules/delegation.md) §14 through
+`tickets.py resume-generation`; resume only from its sealed generation or
 unchanged packet. The absence of v2 fields means v1; old free-form Handoffs and
 claimed or terminal v1 history retain their path.
 

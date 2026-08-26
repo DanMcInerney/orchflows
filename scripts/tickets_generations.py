@@ -14,10 +14,10 @@ import re
 from pathlib import Path
 
 if __package__:
-    from .tickets_format import (_executor_of, _parse_frontmatter, _scope_entries, _sections, _set_frontmatter_field, _write_section, canonical_json)
+    from .tickets_format import (_executor_of, _parse_frontmatter, _scope_entries, _sections, _set_frontmatter_field, _write_section, canonical_json, ticket_defects)
     from .tickets_transitions import CLAIMED, stamp
 else:
-    from tickets_format import (_executor_of, _parse_frontmatter, _scope_entries, _sections, _set_frontmatter_field, _write_section, canonical_json)
+    from tickets_format import (_executor_of, _parse_frontmatter, _scope_entries, _sections, _set_frontmatter_field, _write_section, canonical_json, ticket_defects)
     from tickets_transitions import CLAIMED, stamp
 
 
@@ -31,6 +31,8 @@ ASSIGNMENT_AUTHORITY_FIELDS = (
     "write_scope", "mutations", "excluded_actions", "isolation", "pack",
     "independence", "bound", "ownership_regions", "granted_scope", "sequence",
 )
+RESUME_FIELDS = ("amendments", "disposition", "request-id")
+RESUME_DISPOSITIONS = ("amend-and-reseal", "continue")
 
 
 class GenerationError(ValueError):
@@ -209,6 +211,49 @@ def append_amendment_request(worker_text: str, record: dict) -> str:
     line = "- amendment-request: " + canonical_json(record)
     return _write_section(worker_text, "Handoff", line, append=True)
 
+
+def _amendment_requests(worker_text: str) -> list:
+    records = []
+    for line in _sections(worker_text).get("Handoff", "").splitlines():
+        marker, separator, encoded = line.strip().partition("- amendment-request:")
+        if marker or not separator:
+            continue
+        try:
+            record = json.loads(encoded.strip())
+            _validate_amendment(record)
+        except (ValueError, json.JSONDecodeError, GenerationError):
+            continue
+        records.append(record)
+    return records
+
+
+def _validate_resume_record(record: dict, request: dict) -> str:
+    """Return the disposition defect, or ``''`` for one exact request."""
+
+    if not isinstance(record, dict) or tuple(record) != RESUME_FIELDS:
+        return f"resume record fields must be exactly {list(RESUME_FIELDS)} in canonical order"
+    if record.get("disposition") not in RESUME_DISPOSITIONS:
+        return f"resume disposition must be one of {list(RESUME_DISPOSITIONS)}"
+    if record.get("request-id") != request.get("request-id"):
+        return "resume request-id does not name the parked amendment request"
+    amendments = record.get("amendments")
+    if not isinstance(amendments, dict):
+        return "resume amendments must be an object"
+    if record["disposition"] == "continue":
+        return "" if not amendments else "continue cannot change assignment fields"
+    if not amendments:
+        return "amend-and-reseal requires at least one assignment amendment"
+    allowed = set(request.get("target-fields") or [])
+    unsupported = sorted(set(amendments) - set(ASSIGNMENT_AUTHORITY_FIELDS))
+    if unsupported:
+        return "resume amendments are not assignment authority fields: " + ", ".join(unsupported)
+    unrequested = sorted(set(amendments) - allowed)
+    if unrequested:
+        return "resume amendments exceed the request target-fields: " + ", ".join(unrequested)
+    if any(value is None for value in amendments.values()):
+        return "resume amendments cannot remove a sealed assignment field"
+    return ""
+
 def v2_seal_findings(ticket_id: str, text: str) -> list:
     """Findings that guard worker eligibility at the v2 seal boundary."""
 
@@ -240,6 +285,7 @@ def v2_seal_findings(ticket_id: str, text: str) -> list:
 DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
 SEAL_USAGE = "seal <run> <root-id> --cut-generation <identity>"
 AMENDMENT_REQUEST_USAGE = "amendment-request <run> <id> --record <canonical-json>"
+RESUME_GENERATION_USAGE = "resume-generation <run> <id> --record <canonical-json>"
 
 
 def _store_bindings():
@@ -494,10 +540,143 @@ def _cmd_amendment_request(rest) -> dict:
     return {"amendment_request": {"id": record["request-id"], "run": run, "ticket": ticket_id, "status": "suspended"}}
 
 
+def _cmd_resume_generation(rest) -> dict:
+    """Dispose one parked v2 amendment without replacing its ticket."""
+
+    args = list(rest)
+    encoded = _extract(args, "--record")
+    if len(args) != 2 or encoded is None:
+        return {"error": f"usage: {RESUME_GENERATION_USAGE}"}
+    run, ticket_id = args
+    _, run_lock, _, segment_error, tickets_root, write_atomically = _store_bindings()
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        refusal = segment_error(kind, value)
+        if refusal is not None:
+            return refusal
+    try:
+        record = json.loads(encoded)
+        if canonical_json(record) != encoded:
+            raise GenerationError("resume record JSON must be canonical")
+    except (ValueError, json.JSONDecodeError, GenerationError) as error:
+        return {"error": str(error)}
+    root = tickets_root()
+    if root is None:
+        return {"error": _store_bindings()[0]}
+    try:
+        with run_lock(run):
+            run_dir, snapshot = _snapshot(run)
+            worker_text = snapshot.get(ticket_id)
+            if worker_text is None:
+                return {"error": f"ticket not found: {run}/{ticket_id}"}
+            worker = _parse_frontmatter(worker_text)
+            if str(worker.get("status") or "") != "suspended" or not str(worker.get("claimed_by") or "").strip():
+                return {"error": "resume-generation requires one parked claimed worker"}
+            requests = [
+                item for item in _amendment_requests(worker_text)
+                if item.get("request-id") == record.get("request-id")
+            ]
+            if len(requests) != 1:
+                return {"error": "resume-generation requires exactly one matching amendment request"}
+            request = requests[0]
+            defect = _validate_resume_record(record, request)
+            if defect:
+                return {"error": defect}
+            if record["disposition"] == "continue":
+                return {"resume_generation": {
+                    "cut_generation": worker["cut_generation"],
+                    "disposition": "continue", "run": run,
+                    "status": "suspended", "ticket": ticket_id,
+                }}
+            match = GENERATION_RE.fullmatch(str(worker.get("root_generation") or ""))
+            if match is None or match.group(1) != "root":
+                return {"error": "parked worker has no valid root generation"}
+            root_id = match.group(2)
+            findings = _v2_draft_findings(root_id, snapshot)
+            if findings:
+                return {"error": "resume-generation cannot rewrite an in-flight or terminal cut", "findings": findings}
+            changed = dict(snapshot)
+            for field, value in record["amendments"].items():
+                changed[ticket_id] = _set_frontmatter_field(
+                    changed[ticket_id], field, canonical_json(value),
+                )
+            defects = ticket_defects(changed[ticket_id])
+            if defects:
+                return {"error": "resume-generation amendment is off contract", "findings": defects}
+            ordinal = generation_ordinal(str(worker.get("cut_generation") or ""), "cut") + 1
+            coverage = _coverage_map(run, root_id)
+            draft = draft_snapshot(root_id, changed, ordinal, coverage)
+            receipt = validate_draft(root_id, changed, draft, coverage)
+            sealed = seal_assignments(root_id, changed, draft, receipt, coverage)
+            validated_path = _state_path(run, draft["cut_generation"], "validated")
+            sealed_path = _state_path(run, draft["cut_generation"], "sealed")
+            validated_document = canonical_json({"draft": draft, "receipt": receipt}) + "\n"
+            seals = {
+                member_id: _parse_frontmatter(text).get("assignment_seal")
+                for member_id, text in sealed.items()
+                if member_id == root_id or member_id.startswith(root_id + ".")
+            }
+            sealed_document = canonical_json({
+                "assignment_seals": seals,
+                "cut_generation": draft["cut_generation"],
+                "receipt": receipt,
+                "root_generation": draft["root_generation"],
+                "root_id": root_id,
+                "state": "sealed",
+            }) + "\n"
+            disposition_document = canonical_json({
+                "disposition": record,
+                "new-cut-generation": draft["cut_generation"],
+                "new-root-generation": draft["root_generation"],
+                "request": request,
+                "run": run,
+                "ticket": ticket_id,
+            }) + "\n"
+            disposition_digest = hashlib.sha256(disposition_document.encode("utf-8")).hexdigest()
+            disposition_path = _generation_dir(run) / (disposition_digest + ".disposition.json")
+            records = (
+                (validated_path, validated_document),
+                (sealed_path, sealed_document),
+                (disposition_path, disposition_document),
+            )
+            for path, body in records:
+                if path.exists() and path.read_text(encoding="utf-8") != body:
+                    return {"error": f"content-addressed generation record collision: {path}"}
+            written_records = []
+            written_tickets = []
+            try:
+                for path, body in records:
+                    if not path.exists():
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        write_atomically(path, body)
+                        written_records.append(path)
+                for member_id, text in sealed.items():
+                    if text != snapshot[member_id]:
+                        write_atomically(run_dir / f"{member_id}.md", text)
+                        written_tickets.append(member_id)
+            except OSError:
+                for member_id in written_tickets:
+                    write_atomically(run_dir / f"{member_id}.md", snapshot[member_id])
+                for path in written_records:
+                    path.unlink(missing_ok=True)
+                raise
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, GenerationError, json.JSONDecodeError) as error:
+        return {"error": str(error)}
+    return {"resume_generation": {
+        "cut_generation": draft["cut_generation"],
+        "disposition": record["disposition"],
+        "path": str(disposition_path),
+        "root_generation": draft["root_generation"],
+        "run": run,
+        "status": "suspended",
+        "ticket": ticket_id,
+    }}
+
+
 GENERATION_SUBCOMMANDS = {
     "draft-validate": (DRAFT_VALIDATE_USAGE, "Grade one exact v2 assignment snapshot and persist its content-addressed validation receipt.", _cmd_draft_validate),
     "seal": (SEAL_USAGE, "Compare-and-swap seal only the exact validated v2 cut generation, making its units eligible for admission.", _cmd_seal),
     "amendment-request": (AMENDMENT_REQUEST_USAGE, "Append one canonical typed parent-amendment request to the worker-owned Handoff and suspend the worker.", _cmd_amendment_request),
+    "resume-generation": (RESUME_GENERATION_USAGE, "Dispose one parked v2 amendment as an unchanged packet or a validated and sealed same-ticket assignment generation.", _cmd_resume_generation),
 }
 
 
@@ -506,5 +685,6 @@ __all__ = (
     "assignment_digest", "assignment_payload", "canonical_json", "correction_decision",
     "draft_snapshot", "generation_identity", "generation_ordinal", "seal_assignments",
     "validate_draft", "v2_seal_findings", "_cmd_amendment_request",
+    "_cmd_resume_generation", "_validate_resume_record",
     "_cmd_draft_validate", "_cmd_seal",
 )

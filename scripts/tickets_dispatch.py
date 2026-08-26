@@ -392,6 +392,7 @@ def _dispatch(argv):
     if command == 'draft-validate': return GENERATION_SUBCOMMANDS[command][2](rest)
     if command == 'seal': return GENERATION_SUBCOMMANDS[command][2](rest)
     if command == 'amendment-request': return GENERATION_SUBCOMMANDS[command][2](rest)
+    if command == 'resume-generation': return GENERATION_SUBCOMMANDS[command][2](rest)
     if command == 'instantiate': return _cmd_instantiate(rest)
     if command == 'gate': return _cmd_gate(rest)
     if command == 'list':

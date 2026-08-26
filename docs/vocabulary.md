@@ -216,7 +216,8 @@ composition).
   assignment generation under `rules/delegation.md`.
 - **amendment request** — the canonical typed record a worker appends to its
   `## Handoff` when its assignment must change; the worker parks and the
-  caller alone chooses a disposition under `rules/delegation.md`.
+  caller alone chooses and materializes a disposition through
+  `tickets.py resume-generation` under `rules/delegation.md`.
 - **authority** — the write scope plus named excluded actions a dispatch
   grants; per `contracts/work-item.md`.
 - **write scope** — the capability naming exactly what a child may change,
