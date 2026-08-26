@@ -29,6 +29,37 @@ from tests.test_validator_cases.repo_and_frontmatter import (
 )
 
 
+class TestRecursiveNameResolution(_IsolatedTree):
+    def test_nested_shipped_prose_resolves_skill_names(self):
+        skill = self.tmp_path / "skills" / "kernel" / "orch-real"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\nname: orch-real\ndescription: synthetic skill\nrole: worker\n---\n"
+            "Require: input.\nNever: overreach.\nReturn: status; result.\n",
+            encoding="utf-8",
+        )
+        (self.tmp_path / "ARCHITECTURE.md").write_text("# Tiers\n", encoding="utf-8")
+        paths = (
+            "rules/nested/call.md",
+            "docs/nested/call.md",
+            "contracts/nested/call.md",
+            "templates/nested/call.md",
+        )
+        for relative in paths:
+            path = self.tmp_path / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("Call `orch-missing`.\n", encoding="utf-8")
+
+        result = self._run()
+
+        for relative in paths:
+            with self.subTest(relative=relative):
+                self.assertIn(
+                    f"ERROR {relative}: `orch-missing` names no package",
+                    result.stdout.replace("\\", "/"),
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
 
