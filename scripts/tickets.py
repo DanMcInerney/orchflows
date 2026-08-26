@@ -22,6 +22,11 @@ Subcommands:
         [--profile P] [--independence gate|checker]
         [--isolation required|none] [--return-fields TEXT]
     new <run> --file <path>
+    errand <run> <id> --task TEXT (--executor E | --sequence E[,E...])
+        --path PATH [--path PATH ...] --bound B
+        (--pre-existing-oracle NAME=COMMAND |
+         --born-red-oracle NAME=COMMAND |
+         --authored-here-oracle NAME=COMMAND)
     instantiate <template-dir> --run <run> [--set k=v ...]
     gate <run> <root-id> [--lens <name>[,<name>] |
         --ordered-lens-bundle <name>[,<name>]]

@@ -67,7 +67,7 @@ class TestRunStateRootResolution(unittest.TestCase):
                  "subprocess", "tempfile", "time", "tickets_format", "tickets_markdown", "tickets_store",
                  "tickets_carry", "tickets_ceiling", "tickets_commands", "tickets_lint",
                  "tickets_sequence",
-                 "tickets_project", "tickets_issue", "tickets_lifecycle", "tickets_packet",
+                 "tickets_project", "tickets_issue", "tickets_errand", "tickets_lifecycle", "tickets_packet",
                  "tickets_result", "tickets_worklog", "tickets_dispatch",
                  "tickets_generations", "tickets_gate_bundle", "tickets_gate_mutations",
                  "tickets_packet_receipts", "tickets_admission", "tickets_emission", "tickets_inputs",
