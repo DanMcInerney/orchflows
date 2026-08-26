@@ -228,10 +228,6 @@ def _result_under_run_lock(rest):
     if failure is not None:
         return failure
     sections = _sections(text)
-    if canonical == 'Carry' and 'Carry' not in sections:
-        return {'error': "'## Carry' is a legacy filing channel available only when that historical section already exists; use canonical '## Context' for new work"}
-    if canonical == 'Context' and 'Context' not in sections and 'Carry' in sections:
-        return {'error': "refusing to create ambiguous dual successor sections: this legacy ticket already has '## Carry', so do not add '## Context'"}
     data = _parse_frontmatter(text)
     v2 = any(key in data for key in (
         'root_generation', 'cut_generation', 'ownership_regions', 'assignment_seal',

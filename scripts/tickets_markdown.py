@@ -2,17 +2,16 @@
 from __future__ import annotations
 
 EXECUTOR_SECTIONS = ('Result', 'Verification', 'Feedback', 'Risks', 'Context', 'Handoff')
-LEGACY_EXECUTOR_SECTIONS = ('Carry',)
-FILEABLE_EXECUTOR_SECTIONS = EXECUTOR_SECTIONS + LEGACY_EXECUTOR_SECTIONS
-EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in FILEABLE_EXECUTOR_SECTIONS}
+FILEABLE_EXECUTOR_SECTIONS = EXECUTOR_SECTIONS
+EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
 CUT_SECTIONS = ('Objective', 'Fixed inputs', 'Completion test', 'Return fields')
 CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
-SECTION_ORDER = CUT_SECTIONS + ('Result', 'Verification', 'Feedback', 'Risks', 'Carry', 'Context', 'Handoff')
+SECTION_ORDER = CUT_SECTIONS + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
 # Optional twice over: `ticket_defects` requires neither, because every
 # ticket already in the sink was issued without them and a new optional
 # section that is retroactively required convicts the whole history.
-OPTIONAL_SECTIONS = ('Handoff', 'Context', 'Carry')
+OPTIONAL_SECTIONS = ('Handoff', 'Context')
 REQUIRED_SECTIONS = tuple(name for name in CUT_SECTIONS + EXECUTOR_SECTIONS if name not in OPTIONAL_SECTIONS)
 SECTION_SENTINEL = '[]'
 """The empty collection a cut prefills an executor-owned section with.

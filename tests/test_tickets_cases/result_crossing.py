@@ -156,35 +156,22 @@ class TestContextFilingContract(unittest.TestCase):
             self.assertIn("one to five", refused["error"])
             self.assertEqual(before, ticket.read_bytes())
 
-    def test_carry_is_legacy_only_and_dual_section_creation_is_refused(self):
+    def test_context_is_the_only_successor_digest_filing_channel(self):
+        self.assertFalse(hasattr(tickets_mod, "LEGACY_EXECUTOR_SECTIONS"))
+        self.assertFalse(hasattr(tickets_mod, "FILEABLE_EXECUTOR_SECTIONS"))
+        self.assertNotIn("Carry", tickets_mod.EXECUTOR_SECTIONS_BY_KEY.values())
+        self.assertNotIn("Carry", tickets_mod.SECTION_ORDER)
+        self.assertNotIn("Carry", tickets_mod.OPTIONAL_SECTIONS)
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
             ticket = run_dir / "T1.md"
             before = ticket.read_bytes()
-            no_provenance = run_cmd(
+            refused = run_cmd(
                 worktree, "result", "testrun", "T1", "--section", "Carry",
-                "--text", "legacy conclusion",
+                "--text", "not a successor digest",
             )
-            self.assertIn("legacy", no_provenance["error"])
-            self.assertEqual(before, ticket.read_bytes())
-
-            ticket.write_text(
-                ticket.read_text(encoding="utf-8") + "\n## Carry\n\nold conclusion\n",
-                encoding="utf-8",
-            )
-            carried = run_cmd(
-                worktree, "result", "testrun", "T1", "--section", "Carry",
-                "--text", "new conclusion", "--append",
-            )
-            self.assertEqual("Carry", carried["result"]["section"])
-            before = ticket.read_bytes()
-            dual = run_cmd(
-                worktree, "result", "testrun", "T1", "--section", "Context",
-                "--text", "- state: canonical conclusion",
-            )
-            self.assertIn("Carry", dual["error"])
-            self.assertIn("Context", dual["error"])
+            self.assertIn("not one of", refused["error"])
             self.assertEqual(before, ticket.read_bytes())
 
 

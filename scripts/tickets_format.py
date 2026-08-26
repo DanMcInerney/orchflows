@@ -8,7 +8,7 @@ if __package__:
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
-        FILEABLE_EXECUTOR_SECTIONS, LEGACY_EXECUTOR_SECTIONS,
+        FILEABLE_EXECUTOR_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
@@ -23,7 +23,7 @@ else:
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
-        FILEABLE_EXECUTOR_SECTIONS, LEGACY_EXECUTOR_SECTIONS,
+        FILEABLE_EXECUTOR_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
@@ -216,12 +216,9 @@ def successor_context_defects(body: str) -> list:
                 f"Context line {number} must begin exactly '- state:' or '- watch:' and have non-empty content"
             )
     return defects
-def successor_section_defects(sections: dict, allow_legacy_carry: bool=False) -> list:
-    named = {str(name).lower(): body for name, body in sections.items()}; suffix = ' beside ## Context' if 'context' in named else ''
-    defects = ([f'canonical new work cannot contain legacy ## Carry{suffix}']
-               if 'carry' in named and not allow_legacy_carry else [])
-    if 'context' in named: defects.extend(successor_context_defects(named['context']))
-    return defects
+def successor_section_defects(sections: dict, *_ignored) -> list:
+    named = {str(name).lower(): body for name, body in sections.items()}
+    return successor_context_defects(named['context']) if 'context' in named else []
 def format_policy_defects(text, data, sections):
     defects = []
     for key in _duplicate_frontmatter_keys(text):
