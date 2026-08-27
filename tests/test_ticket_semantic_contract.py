@@ -224,6 +224,36 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual([], cutcheck.graph_findings(complete))
         self.assertEqual([], cutcheck.graph_findings(sealed))
 
+        later_cut = tickets_generations.draft_snapshot(
+            "S", {"S": assignment("S", "orch-decompose")}, ordinal=2
+        )
+        self.assertIn("root:S:1:", later_cut["root_generation"])
+        self.assertIn("cut:S:2:", later_cut["cut_generation"])
+
+        changed_root = dict(rooted)
+        changed_root["R"] = changed_root["R"].replace(
+            "Deliver the observable result for R.",
+            "Deliver a semantically changed result for R.",
+        )
+        with self.assertRaisesRegex(
+            tickets_generations.GenerationError,
+            "successor run.*accepted predecessor result",
+        ):
+            tickets_generations.draft_snapshot("R", changed_root, ordinal=2)
+
+        forged_second_root = rooted["R"].replace(
+            "root:R:1:", "root:R:2:"
+        ).replace("cut:R:1:", "cut:R:2:")
+        self.assertIn(
+            "root-generation-successor-required",
+            {
+                finding["code"]
+                for finding in tickets_generations.seal_findings(
+                    "R", forged_second_root
+                )
+            },
+        )
+
     def test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate(self):
         snapshot = {
             "R": assignment("R", "orch-decompose"),
