@@ -7,7 +7,7 @@
    "test_affected_tests.TestDiscoveryCache.test_the_first_resolve_records_discovery_and_the_second_is_served",
    "test_affected_tests.TestDiscoveryCache.test_the_record_is_runtime_state_and_never_a_repository_artifact",
    "test_affected_tests.TestLiveFacadeMappings.test_neither_owner_selects_the_whole_suite",
-   "test_affected_tests.TestLiveFacadeMappings.test_the_issue_owner_selects_its_own_admission_suite",
+   "test_affected_tests.TestLiveFacadeMappings.test_the_issue_owner_selects_the_current_admission_suite",
    "test_affected_tests.TestLiveFacadeMappings.test_the_lint_owner_selects_the_current_protocol_suite",
    "test_affected_tests.TestMeasuredImportEdges.test_a_file_reached_only_through_a_facade_selects_its_shard",
    "test_affected_tests.TestMeasuredImportEdges.test_a_file_reached_only_through_a_relative_import_selects_its_shard",
@@ -1704,7 +1704,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "eb84714c9accdc3da4da48764a54828ec6e29357d37dc74f8de71ae29c6523f5"
+  "sha256": "e543c7b771f5dea47cbff67f154a6924866c71ae11e66eb25ed82780a94e09f4"
  },
  "mutation_owners": [
   {
