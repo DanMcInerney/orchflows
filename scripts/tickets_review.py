@@ -10,14 +10,12 @@ if __package__:
         GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         parse_canonical_json,
     )
-    from .tickets_attempts import _record_response
     from .tickets_store import _load_ticket
 else:
     from tickets_format import (
         GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         parse_canonical_json,
     )
-    from tickets_attempts import _record_response
     from tickets_store import _load_ticket
 
 
@@ -156,6 +154,42 @@ def gate_plan(ticket_path: Path, artifact: str) -> dict:
     )
 
 
+def checker_plan(ticket_path: Path, artifact: str) -> dict:
+    if not isinstance(artifact, str) or not artifact.strip():
+        raise ReviewError("ordinary check requires --artifact <fixed-identity>")
+    data = _load_ticket(ticket_path)
+    seal = str(data.get("assignment_seal") or "")
+    if not seal:
+        raise ReviewError("ordinary check target is not sealed")
+    criterion = {
+        "identity": _digest({
+            "executor": GATE_EXECUTORS["critique"],
+            "lens": "checker",
+            "pack": data.get("pack"),
+            "target_assignment": seal,
+        }),
+        "lens": "checker",
+        "order": 0,
+        "ticket": str(data.get("id") or ticket_path.stem),
+    }
+    return _record(
+        "GatePlan", None,
+        artifact=artifact.strip(), criteria=[criterion],
+        isolation=str(data.get("isolation") or "none"), mode="checker",
+        pack=data.get("pack"), root=str(data.get("id") or ticket_path.stem),
+    )
+
+
+def checker_state(
+    ticket_path: Path, artifact: str | None, findings: str | None,
+    accepted: str | None, by: str,
+) -> dict:
+    plan = checker_plan(ticket_path, artifact or "")
+    return adjudicate(
+        _review_state([plan]), findings or "", accepted, by, "checker",
+    )
+
+
 def _dependency_text(ticket_path: Path, dependency: str) -> str:
     path = ticket_path.with_name(f"{dependency}.md")
     try:
@@ -235,6 +269,10 @@ def packet_state_result(ticket_path: Path, text: str, artifact: str | None):
 def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id, content):
     if review_state is None:
         return None
+    if __package__:
+        from .tickets_attempts import _record_response
+    else:
+        from tickets_attempts import _record_response
 
     def commit(candidate, _data, _attempt, _dispatch_state):
         updated = _set_frontmatter_field(
@@ -272,6 +310,8 @@ def adjudicate(
         raise ReviewError(f"critique findings and accepted set must be canonical JSON arrays: {error}") from error
     if not isinstance(findings, list) or not isinstance(accepted, list):
         raise ReviewError("critique join requires --accepted <canonical-json-array>")
+    if canonical_json(findings) != feedback or canonical_json(accepted) != accepted_text:
+        raise ReviewError("critique findings and accepted set must use canonical JSON")
     finding_values = {canonical_json(item) for item in findings}
     if any(canonical_json(item) not in finding_values for item in accepted):
         raise ReviewError("accepted blocker set is not a subset of critique findings")
@@ -319,17 +359,23 @@ def verification_outcome(state: dict, artifact: str | None, verification: str, b
     repaired = records[-1]
     if artifact is not None and artifact != repaired["artifact"]:
         raise ReviewError("verification join names a different artifact")
+    verdict = verification.partition(":")[0].strip()
+    if verdict not in {"PASS", "FAIL", "UNVERIFIED"}:
+        raise ReviewError(
+            "verification evidence must begin PASS:, FAIL:, or UNVERIFIED:"
+        )
     record = _record(
         "Verification", repaired["identity"],
         artifact=repaired["artifact"],
         by=by,
         evidence=verification,
+        verdict=verdict,
     )
     return _review_state([*records, record])
 
 
 __all__ = (
-    "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate",
+    "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate", "checker_state",
     "aggregate_adjudication", "canonical_json", "packet_mutation", "packet_state_result",
     "replay_review_failure",
     "repair_outcome", "review_records", "state_from_text",

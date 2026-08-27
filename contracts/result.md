@@ -33,6 +33,8 @@ established receiver accepted the exact committed packet before execution.
 A read-only critique records findings in `## Feedback`; it never rewrites the
 executor's Result or Verification. A verifier records its independent verdict
 and evidence in `## Verification`.
+Gate and ordinary-checker critique Feedback is a canonical JSON array so the
+review ledger can bind the complete findings and an exact accepted subset.
 
 The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, and adjudicates only material blockers

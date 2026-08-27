@@ -194,6 +194,8 @@ def _cmd_dispatch_join(rest):
         "operation": "join",
         "outcome_record_id": outcome_record_id,
     }
+    if ".gate." in ticket_id:
+        content["review"] = {"accepted": accepted, "artifact": artifact}
 
     def join(text, _data, attempt, _state):
         outcome_record = next(
@@ -264,6 +266,8 @@ def _cmd_dispatch_join(rest):
             "status": status,
             "joined_at": joined_at,
         }}
+        if review is not None:
+            response["join"]["review_identity"] = review["records"][-1]["identity"]
         attempt["state"] = "retired"
         attempt["retired_at"] = joined_at
         attempt["retirement"] = response

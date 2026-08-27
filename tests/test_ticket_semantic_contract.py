@@ -352,6 +352,64 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertTrue(repair_review["records"][-1]["no_op"])
         self.assertEqual(artifact, repair_review["records"][-1]["artifact"])
 
+        verify_id = "R.gate.verify"
+        verify_opened = self.open_attempt(
+            "clean", verify_id, "verifier", "verify-D1"
+        )
+        mismatch = tickets._dispatch([
+            "dispatch-packet", "clean", verify_id,
+            "--dispatch-id", "verify-D1", "--reply-to", "root",
+            "--artifact", "git:" + "f" * 40,
+        ])
+        self.assertEqual("review-invalid", mismatch["code"])
+        verify_packet = self.dispatch(
+            "dispatch-packet", "clean", verify_id,
+            "--dispatch-id", "verify-D1", "--reply-to", "root",
+            "--artifact", artifact,
+        )["packet"]
+        self.assertIn('"kind":"RepairOutcome"', verify_packet["prompt"])
+        self.dispatch(
+            "dispatch-receive", "--content",
+            json.dumps(verify_packet, sort_keys=True, separators=(",", ":")),
+            "--role", verify_packet["role"],
+            "--profile", verify_packet["profile"],
+            "--by", "verifier", "--reply-to", "root",
+        )
+        verify_outcome = {
+            "assignment_seal": verify_opened["assignment_seal"],
+            "by": "verifier", "dispatch_id": "verify-D1",
+            "evidence": {
+                "Result": "verified fixed artifact",
+                "Verification": "PASS: exact artifact checks are green",
+                "Feedback": "[]", "Risks": "[]", "Handoff": "",
+            },
+            "id": verify_id, "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1", "run": "clean",
+            "status": "complete",
+        }
+        self.dispatch(
+            "dispatch-outcome", "clean", verify_id, "--content",
+            json.dumps(verify_outcome, sort_keys=True, separators=(",", ":")),
+        )
+        self.dispatch(
+            "dispatch-join", "clean", verify_id,
+            "--assignment-seal", verify_opened["assignment_seal"],
+            "--dispatch-id", "verify-D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--artifact", artifact,
+        )
+        verify = (
+            Path(self.temporary.name) / "tickets" / "clean" / f"{verify_id}.md"
+        ).read_text(encoding="utf-8")
+        verify_review = json.loads(_parse_frontmatter(verify)["review_v1"])
+        verification = verify_review["records"][-1]
+        self.assertEqual("Verification", verification["kind"])
+        self.assertEqual("PASS", verification["verdict"])
+        self.assertEqual(artifact, verification["artifact"])
+        self.assertEqual(
+            verify_review["records"][-2]["identity"],
+            verification["predecessor"],
+        )
+
     def test_gate_stubs_freeze_pack_isolation_and_lens_order(self):
         self.dispatch(
             "new", "ordered", "R", "--executor", "orch-decompose",
@@ -384,6 +442,45 @@ class SemanticTicketContractTest(unittest.TestCase):
             self.assertEqual("none", record["isolation"])
         self.assertEqual("0", security["review_order"])
         self.assertEqual("1", code["review_order"])
+
+    def test_distinct_checker_records_the_same_immutable_adjudication_carrier(self):
+        self.dispatch(
+            "new", "checker", "R", "--executor", "orch-tdd",
+            "--goal", "Deliver the checked result.",
+            "--context", "The artifact and evidence are authoritative.",
+            "--pack", "orch-code-pack", "--isolation", "required",
+        )
+        self.seal("checker", "R")
+        self.dispatch("ready", "--run", "checker")
+        self.open_attempt("checker", "R", "worker", "worker-D1")
+        ticket = Path(self.temporary.name) / "tickets" / "checker" / "R.md"
+        artifact = "git:" + "b" * 40
+        before = ticket.read_bytes()
+        refused = tickets._dispatch([
+            "check", "checker", "R", "--by", "checker-a",
+        ])
+        self.assertEqual("review-invalid", refused["code"])
+        self.assertEqual(before, ticket.read_bytes())
+
+        findings = '[{"evidence":"test-x failed","id":"B1"}]'
+        checked = self.dispatch(
+            "check", "checker", "R", "--by", "checker-a",
+            "--artifact", artifact,
+            "--findings", findings, "--accepted", findings,
+        )
+        self.assertEqual("checker-a", checked["check"]["checked_by"])
+        data = _parse_frontmatter(ticket.read_text(encoding="utf-8"))
+        review = json.loads(data["review_v1"])
+        self.assertEqual(
+            ["GatePlan", "CritiqueAdjudication"],
+            [record["kind"] for record in review["records"]],
+        )
+        self.assertEqual("checker", review["records"][0]["mode"])
+        self.assertEqual(json.loads(findings), review["records"][1]["accepted"])
+        self.assertEqual(
+            review["records"][0]["identity"],
+            review["records"][1]["predecessor"],
+        )
 
     def test_decompose_builds_the_complete_gate_bearing_draft_before_validation(self):
         skill = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")

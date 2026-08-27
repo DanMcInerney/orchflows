@@ -4,8 +4,9 @@ description: Challenge a fixed artifact and its evidence against Goal under one 
 role: planner
 ---
 
-Require: a fixed artifact identity, the ticket's Goal and Context, the
-executor's Result and Verification evidence, and one lens.
+Require: the immutable `GatePlan` from the packet's `review_v1` ledger, whose
+fixed artifact identity and one ordered lens assignment match the ticket's
+Goal, Context, Result, and Verification evidence.
 
 First enumerate every material issue under the lens that can prevent Goal,
 contradict explicit Context, invalidate claimed evidence, violate a required
@@ -29,6 +30,6 @@ Never soften a finding because fixing it is costly.
 Never: edit the artifact or sealed ticket, perform a repair, report a
 preference or speculative improvement, or claim a post-repair verdict.
 
-Return: enumerated material findings with Goal impact and evidence; cause
+Return: one canonical JSON array of enumerated material findings with Goal impact and evidence; cause
 clusters; the ranked minimal architectural repair set with blocker coverage;
 uncertainties; and evidence inspected. `[]` records no accepted blockers.

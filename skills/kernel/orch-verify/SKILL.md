@@ -4,8 +4,9 @@ description: Evaluate a fixed artifact and its evidence against Goal. Use for fr
 role: worker
 ---
 
-Require: a fixed artifact identity, Goal and Context, the executor's Result
-and Verification evidence, and any applicable repository standards or frozen
+Require: the packet's immutable predecessor ledger ending in `RepairOutcome`,
+whose fixed artifact identity matches Goal, Context, executor Result and
+Verification evidence, plus any applicable repository standards or frozen
 evaluation scale.
 
 Choose methods capable of disproving the claimed Goal, then inspect or run
@@ -27,3 +28,5 @@ executor's claim; reach into a sibling candidate.
 Return: Goal verdict `PASS|FAIL|UNVERIFIED`; methods and evidence inspected;
 covered identities; contradictions and gaps; or, for a frozen scored
 evaluation, the dimension records, overall score, and warranted confidence.
+Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or
+`UNVERIFIED:` so the join can bind the verdict to the verified artifact.

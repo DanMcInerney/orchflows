@@ -246,12 +246,23 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             return None
         return _invalid(f"lifecycle record '{record_id}' has an unknown operation")
     if kind == "join":
+        if not isinstance(content, dict):
+            return _invalid(f"join record '{record_id}' has invalid content")
+        review_stage = ".gate." in ticket_id
         expected = {
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
-            "joined_by": content.get("joined_by") if isinstance(content, dict) else None,
+            "joined_by": content.get("joined_by"),
             "operation": "join", "outcome_record_id": OUTCOME_RECORD_ID,
         }
+        if review_stage:
+            review = content.get("review")
+            if not _closed(review, {"accepted", "artifact"}) or any(
+                value is not None and not isinstance(value, str)
+                for value in review.values()
+            ):
+                return _invalid(f"join record '{record_id}' has invalid review content")
+            expected["review"] = review
         if content != expected or identity_failure("join-owner", content.get("joined_by")) is not None:
             return _invalid(f"join record '{record_id}' has invalid content")
         outcome = next((
@@ -260,11 +271,18 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
         ), None)
         success = record["success"]
         joined = success.get("join") if _closed(success, {"join"}) else None
-        if outcome is None or not _closed(joined, {
+        joined_keys = {
             "protocol", "run", "id", "assignment_seal", "dispatch_id",
             "outcome_record_id", "by", "status", "joined_at",
-        }):
+        }
+        if review_stage:
+            joined_keys.add("review_identity")
+        if outcome is None or not _closed(joined, joined_keys):
             return _invalid(f"join record '{record_id}' has invalid stored success")
+        if review_stage and identity_failure(
+            "review-identity", joined.get("review_identity"),
+        ) is not None:
+            return _invalid(f"join record '{record_id}' has invalid review identity")
         outcome_content = parse_canonical_json(outcome["content"])
         outcome_status = (
             outcome_content.get("status") if isinstance(outcome_content, dict) else None
@@ -279,6 +297,8 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             "status": outcome_status,
             "joined_at": attempt.get("retired_at"),
         }
+        if review_stage:
+            expected_join["review_identity"] = joined["review_identity"]
         if joined != expected_join or attempt.get("retirement") != success:
             return _invalid(f"join record '{record_id}' differs from its outcome or retirement")
         return None

@@ -138,11 +138,14 @@ Three moments use readers who did not produce the fixed artifact
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — each result takes one outside-independence path:
    either a fresh read-only `orch-critique` checker or the downstream composite
-   gate. Critique records blockers; it never repairs its own target.
+   gate. Critique records blockers; it never repairs its own target. The
+   ordinary checker atomically records a fixed artifact, canonical findings,
+   and accepted subset in the same immutable review ledger before `checked_by`.
 3. **Composite gate** — fresh critique lenses read the integrated identity,
    one `orch-repair` ticket fixes accepted blockers, and a fresh `orch-verify`
    judges the repaired identity. A clean defect set skips repair work through
-   the attributed join.
+   the attributed join. `GatePlan`, `CritiqueAdjudication`, `RepairOutcome`,
+   and `Verification` form one predecessor-linked `orchflows.review.v1` chain.
 
 ## Errors and feedback
 

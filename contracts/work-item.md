@@ -31,12 +31,15 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `depends_on` — ticket ids that must complete first.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate and workspace mechanics.
+- `review_order` — the sealed zero-based order of a composite-gate lens.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
 - `claimed_by`, `claimed_at`, `checked_by`, `workspace_branch`, and
   `workspace_baseline` — lifecycle observations written by their owning tools.
 - `dispatch_v1` — the canonical JSON `orchflows.dispatch.v1` attempt record.
   It is operational state, excluded from the assignment fingerprint.
+- `review_v1` — the canonical JSON immutable review-stage ledger. It is
+  operational state, excluded from the assignment fingerprint.
 
 `status` is `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`,
 `stalled`, `failed`, or `limited`. Admission alone creates `ready`; claim alone
@@ -63,6 +66,22 @@ Packet projection and receipt are the [dispatch contract](dispatch.md)'s wire
 boundary. Reference is the normal projection. Inline seals the whole routing
 envelope for an offline receiver and returns the same reserved outcome envelope
 for atomic coordinator relay; it never creates a second ticket truth.
+
+## Review-stage ledger
+
+`review_v1` is a closed `orchflows.review.v1` object with an ordered `records`
+list. Every record carries its canonical content digest as `identity` and the
+exact prior record identity as `predecessor`. `GatePlan` fixes the artifact,
+pack, normalized isolation, and ordered lens assignment identities;
+`CritiqueAdjudication` fixes complete findings and their accepted subset;
+`RepairOutcome` fixes the resulting artifact or proves no-op from an empty
+accepted set; `Verification` fixes its artifact, verdict, and evidence.
+
+Composite gate packets copy only the validated predecessor chain. Critique,
+repair, and verification joins append their stage atomically with the lifecycle
+join. The ordinary distinct checker writes the same `GatePlan` and
+`CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
+artifact, complete canonical findings, and accepted subset.
 
 ## Executor records
 

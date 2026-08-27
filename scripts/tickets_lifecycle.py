@@ -43,11 +43,12 @@ if __package__:
 else:
     from tickets_attempts import _classification
 if __package__:
-    from .tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome
+    from .tickets_review import REVIEW_FIELD, ReviewError, checker_state, packet_state, repair_outcome
 else:
-    from tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome
+    from tickets_review import REVIEW_FIELD, ReviewError, checker_state, packet_state, repair_outcome
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
-CHECK_USAGE = 'check <run> <id> --by <name>'
+CHECK_USAGE = ('check <run> <id> --by <name> --artifact <fixed-identity> '
+               '--findings <canonical-json-array> --accepted <canonical-json-array>')
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
@@ -164,7 +165,8 @@ def _cmd_ready(rest):
     return {'ready': ready_items, 'skipped': skipped}
 def _cmd_check(rest):
     probe = list(rest)
-    _extract_flag(probe, '--by')
+    for flag in ('--by', '--artifact', '--findings', '--accepted'):
+        _extract_flag(probe, flag)
     if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
         return _check_under_run_lock(rest)
     try:
@@ -175,6 +177,9 @@ def _cmd_check(rest):
 def _check_under_run_lock(rest):
     args = list(rest)
     checked_by = _extract_flag(args, '--by')
+    artifact = _extract_flag(args, '--artifact')
+    findings = _extract_flag(args, '--findings')
+    accepted = _extract_flag(args, '--accepted')
     if len(args) != 2:
         return {'error': f'usage: {CHECK_USAGE}'}
     if not (checked_by or '').strip():
@@ -200,7 +205,14 @@ def _check_under_run_lock(rest):
     if prior_checker:
         return {'error': f"ticket {run}/{ticket_id} is already checked by '{prior_checker}': one ticket has one checker identity. An additional adversarial reviewer must be a distinctly named root-gate lens"}
     try:
+        review = checker_state(
+            ticket_path, artifact, findings, accepted, checked_by.strip()
+        )
+    except ReviewError as error:
+        return _classification('review-invalid', str(error))
+    try:
         updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by.strip())
+        updated = _set_frontmatter_field(updated, REVIEW_FIELD, canonical_json(review))
     except ValueError as error:
         return {'error': str(error)}
     try:

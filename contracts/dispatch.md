@@ -101,6 +101,10 @@ retirement, changed join content conflicts, and an unseen join on an ended
 attempt is stale. Only join writes suspended or terminal ticket status. Every
 joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
+For review-stage tickets the same atomic join also advances the ticket's
+validated `orchflows.review.v1` chain: critique requires the canonical accepted
+subset, repair requires the exact output artifact, and verification must match
+that artifact and carry a `PASS`, `FAIL`, or `UNVERIFIED` verdict.
 
 ## Cutover
 

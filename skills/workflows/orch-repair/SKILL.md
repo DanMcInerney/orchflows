@@ -4,9 +4,9 @@ description: Fix accepted verified defects with the smallest coherent change. Us
 role: worker
 ---
 
-Require: the accepted defect set the ticket Context names — each
-finding or cause with its evidence; an empty set is a legal dispatch
-whose result is no change.
+Require: the packet's immutable `GatePlan -> CritiqueAdjudication` ledger. Its
+accepted defect set names each finding or cause with its evidence; an empty set
+is a legal no-op only when every ordered adjudication is empty.
 
 Make the smallest change that coherently fixes the set, per
 [rules/verification.md](../../../rules/verification.md) §5 — smallest
@@ -17,5 +17,6 @@ identity changed.
 Never: fix a finding not in the set; decline one without citing the
 evidence that it does not hold; claim a fix without fresh evidence.
 
-Return: changed artifacts, per-finding disposition with fresh evidence,
-and anything queued.
+Return: the exact output artifact identity, per-finding disposition with fresh
+evidence, and anything queued. The join appends `RepairOutcome` to that exact
+predecessor ledger.

@@ -25,3 +25,9 @@
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
     candidate's own changes through `scripts/workspace.py check`.
+9. Composite review and the ordinary checker use the ticket's immutable
+   `orchflows.review.v1` predecessor ledger. A review packet must fix the
+   artifact and criteria identity before evaluation; adjudication records the
+   full findings and accepted subset; repair records the exact output artifact
+   or proves no-op only from an empty accepted set; verification records an
+   exact matching artifact and `PASS`, `FAIL`, or `UNVERIFIED` verdict.
