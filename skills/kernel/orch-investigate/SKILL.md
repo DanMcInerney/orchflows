@@ -4,8 +4,8 @@ description: Answer one bounded question from primary evidence with cited findin
 role: worker
 ---
 
-Require: `evidence-store-root`, bounded `question`, `source-policy`,
-`rigor-bar`, and a bound.
+Require: one question, the fixed evidence sources or source policy, and
+a bound.
 
 Work from primary evidence; every finding cites the source that shows
 it, with a confidence the evidence actually supports. Record

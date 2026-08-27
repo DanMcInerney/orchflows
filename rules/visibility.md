@@ -33,8 +33,7 @@
    workspace in any repository, so a run outlives the checkout it
    started in. Every other file links here rather than restating that
    path; `scripts/state_root.py` is the resolver. Each record names the
-   project it arose in as a field, never by where it sits. Terminal
-   required-check events are red or green and content-addressed there.
+   project it arose in as a field, never by where it sits.
    There is no fallback: a run-state write that cannot reach that root
    reports it in the script's JSON payload, which the caller reads — exit
    status alone can be 0; the friction logger's silence contract is

@@ -6,10 +6,10 @@ role: worker
 
 Require: the terminal assembly ticket naming the section items it
 assembles — none is a cut defect, refused; the voice contract and the
-root's exact audience; and the document budget.
+document budget.
 
 Assemble in the outline's order, then edit as one document: one voice
-for that audience throughout, the whole brought inside budget, every cut logged, with
+throughout, the whole brought inside budget, every cut logged, with
 voice, shape and terms per the stamped pack's craft.
 
 Never: introduce claims the sections did not carry; average two voices;

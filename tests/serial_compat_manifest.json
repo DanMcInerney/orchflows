@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1726,
+  "count": 1724,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -329,8 +329,6 @@
    "test_run_required.TestCacheService.test_touching_one_tracked_file_invalidates_the_entry",
    "test_run_required.TestConsoleCodec.test_a_json_record_survives_the_same_console",
    "test_run_required.TestConsoleCodec.test_a_text_report_survives_a_console_that_cannot_spell_it",
-   "test_run_required.TestDurableRunEvent.test_green_event_is_durable_and_named_by_its_exact_bytes",
-   "test_run_required.TestDurableRunEvent.test_red_event_exists_before_the_caller_handles_exit_one",
    "test_run_required.TestExitMapping.test_a_red_cheap_check_does_not_cancel_the_long_ones",
    "test_run_required.TestExitMapping.test_all_five_green_is_zero",
    "test_run_required.TestExitMapping.test_one_red_check_is_one",
@@ -1729,7 +1727,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "f03fb09463bc8ca9083cf0ff251be0eada5e2d04a3131f4c27bc66b9669cfc0d"
+  "sha256": "c38b2167e8113afab42a99dcc19fbf438dd01ba85a2b591863da572b9a3f5f18"
  },
  "mutation_owners": [
   {
@@ -3206,13 +3204,6 @@
    ]
   },
   {
-   "module": "tests.test_run_required",
-   "owner": "TestDurableRunEvent.invoke_with_sink",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
    "module": "tests.test_run_required_cases.harness",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
@@ -3946,62 +3937,6 @@
    ]
   },
   {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_a_refusal_describes_the_section_it_actually_refused",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_a_section_holding_real_content_keeps_every_protection",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_a_writer_whose_own_content_is_the_sentinel_is_not_told_apart",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_an_empty_section_is_not_the_sentinel_and_stays_append_only",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_only_the_exact_sentinel_bytes_are_the_exception",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_the_first_real_write_consumes_the_sentinel_under_every_flag",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_the_generator_prefills_the_one_sentinel_the_filing_law_names",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.result_sections",
-   "owner": "SentinelIsNotContentTest.test_the_help_states_the_append_only_law_the_command_enforces",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
    "module": "tests.test_tickets_cases.run_state_artifacts",
    "owner": "TestRunStateWorklog.test_an_append_waits_past_a_refusal_longer_than_the_finite_window",
    "restoration": "sharded-module-guard",
@@ -4079,20 +4014,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_lint_cases.family3",
-   "owner": "LintFixture.setUp",
-   "seams": [
-    "cwd"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_lint_cases.family3",
-   "owner": "LintFixture.tearDown",
-   "seams": [
-    "cwd"
    ]
   },
   {

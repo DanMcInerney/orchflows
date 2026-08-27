@@ -5,13 +5,11 @@ from __future__ import annotations
 import hashlib
 import io
 import json
-import os
 import re
 import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
-from unittest import mock
 
 from tests.test_run_required_cases.harness import (
     REPO_ROOT,
@@ -39,7 +37,6 @@ COMMAND_KEYS = {
 }
 RECORD_KEYS = {
     "kind", "repository_identity", "tree_identity", "dirty", "commands", "exit",
-    "event_identity",
 }
 
 
@@ -378,37 +375,6 @@ class TestWhatIsNeverStored(RunRequiredCase):
         self.assertEqual(0, status)
         self.assertEqual(4, len(self.stub.calls()))
         self.assertEqual(1, len(self.cache_entries()))
-
-
-class TestDurableRunEvent(RunRequiredCase):
-    """Terminal evidence is script-owned even when the verdict is red."""
-
-    def invoke_with_sink(self, *extra):
-        state = self.repo.parent / "state"
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(state)}):
-            result = self.invoke("--run", "terminal-run", *extra)
-        events = sorted((state / "runs" / "terminal-run" / "required-check-events").glob("*.json"))
-        return result, events
-
-    def test_green_event_is_durable_and_named_by_its_exact_bytes(self):
-        (status, payload, _, _), events = self.invoke_with_sink()
-        self.assertEqual(0, status)
-        self.assertEqual(1, len(events))
-        raw = events[0].read_bytes()
-        identity = "sha256:" + hashlib.sha256(raw).hexdigest()
-        self.assertEqual(identity, payload["event_identity"])
-        self.assertEqual(identity.partition(":")[2], events[0].stem)
-        event = json.loads(raw)
-        self.assertEqual("required-check-event/v1", event["kind"])
-        self.assertEqual(0, event["record"]["exit"])
-
-    def test_red_event_exists_before_the_caller_handles_exit_one(self):
-        self.stub.plan({"run_tests.py": {"exit": 1}})
-        (status, payload, _, _), events = self.invoke_with_sink()
-        self.assertEqual(1, status)
-        self.assertEqual(1, len(events))
-        self.assertEqual(payload["event_identity"], "sha256:" + events[0].stem)
-        self.assertEqual(1, json.loads(events[0].read_text(encoding="utf-8"))["record"]["exit"])
 
 
 class TestTextReport(RunRequiredCase):

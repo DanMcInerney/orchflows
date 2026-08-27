@@ -146,7 +146,8 @@ and how review reads; none bound what its domain's terms mean or what
 good shape is at write time. Undefined judged terms resolve differently
 in every fresh judge context, so gate verdicts churn, and executors
 write to an unstated bar the one gate then pays for in rework. The cell
-that closes it is each pack's `references/craft.md` — **Vocabulary** — defined by
+that closes it is each pack's `references/craft.md` — **Vocabulary**
+and **Shape** — defined by
 [contracts/pack-signature.md](contracts/pack-signature.md) and carried
 to every executor through the ticket's `pack` stamp.
 

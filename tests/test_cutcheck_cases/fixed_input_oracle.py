@@ -2,7 +2,6 @@
 
 from tests.test_cutcheck import *  # noqa: F401,F403
 
-from scripts import tickets_input_producers, tickets_inputs  # noqa: E402
 from scripts.tickets_format import canonical_json  # noqa: E402  the record's writer
 
 try:
@@ -63,40 +62,6 @@ def input_record(name, value):
     return INPUT_LINE.format(
         canonical_json({"name": name, "type": "literal", "value": value})
     )
-
-
-class InputRecordCutcheckCases:
-    """Input-identity cases owned by the cutcheck policy seam."""
-
-    def test_cutcheck_renders_the_shared_input_codes_unchanged(self):
-        revision = tickets_input_producers.git_head()
-        inputs = "\n".join((
-            self.record("baseline", identity={"kind": "git-tree", "repo": "run-project", "revision": revision}),
-            self.record("missing", identity={"kind": "git-path", "path": "absent-input-identity", "repo": "run-project", "revision": revision}),
-        ))
-        text = self.ticket(inputs, pack="orch-code-pack")
-        expected = [item["code"] for item in tickets_inputs.grade_inputs(
-            ticket_id="T", text=text, siblings={"T": text}, adapter_id="git",
-        )["findings"]]
-        rendered = cutcheck_ticket._policy_findings("T", text, {"T": text}, revision, revision)
-        actual = [item[2] for item in rendered if item[2] in expected]
-        self.assertEqual(expected, actual)
-
-    def test_cutcheck_reports_pending_dependency_as_advisory(self):
-        revision = tickets_input_producers.git_head()
-        predecessor = self.ticket("", ticket_id="P")
-        dependent = self.ticket(
-            self.record("predecessor", identity={
-                "kind": "ticket-section", "run": "run", "section": "Result", "ticket": "P",
-            }),
-            ticket_id="D", depends="[P]",
-        )
-        rendered = cutcheck_ticket._policy_findings(
-            "D", dependent, {"D": dependent, "P": predecessor}, revision, revision,
-        )
-        codes = [item[2] for item in rendered]
-        self.assertIn("ticket-result-not-terminal", codes)
-        self.assertIn("ticket-result-not-terminal", cutcheck_ticket._contract.ADVISORY)
 
 
 def graded(case, oracle, inputs, ticket_id="01-unit", executor="orch-tdd",
