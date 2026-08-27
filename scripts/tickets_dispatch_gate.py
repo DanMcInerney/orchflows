@@ -68,6 +68,7 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
         "sequence": metadata.get("sequence"), "pack": pack,
         "independence": "gate", "depends_on": list(depends_on),
         "isolation": metadata.get("isolation"), "bound": NEW_DEFAULT_BOUND,
+        "review_order": metadata.get("review_order"),
         "claimed_by": "", "claimed_at": "",
         "root_generation": metadata.get("root_generation"),
     }
@@ -128,17 +129,30 @@ def _gate_under_run_lock(rest, _head_probe=None):
         return {"error": str(error)}
     rendered = []
     critique_ids = []
-    for lens in lenses:
+    gate_pack = root_ticket.get("pack")
+    for review_order, lens in enumerate(lenses):
         critique_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
         critique_ids.append(critique_id)
         sections = _gate_sections("critique", root_id, lens, units=units)
-        rendered.append((critique_id, _gate_stub(run, critique_id, GATE_EXECUTORS["critique"], units, sections=sections, root_generation=root_generation)))
+        rendered.append((critique_id, _gate_stub(
+            run, critique_id, GATE_EXECUTORS["critique"], units,
+            sections=sections, root_generation=root_generation, pack=gate_pack,
+            isolation="none", review_order=review_order,
+        )))
     repaired_by = GATE_REPAIR_ID.format(root=root_id)
     sections = _gate_sections("repair", root_id, units=critique_ids)
-    rendered.append((repaired_by, _gate_stub(run, repaired_by, GATE_EXECUTORS["repair"], critique_ids, sections=sections, root_generation=root_generation)))
+    rendered.append((repaired_by, _gate_stub(
+        run, repaired_by, GATE_EXECUTORS["repair"], critique_ids,
+        sections=sections, root_generation=root_generation, pack=gate_pack,
+        isolation="none",
+    )))
     verify_id = GATE_VERIFY_ID.format(root=root_id)
     sections = _gate_sections("verify", root_id, units=units, repaired_by=repaired_by)
-    rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS["verify"], [repaired_by], sections=sections, root_generation=root_generation)))
+    rendered.append((verify_id, _gate_stub(
+        run, verify_id, GATE_EXECUTORS["verify"], [repaired_by],
+        sections=sections, root_generation=root_generation, pack=gate_pack,
+        isolation="none",
+    )))
     for ticket_id, text in rendered:
         defects = ticket_defects(text)
         if defects:

@@ -287,7 +287,19 @@ class SemanticTicketContractTest(unittest.TestCase):
         critique_id = "R.gate.critique.code"
         self.assertIn(critique_id, {item["id"] for item in ready["ready"]})
         opened = self.open_attempt("clean", critique_id, "critic", "critic-D1")
-        self.accept_packet("clean", critique_id, "critic", "critic-D1")
+        artifact = "git:" + "a" * 40
+        packet = self.dispatch(
+            "dispatch-packet", "clean", critique_id,
+            "--dispatch-id", "critic-D1", "--reply-to", "root",
+            "--artifact", artifact,
+        )["packet"]
+        self.assertIn('"kind":"GatePlan"', packet["prompt"])
+        self.dispatch(
+            "dispatch-receive", "--content",
+            json.dumps(packet, sort_keys=True, separators=(",", ":")),
+            "--role", packet["role"], "--profile", packet["profile"],
+            "--by", "critic", "--reply-to", "root",
+        )
         self.dispatch(
             "result", "clean", critique_id,
             "--assignment-seal", opened["assignment_seal"],
@@ -301,6 +313,21 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--assignment-seal", opened["assignment_seal"],
             "--dispatch-id", "critic-D1",
             "--outcome-record-id", "outcome", "--by", "root-join",
+            "--accepted", "[]",
+        )
+        critique = (
+            Path(self.temporary.name) / "tickets" / "clean" / f"{critique_id}.md"
+        ).read_text(encoding="utf-8")
+        review = json.loads(_parse_frontmatter(critique)["review_v1"])
+        self.assertEqual(
+            ["GatePlan", "CritiqueAdjudication"],
+            [record["kind"] for record in review["records"]],
+        )
+        self.assertEqual(artifact, review["records"][0]["artifact"])
+        self.assertEqual([], review["records"][1]["accepted"])
+        self.assertEqual(
+            review["records"][0]["identity"],
+            review["records"][1]["predecessor"],
         )
         ready = self.dispatch("ready", "--run", "clean")
         self.assertIn("R.gate.repair", {item["id"] for item in ready["ready"]})
@@ -317,6 +344,46 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertIn("status: complete", repair)
         self.assertIn("claimed_by: root-join", repair)
         self.assertIn("### Written by `root-join`\n\n[]", repair)
+        repair_review = json.loads(_parse_frontmatter(repair)["review_v1"])
+        self.assertEqual(
+            ["GatePlan", "CritiqueAdjudication", "RepairOutcome"],
+            [record["kind"] for record in repair_review["records"]],
+        )
+        self.assertTrue(repair_review["records"][-1]["no_op"])
+        self.assertEqual(artifact, repair_review["records"][-1]["artifact"])
+
+    def test_gate_stubs_freeze_pack_isolation_and_lens_order(self):
+        self.dispatch(
+            "new", "ordered", "R", "--executor", "orch-decompose",
+            "--goal", "Deliver the integrated result.", "--context", "Use two members.",
+            "--pack", "orch-code-pack", "--independence", "gate",
+        )
+        for suffix in ("01", "02"):
+            self.dispatch(
+                "new", "ordered", f"R.{suffix}", "--executor", "orch-tdd",
+                "--goal", f"Deliver member {suffix}.", "--context", "Feed the root.",
+                "--pack", "orch-code-pack", "--independence", "gate",
+                "--isolation", "required",
+            )
+        self.dispatch("stamp-generation", "ordered", "R")
+        self.dispatch(
+            "gate", "ordered", "R", "--ordered-lens-bundle", "security,code",
+        )
+        run_dir = Path(self.temporary.name) / "tickets" / "ordered"
+        security = _parse_frontmatter(
+            (run_dir / "R.gate.critique.security.md").read_text(encoding="utf-8")
+        )
+        code = _parse_frontmatter(
+            (run_dir / "R.gate.critique.code.md").read_text(encoding="utf-8")
+        )
+        repair = _parse_frontmatter(
+            (run_dir / "R.gate.repair.md").read_text(encoding="utf-8")
+        )
+        for record in (security, code, repair):
+            self.assertEqual("orch-code-pack", record["pack"])
+            self.assertEqual("none", record["isolation"])
+        self.assertEqual("0", security["review_order"])
+        self.assertEqual("1", code["review_order"])
 
     def test_decompose_builds_the_complete_gate_bearing_draft_before_validation(self):
         skill = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")

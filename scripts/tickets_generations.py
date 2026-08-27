@@ -15,7 +15,8 @@ else:
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
 ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "independence", "isolation", "pack", "profile", "sequence",
+    "bound", "independence", "isolation", "pack", "profile", "review_order",
+    "sequence",
 )
 
 

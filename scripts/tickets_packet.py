@@ -13,6 +13,7 @@ if __package__:
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
         LOOP_EXECUTOR, REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
+        canonical_json,
     )
     from .tickets_sequence import sequence_block
     from .tickets_store import (
@@ -26,6 +27,7 @@ else:
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
         LOOP_EXECUTOR, REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
+        canonical_json,
     )
     from tickets_sequence import sequence_block
     from tickets_store import (
@@ -137,7 +139,7 @@ def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
     return lines
 
 
-def _packet_under_run_lock(rest, *, result_attempt=None):
+def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     args = list(rest)
     reply_to = _extract_flag(args, "--reply-to")
     dispatched_name = _extract_flag(args, "--by")
@@ -227,6 +229,11 @@ def _packet_under_run_lock(rest, *, result_attempt=None):
         prompt.append(f"Each pass works toward Goal and stops when it is achieved or the operational bound {loaded.get('bound')} is exhausted.")
     if workspace:
         prompt.append(f"Workspace: {workspace}")
+    if review_state is not None:
+        prompt.extend((
+            "Immutable review ledger; consume this exact predecessor chain:",
+            canonical_json(review_state),
+        ))
     isolation = normalized_isolation(loaded.get("isolation"))
     if further is None and isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(loaded.get("pack")):
         prompt.append("First record the isolated candidate workspace:")

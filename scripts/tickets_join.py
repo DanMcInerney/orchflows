@@ -19,6 +19,10 @@ if __package__:
     from .tickets_store import UTC_STAMP, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
+    from .tickets_review import (
+        REVIEW_FIELD, ReviewError, adjudicate, repair_outcome,
+        state_from_text, verification_outcome,
+    )
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
@@ -34,14 +38,42 @@ else:
     from tickets_store import UTC_STAMP, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
     from tickets_project import TERMINAL_REMEDY, binding_refusal
+    from tickets_review import (
+        REVIEW_FIELD, ReviewError, adjudicate, repair_outcome,
+        state_from_text, verification_outcome,
+    )
 
 JOIN_STATUSES = frozenset(TERMINAL_STATES) | {"suspended"}
 OUTCOME_SECTIONS = ("Result", "Verification", "Feedback", "Risks", "Handoff")
 DISPATCH_OUTCOME_USAGE = "dispatch-outcome <run> <id> --content <canonical-json>"
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
-    "--outcome-record-id outcome --by <join-name>"
+    "--outcome-record-id outcome --by <join-name> "
+    "[--accepted <canonical-json-array>] [--artifact <fixed-identity>]"
 )
+
+
+def _critique_findings(attempt: dict, outcome_feedback: str) -> str:
+    findings = []
+    found = False
+    for record in attempt.get("records", []):
+        if record.get("kind") != "result":
+            continue
+        try:
+            content = parse_canonical_json(record["content"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ReviewError(f"critique findings result is not canonical JSON: {error}") from error
+        if not isinstance(content, dict) or content.get("section") != "Feedback":
+            continue
+        found = True
+        try:
+            values = parse_canonical_json(content.get("body"))
+        except (TypeError, ValueError) as error:
+            raise ReviewError(f"critique findings must be a canonical JSON array: {error}") from error
+        if not isinstance(values, list):
+            raise ReviewError("critique findings must be a canonical JSON array")
+        findings.extend(values)
+    return canonical_json(findings) if found else outcome_feedback
 
 
 def _outcome_failure(run: str, ticket_id: str, content):
@@ -136,6 +168,8 @@ def _cmd_dispatch_join(rest):
     dispatch_id = _extract_flag(args, "--dispatch-id")
     outcome_record_id = _extract_flag(args, "--outcome-record-id")
     joined_by = _extract_flag(args, "--by")
+    accepted = _extract_flag(args, "--accepted")
+    artifact = _extract_flag(args, "--artifact")
     if len(args) != 2 or not all((
         assignment_seal, dispatch_id, outcome_record_id, joined_by,
     )):
@@ -186,6 +220,34 @@ def _cmd_dispatch_join(rest):
                 "outcome-record-mismatch", "committed outcome belongs to another dispatch"
             )
         status = outcome["status"]
+        try:
+            review = state_from_text(text)
+            if ".gate.critique." in ticket_id:
+                lens = ticket_id.split(".gate.critique.", 1)[1]
+                review = adjudicate(
+                    review, _critique_findings(
+                        attempt, outcome["evidence"]["Feedback"],
+                    ), accepted,
+                    joined_by, lens,
+                )
+            elif ticket_id.endswith(".gate.repair"):
+                if accepted is not None:
+                    raise ReviewError("repair join does not accept --accepted")
+                review = repair_outcome(
+                    review, artifact or "", outcome["evidence"]["Result"],
+                    joined_by,
+                )
+            elif ticket_id.endswith(".gate.verify"):
+                if accepted is not None:
+                    raise ReviewError("verification join does not accept --accepted")
+                review = verification_outcome(
+                    review, artifact, outcome["evidence"]["Verification"],
+                    joined_by,
+                )
+            elif accepted is not None or artifact is not None:
+                raise ReviewError("review flags apply only to gate-stage joins")
+        except ReviewError as error:
+            return text, None, _classification("review-invalid", str(error))
         if status in TERMINAL_STATES:
             held = binding_refusal(run, TERMINAL_REMEDY)
             if held is not None:
@@ -206,6 +268,10 @@ def _cmd_dispatch_join(rest):
         attempt["retired_at"] = joined_at
         attempt["retirement"] = response
         updated = _set_frontmatter_field(text, "status", status)
+        if review is not None:
+            updated = _set_frontmatter_field(
+                updated, REVIEW_FIELD, canonical_json(review)
+            )
         return updated, response, None
 
     result = _commit_record(

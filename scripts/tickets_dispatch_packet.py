@@ -19,6 +19,7 @@ if __package__:
     from .tickets_generations import assignment_payload, seal_findings
     from .tickets_packet import _packet_under_run_lock
     from .tickets_dispatch_receipt import actual_mismatch, read_packet_payload
+    from .tickets_review import packet_mutation, packet_state_result, replay_review_failure
     from .tickets_store import _tickets_root
 else:
     from tickets_attempts import (
@@ -32,11 +33,12 @@ else:
     from tickets_generations import assignment_payload, seal_findings
     from tickets_packet import _packet_under_run_lock
     from tickets_dispatch_receipt import actual_mismatch, read_packet_payload
+    from tickets_review import packet_mutation, packet_state_result, replay_review_failure
     from tickets_store import _tickets_root
 
 DISPATCH_PACKET_USAGE = (
     "dispatch-packet <run> <id> --dispatch-id <id> --reply-to <name> "
-    "[--workspace <path>] [--form reference | inline]"
+    "[--workspace <path>] [--artifact <fixed-identity>] [--form reference | inline]"
 )
 DISPATCH_RECEIVE_USAGE = (
     "dispatch-receive (--content <canonical-json> | --file <path|->) "
@@ -229,6 +231,7 @@ def _cmd_dispatch_packet(rest):
     dispatch_id = _extract_flag(args, "--dispatch-id")
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
+    artifact = _extract_flag(args, "--artifact")
     form = (_extract_flag(args, "--form") or "reference").strip()
     if len(args) != 2 or not dispatch_id or not reply_to or form not in PACKET_FORMS:
         return {"error": f"usage: {DISPATCH_PACKET_USAGE}"}
@@ -244,10 +247,16 @@ def _cmd_dispatch_packet(rest):
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure
+    review_state, review_error = packet_state_result(path, text, artifact)
+    if review_error is not None:
+        return _classification("review-invalid", review_error)
     replay = _replay_projection(
         attempt, run, ticket_id, form, reply_to, workspace
     )
     if replay is not None:
+        divergence = replay_review_failure(text, review_state)
+        if "error" not in replay and divergence is not None:
+            return _classification("review-invalid", divergence)
         return replay
     failure = _live_attempt(attempt)
     if failure is not None:
@@ -261,12 +270,14 @@ def _cmd_dispatch_packet(rest):
     legacy_args = [run, ticket_id, "--reply-to", reply_to, "--by", attempt["owner"]]
     if workspace is not None:
         legacy_args.extend(("--workspace", workspace))
-    projected = _packet_under_run_lock(legacy_args, result_attempt=attempt)
+    projected = _packet_under_run_lock(legacy_args, result_attempt=attempt, review_state=review_state)
     if "error" in projected:
         return projected
     packet = _projection_packet(projected["packet"], data, text, attempt, form)
+    content = {"packet": packet}
     committed = _commit_record(
-        run, ticket_id, dispatch_id, PACKET_RECORD_ID, {"packet": packet},
+        run, ticket_id, dispatch_id, PACKET_RECORD_ID, content,
+        mutate=packet_mutation(review_state, run, ticket_id, dispatch_id, PACKET_RECORD_ID, content),
         record_kind="packet",
     )
     if "error" in committed:

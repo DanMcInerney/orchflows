@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section
+    from .tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section, canonical_json
 else:
-    from tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section
+    from tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section, canonical_json
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
@@ -42,6 +42,10 @@ if __package__:
     from .tickets_attempts import _classification
 else:
     from tickets_attempts import _classification
+if __package__:
+    from .tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome
+else:
+    from tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --by <name>'
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
@@ -264,11 +268,17 @@ def _join_noop_repair_under_run_lock(rest):
             return {'error': f'join-noop-repair dependency is not a completed gate critique: {dependency}'}
     if _section_body(text, 'Result'):
         return {'error': 'join-noop-repair requires an empty repair Result'}
+    try:
+        review = packet_state(ticket_path, text, None)
+        review = repair_outcome(review, '', '[]', written_by, no_op=True)
+    except ReviewError as error:
+        return _classification('review-invalid', str(error))
     timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
     updated = _set_frontmatter_field(text, 'status', 'claimed')
     updated = _set_frontmatter_field(updated, 'claimed_by', written_by)
     updated = _set_frontmatter_field(updated, 'claimed_at', timestamp)
     updated = _write_section(updated, 'Result', f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n[]')
+    updated = _set_frontmatter_field(updated, REVIEW_FIELD, canonical_json(review))
     updated = _set_frontmatter_field(updated, 'status', 'complete')
     try:
         _write_text_atomically(ticket_path, updated)
