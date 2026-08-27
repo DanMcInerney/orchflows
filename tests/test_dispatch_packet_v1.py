@@ -105,6 +105,8 @@ class DispatchPacketV1Test(unittest.TestCase):
         packet = self.project(form="inline")["packet"]
         self.assertEqual("inline", packet["form"])
         self.assertEqual("ticket", packet["durability"])
+        self.assertIn("inline sealed assignment", packet["prompt"])
+        self.assertNotIn("tickets.py result", packet["prompt"])
         self.assertEqual(
             packet["assignment_seal"], packet["inline"]["assignment_seal"]
         )
@@ -113,6 +115,17 @@ class DispatchPacketV1Test(unittest.TestCase):
         with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
             receipt = self.receive(packet)
         self.assertEqual("accepted", receipt["receipt"]["outcome"])
+        self.assertFalse(receipt["receipt"]["state_sink_checked"])
+
+    def test_packet_only_inline_is_explicitly_ephemeral(self):
+        packet = self.project(form="inline")["packet"]
+        packet["durability"] = "ephemeral"
+        packet.pop("source")
+        missing = str(Path(self.temporary.name) / "not-mounted")
+        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
+            receipt = self.receive(packet)
+        self.assertEqual("accepted", receipt["receipt"]["outcome"])
+        self.assertEqual("ephemeral", receipt["receipt"]["durability"])
         self.assertFalse(receipt["receipt"]["state_sink_checked"])
 
     def test_reference_without_state_sink_is_a_structured_refusal(self):

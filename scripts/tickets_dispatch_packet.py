@@ -139,6 +139,12 @@ def _projection_packet(
             "assignment": assignment,
             "assignment_seal": _semantic_digest(assignment),
         }
+        packet["prompt"] = "\n".join((
+            f"Apply skill {executor} directly to the inline sealed assignment in this packet.",
+            "Use inline.assignment.semantic as Goal, Context, and optional Suggested files; do not try to repair or reconstruct a ticket path.",
+            "The state sink is unavailable here, so return the result through reply_to without claiming durable filing, recovery, resumption, or stale-lane evidence.",
+            f"Your assigned name is `{attempt.get('owner')}` and reply_to is `{legacy.get('reply_to')}`.",
+        ))
     return packet
 
 
@@ -335,21 +341,26 @@ def _cmd_dispatch_receive(rest):
             or _semantic_digest(assignment) != packet["assignment_seal"]
         ):
             return _classification("assignment-divergent", "inline assignment seal diverged")
-        reference = packet.get("source")
-        packet_with_reference = dict(packet, reference=reference)
-        text, data, inaccessible = _reference_ticket(packet_with_reference)
-        if inaccessible is not None:
-            if inaccessible.get("code") != "state-inaccessible":
-                return inaccessible
+        if packet["durability"] == "ephemeral":
             checked = False
             failure = None
         else:
-            failure = _validate_durable(packet, text, data)
+            reference = packet.get("source")
+            packet_with_reference = dict(packet, reference=reference)
+            text, data, inaccessible = _reference_ticket(packet_with_reference)
+            if inaccessible is not None:
+                if inaccessible.get("code") != "state-inaccessible":
+                    return inaccessible
+                checked = False
+                failure = None
+            else:
+                failure = _validate_durable(packet, text, data)
     if failure is not None:
         return failure
     return {"receipt": {
         "assignment_seal": packet["assignment_seal"],
         "dispatch_id": packet["dispatch_id"],
+        "durability": packet["durability"],
         "form": packet["form"],
         "outcome": "accepted",
         "protocol": PROTOCOL,
