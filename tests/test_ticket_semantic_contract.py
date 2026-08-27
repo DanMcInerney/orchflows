@@ -13,7 +13,9 @@ from unittest import mock
 from scripts import cutcheck
 from scripts import tickets
 from scripts import tickets_generations
-from scripts.tickets_format import _parse_frontmatter, _sections
+from scripts.tickets_format import (
+    _parse_frontmatter, _remove_frontmatter_field, _sections,
+)
 from scripts.tickets_issue_render import _render_ticket
 from scripts import workspace
 
@@ -130,6 +132,53 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertIn("Suggested files are non-binding", packet["prompt"])
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
         self.assertEqual({"Goal", "Context", "Result", "Verification", "Feedback", "Risks"}, set(_sections(text)))
+
+    def test_preissue_lint_and_new_grade_the_same_projected_file_candidate(self):
+        source = Path(self.temporary.name) / "R1.md"
+        draft = assignment("R1", "orch-tdd")
+        draft = _remove_frontmatter_field(draft, "admission")
+        draft = _remove_frontmatter_field(draft, "run")
+        draft = tickets._set_frontmatter_field(draft, "status", "complete")
+        draft = tickets._set_frontmatter_field(draft, "claimed_by", "forged-owner")
+        draft = tickets._set_frontmatter_field(draft, "claimed_at", "2099-01-01T00:00:00Z")
+        source.write_text(draft, encoding="utf-8")
+        before = source.read_bytes()
+
+        linted = self.dispatch("lint", "issued-run", "R1", "--file", str(source))
+        self.assertEqual([], linted["lint"]["findings"])
+        self.assertEqual("issued-run", linted["lint"]["run"])
+        self.assertEqual(before, source.read_bytes())
+        self.assertFalse((Path(self.temporary.name) / "tickets" / "issued-run").exists())
+
+        created = self.dispatch("new", "issued-run", "R1", "--file", str(source))
+        self.assertEqual("R1", created["new"]["id"])
+        issued = (
+            Path(self.temporary.name) / "tickets" / "issued-run" / "R1.md"
+        ).read_text(encoding="utf-8")
+        data = _parse_frontmatter(issued)
+        self.assertEqual("issued-run", data["run"])
+        self.assertEqual("pending", data["status"])
+        self.assertEqual("pending", data["admission"])
+        self.assertEqual("", data.get("claimed_by") or "")
+        self.assertEqual("", data.get("claimed_at") or "")
+
+    def test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch(self):
+        source = Path(self.temporary.name) / "R1.md"
+        draft = _remove_frontmatter_field(
+            assignment("R1", "orch-tdd"), "admission"
+        )
+        source.write_text(draft, encoding="utf-8")
+        before = source.read_bytes()
+
+        linted = tickets._dispatch(
+            ["lint", "other-run", "R9", "--file", str(source)]
+        )
+        issued = tickets._dispatch(
+            ["new", "other-run", "R9", "--file", str(source)]
+        )
+        self.assertIn("placed as 'R9', but ticket file names 'R1'", linted["error"])
+        self.assertEqual(linted["error"], issued["error"])
+        self.assertEqual(before, source.read_bytes())
 
     def test_suggested_files_do_not_limit_candidate_paths(self):
         self.dispatch(

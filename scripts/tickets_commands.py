@@ -37,7 +37,7 @@ else:
     DISPATCH_JOIN_USAGE = _join.DISPATCH_JOIN_USAGE
     DISPATCH_OUTCOME_USAGE = _join.DISPATCH_OUTCOME_USAGE
 
-LINT_USAGE = "lint (<run> <id> | --file <path> [--executor E] [--pack P]) [--fix]"
+LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 GATE_USAGE = "gate <run> <root-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
@@ -91,7 +91,7 @@ SUBCOMMAND_SUMMARY = {
     "run-state": f"Write run state under {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}).",
     "improvement": "Write improvement evidence.",
     "bound-check": "Report live claims against their operational bound.",
-    "lint": "Report current contract, ceiling, seal, and admission findings.",
+    "lint": "Grade the exact pre-issue file projection or one current ticket.",
     **{name: values[1] for name, values in GENERATION_SUBCOMMANDS.items()},
 }
 HELP_FLAGS = frozenset({"--help", "-h"})
