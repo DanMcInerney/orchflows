@@ -23,4 +23,8 @@ returning name against the claim, adjudicates only material blockers against
 Goal and Context, and records terminal status. Deterministic repository-global gates
 run on the integrated tip. Suggested files are never an acceptance boundary.
 
+A dispatch-v1 committed record stores the protocol command's success for
+replay. It is not an executor Result, does not replace this section's writer,
+and makes no exactly-once external-side-effect claim.
+
 T0 supersession record sha256:9c4a109ca9158a60109f756f02e28673270cc741d8ad2e6a2fa06529841d5fdd: result section writes now require and return their current claim writer.

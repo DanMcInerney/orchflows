@@ -76,5 +76,9 @@
     optional Suggested files, dependencies, and executor, its
     `sequence` included. Those fields are immutable after seal; any change
     creates a new generation. The executor-owned `Result`, `Verification`,
-    `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
-    the sealed assignment.
+   `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
+   the sealed assignment.
+16. A persisted dispatch attempt opens, commits records, retires, and replaces
+   only through `contracts/work-item.md`'s dispatch-v1 seam. The ticket write
+   is the fence: transport silence, delivery retry, or an external side effect
+   never creates a second live attempt or overrides its replay precedence.

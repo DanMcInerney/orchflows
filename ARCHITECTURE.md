@@ -37,6 +37,7 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `tickets_markdown.py` semantic payload parsing and byte preservation;
   `tickets_admission.py` receipt lifecycle; `tickets_generations.py` immutable
   generation and seal identities; `tickets_project.py` run-project binding;
+  `tickets_attempts.py` atomic dispatch-v1 attempt and committed-record state;
   `tickets_emission.py` emission grading; `tickets_ceiling.py` instruction
   ceiling; `tickets_issue_render.py` issuance markdown; and
   `tickets_dispatch_gate.py` integrated-result gates. `cutcheck.py` owns

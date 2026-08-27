@@ -1,6 +1,7 @@
 """Sealed assignment identity covers semantics, not executor records."""
 import unittest
 from scripts.tickets_generations import assignment_digest
+from scripts.tickets_format import _set_frontmatter_field
 from scripts.tickets_issue_render import _render_ticket
 
 
@@ -19,3 +20,30 @@ class TicketProtocolTest(unittest.TestCase):
 
     def test_result_does_not_move_assignment(self):
         self.assertEqual(assignment_digest("R", ticket()), assignment_digest("R", ticket(result="landed")))
+
+    def test_dispatch_attempt_state_does_not_move_assignment(self):
+        original = ticket()
+        dispatched = _set_frontmatter_field(
+            original, "dispatch_v1",
+            '{"attempts":[],"protocol":"orchflows.dispatch.v1"}',
+        )
+        self.assertEqual(
+            assignment_digest("R", original), assignment_digest("R", dispatched)
+        )
+
+    def test_dispatch_v1_contract_owns_the_closed_public_seam(self):
+        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
+        delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
+        vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+        for token in (
+            "`dispatch_v1`", "`orchflows.dispatch.v1`", "`dispatch-open`",
+            "`dispatch-commit`", "`dispatch-retire`", "`dispatch-replace`",
+            "`legacy-live-claim`", "`idempotency-conflict`",
+            "`dispatch-mismatch`", "`assignment-mismatch`", "`stale-attempt`",
+        ):
+            self.assertIn(token, work_item)
+        self.assertIn("exactly-once external", result)
+        self.assertIn("dispatch attempt", delegation.lower())
+        self.assertIn("**dispatch attempt**", vocabulary)

@@ -35,6 +35,8 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   deterministic generation, validation, seal, and admission records.
 - `claimed_by`, `claimed_at`, `checked_by`, `workspace_branch`, and
   `workspace_baseline` — lifecycle observations written by their owning tools.
+- `dispatch_v1` — the canonical JSON `orchflows.dispatch.v1` attempt record.
+  It is operational state, excluded from the assignment fingerprint.
 
 `status` is `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`,
 `stalled`, `failed`, or `limited`. Admission alone creates `ready`; claim alone
@@ -44,6 +46,30 @@ Sealing fingerprints Goal, Context, optional Suggested files, exact executor,
 dependencies, and necessary system identity. It never creates file authority
 or a prescribed test oracle. Accepted generation identity is immutable;
 compare-and-swap sealing refuses a stale snapshot.
+
+## Dispatch-v1 attempt state
+
+One ticket has one authoritative `dispatch_v1` record and at most one live
+**dispatch attempt**. `dispatch-open` atomically records `dispatch_id`, the
+current `assignment_seal`, owner, opening time, and absolute
+`lease_expires_at` while creating `claimed`. Delivery retries reuse the same
+`dispatch_id`; a new attempt after retirement or replacement uses a new one.
+`dispatch-replace` ends the named live attempt and opens its unique successor
+in the same ticket write. `dispatch-retire` durably ends the named attempt.
+
+`dispatch-commit` keys a committed record by `dispatch_id` plus `record_id`.
+Precedence is fixed: an exact committed pair and content returns its stored
+success even after retirement, replacement, or lease expiry; changed content
+for that pair is `idempotency-conflict`. Only then does the command classify
+an unknown id as `dispatch-mismatch`, a changed seal as
+`assignment-mismatch`, or an unseen record on an expired, retired, or replaced
+attempt as `stale-attempt`. A different attempt while one is live is
+`live-attempt`. Every refusal leaves the ticket byte-identical.
+
+A claimed or suspended historical ticket with no `dispatch_v1` is
+`legacy-live-claim` at every dispatch-v1 operation. Its existing owner must
+complete or abandon it before installation of a v1 attempt. No command infers
+an attempt, reconstructs history, or rewrites historical state.
 
 ## Executor records
 
@@ -85,3 +111,5 @@ one current reader and writer: no compatibility aliases, dual parsing, or
 migration mode. Historical user state is not rewritten.
 
 T0 supersession record sha256:b2d5d570a37764b9c83f305eaf90a98f604ce98c5d479ecbd7abb1059b9c94aa: executor records now enter through the attributed result writer.
+
+T0 supersession record sha256:1d95dfb82a4489f5d05d067d36fc669720c18424359d8b8c84f0857bde3a53fb: `dispatch_v1` adds the sole atomic execution-attempt and committed-record seam.
