@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1830,
+  "count": 1838,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -42,6 +42,12 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
+   "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
+   "test_dispatch_v1.DispatchV1Test.test_expired_attempt_rejects_unseen_records_without_mutation",
+   "test_dispatch_v1.DispatchV1Test.test_open_is_atomic_replayable_and_fences_a_second_live_attempt",
+   "test_dispatch_v1.DispatchV1Test.test_pre_v1_live_claim_requires_owner_cutover",
+   "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
+   "test_dispatch_v1.DispatchV1Test.test_retirement_allows_a_unique_new_attempt",
    "test_doclint.CommandLineTest.test_a_clean_root_exits_zero",
    "test_doclint.CommandLineTest.test_the_run_prints_the_findings_and_exits_nonzero",
    "test_doclint.CommandLineTest.test_the_threshold_flag_reaches_the_report",
@@ -545,6 +551,8 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_packet",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_spec_route_consumes_the_root_shape_it_sealed",
+   "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
+   "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification",
@@ -1833,7 +1841,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "5f7ae3a6a8d7b2687faea14f184121b6673abe20d45a01991d517ad6d7a473ec"
+  "sha256": "7c799ce35f7aef3c8678c764c682e535265af1b83a8b75c3e283d8ed7190ed1a"
  },
  "mutation_owners": [
   {
@@ -2149,6 +2157,15 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {
