@@ -8,6 +8,7 @@ them here preserves the complete tests.test_live_harnesses collection.
 
 import unittest
 
+from tests.test_live_harnesses_cases.grok_profile_cases import TestGrokRoleProfiles
 from tests.test_live_harnesses_cases.loop_cases import (
     TestBuiltCommand,
     TestLoopAnalyzeRun,

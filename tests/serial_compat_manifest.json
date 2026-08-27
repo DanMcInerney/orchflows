@@ -741,6 +741,11 @@
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_an_unacquirable_lock_still_writes_and_never_raises",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_concurrent_writers_lose_no_line",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_the_unacquired_path_returns_inside_a_budget_under_one_second",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_a_row_that_lost_its_grok_cell_is_not_read_as_a_row",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_column_parses_and_grok_is_bound_for_both_roles",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_recorded_model_and_effort_is_admitted",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_isolation_stays_the_tickets_field_on_every_host",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_condition_command_wires_stop_rule_bound_and_single_reply",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_exit_lines_are_never_dictated_verbatim_in_the_built_command",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_iterations_command_wires_model_effort_and_done_check",
@@ -764,13 +769,8 @@
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_rejects_duplicate_launches",
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_role_skill_topology_is_enforced",
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_timeout_returns_structured_failure",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_a_row_that_lost_its_grok_cell_is_not_read_as_a_row",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_column_parses_and_grok_is_bound_for_both_roles",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_recorded_model_and_effort_is_admitted",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_exception_during_surface_run_still_cleans_up_temp_agent_file",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_file_tool_activity_fails_the_surface",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_isolation_stays_the_tickets_field_on_every_host",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_probe_sentinel_injection_does_not_require_tomllib",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_role_skill_topology_reports_advisory_when_unsupported",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_stable_surface_accepts_all_sentinels",
@@ -1762,7 +1762,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "bf1c1793ec8834440fbc46ddaaa5338594508465ca6474bb1ed75f092f5c9c8a"
  },
  "mutation_owners": [
   {
