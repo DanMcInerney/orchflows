@@ -56,12 +56,11 @@ CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is
 # not a file to delete but a marked block to lift back out, which is why
-# ``installer/uninstall.py`` gives it an arm of its own. Claude's
-# ``host-block`` and ``codex-config`` stay off this list: nobody has asked
-# their hosts for a removal this exact, and widening them is not this
-# installer's to decide in passing.
+# ``installer/uninstall.py`` gives it and its Codex twin an arm of their own.
 GROK_AUTO_REMOVE_KINDS = frozenset(("grok-skill", "grok-agent", "grok-rules", "grok-config"))
-AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill", "frontend-asset")) | GROK_AUTO_REMOVE_KINDS
+AUTO_REMOVE_KINDS = frozenset(
+    ("adapter", "prompt", "codex-skill", "codex-config", "frontend-asset")
+) | GROK_AUTO_REMOVE_KINDS
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
 GROK_MAX_CONCURRENT = 20
