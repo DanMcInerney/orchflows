@@ -27,7 +27,7 @@
 7. A child needing a user-only decision returns a `kind: user-only`
    question and resume state. Root asks its text verbatim and returns
    the answer without deciding it.
-8. Dispatch-v1 receipt compares the established child's actual assigned name,
-   role, profile, reply target, and workspace authority with the committed
-   packet before clause 6 permits execution. A disagreement is a structured
-   refusal; the child never substitutes or repairs the packet.
+8. The [dispatch contract](../contracts/dispatch.md)'s receipt compares the
+   established child with the committed authority before clause 6 permits
+   execution. A disagreement is a structured refusal; the child never
+   substitutes or repairs the packet.

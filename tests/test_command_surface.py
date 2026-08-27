@@ -49,6 +49,7 @@ class CurrentCommandSurfaceTest(unittest.TestCase):
     def test_removed_authority_commands_have_no_route_or_facade_export(self):
         removed = {"amend", "amendment-request", "grant", "recut", "reissue", "result-grade"}
         self.assertEqual(set(), removed & routed_commands())
+        self.assertEqual(set(), {"claim", "packet"} & routed_commands())
         for command in removed:
             self.assertFalse(hasattr(tickets, "_cmd_" + command.replace("-", "_")), command)
 

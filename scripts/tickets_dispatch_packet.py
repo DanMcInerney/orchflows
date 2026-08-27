@@ -8,7 +8,10 @@ from pathlib import Path
 import re
 
 if __package__:
-    from .tickets_attempts import PROTOCOL, _classification, _cmd_dispatch_commit, _state
+    from .tickets_attempts import (
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, _classification,
+        _commit_record, _identity_failure, _state,
+    )
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         canonical_json, parse_canonical_json,
@@ -17,7 +20,10 @@ if __package__:
     from .tickets_packet import _packet_under_run_lock
     from .tickets_store import _tickets_root
 else:
-    from tickets_attempts import PROTOCOL, _classification, _cmd_dispatch_commit, _state
+    from tickets_attempts import (
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, _classification,
+        _commit_record, _identity_failure, _state,
+    )
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         canonical_json, parse_canonical_json,
@@ -34,7 +40,6 @@ DISPATCH_RECEIVE_USAGE = (
     "dispatch-receive --content <canonical-json> --role <worker|planner> "
     "--profile <name> --by <name> --reply-to <name> [--workspace <path>]"
 )
-PACKET_RECORD_ID = "dispatch-packet"
 PACKET_FORMS = frozenset({"reference", "inline"})
 ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
 
@@ -124,6 +129,7 @@ def _projection_packet(
         "independence": legacy.get("independence"),
         "isolation": legacy.get("isolation"),
         "lease_expires_at": attempt.get("lease_expires_at"),
+        "outcome_record_id": attempt.get("outcome_record_id"),
         "pack": legacy.get("pack"),
         "profile": profile,
         "prompt": legacy.get("prompt"),
@@ -142,15 +148,35 @@ def _projection_packet(
             "id": str(data.get("id") or legacy.get("id")),
             "run": str(data.get("run") or legacy.get("run")),
         }
+        packet["prompt"] = "\n".join((
+            str(packet["prompt"]),
+            "At closing, commit exactly one reserved outcome envelope with dispatch-outcome; dispatch-join consumes only that durable return.",
+            f"The canonical envelope names protocol {PROTOCOL}, run {packet['source']['run']}, id {packet['source']['id']}, assignment_seal {packet['assignment_seal']}, dispatch_id {packet['dispatch_id']}, outcome_record_id {OUTCOME_RECORD_ID}, by {attempt.get('owner')}, status, and evidence with Result, Verification, Feedback, Risks, and Handoff.",
+        ))
     else:
+        sealed_envelope = {
+            "assigned_name": packet["assigned_name"],
+            "assignment": assignment,
+            "assignment_seal": packet["assignment_seal"],
+            "dispatch_id": packet["dispatch_id"],
+            "durability": packet["durability"],
+            "lease_expires_at": packet["lease_expires_at"],
+            "outcome_record_id": packet["outcome_record_id"],
+            "reply_to": packet["reply_to"],
+            "role": packet["role"],
+            "profile": packet["profile"],
+            "source": packet["source"],
+            "workspace": packet["workspace"],
+        }
         packet["inline"] = {
             "assignment": assignment,
-            "assignment_seal": _semantic_digest(assignment),
+            "envelope_seal": _semantic_digest(sealed_envelope),
         }
         packet["prompt"] = "\n".join((
             f"Apply skill {executor} directly to the inline sealed assignment in this packet.",
             "Use inline.assignment.semantic as Goal, Context, and optional Suggested files; do not try to repair or reconstruct a ticket path.",
-            "The state sink is unavailable here, so return the result through reply_to without claiming durable filing, recovery, resumption, or stale-lane evidence.",
+            "The state sink is unavailable here. Return one canonical outcome envelope through reply_to; the coordinator imports it with dispatch-outcome before dispatch-join.",
+            f"The envelope must name protocol {PROTOCOL}, assignment_seal {packet['assignment_seal']}, dispatch_id {packet['dispatch_id']}, outcome_record_id {OUTCOME_RECORD_ID}, by {attempt.get('owner')}, status, and evidence containing Result, Verification, Feedback, Risks, plus Handoff only for suspension.",
             f"Your assigned name is `{attempt.get('owner')}` and reply_to is `{legacy.get('reply_to')}`.",
         ))
     return packet
@@ -233,11 +259,10 @@ def _cmd_dispatch_packet(rest):
     if "error" in projected:
         return projected
     packet = _projection_packet(projected["packet"], data, text, attempt, form)
-    committed = _cmd_dispatch_commit([
-        run, ticket_id, "--dispatch-id", dispatch_id,
-        "--record-id", PACKET_RECORD_ID,
-        "--content", canonical_json({"packet": packet}),
-    ])
+    committed = _commit_record(
+        run, ticket_id, dispatch_id, PACKET_RECORD_ID, {"packet": packet},
+        record_kind="packet",
+    )
     if "error" in committed:
         return committed
     return committed["committed_record"]["content"]
@@ -251,12 +276,48 @@ def _packet_shape(value):
         return _classification("packet-invalid", "packet form is unknown")
     required = (
         "assigned_name", "assignment_seal", "dispatch_id", "executor",
-        "lease_expires_at", "profile", "reply_to", "role",
+        "lease_expires_at", "outcome_record_id", "profile", "reply_to", "role",
     )
     if any(not isinstance(value.get(key), str) or not value[key] for key in required):
         return _classification("packet-invalid", "packet identity or routing field is missing")
     if value.get("durability") not in ("ticket", "ephemeral"):
         return _classification("packet-invalid", "packet durability is unknown")
+    base = {
+        "admission", "assigned_name", "assignment_seal", "dispatch_id",
+        "durability", "executor", "form", "independence", "isolation",
+        "lease_expires_at", "outcome_record_id", "pack", "profile", "prompt",
+        "protocol", "reply_to", "role", "source", "workspace",
+    }
+    expected = base | ({"reference"} if form == "reference" else {"inline"})
+    if set(value) != expected:
+        return _classification("packet-invalid", "packet has unknown or missing fields")
+    source = value.get("source")
+    if not isinstance(source, dict) or set(source) != {"id", "run"} or any(
+        not isinstance(source.get(key), str) or not source[key] for key in ("id", "run")
+    ):
+        return _classification("packet-invalid", "packet source is incomplete")
+    if form == "reference":
+        reference = value.get("reference")
+        if not isinstance(reference, dict) or set(reference) != {"id", "run"} or reference != source:
+            return _classification("packet-invalid", "packet reference does not equal its origin")
+    else:
+        inline = value.get("inline")
+        if not isinstance(inline, dict) or set(inline) != {"assignment", "envelope_seal"}:
+            return _classification("packet-invalid", "inline packet shape is incomplete")
+    if value.get("workspace") is not None:
+        failure = _identity_failure("workspace", value["workspace"], allow_path=True)
+        if failure is not None:
+            return _classification("packet-invalid", failure["error"])
+    if value["outcome_record_id"] != OUTCOME_RECORD_ID:
+        return _classification("packet-invalid", "packet outcome identity is not canonical")
+    for kind, identity in (
+        ("dispatch-id", value["dispatch_id"]),
+        ("owner", value["assigned_name"]),
+        ("reply-to", value["reply_to"]),
+    ):
+        failure = _identity_failure(kind, identity)
+        if failure is not None:
+            return _classification("packet-invalid", failure["error"])
     return None
 
 
@@ -287,12 +348,36 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
             "inline routing does not match the sealed assignment",
         )
     source = packet.get("source")
-    if packet["durability"] == "ticket" and (
-        not isinstance(source, dict) or source.get("id") != assignment.get("ticket")
+    if packet["durability"] != "ticket":
+        return _classification(
+            "assignment-divergent", "a ticket projection cannot be downgraded to ephemeral"
+        )
+    if (
+        not isinstance(source, dict)
+        or source.get("id") != assignment.get("ticket")
+        or not isinstance(source.get("run"), str)
+        or not source.get("run")
     ):
         return _classification(
             "assignment-divergent", "inline source does not match the sealed assignment"
         )
+    sealed_envelope = {
+        "assigned_name": packet["assigned_name"],
+        "assignment": assignment,
+        "assignment_seal": packet["assignment_seal"],
+        "dispatch_id": packet["dispatch_id"],
+        "durability": packet["durability"],
+        "lease_expires_at": packet["lease_expires_at"],
+        "outcome_record_id": packet["outcome_record_id"],
+        "reply_to": packet["reply_to"],
+        "role": packet["role"],
+        "profile": packet["profile"],
+        "source": source,
+        "workspace": packet.get("workspace"),
+    }
+    inline = packet.get("inline")
+    if not isinstance(inline, dict) or inline.get("envelope_seal") != _semantic_digest(sealed_envelope):
+        return _classification("assignment-divergent", "inline routing envelope seal diverged")
     return None
 
 
@@ -340,7 +425,7 @@ def _validate_durable(packet: dict, text: str, data: dict):
         None,
     )
     expected = canonical_json({"packet": packet})
-    if record is None or record.get("content") != expected:
+    if record is None or record.get("kind") != "packet" or record.get("content") != expected:
         return _classification("idempotency-conflict", "packet is not the committed projection")
     if attempt.get("owner") != packet["assigned_name"]:
         return _classification("identity-mismatch", "attempt owner diverges from packet")
@@ -379,29 +464,21 @@ def _cmd_dispatch_receive(rest):
     else:
         inline = packet.get("inline")
         assignment = inline.get("assignment") if isinstance(inline, dict) else None
-        if (
-            not isinstance(assignment, dict)
-            or inline.get("assignment_seal") != packet["assignment_seal"]
-            or _semantic_digest(assignment) != packet["assignment_seal"]
-        ):
+        if not isinstance(assignment, dict) or _semantic_digest(assignment) != packet["assignment_seal"]:
             return _classification("assignment-divergent", "inline assignment seal diverged")
         failure = _inline_assignment_failure(packet, assignment)
         if failure is not None:
             return failure
-        if packet["durability"] == "ephemeral":
+        reference = packet.get("source")
+        packet_with_reference = dict(packet, reference=reference)
+        text, data, inaccessible = _reference_ticket(packet_with_reference)
+        if inaccessible is not None:
+            if inaccessible.get("code") != "state-inaccessible":
+                return inaccessible
             checked = False
             failure = None
         else:
-            reference = packet.get("source")
-            packet_with_reference = dict(packet, reference=reference)
-            text, data, inaccessible = _reference_ticket(packet_with_reference)
-            if inaccessible is not None:
-                if inaccessible.get("code") != "state-inaccessible":
-                    return inaccessible
-                checked = False
-                failure = None
-            else:
-                failure = _validate_durable(packet, text, data)
+            failure = _validate_durable(packet, text, data)
     if failure is not None:
         return failure
     return {"receipt": {

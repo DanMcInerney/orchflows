@@ -37,13 +37,16 @@ generations. Recompute the frontier after lifecycle transitions; only work
 newly sealed by `tickets.py seal` proceeds.
 Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
+At close, reference commits `outcome`; offline inline returns that envelope for
+caller relay. No section record closes the attempt; join consumes only
+`outcome`.
 A lane runs its own chosen proof methods, nothing wider. After every return is
 integrated and its required checker or run gate is closed, run the standards
 owner's required checks exactly once at the accepted terminal identity and
 record its revision, not per merge batch. A red terminal suite blocks
 completion.
 
-Watch per [profiles](references/profiles.md); recompute on results, tickets,
+Watch per [profiles](references/profiles.md); recompute on outcomes, tickets,
 suspensions, or stale claims. `bound-check` parks overdue work without
 post-bound motion as `suspended` through `dispatch-join`, Handoff naming bound and
 `last_motion_at`; motion reports `over-bound`. Promote with `tickets.py ready`;

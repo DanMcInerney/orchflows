@@ -52,15 +52,19 @@ The assignment seal identifies semantic generation. The dispatch id identifies
 one attempt and remains fixed across exact delivery retries. Transport silence
 replays the stored projection to the same child; it never creates a second live
 child. Retirement precedes replacement, and `dispatch-replace` performs both
-sides atomically. Results and joins use fixed record ids, so identical replay
-returns stored success while conflicting or unseen stale traffic refuses.
+sides atomically. The packet carries one reserved `outcome` identity. The
+child commits its closed evidence envelope with `dispatch-outcome`, or an
+offline inline child returns that same envelope for coordinator relay.
+`dispatch-join` consumes only that durable outcome, so recovery never guesses
+which streamed write closed the attempt. Fixed record ids replay identically
+and conflicting or unseen stale traffic refuses.
 
-Reference packets are normal. Inline packets carry the same sealed snapshot
-only when the state sink is inaccessible; packet-only inline work is explicitly
-ephemeral. A pre-v1 live claim without an attempt refuses
+Reference packets are normal. Inline packets seal the ticket origin, routing,
+lease, and durability when the receiver cannot read the sink; a ticket
+projection cannot be downgraded to ephemeral. A pre-v1 live claim without an attempt refuses
 `legacy-live-claim`: its existing owner must complete or abandon it before v1
 installation. The normative shapes and precedence live in
-[contracts/work-item.md](contracts/work-item.md).
+[contracts/dispatch.md](contracts/dispatch.md).
 
 ## A run is a directory of tickets
 
@@ -99,24 +103,23 @@ The frontmatter carries two related mechanisms:
                 admission graded       dispatch-open commits
                 and seal checked       one absolute lease
      pending ─────────────────▶ ready ────────────────▶ claimed
-        ▲                                                  │
-        │ amend / recut                                    │ records,
-        │ before dispatch                                  ▼ join
-        │                                            dispatch-join
-        │                                                  │
-        │                                      ┌───────────────────┤
-        │                                      ▼                   ▼
-        └──────────────────── suspended       complete · blocked
-                                               stalled · limited · failed
+                                                           │ outcome,
+                                                           ▼ join
+                                                     dispatch-join
+                                                           │
+                                               ┌───────────────────┤
+                                               ▼                   ▼
+                                        suspended       complete · blocked
+                                                         stalled · limited · failed
 
 **Admission** is the gate into work: `tickets.py` grades the ticket
 against a snapshot of the whole run — dependencies complete, executor
 bound by the stamped pack, workspace policy, inputs resolvable — and
 stamps a hash **receipt** of the frozen cut. `dispatch-open` atomically records
 the claim and absolute lease. `dispatch-packet` commits the delivery projection;
-`dispatch-receive` re-grades its seal and actual receiver authority. Corrections
-(`amend`, `recut`) exist only before dispatch; afterward the assignment is a
-fixed target ([rules/verification.md](rules/verification.md) §3).
+`dispatch-receive` re-grades its seal and actual receiver authority. After an
+attempt opens, the assignment is a fixed target
+([rules/verification.md](rules/verification.md) §3).
 
 ## Review
 
@@ -129,7 +132,8 @@ Three moments use readers who did not produce the fixed artifact
                                                       -> verify
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
-   issued ticket set as data, corrects it with `amend`/`new`, and is
+   issued ticket set as data and returns blockers to the decomposer before a
+   replacement generation is sealed. It is
    accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — each result takes one outside-independence path:

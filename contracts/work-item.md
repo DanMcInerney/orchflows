@@ -49,75 +49,19 @@ compare-and-swap sealing refuses a stale snapshot.
 
 ## Dispatch-v1 attempt state
 
-One ticket has one authoritative `dispatch_v1` record and at most one live
-**dispatch attempt**. `dispatch-open` atomically records `dispatch_id`, the
-current `assignment_seal`, owner, opening time, and absolute
-`lease_expires_at` while creating `claimed`. Delivery retries reuse the same
-`dispatch_id`; a new attempt after retirement or replacement uses a new one.
-`dispatch-replace` ends the named live attempt and opens its unique successor
-in the same ticket write. `dispatch-retire` durably ends the named attempt.
-Both name the current `assignment_seal` and a unique `record_id`, so their
-exact retry returns stored success and changed operation content conflicts.
-The absolute attempt lease governs dispatch, delivery, executor records,
-replacement, and join; transport retry and result-file motion never extend it.
-
-`dispatch-commit` keys a committed record by `dispatch_id` plus `record_id`.
-Precedence is fixed: an exact committed pair and content returns its stored
-success even after retirement, replacement, or lease expiry; changed content
-for that pair is `idempotency-conflict`. Only then does the command classify
-an unknown id as `dispatch-mismatch`, a changed seal as
-`assignment-mismatch`, or an unseen record on an expired, retired, or replaced
-attempt as `stale-attempt`. A different attempt while one is live is
-`live-attempt`. Every refusal leaves the ticket byte-identical.
-
-`dispatch-join` is the only suspension or terminal transition for a v1
-attempt. It names `assignment_seal`, `dispatch_id`, the committed executor
-`result_record_id`, join owner, and disposition status in one atomic ticket
-write which also retires the attempt. The derived join record is the fixed
-identity: exact replay returns its stored disposition after retirement,
-changed content is `idempotency-conflict`, and an unseen join on an ended
-attempt is `stale-attempt`. Suspension additionally requires that
-`result_record_id` identify a committed `Handoff`. The unfenced `set-status`
-path remains only for pre-v1 cutover and non-v1 system transitions.
-
-A claimed or suspended historical ticket with no `dispatch_v1` is
-`legacy-live-claim` at every dispatch-v1 operation. Its existing owner must
-complete or abandon it before installation of a v1 attempt. No command infers
-an attempt, reconstructs history, or rewrites historical state.
+The ticket's `dispatch_v1` frontmatter value binds the complete closed
+[dispatch contract](dispatch.md). That contract solely owns attempts, records,
+packets, receipts, outcomes, joins, precedence, and cutover. Ticket lifecycle
+projects its accepted mutations: open creates `claimed`; only the outcome-fenced
+join creates `suspended` or a terminal state. Raw status writes cannot mutate a
+ticket once its dispatch record exists.
 
 ## Dispatch-v1 packet projection and receipt
 
-`dispatch-packet` commits exactly one `dispatch-packet` record for a live
-attempt, then returns its stored packet projection. An exact delivery retry
-replays that stored projection even after the attempt ends; different form,
-reply target, or workspace authority for the same record is
-`idempotency-conflict`. The projection fields are generated, never repaired in
-transport:
-
-- `protocol`, `dispatch_id`, `assignment_seal`, and absolute
-  `lease_expires_at` identify the fenced attempt.
-- `executor`, `role`, `profile`, `assigned_name`, `reply_to`, and `workspace`
-  bind the exact child identity and authority; `pack`, `independence`,
-  `isolation`, and `admission` carry its admitted execution mechanics.
-- `form` is `reference` or `inline`; `durability` is `ticket` or `ephemeral`.
-  `source` names the originating ticket. A `reference` names that ticket by
-  `run` and `id`. An `inline` carries the immutable semantic assignment and
-  the same `assignment_seal`.
-
-`dispatch-receive` validates protocol, form, lease, seal, committed projection,
-assigned identity, resolved role and profile, reply target, and workspace
-authority before execution. Unknown or malformed traffic is `packet-invalid`;
-an unavailable referenced ticket is `state-inaccessible`; a changed reference
-or inline snapshot is `assignment-divergent`; actual child name, role, profile,
-or authority disagreements are `identity-mismatch`, `role-mismatch`,
-`profile-mismatch`, or `authority-mismatch`. An ended attempt is
-`stale-attempt`. No refusal changes ticket state.
-
-Reference is the default. Inline is the fallback when the receiver cannot read
-the state sink: it can prove the sealed snapshot and absolute lease but reports
-that durable state was not checked, so a later result still crosses the
-authoritative attempt seam. An inline packet with `durability: ephemeral` has
-no ticket, crash recovery, resumption, or durable stale-lane evidence.
+Packet projection and receipt are the [dispatch contract](dispatch.md)'s wire
+boundary. Reference is the normal projection. Inline seals the whole routing
+envelope for an offline receiver and returns the same reserved outcome envelope
+for atomic coordinator relay; it never creates a second ticket truth.
 
 ## Executor records
 
@@ -128,8 +72,10 @@ The executor files them as work is produced through `tickets.py result` under
 [result.md](result.md), naming the packet's `assignment_seal`, `dispatch_id`,
 a unique `record_id`, and recorded writer. Reference packet
 prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
-the executor chooses a fresh record id for each logical write. `Feedback` and
-`Risks` use `[]` when empty.
+the executor chooses a fresh record id for each streamed write. At closing,
+every executor commits or returns the reserved
+[dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use
+`[]` when empty.
 
 ## Roots, decomposition, and integration
 
@@ -174,3 +120,7 @@ seam atomically; claim-name-only result filing is removed.
 T0 supersession record sha256:e907a499354bc667db48f0cac413a3bf216a86f745ee0aeab0d70a71eced03f8: dispatch-v1
 lifecycle operations and joins are fixed-record transitions over one absolute
 attempt lease; raw status writes cannot terminate or suspend a v1 attempt.
+
+T0 supersession record sha256:0d3198c3bca64480a60502a7d621be4e6ca6349fc4ef74e9b18f30951fdec956: the
+closed dispatch grammar and reserved outcome return moved to `dispatch.md`;
+public legacy role-bearing routes are removed.

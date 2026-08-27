@@ -33,7 +33,7 @@ class TicketProtocolTest(unittest.TestCase):
 
     def test_dispatch_v1_contract_owns_the_closed_public_seam(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
-        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
@@ -44,27 +44,29 @@ class TicketProtocolTest(unittest.TestCase):
             "`legacy-live-claim`", "`idempotency-conflict`",
             "`dispatch-mismatch`", "`assignment-mismatch`", "`stale-attempt`",
         ):
-            self.assertIn(token, work_item)
+            self.assertIn(token, dispatch)
         self.assertIn("exactly-once external", result)
-        self.assertIn("dispatch attempt", delegation.lower())
+        self.assertIn("dispatch contract", delegation.lower())
         self.assertIn("**dispatch attempt**", vocabulary)
 
     def test_join_contract_consumes_one_fixed_result_and_absolute_attempt_lease(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
         result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         integrate = (root / "skills" / "kernel" / "orch-integrate" / "SKILL.md").read_text(encoding="utf-8")
-        for owner in (work_item, result, delegation):
-            self.assertIn("`dispatch-join`", owner)
+        self.assertIn("`dispatch-join`", dispatch)
+        for projection in (work_item, result, delegation):
+            self.assertIn("dispatch contract", projection.lower())
         self.assertIn("tickets.py dispatch-join", integrate)
-        self.assertIn("`result_record_id`", work_item)
-        self.assertIn("`lease_expires_at`", delegation)
+        self.assertIn("`outcome_record_id`", dispatch)
+        self.assertIn("`lease_expires_at`", dispatch)
         self.assertNotIn("only this join calls `tickets.py set-status`", integrate)
 
     def test_dispatch_v1_contract_owns_packet_projection_and_receipt(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
-        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
@@ -74,7 +76,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`identity-mismatch`", "`authority-mismatch`",
             "`role-mismatch`", "`profile-mismatch`",
         ):
-            self.assertIn(token, work_item)
+            self.assertIn(token, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         frontier = (root / "skills" / "engines" / "orch-frontier" / "SKILL.md").read_text(encoding="utf-8")
         profiles = (root / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md").read_text(encoding="utf-8")
@@ -100,6 +102,6 @@ class TicketProtocolTest(unittest.TestCase):
             "absolute lease", "`dispatch-join`", "outside-independence path",
         ):
             self.assertIn(current, tickets)
-        self.assertIn("committed packet projection", delegation)
+        self.assertIn("committed packet", delegation)
         self.assertIn("receipt", roles.lower())
         self.assertIn("**packet projection**", vocabulary)

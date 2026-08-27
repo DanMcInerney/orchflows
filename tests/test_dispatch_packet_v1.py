@@ -113,9 +113,9 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("ticket", packet["durability"])
         self.assertIn("inline sealed assignment", packet["prompt"])
         self.assertNotIn("tickets.py result", packet["prompt"])
-        self.assertEqual(
-            packet["assignment_seal"], packet["inline"]["assignment_seal"]
-        )
+        self.assertTrue(packet["inline"]["envelope_seal"].startswith("sha256:"))
+        self.assertEqual("outcome", packet["outcome_record_id"])
+        self.assertIn("dispatch-outcome", packet["prompt"])
 
         missing = str(Path(self.temporary.name) / "not-mounted")
         with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
@@ -123,16 +123,13 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("accepted", receipt["receipt"]["outcome"])
         self.assertFalse(receipt["receipt"]["state_sink_checked"])
 
-    def test_packet_only_inline_is_explicitly_ephemeral(self):
+    def test_ticket_inline_cannot_be_downgraded_to_ephemeral(self):
         packet = self.project(form="inline")["packet"]
         packet["durability"] = "ephemeral"
-        packet.pop("source")
         missing = str(Path(self.temporary.name) / "not-mounted")
         with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            receipt = self.receive(packet)
-        self.assertEqual("accepted", receipt["receipt"]["outcome"])
-        self.assertEqual("ephemeral", receipt["receipt"]["durability"])
-        self.assertFalse(receipt["receipt"]["state_sink_checked"])
+            refusal = self.receive(packet)
+        self.assertEqual("assignment-divergent", refusal["code"])
 
     def test_reference_without_state_sink_is_a_structured_refusal(self):
         packet = self.project()["packet"]
@@ -160,7 +157,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.dispatch(
             "dispatch-retire", "run", "T",
             "--assignment-seal", self.assignment_seal,
-            "--dispatch-id", "D1", "--record-id", "retire-1",
+            "--dispatch-id", "D1", "--record-id", "lifecycle:retire-1",
         )
 
         self.assertEqual(committed, self.project())
@@ -183,6 +180,15 @@ class DispatchPacketV1Test(unittest.TestCase):
         missing = str(Path(self.temporary.name) / "not-mounted")
         with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
             refusal = self.receive(routing)
+        self.assertEqual("assignment-divergent", refusal["code"])
+
+        self.tearDown()
+        self.setUp()
+        origin = self.project(form="inline")["packet"]
+        origin["source"]["run"] = "missing"
+        missing = str(Path(self.temporary.name) / "not-mounted")
+        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
+            refusal = self.receive(origin)
         self.assertEqual("assignment-divergent", refusal["code"])
 
         self.tearDown()

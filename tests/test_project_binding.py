@@ -228,7 +228,8 @@ class TestClaimAdmission(ProjectBindingFixture):
 
     def test_a_claim_from_a_foreign_project_is_refused(self):
         completed = self.tickets(
-            self.beta, "claim", RUN, "00-root.01", "--by", "stranger"
+            self.beta, "dispatch-open", RUN, "00-root.01", "--by", "stranger",
+            "--dispatch-id", "foreign-D1", "--lease-expires-at", "2099-01-01T00:00:00Z",
         )
         payload = json.loads(completed.stdout or "{}")
         self.assertNotEqual(0, completed.returncode)
@@ -239,7 +240,8 @@ class TestClaimAdmission(ProjectBindingFixture):
     def test_a_refused_claim_writes_nothing(self):
         before = (self.run_dir / "00-root.01.md").read_text(encoding="utf-8")
         completed = self.tickets(
-            self.beta, "claim", RUN, "00-root.01", "--by", "stranger"
+            self.beta, "dispatch-open", RUN, "00-root.01", "--by", "stranger",
+            "--dispatch-id", "foreign-D1", "--lease-expires-at", "2099-01-01T00:00:00Z",
         )
         after = (self.run_dir / "00-root.01.md").read_text(encoding="utf-8")
         self.assertEqual(before, after)
@@ -255,7 +257,8 @@ class TestClaimAdmission(ProjectBindingFixture):
         """
 
         payload = self.payload(
-            self.alpha, "claim", RUN, "00-root.01", "--by", "worker"
+            self.alpha, "dispatch-open", RUN, "00-root.01", "--by", "worker",
+            "--dispatch-id", "own-D1", "--lease-expires-at", "2099-01-01T00:00:00Z",
         )
         self.assertNotIn(HELD, payload.get("error", ""))
 
@@ -301,7 +304,8 @@ class TestLegacyRuns(ProjectBindingFixture):
             json.dumps({"run": RUN, "sink_convention": 2}) + "\n", encoding="utf-8"
         )
         payload = self.payload(
-            self.beta, "claim", RUN, "00-root.01", "--by", "worker"
+            self.beta, "dispatch-open", RUN, "00-root.01", "--by", "worker",
+            "--dispatch-id", "legacy-D1", "--lease-expires-at", "2099-01-01T00:00:00Z",
         )
         self.assertNotIn(HELD, payload.get("error", ""))
 

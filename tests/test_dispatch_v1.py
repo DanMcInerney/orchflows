@@ -11,7 +11,9 @@ import unittest
 from unittest import mock
 
 from scripts import tickets
-from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
+from scripts.tickets_format import (
+    _parse_frontmatter, _sections, _set_frontmatter_field, parse_canonical_json,
+)
 
 
 class DispatchV1Test(unittest.TestCase):
@@ -67,7 +69,7 @@ class DispatchV1Test(unittest.TestCase):
             "--content", content,
         ])
 
-    def retire(self, dispatch_id="D1", record_id="retire-1", seal=None):
+    def retire(self, dispatch_id="D1", record_id="lifecycle:retire-1", seal=None):
         return tickets._dispatch([
             "dispatch-retire", "run", "T", "--dispatch-id", dispatch_id,
             "--assignment-seal", seal or self.opened_seal,
@@ -76,7 +78,7 @@ class DispatchV1Test(unittest.TestCase):
 
     def replace(
         self, dispatch_id="D1", replacement="D2", lease=None, by="worker-2",
-        record_id="replace-1", seal=None,
+        record_id="lifecycle:replace-1", seal=None,
     ):
         return tickets._dispatch([
             "dispatch-replace", "run", "T",
@@ -104,6 +106,29 @@ class DispatchV1Test(unittest.TestCase):
         if append:
             arguments.append("--append")
         return tickets._dispatch(arguments)
+
+    def outcome(self, *, status="complete", by="worker", dispatch_id="D1", seal=None):
+        content = {
+            "assignment_seal": seal or self.opened_seal,
+            "by": by,
+            "dispatch_id": dispatch_id,
+            "evidence": {
+                "Result": "delivered",
+                "Verification": "verified",
+                "Feedback": "[]",
+                "Risks": "[]",
+                "Handoff": "resume here" if status == "suspended" else "",
+            },
+            "id": "T",
+            "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1",
+            "run": "run",
+            "status": status,
+        }
+        return tickets._dispatch([
+            "dispatch-outcome", "run", "T", "--content",
+            json.dumps(content, sort_keys=True, separators=(",", ":")),
+        ])
 
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
@@ -216,7 +241,8 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_text())
 
     def test_pre_v1_live_claim_requires_owner_cutover(self):
-        self.dispatch("claim", "run", "T", "--by", "legacy-owner")
+        claimed = tickets._cmd_claim(["run", "T", "--by", "legacy-owner"])
+        self.assertNotIn("error", claimed, claimed)
         before = self.ticket_text()
         refusal = self.open()
         self.assertEqual("legacy-live-claim", refusal["code"])
@@ -286,23 +312,22 @@ class DispatchV1Test(unittest.TestCase):
 
         conflict = self.retire(seal="sha256:changed")
         self.assertEqual("idempotency-conflict", conflict["code"])
-        unseen = self.retire(record_id="retire-2")
+        unseen = self.retire(record_id="lifecycle:retire-2")
         self.assertEqual("stale-attempt", unseen["code"])
         self.assertEqual(retired_text, self.ticket_text())
 
     def test_join_consumes_a_fixed_result_identity_and_replays_after_retirement(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        result = self.result(record_id="result-fixed")
-        self.assertNotIn("error", result)
+        outcome = self.outcome()
+        self.assertNotIn("error", outcome)
 
         arguments = [
             "dispatch-join", "run", "T",
             "--assignment-seal", self.opened_seal,
             "--dispatch-id", "D1",
-            "--result-record-id", "result-fixed",
+            "--outcome-record-id", "outcome",
             "--by", "root-join",
-            "--status", "complete",
         ]
         joined = tickets._dispatch(arguments)
         self.assertEqual("complete", joined["join"]["status"])
@@ -321,26 +346,65 @@ class DispatchV1Test(unittest.TestCase):
 
         self.assertEqual(joined, tickets._dispatch(arguments))
         self.assertEqual(joined_text, self.ticket_text())
+        self.assertEqual(outcome, self.outcome())
 
-        changed = list(arguments)
-        changed[-1] = "blocked"
-        conflict = tickets._dispatch(changed)
+        changed_outcome = self.outcome(status="blocked")
+        conflict = changed_outcome
         self.assertEqual("idempotency-conflict", conflict["code"])
-        unseen = tickets._dispatch([
-            *arguments[:8], "another-result", *arguments[9:],
-        ])
-        self.assertEqual("stale-attempt", unseen["code"])
+        unseen = list(arguments)
+        unseen[unseen.index("outcome")] = "another-outcome"
+        mismatch = tickets._dispatch(unseen)
+        self.assertEqual("outcome-record-mismatch", mismatch["code"])
         self.assertEqual(joined_text, self.ticket_text())
 
     def test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         before = self.ticket_text()
-        for status in ("suspended", "complete", "failed"):
+        for status in ("pending", "suspended", "complete", "failed"):
             with self.subTest(status=status):
                 refusal = tickets._dispatch(["set-status", "run", "T", status])
                 self.assertEqual("dispatch-join-required", refusal["code"])
                 self.assertEqual(before, self.ticket_text())
+
+    def test_protocol_owned_record_ids_cannot_be_squatted(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        before = self.ticket_text()
+        for record_id in ("dispatch-packet", "outcome", "join:outcome", "lifecycle:x"):
+            with self.subTest(record_id=record_id):
+                refusal = self.commit(record_id=record_id)
+                self.assertEqual("record-id-reserved", refusal["code"])
+                self.assertEqual(before, self.ticket_text())
+        result_refusal = self.result(record_id="outcome")
+        self.assertEqual("record-id-reserved", result_refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+
+    def test_malformed_persisted_attempt_is_a_structured_byte_preserving_refusal(self):
+        self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        malformed = _set_frontmatter_field(
+            path.read_text(encoding="utf-8"), "dispatch_v1",
+            '{"attempts":[1],"protocol":"orchflows.dispatch.v1"}',
+        )
+        path.write_text(malformed, encoding="utf-8")
+        before = path.read_bytes()
+        refusal = self.commit()
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_replacement_identity_injection_is_refused_without_mutation(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        before = self.ticket_text()
+        refusal = self.replace(by="evil\nstatus: complete")
+        self.assertEqual("owner-invalid", refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+
+    def test_legacy_role_bearing_facade_routes_are_absent(self):
+        for command in ("claim", "packet"):
+            refusal = tickets._dispatch([command, "run", "T"])
+            self.assertIn("unknown subcommand", refusal["error"])
 
 
 if __name__ == "__main__":

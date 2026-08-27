@@ -29,12 +29,10 @@ and evidence in `## Verification`.
 
 The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, and adjudicates only material blockers
-against Goal and Context. For a v1 attempt, `dispatch-join` consumes the
-committed `result_record_id` and atomically stores the disposition, retires the
-attempt, and changes ticket status. Its exact retry returns stored success
-after retirement; changed content conflicts and an unseen ended-attempt join
-is stale. Deterministic repository-global gates run on the integrated tip.
-Suggested files are never an acceptance boundary.
+against Goal and Context. The reserved durable return and its lifecycle
+consumption belong to the [dispatch contract](dispatch.md#outcome-and-join).
+Deterministic repository-global gates run on the integrated tip. Suggested
+files are never an acceptance boundary.
 
 A generic `dispatch-commit` record is not an executor Result and does not
 replace this section's writer. The `result` operation uses the same committed
@@ -50,3 +48,6 @@ claim-name-only writer is not a compatibility path.
 T0 supersession record sha256:0654e413997c54fcbe12f4aa4e8ebb27bae7c36ac2c6c7dc0798917a48414524: `dispatch-join`
 atomically binds a lifecycle disposition to one committed executor result and
 the attempt that produced it.
+
+T0 supersession record sha256:47f6855da46fd692a6dd8e42408ef721e719400d655f5e74e85dcdb50f924dd3: the
+distinguished outcome envelope is the sole durable return consumed by join.

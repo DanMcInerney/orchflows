@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1853,
+  "count": 1857,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -42,20 +42,24 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_receives_without_the_state_sink",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_only_inline_is_explicitly_ephemeral",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_receipt_refuses_identity_profile_and_authority_mismatches",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_ticket_inline_cannot_be_downgraded_to_ephemeral",
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_rejects_unseen_records_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_join_consumes_a_fixed_result_identity_and_replays_after_retirement",
+   "test_dispatch_v1.DispatchV1Test.test_legacy_role_bearing_facade_routes_are_absent",
    "test_dispatch_v1.DispatchV1Test.test_lifecycle_operation_replay_precedes_conflict_and_retirement",
+   "test_dispatch_v1.DispatchV1Test.test_malformed_persisted_attempt_is_a_structured_byte_preserving_refusal",
    "test_dispatch_v1.DispatchV1Test.test_open_is_atomic_replayable_and_fences_a_second_live_attempt",
    "test_dispatch_v1.DispatchV1Test.test_pre_v1_live_claim_requires_owner_cutover",
+   "test_dispatch_v1.DispatchV1Test.test_protocol_owned_record_ids_cannot_be_squatted",
    "test_dispatch_v1.DispatchV1Test.test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join",
+   "test_dispatch_v1.DispatchV1Test.test_replacement_identity_injection_is_refused_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
    "test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_result_write_and_receipt_are_one_replayable_operation",
@@ -1856,7 +1860,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "57c7e569ac90d02caac3143b91394f69a94364ea7d1b1a67ab03ad085eba1702"
+  "sha256": "156e74b330c6c0a304c551b985c2690ccc304c44658666e6d7d46c434314412c"
  },
  "mutation_owners": [
   {
@@ -2201,7 +2205,7 @@
   },
   {
    "module": "tests.test_dispatch_packet_v1",
-   "owner": "DispatchPacketV1Test.test_packet_only_inline_is_explicitly_ephemeral",
+   "owner": "DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
@@ -2209,7 +2213,7 @@
   },
   {
    "module": "tests.test_dispatch_packet_v1",
-   "owner": "DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
+   "owner": "DispatchPacketV1Test.test_ticket_inline_cannot_be_downgraded_to_ephemeral",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"

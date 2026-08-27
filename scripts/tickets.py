@@ -224,6 +224,7 @@ _cmd_dispatch_replace = _tickets_attempts_module._cmd_dispatch_replace
 _cmd_dispatch_packet = _tickets_dispatch_packet_module._cmd_dispatch_packet
 _cmd_dispatch_receive = _tickets_dispatch_packet_module._cmd_dispatch_receive
 _cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
+_cmd_dispatch_outcome = _tickets_join_module._cmd_dispatch_outcome
 _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
@@ -348,6 +349,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_packet = _cmd_dispatch_packet
     _tickets_dispatch_module._cmd_dispatch_receive = _cmd_dispatch_receive
     _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
+    _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
     _tickets_attempts_module._write_text_atomically = _write_text_atomically
     _tickets_dispatch_module._cmd_ready = _cmd_ready
     _tickets_dispatch_module._cmd_check = _cmd_check

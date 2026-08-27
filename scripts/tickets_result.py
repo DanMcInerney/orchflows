@@ -54,7 +54,7 @@ def _result_under_run_lock(rest):
         return {'error': f'result takes one of --append or --replace, not both: they are the two ways to write a section that already carries content. usage: {RESULT_USAGE}'}
     stray = next((arg for arg in args if arg.startswith('-')), None)
     if stray is not None:
-        return {'error': f'result does not accept {stray}: it writes body sections only, never frontmatter — terminal status is set by the join (orch-integrate) through `set-status`. usage: {RESULT_USAGE}'}
+        return {'error': f'result does not accept {stray}: it writes body sections only, never frontmatter — commit the reserved outcome envelope, then let orch-integrate call dispatch-join. usage: {RESULT_USAGE}'}
     if len(args) != 2:
         return {'error': f'usage: {RESULT_USAGE}'}
     run, ticket_id = args
@@ -132,6 +132,7 @@ def _result_under_run_lock(rest):
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content, mutate=mutate,
         expected_seal=assignment_seal, expected_owner=written_by,
+        record_kind="result",
     )
 def _is_terminal_heading(line: str) -> bool:
     """Whether one line closes a run's notes.

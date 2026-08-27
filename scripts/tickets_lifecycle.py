@@ -313,10 +313,10 @@ def _set_status_under_run_lock(rest):
     if failure is not None:
         return failure
     data = _parse_frontmatter(text)
-    if data.get('dispatch_v1') and (status == 'suspended' or status in TERMINAL_STATES):
+    if data.get('dispatch_v1'):
         return _classification(
             'dispatch-join-required',
-            'dispatch-v1 suspension and terminal transitions require dispatch-join with the fixed result identity',
+            'dispatch-v1 lifecycle is owned by dispatch-open, dispatch-replace, dispatch-retire, and dispatch-join',
         )
     items, run_error = _run_tickets(run)
     terminal_transition = False

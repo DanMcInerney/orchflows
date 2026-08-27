@@ -27,7 +27,10 @@ the integrating checkout (exit 6 is caller-vantage failure).
 
 Record blame on the run-state channel. For dispatch v1, only this join calls
 `tickets.py dispatch-join` with the packet's assignment seal and dispatch id,
-the fixed committed result record id, this join's name, and its disposition.
+the fixed `outcome` record id, and this join's name. Disposition comes from the
+validated outcome envelope, never a transport message or arbitrary section
+record. If an inline child returned that envelope offline, relay it unchanged
+through `tickets.py dispatch-outcome` first.
 Pre-v1 cutover alone uses `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here without dispatch through

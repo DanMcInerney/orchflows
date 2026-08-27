@@ -285,6 +285,7 @@ class BoundCheckCommandTest(unittest.TestCase):
                 "dispatch_id": "D1",
                 "lease_expires_at": expires.strftime(UTC_STAMP),
                 "opened_at": opened.strftime(UTC_STAMP),
+                "outcome_record_id": "outcome",
                 "owner": "agent-a",
                 "records": [],
                 "state": "live",

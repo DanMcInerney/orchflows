@@ -10,6 +10,13 @@ if __package__:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from .tickets_generations import seal_findings
+    from .tickets_project import CLAIM_REMEDY, binding_refusal
+    from .tickets_dispatch_schema import (
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
+        classification as _classification, identity_failure as _identity_failure,
+        record_id_is_reserved as _record_id_is_reserved, state as _state,
+        validate_state as _validate_state,
+    )
     from .tickets_store import (
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -20,12 +27,18 @@ else:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from tickets_generations import seal_findings
+    from tickets_project import CLAIM_REMEDY, binding_refusal
+    from tickets_dispatch_schema import (
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
+        classification as _classification, identity_failure as _identity_failure,
+        record_id_is_reserved as _record_id_is_reserved, state as _state,
+        validate_state as _validate_state,
+    )
     from tickets_store import (
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
     )
 
-PROTOCOL = "orchflows.dispatch.v1"
 DISPATCH_OPEN_USAGE = (
     "dispatch-open <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso>"
@@ -44,32 +57,6 @@ DISPATCH_REPLACE_USAGE = (
     "--replacement-dispatch-id <new-id> --by <name> "
     "--lease-expires-at <absolute-iso>"
 )
-
-
-def _classification(code: str, detail: str) -> dict:
-    return {"error": detail, "code": code, "protocol": PROTOCOL}
-
-
-def _state(data: dict):
-    encoded = str(data.get("dispatch_v1") or "").strip()
-    if not encoded:
-        return None, None
-    try:
-        state = parse_canonical_json(encoded)
-    except (TypeError, ValueError) as error:
-        return None, _classification(
-            "dispatch-record-invalid", f"dispatch_v1 is not canonical JSON: {error}"
-        )
-    if not isinstance(state, dict) or state.get("protocol") != PROTOCOL:
-        return None, _classification(
-            "dispatch-record-invalid", f"dispatch_v1 does not name {PROTOCOL}"
-        )
-    attempts = state.get("attempts")
-    if not isinstance(attempts, list):
-        return None, _classification(
-            "dispatch-record-invalid", "dispatch_v1 attempts is not a list"
-        )
-    return state, None
 
 
 def attempt_window(data: dict):
@@ -109,6 +96,7 @@ def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dic
         "assignment_seal": attempt["assignment_seal"],
         "lease_expires_at": attempt["lease_expires_at"],
         "opened_at": attempt["opened_at"],
+        "outcome_record_id": attempt["outcome_record_id"],
         "state": attempt["state"],
     }}
 
@@ -125,8 +113,13 @@ def _cmd_dispatch_open(rest):
         invalid = _segment_error(kind, value)
         if invalid is not None:
             return invalid
-    if any(mark in value for value in (owner, dispatch_id) for mark in ("`", "\r", "\n")):
-        return {"error": "dispatch identity contains backticks or line breaks"}
+    for kind, value in (("owner", owner), ("dispatch-id", dispatch_id)):
+        failure = _identity_failure(kind, value)
+        if failure is not None:
+            return failure
+    held = binding_refusal(run, CLAIM_REMEDY)
+    if held is not None:
+        return {"error": held}
     lease = _parse_iso(lease_text)
     if lease is None or lease.utcoffset() is None:
         return _classification(
@@ -205,6 +198,7 @@ def _cmd_dispatch_open(rest):
             attempt = {
                 **request,
                 "opened_at": now.strftime(UTC_STAMP),
+                "outcome_record_id": OUTCOME_RECORD_ID,
                 "records": [],
                 "state": "live",
             }
@@ -236,8 +230,25 @@ def _record_response(
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
     expected_seal=None, expected_owner=None, require_live_lease=True,
+    record_kind="generic",
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
+    for kind, value in (("dispatch-id", dispatch_id), ("record-id", record_id)):
+        failure = _identity_failure(kind, value)
+        if failure is not None:
+            return failure
+    if record_kind not in RECORD_KINDS:
+        return _classification("record-kind-invalid", f"unknown record kind '{record_kind}'")
+    owned = {
+        "packet": record_id == PACKET_RECORD_ID,
+        "outcome": record_id == OUTCOME_RECORD_ID,
+        "join": record_id.startswith("join:"),
+        "lifecycle": record_id.startswith("lifecycle:"),
+    }
+    if record_kind in owned and not owned[record_kind]:
+        return _classification("record-id-invalid", f"{record_kind} operation used another record namespace")
+    if record_kind in ("generic", "result") and _record_id_is_reserved(record_id):
+        return _classification("record-id-reserved", f"record_id '{record_id}' belongs to a protocol-owned operation")
     normalized = canonical_json(content)
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -320,9 +331,13 @@ def _commit_record(
             records.append({
                 "committed_at": now.strftime(UTC_STAMP),
                 "content": normalized,
+                "kind": record_kind,
                 "record_id": record_id,
                 "success": success,
             })
+            failure = _validate_state(state)
+            if failure is not None:
+                return failure
             updated = _set_frontmatter_field(updated, "dispatch_v1", canonical_json(state))
             _write_text_atomically(path, updated)
             return success
@@ -346,7 +361,14 @@ def _cmd_dispatch_commit(rest):
         content = parse_canonical_json(content_text)
     except (TypeError, ValueError) as error:
         return _classification("content-invalid", f"--content is not JSON: {error}")
-    return _commit_record(run, ticket_id, dispatch_id, record_id, content)
+    if _record_id_is_reserved(record_id):
+        return _classification(
+            "record-id-reserved",
+            f"record_id '{record_id}' belongs to a protocol-owned operation",
+        )
+    return _commit_record(
+        run, ticket_id, dispatch_id, record_id, content, record_kind="generic"
+    )
 
 
 def _cmd_dispatch_retire(rest):
@@ -385,9 +407,12 @@ def _cmd_dispatch_retire(rest):
         attempt["retirement"] = response
         return text, response, None
 
+    if not record_id.startswith("lifecycle:"):
+        return _classification("record-id-invalid", "retirement record_id must use the lifecycle: namespace")
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content,
         mutate=retire, expected_seal=assignment_seal, require_live_lease=False,
+        record_kind="lifecycle",
     )
 
 
@@ -404,8 +429,14 @@ def _cmd_dispatch_replace(rest):
     )):
         return {"error": f"usage: {DISPATCH_REPLACE_USAGE}"}
     run, ticket_id = args
+    for kind, value in (("owner", owner), ("dispatch-id", replacement_id)):
+        failure = _identity_failure(kind, value)
+        if failure is not None:
+            return failure
+    if not record_id.startswith("lifecycle:"):
+        return _classification("record-id-invalid", "replacement record_id must use the lifecycle: namespace")
     lease = _parse_iso(lease_text)
-    if lease is None:
+    if lease is None or lease.utcoffset() is None:
         return _classification(
             "lease-invalid", "--lease-expires-at must be an absolute ISO timestamp"
         )
@@ -436,6 +467,7 @@ def _cmd_dispatch_replace(rest):
             "dispatch_id": replacement_id,
             "lease_expires_at": lease_text,
             "opened_at": opened_at,
+            "outcome_record_id": OUTCOME_RECORD_ID,
             "owner": owner,
             "records": [],
             "replaces": dispatch_id,
@@ -466,5 +498,5 @@ def _cmd_dispatch_replace(rest):
 
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content,
-        mutate=replace, expected_seal=assignment_seal,
+        mutate=replace, expected_seal=assignment_seal, record_kind="lifecycle",
     )

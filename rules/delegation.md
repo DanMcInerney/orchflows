@@ -78,16 +78,11 @@
     creates a new generation. The executor-owned `Result`, `Verification`,
    `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
    the sealed assignment.
-16. A persisted dispatch attempt opens, commits records, retires, replaces,
-   and crosses `dispatch-join`
-   only through `contracts/work-item.md`'s dispatch-v1 seam. The ticket write
-   is the fence: transport silence, delivery retry, or an external side effect
-   never creates a second live attempt or overrides its replay precedence.
-   Its immutable deadline is `lease_expires_at`; later delivery or artifact
-   activity never recomputes that timestamp.
-17. A committed packet projection is the only role-bearing delivery for a v1
-    attempt. Reference is normal; inline carries the same sealed assignment
-    only when the receiver cannot read the state sink. Receipt validates the
-    packet's generated identity and authority before any skill runs. A
-    packet-only inline lane is explicitly ephemeral and stops rather than
-    claiming durable recovery, resumption, or stale-lane evidence.
+16. Every role-bearing call and return follows the closed
+   [dispatch contract](../contracts/dispatch.md). The ticket write is the
+   fence; transport behavior never changes its attempt precedence or absolute
+   lease.
+17. A committed packet is the only role-bearing delivery. Reference is normal;
+    inline is the same ticket-durable call when its receiver cannot read the
+    sink. Receipt precedes execution. The child commits or returns the packet's
+    one reserved outcome envelope; the caller relays it unchanged when needed.
