@@ -56,3 +56,5 @@ the attempt that produced it.
 
 T0 supersession record sha256:47f6855da46fd692a6dd8e42408ef721e719400d655f5e74e85dcdb50f924dd3: the
 distinguished outcome envelope is the sole durable return consumed by join.
+
+T0 supersession record sha256:734f7558400198917ee42aa9f0c06052bacdec2e0d9dd9304976e937e88b9873: closing outcome evidence is the nonduplicating delta after streamed result records.

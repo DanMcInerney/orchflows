@@ -50,8 +50,8 @@ Watch per [profiles](references/profiles.md); recompute on outcomes, tickets,
 suspensions, or stale claims. `bound-check` parks overdue work without
 post-bound motion as `suspended` through `dispatch-join`, Handoff naming bound and
 `last_motion_at`; motion reports `over-bound`. Promote with `tickets.py ready`;
-report `skipped` and terminal blockers. A parked ticket retains claimant
-observations for Handoff, but its joined attempt is retired; dependents wait;
+report `skipped` and terminal blockers. Parked tickets retain claimant Handoff
+observations but have retired attempts; dependents wait;
 unsatisfied exclusions exit with the remainder. Quiescent: read
 `successors.md`. If a `planned` entry exists and the run is complete, return
 the successor trigger and predecessor's accepted `## Result` identity to the

@@ -437,7 +437,7 @@ class TestElapsedMeter(unittest.TestCase):
 
     def test_a_claim_past_its_bound_caps_at_full_and_says_so(self):
         meter = ui.claim_meter(
-            {"status": "suspended", "bound": "30m", "claimed_at": "2026-01-01T00:00:00Z"},
+            {"status": "claimed", "bound": "30m", "claimed_at": "2026-01-01T00:00:00Z"},
             self.NOW,
         )
 
@@ -450,6 +450,7 @@ class TestElapsedMeter(unittest.TestCase):
             {"status": "claimed", "bound": "90m"},
             {"status": "claimed", "bound": "90m", "claimed_at": "yesterday"},
             {"status": "complete", "bound": "90m", "claimed_at": "2026-01-01T00:00:00Z"},
+            {"status": "suspended", "bound": "90m", "claimed_at": "2026-01-01T00:00:00Z"},
             {"status": "pending", "bound": "90m", "claimed_at": "2026-01-01T00:00:00Z"},
             {},
         ):

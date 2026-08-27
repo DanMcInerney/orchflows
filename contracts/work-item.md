@@ -127,3 +127,5 @@ attempt lease; raw status writes cannot terminate or suspend a v1 attempt.
 T0 supersession record sha256:0d3198c3bca64480a60502a7d621be4e6ca6349fc4ef74e9b18f30951fdec956: the
 closed dispatch grammar and reserved outcome return moved to `dispatch.md`;
 public legacy role-bearing routes are removed.
+
+T0 supersession record sha256:0c37ca5c93bc6f4b5042e8fb746f3fc10a6e82f45228d7889e678be500da0d68: suspension retains claimant observations after retiring its attempt, and closing outcome evidence is an unstreamed delta.
