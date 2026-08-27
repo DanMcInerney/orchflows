@@ -74,7 +74,8 @@ class TicketProtocolTest(unittest.TestCase):
             "`dispatch-packet`", "`dispatch-receive`", "`reference`",
             "`inline`", "`state-inaccessible`", "`assignment-divergent`",
             "`identity-mismatch`", "`authority-mismatch`",
-            "`role-mismatch`", "`profile-mismatch`",
+            "`role-mismatch`", "`profile-mismatch`", "`dispatch-receipt`",
+            "`receipt-required`", "`--file -`", "ASCII-escaped canonical JSON",
         ):
             self.assertIn(token, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")

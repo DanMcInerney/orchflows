@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1858,
+  "count": 1863,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -40,13 +40,18 @@
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
    "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_accepted_receipt_is_a_durable_replayable_attempt_record",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_receives_without_the_state_sink",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_file_and_standard_input_carry_the_packet_without_shell_reconstruction",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_command_emits_codepage_independent_canonical_ascii",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_receipt_refuses_identity_profile_and_authority_mismatches",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_result_outcome_and_join_require_the_accepted_receipt",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_ticket_inline_cannot_be_downgraded_to_ephemeral",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_wrapper_and_malformed_file_refuse_without_ticket_mutation",
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
@@ -1861,7 +1866,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "5a9a0301f33529a138ddf08be5ec240fbb79c924a79fa7ee33eef4e5f44bf53b"
+  "sha256": "1ee62060cd64dd20ddf9c488b9be6a59d1461d51504ff1652c5e36ab9b045199"
  },
  "mutation_owners": [
   {
@@ -2190,7 +2195,7 @@
   },
   {
    "module": "tests.test_dispatch_packet_v1",
-   "owner": "DispatchPacketV1Test.test_inline_snapshot_receives_without_the_state_sink",
+   "owner": "DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"

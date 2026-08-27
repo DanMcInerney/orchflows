@@ -179,6 +179,8 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             record["success"], content, run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
+    if kind == "receipt":
+        return accepted_receipt_failure(attempt)
     if kind == "result":
         return _result_failure(record, content, run=run, ticket_id=ticket_id, attempt=attempt)
     if kind == "outcome":
@@ -281,6 +283,64 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             return _invalid(f"join record '{record_id}' differs from its outcome or retirement")
         return None
     return _invalid(f"record '{record_id}' has an unsupported kind")
+
+
+def accepted_receipt_failure(attempt: dict):
+    records = attempt.get("records") or []
+    receipt_record = next(
+        (item for item in records if item.get("record_id") == RECEIPT_RECORD_ID),
+        None,
+    )
+    if receipt_record is None:
+        return classification(
+            "receipt-required",
+            "receiver acceptance must be committed before execution records",
+        )
+    packet_record = next(
+        (item for item in records if item.get("record_id") == PACKET_RECORD_ID),
+        None,
+    )
+    try:
+        packet_content = parse_canonical_json(packet_record["content"])
+        receipt_content = parse_canonical_json(receipt_record["content"])
+    except (KeyError, TypeError, ValueError):
+        return classification(
+            "dispatch-record-invalid", "accepted receipt has no committed packet",
+        )
+    packet = packet_content.get("packet") if isinstance(packet_content, dict) else None
+    receipt = (
+        receipt_content.get("receipt")
+        if isinstance(receipt_content, dict) else None
+    )
+    required = {
+        "assignment_seal", "dispatch_id", "durability", "form", "outcome",
+        "protocol", "state_sink_checked",
+    }
+    valid = (
+        isinstance(packet, dict)
+        and set(packet_content) == {"packet"}
+        and set(receipt_content) == {"packet", "receipt"}
+        and receipt_content.get("packet") == packet
+        and isinstance(receipt, dict)
+        and set(receipt) == required
+        and receipt_record.get("kind") == "receipt"
+        and receipt_record.get("success") == {"receipt": receipt}
+        and receipt.get("protocol") == PROTOCOL
+        and receipt.get("outcome") == "accepted"
+        and receipt.get("durability") == "ticket"
+        and receipt.get("state_sink_checked") is True
+        and receipt.get("assignment_seal") == attempt.get("assignment_seal")
+        and receipt.get("dispatch_id") == attempt.get("dispatch_id")
+        and packet.get("assignment_seal") == attempt.get("assignment_seal")
+        and packet.get("dispatch_id") == attempt.get("dispatch_id")
+        and packet.get("assigned_name") == attempt.get("owner")
+    )
+    if not valid:
+        return classification(
+            "dispatch-record-invalid",
+            "accepted receipt does not bind the committed packet and attempt",
+        )
+    return None
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None):

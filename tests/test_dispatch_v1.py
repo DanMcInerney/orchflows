@@ -495,6 +495,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_outcome_materializes_only_unstreamed_evidence_once(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         self.result(body="delivered")
         streamed = self.ticket_text()
 
@@ -515,6 +516,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_suspended_join_retires_the_attempt_but_retains_claimant_observations(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         self.outcome(status="suspended")
 
         joined = tickets._dispatch([
@@ -610,12 +612,16 @@ class DispatchV1Test(unittest.TestCase):
     def test_forged_outcome_success_cannot_drive_join(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
         data = _parse_frontmatter(text)
         state = parse_canonical_json(data["dispatch_v1"])
-        record = state["attempts"][0]["records"][0]
+        record = next(
+            item for item in state["attempts"][0]["records"]
+            if item["record_id"] == "outcome"
+        )
         record["success"]["outcome"]["status"] = "ready"
         path.write_text(
             _set_frontmatter_field(text, "dispatch_v1", json.dumps(

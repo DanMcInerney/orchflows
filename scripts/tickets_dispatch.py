@@ -481,5 +481,12 @@ def main(argv=None):
     except Exception as error:
         result = {'error': str(error)}
     exit_code = result.pop('exit_code', None) if isinstance(result, dict) else None
-    print(json.dumps(result, ensure_ascii=False))
+    encoded = json.dumps(
+        result, ensure_ascii=True, separators=(',', ':'), sort_keys=True,
+    ) + '\n'
+    try:
+        sys.stdout.buffer.write(encoded.encode('ascii'))
+        sys.stdout.buffer.flush()
+    except AttributeError:
+        sys.stdout.write(encoded)
     return (1 if 'error' in result else 0) if exit_code is None else int(exit_code)

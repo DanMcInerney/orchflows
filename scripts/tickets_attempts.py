@@ -14,7 +14,7 @@ if __package__:
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS,
+        RECORD_KINDS, accepted_receipt_failure,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved, state as _state,
         validate_state as _validate_state,
@@ -33,7 +33,7 @@ else:
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS,
+        RECORD_KINDS, accepted_receipt_failure,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved, state as _state,
         validate_state as _validate_state,
@@ -226,64 +226,6 @@ def _record_response(
     }}
 
 
-def _accepted_receipt_failure(attempt: dict):
-    records = attempt.get("records") or []
-    receipt_record = next(
-        (item for item in records if item.get("record_id") == RECEIPT_RECORD_ID),
-        None,
-    )
-    if receipt_record is None:
-        return _classification(
-            "receipt-required",
-            "receiver acceptance must be committed before execution records",
-        )
-    packet_record = next(
-        (item for item in records if item.get("record_id") == PACKET_RECORD_ID),
-        None,
-    )
-    try:
-        packet_content = parse_canonical_json(packet_record["content"])
-        receipt_content = parse_canonical_json(receipt_record["content"])
-    except (KeyError, TypeError, ValueError):
-        return _classification(
-            "dispatch-record-invalid", "accepted receipt has no committed packet",
-        )
-    packet = packet_content.get("packet") if isinstance(packet_content, dict) else None
-    receipt = (
-        receipt_content.get("receipt")
-        if isinstance(receipt_content, dict) else None
-    )
-    required = {
-        "assignment_seal", "dispatch_id", "durability", "form", "outcome",
-        "protocol", "state_sink_checked",
-    }
-    valid = (
-        isinstance(packet, dict)
-        and set(packet_content) == {"packet"}
-        and set(receipt_content) == {"packet", "receipt"}
-        and receipt_content.get("packet") == packet
-        and isinstance(receipt, dict)
-        and set(receipt) == required
-        and receipt_record.get("kind") == "receipt"
-        and receipt_record.get("success") == {"receipt": receipt}
-        and receipt.get("protocol") == PROTOCOL
-        and receipt.get("outcome") == "accepted"
-        and receipt.get("durability") == "ticket"
-        and receipt.get("state_sink_checked") is True
-        and receipt.get("assignment_seal") == attempt.get("assignment_seal")
-        and receipt.get("dispatch_id") == attempt.get("dispatch_id")
-        and packet.get("assignment_seal") == attempt.get("assignment_seal")
-        and packet.get("dispatch_id") == attempt.get("dispatch_id")
-        and packet.get("assigned_name") == attempt.get("owner")
-    )
-    if not valid:
-        return _classification(
-            "dispatch-record-invalid",
-            "accepted receipt does not bind the committed packet and attempt",
-        )
-    return None
-
-
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
     expected_seal=None, expected_owner=None, require_live_lease=True,
@@ -387,7 +329,7 @@ def _commit_record(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
             if record_kind in ("result", "outcome", "join"):
-                failure = _accepted_receipt_failure(attempt)
+                failure = accepted_receipt_failure(attempt)
                 if failure is not None:
                     return failure
             if mutate is None:

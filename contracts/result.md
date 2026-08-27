@@ -27,6 +27,8 @@ returns the stored success without adding content, even after retirement,
 replacement, or lease expiry. Changed operation content for that pair is an
 `idempotency-conflict`; an unseen record on an ended attempt is stale. Every
 refusal leaves the ticket byte-identical.
+An unseen result requires the attempt's durable `dispatch-receipt`, proving the
+established receiver accepted the exact committed packet before execution.
 
 A read-only critique records findings in `## Feedback`; it never rewrites the
 executor's Result or Verification. A verifier records its independent verdict

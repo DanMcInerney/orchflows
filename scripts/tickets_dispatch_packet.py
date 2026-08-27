@@ -18,6 +18,7 @@ if __package__:
     )
     from .tickets_generations import assignment_payload, seal_findings
     from .tickets_packet import _packet_under_run_lock
+    from .tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from .tickets_store import _tickets_root
 else:
     from tickets_attempts import (
@@ -30,6 +31,7 @@ else:
     )
     from tickets_generations import assignment_payload, seal_findings
     from tickets_packet import _packet_under_run_lock
+    from tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from tickets_store import _tickets_root
 
 DISPATCH_PACKET_USAGE = (
@@ -37,7 +39,8 @@ DISPATCH_PACKET_USAGE = (
     "[--workspace <path>] [--form reference | inline]"
 )
 DISPATCH_RECEIVE_USAGE = (
-    "dispatch-receive --content <canonical-json> --role <worker|planner> "
+    "dispatch-receive (--content <canonical-json> | --file <path|->) "
+    "--role <worker|planner> "
     "--profile <name> --by <name> --reply-to <name> [--workspace <path>]"
 )
 PACKET_FORMS = frozenset({"reference", "inline"})
@@ -150,6 +153,7 @@ def _projection_packet(
         }
         packet["prompt"] = "\n".join((
             str(packet["prompt"]),
+            "Pass the response `.packet` value through dispatch-receive --file <path> or --file -; do not pass the response wrapper or reconstruct it as a shell literal.",
             "At closing, commit exactly one reserved outcome envelope with dispatch-outcome; dispatch-join consumes only that durable return.",
             f"The canonical envelope names protocol {PROTOCOL}, run {packet['source']['run']}, id {packet['source']['id']}, assignment_seal {packet['assignment_seal']}, dispatch_id {packet['dispatch_id']}, outcome_record_id {OUTCOME_RECORD_ID}, by {attempt.get('owner')}, status, and evidence with Result, Verification, Feedback, Risks, and Handoff.",
         ))
@@ -175,7 +179,9 @@ def _projection_packet(
         packet["prompt"] = "\n".join((
             f"Apply skill {executor} directly to the inline sealed assignment in this packet.",
             "Use inline.assignment.semantic as Goal, Context, and optional Suggested files; do not try to repair or reconstruct a ticket path.",
-            "The state sink is unavailable here. Return one canonical outcome envelope through reply_to; the coordinator imports it with dispatch-outcome before dispatch-join.",
+            "Pass the response `.packet` value through dispatch-receive --file <path> or --file -; do not pass the response wrapper or reconstruct it as a shell literal.",
+            "The authoritative state sink must be available at receipt; unauthenticated offline execution is refused.",
+            "After accepted receipt, commit the canonical envelope with dispatch-outcome before dispatch-join.",
             f"The envelope must name protocol {PROTOCOL}, assignment_seal {packet['assignment_seal']}, dispatch_id {packet['dispatch_id']}, outcome_record_id {OUTCOME_RECORD_ID}, by {attempt.get('owner')}, status, and evidence containing Result, Verification, Feedback, Risks, plus Handoff only for suspension.",
             f"Your assigned name is `{attempt.get('owner')}` and reply_to is `{legacy.get('reply_to')}`.",
         ))
@@ -269,6 +275,11 @@ def _cmd_dispatch_packet(rest):
 
 
 def _packet_shape(value):
+    if isinstance(value, dict) and set(value) == {"packet"}:
+        return _classification(
+            "packet-invalid",
+            "dispatch-receive expects the response .packet value, not its wrapper",
+        )
     if not isinstance(value, dict) or value.get("protocol") != PROTOCOL:
         return _classification("packet-invalid", f"packet must name {PROTOCOL}")
     form = value.get("form")
@@ -381,19 +392,6 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
     return None
 
 
-def _actual_mismatch(packet: dict, role, profile, owner, reply_to, workspace):
-    for key, expected, actual, code in (
-        ("assigned_name", packet["assigned_name"], owner, "identity-mismatch"),
-        ("role", packet["role"], role, "role-mismatch"),
-        ("profile", packet["profile"], profile, "profile-mismatch"),
-        ("reply_to", packet["reply_to"], reply_to, "authority-mismatch"),
-        ("workspace", packet.get("workspace"), workspace, "authority-mismatch"),
-    ):
-        if expected != actual:
-            return _classification(code, f"received {key} does not match packet")
-    return None
-
-
 def _reference_ticket(packet: dict):
     reference = packet.get("reference")
     if not isinstance(reference, dict):
@@ -435,13 +433,20 @@ def _validate_durable(packet: dict, text: str, data: dict):
 def _cmd_dispatch_receive(rest):
     args = list(rest)
     content = _extract_flag(args, "--content")
+    source_file = _extract_flag(args, "--file")
     role = _extract_flag(args, "--role")
     profile = _extract_flag(args, "--profile")
     owner = _extract_flag(args, "--by")
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
-    if args or not all((content, role, profile, owner, reply_to)):
+    if (
+        args or (content is None) == (source_file is None)
+        or not all((role, profile, owner, reply_to))
+    ):
         return {"error": f"usage: {DISPATCH_RECEIVE_USAGE}"}
+    content, failure = read_packet_payload(content, source_file)
+    if failure is not None:
+        return failure
     try:
         packet = parse_canonical_json(content)
     except (TypeError, ValueError) as error:
@@ -449,7 +454,7 @@ def _cmd_dispatch_receive(rest):
     failure = _packet_shape(packet)
     if failure is not None:
         return failure
-    failure = _actual_mismatch(packet, role, profile, owner, reply_to, workspace)
+    failure = actual_mismatch(packet, role, profile, owner, reply_to, workspace)
     if failure is not None:
         return failure
     lease = _parse_iso(packet["lease_expires_at"])

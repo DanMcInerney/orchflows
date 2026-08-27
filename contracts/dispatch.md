@@ -16,9 +16,9 @@ and `records`, plus only the transition fields applicable to retirement or
 replacement. States are `live`, `retired`, and `replaced`; clock expiry never
 writes an implicit state transition. Each record has exactly `record_id`, `kind`, canonical-JSON
 `content`, absolute `committed_at`, and stored `success`. Record ids are unique
-within an attempt. Kinds are `generic`, `packet`, `result`, `outcome`, `join`,
-and `lifecycle`; `dispatch-packet`, `outcome`, `join:*`, and `lifecycle:*` are
-reserved for their owning operations.
+within an attempt. Kinds are `generic`, `packet`, `receipt`, `result`, `outcome`,
+`join`, and `lifecycle`; `dispatch-packet`, `dispatch-receipt`, `outcome`,
+`join:*`, and `lifecycle:*` are reserved for their owning operations.
 
 Every read and mutation validates the whole closed state first. Record content
 and stored success are closed per kind and must agree with ticket origin,
@@ -47,7 +47,12 @@ absolute lease is never extended by transport or result motion.
 ## Packet and receipt
 
 `dispatch-packet` commits the projection and `dispatch-receive` validates it
-against the actual established child before execution.
+against the actual established child before execution. The public command emits
+ASCII-escaped canonical JSON, preserving every packet character independently
+of the subprocess code page. Receipt accepts exactly one carrier:
+`--content <canonical-json>`, `--file <path>`, or UTF-8 standard input through
+`--file -`. The carried value is the response `.packet` member; the response
+wrapper is a structured `packet-invalid` refusal.
 
 A packet has exactly the common fields `protocol`, `source`, `dispatch_id`,
 `assignment_seal`, `outcome_record_id`, `lease_expires_at`, `executor`, `role`,
@@ -56,20 +61,24 @@ A packet has exactly the common fields `protocol`, `source`, `dispatch_id`,
 of `reference` or `inline`. Source and reference are exact `{run,id}` objects.
 
 Reference is the default and is checked against the committed packet record.
-Inline is a ticket-durable fallback: `inline` has exactly `assignment` and
+Inline is a ticket-durable snapshot: `inline` has exactly `assignment` and
 `envelope_seal`; that seal binds assignment, source, dispatch, assignment,
 lease, outcome, owner, role, profile, reply target, workspace, and durability.
-A ticket packet cannot be downgraded to ephemeral. When its sink is unavailable,
-receipt may report `state_sink_checked: false`, but the returned outcome still
-imports through the original ticket attempt. Packet-only ephemeral work is
-outside this ticket protocol.
+A ticket packet cannot be downgraded to ephemeral. The authoritative ticket
+sink must be available for both reference and inline receipt; self-carried
+inline material cannot authenticate offline role-bearing execution. Packet-only
+ephemeral work is outside this ticket protocol.
 
 Receipt success has exactly `protocol`, `outcome: accepted`, `dispatch_id`,
 `assignment_seal`, `form`, `durability`, and `state_sink_checked`. Refusal has
 `protocol`, `code`, and `error`. Unknown packet fields or shapes are
 `packet-invalid`; other codes are `state-inaccessible`, `assignment-divergent`,
 `stale-attempt`, `identity-mismatch`, `role-mismatch`, `profile-mismatch`, and
-`authority-mismatch`.
+`authority-mismatch`. Acceptance atomically commits the reserved
+`dispatch-receipt` record, binding the exact committed packet and receipt to the
+attempt. Result, outcome, and join records refuse with `receipt-required` until
+that durable acceptance exists; an exact committed operation still replays by
+the attempt-precedence rule.
 
 ## Outcome and join
 
@@ -81,9 +90,10 @@ exactly string bodies for `Result`, `Verification`, `Feedback`, `Risks`, and
 `suspended`. Evidence is the non-empty closing delta not already materialized
 through result records; repeated material is refused so each item is written
 once. `dispatch-outcome` validates the envelope, imports its attributed
-evidence atomically, and commits or replays the reserved outcome record. Thus a
-reference child may commit directly and an offline inline child may return the
-same envelope for its coordinator to relay without inventing another payload.
+evidence atomically, and commits or replays the reserved outcome record after
+durable receiver acceptance. Thus a reference child may commit directly and an
+offline inline child may return the same envelope for its coordinator to relay
+without inventing another payload.
 
 `dispatch-join` consumes only that distinguished record and derives disposition
 from it. Its id is `join:outcome`; exact replay returns stored success after

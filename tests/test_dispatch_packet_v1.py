@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -72,6 +75,19 @@ class DispatchPacketV1Test(unittest.TestCase):
             "--workspace", actual["workspace"],
         ]
         return tickets._dispatch(arguments)
+
+    def receive_file(self, path, **overrides):
+        actual = {
+            "role": "worker", "profile": "orch-worker", "by": "worker",
+            "reply_to": "root", "workspace": "C:/candidate",
+        }
+        actual.update(overrides)
+        return tickets._dispatch([
+            "dispatch-receive", "--file", str(path),
+            "--role", actual["role"], "--profile", actual["profile"],
+            "--by", actual["by"], "--reply-to", actual["reply_to"],
+            "--workspace", actual["workspace"],
+        ])
 
     def ticket_state(self):
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
@@ -192,6 +208,68 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("accepted", self.receive(packet)["receipt"]["outcome"])
         committed = tickets._dispatch(operations[0])
         self.assertNotIn("error", committed, committed)
+
+    def test_file_and_standard_input_carry_the_packet_without_shell_reconstruction(self):
+        packet = self.project()["packet"]
+        path = Path(self.temporary.name) / "packet.json"
+        path.write_text(canonical_json(packet), encoding="utf-8")
+
+        accepted = self.receive_file(path)
+        self.assertEqual("accepted", accepted["receipt"]["outcome"])
+
+        script = Path(__file__).resolve().parents[1] / "scripts" / "tickets.py"
+        completed = subprocess.run(
+            [
+                sys.executable, str(script), "dispatch-receive", "--file", "-",
+                "--role", "worker", "--profile", "orch-worker", "--by", "worker",
+                "--reply-to", "root", "--workspace", "C:/candidate",
+            ],
+            input=canonical_json(packet).encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual(accepted, json.loads(completed.stdout.decode("ascii")))
+
+    def test_wrapper_and_malformed_file_refuse_without_ticket_mutation(self):
+        packet = self.project()["packet"]
+        path = Path(self.temporary.name) / "packet.json"
+        before = self.ticket_bytes()
+
+        path.write_text(canonical_json({"packet": packet}), encoding="utf-8")
+        wrapper = self.receive_file(path)
+        self.assertEqual("packet-invalid", wrapper["code"])
+        self.assertIn(".packet", wrapper["error"])
+        self.assertEqual(before, self.ticket_bytes())
+
+        path.write_bytes(b'{"protocol":"orchflows.dispatch.v1","prompt":"\x97"}')
+        malformed = self.receive_file(path)
+        self.assertEqual("packet-invalid", malformed["code"])
+        self.assertEqual(before, self.ticket_bytes())
+
+    def test_packet_command_emits_codepage_independent_canonical_ascii(self):
+        packet = self.project()["packet"]
+        self.assertIn("—", packet["prompt"])
+        script = Path(__file__).resolve().parents[1] / "scripts" / "tickets.py"
+        completed = subprocess.run(
+            [
+                sys.executable, str(script), "dispatch-packet", "run", "T",
+                "--dispatch-id", "D1", "--reply-to", "root",
+                "--workspace", "C:/candidate", "--form", "reference",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        decoded = completed.stdout.decode("ascii")
+        response = json.loads(decoded)
+        self.assertEqual(packet, response["packet"])
+        expected = json.dumps(
+            response, ensure_ascii=True, separators=(",", ":"), sort_keys=True,
+        ) + "\n"
+        self.assertEqual(expected, decoded)
 
     def test_ticket_inline_cannot_be_downgraded_to_ephemeral(self):
         packet = self.project(form="inline")["packet"]
