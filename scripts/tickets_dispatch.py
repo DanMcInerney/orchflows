@@ -14,9 +14,9 @@ if __package__:
 else:
     from tickets_issue import NEW_USAGE, _cmd_new
 if __package__:
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status
+    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
 else:
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status
+    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
 if __package__:
     from .tickets_packet import CHECKER_PATH_EXECUTORS, GATE_CRITIQUE_ID, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID, _cmd_packet
 else:
@@ -416,7 +416,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | ready | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | show | ready | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -437,6 +437,8 @@ def _dispatch(argv):
     if command == 'gate': return _cmd_gate(rest)
     if command == 'list':
         return _cmd_list(rest)
+    if command == 'show':
+        return _cmd_show(rest)
     if command == 'ready':
         return _cmd_ready(rest)
     if command == 'dispatch-open':

@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section, canonical_json
+    from .tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
 else:
-    from tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section, canonical_json
+    from tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
@@ -101,6 +101,27 @@ def _cmd_list(rest):
             loaded = _load_ticket(ticket_path)
             items.append(loaded.get('summary') or loaded)
     return {'tickets': items}
+def _cmd_show(rest):
+    if len(rest) != 2:
+        return {'error': 'usage: show <run> <id>'}
+    run, ticket_id = rest
+    for kind, value in (('run id', run), ('ticket id', ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    path = tickets_root / run / f'{ticket_id}.md'
+    text, failure = _read_utf8(path, f'ticket {run}/{ticket_id}')
+    if failure is not None:
+        return failure
+    loaded = _load_ticket(path)
+    if 'error' in loaded:
+        return {'error': loaded['error']}
+    loaded.pop('summary', None)
+    loaded['sections'] = _sections(text)
+    return {'ticket': loaded}
 def _cmd_ready(rest):
     args = list(rest)
     run_filter = _extract_flag(args, '--run')

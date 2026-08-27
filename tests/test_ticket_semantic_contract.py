@@ -180,6 +180,39 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(linted["error"], issued["error"])
         self.assertEqual(before, source.read_bytes())
 
+    def test_show_inspects_one_ticket_without_mutating_the_sink(self):
+        self.dispatch(
+            "new", "inspect-run", "R1", "--executor", "orch-tdd",
+            "--goal", "Expose this ticket.",
+            "--context", "Inspection is read-only.",
+            "--pack", "orch-code-pack", "--isolation", "required",
+        )
+        ticket_path = (
+            Path(self.temporary.name) / "tickets" / "inspect-run" / "R1.md"
+        )
+        before = ticket_path.read_bytes()
+
+        shown = self.dispatch("show", "inspect-run", "R1")["ticket"]
+
+        self.assertEqual("R1", shown["id"])
+        self.assertEqual("inspect-run", shown["run"])
+        self.assertEqual("pending", shown["status"])
+        self.assertEqual("Expose this ticket.", shown["sections"]["Goal"])
+        self.assertEqual("Inspection is read-only.", shown["sections"]["Context"])
+        self.assertEqual(before, ticket_path.read_bytes())
+
+    def test_show_refuses_unsafe_or_missing_coordinates_without_creating_state(self):
+        root = Path(self.temporary.name)
+        for arguments in (
+            ("show", "../escape", "R1"),
+            ("show", "inspect-run", "a/b"),
+            ("show", "inspect-run", "missing"),
+        ):
+            with self.subTest(arguments=arguments):
+                refused = tickets._dispatch(list(arguments))
+                self.assertIn("error", refused)
+        self.assertFalse((root / "tickets").exists())
+
     def test_suggested_files_do_not_limit_candidate_paths(self):
         self.dispatch(
             "new", "suggested", "R1", "--executor", "orch-tdd",
