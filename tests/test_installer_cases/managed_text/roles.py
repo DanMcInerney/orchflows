@@ -331,6 +331,12 @@ class TestRoleAgentInstructions(unittest.TestCase):
         self.assertEqual(1, updated.count(foundation.GROK_LIMITS_END))
         self.assertIn("subagents.max_concurrent = ", updated)
         self.assertLess(updated.index(foundation.GROK_LIMITS_END), updated.index("[marketplace]"))
+        # 3.9 is the floor and the one leg without stdlib `tomllib`. What it
+        # keeps is proved here rather than only on that leg of the matrix:
+        # the parser gates the check, never the merge.
+        self.assertEqual(
+            updated, managed_text.render_grok_subagent_limits(text, toml_module=None)[0]
+        )
         if foundation.tomllib is not None:
             parsed = foundation.tomllib.loads(updated)
             self.assertTrue(parsed["marketplace"]["default_skills_installs_purged"])
