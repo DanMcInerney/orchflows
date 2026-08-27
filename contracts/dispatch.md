@@ -109,4 +109,10 @@ dual reader. A historical claimed or suspended ticket without this record is
 `legacy-live-claim`; its existing owner must complete or abandon it before
 installation. History is never inferred or rewritten.
 
-T0 supersession record sha256:82cecc2a7e182409496a6ed451f9121bfb990ab0bf7ca9e69012073093f8be67: persisted dispatch semantics now close every record kind and stored success, require explicit expiry transitions, retire suspension, and materialize only unstreamed outcome evidence.
+T0 supersession record sha256:82cecc2a7e182409496a6ed451f9121bfb990ab0bf7ca9e69012073093f8be67:
+persisted dispatch semantics now close every record kind and stored success,
+require explicit expiry transitions, retire suspension, and materialize only
+unstreamed outcome evidence; receiver acceptance is a reserved durable attempt
+record required before result, outcome, or join; packet carriage is canonical
+ASCII output plus UTF-8 file or standard input, and unauthenticated offline
+inline receipt is refused.
