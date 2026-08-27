@@ -10,9 +10,13 @@ Two facts in the manifest are derived and one is not. The discovery block
 tree says today, so a hand-edited count is a number nobody recomputed.
 A mutation owner's `restoration` is a *classification* a reviewer made about
 how the seam is returned; no scan can recover it, so regeneration carries it
-across by (module, owner) and leaves a newly-appeared owner unclassified for
-a reviewer to rule on. The sentinel roster is chosen, never derived, and this
-file proves it survived byte-for-byte rather than merely round-tripped.
+across by (module, owner) and marks a newly-appeared owner `unclassified` for
+a reviewer to rule on. That marker is one the runner's loader refuses, so the
+command that wrote it must not report success: it names every owner awaiting
+a ruling and exits non-zero, leaving the regenerated file in place so the
+ruling is made on the marked row rather than on hand-written derived facts.
+The sentinel roster is chosen, never derived, and this file proves it survived
+byte-for-byte rather than merely round-tripped.
 
 Stdlib only, Python 3.9+, POSIX and Windows.
 """
@@ -25,6 +29,9 @@ from pathlib import Path
 
 SENTINELS_KEY = '\n "sentinels": ['
 BLOCK_END = "\n ]"
+UNCLASSIFIED = "unclassified"
+POLICY = "tools/serial-compat-policy.md"
+NEEDS_RULING = 2
 
 
 def render(manifest: dict) -> str:
@@ -53,16 +60,26 @@ def discovery(cases) -> dict:
 
 
 def merge_owners(previous, scanned) -> list:
-    """Scanned owners, each keeping the restoration its prior record carried."""
+    """Scanned owners, each keeping the restoration its prior record carried.
+
+    An owner no prior record classified is marked, not left silent: a missing
+    key is a pending decision nobody can find in a several-hundred-row file.
+    """
     prior = {(row.get("module"), row.get("owner")): row for row in previous or []}
     merged = []
     for row in scanned:
         record = dict(row)
         carried = prior.get((record.get("module"), record.get("owner")), {}).get("restoration")
-        if carried is not None:
-            record["restoration"] = carried
+        record["restoration"] = UNCLASSIFIED if carried is None else carried
         merged.append(record)
     return sorted(merged, key=lambda record: (record["module"], record["owner"]))
+
+
+def unruled(owners) -> list:
+    """Every marked owner, named the way a reviewer has to go find it."""
+    return ["%s::%s [%s]" % (row.get("module"), row.get("owner"),
+                             ", ".join(row.get("seams") or ()))
+            for row in owners if row.get("restoration") == UNCLASSIFIED]
 
 
 def _identity(block) -> dict:
@@ -91,11 +108,12 @@ def regenerate(manifest_path, tests_dir, discover, scan) -> dict:
             "before": len(before.get("mutation_owners") or []),
             "after": len(after["mutation_owners"]),
         },
+        "unruled": unruled(after["mutation_owners"]),
     }
 
 
 def write_manifest(manifest_path, tests_dir, discover, scan, out=None) -> int:
-    """The runner's `--write-manifest`: regenerate, report, exit 0."""
+    """The runner's `--write-manifest`: regenerate, report, rule or refuse."""
     report = regenerate(manifest_path, tests_dir, discover, scan)
     lines = [
         "serial manifest: %s" % report["manifest"],
@@ -104,5 +122,10 @@ def write_manifest(manifest_path, tests_dir, discover, scan, out=None) -> int:
         "mutation owners before: %d after: %d"
         % (report["owners"]["before"], report["owners"]["after"]),
     ]
+    if report["unruled"]:
+        lines.append("mutation owners needing a ruling (%d), per %s:"
+                     % (len(report["unruled"]), POLICY))
+        lines.extend("  " + name for name in report["unruled"])
+        lines.append("set each marked restoration in the written manifest, then run this again")
     print("\n".join(lines), file=out if out is not None else sys.stdout)
-    return 0
+    return NEEDS_RULING if report["unruled"] else 0

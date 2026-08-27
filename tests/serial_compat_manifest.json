@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1764,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -464,10 +464,15 @@
    "test_serial_compat_manifest_regression.TestCodexRedirectManifestRegression.test_the_codex_redirect_test_identities_stay_serial_compatible",
    "test_serial_manifest.TestCommittedManifest.test_every_committed_owner_still_carries_its_restoration",
    "test_serial_manifest.TestCommittedManifest.test_the_committed_bytes_are_exactly_what_regeneration_would_write",
-   "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_has_none",
+   "test_serial_manifest.TestCommittedManifest.test_the_loader_accepts_the_committed_file_and_names_what_it_refuses",
+   "test_serial_manifest.TestCommittedManifest.test_the_policy_names_every_ruling_the_loader_accepts",
+   "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_is_marked",
    "test_serial_manifest.TestRegeneration.test_regeneration_replaces_stale_discovery_with_the_live_multiset",
+   "test_serial_manifest.TestRegeneration.test_the_marker_is_a_restoration_the_loader_can_never_accept",
    "test_serial_manifest.TestRegeneration.test_the_rendered_manifest_keeps_key_order_indent_and_lf_newlines",
    "test_serial_manifest.TestRegeneration.test_the_sentinels_block_survives_regeneration_byte_for_byte",
+   "test_serial_manifest.TestUnruledOwners.test_an_owner_needing_a_ruling_fails_the_flag_and_is_named",
+   "test_serial_manifest.TestUnruledOwners.test_the_flag_exits_zero_once_every_scanned_owner_carries_a_ruling",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
    "test_skill_fork_governance.SpecStatesItsDirectTicketLane.test_the_direct_lane_names_its_condition_and_its_mechanics",
@@ -1762,7 +1767,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "2b191f1d1ffb63b64810614c5e6c57fe49a52b969306fcd18203f4147f1da88b"
  },
  "mutation_owners": [
   {
@@ -3548,6 +3553,14 @@
     "monkeypatch",
     "threads",
     "warnings"
+   ]
+  },
+  {
+   "module": "tests.test_serial_manifest",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {
