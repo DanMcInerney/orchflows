@@ -25,7 +25,10 @@ diffs and Git conflicts, resolve overlaps, regenerate shared derived artifacts
 once, and, for required isolation, run `workspace.py check` from
 the integrating checkout (exit 6 is caller-vantage failure).
 
-Record blame on the run-state channel; only this join calls `tickets.py set-status`.
+Record blame on the run-state channel. For dispatch v1, only this join calls
+`tickets.py dispatch-join` with the packet's assignment seal and dispatch id,
+the fixed committed result record id, this join's name, and its disposition.
+Pre-v1 cutover alone uses `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here without dispatch through
 `tickets.py join-noop-repair <run> <root>.gate.repair --by <join-name>`, the

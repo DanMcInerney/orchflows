@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1848,
+  "count": 1853,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -51,8 +51,11 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_rejects_unseen_records_without_mutation",
+   "test_dispatch_v1.DispatchV1Test.test_join_consumes_a_fixed_result_identity_and_replays_after_retirement",
+   "test_dispatch_v1.DispatchV1Test.test_lifecycle_operation_replay_precedes_conflict_and_retirement",
    "test_dispatch_v1.DispatchV1Test.test_open_is_atomic_replayable_and_fences_a_second_live_attempt",
    "test_dispatch_v1.DispatchV1Test.test_pre_v1_live_claim_requires_owner_cutover",
+   "test_dispatch_v1.DispatchV1Test.test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join",
    "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
    "test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_result_write_and_receipt_are_one_replayable_operation",
@@ -563,6 +566,7 @@
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_packet_projection_and_receipt",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
+   "test_ticket_protocol.TicketProtocolTest.test_join_contract_consumes_one_fixed_result_and_absolute_attempt_lease",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification",
@@ -587,6 +591,7 @@
    "test_tickets_bound.BoundCheckCommandTest.test_a_row_is_never_parked_while_the_run_reports_nothing_overdue",
    "test_tickets_bound.BoundCheckCommandTest.test_a_run_with_no_tickets_is_an_error_rather_than_an_empty_pass",
    "test_tickets_bound.BoundCheckCommandTest.test_an_elapsed_bound_is_overdue_whether_or_not_anything_moved",
+   "test_tickets_bound.BoundCheckCommandTest.test_dispatch_v1_uses_its_absolute_lease_and_motion_cannot_extend_it",
    "test_tickets_bound.BoundCheckCommandTest.test_each_row_carries_the_bound_as_read_and_the_claim_as_measured",
    "test_tickets_bound.BoundCheckCommandTest.test_it_lists_the_live_claims_and_nothing_else",
    "test_tickets_bound.BoundCheckCommandTest.test_the_command_is_in_the_usage_table_the_help_view_reads",
@@ -1851,7 +1856,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "f54737d94b5ada679b78b7b48b87a5a6f99162f1a849f901b8edc8913895bed3"
+  "sha256": "57c7e569ac90d02caac3143b91394f69a94364ea7d1b1a67ab03ad085eba1702"
  },
  "mutation_owners": [
   {

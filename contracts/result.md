@@ -28,9 +28,13 @@ executor's Result or Verification. A verifier records its independent verdict
 and evidence in `## Verification`.
 
 The join reads the fixed candidate identity and its actual diff, checks the
-returning name against the claim, adjudicates only material blockers against
-Goal and Context, and records terminal status. Deterministic repository-global gates
-run on the integrated tip. Suggested files are never an acceptance boundary.
+returning name against the claim, and adjudicates only material blockers
+against Goal and Context. For a v1 attempt, `dispatch-join` consumes the
+committed `result_record_id` and atomically stores the disposition, retires the
+attempt, and changes ticket status. Its exact retry returns stored success
+after retirement; changed content conflicts and an unseen ended-attempt join
+is stale. Deterministic repository-global gates run on the integrated tip.
+Suggested files are never an acceptance boundary.
 
 A generic `dispatch-commit` record is not an executor Result and does not
 replace this section's writer. The `result` operation uses the same committed
@@ -42,3 +46,7 @@ T0 supersession record sha256:9c4a109ca9158a60109f756f02e28673270cc741d8ad2e6a2f
 T0 supersession record sha256:3d86568240f6cd4fd87483b1be39e415f496d588601935a5e67d72bcf2b1dc58: executor-record writes are dispatch-v1 operations fenced by
 assignment, attempt, record, and recorded writer identity; the old
 claim-name-only writer is not a compatibility path.
+
+T0 supersession record sha256:0654e413997c54fcbe12f4aa4e8ebb27bae7c36ac2c6c7dc0798917a48414524: `dispatch-join`
+atomically binds a lifecycle disposition to one committed executor result and
+the attempt that produced it.

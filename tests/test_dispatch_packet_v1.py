@@ -37,10 +37,11 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.lease = (
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
-        self.dispatch(
+        opened = self.dispatch(
             "dispatch-open", "run", "T", "--by", "worker",
             "--dispatch-id", "D1", "--lease-expires-at", self.lease,
         )
+        self.assignment_seal = opened["dispatch"]["assignment_seal"]
 
     def tearDown(self):
         self.environment.stop()
@@ -156,7 +157,11 @@ class DispatchPacketV1Test(unittest.TestCase):
 
     def test_committed_projection_replay_precedes_retirement_and_conflict(self):
         committed = self.project()
-        self.dispatch("dispatch-retire", "run", "T", "--dispatch-id", "D1")
+        self.dispatch(
+            "dispatch-retire", "run", "T",
+            "--assignment-seal", self.assignment_seal,
+            "--dispatch-id", "D1", "--record-id", "retire-1",
+        )
 
         self.assertEqual(committed, self.project())
         changed = tickets._dispatch([

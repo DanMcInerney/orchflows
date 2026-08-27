@@ -72,6 +72,33 @@ def _state(data: dict):
     return state, None
 
 
+def attempt_window(data: dict):
+    """Return the current attempt's immutable clock from the state owner."""
+    state, failure = _state(data)
+    if failure is not None or state is None:
+        return None, failure
+    attempts = state["attempts"]
+    if not attempts:
+        return None, _classification(
+            "dispatch-record-invalid", "dispatch_v1 has no execution attempt"
+        )
+    attempt = next(
+        (item for item in reversed(attempts) if item.get("state") == "live"),
+        attempts[-1],
+    )
+    opened = _parse_iso(attempt.get("opened_at"))
+    expires = _parse_iso(attempt.get("lease_expires_at"))
+    if opened is None or expires is None:
+        return None, _classification(
+            "dispatch-record-invalid", "dispatch attempt has no absolute lease window"
+        )
+    return {
+        "attempt": attempt,
+        "opened_at": opened,
+        "lease_expires_at": expires,
+    }, None
+
+
 def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dict:
     return {"dispatch": {
         "protocol": PROTOCOL,

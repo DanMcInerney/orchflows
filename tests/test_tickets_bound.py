@@ -24,6 +24,9 @@ from tests.test_tickets_cases.common import backdate, run_main, use_sink
 import scripts.tickets as tickets_mod  # noqa: E402
 from scripts import tickets_bound  # noqa: E402
 from scripts import ui_model  # noqa: E402
+from scripts.tickets_format import (  # noqa: E402
+    _set_frontmatter_field, canonical_json,
+)
 
 UTC_STAMP = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -269,6 +272,43 @@ class BoundCheckCommandTest(unittest.TestCase):
             # bound, T2 is still working past it.
             self.assertTrue(rows["T1"]["park"])
             self.assertFalse(rows["T2"]["park"])
+
+    def test_dispatch_v1_uses_its_absolute_lease_and_motion_cannot_extend_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_run(Path(tmp), (("T1", "claimed", "1m", 90, 0),))
+            path = use_sink(root) / "tickets" / "testrun" / "T1.md"
+            text = path.read_text(encoding="utf-8")
+            opened = NOW - timedelta(minutes=45)
+            expires = NOW + timedelta(minutes=15)
+            state = {"protocol": "orchflows.dispatch.v1", "attempts": [{
+                "assignment_seal": "sha256:sealed",
+                "dispatch_id": "D1",
+                "lease_expires_at": expires.strftime(UTC_STAMP),
+                "opened_at": opened.strftime(UTC_STAMP),
+                "owner": "agent-a",
+                "records": [],
+                "state": "live",
+            }]}
+            path.write_text(
+                _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+                encoding="utf-8",
+            )
+
+            before, before_code = bound_check(
+                root, "--now", NOW.strftime(UTC_STAMP)
+            )
+            after, after_code = bound_check(
+                root, "--now", (NOW + timedelta(minutes=20)).strftime(UTC_STAMP)
+            )
+
+            before_row = rows_by_id(before)["T1"]
+            after_row = rows_by_id(after)["T1"]
+            self.assertEqual((0, 1), (before_code, after_code))
+            self.assertEqual(expires.strftime(UTC_STAMP), before_row["lease_expires_at"])
+            self.assertEqual(45, before_row["elapsed_minutes"])
+            self.assertFalse(before_row["overdue"])
+            self.assertTrue(after_row["overdue"])
+            self.assertTrue(after_row["park"])
 
     def test_the_now_flag_pins_the_clock_the_row_is_measured_against(self):
         with tempfile.TemporaryDirectory() as tmp:

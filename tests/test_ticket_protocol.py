@@ -40,6 +40,7 @@ class TicketProtocolTest(unittest.TestCase):
         for token in (
             "`dispatch_v1`", "`orchflows.dispatch.v1`", "`dispatch-open`",
             "`dispatch-commit`", "`dispatch-retire`", "`dispatch-replace`",
+            "`dispatch-join`",
             "`legacy-live-claim`", "`idempotency-conflict`",
             "`dispatch-mismatch`", "`assignment-mismatch`", "`stale-attempt`",
         ):
@@ -47,6 +48,19 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("exactly-once external", result)
         self.assertIn("dispatch attempt", delegation.lower())
         self.assertIn("**dispatch attempt**", vocabulary)
+
+    def test_join_contract_consumes_one_fixed_result_and_absolute_attempt_lease(self):
+        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
+        delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
+        integrate = (root / "skills" / "kernel" / "orch-integrate" / "SKILL.md").read_text(encoding="utf-8")
+        for owner in (work_item, result, delegation):
+            self.assertIn("`dispatch-join`", owner)
+        self.assertIn("tickets.py dispatch-join", integrate)
+        self.assertIn("`result_record_id`", work_item)
+        self.assertIn("`lease_expires_at`", delegation)
+        self.assertNotIn("only this join calls `tickets.py set-status`", integrate)
 
     def test_dispatch_v1_contract_owns_packet_projection_and_receipt(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]

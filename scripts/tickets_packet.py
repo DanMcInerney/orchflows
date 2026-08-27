@@ -76,6 +76,19 @@ def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -
 
 
 def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
+    if data.get("dispatch_v1"):
+        if __package__:
+            from .tickets_attempts import attempt_window
+        else:
+            from tickets_attempts import attempt_window
+        window, failure = attempt_window(data)
+        if failure is not None:
+            return True, [failure["error"]]
+        attempt = window["attempt"]
+        return (
+            attempt.get("state") != "live" or now >= window["lease_expires_at"],
+            [],
+        )
     motion, unreadable = _last_motion(Path(ticket_path), _sections(text).get("Result", ""))
     return _is_stale(data.get("claimed_at"), _parse_bound_minutes(data.get("bound")), now, motion), unreadable
 

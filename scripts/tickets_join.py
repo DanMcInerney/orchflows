@@ -10,10 +10,14 @@ if __package__:
         TERMINAL_STATES, _extract_flag, _set_frontmatter_field,
     )
     from .tickets_store import UTC_STAMP, _segment_error
+    from .tickets_store import _terminal_identity_update, _write_identity
+    from .tickets_project import TERMINAL_REMEDY, binding_refusal
 else:
     from tickets_attempts import PROTOCOL, _classification, _commit_record
     from tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field
     from tickets_store import UTC_STAMP, _segment_error
+    from tickets_store import _terminal_identity_update, _write_identity
+    from tickets_project import TERMINAL_REMEDY, binding_refusal
 
 JOIN_STATUSES = frozenset(TERMINAL_STATES) | {"suspended"}
 DISPATCH_JOIN_USAGE = (
@@ -43,6 +47,10 @@ def _cmd_dispatch_join(rest):
             "join-status-invalid",
             f"dispatch-join status must be one of {sorted(JOIN_STATUSES)}",
         )
+    if status in TERMINAL_STATES:
+        held = binding_refusal(run, TERMINAL_REMEDY)
+        if held is not None:
+            return {"error": held}
     if any(
         mark in value
         for value in (assignment_seal, dispatch_id, result_record_id, joined_by)
@@ -108,7 +116,21 @@ def _cmd_dispatch_join(rest):
         updated = _set_frontmatter_field(text, "status", status)
         return updated, response, None
 
-    return _commit_record(
+    result = _commit_record(
         run, ticket_id, dispatch_id, join_record_id, content,
         mutate=join, expected_seal=assignment_seal,
     )
+    if "error" in result or status not in TERMINAL_STATES:
+        return result
+    identity_dir, identity, refusal = _terminal_identity_update(
+        run, ticket_id, status, datetime.now(timezone.utc)
+    )
+    if refusal is not None:
+        return refusal
+    if identity is not None:
+        try:
+            identity_dir.mkdir(parents=True, exist_ok=True)
+            _write_identity(identity_dir, identity)
+        except OSError as error:
+            return {"error": f"join committed and terminal timing remains pending: {error}"}
+    return result

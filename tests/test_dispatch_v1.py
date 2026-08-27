@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -310,6 +311,13 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("complete", data["status"])
         state = parse_canonical_json(data["dispatch_v1"])
         self.assertEqual("retired", state["attempts"][0]["state"])
+        identity = json.loads(
+            (Path(self.temporary.name) / "runs" / "run" / "run.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual("complete", identity["terminal_status"])
+        self.assertEqual("T", identity["terminal_ticket_id"])
 
         self.assertEqual(joined, tickets._dispatch(arguments))
         self.assertEqual(joined_text, self.ticket_text())

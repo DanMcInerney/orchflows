@@ -35,11 +35,11 @@
 8. Dispatch names carry behavioral weight: bind executors by their exact
    skill names; never split a named executor into a generic shell plus a
    method file.
-9. The caller retires a child the moment its result crosses the join
+9. The caller retires a child the moment its result crosses `dispatch-join`
    (rule 5) — accepted, rejected, needs-verify, or suspended — or the
    dispatch is abandoned; retirement is the dispatching caller's own
    action, never a separate watchdog.
-   Suspension and escalation cross the ticket's `## Handoff`
+   Suspension and escalation cross the ticket's committed `## Handoff`
    ([work-item.md](../contracts/work-item.md)), never as a failure,
    under a once-per-dispatch bound.
 10. Artifact primacy: a return's payload lives in the dispatch's durable
@@ -78,10 +78,13 @@
     creates a new generation. The executor-owned `Result`, `Verification`,
    `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
    the sealed assignment.
-16. A persisted dispatch attempt opens, commits records, retires, and replaces
+16. A persisted dispatch attempt opens, commits records, retires, replaces,
+   and crosses `dispatch-join`
    only through `contracts/work-item.md`'s dispatch-v1 seam. The ticket write
    is the fence: transport silence, delivery retry, or an external side effect
    never creates a second live attempt or overrides its replay precedence.
+   Its immutable deadline is `lease_expires_at`; later delivery or artifact
+   activity never recomputes that timestamp.
 17. A committed packet projection is the only role-bearing delivery for a v1
     attempt. Reference is normal; inline carries the same sealed assignment
     only when the receiver cannot read the state sink. Receipt validates the

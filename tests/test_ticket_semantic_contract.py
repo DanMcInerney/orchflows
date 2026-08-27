@@ -236,7 +236,13 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "--record-id", "result-1", "--by", f"member-{suffix}",
                 "--section", "Result", "--text", "done",
             )
-            self.dispatch("set-status", "clean", ticket_id, "complete")
+            self.dispatch(
+                "dispatch-join", "clean", ticket_id,
+                "--assignment-seal", opened["assignment_seal"],
+                "--dispatch-id", f"member-D{suffix}",
+                "--result-record-id", "result-1", "--by", "root-join",
+                "--status", "complete",
+            )
         ready = self.dispatch("ready", "--run", "clean")
         critique_id = "R.gate.critique.code"
         self.assertIn(critique_id, {item["id"] for item in ready["ready"]})
@@ -248,7 +254,13 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--by", "critic",
             "--section", "Feedback", "--text", "[]",
         )
-        self.dispatch("set-status", "clean", critique_id, "complete")
+        self.dispatch(
+            "dispatch-join", "clean", critique_id,
+            "--assignment-seal", opened["assignment_seal"],
+            "--dispatch-id", "critic-D1",
+            "--result-record-id", "feedback-1", "--by", "root-join",
+            "--status", "complete",
+        )
         ready = self.dispatch("ready", "--run", "clean")
         self.assertIn("R.gate.repair", {item["id"] for item in ready["ready"]})
 
