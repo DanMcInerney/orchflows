@@ -10,7 +10,7 @@ import unittest
 from unittest import mock
 
 from scripts import tickets
-from scripts.tickets_format import parse_canonical_json
+from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
 
 
 class DispatchV1Test(unittest.TestCase):
@@ -81,6 +81,23 @@ class DispatchV1Test(unittest.TestCase):
             "--by", by,
             "--lease-expires-at", lease or self.lease,
         ])
+
+    def result(
+        self, *, dispatch_id="D1", record_id="result-1", by="worker",
+        seal=None, section="Result", body="delivered", append=False,
+    ):
+        arguments = [
+            "result", "run", "T",
+            "--assignment-seal", seal or self.opened_seal,
+            "--dispatch-id", dispatch_id,
+            "--record-id", record_id,
+            "--by", by,
+            "--section", section,
+            "--text", body,
+        ]
+        if append:
+            arguments.append("--append")
+        return tickets._dispatch(arguments)
 
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
@@ -168,7 +185,9 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("opened", reopened["dispatch"]["outcome"])
 
     def test_expired_attempt_rejects_unseen_records_without_mutation(self):
-        self.assertNotIn("error", self.open())
+        opened = self.open()
+        self.assertNotIn("error", opened)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
         before = self.ticket_text()
 
         class Later(datetime):
@@ -179,7 +198,9 @@ class DispatchV1Test(unittest.TestCase):
 
         with mock.patch("scripts.tickets_attempts.datetime", Later):
             stale = self.commit(record_id="after-expiry")
+            stale_result = self.result(record_id="result-after-expiry")
         self.assertEqual("stale-attempt", stale["code"])
+        self.assertEqual("stale-attempt", stale_result["code"])
         self.assertEqual(before, self.ticket_text())
 
     def test_pre_v1_live_claim_requires_owner_cutover(self):
@@ -188,6 +209,59 @@ class DispatchV1Test(unittest.TestCase):
         refusal = self.open()
         self.assertEqual("legacy-live-claim", refusal["code"])
         self.assertEqual(before, self.ticket_text())
+        self.opened_seal = _parse_frontmatter(before)["assignment_seal"]
+        result_refusal = self.result(by="legacy-owner")
+        self.assertEqual("legacy-live-claim", result_refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+
+    def test_result_write_and_receipt_are_one_replayable_operation(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+
+        committed = self.result()
+        self.assertEqual("orchflows.dispatch.v1", committed["result"]["protocol"])
+        self.assertEqual("D1", committed["result"]["dispatch_id"])
+        self.assertEqual("result-1", committed["result"]["record_id"])
+        self.assertEqual("worker", committed["result"]["by"])
+        written = self.ticket_text()
+        result_body = _sections(written)["Result"]
+        self.assertEqual(1, result_body.count("### Written by `worker`"), result_body)
+        self.assertEqual(1, result_body.count("delivered"), result_body)
+
+        self.assertNotIn("error", self.retire())
+        retired = self.ticket_text()
+        self.assertEqual(committed, self.result())
+        self.assertEqual(retired, self.ticket_text())
+
+        conflict = self.result(body="different")
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        self.assertEqual(retired, self.ticket_text())
+        stale = self.result(record_id="result-2", body="later", append=True)
+        self.assertEqual("stale-attempt", stale["code"])
+        self.assertEqual(retired, self.ticket_text())
+
+    def test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        before = self.ticket_text()
+
+        wrong_seal = self.result(seal="sha256:not-the-assignment")
+        self.assertEqual("assignment-mismatch", wrong_seal["code"])
+        self.assertEqual(before, self.ticket_text())
+
+        wrong_writer = self.result(by="reused-human-name")
+        self.assertEqual("identity-mismatch", wrong_writer["code"])
+        self.assertEqual(before, self.ticket_text())
+
+        committed = self.result()
+        replaced = self.replace()
+        self.assertNotIn("error", replaced)
+        replaced_text = self.ticket_text()
+        self.assertEqual(committed, self.result())
+        self.assertEqual(replaced_text, self.ticket_text())
+        stale = self.result(record_id="unseen-after-replacement")
+        self.assertEqual("stale-attempt", stale["code"])
+        self.assertEqual(replaced_text, self.ticket_text())
 
 
 if __name__ == "__main__":

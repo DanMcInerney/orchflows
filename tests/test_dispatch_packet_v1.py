@@ -92,6 +92,11 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("worker", packet["role"])
         self.assertEqual({"run": "run", "id": "T"}, packet["reference"])
         self.assertNotIn("inline", packet)
+        self.assertIn(
+            f"--assignment-seal {packet['assignment_seal']} --dispatch-id D1 "
+            "--record-id RECORD_ID --by worker",
+            packet["prompt"],
+        )
 
         self.assertEqual(first, self.project())
         records = self.ticket_state()["attempts"][0]["records"]

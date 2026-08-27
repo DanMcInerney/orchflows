@@ -229,7 +229,7 @@ def _cmd_dispatch_packet(rest):
     legacy_args = [run, ticket_id, "--reply-to", reply_to, "--by", attempt["owner"]]
     if workspace is not None:
         legacy_args.extend(("--workspace", workspace))
-    projected = _packet_under_run_lock(legacy_args)
+    projected = _packet_under_run_lock(legacy_args, result_attempt=attempt)
     if "error" in projected:
         return projected
     packet = _projection_packet(projected["packet"], data, text, attempt, form)

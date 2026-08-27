@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1846,
+  "count": 1848,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -54,6 +54,8 @@
    "test_dispatch_v1.DispatchV1Test.test_open_is_atomic_replayable_and_fences_a_second_live_attempt",
    "test_dispatch_v1.DispatchV1Test.test_pre_v1_live_claim_requires_owner_cutover",
    "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
+   "test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation",
+   "test_dispatch_v1.DispatchV1Test.test_result_write_and_receipt_are_one_replayable_operation",
    "test_dispatch_v1.DispatchV1Test.test_retirement_allows_a_unique_new_attempt",
    "test_doclint.CommandLineTest.test_a_clean_root_exits_zero",
    "test_doclint.CommandLineTest.test_the_run_prints_the_findings_and_exits_nonzero",
@@ -1849,7 +1851,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "c2404420ff5bca7f830551913d5c1e09c52e11ba022f546854ab2c46a0500c3f"
+  "sha256": "f54737d94b5ada679b78b7b48b87a5a6f99162f1a849f901b8edc8913895bed3"
  },
  "mutation_owners": [
   {
@@ -2179,6 +2181,14 @@
   {
    "module": "tests.test_dispatch_packet_v1",
    "owner": "DispatchPacketV1Test.test_inline_snapshot_receives_without_the_state_sink",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"

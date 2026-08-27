@@ -17,60 +17,29 @@ else:
     from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_markdown import SECTION_SENTINEL
+    from .tickets_attempts import PROTOCOL, _commit_record
 else:
     from tickets_markdown import SECTION_SENTINEL
+    from tickets_attempts import PROTOCOL, _commit_record
 
 TERMINAL_HEADING = '## terminal'
 RESULT_ATTRIBUTION_PREFIX = '### Written by '
-RESULT_USAGE = f'result <run> <id> --by <claimed_by> --section <name> (--file <path> | --text <string>) [--append | --replace]; every record names the current claimant, and an executor-owned section is append-only except over the cut sentinel {SECTION_SENTINEL}, which is not content: the first real write consumes it under any flag'
+RESULT_USAGE = f'result <run> <id> --assignment-seal <seal> --dispatch-id <id> --record-id <id> --by <writer> --section <name> (--file <path> | --text <string>) [--append | --replace]; every record is fenced to one dispatch-v1 attempt, and an executor-owned section is append-only except over the cut sentinel {SECTION_SENTINEL}'
 RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact <name> [--replace] | --terminal <state>) (--file <path> | --text <string>))'
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
 COVERAGE_RECORD_NAME = 'covered.jsonl'
 
 def _cmd_result(rest):
-    probe = list(rest)
-    for flag in ('--by', '--section', '--file', '--text'):
-        _extract_flag(probe, flag)
-    probe = [arg for arg in probe if arg not in ('--append', '--replace')]
-    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
-        return _result_under_run_lock(rest)
-    try:
-        with _run_lock(probe[0]):
-            return _result_under_run_lock(rest)
-    except OSError as error:
-        return {'error': f'unwritable ticket: {error}'}
+    return _result_under_run_lock(rest)
+
+
 def _result_under_run_lock(rest):
-    """Write one reserved section of a ticket in the state sink.
-
-    The executor runs this from inside its own isolated worktree: ``--file``
-    reads the body from that workspace while ``_tickets_root()`` resolves the
-    user-scope sink, the one ticket path every workspace in every repository
-    agrees on (contracts/work-item.md).
-
-    A section holding nothing but the cut's ``SECTION_SENTINEL`` is empty for
-    every purpose here: the cut is the only writer that emits exactly those
-    bytes, so the first real content consumes it under any flag and is
-    reported as the ``write`` it is. What the guard reads is the bytes, not
-    who wrote them -- so a writer whose own content is exactly the sentinel
-    is indistinguishable from the cut, and its section stays consumable until
-    it holds something else. That edge is graded by
-    ``SentinelIsNotContentTest`` rather than left to accident; closing it
-    needs provenance the ticket does not record, which is its own scope.
-    Before this held, the marker was a placeholder to the generator
-    that wrote it and content to the guard that read it, and the executor's
-    first write paid the difference: five refusal round-trips in one cycle
-    across three projects -- ``--replace`` refused outright by the sealed
-    append-only law, and ``--append`` succeeding into a ``## Risks`` that then
-    read as the empty collection above the risk it had just listed.
-
-    The comparison is byte equality against the one constant the format owner
-    states. Emptiness is not the test and neither is resemblance: a blank
-    section and a near miss are both content, so they keep the append-only
-    law whole rather than widening it, and the trap cannot be rebuilt by a
-    generator that prefills anything else.
-    """
+    """Commit one attributed section record and its replay receipt together."""
     args = list(rest)
+    assignment_seal = _extract_flag(args, '--assignment-seal')
+    dispatch_id = _extract_flag(args, '--dispatch-id')
+    record_id = _extract_flag(args, '--record-id')
     written_by = _extract_flag(args, '--by')
     section = _extract_flag(args, '--section')
     file_arg = _extract_flag(args, '--file')
@@ -89,8 +58,12 @@ def _result_under_run_lock(rest):
     if len(args) != 2:
         return {'error': f'usage: {RESULT_USAGE}'}
     run, ticket_id = args
-    if not (written_by or '').strip():
-        return {'error': f'result requires --by <claimed_by>: every executor record is attributed to the current claim. usage: {RESULT_USAGE}'}
+    for kind, value in (('run id', run), ('ticket id', ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    if not all((assignment_seal, dispatch_id, record_id, (written_by or '').strip())):
+        return {'error': f'result requires assignment seal, dispatch id, record id, and writer. usage: {RESULT_USAGE}'}
     written_by = written_by.strip()
     if any(mark in written_by for mark in ('`', '\r', '\n')):
         return {'error': 'result --by contains a character that cannot form one canonical writer attribution: backticks and line breaks are refused'}
@@ -111,58 +84,55 @@ def _result_under_run_lock(rest):
         body = text_arg
     if any((line.startswith('## ') for line in body.splitlines())):
         return {'error': f"a '## {canonical}' body may not contain a level-2 heading ('## ...'): it would be read as a sibling ticket section. Use '###' or deeper for sub-headings inside a section"}
+    if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
+        return {'error': f"a result body may not contain the canonical writer attribution prefix '{RESULT_ATTRIBUTION_PREFIX}': tickets.py adds exactly one for this write"}
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
     ticket_path = tickets_root / run / f'{ticket_id}.md'
-    if not ticket_path.is_file():
-        return {'error': f'ticket not found: {run}/{ticket_id}'}
-    text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return failure
-    data = _parse_frontmatter(text)
-    recorded_run = str(data.get('run') or '').strip()
-    recorded_id = str(data.get('id') or '').strip()
-    if recorded_run != run or recorded_id != ticket_id:
-        return {'error': f"ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded_run or '<missing>'}/{recorded_id or '<missing>'}"}
-    status = str(data.get('status') or '').strip().strip('`')
-    if status != 'claimed':
-        return {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
-    claimed_by = str(data.get('claimed_by') or '').strip()
-    if not claimed_by:
-        return {'error': f'result requires the current claim identity, but {run}/{ticket_id} has no claimed_by'}
-    if written_by != claimed_by:
-        return {'error': f"result writer '{written_by}' does not match current claimed_by '{claimed_by}' for {run}/{ticket_id}"}
-    if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
-        return {'error': f"a result body may not contain the canonical writer attribution prefix '{RESULT_ATTRIBUTION_PREFIX}': tickets.py adds exactly one for this write"}
-    sections = _sections(text)
-    prior = _section_body(text, canonical)
-    sentinel = prior == SECTION_SENTINEL
-    if sentinel:
-        prior, append = '', False
-    write_body = f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n{body}'
-    write_append = append
-    if replace and (not sentinel):
-        return {'error': f"executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
-    try:
-        rendered = _write_section(text, canonical, write_body, write_append)
-    except TicketFormatError as error:
-        return {'error': f'{error}. ticket: {ticket_path}'}
-    if prior and (not append) and (not replace):
-        return {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. Pass --append to add after it. ticket: {ticket_path}"}
-    try:
-        _write_text_atomically(ticket_path, rendered)
-    except OSError as error:
-        return {'error': f'unwritable ticket: {error}'}
-    if sentinel:
-        mode = 'write'
-    elif append:
-        mode = 'append'
-    elif replace:
-        mode = 'replace'
-    else:
-        mode = 'write'
-    return {'result': {'run': run, 'id': ticket_id, 'path': str(ticket_path), 'section': canonical, 'mode': mode, 'by': written_by}}
+    request_mode = 'append' if append else ('replace' if replace else 'write')
+    content = {
+        'assignment_seal': assignment_seal, 'body': body, 'mode': request_mode,
+        'operation': 'result', 'section': canonical, 'writer': written_by,
+    }
+
+    def mutate(text, data, attempt):
+        recorded = (str(data.get('run') or '').strip(), str(data.get('id') or '').strip())
+        if recorded != (run, ticket_id):
+            return text, None, {'error': f'ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded[0] or "<missing>"}/{recorded[1] or "<missing>"}'}
+        status = str(data.get('status') or '').strip().strip('`')
+        if status != 'claimed':
+            return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
+        if str(data.get('claimed_by') or '').strip() != written_by:
+            return text, None, {'code': 'identity-mismatch', 'error': 'result writer does not match the current ticket claimant', 'protocol': PROTOCOL}
+        prior = _section_body(text, canonical)
+        sentinel = prior == SECTION_SENTINEL
+        effective_append = append and not sentinel
+        if replace and not sentinel:
+            return text, None, {'error': f"executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}; pass --append. ticket: {ticket_path}"}
+        if prior and not sentinel and not append and not replace:
+            return text, None, {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. Pass --append to add after it. ticket: {ticket_path}"}
+        try:
+            rendered = _write_section(
+                text, canonical,
+                f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n{body}',
+                effective_append,
+            )
+        except TicketFormatError as error:
+            return text, None, {'error': f'{error}. ticket: {ticket_path}'}
+        mode = 'write' if sentinel else request_mode
+        success = {'result': {
+            'protocol': PROTOCOL, 'run': run, 'id': ticket_id,
+            'path': str(ticket_path), 'section': canonical, 'mode': mode,
+            'by': written_by, 'assignment_seal': assignment_seal,
+            'dispatch_id': dispatch_id, 'record_id': record_id,
+        }}
+        return rendered, success, None
+
+    return _commit_record(
+        run, ticket_id, dispatch_id, record_id, content, mutate=mutate,
+        expected_seal=assignment_seal, expected_owner=written_by,
+    )
 def _is_terminal_heading(line: str) -> bool:
     """Whether one line closes a run's notes.
 

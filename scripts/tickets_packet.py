@@ -124,7 +124,7 @@ def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
     return lines
 
 
-def _packet_under_run_lock(rest):
+def _packet_under_run_lock(rest, *, result_attempt=None):
     args = list(rest)
     reply_to = _extract_flag(args, "--reply-to")
     dispatched_name = _extract_flag(args, "--by")
@@ -225,8 +225,15 @@ def _packet_under_run_lock(rest):
     else:
         prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
     prompt.append(f"Filing channel, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH in the candidate workspace:")
-    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--by", assigned_name, "--section", "SECTION", "--file", "PATH", "--append"))
-    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--by", assigned_name, "--section", "SECTION", "--text", "TEXT"))
+    result_identity = []
+    if result_attempt is not None:
+        result_identity = [
+            "--assignment-seal", result_attempt["assignment_seal"],
+            "--dispatch-id", result_attempt["dispatch_id"],
+            "--record-id", "RECORD_ID",
+        ]
+    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--file", "PATH", "--append"))
+    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT"))
     if assigned_name is not None:
         prompt.append(f"Your assigned name is `{assigned_name}`; use exactly it wherever a command takes --by.")
     if executor in DISPATCHING_EXECUTORS and assigned_name is not None:

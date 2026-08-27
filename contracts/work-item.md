@@ -110,8 +110,12 @@ no ticket, crash recovery, resumption, or durable stale-lane evidence.
 After the semantic sections, tickets carry executor-owned `## Result`,
 `## Verification`, `## Feedback`, and `## Risks`; `## Handoff` is optional.
 They are append-only after seal and are excluded from assignment fingerprints.
-The executor files them as work is produced through `tickets.py result --by <claimed_by>`
-under [result.md](result.md). `Feedback` and `Risks` use `[]` when empty.
+The executor files them as work is produced through `tickets.py result` under
+[result.md](result.md), naming the packet's `assignment_seal`, `dispatch_id`,
+a unique `record_id`, and recorded writer. Reference packet
+prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
+the executor chooses a fresh record id for each logical write. `Feedback` and
+`Risks` use `[]` when empty.
 
 ## Roots, decomposition, and integration
 
@@ -149,3 +153,6 @@ T0 supersession record sha256:b2d5d570a37764b9c83f305eaf90a98f604ce98c5d479ecbd7
 T0 supersession record sha256:1d95dfb82a4489f5d05d067d36fc669720c18424359d8b8c84f0857bde3a53fb: `dispatch_v1` adds the sole atomic execution-attempt and committed-record seam.
 
 T0 supersession record sha256:d12f7cb34c27575e52f78faf4aa5348d1c5ee35f5f14bf9fc502103560435fe5: dispatch-v1 adds committed reference or inline packet projection and deterministic receipt validation.
+
+T0 supersession record sha256:89179c389a091321aca0ed52ef81dd5947041fcbf0a57b52e18136775b33e8b5: executor records now cross the dispatch-v1 committed-record
+seam atomically; claim-name-only result filing is removed.

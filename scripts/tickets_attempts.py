@@ -202,23 +202,12 @@ def _record_response(
     }}
 
 
-def _cmd_dispatch_commit(rest):
-    args = list(rest)
-    dispatch_id = _extract_flag(args, "--dispatch-id")
-    record_id = _extract_flag(args, "--record-id")
-    content_text = _extract_flag(args, "--content")
-    if len(args) != 2 or not all((dispatch_id, record_id)) or content_text is None:
-        return {"error": f"usage: {DISPATCH_COMMIT_USAGE}"}
-    run, ticket_id = args
-    for kind, value in (("run id", run), ("ticket id", ticket_id)):
-        invalid = _segment_error(kind, value)
-        if invalid is not None:
-            return invalid
-    try:
-        content = parse_canonical_json(content_text)
-        normalized = canonical_json(content)
-    except (TypeError, ValueError) as error:
-        return _classification("content-invalid", f"--content is not JSON: {error}")
+def _commit_record(
+    run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
+    expected_seal=None, expected_owner=None,
+):
+    """Commit or replay one record and its optional ticket mutation atomically."""
+    normalized = canonical_json(content)
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {"error": NO_SINK_ERROR}
@@ -279,18 +268,51 @@ def _cmd_dispatch_commit(rest):
                 return _classification(
                     "assignment-mismatch", "dispatch attempt is fenced to another assignment seal"
                 )
-            success = _record_response(run, ticket_id, dispatch_id, record_id, content)
+            if expected_seal is not None and expected_seal != seal:
+                return _classification(
+                    "assignment-mismatch", "result operation names another assignment seal"
+                )
+            if expected_owner is not None and expected_owner != attempt.get("owner"):
+                return _classification(
+                    "identity-mismatch", "result writer does not match the dispatch attempt owner"
+                )
+            if mutate is None:
+                success = _record_response(run, ticket_id, dispatch_id, record_id, content)
+                updated = text
+            else:
+                updated, success, failure = mutate(text, data, attempt)
+                if failure is not None:
+                    return failure
             records.append({
                 "committed_at": now.strftime(UTC_STAMP),
                 "content": normalized,
                 "record_id": record_id,
                 "success": success,
             })
-            updated = _set_frontmatter_field(text, "dispatch_v1", canonical_json(state))
+            updated = _set_frontmatter_field(updated, "dispatch_v1", canonical_json(state))
             _write_text_atomically(path, updated)
             return success
     except OSError as error:
         return {"error": f"unable to commit dispatch record: {error}"}
+
+
+def _cmd_dispatch_commit(rest):
+    args = list(rest)
+    dispatch_id = _extract_flag(args, "--dispatch-id")
+    record_id = _extract_flag(args, "--record-id")
+    content_text = _extract_flag(args, "--content")
+    if len(args) != 2 or not all((dispatch_id, record_id)) or content_text is None:
+        return {"error": f"usage: {DISPATCH_COMMIT_USAGE}"}
+    run, ticket_id = args
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    try:
+        content = parse_canonical_json(content_text)
+    except (TypeError, ValueError) as error:
+        return _classification("content-invalid", f"--content is not JSON: {error}")
+    return _commit_record(run, ticket_id, dispatch_id, record_id, content)
 
 
 def _cmd_dispatch_retire(rest):

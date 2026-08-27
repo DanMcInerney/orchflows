@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
@@ -66,6 +67,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         generation = validated["draft_validation"]["cut_generation"]
         self.dispatch("seal", run, root, "--cut-generation", generation)
 
+    def open_attempt(self, run, ticket_id, by, dispatch_id):
+        lease = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        return self.dispatch(
+            "dispatch-open", run, ticket_id, "--by", by,
+            "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
+        )["dispatch"]
+
     def test_goal_context_only_direct_root_lifecycle(self):
         self.dispatch(
             "new", "direct", "R1", "--executor", "orch-edit",
@@ -103,9 +111,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.seal("packet", "R1")
         self.dispatch("ready", "--run", "packet")
-        self.dispatch("claim", "packet", "R1", "--by", "worker")
+        opened = self.open_attempt("packet", "R1", "worker", "packet-D1")
         prompt = self.dispatch(
-            "packet", "packet", "R1", "--reply-to", "root"
+            "dispatch-packet", "packet", "R1", "--dispatch-id", "packet-D1",
+            "--reply-to", "root"
         )["packet"]["prompt"]
         command = next(
             line for line in prompt.splitlines()
@@ -115,7 +124,11 @@ class SemanticTicketContractTest(unittest.TestCase):
             and "--text" in line.split()
         )
         argv = command.split()[2:]
-        self.assertEqual(["--by", "worker"], argv[3:5])
+        self.assertEqual(["--assignment-seal", opened["assignment_seal"]], argv[3:5])
+        self.assertEqual(["--dispatch-id", "packet-D1"], argv[5:7])
+        self.assertEqual(["--record-id", "RECORD_ID"], argv[7:9])
+        self.assertEqual(["--by", "worker"], argv[9:11])
+        argv[argv.index("RECORD_ID")] = "result-1"
         argv[argv.index("SECTION")] = "Result"
         argv[argv.index("TEXT")] = "filed from emitted packet"
         filed = self.dispatch(*argv)
@@ -213,18 +226,26 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.dispatch("ready", "--run", "clean")
         for suffix in ("01", "02"):
             ticket_id = f"R.{suffix}"
-            self.dispatch("claim", "clean", ticket_id, "--by", f"member-{suffix}")
+            opened = self.open_attempt(
+                "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
+            )
             self.dispatch(
-                "result", "clean", ticket_id, "--by", f"member-{suffix}",
+                "result", "clean", ticket_id,
+                "--assignment-seal", opened["assignment_seal"],
+                "--dispatch-id", f"member-D{suffix}",
+                "--record-id", "result-1", "--by", f"member-{suffix}",
                 "--section", "Result", "--text", "done",
             )
             self.dispatch("set-status", "clean", ticket_id, "complete")
         ready = self.dispatch("ready", "--run", "clean")
         critique_id = "R.gate.critique.code"
         self.assertIn(critique_id, {item["id"] for item in ready["ready"]})
-        self.dispatch("claim", "clean", critique_id, "--by", "critic")
+        opened = self.open_attempt("clean", critique_id, "critic", "critic-D1")
         self.dispatch(
-            "result", "clean", critique_id, "--by", "critic",
+            "result", "clean", critique_id,
+            "--assignment-seal", opened["assignment_seal"],
+            "--dispatch-id", "critic-D1", "--record-id", "feedback-1",
+            "--by", "critic",
             "--section", "Feedback", "--text", "[]",
         )
         self.dispatch("set-status", "clean", critique_id, "complete")
@@ -309,11 +330,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         work_item = (ROOT / "contracts" / "work-item.md").read_text(encoding="utf-8")
         for phrase in (
             "exactly one canonical writer attribution",
-            "matches `claimed_by`",
+            "dispatch attempt's recorded owner",
+            "one atomic write",
             "never changes lifecycle state",
         ):
             self.assertIn(phrase, result_contract)
-        self.assertIn("`tickets.py result --by <claimed_by>`", work_item)
+        for field in ("`assignment_seal`", "`dispatch_id`", "`record_id`"):
+            self.assertIn(field, work_item)
 
 
 if __name__ == "__main__":
