@@ -13,6 +13,9 @@ if __package__:
     from .tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
     from .tickets_generations import GENERATION_SUBCOMMANDS
+    from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_REPLACE_USAGE, DISPATCH_RETIRE_USAGE
+    from .tickets_dispatch_packet import DISPATCH_PACKET_USAGE, DISPATCH_RECEIVE_USAGE
+    from .tickets_join import DISPATCH_JOIN_USAGE, DISPATCH_OUTCOME_USAGE
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
@@ -22,6 +25,17 @@ else:
     from tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE
     GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
+    _attempts = __import__("tickets_attempts")
+    DISPATCH_COMMIT_USAGE = _attempts.DISPATCH_COMMIT_USAGE
+    DISPATCH_OPEN_USAGE = _attempts.DISPATCH_OPEN_USAGE
+    DISPATCH_REPLACE_USAGE = _attempts.DISPATCH_REPLACE_USAGE
+    DISPATCH_RETIRE_USAGE = _attempts.DISPATCH_RETIRE_USAGE
+    _dispatch_packet = __import__("tickets_dispatch_packet")
+    DISPATCH_PACKET_USAGE = _dispatch_packet.DISPATCH_PACKET_USAGE
+    DISPATCH_RECEIVE_USAGE = _dispatch_packet.DISPATCH_RECEIVE_USAGE
+    _join = __import__("tickets_join")
+    DISPATCH_JOIN_USAGE = _join.DISPATCH_JOIN_USAGE
+    DISPATCH_OUTCOME_USAGE = _join.DISPATCH_OUTCOME_USAGE
 
 LINT_USAGE = "lint (<run> <id> | --file <path> [--executor E] [--pack P]) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
@@ -35,11 +49,17 @@ SUBCOMMAND_USAGE = {
     "stamp-generation": STAMP_GENERATION_USAGE,
     "list": "list [--run R]",
     "ready": "ready [--run R]",
-    "claim": "claim <run> <id> --by <name>",
+    "dispatch-open": DISPATCH_OPEN_USAGE,
+    "dispatch-commit": DISPATCH_COMMIT_USAGE,
+    "dispatch-retire": DISPATCH_RETIRE_USAGE,
+    "dispatch-replace": DISPATCH_REPLACE_USAGE,
+    "dispatch-outcome": DISPATCH_OUTCOME_USAGE,
+    "dispatch-join": DISPATCH_JOIN_USAGE,
+    "dispatch-packet": DISPATCH_PACKET_USAGE,
+    "dispatch-receive": DISPATCH_RECEIVE_USAGE,
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "join-noop-repair": JOIN_NOOP_REPAIR_USAGE,
-    "packet": PACKET_USAGE,
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
@@ -55,11 +75,17 @@ SUBCOMMAND_SUMMARY = {
     "stamp-generation": "Stamp one unclaimed direct or decomposed root and its members.",
     "list": "List tickets.",
     "ready": "Promote sealed tickets whose dependencies are complete.",
-    "claim": "Claim one ready ticket.",
+    "dispatch-open": "Atomically open or replay one fenced dispatch-v1 execution attempt.",
+    "dispatch-commit": "Commit or replay one idempotent record on a live dispatch-v1 attempt.",
+    "dispatch-retire": "Retire or replay retirement of one dispatch-v1 attempt.",
+    "dispatch-replace": "Atomically replace one live dispatch-v1 attempt with a unique successor.",
+    "dispatch-outcome": "Commit or replay the attempt's one reserved executor outcome envelope.",
+    "dispatch-join": "Commit or replay one outcome-fenced join and its lifecycle transition.",
+    "dispatch-packet": "Commit or replay one reference or inline dispatch-v1 packet projection.",
+    "dispatch-receive": "Validate one dispatch-v1 packet against its receipt identity and authority.",
     "check": f"Record one blocker-only checker pass while status is one of {sorted(CHECKABLE_STATUSES)}.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
     "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
-    "packet": f"Emit a semantic dispatch packet; --executor may be {' or '.join(CHECKER_PATH_EXECUTORS)}.",
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
     "worklog": "Render the run worklog.",
     "run-state": f"Write run state under {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}).",
@@ -76,7 +102,10 @@ VALUE_FLAGS = frozenset({
     "--profile", "--independence", "--isolation", "--sequence", "--set",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--reply-to", "--workspace", "--proposal", "--covered",
-    "--cut-generation", "--correction-bound", "--now",
+    "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
+    "--assignment-seal",
+    "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
+    "--form", "--role", "--outcome-record-id", "--status",
 })
 
 

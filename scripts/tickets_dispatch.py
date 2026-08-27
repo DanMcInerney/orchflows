@@ -26,6 +26,14 @@ if __package__:
 else:
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, RESULT_USAGE, RUN_STATE_USAGE, _append_one_line, _cmd_result, _cmd_run_state
 if __package__:
+    from .tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
+    from .tickets_dispatch_packet import _cmd_dispatch_packet, _cmd_dispatch_receive
+    from .tickets_join import _cmd_dispatch_join, _cmd_dispatch_outcome
+else:
+    from tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
+    from tickets_dispatch_packet import _cmd_dispatch_packet, _cmd_dispatch_receive
+    from tickets_join import _cmd_dispatch_join, _cmd_dispatch_outcome
+if __package__:
     from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_STATE_TREES, _create_text_exclusively, _identity_update, _improvement_root, _load_ticket, _run_lock, _runs_root, _segment_error, _tickets_root, _write_identity, _write_text_atomically
 else:
     from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_STATE_TREES, _create_text_exclusively, _identity_update, _improvement_root, _load_ticket, _run_lock, _runs_root, _segment_error, _tickets_root, _write_identity, _write_text_atomically
@@ -408,7 +416,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | ready | claim | check | set-status | join-noop-repair | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | ready | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -431,16 +439,28 @@ def _dispatch(argv):
         return _cmd_list(rest)
     if command == 'ready':
         return _cmd_ready(rest)
-    if command == 'claim':
-        return _cmd_claim(rest)
+    if command == 'dispatch-open':
+        return _cmd_dispatch_open(rest)
+    if command == 'dispatch-commit':
+        return _cmd_dispatch_commit(rest)
+    if command == 'dispatch-retire':
+        return _cmd_dispatch_retire(rest)
+    if command == 'dispatch-replace':
+        return _cmd_dispatch_replace(rest)
+    if command == 'dispatch-outcome':
+        return _cmd_dispatch_outcome(rest)
+    if command == 'dispatch-join':
+        return _cmd_dispatch_join(rest)
+    if command == 'dispatch-packet':
+        return _cmd_dispatch_packet(rest)
+    if command == 'dispatch-receive':
+        return _cmd_dispatch_receive(rest)
     if command == 'check':
         return _cmd_check(rest)
     if command == 'set-status':
         return _cmd_set_status(rest)
     if command == 'join-noop-repair':
         return _cmd_join_noop_repair(rest)
-    if command == 'packet':
-        return _cmd_packet(rest)
     if command == 'result':
         return _cmd_result(rest)
     if command == 'worklog':

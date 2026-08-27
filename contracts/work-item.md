@@ -35,6 +35,8 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   deterministic generation, validation, seal, and admission records.
 - `claimed_by`, `claimed_at`, `checked_by`, `workspace_branch`, and
   `workspace_baseline` — lifecycle observations written by their owning tools.
+- `dispatch_v1` — the canonical JSON `orchflows.dispatch.v1` attempt record.
+  It is operational state, excluded from the assignment fingerprint.
 
 `status` is `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`,
 `stalled`, `failed`, or `limited`. Admission alone creates `ready`; claim alone
@@ -45,13 +47,35 @@ dependencies, and necessary system identity. It never creates file authority
 or a prescribed test oracle. Accepted generation identity is immutable;
 compare-and-swap sealing refuses a stale snapshot.
 
+## Dispatch-v1 attempt state
+
+The ticket's `dispatch_v1` frontmatter value binds the complete closed
+[dispatch contract](dispatch.md). That contract solely owns attempts, records,
+packets, receipts, outcomes, joins, precedence, and cutover. Ticket lifecycle
+projects its accepted mutations: open creates `claimed`; only the outcome-fenced
+join creates `suspended` or a terminal state. Raw status writes cannot mutate a
+ticket once its dispatch record exists.
+
+## Dispatch-v1 packet projection and receipt
+
+Packet projection and receipt are the [dispatch contract](dispatch.md)'s wire
+boundary. Reference is the normal projection. Inline seals the whole routing
+envelope for an offline receiver and returns the same reserved outcome envelope
+for atomic coordinator relay; it never creates a second ticket truth.
+
 ## Executor records
 
 After the semantic sections, tickets carry executor-owned `## Result`,
 `## Verification`, `## Feedback`, and `## Risks`; `## Handoff` is optional.
 They are append-only after seal and are excluded from assignment fingerprints.
-The executor files them as work is produced through `tickets.py result --by <claimed_by>`
-under [result.md](result.md). `Feedback` and `Risks` use `[]` when empty.
+The executor files them as work is produced through `tickets.py result` under
+[result.md](result.md), naming the packet's `assignment_seal`, `dispatch_id`,
+a unique `record_id`, and recorded writer. Reference packet
+prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
+the executor chooses a fresh record id for each streamed write. At closing,
+every executor commits or returns the reserved
+[dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use
+`[]` when empty.
 
 ## Roots, decomposition, and integration
 
@@ -85,3 +109,18 @@ one current reader and writer: no compatibility aliases, dual parsing, or
 migration mode. Historical user state is not rewritten.
 
 T0 supersession record sha256:b2d5d570a37764b9c83f305eaf90a98f604ce98c5d479ecbd7abb1059b9c94aa: executor records now enter through the attributed result writer.
+
+T0 supersession record sha256:1d95dfb82a4489f5d05d067d36fc669720c18424359d8b8c84f0857bde3a53fb: `dispatch_v1` adds the sole atomic execution-attempt and committed-record seam.
+
+T0 supersession record sha256:d12f7cb34c27575e52f78faf4aa5348d1c5ee35f5f14bf9fc502103560435fe5: dispatch-v1 adds committed reference or inline packet projection and deterministic receipt validation.
+
+T0 supersession record sha256:89179c389a091321aca0ed52ef81dd5947041fcbf0a57b52e18136775b33e8b5: executor records now cross the dispatch-v1 committed-record
+seam atomically; claim-name-only result filing is removed.
+
+T0 supersession record sha256:e907a499354bc667db48f0cac413a3bf216a86f745ee0aeab0d70a71eced03f8: dispatch-v1
+lifecycle operations and joins are fixed-record transitions over one absolute
+attempt lease; raw status writes cannot terminate or suspend a v1 attempt.
+
+T0 supersession record sha256:0d3198c3bca64480a60502a7d621be4e6ca6349fc4ef74e9b18f30951fdec956: the
+closed dispatch grammar and reserved outcome return moved to `dispatch.md`;
+public legacy role-bearing routes are removed.

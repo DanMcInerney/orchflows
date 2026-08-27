@@ -35,11 +35,11 @@
 8. Dispatch names carry behavioral weight: bind executors by their exact
    skill names; never split a named executor into a generic shell plus a
    method file.
-9. The caller retires a child the moment its result crosses the join
+9. The caller retires a child the moment its result crosses `dispatch-join`
    (rule 5) — accepted, rejected, needs-verify, or suspended — or the
    dispatch is abandoned; retirement is the dispatching caller's own
    action, never a separate watchdog.
-   Suspension and escalation cross the ticket's `## Handoff`
+   Suspension and escalation cross the ticket's committed `## Handoff`
    ([work-item.md](../contracts/work-item.md)), never as a failure,
    under a once-per-dispatch bound.
 10. Artifact primacy: a return's payload lives in the dispatch's durable
@@ -76,5 +76,13 @@
     optional Suggested files, dependencies, and executor, its
     `sequence` included. Those fields are immutable after seal; any change
     creates a new generation. The executor-owned `Result`, `Verification`,
-    `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
-    the sealed assignment.
+   `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
+   the sealed assignment.
+16. Every role-bearing call and return follows the closed
+   [dispatch contract](../contracts/dispatch.md). The ticket write is the
+   fence; transport behavior never changes its attempt precedence or absolute
+   lease.
+17. A committed packet is the only role-bearing delivery. Reference is normal;
+    inline is the same ticket-durable call when its receiver cannot read the
+    sink. Receipt precedes execution. The child commits or returns the packet's
+    one reserved outcome envelope; the caller relays it unchanged when needed.

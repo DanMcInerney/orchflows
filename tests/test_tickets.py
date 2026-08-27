@@ -1,6 +1,7 @@
 """Public ticket command regressions for the current semantic contract."""
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
@@ -35,19 +36,43 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
     return ticket
 
 
+def _v1_result_ticket(tmp: Path, *, by="agent-a"):
+    (tmp / ".git").mkdir()
+    sink = use_sink(tmp)
+    tickets_mod._dispatch([
+        "new", "testrun", "T1", "--executor", "orch-tdd",
+        "--goal", "Test result attribution.", "--context", "[]",
+        "--pack", "orch-code-pack", "--isolation", "required",
+    ])
+    tickets_mod._dispatch(["stamp-generation", "testrun", "T1"])
+    validated = tickets_mod._dispatch(["draft-validate", "testrun", "T1"])
+    tickets_mod._dispatch([
+        "seal", "testrun", "T1", "--cut-generation",
+        validated["draft_validation"]["cut_generation"],
+    ])
+    tickets_mod._dispatch(["ready", "--run", "testrun"])
+    lease = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    opened = tickets_mod._dispatch([
+        "dispatch-open", "testrun", "T1", "--by", by,
+        "--dispatch-id", "D1", "--lease-expires-at", lease,
+    ])["dispatch"]
+    ticket = sink / "tickets" / "testrun" / "T1.md"
+    return ticket, opened["assignment_seal"]
+
+
 class ResultAttributionTest(unittest.TestCase):
     def test_each_append_records_and_returns_exactly_one_current_claim_writer(self):
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
-            ticket = _result_ticket(tmp)
-            frontmatter = ticket.read_text(encoding="utf-8").split("---\n", 2)[1]
-
+            ticket, seal = _v1_result_ticket(tmp)
             first = run_cmd(
-                tmp, "result", "testrun", "T1", "--by", "agent-a",
+                tmp, "result", "testrun", "T1", "--assignment-seal", seal,
+                "--dispatch-id", "D1", "--record-id", "R1", "--by", "agent-a",
                 "--section", "Result", "--text", "first record",
             )
             second = run_cmd(
-                tmp, "result", "testrun", "T1", "--by", "agent-a",
+                tmp, "result", "testrun", "T1", "--assignment-seal", seal,
+                "--dispatch-id", "D1", "--record-id", "R2", "--by", "agent-a",
                 "--section", "Result", "--text", "second record", "--append",
             )
 
@@ -58,7 +83,7 @@ class ResultAttributionTest(unittest.TestCase):
             self.assertEqual(2, body.count("### Written by `agent-a`"), body)
             self.assertEqual(1, body.count("first record"), body)
             self.assertEqual(1, body.count("second record"), body)
-            self.assertEqual(frontmatter, text.split("---\n", 2)[1])
+            self.assertIn(f"assignment_seal: {seal}", text.split("---\n", 2)[1])
 
     def test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused(self):
         attempts = (
@@ -84,14 +109,16 @@ class ResultAttributionTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
-            ticket = _result_ticket(tmp)
+            ticket, seal = _v1_result_ticket(tmp)
             run_cmd(
-                tmp, "result", "testrun", "T1", "--by", "agent-a",
+                tmp, "result", "testrun", "T1", "--assignment-seal", seal,
+                "--dispatch-id", "D1", "--record-id", "R1", "--by", "agent-a",
                 "--section", "Result", "--text", "first",
             )
             before = ticket.read_bytes()
             refused = run_cmd(
-                tmp, "result", "testrun", "T1", "--by", "agent-a",
+                tmp, "result", "testrun", "T1", "--assignment-seal", seal,
+                "--dispatch-id", "D1", "--record-id", "R2", "--by", "agent-a",
                 "--section", "Result", "--text", "replacement", "--replace",
             )
             self.assertIn("append-only", refused["error"])

@@ -104,6 +104,22 @@ def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
     minutes, kind = parse_bound(item.get('bound'))
     motion, unreadable = support['_last_motion'](Path(item['path']))
     claimed = support['_parse_iso'](item.get('claimed_at'))
+    lease_expires_at = None
+    if item.get('dispatch_v1'):
+        window, failure = support['attempt_window'](item)
+        if failure is not None:
+            unreadable.append(failure['error'])
+            claimed = None
+        else:
+            claimed = window['opened_at']
+            expires = window['lease_expires_at']
+            lease_expires_at = expires.strftime(support['UTC_STAMP'])
+            minutes = max(int((expires - claimed).total_seconds() // 60), 0)
+            overdue = now > expires
+            park = overdue
+    else:
+        overdue = claimed is None or now > claimed + timedelta(minutes=minutes)
+        park = should_park(claimed, minutes, motion, now)
     elapsed = None if claimed is None else max(int((now - claimed).total_seconds() // 60), 0)
     return ({
         'id': item.get('id'),
@@ -111,6 +127,7 @@ def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
         'bound_kind': kind,
         'bound_minutes': minutes,
         'claimed_at': item.get('claimed_at'),
+        'lease_expires_at': lease_expires_at,
         'last_motion_at': None if motion is None else motion.strftime(support['UTC_STAMP']),
         'elapsed_minutes': elapsed,
         # The deadline `should_park` reads, not the whole minutes the row
@@ -120,8 +137,8 @@ def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
         # re-check reads on opposite sides of one deadline. An unreadable
         # start is over every bound rather than inside one: the lease already
         # hands such a claim to the next taker.
-        'overdue': claimed is None or now > claimed + timedelta(minutes=minutes),
-        'park': should_park(claimed, minutes, motion, now),
+        'overdue': overdue,
+        'park': park,
     }, unreadable)
 
 
@@ -132,18 +149,20 @@ def _bound_support() -> dict:
     named at module scope here would close a cycle at import time.
     """
     if __package__:
+        from .tickets_attempts import attempt_window
         from .tickets_commands import BOUND_CHECK_USAGE
         from .tickets_format import _extract_flag, _parse_iso
         from .tickets_packet import _last_motion
         from .tickets_store import UTC_STAMP
         from .tickets_worklog import _run_tickets
     else:
+        from tickets_attempts import attempt_window
         from tickets_commands import BOUND_CHECK_USAGE
         from tickets_format import _extract_flag, _parse_iso
         from tickets_packet import _last_motion
         from tickets_store import UTC_STAMP
         from tickets_worklog import _run_tickets
-    return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'UTC_STAMP': UTC_STAMP, '_extract_flag': _extract_flag,
+    return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'UTC_STAMP': UTC_STAMP, 'attempt_window': attempt_window, '_extract_flag': _extract_flag,
             '_last_motion': _last_motion, '_parse_iso': _parse_iso, '_run_tickets': _run_tickets}
 
 

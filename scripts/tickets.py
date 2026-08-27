@@ -35,6 +35,9 @@ if __package__:
     from . import tickets_lint as _tickets_lint_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
+    from . import tickets_attempts as _tickets_attempts_module
+    from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
+    from . import tickets_join as _tickets_join_module
 else:
     # By name, as `tickets_generations` is reached: the family's
     # module-level import census is pinned, and this module joined after it.
@@ -50,6 +53,9 @@ else:
     import tickets_lint as _tickets_lint_module
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
+    import tickets_attempts as _tickets_attempts_module
+    import tickets_dispatch_packet as _tickets_dispatch_packet_module
+    import tickets_join as _tickets_join_module
 
 BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
 OTHER_BOUND_KIND = _tickets_bound_module.OTHER_BOUND_KIND
@@ -211,6 +217,14 @@ _claim_is_stale = _tickets_packet_module._claim_is_stale
 _claim_under_run_lock = _tickets_lifecycle_module._claim_under_run_lock
 _cmd_check = _tickets_lifecycle_module._cmd_check
 _cmd_claim = _tickets_lifecycle_module._cmd_claim
+_cmd_dispatch_open = _tickets_attempts_module._cmd_dispatch_open
+_cmd_dispatch_commit = _tickets_attempts_module._cmd_dispatch_commit
+_cmd_dispatch_retire = _tickets_attempts_module._cmd_dispatch_retire
+_cmd_dispatch_replace = _tickets_attempts_module._cmd_dispatch_replace
+_cmd_dispatch_packet = _tickets_dispatch_packet_module._cmd_dispatch_packet
+_cmd_dispatch_receive = _tickets_dispatch_packet_module._cmd_dispatch_receive
+_cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
+_cmd_dispatch_outcome = _tickets_join_module._cmd_dispatch_outcome
 _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
@@ -328,6 +342,15 @@ def _sync_seams():
     _tickets_result_module._append_one_line = _append_one_line
     _tickets_dispatch_module._cmd_new = _cmd_new
     _tickets_dispatch_module._cmd_claim = _cmd_claim
+    _tickets_dispatch_module._cmd_dispatch_open = _cmd_dispatch_open
+    _tickets_dispatch_module._cmd_dispatch_commit = _cmd_dispatch_commit
+    _tickets_dispatch_module._cmd_dispatch_retire = _cmd_dispatch_retire
+    _tickets_dispatch_module._cmd_dispatch_replace = _cmd_dispatch_replace
+    _tickets_dispatch_module._cmd_dispatch_packet = _cmd_dispatch_packet
+    _tickets_dispatch_module._cmd_dispatch_receive = _cmd_dispatch_receive
+    _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
+    _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
+    _tickets_attempts_module._write_text_atomically = _write_text_atomically
     _tickets_dispatch_module._cmd_ready = _cmd_ready
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status

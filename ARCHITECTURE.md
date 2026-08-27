@@ -8,6 +8,7 @@ Ceiling: 850 whitespace-delimited words. Terms are
 - **T0 — [`contracts/`](contracts/):** the narrow waist. Each contract
   owns one pure data shape, hash-pinned: a field or enum change breaks
   it even when the prose meaning holds.
+  [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
   skill-free primitives; `engines/` control flow; `workflows/`
   domain-blind behavior; `instances/` domain executors/lenses;
@@ -37,6 +38,9 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `tickets_markdown.py` semantic payload parsing and byte preservation;
   `tickets_admission.py` receipt lifecycle; `tickets_generations.py` immutable
   generation and seal identities; `tickets_project.py` run-project binding;
+  `tickets_dispatch_schema.py` validates dispatch grammar; `tickets_attempts.py`
+  mutates atomically;
+  `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
   `tickets_emission.py` emission grading; `tickets_ceiling.py` instruction
   ceiling; `tickets_issue_render.py` issuance markdown; and
   `tickets_dispatch_gate.py` integrated-result gates. `cutcheck.py` owns

@@ -204,12 +204,23 @@ composition).
 - **dispatch / delegation packet** — sending one packet to one fresh
   child, and the packet itself: Goal, Context, optional Suggested files,
   operational bound, exact executor binding, and reply_to, per
-  `contracts/work-item.md`, plus an optional one-shot `profile`
+  `contracts/work-item.md` and `contracts/dispatch.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. A packet-only
   dispatch is a ticket the dispatcher does not persist.
 - **assignment seal** — the proof that an exact validated assignment digest
   is immutable for dispatch; changing sealed assignment fields creates a new
   assignment generation under `rules/delegation.md`.
+- **dispatch attempt** — one fenced execution of a sealed ticket under
+  `orchflows.dispatch.v1`, identified by `dispatch_id` and an absolute lease;
+  its ticket record owns opening, committed-record replay, retirement,
+  replacement, and expiry precedence.
+- **packet projection** — the immutable dispatch-v1 delivery record generated
+  from one sealed attempt: normally a ticket reference plus seal, or an inline
+  sealed assignment when the receiver cannot read the state sink. Its receipt
+  validates the actual child identity and authority before execution.
+- **dispatch outcome** — one attempt's distinguished durable return envelope,
+  reserved as `outcome`; it carries the closing evidence and disposition for
+  direct commit or unchanged inline relay before join.
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. Suggested files do not attenuate it; actual changes
   are adjudicated at the join.

@@ -323,9 +323,11 @@ def _role_description(name: str) -> str:
 # return into the durable artifact; deliver it by SendMessage). No rendered
 # role agent file names roles.md anywhere (D-2).
 ROLE_INSTRUCTIONS = (
-    "Stay within the delegated scope. Execute the packet's exact primary skill, "
-    "or each exact member of a packet-stated ordered sequence, directly; never "
-    "redispatch any of them. Refuse a missing or mismatched role."
+    "Stay within delegated scope. Validate the packet with `dispatch-receive` "
+    "against this child's identity and authority; only an accepted receipt "
+    "permits execution. Execute the exact primary skill, or each exact member of a "
+    "packet-stated ordered sequence, directly; never redispatch. Refuse a missing "
+    "or mismatched role."
 )
 
 def render_codex_agent(name: str, profile: dict) -> str:

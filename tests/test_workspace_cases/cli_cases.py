@@ -172,7 +172,7 @@ class TestAnEmptyScopeIsGradedNotRequired(unittest.TestCase):
     """The two graders of one declaration agree about the lane that writes
     nothing. An item whose effective write scope is empty is authorized to
     change no path in any workspace -- it writes its own ticket sections,
-    and those live in the sink -- so ``tickets.py packet`` emits no
+    and those live in the sink -- so dispatch packet construction emits no
     establishment step for it. A grader that still demanded the stamp
     refused such a lane at no-record for obeying the packet it was given.
 
@@ -261,7 +261,7 @@ class TestAnEmptyScopeIsGradedNotRequired(unittest.TestCase):
 
     def test_empty_scope_is_not_what_an_absent_write_scope_key_means(self):
         """An empty scope is a declared authority over nothing; an absent key
-        is no declaration at all, which `tickets.py packet` refuses as an
+        is no declaration at all, which dispatch packet construction refuses as an
         incomplete packet. Read alike, an item that never declared what it
         may change would pass its join whatever it changed."""
 

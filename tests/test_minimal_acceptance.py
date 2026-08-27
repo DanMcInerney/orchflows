@@ -15,7 +15,7 @@ def _gaps(frontier: str, profiles: str) -> list[str]:
     frontier = " ".join(frontier.split())
     profiles = " ".join(profiles.split())
     required = {
-        "read-only checker": "one read-only `--executor orch-critique`",
+        "read-only checker": "one distinct read-only `orch-critique` dispatch",
         "fixed evidence": "fixed artifact, Goal, Context, executor evidence",
         "separate repair": "one separate repair ticket",
         "fresh verifier": "fresh verification",
@@ -61,7 +61,7 @@ class MinimalAcceptanceTests(unittest.TestCase):
                 profiles,
             ),
             "checker mutates": (
-                frontier.replace("one read-only `--executor orch-critique`", "one correcting `--executor orch-critique`", 1),
+                frontier.replace("one distinct read-only `orch-critique` dispatch", "one correcting `orch-critique` dispatch", 1),
                 profiles,
             ),
         }
