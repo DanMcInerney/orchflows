@@ -6,9 +6,12 @@ role: none
 
 Require: finite acyclic `tickets.py` run graph and root/caller bound.
 
-For each ready ticket choose unique assigned name, dispatch id, and absolute
-lease. `tickets.py dispatch-open` atomically claims it; `tickets.py
-dispatch-packet` commits its reference projection. Establish exactly one
+Establish/enter the pack workspace, run `workspace.py start`, retain
+`workspace_path`, per [workspace establishment](references/workspaces.md),
+before `dispatch-open`. Choose unique
+assigned name, dispatch id, and absolute lease. `tickets.py dispatch-open`
+claims it; `tickets.py dispatch-packet` commits its
+projection. Establish exactly one
 child under [delegation](../../../rules/delegation.md) §1–§2 and its
 [role](../../../rules/roles.md) §4/[profile](references/profiles.md), and send
 the stored packet. The child runs `tickets.py dispatch-receive` against its
@@ -21,15 +24,12 @@ one separate repair ticket, which invalidates critique verdicts and is
 followed by fresh verification
 ([verification](../../../rules/verification.md) §7).
 
-Transport silence replays the exact committed `dispatch-packet` to the same
-recorded child, never another attempt or child. Durable abandonment ends via
-join or `dispatch-retire` before a successor; `dispatch-replace` performs both
-atomically. Never extend the lease or infer abandonment from silence.
+Silence replays the committed packet to the same child. Abandon through join
+or `dispatch-retire`; replace through `dispatch-replace`. Never extend leases
+or infer abandonment.
 
-For [topology](../../../rules/topology.md) §5 graphs, each sealed critique gets
-fresh read-only context. Accepted blockers feed one repair ticket. Dispatch
-gate.verify in another fresh child at final identity; reuse no critique/repair
-context.
+For [topology](../../../rules/topology.md) §5 graphs, give each critique fresh
+read-only context, then one repair and a fresh final-identity verify child.
 
 `dispatch-open` and `dispatch-packet` require one sealed admission matching
 `root_generation`, `cut_generation`, and `assignment_seal`.

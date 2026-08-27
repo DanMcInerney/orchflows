@@ -75,17 +75,23 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
         )["dispatch"]
 
-    def accept_packet(self, run, ticket_id, by, dispatch_id):
-        packet = self.dispatch(
+    def accept_packet(self, run, ticket_id, by, dispatch_id, workspace=None):
+        packet_args = [
             "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
             "--reply-to", "root", "--form", "reference",
-        )["packet"]
-        self.dispatch(
+        ]
+        if workspace is not None:
+            packet_args.extend(("--workspace", workspace))
+        packet = self.dispatch(*packet_args)["packet"]
+        receive_args = [
             "dispatch-receive", "--content",
             json.dumps(packet, sort_keys=True, separators=(",", ":")),
             "--role", packet["role"], "--profile", packet["profile"],
             "--by", by, "--reply-to", "root",
-        )
+        ]
+        if workspace is not None:
+            receive_args.extend(("--workspace", workspace))
+        self.dispatch(*receive_args)
         return packet
 
     def commit_outcome(self, run, ticket_id, opened, by, dispatch_id, status="complete"):
@@ -261,11 +267,22 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.dispatch("ready", "--run", "clean")
         for suffix in ("01", "02"):
             ticket_id = f"R.{suffix}"
+            candidate = f"C:/candidate-{suffix}"
+            ticket = Path(self.temporary.name) / "tickets" / "clean" / f"{ticket_id}.md"
+            established = ticket.read_text(encoding="utf-8")
+            for key, value in (
+                ("workspace_path", candidate),
+                ("workspace_branch", f"candidate-{suffix}"),
+                ("workspace_baseline", "0123456789abcdef clean"),
+            ):
+                established = tickets._set_frontmatter_field(established, key, value)
+            ticket.write_text(established, encoding="utf-8")
             opened = self.open_attempt(
                 "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
             )
             self.accept_packet(
-                "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
+                "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}",
+                workspace=candidate,
             )
             self.dispatch(
                 "result", "clean", ticket_id,
@@ -520,10 +537,19 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.seal("tdd", "R")
         self.dispatch("ready", "--run", "tdd")
+        ticket = Path(self.temporary.name) / "tickets" / "tdd" / "R.md"
+        established = ticket.read_text(encoding="utf-8")
+        for key, value in (
+            ("workspace_path", "C:/candidate"),
+            ("workspace_branch", "candidate-branch"),
+            ("workspace_baseline", "0123456789abcdef clean"),
+        ):
+            established = tickets._set_frontmatter_field(established, key, value)
+        ticket.write_text(established, encoding="utf-8")
         opened = self.open_attempt("tdd", "R", "worker", "tdd-D1")
         prompt = self.dispatch(
             "dispatch-packet", "tdd", "R", "--dispatch-id", opened["dispatch_id"],
-            "--reply-to", "root",
+            "--reply-to", "root", "--workspace", "C:/candidate",
         )["packet"]["prompt"]
         self.assertIn("choose the implementation, tests, and verification", prompt.lower())
         self.assertNotIn("oracle_class", prompt)

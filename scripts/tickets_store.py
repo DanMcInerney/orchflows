@@ -57,10 +57,10 @@ def normalized_isolation(declared) -> str:
 
     Absent or empty reads `none`. Backticks are ordinary frontmatter
     punctuation here, stripped exactly as `_normalized_scope` and the
-    executor check strip them, so the value this script emits an
-    establishment step for is the value `scripts/workspace.py` grades.
-    Normalizing it in two places is how an emitted step and a skipped
-    grade can disagree behind a green suite.
+    executor check strip them, so the pre-dispatch establishment gate and
+    `scripts/workspace.py` grade one value. Normalizing it in two places is
+    how an accepted candidate and a skipped grade can disagree behind a green
+    suite.
     """
     return str(declared or 'none').strip().strip('`').strip() or 'none'
 def _executor_script(executor: str):

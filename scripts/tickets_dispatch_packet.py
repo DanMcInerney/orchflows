@@ -17,7 +17,7 @@ if __package__:
         canonical_json, parse_canonical_json,
     )
     from .tickets_generations import assignment_payload, seal_findings
-    from .tickets_packet import _packet_under_run_lock
+    from .tickets_packet import _packet_under_run_lock, workspace_establishment_finding
     from .tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from .tickets_review import packet_mutation, packet_state_result, replay_review_failure
     from .tickets_store import _tickets_root
@@ -31,7 +31,7 @@ else:
         canonical_json, parse_canonical_json,
     )
     from tickets_generations import assignment_payload, seal_findings
-    from tickets_packet import _packet_under_run_lock
+    from tickets_packet import _packet_under_run_lock, workspace_establishment_finding
     from tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from tickets_review import packet_mutation, packet_state_result, replay_review_failure
     from tickets_store import _tickets_root
@@ -258,6 +258,9 @@ def _cmd_dispatch_packet(rest):
         if "error" not in replay and divergence is not None:
             return _classification("review-invalid", divergence)
         return replay
+    finding = workspace_establishment_finding(data, workspace)
+    if finding is not None:
+        return _classification(*finding)
     failure = _live_attempt(attempt)
     if failure is not None:
         return failure

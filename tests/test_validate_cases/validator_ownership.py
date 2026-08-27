@@ -90,9 +90,9 @@ def workspace_mechanism(skill_md: Path) -> str:
 
 class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
     """scripts/tickets.py's PACK_WORKSPACE_MECHANISMS against its owners, the
-    packs' own `workspace` cells. `packet` emits the establishment step only
-    for a git mechanism, so a cell that changes mechanism without the table
-    changing with it silently stops -- or starts -- stamping a lane. The one
+    packs' own `workspace` cells. Packet projection and workspace start use
+    the mechanism to gate the host-established identity, so a cell that
+    changes without the table silently changes which record is required. The one
     literal copy that was never validate.py's, and so outlives the check that
     was."""
 

@@ -13,6 +13,7 @@ import unittest
 from unittest import mock
 
 from scripts import tickets
+from scripts.tickets_packet import workspace_establishment_finding
 from scripts.tickets_format import canonical_json, parse_canonical_json
 
 
@@ -37,6 +38,15 @@ class DispatchPacketV1Test(unittest.TestCase):
             validated["draft_validation"]["cut_generation"],
         )
         self.dispatch("ready", "--run", "run")
+        self.ticket_path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        established = self.ticket_path.read_text(encoding="utf-8")
+        for key, value in (
+            ("workspace_path", "C:/candidate"),
+            ("workspace_branch", "candidate-branch"),
+            ("workspace_baseline", "0123456789abcdef clean"),
+        ):
+            established = tickets._set_frontmatter_field(established, key, value)
+        self.ticket_path.write_text(established, encoding="utf-8")
         self.lease = (
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
@@ -55,10 +65,10 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertNotIn("error", result, result)
         return result
 
-    def project(self, form="reference"):
+    def project(self, form="reference", workspace="C:/candidate"):
         return tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "root", "--workspace", "C:/candidate",
+            "--reply-to", "root", "--workspace", workspace,
             "--form", form,
         ])
 
@@ -119,6 +129,7 @@ class DispatchPacketV1Test(unittest.TestCase):
             "--record-id RECORD_ID --by worker",
             packet["prompt"],
         )
+        self.assertNotIn("workspace.py", packet["prompt"])
 
         self.assertEqual(first, self.project())
         records = self.ticket_state()["attempts"][0]["records"]
@@ -127,6 +138,35 @@ class DispatchPacketV1Test(unittest.TestCase):
         receipt = self.receive(packet)
         self.assertEqual("accepted", receipt["receipt"]["outcome"])
         self.assertEqual("reference", receipt["receipt"]["form"])
+
+    def test_projection_refuses_an_unrecorded_candidate_workspace(self):
+        text = self.ticket_path.read_text(encoding="utf-8")
+        text = "\n".join(
+            line for line in text.splitlines()
+            if not line.startswith("workspace_path:")
+        ) + "\n"
+        self.ticket_path.write_text(text, encoding="utf-8")
+
+        refusal = self.project()
+
+        self.assertEqual("workspace-unestablished", refusal["code"])
+        self.assertNotIn("packet", refusal)
+
+    def test_projection_refuses_a_workspace_other_than_the_recorded_candidate(self):
+        refusal = self.project(workspace="C:/other")
+
+        self.assertEqual("workspace-mismatch", refusal["code"])
+        self.assertNotIn("packet", refusal)
+
+    def test_research_projection_requires_the_recorded_store_to_exist(self):
+        with tempfile.TemporaryDirectory() as store:
+            data = {
+                "pack": "orch-research-pack",
+                "workspace_path": store,
+            }
+            self.assertIsNone(workspace_establishment_finding(data, store))
+        finding = workspace_establishment_finding(data, store)
+        self.assertEqual("workspace-unestablished", finding[0])
 
     def test_inline_snapshot_requires_the_authoritative_state_sink(self):
         packet = self.project(form="inline")["packet"]
