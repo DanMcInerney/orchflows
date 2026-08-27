@@ -3,6 +3,13 @@ import unittest
 from pathlib import Path
 from scripts import workspace
 
+from tests.test_workspace_cases.start_cases import (  # noqa: F401
+    TestCheckUsesTheEstablishedCandidate,
+    TestStartEstablishesEvidenceStore,
+    TestStartRecordsWhatItObserved,
+    TestTheStampPreservesTheTicketsByteDomain,
+)
+
 
 class WorkspaceTest(unittest.TestCase):
     def test_actual_mutations_include_every_changed_and_new_path(self):

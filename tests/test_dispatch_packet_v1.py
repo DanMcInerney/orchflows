@@ -319,6 +319,17 @@ class DispatchPacketV1Test(unittest.TestCase):
             refusal = self.receive(packet)
         self.assertEqual("assignment-divergent", refusal["code"])
 
+    def test_reference_ticket_packet_cannot_be_downgraded_to_ephemeral(self):
+        packet = self.project()["packet"]
+        before = self.ticket_bytes()
+        packet["durability"] = "ephemeral"
+
+        refusal = self.receive(packet)
+
+        self.assertEqual("idempotency-conflict", refusal["code"])
+        self.assertIn("not the committed projection", refusal["error"])
+        self.assertEqual(before, self.ticket_bytes())
+
     def test_reference_without_state_sink_is_a_structured_refusal(self):
         packet = self.project()["packet"]
         missing = str(Path(self.temporary.name) / "not-mounted")
