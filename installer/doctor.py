@@ -27,6 +27,18 @@ def _finding(identity: str, path: Path | None = None, **details) -> dict:
 
 
 def _planned_files(plan: Plan):
+    """Every file the desired plan wants on disk, as the doctor reads it.
+
+    A second reading of the same ``Plan`` that ``application.apply_plan``
+    writes from, and nothing in either file holds the two equal. What holds
+    them equal is ``tests/test_install_doctor_parity.py``: it runs the real
+    write loop over a plan held maximal against ``Plan``'s fields and fails
+    on any ``(path, kind)`` one enumerates and the other does not. Add a
+    field here without adding it there and a healthy install reports itself
+    as ``receipt.unexpected-entry`` junk -- which is what happened to the
+    whole Grok column once already.
+    """
+
     for source, destination in plan.lib_copies:
         yield "catalog", "lib", destination, source, None
     for source, destination in plan.scripts:

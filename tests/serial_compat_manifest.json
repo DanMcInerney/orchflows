@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1764,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -71,6 +71,11 @@
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
    "test_install_doctor.TestInstallDoctor.test_each_grok_artifact_reports_presence_and_staleness_by_receipt",
    "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_kind_the_receipt_carries_is_a_kind_the_doctor_knows",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_receipt_entry_the_installer_writes_is_one_the_doctor_inspects",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_maximal_plan_exercises_every_field_a_plan_can_carry",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_receipt_on_disk_is_the_receipt_returned",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_written_install_reads_back_coherent_to_the_doctor",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
    "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
@@ -1762,7 +1767,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "16920886086ea693ac2b44b66a5be02d430c7a0d6036cda6c55e739e1f55552c"
  },
  "mutation_owners": [
   {
@@ -2280,6 +2285,15 @@
   {
    "module": "tests.test_install_doctor",
    "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_install_doctor_parity",
+   "owner": "TestDoctorInspectsWhatTheInstallerWrites._apply",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment",
