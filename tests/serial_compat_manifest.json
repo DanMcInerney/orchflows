@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1760,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -110,6 +110,7 @@
    "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
    "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
    "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_four_shared_adapters",
+   "test_installer.TestClaudeAdapterSet.test_help_names_the_hosts_the_module_docstring_names",
    "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_redirects_every_canonical_name",
    "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
    "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
@@ -1762,7 +1763,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "004eb6d8736472eca66841f7ae401d17c54c8fd7446619132ce7e81cbfa3141b"
  },
  "mutation_owners": [
   {

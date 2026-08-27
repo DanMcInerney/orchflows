@@ -168,6 +168,30 @@ class TestClaudeAdapterSet(unittest.TestCase):
         self.assertIn("one exact redirect skill", codex_description)
         self.assertIn("per discovered canonical skill or composition", codex_description)
 
+    @staticmethod
+    def _hosts_named(sentence):
+        """The hosts one surface's opening sentence lists, in order."""
+
+        listed = sentence.partition("orchflows for ")[2].partition(" from ")[0].rstrip(".")
+        return tuple(part.strip() for part in re.split(r",| and ", listed) if part.strip())
+
+    def test_help_names_the_hosts_the_module_docstring_names(self):
+        """``--help`` is a host-facing surface the docstring guards never read.
+
+        The two are compared as lists rather than as one string: each keeps
+        its own sentence, and only the host list is shared. The literal
+        triple anchors the comparison -- without it a parser extractor that
+        returned nothing would pass against a docstring it never parsed.
+        """
+
+        docstring_hosts = self._hosts_named((install.__doc__ or "").splitlines()[0])
+        self.assertEqual(("Claude Code", "Codex", "Grok Build"), docstring_hosts)
+        parser = install.build_arg_parser()
+        self.assertEqual(docstring_hosts, self._hosts_named(parser.description or ""))
+        rendered = " ".join(parser.format_help().split())
+        for host in docstring_hosts:
+            self.assertIn(host, rendered)
+
     def test_four_mints_exactly_the_four_shared_adapters(self):
         plan = self._plan("four")
         self.assertEqual(set(install.SHARED_ADAPTER_NAMES), self._names(plan.claude_adapters))
