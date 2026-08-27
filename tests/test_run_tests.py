@@ -1,7 +1,6 @@
 """Process-runner tests for residue, scheduling, telemetry, and console seams."""
 
 from __future__ import annotations
-import ast
 import importlib
 import io
 import os
@@ -19,6 +18,10 @@ if str(REPO_ROOT) not in sys.path:
 
 from tools import run_tests  # noqa: E402
 from tools import run_tests_scope  # noqa: E402
+from tests.test_installer_cases import _collection  # noqa: E402
+from tests.test_run_tests_cases.collection_law import (  # noqa: E402,F401
+    TestCollectionLaw,
+)
 from tests.test_run_tests_cases.workflow_contract import (  # noqa: E402,F401
     TestWorkflowContract,
 )
@@ -217,33 +220,25 @@ class TestSchedule(unittest.TestCase):
             name for name in run_tests.discover(run_tests.DEFAULT_TESTS_DIR)[2]
             if name.startswith("tests.test_installer")
         ]
-        expected = [
-            (node.name, method.name)
-            for path in (REPO_ROOT / "tests").rglob("*.py")
-            for node in ast.parse(path.read_text(encoding="utf-8")).body
-            for method in getattr(node, "body", ())
-            if (path.name == "test_installer.py" or "test_installer_cases" in path.parts)
-            and isinstance(node, ast.ClassDef) and isinstance(method, ast.FunctionDef)
-            and method.name.startswith("test")
-        ]
         self.assertGreaterEqual(len(modules), 3)
         for name in modules:
             if name != "tests.test_installer":
                 source = REPO_ROOT.joinpath(*name.split(".")).with_suffix(".py")
                 self.assertIn('sys.modules.get("test_installer")', source.read_text())
-        stack = list(unittest.TestLoader().loadTestsFromNames(modules))
-        identities = []
-        cases = []
-        while stack:
-            item = stack.pop()
-            if isinstance(item, unittest.TestSuite):
-                stack.extend(item)
-            else:
-                identities.append(item.id())
-                cases.append((type(item).__name__, item._testMethodName))
-        self.assertCountEqual(expected, cases)
-        self.assertEqual(len(identities), len(set(identities)))
-        self.assertTrue(identities)
+        loaded = _collection.loaded_cases(modules)
+        declared = _collection.declared_cases(REPO_ROOT)
+        # Both, before the comparison: two empty corpora agree with each other,
+        # which is a scan that found nothing to inspect wearing a green tick --
+        # the same shape as the silence the comparison is here to break.
+        self.assertTrue(declared)
+        self.assertTrue(loaded)
+        # A count subtraction cannot say which of the two rules was broken or
+        # what to do about it, and both halves of a mixin look like arithmetic.
+        # `_collection.report` owns the statement; this only carries it.
+        breach = _collection.report(declared, loaded)
+        if breach:  # `assertEqual("", ...)` would bury it under a diff notice
+            self.fail(breach)
+        identities = [identity for identity, _, _ in loaded]
         prefixes = ("tests.test_installer.", "test_installer.")
         self.assertTrue(all(name.startswith(prefixes) for name in identities))
     def test_timing_record_carries_context_occupancy_modules_and_outcomes(self):
