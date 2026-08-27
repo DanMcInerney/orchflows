@@ -1,4 +1,5 @@
 """Public ticket command regressions for the current semantic contract."""
+import json
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -56,6 +57,16 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         "dispatch-open", "testrun", "T1", "--by", by,
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]
+    packet = tickets_mod._dispatch([
+        "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
+        "--reply-to", "root", "--form", "reference",
+    ])["packet"]
+    tickets_mod._dispatch([
+        "dispatch-receive", "--content",
+        json.dumps(packet, sort_keys=True, separators=(",", ":")),
+        "--role", packet["role"], "--profile", packet["profile"],
+        "--by", by, "--reply-to", "root",
+    ])
     ticket = sink / "tickets" / "testrun" / "T1.md"
     return ticket, opened["assignment_seal"]
 

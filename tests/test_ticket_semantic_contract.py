@@ -75,6 +75,19 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
         )["dispatch"]
 
+    def accept_packet(self, run, ticket_id, by, dispatch_id):
+        packet = self.dispatch(
+            "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
+            "--reply-to", "root", "--form", "reference",
+        )["packet"]
+        self.dispatch(
+            "dispatch-receive", "--content",
+            json.dumps(packet, sort_keys=True, separators=(",", ":")),
+            "--role", packet["role"], "--profile", packet["profile"],
+            "--by", by, "--reply-to", "root",
+        )
+        return packet
+
     def commit_outcome(self, run, ticket_id, opened, by, dispatch_id, status="complete"):
         content = {
             "assignment_seal": opened["assignment_seal"],
@@ -135,10 +148,9 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.seal("packet", "R1")
         self.dispatch("ready", "--run", "packet")
         opened = self.open_attempt("packet", "R1", "worker", "packet-D1")
-        prompt = self.dispatch(
-            "dispatch-packet", "packet", "R1", "--dispatch-id", "packet-D1",
-            "--reply-to", "root"
-        )["packet"]["prompt"]
+        prompt = self.accept_packet(
+            "packet", "R1", "worker", "packet-D1"
+        )["prompt"]
         command = next(
             line for line in prompt.splitlines()
             if len(line.split()) > 2
@@ -252,6 +264,9 @@ class SemanticTicketContractTest(unittest.TestCase):
             opened = self.open_attempt(
                 "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
             )
+            self.accept_packet(
+                "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
+            )
             self.dispatch(
                 "result", "clean", ticket_id,
                 "--assignment-seal", opened["assignment_seal"],
@@ -272,6 +287,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         critique_id = "R.gate.critique.code"
         self.assertIn(critique_id, {item["id"] for item in ready["ready"]})
         opened = self.open_attempt("clean", critique_id, "critic", "critic-D1")
+        self.accept_packet("clean", critique_id, "critic", "critic-D1")
         self.dispatch(
             "result", "clean", critique_id,
             "--assignment-seal", opened["assignment_seal"],
