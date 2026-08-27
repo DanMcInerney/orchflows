@@ -69,6 +69,20 @@ class DispatchV1Test(unittest.TestCase):
             "--content", content,
         ])
 
+    def authorize(self, dispatch_id="D1", by="worker"):
+        packet = tickets._dispatch([
+            "dispatch-packet", "run", "T", "--dispatch-id", dispatch_id,
+            "--reply-to", "root", "--workspace", "C:/candidate",
+            "--form", "reference",
+        ])["packet"]
+        return tickets._dispatch([
+            "dispatch-receive", "--content",
+            json.dumps(packet, sort_keys=True, separators=(",", ":")),
+            "--role", "worker", "--profile", "orch-worker",
+            "--by", by, "--reply-to", "root",
+            "--workspace", "C:/candidate",
+        ])
+
     def retire(self, dispatch_id="D1", record_id="lifecycle:retire-1", seal=None):
         return tickets._dispatch([
             "dispatch-retire", "run", "T", "--dispatch-id", dispatch_id,
@@ -373,6 +387,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_write_and_receipt_are_one_replayable_operation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
 
         committed = self.result()
         self.assertEqual("orchflows.dispatch.v1", committed["result"]["protocol"])
@@ -399,6 +414,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         before = self.ticket_text()
 
         wrong_seal = self.result(seal="sha256:not-the-assignment")
@@ -437,6 +453,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_join_consumes_a_fixed_result_identity_and_replays_after_retirement(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         outcome = self.outcome()
         self.assertNotIn("error", outcome)
 

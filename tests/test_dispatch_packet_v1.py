@@ -82,6 +82,11 @@ class DispatchPacketV1Test(unittest.TestCase):
         )
         return parse_canonical_json(encoded)
 
+    def ticket_bytes(self):
+        return (
+            Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        ).read_bytes()
+
     def test_reference_projection_is_committed_and_exact_retry_replays(self):
         first = self.project()
         self.assertNotIn("error", first, first)
@@ -141,6 +146,52 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(accepted, receipt_record["success"])
         self.assertEqual(accepted, self.receive(packet))
         self.assertEqual(2, len(self.ticket_state()["attempts"][0]["records"]))
+
+    def test_result_outcome_and_join_require_the_accepted_receipt(self):
+        packet = self.project()["packet"]
+        outcome = {
+            "assignment_seal": self.assignment_seal,
+            "by": "worker",
+            "dispatch_id": "D1",
+            "evidence": {
+                "Result": "delivered",
+                "Verification": "verified",
+                "Feedback": "[]",
+                "Risks": "[]",
+                "Handoff": "",
+            },
+            "id": "T",
+            "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1",
+            "run": "run",
+            "status": "complete",
+        }
+        operations = (
+            [
+                "result", "run", "T", "--assignment-seal", self.assignment_seal,
+                "--dispatch-id", "D1", "--record-id", "result-1",
+                "--by", "worker", "--section", "Result", "--text", "delivered",
+            ],
+            [
+                "dispatch-outcome", "run", "T", "--content",
+                canonical_json(outcome),
+            ],
+            [
+                "dispatch-join", "run", "T", "--assignment-seal",
+                self.assignment_seal, "--dispatch-id", "D1",
+                "--outcome-record-id", "outcome", "--by", "root",
+            ],
+        )
+        before = self.ticket_bytes()
+        for operation in operations:
+            with self.subTest(operation=operation[0]):
+                refusal = tickets._dispatch(operation)
+                self.assertEqual("receipt-required", refusal["code"], refusal)
+                self.assertEqual(before, self.ticket_bytes())
+
+        self.assertEqual("accepted", self.receive(packet)["receipt"]["outcome"])
+        committed = tickets._dispatch(operations[0])
+        self.assertNotIn("error", committed, committed)
 
     def test_ticket_inline_cannot_be_downgraded_to_ephemeral(self):
         packet = self.project(form="inline")["packet"]
