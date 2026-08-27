@@ -13,6 +13,13 @@ OVERLAP_ANCHORS = ("Suggested files may overlap", "never grant authority")
 CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
 EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
+CURRENT_UNIT_ANCHORS = (
+    "one observable `Goal`",
+    "`Context`",
+    "optional non-binding `Suggested files`",
+    "system metadata",
+    "executor-owned",
+)
 
 
 class TestDependencyOrderedOverlap(unittest.TestCase):
@@ -56,6 +63,23 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                 "already checks and reserves the tracer for the riskiest "
                 "seam the spec leaves unproven",
             )
+
+    def test_the_code_cut_uses_the_current_unit_assignment_shape(self):
+        text = read_flat(CODE_SLICING)
+        for anchor in CURRENT_UNIT_ANCHORS:
+            with self.subTest(anchor=anchor):
+                self.assertIn(
+                    anchor, text,
+                    f"code pack slicing does not name {anchor!r}, so a code "
+                    "cut can drift from the current work-item assignment",
+                )
+        for removed in ("runnable check commands", "oracle_class", "workspace cell"):
+            with self.subTest(removed=removed):
+                self.assertNotIn(
+                    removed, text,
+                    f"code pack slicing still prescribes removed ticket prose "
+                    f"{removed!r}",
+                )
 
 
 class TestCutGoalAnchors(unittest.TestCase):
