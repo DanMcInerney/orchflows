@@ -96,12 +96,6 @@ def _cmd_list(rest):
             loaded = _load_ticket(ticket_path)
             items.append(loaded.get('summary') or loaded)
     return {'tickets': items}
-def _unchecked_cut(ticket_id: str, tickets: dict) -> str:
-    """Sealed cut validation is the sole pre-dispatch cut check."""
-    del ticket_id, tickets
-    return ''
-
-
 def _cmd_ready(rest):
     args = list(rest)
     run_filter = _extract_flag(args, '--run')
@@ -133,10 +127,6 @@ def _cmd_ready(rest):
                 continue
             if not facts['status_valid']:
                 skipped.append({'id': data['id'], 'reason': f"status '{status}' is none of {sorted(VALID_STATUSES)}, so readiness cannot be graded"})
-                continue
-            unchecked = _unchecked_cut(ticket_id, tickets)
-            if unchecked:
-                skipped.append({'id': ticket_id, 'reason': f"cut root '{unchecked}' carries no {CHECKED_BY_KEY}: a cut is checked before its first unit is dispatched, and readiness is what makes a dispatch possible. `check` the root first"})
                 continue
             deps_complete = facts['dependencies_complete']
             if not deps_complete and status not in ('pending', 'ready'):

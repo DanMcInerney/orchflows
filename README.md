@@ -176,10 +176,7 @@ their details:
 flowchart TD
     spec["orch-spec — freeze one root ticket"] --> pack{"stamp a domain pack"}
     pack --> dec["orch-decompose — cut ordered units"]
-    dec --> cut{"subtree ≥ 3 units or cutcheck advisory?"}
-    cut -->|yes| reader["root cut reader"]
-    cut -->|no| frontier["orch-frontier — dispatch ready units"]
-    reader --> frontier
+    dec --> frontier["orch-frontier — dispatch ready units"]
     frontier --> exec["unit executor"]
     exec --> path{"independence path"}
     path -->|unit-local| checker["fresh checker"]

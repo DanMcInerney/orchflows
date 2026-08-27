@@ -18,11 +18,8 @@ from `## Handoff`.
 
 The returning name and artifact identity must match the committed dispatch-v1
 packet and its accepted receipt; reject mismatches and expired attempts.
-Reject a non-root carrying both `independence: gate` and `checked_by`. But
-on a root, `checked_by` is cut reader bookkeeping, never final checker
-acceptance: the composite gate decides acceptance. Inspect actual candidate
-diffs and Git conflicts, resolve overlaps, regenerate shared derived artifacts
-once, and, for required isolation, run `workspace.py check` from
+Inspect actual candidate diffs and Git conflicts, resolve overlaps, regenerate
+shared derived artifacts once, and, for required isolation, run `workspace.py check` from
 the integrating checkout (exit 6 is caller-vantage failure).
 
 Record blame on the run-state channel. For dispatch v1, only this join calls
