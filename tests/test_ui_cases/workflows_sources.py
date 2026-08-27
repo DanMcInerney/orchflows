@@ -180,18 +180,8 @@ class WorkflowSourceTests(unittest.TestCase):
             set(evolve),
         )
 
-        orch_build = sources.source_inventory(ROOT, "orch-build")
-        expected_build_paths = {
-            "lib/skills/workflows/orch-build/SKILL.md",
-            "bin/tickets.py",
-        }
-        self.assertEqual(
-            {identity.source_id(path) for path in expected_build_paths},
-            set(orch_build),
-        )
         self.assertTrue(all(re.fullmatch(r"src_[A-Za-z0-9_-]{43}", item) for item in evolve))
-        self.assertTrue(all("/" not in item and "\\" not in item for item in (*evolve, *orch_build)))
-        self.assertNotIn(identity.source_id("tools/validate.py"), orch_build)
+        self.assertTrue(all("/" not in item and "\\" not in item for item in evolve))
 
     def test_success_reads_once_and_hashes_the_redacted_delivered_text(self):
         with tempfile.TemporaryDirectory() as directory:

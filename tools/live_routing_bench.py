@@ -47,7 +47,6 @@ from tools.live_routing_bench_support.execution import (  # noqa: E402
 from tools.live_routing_bench_support import execution as _execution  # noqa: E402
 from tools.live_routing_bench_support.grading import (  # noqa: E402
     ANSWER_LINE_RE,
-    BUILD_SKILL,
     BY_NAME_RE,
     ERROR,
     FIX_SKILL,
@@ -76,7 +75,7 @@ DEFAULT_CASES = REPO_ROOT / "benchmarks" / "routing" / "cases.json"
 ADAPTER_SETS = ("all", "four")
 ADAPTER_CHOICES = ADAPTER_SETS + ("both",)
 CASE_FIELDS = ("id", "prompt", "expected", "note")
-ROLE_SKILL_ROUTES = {"build": ("worker", "orch-build")}
+ROLE_SKILL_ROUTES = {}
 
 _install_command_impl = _install_command
 _run_benchmark_impl = run_benchmark

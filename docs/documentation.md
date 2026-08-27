@@ -105,7 +105,7 @@ state sink, its constitution ([library-review.md](library-review.md)
 carries this library's), and this file by reference. The user install
 supplies the shared library and runtime; it never writes repository
 artifacts. Project artifacts are created explicitly through repository
-work or `orch-build`. Everything else is earned by a failure — a
+work under [custom workflow authoring](custom-workflow-authoring.md). Everything else is earned by a failure — a
 section is added when agents repeatedly get the thing wrong, and
 removed when the convention it guarded changes. Start near thirty
 lines of router; grow only on evidence.
@@ -124,13 +124,13 @@ lands. It is proposed and evolves under §5, never from symmetry.
 
 | factory | procedure | library instance | project instance | oracle |
 |---|---|---|---|---|
-| documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | tools/validate.py, `doclint.py` in a project; library lens |
+| documentation | this file, §6 | `docs/`, `AGENTS.md` | router, vocabulary, ownership map, sink | tools/validate.py, `doclint.py` in a project; authoring lens |
 | vocabulary | [vocabulary-authoring.md](vocabulary-authoring.md) | [vocabulary.md](vocabulary.md); each pack's craft Vocabulary | `<repo>/docs/vocabulary.md` | consumer test; craft budget |
-| pack | [pack-authoring.md](pack-authoring.md) | `packs/` | a scoped pack through `orch-build` | pack-signature checks in tools/validate.py |
-| skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; `orch-build` | `skills/` | `<repo>/.orchflows/skills/<name>` | tools/validate.py; library lens |
-| composition | [contracts/work-item.md](../contracts/work-item.md), Template and stub; `orch-build` | `compositions/` | `<repo>/.orchflows/compositions/<name>` | `tickets.py instantiate`; tools/validate.py |
+| pack | [pack-authoring.md](pack-authoring.md); [custom-workflow-authoring.md](custom-workflow-authoring.md) | `packs/` | a scoped pack | pack-signature checks in tools/validate.py |
+| skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `skills/` | `<repo>/.orchflows/skills/<name>` | tools/validate.py; authoring lens |
+| composition | [contracts/work-item.md](../contracts/work-item.md), Template and stub; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `compositions/` | `<repo>/.orchflows/compositions/<name>` | `tickets.py instantiate`; tools/validate.py |
 | review | [library-review.md](library-review.md) — its method; the constitution is the parameter | this library's constitution | a project's constitution under the same report contract | the report contract |
-| router | `templates/host-block.md`; `orch-build` | the host block | the project routing block | library lens |
+| router | `templates/host-block.md`; [custom-workflow-authoring.md](custom-workflow-authoring.md) | the host block | the project routing block | authoring lens |
 
 The test suite is not a factory: its conventions are owned by the code
 that enforces them in the checkout (tests/__init__.py,

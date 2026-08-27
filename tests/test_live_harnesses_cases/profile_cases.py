@@ -116,7 +116,7 @@ class TestClaudeLiveProfiles(unittest.TestCase):
     def test_role_skill_topology_is_enforced(self):
         agent_type = "orch-worker"
         skill_name = "orch-profile-probe-worker-42"
-        sentinel = "ORCH_SKILL_EXECUTED:orch-build"
+        sentinel = "ORCH_SKILL_EXECUTED:orch-repair"
         matching = [
             {"type": "system", "subtype": "init", "agents": [agent_type]},
             _skill_use(skill_name, "skill-1"),

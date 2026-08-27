@@ -49,9 +49,9 @@ CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
 GROK_LIMITS_START = "# BEGIN ORCHFLOWS SUBAGENT LIMITS"
 GROK_LIMITS_END = "# END ORCHFLOWS SUBAGENT LIMITS"
 PROFILE_ROLES = ("planner", "worker")
-# The four names exposed by Claude's bounded adapter set. The routed
-# composition ``fix`` replaced the demoted ``orch-fix`` skill.
-SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
+# The routed names exposed by Claude's bounded compatibility adapter set.
+# The selector remains ``four`` for CLI compatibility after the set narrowed.
+SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix")
 CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is

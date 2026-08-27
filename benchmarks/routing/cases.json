@@ -189,49 +189,45 @@
     "distractor": true
   },
   {
-    "id": "build-friction-summary-skill",
-    "prompt": "use orch-build to write a new orchflows skill that summarizes a run's friction entries",
-    "expected": "build",
-    "required_role": "worker",
-    "required_skill": "orch-build",
-    "note": "Names orch-build outright, which is the only thing that makes build a route: unnamed delivery uses answer, single, graph, spec, or fix.",
+    "id": "author-friction-summary-skill",
+    "prompt": "write a new orchflows skill that summarizes a run's friction entries",
+    "expected": "single",
+    "note": "One bounded custom-workflow change follows the ordinary single-ticket code route with the authoring-standard pointer in Context.",
     "distractor": false
   },
   {
-    "id": "build-amend-tdd",
-    "prompt": "with orch-build, amend orch-tdd so it names its craft reference explicitly",
-    "expected": "build",
-    "required_role": "worker",
-    "required_skill": "orch-build",
-    "note": "Named again, and an amendment rather than a new item: naming is what decides the route, not what the change is to.",
+    "id": "author-amend-tdd",
+    "prompt": "amend orch-tdd so it names its craft reference explicitly",
+    "expected": "single",
+    "note": "A settled bounded amendment follows the ordinary single-ticket code route with the authoring-standard pointer in Context.",
     "distractor": false
   },
   {
-    "id": "build-migration-pack",
+    "id": "author-migration-pack",
     "prompt": "create a new domain pack for database-migration deliverables",
     "expected": "single",
-    "note": "A bounded canonical item whose prompt names no skill uses one ordinary ticket; its executor may invoke the existing build machinery.",
+    "note": "A bounded canonical item uses one ordinary ticket under the custom-workflow authoring standard.",
     "distractor": false
   },
   {
-    "id": "build-project-custom-skill",
+    "id": "author-project-custom-skill",
     "prompt": "make a project-scope custom skill for our deploy checklist",
     "expected": "single",
-    "note": "The project-scoped item is one bounded delivery; its executor reaches the existing build owner.",
+    "note": "The project-scoped item is one bounded code-pack delivery carrying the authoring-standard pointer.",
     "distractor": false
   },
   {
-    "id": "build-project-custom-composition",
+    "id": "author-project-custom-composition",
     "prompt": "make a project-scope custom composition for our release workflow",
     "expected": "single",
-    "note": "Project composition is a build scope, not an install scope, and one bounded delivery is single work.",
+    "note": "Project composition is an authoring scope, not an install scope, and one bounded delivery is single work.",
     "distractor": false
   },
   {
-    "id": "build-benchmark-contract",
+    "id": "author-benchmark-contract",
     "prompt": "add a new contract for benchmark manifests under contracts/",
     "expected": "single",
-    "note": "A bounded T0 addition whose prompt names no skill is authored as one ordinary ticket; naming orch-build remains a direct named route.",
+    "note": "A bounded T0 addition is authored as one ordinary ticket; a shape change still follows supersession law.",
     "distractor": false
   },
   {

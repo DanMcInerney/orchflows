@@ -104,14 +104,15 @@ checkout — resumes mid-flight. What a ticket is — anatomy, lifecycle,
 review, failure handling — is [TICKETS.md](TICKETS.md).
 
 Team setup: each teammate runs the user install. Repository-local custom
-skills and compositions remain ordinary `orch-build` outputs under
-`<repo>/.orchflows`; they are not an installation scope. Uninstall:
+skills and compositions are ordinary repository work under
+`<repo>/.orchflows`, governed by
+[custom workflow authoring](docs/custom-workflow-authoring.md); they are not an installation scope. Uninstall:
 `python install.py --user --uninstall` removes only what it generated;
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
 package and template, `four` mints only `orch-spec`, `orch-frontier`,
-`fix` and `orch-build` and leaves every other name to resolve at
+and `fix` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
 [profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it

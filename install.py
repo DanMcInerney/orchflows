@@ -377,8 +377,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         choices=CLAUDE_ADAPTER_SETS,
         default="all",
         help=(
-            "Claude skill adapters to mint: all canonical names (default), or only "
-            f"the four both hosts expose ({', '.join(SHARED_ADAPTER_NAMES)}). "
+            "Claude skill adapters to mint: all canonical names (default), or the "
+            f"bounded compatibility set ({', '.join(SHARED_ADAPTER_NAMES)}). "
             "Every other name still resolves at the flat by-name index."
         ),
     )

@@ -105,7 +105,7 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
     `${identity.identity}: active navigation parent`,
   ).toHaveAttribute("aria-current", "page");
   if (identity.identity.startsWith("workflow-catalog--populated--")) {
-    await expect(page.locator(".workflow-catalog__row"), `${identity.identity}: canonical definitions`).toHaveCount(14);
+    await expect(page.locator(".workflow-catalog__row"), `${identity.identity}: canonical definitions`).toHaveCount(13);
     await expect(page.locator(".workflow-catalog a[href^='/runs/']"), `${identity.identity}: definition-only catalog`).toHaveCount(0);
   }
   if (identity.identity.startsWith("workflow-catalog--empty--")) {
@@ -325,7 +325,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
 
   await page.goto(`${origin}/workflows`);
   const workflowCatalog = page.getByRole("list", { name: "Workflow definitions" });
-  await expect(workflowCatalog.locator(":scope > li")).toHaveCount(14);
+  await expect(workflowCatalog.locator(":scope > li")).toHaveCount(13);
   await expect(workflowCatalog.locator("a[href^='/runs/']")).toHaveCount(0);
   await page.getByRole("link", { name: "fix", exact: true }).click();
   await expect(page).toHaveURL(/\/workflows\/fix$/);

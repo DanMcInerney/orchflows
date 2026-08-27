@@ -52,11 +52,12 @@ class SourceSizeCheckerTest(unittest.TestCase):
             root = Path(tmp)
             accepted = root / "accepted.py"
             rejected = root / "rejected.py"
+            deleted = root / "deleted.py"
             accepted.write_bytes(b"line\n" * 510)
             rejected.write_bytes(b"line\n" * 511)
 
             self.assertEqual(sizes.physical_line_count(accepted), 510)
-            self.assertEqual(sizes.oversized_files([accepted]), [])
+            self.assertEqual(sizes.oversized_files([deleted, accepted]), [])
             self.assertEqual(sizes.oversized_files([rejected]), [(rejected, 511)])
 
             stdout = io.StringIO()

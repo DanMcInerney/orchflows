@@ -9,21 +9,23 @@
   refuses. `role: none` is orchestration, never artifact authorship.
   `orch-off` suspends routing. Route smallest-first by graph shape:
   **answer** — evidence in context decides it; **single** — one
-  [ticket]({{ORCH_LIB}}/contracts/work-item.md) whose semantic payload is Goal, Context, and
+  [ticket]({{ORCH_LIB}}/contracts/work-item.md) with semantic payload Goal, Context, and
   optional non-binding Suggested files goes to `orch-frontier`; its
-  executor chooses implementation, verification. **graph** — for a stamped root, run
+  executor chooses implementation, verification. **graph** — stamped root: run
   `tickets.py ready --run <run>`,
   `tickets.py claim <run> <root> --by <assigned-name>`,
   `tickets.py packet <run> <root> --reply-to <parent-name> --by
   <assigned-name> --workspace <tree>`; dispatch the exact `orch-decompose` to
   the matching `orch-planner` child with the complete emitted packet; ticket
-  path is not a packet. The outer coordinator integrates the return and starts
+  path is not a packet; outer coordinator integrates return, starts
   `orch-frontier`. **spec** — one same planner child runs
   `orch-spec`: return a sealed direct root for one lawful executor; for distinct
   outcomes or dependencies, take a sealed `orch-decompose` root through
   `ready` → `claim` → `packet`, then run `orch-decompose`. The outer coordinator
-  integrates either, then starts `orch-frontier`. Never persist a ticket
-  sequence or start frontier inside planner. A known cause
+  integrates either, starts `orch-frontier`. Never persist ticket sequences
+  or start frontier inside planner. Skill/composition/pack/contract/router
+  work uses those routes; seal `{{ORCH_LIB}}/docs/custom-workflow-authoring.md`
+  in Context. A known cause
   enters single; **fix** — an unknown cause →
   `tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run>
   --set failure=<the observed failure> --set workspace=<the tree>`,

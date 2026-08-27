@@ -3,7 +3,7 @@
 1. Shared library packages live under `skills/`, `packs/`. A
    project-only package lives at the owner path named in the project's
    explicit binding when one exists, else the generic project default
-   owned by [scopes.md](../skills/workflows/orch-build/references/scopes.md).
+   owned by [custom-workflow-authoring.md](../docs/custom-workflow-authoring.md).
    Host integration paths are adapters, never owners. Choose scope
    explicitly at creation.
 2. Direction: a shared package never names a project package; a project
