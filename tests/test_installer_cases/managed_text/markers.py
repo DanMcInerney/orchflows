@@ -185,3 +185,82 @@ class TestConservativeBlockRemoval(unittest.TestCase):
             "[marketplace]\r\nkey = true\r\n",
             managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned),
         )
+
+
+class TestHostConfigLimitRemoval(unittest.TestCase):
+    """Each host's TOML config removal, read as one contract rather than two.
+
+    Both hosts fence a fixed set of keys inside one table of a file their own
+    CLI also writes, so both removals have to be keyed on the lines the
+    installer wrote rather than on the marked span. Every case here is written
+    once and run per host, so a removal that regressed to a span lift on
+    either side fails. The observed appended table is Grok's, but nothing
+    about the hazard is -- and the Codex side had no check saying so.
+    """
+
+    def _hosts(self):
+        return (
+            (
+                "codex",
+                managed_text.without_codex_agent_limits,
+                managed_text.render_codex_agent_limits,
+                install.CODEX_LIMITS_START,
+                install.CODEX_LIMITS_END,
+                ("agents.max_threads = 20\n", "agents.max_depth = 1\n"),
+            ),
+            (
+                "grok",
+                managed_text.without_grok_subagent_limits,
+                managed_text.render_grok_subagent_limits,
+                install.GROK_LIMITS_START,
+                install.GROK_LIMITS_END,
+                (
+                    "subagents.max_concurrent = 20\n",
+                    "subagents.max_depth = 1\n",
+                    'subagents.limit_behavior = "queue"\n',
+                ),
+            ),
+        )
+
+    def test_a_table_the_host_appended_inside_the_block_survives_removal(self):
+        for host, remove, _render, start, end, keys in self._hosts():
+            with self.subTest(host=host):
+                text = f"{start}\n" + "".join(keys) + f"[marketplace]\nkey = true\n{end}\n"
+
+                self.assertEqual("[marketplace]\nkey = true\n", remove(text))
+
+    def test_a_block_holding_only_the_installers_keys_lifts_out_whole(self):
+        for host, remove, _render, start, end, keys in self._hosts():
+            with self.subTest(host=host):
+                text = f"before\n{start}\n" + "".join(keys) + f"{end}\nafter\n"
+
+                self.assertEqual("before\nafter\n", remove(text))
+
+    def test_absent_markers_pass_the_config_through(self):
+        for host, remove, _render, _start, _end, _keys in self._hosts():
+            with self.subTest(host=host):
+                text = '[permission]\nmode = "ask"\n'
+
+                self.assertEqual(text, remove(text))
+
+    @requires_tomllib
+    def test_removing_the_rendered_block_restores_the_config_it_merged_into(self):
+        """The removal is the merge run backwards, read as TOML.
+
+        Byte equality is the wrong reading: the merge writes a blank line
+        above the first table and the removal leaves that separator behind,
+        which is whitespace and not a key. What must come back exactly is the
+        document -- every table the user had, and none of the installer's.
+        """
+
+        for host, remove, render, _start, _end, _keys in self._hosts():
+            for original in ('[permission]\nmode = "ask"\n', "seed = 1\n", ""):
+                with self.subTest(host=host, original=original):
+                    merged, _details = render(original)
+
+                    restored = remove(merged)
+
+                    self.assertEqual(
+                        foundation.tomllib.loads(original),
+                        foundation.tomllib.loads(restored),
+                    )

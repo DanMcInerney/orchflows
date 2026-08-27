@@ -150,20 +150,30 @@ class TestConservativeUninstall(unittest.TestCase):
             self.assertIn("no original backup", result["manual_actions"][0]["action"])
 
     def test_manual_config_action_reports_installed_settings(self):
+        """``claude-config`` is the kind this line is for.
+
+        Claude's is a JSON settings file the installer sets one env key
+        inside, and nothing here can lift one key back out of JSON the way
+        the two TOML blocks come out. So the removal stays the user's, and
+        the manual line has to hand them the exact setting to undo.
+        """
+
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
-            config = project / ".codex" / "config.toml"
+            config = project / ".claude" / "settings.json"
             config.parent.mkdir()
-            config.write_text("agents.max_threads = 6\n", encoding="utf-8")
+            config.write_text(
+                '{"env": {"CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY": "20"}}\n', encoding="utf-8"
+            )
             self._write_receipt(
                 project,
                 [
                     {
                         "path": str(config),
-                        "kind": "codex-config",
+                        "kind": "claude-config",
                         "install_action": "created",
                         "sha256": digest(config),
-                        "details": {"settings": {"agents.max_threads": 6}},
+                        "details": {"setting": "env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"},
                     }
                 ],
             )
@@ -171,7 +181,10 @@ class TestConservativeUninstall(unittest.TestCase):
             result = install.run_uninstall("project", project, dry_run=False)
 
             self.assertTrue(config.exists())
-            self.assertIn('"agents.max_threads": 6', result["manual_actions"][0]["action"])
+            self.assertIn(
+                '"setting": "env.CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY"',
+                result["manual_actions"][0]["action"],
+            )
 
     def test_dry_run_changes_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
