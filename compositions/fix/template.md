@@ -12,4 +12,4 @@ verified behind a regression guard that fails on the old behaviour.
 
 Instantiate with both placeholders: `failure`, the observed failure as
 reported, and `workspace`, the repository or tree it lives in —
-`02-repair`'s write scope; every other stub is read-only.
+`02-repair`'s candidate workspace; every other stub is read-only.

@@ -67,7 +67,7 @@ class ScriptOwnershipTest(unittest.TestCase):
                 "mutually exclusive ordinary path", "unique named root-gate critique lens",
             ),
             "skills/engines/orch-frontier/SKILL.md": (
-                "checker packet", "root cut reader",
+                "checker packet", "assignment_seal", "sealed snapshot",
             ),
             "skills/kernel/orch-critique/SKILL.md": (
                 "gate-deferred", "unique named root-gate critique lens",

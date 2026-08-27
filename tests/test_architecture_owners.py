@@ -36,7 +36,7 @@ CEILING_RE = re.compile(r"Ceiling: (\d+) whitespace-delimited words")
 # are the whole reason to reach for it rather than run the command here.
 NEW_TOOLS = {
     "run_required.py": ("required-check run", "verdict cache"),
-    "affected_tests.py": ("write-scope-to-test-module derivation",),
+    "affected_tests.py": ("changed-path-to-test-module derivation",),
     "run_report.py": ("retrospective speed report",),
     "verify_at.py": ("detached worktree", "exact revision"),
 }

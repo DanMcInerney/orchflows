@@ -86,7 +86,7 @@ project maintains its own instance beside its router file.
 |---|---|---|
 | orchestrator, cold | router block, then the ownership map; vocabulary entries on demand | ~2 pages |
 | decomposer | the root ticket, the stamped pack, the owners the spec names | the ticket |
-| executor | its packet, then only what the ticket's fixed inputs name | the packet |
+| executor | its Goal and relevant Context | the ticket |
 | evaluator | the lens, then the artifact — blind to the producer's prose | the lens |
 | human | README, then whatever it links | nothing |
 

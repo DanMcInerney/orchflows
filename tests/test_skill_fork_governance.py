@@ -299,7 +299,10 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
             # assertion passes with the whole lane deleted. Only the lane
             # says it this way, which is what makes the case able to fail.
             ("rather than `orch-decompose`", "what the direct root is emitted instead of"),
-            ("write scope", "what the directly bound executor is given"),
+            (
+                "prescribe implementation or tests in Goal",
+                "the directly bound executor's implementation authority",
+            ),
         ):
             with self.subTest(token=token):
                 self.assertIn(

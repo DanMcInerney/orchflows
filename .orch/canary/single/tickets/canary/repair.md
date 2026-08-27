@@ -17,8 +17,11 @@ excluded_actions:
 independence: checker
 isolation: none
 bound: <= 120 tool calls
-admission: v1:plain-artifact:sha256:4b4b94b1e6a6ba192aa91d5ef4825d139f8ab42299852a10ca07b3a1ee218479
-cohort: v1:ticket:repair
+admission: plain-artifact:sha256:08ea59a33094a3fad47a4e943a5ed2aabc162a1d79838607751daaa9f9b8a1ab
+ownership_regions: []
+root_generation: root:repair:1:sha256:c8b50504b264a3f3a5cdefdeb34f9e4d62973a47c012dc3d9b14aa3253f07183
+cut_generation: cut:repair:1:sha256:12c115412192ebaf6457e6cabdbeeb49d6b9a917453beb159535c40e9d70057f
+assignment_seal: sha256:4865c276f3c9fec642a767af395fc85a580e1b2d6941068ed6ee2a148a243bef
 claimed_by: orch-install-catalog-repair-20260825-repair
 claimed_at: 2026-08-25T17:45:59Z
 checked_by: orch-install-catalog-repair-20260825-repair-checker

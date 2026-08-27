@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 if __package__:
     from .tickets_format import (
         GATE_ID_MARKER,
@@ -49,27 +47,6 @@ def _render_ticket(fields: dict, sections: list) -> str:
     return "\n".join(lines) + "\n" + "".join(body)
 
 
-def _input_record(value: str, position: int = 1) -> str:
-    """Render one ``--input`` value as the canonical-record bullet shell."""
-    stripped = str(value).strip()
-    if stripped.startswith("input: "):
-        stripped = stripped[len("input: ") :]
-    try:
-        json.loads(stripped)
-    except json.JSONDecodeError:
-        stripped = json.dumps(
-            {
-                "name": f"legacy-input-{position}",
-                "type": "literal",
-                "value": stripped,
-            },
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        )
-    return f"- input: {stripped}"
-
-
 def _ceiling_error(subject: str, ticket_id: str, text: str):
     """Return the instruction-ceiling refusal for one non-root unit."""
     if GATE_ID_MARKER in str(ticket_id or ""):
@@ -83,6 +60,5 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
 __all__ = (
     "_ceiling_error",
     "_frontmatter_list",
-    "_input_record",
     "_render_ticket",
 )

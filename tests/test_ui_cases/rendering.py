@@ -90,10 +90,10 @@ class TestEmptyStates(unittest.TestCase):
             _, page = ui.render_route(main, "/")
 
             degenerate = row_for(page, "B1")
-            self.assertIn("no objective recorded", degenerate)
+            self.assertIn("no goal recorded", degenerate)
             self.assertIn("unset", degenerate)
             self.assertNotIn("unset", row_for(page, "A1"))
-            self.assertNotIn("no objective recorded", row_for(page, "A1"))
+            self.assertNotIn("no goal recorded", row_for(page, "A1"))
 
 
 class TestStatusPresentation(unittest.TestCase):
@@ -365,7 +365,7 @@ class TestTicketDetail(unittest.TestCase):
             main = make_sink(Path(tmp))
             outside = main / "secret.md"
             outside.write_text(
-                "---\nid: secret\n---\n\n## Objective\n\nOUTSIDE-THE-TICKETS-TREE\n",
+                "---\nid: secret\n---\n\n## Goal\n\nOUTSIDE-THE-TICKETS-TREE\n\n## Context\n\n[]\n",
                 encoding="utf-8",
             )
 

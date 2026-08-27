@@ -42,7 +42,7 @@ class FrictionSectionTest(unittest.TestCase):
         self.assertEqual(
             [row["cluster"] for row in self.section["clusters"]],
             ["powershell-quoting", "rg-wildcard", "guessed-path", "truncated-escaped-result",
-             "workspace-vantage", "missing-node-modules", "word-ceiling", "sealed-cohort",
+             "workspace-vantage", "missing-node-modules", "word-ceiling", "sealed-assignment",
              "isolation", "missing-flag", "full-suite-flake"],
         )
 

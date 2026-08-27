@@ -1,7 +1,7 @@
 ---
 id: 01-mentioned
 run: cutcheck-provenance-mention
-status: issued
+status: pending
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
@@ -11,6 +11,12 @@ write_scope:
   - install.py
 excluded_actions:
   - editing scripts/tickets.py
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:01-mentioned:1:sha256:f2f0707eac480ab7ee7b5014c925f47d9ac28bc820ff86bedb2320fa8a5f8797
+cut_generation: cut:01-mentioned:1:sha256:5262d4401c141689028c0eab4bec44769bd8ebf240f74167507f0c52ff32351d
+assignment_seal: sha256:078718c2dcc6952e9e5ff257e5cc468448b3a10c500599bf76463d854cf052b0
 ---
 ## Objective
 
@@ -20,7 +26,7 @@ exactly as they would be with the phrase absent.
 
 ## Fixed inputs
 
-- Baseline: the revision cutcheck is invoked with.
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"462ef52aab37655260bdc9f9f98be4ed2601af2d"},"name":"baseline","type":"identity"}
 
 ## Completion test
 

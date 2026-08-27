@@ -37,8 +37,7 @@ def ticket_text(executor: str, *, pack: str = "orch-code-pack") -> str:
 id: T1
 run: script-executor-fixture
 status: pending
-admission: v1:pending
-cohort: v1:ticket:T1
+admission: pending
 executor: {executor}
 pack: {pack}
 independence: checker

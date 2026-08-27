@@ -48,7 +48,7 @@ MARKS = {
 ESCAPE_TICKET = """---
 id: 01-escape
 run: cutcheck-escape-beside
-status: issued
+status: pending
 ---
 ## Objective
 

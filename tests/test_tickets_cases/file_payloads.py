@@ -81,6 +81,7 @@ class AmendmentRecordFilePayloadTest(unittest.TestCase):
         run_dir.mkdir(parents=True)
         for ticket_id, value in snapshot().items():
             (run_dir / f"{ticket_id}.md").write_text(value, encoding="utf-8")
+        _dispatch(["stamp-generation", "run", "00-root"])
         cut = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]["cut_generation"]
         _dispatch(["seal", "run", "00-root", "--cut-generation", cut])
         _dispatch(["claim", "run", "00-root.01", "--by", "worker"])

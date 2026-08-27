@@ -19,16 +19,16 @@ class TestExperienceFoundationGap(unittest.TestCase):
         self.assertIn("status === 304", default_contract)
         self.assertNotIn("revision [0-9a-f]{64}", default_contract)
 
-    def test_ticket_inputs_scope_and_raw_share_the_host_path_boundary(self):
+    def test_ticket_context_suggestions_and_raw_share_the_host_path_boundary(self):
         with tempfile.TemporaryDirectory() as raw:
             root = make_sink(Path(raw), runs=("run-gamma",))
             ticket_path = root / "tickets" / "run-gamma" / "G1.md"
             private_path = r"C:\Users\private\source\input.md"
-            ticket_text = ticket_path.read_text(encoding="utf-8").replace(
-                "  - scratch/g1.txt", "  - {0}".format(private_path), 1
-            )
+            ticket_text = ticket_path.read_text(encoding="utf-8")
+            ticket_text = ticket_text.replace("## Context\n\n[]", "## Context\n\n- source fact: {0}".format(private_path))
+            ticket_text = ticket_text.replace("- scratch/g1.txt", "- {0}".format(private_path))
             ticket_path.write_text(
-                ticket_text + "\n## Fixed inputs\n\n- {0}\n".format(private_path),
+                ticket_text,
                 encoding="utf-8",
             )
 
@@ -38,19 +38,21 @@ class TestExperienceFoundationGap(unittest.TestCase):
             )
 
         ticket = selected["ticket"]
-        self.assertEqual(["[redacted-host-path]"], ticket["inputs"])
-        self.assertEqual(["[redacted-host-path]"], ticket["write_scope"])
+        self.assertEqual(["[redacted-host-path]"], ticket["suggested_files"])
+        self.assertIn("[redacted-host-path]", ticket["context"])
         self.assertNotIn(private_path, ticket["raw"])
         self.assertIn("[redacted-host-path]", ticket["raw"])
 
-    def test_ticket_inputs_redact_host_paths_like_raw_ticket_text(self):
+    def test_ticket_context_redacts_host_paths_like_raw_ticket_text(self):
         with tempfile.TemporaryDirectory() as raw:
             root = make_sink(Path(raw), runs=("run-gamma",))
             ticket_path = root / "tickets" / "run-gamma" / "G1.md"
             private_path = r"C:\Users\private\source\input.md"
             ticket_path.write_text(
-                ticket_path.read_text(encoding="utf-8")
-                + "\n## Fixed inputs\n\n- {0}\n".format(private_path),
+                ticket_path.read_text(encoding="utf-8").replace(
+                    "## Context\n\n[]",
+                    "## Context\n\n- source fact: {0}".format(private_path),
+                ),
                 encoding="utf-8",
             )
 
@@ -59,7 +61,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
                 query={"view": "ticket", "run": "run-gamma", "ticket": "G1"},
             )
 
-        self.assertEqual(["[redacted-host-path]"], selected["ticket"]["inputs"])
+        self.assertIn("[redacted-host-path]", selected["ticket"]["context"])
         self.assertNotIn(private_path, selected["ticket"]["raw"])
 
     def test_feature_entries_and_safe_live_fields_share_one_contract(self):
@@ -186,11 +188,11 @@ class TestExperienceFoundationGap(unittest.TestCase):
             self.assertIsInstance(readiness["causal_chain"], list)
 
         ticket = selected["ticket"]
-        self.assertEqual(["scratch/g1.txt"], ticket["write_scope"])
-        self.assertIsInstance(ticket["inputs"], list)
+        self.assertEqual(["scratch/g1.txt"], ticket["suggested_files"])
+        self.assertIsInstance(ticket["context"], str)
         self.assertIsInstance(ticket["pack"], str)
         self.assertIsInstance(ticket["history"], list)
-        self.assertIn("## Objective", ticket["raw"])
+        self.assertIn("## Goal", ticket["raw"])
         self.assertNotIn("unselected-ticket-body-sentinel", ticket["raw"])
         for private_path in private_paths:
             self.assertNotIn(private_path, ticket["raw"])

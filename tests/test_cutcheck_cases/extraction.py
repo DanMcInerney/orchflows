@@ -66,7 +66,7 @@ class BareCommandNounTest(unittest.TestCase):
 QUOTED_TICKET = """---
 id: 01-quoted
 run: cutcheck-quoted
-status: issued
+status: pending
 ---
 ## Objective
 

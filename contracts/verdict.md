@@ -18,7 +18,7 @@ Per criterion:
 
 Overall verdict: PASS only when every required criterion is PASS, and it
 states the weakest oracle_class it contains. Every criterion in a spec's
-acceptance and a ticket's completion test is required unless the spec
+acceptance and Goal is required unless the spec
 explicitly marks it optional; nothing downstream may reclassify one.
 
 Class policy, wired into every loop and gate:

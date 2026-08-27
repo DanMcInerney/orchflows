@@ -280,13 +280,13 @@ class TestWorkItemCitationLaws(unittest.TestCase):
                 self.assertIn(token, text, why)
 
 
-class TestV1AdmissionContract(unittest.TestCase):
+class AdmissionContractTest(unittest.TestCase):
     def bullet(self, marker):
         return read_bullet_flat("work-item.md", marker)
 
-    def test_frontmatter_owns_admission_cohort_and_mutation_plan(self):
+    def test_frontmatter_owns_admission_generation_and_mutation_plan(self):
         text = read("work-item.md")
-        for token in ("`admission`", "`cohort`", "`mutations`", "v1:pending", "create", "change", "delete", "write"):
+        for token in ("`admission`", "`root_generation`", "`mutations`", "`pending`", "create", "change", "delete", "write"):
             with self.subTest(token=token):
                 self.assertIn(token, text)
 
@@ -323,37 +323,12 @@ class TestV1AdmissionContract(unittest.TestCase):
             self.assertNotIn(f"def {owner}", admission_source)
         self.assertNotIn("tickets_admission", cutcheck_source)
 
-    def test_decomposer_cuts_one_cohort_with_typed_inputs_and_mutations(self):
+    def test_decomposer_cuts_one_generation_with_typed_inputs_and_mutations(self):
         text = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")
-        for token in ("--cohort", "--input", "--mutation", "canonical JSON", "stamped workspace cell"):
+        for token in ("candidate", "root_generation", "--file", "canonical JSON", "stamped workspace cell"):
             with self.subTest(token=token):
                 self.assertIn(token, text)
         self.assertNotIn("--mutation create|change|delete|write", text)
-
-    def test_decomposer_names_version_aware_v1_and_v2_member_emission(self):
-        lines = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8").splitlines()
-        rows = {}
-        for line in lines:
-            if line.startswith(("| `mandatory-v2` |", "| `legacy-v1` |")):
-                cells = [cell.strip() for cell in line.strip("|").split("|")]
-                rows[cells[0].strip("`")] = cells[1:]
-        self.assertEqual(
-            {
-                "mandatory-v2": [
-                    "candidate file",
-                    "exact inherited",
-                    "absent",
-                    "`tickets.py new <run> --file <candidate>`",
-                ],
-                "legacy-v1": [
-                    "arguments",
-                    "absent",
-                    "`v1:root:<root>`",
-                    "`tickets.py new <run> <id> --cohort v1:root:<root>`",
-                ],
-            },
-            rows,
-        )
 
     def test_result_clause_shape_and_actual_enforcement_have_distinct_owners(self):
         work_item = read("work-item.md")
@@ -399,15 +374,15 @@ class TestV1AdmissionContract(unittest.TestCase):
                 self.assertIn(token, text, why)
 
 
-class WorkItemV2ContractTest(unittest.TestCase):
-    def test_v2_frontmatter_exposes_generation_region_and_seal_fields(self):
+class GenerationWorkItemContractTest(unittest.TestCase):
+    def test_frontmatter_exposes_generation_region_and_seal_fields(self):
         text = read("work-item.md")
         for field in ("root_generation", "cut_generation", "ownership_regions", "assignment_seal"):
             with self.subTest(field=field):
                 self.assertIn(f"`{field}`", text)
 
-    def test_the_contract_states_the_v2_shapes_and_defers_their_law(self):
-        """Shape here, law at rules/topology.md §8-§11.
+    def test_the_contract_states_generation_shapes_and_defers_their_law(self):
+        """Shape here, law at rules/topology.md §8-§10.
 
         The contract used to restate topology's digest boundaries, selector
         list, seal timing and migration clauses almost verbatim -- the
@@ -416,8 +391,8 @@ class WorkItemV2ContractTest(unittest.TestCase):
         """
         text = read("work-item.md")
         for token in (
-            "`v2:root:<root-id>:<ordinal>:sha256:<digest>`",
-            "`v2:cut:<root-id>:<ordinal>:sha256:<digest>`",
+            "`root:<root-id>:<ordinal>:sha256:<digest>`",
+            "`cut:<root-id>:<ordinal>:sha256:<digest>`",
             '"artifact"',
             '"owner"',
             '"selector"',
@@ -431,7 +406,7 @@ class WorkItemV2ContractTest(unittest.TestCase):
             "`dependencies`",
             "`acceptance`",
             "`executor`",
-            "[rules/topology.md](../rules/topology.md) §8–§11",
+            "[rules/topology.md](../rules/topology.md) §8–§10",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text)
@@ -452,7 +427,7 @@ class WorkItemV2ContractTest(unittest.TestCase):
             with self.subTest(owner_token=token):
                 self.assertIn(token, topology)
 
-    def test_executor_owned_sections_stay_append_only_under_v2(self):
+    def test_executor_owned_sections_stay_append_only(self):
         text = read("work-item.md")
         for token in (
             "`## Result`",
@@ -464,24 +439,6 @@ class WorkItemV2ContractTest(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text)
-
-    def test_absent_v2_fields_preserve_v1_without_reinterpretation(self):
-        text = read_flat("work-item.md")
-        for token in (
-            "absence of all four v2 fields",
-            "v1",
-            "no v1 value is reinterpreted",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token, text)
-        topology = read_at_flat("rules/topology.md")
-        for token in (
-            "claimed or terminal v1",
-            "pending or ready v1",
-            "successor or new v2 root",
-        ):
-            with self.subTest(owner_token=token):
-                self.assertIn(token, topology)
 
     def test_t0_supersession_is_explicit_and_contract_bytes_are_pinned(self):
         work_item = read("work-item.md")

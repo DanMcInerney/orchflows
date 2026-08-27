@@ -9,12 +9,12 @@ defines.
   join the return, relay a `kind: user-only` question verbatim. It
   never authors role-bearing payloads or modifies outputs; missing/wrong profile refuses.
   `role: none` covers orchestration mechanics, not artifact authorship.
-  `orch-off` suspends routing. Otherwise route smallest-first by graph shape
-  and oracle provenance: **answer** — evidence in context decides it;
-  **single** — one ordinary ticket per {{ORCH_LIB}}/contracts/work-item.md to
-  `orch-frontier`; pre-existing deterministic or born-red acceptance needs
-  only its worker, while `authored-here` adds
-  that claim's checker. **graph** — a frozen root goes to a planner for
+  `orch-off` suspends routing. Otherwise route smallest-first by graph shape:
+  **answer** — evidence in context decides it; **single** — one
+  [ticket]({{ORCH_LIB}}/contracts/work-item.md) whose
+  semantic payload is Goal, Context, and optional non-binding Suggested files,
+  sent to `orch-frontier`; the executor chooses implementation, tests, and
+  verification. **graph** — a frozen root goes to a planner for
   `orch-decompose`; outer coordinator integrates it and
   starts `orch-frontier`. **spec** — one same planner child runs `orch-spec`,
   takes its root through `ready` → `claim` → `packet`, then runs

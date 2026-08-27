@@ -37,7 +37,7 @@ The shape principles every domain shares are
   including its failure paths, not only the happy path?
 - Contract fidelity: does every public seam still honor its declared
   Require/Return shape for callers outside this revision?
-- Scope: does every changed line sit inside the ticket's write scope
+- Diff: does every changed line contribute to Goal, with no unrelated change
   and the spec's stated surface, with nothing incidental swept in?
 - Shape: does the revision hold the idiom and simplification bar above
   rather than import a foreign pattern? The standards owner is a

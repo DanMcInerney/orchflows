@@ -164,7 +164,7 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # not per-sentence. Every occurrence of this token in this file is exempt,
 # so a future sentence here that really does point somewhere would pass
 # unseen. Splitting the pair by line is the fix if that day comes.
-DOC_PATH_EXEMPT_SITES = frozenset({("rules/topology.md", "tests/pins.json")})
+DOC_PATH_EXEMPT_SITES = frozenset()
 
 
 def _documented_path_finding(token: str, source: Path, root: Path):

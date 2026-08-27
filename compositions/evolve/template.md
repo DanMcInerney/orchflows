@@ -20,4 +20,4 @@ evolved; `incumbent`, its fixed starting result/evidence identity;
 promotion rule, margin and search policy — or `none` when one must be
 designed first; `writer`, the skill each candidate is written through;
 `bound`, the campaign's budget; and `mutation_scope`, the candidate
-write scope — `02-campaign`'s, and every other stub is read-only.
+candidate workspace — `02-campaign`'s, and every other stub is read-only.

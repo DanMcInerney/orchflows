@@ -12,8 +12,8 @@ context packet the iterations carry — design it once via
 [references/context-packet.md](references/context-packet.md).
 
 Each iteration: issue `<id>.iter.NN` through `tickets.py new`
-([contracts/work-item.md](../../../contracts/work-item.md#admission-and-migration),
-Admission and migration) and claim it through `tickets.py claim` in the dispatched
+([contracts/work-item.md](../../../contracts/work-item.md#dispatch),
+Dispatch) and claim it through `tickets.py claim` in the dispatched
 child's name; start fresh from the frozen goal plus the worklog
 `tickets.py worklog` renders; dispatch the body per
 [rules/delegation.md](../../../rules/delegation.md), each packet field

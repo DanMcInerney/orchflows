@@ -5,17 +5,17 @@
 halves ran different grades, so a door could spend the run's time writing
 what the next door then refused: a template instantiated two stubs and
 `ready` skipped both, `new` accepted a locator `claim` refused, and a gate
-wrote v1 stubs under a v2 root. In each the flag that was wrong was still
+wrote unsealed stubs under a sealed root. In each the flag that was wrong was still
 in the caller's hand at emission and nobody looked.
 
 The one grade is `tickets_context.graded_admission`, and this module is
 the emitting half's door to it. What it adds is the partition, because an
 emission cannot be held to a claim's standard: a freshly cut item names
-dependencies that have not run yet and, under v2, an assignment `seal`
+dependencies that have not run yet and an assignment `seal`
 has not sealed yet. Neither is the emitter's fault and neither can be
 repaired at emission time, so both are deferred. Everything else is the
 emitter's own -- a locator no adapter resolves, an executor its pack does
-not bind, an absent mutation plan -- and is refused where repairing it
+not bind -- and is refused where repairing it
 still costs the flag rather than the dispatch.
 
 ``DEFERRED_CODES`` is the whole of what is deferred, so the law is
@@ -37,7 +37,7 @@ DEFERRED_CODES = frozenset({
     # the first is still pending, and every edge in a template is this.
     'dependency-dangling',
     'dependency-incomplete',
-    # A cut cites its predecessor's Result by identity -- that citation is
+    # A cut cites its predecessor's Context by identity -- that citation is
     # how a later item is written against what an earlier one finds, rather
     # than left as a hole someone amends in mid-flight. At emission the
     # predecessor is pending and its Result is empty, which is the whole
@@ -48,7 +48,7 @@ DEFERRED_CODES = frozenset({
     # `stamp-generation`, `draft-validate` and `seal` are three steps in
     # that order, and each is emitted into the state the next one repairs:
     # a stamped root has no cut generation until the draft names one and no
-    # seal until `seal` writes one. A v2 ticket is emitted unsealed or is
+    # seal until `seal` writes one. A ticket is emitted unsealed or is
     # never emitted at all, so the whole seal vocabulary defers.
     'assignment-seal-mismatch',
     'assignment-unsealed',
@@ -59,8 +59,8 @@ DEFERRED_CODES = frozenset({
     'seal-state-missing',
     'seal-state-mismatch',
     'sealed-assignment-mismatch',
-    'v2-draft-status',
-    'v2-opt-in-missing',
+    'draft-status',
+    'generation-missing',
     'validation-receipt-mismatch',
     # Resolved against the checkout, the sink or the validator the grading
     # process happens to stand in, rather than against the ticket's text.
@@ -100,7 +100,7 @@ def emission_findings(ticket_id: str, text: str, prospective: dict, run) -> list
 
     ``prospective`` is the snapshot as it would stand after the write --
     the run's existing members with the incoming ones laid over them --
-    because admission's cohort and dependency findings read the siblings,
+    because admission's dependency findings read the siblings,
     not the subject alone. Grading the incoming ticket against the run
     without it would report every member of its own batch as dangling.
     """

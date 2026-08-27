@@ -4,8 +4,7 @@ description: Freeze and seal a semantic root when evidence, user decisions, kind
 role: planner
 ---
 
-Require: the request as the packet's `objective`; the workspace or
-evidence it concerns as its `inputs`.
+Require: the request as Goal and relevant workspace facts as Context.
 
 Gather the facts the frozen statement depends on through
 `orch-investigate` — one bounded question: what exists, what
@@ -22,7 +21,7 @@ sole writer and materialization owner. When a drained `orch-frontier` returns
 its successor trigger under [work-item.md](../../../contracts/work-item.md#root-ticket),
 resolve the predecessor's accepted result identity;
 once resolved, open the next entry's successor run and root, cite that identity among the
-successor root's own `## Fixed inputs`, then replace `successors.md` with that
+successor root's own `## Context`, then replace `successors.md` with that
 entry `opened` and the next entry still `planned`. A kind boundary never
 creates a second root in the same run, and an unmaterialized entry is durable
 state, never a promise left only in this Return.
@@ -41,23 +40,20 @@ stamp> --independence gate …`; the root's `checked_by` is its cut-reader
 bookkeeping, never its final acceptance path.
 
 When one executor plus the mandatory `orch-integrate` join owns the whole
-outcome, bind that executor in the root itself rather than `orch-decompose`,
-with its own completion test and write scope.
+outcome, bind that executor in the root itself rather than `orch-decompose`.
 
-For every new root, opt into v2 through
+For every new root, open the generation lifecycle through
 `tickets.py stamp-generation <run> <root-id>`, which derives `root_generation`
-as `v2:root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
+as `root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
 that snapshot through `tickets.py draft-validate <run> <root-id>`, then
 compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
 <run> <root-id> --cut-generation <validated cut_generation>`. Only that
-validated digest is sealed and eligible for `orch-decompose`; its
+validated digest is sealed and eligible for dispatch; its
 `assignment_seal` records that exact assignment digest, and a post-seal
 assignment change is a new generation.
-Compatibility is closed: absence of v2 fields means v1, so legacy producers
-and existing v0/v1 tickets keep their prior admission and execution path.
 
-Never: stamp a pack the cut cannot share; leave an acceptance criterion
-oracle-less; restate standards an exemplar's owner already states.
+Never: stamp a pack the cut cannot share; prescribe implementation or tests in
+Goal; restate standards an exemplar's owner already states.
 
 Return: the accepted root ticket's id and path, the durable `successors.md`
 identity (`[]` for one kind), and, after each predecessor resolves, the

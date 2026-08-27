@@ -80,7 +80,7 @@ that needs a different meaning needs a different word.
   run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. When
   decomposed it has one root ticket and one composite gate. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
-  tickets' objectives and completion tests are its frozen statement,
+  tickets' Goals and Context are its frozen statement,
   the ticket files the whole record — no worklog.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §10 binds.
@@ -96,31 +96,30 @@ that needs a different meaning needs a different word.
 - **assignment generation** — one root or cut assignment fixed by a content
   digest, named by `root_generation` or `cut_generation`; identity and
   lifecycle law are `rules/topology.md`'s.
-- **exemplar** — an artifact a root ticket's `## Fixed inputs` names to
+- **exemplar** — an artifact a root ticket's `## Context` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
 - **stamp** — the pack fixed at intake, carried by a ticket's `pack`
   field, which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
   design); selects an item's pack and gate lens, per [topology](../rules/topology.md) 5a.
-- **work item / ticket** — a delegation packet made durable: packet parts
-  ⊕ completion test ⊕ lifecycle ⊕ graph position, per
+- **work item / ticket** — a sealed Goal, Context, optional Suggested files,
+  lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
   to. The two words name the same thing; ticket is the on-disk view.
-- **atom** — a work item at the finest lawful cut: one observable end
-  state, a completion test discriminating it alone, a closed write
-  scope, oracles reading nothing a sibling writes, an instruction
+- **atom** — a work item at the finest lawful cut: one observable Goal,
+  dependency closure, and an instruction
   inside the stub ceiling. Law, and what lies either side of it, in
   `rules/topology.md` §3.
-- **root ticket** — a ticket whose executor is `orch-decompose`; its
-  subtree is any `<id>.NN` unit tickets plus `<id>.gate.*`, checked before
-  its first unit is promoted; it completes when
+- **root ticket** — the ticket named by a `root_generation`, directly bound to
+  any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
+  any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
   `<id>.gate.verify` completes. A successor root lives in a successor run
   opened after this root's result identity resolves and cites that identity
-  among its own fixed inputs; the predecessor run's durable `successors.md`
+  in its Context; the predecessor run's durable `successors.md`
   names the planned root until `orch-spec` materializes it on the frontier's
   completion trigger.
-- **gate-only cut** — a v2 root cut with zero unit tickets because its
+- **gate-only cut** — a decomposed root cut with zero unit tickets because its
   coverage map assigns every root criterion to the composite gate; it is
   not padding, per `rules/topology.md` §3.
 - **template** — a directory of ticket stubs plus its `template.md`
@@ -129,10 +128,10 @@ that needs a different meaning needs a different word.
   takes. Shape per `contracts/work-item.md`.
 - **stub** — a template's unit: a ticket missing only `run`, `status`,
   `claimed_*` and any `{{placeholder}}`.
-- **terminal ticket** — the stub no other stub depends on; its
-  completion test is the template's done check.
+- **terminal ticket** — the stub no other stub depends on; its Goal is the
+  template's final observable result.
 - **ad-hoc ticket** — a work item the orchestrator cuts directly from a
-  one-off request: a delegation packet persisted with a completion test,
+  one-off request: a Goal and Context persisted with system metadata,
   not a separate species — same contract shape, run id
   `<utc-stamp>-adhoc-<slug>`, `ready` at issue.
 - **ad-hoc set** — ad-hoc tickets cut together with dependency edges,
@@ -147,9 +146,8 @@ that needs a different meaning needs a different word.
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the
   work.
-- **assembly item** — the at-most-one terminal work item that rewrites its
-  inputs into the final artifact (edit, synthesize); its completion test
-  carries the final gate.
+- **assembly item** — the at-most-one terminal work item that integrates
+  candidate results into the final artifact before the final gate.
 - **decision gap** — a decomposition return naming the acceptance
   criteria the stamped slicing cannot cover.
 - **workspace** — where results live and what identities mean there (git
@@ -176,7 +174,7 @@ that needs a different meaning needs a different word.
   `rules/verification.md` §10.
   Research craft narrows the term for sources: no shared upstream.
 - **checker** — the fresh reviewer-corrector context (`orch-critique`
-  dispatched with the ticket's write scope as its packet `authority`)
+  dispatched into the isolated candidate)
   through which independence enters a unit whose checks were authored
   in-unit; corrects but never renders verdicts; law in
   `rules/verification.md` §10.
@@ -214,21 +212,17 @@ composition).
 ## Delegation
 
 - **dispatch / delegation packet** — sending one packet to one fresh
-  child, and the packet itself: a ticket's own dispatch fields —
-  objective, inputs, authority, bounds, return contract, reply_to, per
+  child, and the packet itself: Goal, Context, optional Suggested files,
+  operational bound, exact executor binding, and reply_to, per
   `contracts/work-item.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. A packet-only
   dispatch is a ticket the dispatcher does not persist.
 - **assignment seal** — the proof that an exact validated assignment digest
   is immutable for dispatch; changing sealed assignment fields creates a new
   assignment generation under `rules/delegation.md`.
-- **amendment request** — the canonical typed record a worker appends to its
-  `## Handoff` when its assignment must change; the worker parks and the
-  caller alone chooses a disposition under `rules/delegation.md`.
-- **authority** — the write scope plus named excluded actions a dispatch
-  grants; per `contracts/work-item.md`.
-- **write scope** — the capability naming exactly what a child may change,
-  expressed in the pack's workspace semantics.
+- **candidate authority** — repository/workspace write authority granted to
+  an isolated candidate. Suggested files do not attenuate it; actual changes
+  are adjudicated at the join.
 - **join** — the single point where a caller integrates one child
   result, always `orch-integrate`. `rules/delegation.md` owns what
   happens there and names its own terms: the closed **disposition** set
@@ -267,12 +261,8 @@ composition).
   every item an atom. Read with each level's width from
   `scripts/cutcheck.py`'s `graph` block (classes `critical-path`,
   `level-width`).
-- **lane** — any independent parallel branch whose write scope and
-  whose workspace are both disjoint from every other's (sharing =
-  writing the same artifact or slot, not returning same-named fields).
-  Two lanes in one workspace are one lane with two authors: neither
-  one's oracle output is attributable to its own change. Distinct from
-  independence, a property of acceptance evidence.
+- **lane** — an isolated parallel candidate. Lanes may change the same path;
+  actual overlap and Git conflicts are integration inputs, not cut defects.
 - **terminal state** — a closed exit: a ticket status in
   `contracts/work-item.md`'s terminal set; a run's is its root (or loop)
   ticket's, per `contracts/worklog.md`.

@@ -17,12 +17,11 @@ here, and a module this one imported back would close a cycle.
 from __future__ import annotations
 import re
 if __package__:
-    from .tickets_markdown import _parse_frontmatter, _sections
+    from .tickets_markdown import _sections
 else:
-    from tickets_markdown import _parse_frontmatter, _sections
+    from tickets_markdown import _sections
 INSTRUCTION_BUDGET = 300
-INSTRUCTION_SECTIONS = ('Objective', 'Completion test', 'Return fields')
-EXCLUDED_ACTIONS_LABEL = 'excluded_actions'
+INSTRUCTION_SECTIONS = ('Goal', 'Context', 'Suggested files')
 LINK_TARGET_RE = re.compile('\\]\\([^)]*\\)')
 CEILING_RULE = 'rules/token-economy.md, section 11'
 
@@ -35,10 +34,7 @@ def _words(part: str) -> int:
 def instruction_breakdown(text: str) -> tuple:
     """Each graded part with its own word count, largest first.
 
-    The objective, the completion test, the return fields and the
-    frontmatter `excluded_actions` -- what a child loads on every dispatch.
-    Never `## Fixed inputs`: those are identities, and counting them would
-    charge a cutter for supplying evidence (rules/token-economy.md §11).
+    The three author-facing semantic fields a child loads on dispatch.
 
     Largest first because the order is the advice: the part printed first
     is the one whose trimming moves the total most, which is the question a
@@ -46,9 +42,7 @@ def instruction_breakdown(text: str) -> tuple:
     `sorted` being stable, so one ticket always renders one way.
     """
     sections = _sections(text)
-    excluded = _parse_frontmatter(text).get('excluded_actions') or []
-    parts = [(EXCLUDED_ACTIONS_LABEL, sum(_words(item) for item in excluded))]
-    parts.extend((name, _words(sections.get(name, ''))) for name in INSTRUCTION_SECTIONS)
+    parts = [(name, _words(sections.get(name, ''))) for name in INSTRUCTION_SECTIONS]
     return tuple(sorted(parts, key=lambda part: -part[1]))
 
 
@@ -75,5 +69,5 @@ def ceiling_sentence(subject: str, text: str, budget: int = INSTRUCTION_BUDGET):
         return None
     return (f'{subject} has a {count}-word instruction, {count - budget} over the '
             f'{budget}-word ceiling ({CEILING_RULE}): {ceiling_arithmetic(text)}, '
-            'and the fixed inputs are free of the count. Cut the part named first: '
-            'a compound objective is two items, not one longer ticket')
+            'Cut the part named first: a compound goal is two items, not one '
+            'longer ticket')

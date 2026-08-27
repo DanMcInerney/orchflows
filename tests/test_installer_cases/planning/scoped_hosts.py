@@ -233,16 +233,11 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(str(expected_lib_path), body)
 
             expected_stub_names = {
-                name
-                for name in install.CODEX_SKILL_REDIRECT_NAMES
-                if name.startswith("orch-") or name in template_names
-            }
+                install.frontmatter_field(install.split_frontmatter(path.read_text(encoding="utf-8"))[0], "name")
+                for path in install.discover_packages()
+            } | template_names
             self.assertEqual(
                 expected_stub_names,
-                {dest.parent.name for dest, _ in plan.codex_skills},
-            )
-            self.assertEqual(
-                {*install.SHARED_ADAPTER_NAMES, "orch-investigate"},
                 {dest.parent.name for dest, _ in plan.codex_skills},
             )
             for dest, content in plan.codex_skills:
@@ -252,7 +247,8 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(f"name: {dest.parent.name}", frontmatter)
                 self.assertIn("description:", frontmatter)
                 self.assertIn(str(expected_lib_path), body)
-                self.assertIn("follow it exactly.", body)
+                if dest.parent.name not in template_names:
+                    self.assertIn("follow it exactly.", body)
 
     def test_discover_templates_requires_a_manifest_with_entry(self):
         """A name surface is a template directory whose manifest declares an

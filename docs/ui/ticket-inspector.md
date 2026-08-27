@@ -10,7 +10,7 @@ The tabs keep their claims deliberately narrow:
 
 - **Overview** answers what the ticket is, what is happening, and what the
   canonical readiness facts say happens next.
-- **Details** shows routing, dependencies, accepted inputs, write scope,
+- **Details** shows routing, dependencies, Goal, Context, Suggested files,
   bound, claim, and pack. It links the exact executor to a contained skill or
   script source only when the projection carries an explicit canonical
   workflow and source association. Otherwise it says `Executor source

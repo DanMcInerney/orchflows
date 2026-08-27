@@ -52,7 +52,7 @@ class InstantiateTest(unittest.TestCase):
             sink = use_sink(tmp)
             stubs = three_stubs()
             stubs["A"] = stubs["A"].replace(
-                "None.",
+                '- input: {"name":"none","type":"literal","value":null}',
                 '- input: {"name":"question","type":"literal","value":"{{target}}"}',
             )
             directory = make_template(tmp, stubs)
@@ -103,7 +103,7 @@ class InstantiateTest(unittest.TestCase):
             )
             self.assertEqual("ticket-00-first-result", dependency["name"])
 
-    def test_legacy_template_prose_is_migrated_to_a_literal_not_left_as_a_prose_bullet(self):
+    def test_template_canonical_input_remains_a_record(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             sink = use_sink(tmp)

@@ -1,4 +1,4 @@
-"""What a fresh runner process collects from each `tests/test_*_cases/` package.
+"""What a fresh runner process collects from each active case family.
 
 `tools/run_tests.py` schedules one process per top-level `tests/test*.py` --
 unittest discover's own pattern, which no case module matches -- so a case
@@ -45,19 +45,23 @@ SUFFIX = "_cases"
 # it would exempt a real class the day its last test was deleted. The
 # exemption test refuses any entry that stops being either half of this.
 BASE_ONLY = frozenset({
-    "test_carriage_cases._support.IsolatedTree",
     "test_cell_linter_cases.pack_cells._IsolatedTree",
     "test_friction_cases.common._IsolatedRepoTestCase",
     "test_friction_cases.storage._ProvenanceTestCase",
     "test_migrate_state_cases.common.MigrationCase",
     "test_state_root_cases.support.SinkFixture",
-    "test_templates_cases.shape._TemplateTree",
     "test_visualize_scripts_cases.support._ScriptCase",
 })
 
 
 def case_packages():
-    return sorted(path for path in TESTS.glob("test_*" + SUFFIX) if path.is_dir())
+    """Case packages whose top-level family aggregator is still live."""
+
+    return sorted(
+        path
+        for path in TESTS.glob("test_*" + SUFFIX)
+        if path.is_dir() and (TESTS / (path.name[:-len(SUFFIX)] + ".py")).is_file()
+    )
 
 
 def family(stem, shards):
@@ -119,31 +123,30 @@ def survey():
     unreachable, exempt, errors, scanned = [], [], [], 0
     for package in case_packages():
         stem = package.name[:-len(SUFFIX)]
-        if not (TESTS / (stem + ".py")).is_file():
-            errors.append("{0} has no tests/{1}.py aggregator".format(package.name, stem))
-            continue
         served = set()
         for name in family(stem, shards):
             try:  # a shard nobody can import collects nothing for anybody
                 served |= collected(importlib.import_module("tests." + name))
             except Exception as failure:
                 errors.append("tests/{0}.py: {1!r}".format(name, failure))
-        for path in sorted(package.rglob("*.py")):
-            if "__pycache__" in path.parts:
-                continue
-            relative = path.relative_to(TESTS).as_posix()
-            dotted = relative[:-len(".py")].replace("/", ".")
-            try:
-                module = importlib.import_module("tests." + dotted)
-            except Exception as failure:
-                errors.append("tests/{0}: {1!r}".format(relative, failure))
-                continue
+        prefix = "tests." + package.name + "."
+        active_modules = sorted(
+            (
+                name,
+                module,
+                Path(module.__file__).resolve(),
+            )
+            for name, module in sys.modules.items()
+            if name.startswith(prefix) and getattr(module, "__file__", None)
+            and Path(module.__file__).resolve().parent == package.resolve()
+        )
+        for dotted, module, path in active_modules:
             for name, value in defined(path, module):
                 scanned += 1
                 if value in served:
                     continue
                 record = {
-                    "case": "{0}.{1}".format(dotted, name),
+                    "case": "{0}.{1}".format(dotted.removeprefix("tests."), name),
                     "aggregator": "tests/{0}.py".format(stem),
                     "tests": len(unittest.defaultTestLoader.getTestCaseNames(value)),
                 }

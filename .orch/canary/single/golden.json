@@ -4,7 +4,7 @@
   "admission": {
     "adapter": "plain-artifact",
     "findings": [],
-    "receipt": "v1:plain-artifact:sha256:4b4b94b1e6a6ba192aa91d5ef4825d139f8ab42299852a10ca07b3a1ee218479",
+    "receipt": "plain-artifact:sha256:08ea59a33094a3fad47a4e943a5ed2aabc162a1d79838607751daaa9f9b8a1ab",
     "snapshot_ids": [
       "repair"
     ]
