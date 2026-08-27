@@ -103,8 +103,16 @@ def _projection_packet(
     legacy: dict, data: dict, text: str, attempt: dict, form: str
 ) -> dict:
     executor = str(legacy["executor"])
-    role = _declared_role(executor)
-    profile = legacy.get("profile") or (f"orch-{role}" if role in ("worker", "planner") else None)
+    declared_role = _declared_role(executor)
+    explicit_profile = legacy.get("profile")
+    profile_role = (
+        explicit_profile.removeprefix("orch-")
+        if explicit_profile in ("orch-worker", "orch-planner") else None
+    )
+    role = profile_role or declared_role
+    profile = explicit_profile or (
+        f"orch-{role}" if role in ("worker", "planner") else None
+    )
     packet = {
         "admission": legacy.get("admission"),
         "assigned_name": attempt.get("owner"),
@@ -252,6 +260,42 @@ def _packet_shape(value):
     return None
 
 
+def _inline_assignment_failure(packet: dict, assignment: dict):
+    system = assignment.get("system")
+    if not isinstance(system, dict):
+        return _classification("assignment-divergent", "inline system identity is missing")
+    executor = assignment.get("executor")
+    declared_role = _declared_role(str(executor or ""))
+    assignment_profile = system.get("profile") or (
+        f"orch-{declared_role}" if declared_role in ("worker", "planner") else None
+    )
+    profile_role = (
+        assignment_profile.removeprefix("orch-")
+        if assignment_profile in ("orch-worker", "orch-planner") else None
+    )
+    expected = {
+        "executor": executor,
+        "independence": system.get("independence") or "checker",
+        "isolation": system.get("isolation"),
+        "pack": system.get("pack"),
+        "profile": assignment_profile,
+        "role": profile_role or declared_role,
+    }
+    if any(packet.get(key) != value for key, value in expected.items()):
+        return _classification(
+            "assignment-divergent",
+            "inline routing does not match the sealed assignment",
+        )
+    source = packet.get("source")
+    if packet["durability"] == "ticket" and (
+        not isinstance(source, dict) or source.get("id") != assignment.get("ticket")
+    ):
+        return _classification(
+            "assignment-divergent", "inline source does not match the sealed assignment"
+        )
+    return None
+
+
 def _actual_mismatch(packet: dict, role, profile, owner, reply_to, workspace):
     for key, expected, actual, code in (
         ("assigned_name", packet["assigned_name"], owner, "identity-mismatch"),
@@ -341,6 +385,9 @@ def _cmd_dispatch_receive(rest):
             or _semantic_digest(assignment) != packet["assignment_seal"]
         ):
             return _classification("assignment-divergent", "inline assignment seal diverged")
+        failure = _inline_assignment_failure(packet, assignment)
+        if failure is not None:
+            return failure
         if packet["durability"] == "ephemeral":
             checked = False
             failure = None

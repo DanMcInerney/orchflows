@@ -168,6 +168,15 @@ class DispatchPacketV1Test(unittest.TestCase):
 
         self.tearDown()
         self.setUp()
+        routing = self.project(form="inline")["packet"]
+        routing["executor"] = "orch-repair"
+        missing = str(Path(self.temporary.name) / "not-mounted")
+        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
+            refusal = self.receive(routing)
+        self.assertEqual("assignment-divergent", refusal["code"])
+
+        self.tearDown()
+        self.setUp()
         reference = self.project()["packet"]
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
