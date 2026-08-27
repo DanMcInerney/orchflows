@@ -9,7 +9,7 @@ to the shapes it exhibits rather than redacted from it.
 | fixture | shape it carries |
 |---|---|
 | `run-alpha/A1.md` | conforming: every `contracts/work-item.md` floor key, plain body |
-| `run-alpha/A2.md` | `## Objective` carrying `<script>alert(1)</script>` — untrusted data per `rules/visibility.md` §6 |
+| `run-alpha/A2.md` | `## Goal` carrying `<script>alert(1)</script>` — untrusted data per `rules/visibility.md` §6 |
 | `run-beta/B1.md` | degenerate: no `status`, no `executor`, no body section at all |
 | `run-gamma/G1.md` | `## Verification` as a five-column verdict table, one row escaping a `\|` inside its evidence, one `FAIL` |
 | `run-gamma/G2.md` | `## Verification` as numbered prose — the shape that must read `unparsed`, never zero rows |

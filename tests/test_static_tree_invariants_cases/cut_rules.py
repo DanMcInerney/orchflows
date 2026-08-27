@@ -9,23 +9,23 @@ CODE_SLICING = ROOT / "packs" / "orch-code-pack" / "references" / "slicing.md"
 DESIGN_SLICING = ROOT / "packs" / "orch-design-pack" / "references" / "slicing.md"
 
 # Stable owner anchors for each rule, rather than whole prose sentences.
-OVERLAP_ANCHORS = ("write scope", "dependency-ordered")
+OVERLAP_ANCHORS = ("Suggested files may overlap", "never grant authority")
 CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
 EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 
 
 class TestDependencyOrderedOverlap(unittest.TestCase):
-    """Write scopes overlap only when their siblings are dependency-ordered."""
+    """Predicted paths are hints; actual overlap belongs to integration."""
 
-    def test_the_owner_permits_overlap_along_dependency_order(self):
+    def test_the_owner_does_not_turn_suggested_paths_into_cut_authority(self):
         text = read_flat(DECOMPOSE)
         for anchor in OVERLAP_ANCHORS:
             self.assertIn(
                 anchor, text,
                 f"orch-decompose, the rule's one owner, does not name "
-                f"{anchor!r}, so it does not permit overlap only along "
-                "dependency order",
+                f"{anchor!r}, so predicted paths can still become cut-time "
+                "authority",
             )
 
     def test_no_cut_states_a_superseded_overlap_rule(self):

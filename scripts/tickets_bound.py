@@ -14,9 +14,8 @@ ticket that is over its bound and still moving is a report; one that is
 over its bound and still is a decision for its caller.
 
 It therefore owns when a claim goes stale, which contracts/work-item.md
-states only as a field: a claim is stale when no write to the ticket file,
-nor to an artifact its `## Result` names that falls inside the item's
-`write_scope`, has landed for longer than the minutes `parse_bound` reads
+states only as a field: a claim is stale when no write to the ticket file
+has landed for longer than the minutes `parse_bound` reads
 off that item's bound -- a stated duration as itself, a tool-call or
 iteration count at its stated conversion, and 60 minutes,
 `DEFAULT_BOUND_MINUTES`, only for a bound this grammar cannot read at all.
@@ -103,9 +102,7 @@ def should_park(claimed_at, bound_minutes: int, last_motion, now) -> bool:
 def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
     """``(row, unreadable)`` for one claimed ticket."""
     minutes, kind = parse_bound(item.get('bound'))
-    motion, unreadable = support['_last_motion'](
-        Path(item['path']), (item.get('sections') or {}).get('Result', ''), item.get('write_scope') or (),
-    )
+    motion, unreadable = support['_last_motion'](Path(item['path']))
     claimed = support['_parse_iso'](item.get('claimed_at'))
     elapsed = None if claimed is None else max(int((now - claimed).total_seconds() // 60), 0)
     return ({

@@ -124,7 +124,7 @@ def contract_statuses() -> tuple:
     this suite instead of rendering as the unknown fallback."""
 
     text = WORK_ITEM_CONTRACT.read_text(encoding="utf-8")
-    declaration = re.search(r"^- `status`:(.+?)—", text, re.MULTILINE | re.DOTALL)
+    declaration = re.search(r"^`status` is (.+?)\.", text, re.MULTILINE | re.DOTALL)
     if declaration is None:
         return ()
     return tuple(re.findall(r"`([a-z]+)`", declaration.group(1)))
@@ -135,7 +135,7 @@ def contract_sections() -> tuple:
     contract for the same reason as the status set."""
 
     text = WORK_ITEM_CONTRACT.read_text(encoding="utf-8")
-    return tuple(re.findall(r"^- `## (.+?)` —", text, re.MULTILINE))
+    return tuple(dict.fromkeys(re.findall(r"`## (.+?)`", text)))
 
 
 def copy_logs(source: Path, dest: Path):

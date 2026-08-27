@@ -220,33 +220,28 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
     EXPECTED = {
         "orch-code-pack": (
             "`orch-tdd`", "`git`",
-            ("git:", "identities: revisions", "authority: paths", "isolation: branch or worktree"),
-            "absent region proof",
+            ("git:", "repository write authority", "actual diffs", "ordinary Git conflicts"),
         ),
         "orch-content-pack": (
             "`orch-draft`", "`document-tree`",
             (
                 "document tree:", "identities are document revisions",
-                "isolation is a run-scoped directory",
-                "write scopes are a whole document for one direct owner or outline slots for a genuine cut",
+                "one direct owner for a whole artifact", "actual candidate changes",
             ),
-            "without region proof",
         ),
         "orch-design-pack": (
             "`orch-render`", "`git-plus-render`",
             (
-                "git plus render:", "identities: [view identity]", "authority: paths",
-                "golden captures:", "run captures: outside write scope",
+                "git plus render:", "identities are [view identities]", "actual diff",
+                "render conflicts",
             ),
-            "failed region proof",
         ),
         "orch-research-pack": (
             "`orch-investigate`", "`evidence-store`",
             (
                 "evidence store:", "identities are [evidence packets]",
-                "isolation is a run-scoped directory", "write scopes are lane stores",
+                "isolation is a run-scoped directory", "actual lane artifacts",
             ),
-            "lacking region proof",
         ),
     }
 
@@ -262,7 +257,7 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
             for path in sorted((ROOT / "packs").glob("*/SKILL.md"))
         }
         self.assertEqual(set(self.EXPECTED), set(packs))
-        for pack, (executor, adapter, substrate, refusal) in self.EXPECTED.items():
+        for pack, (executor, adapter, substrate) in self.EXPECTED.items():
             with self.subTest(pack=pack):
                 cells = packs[pack]
                 workspace = cells["workspace"]
@@ -270,17 +265,9 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
                 self.assertIn("ticket adapter: %s" % adapter, workspace)
                 for fragment in substrate:
                     self.assertIn(fragment, workspace)
-                for field in (
-                    "root_generation", "cut_generation", "assignment_seal", "ownership_regions",
-                ):
+                for field in ("root_generation", "cut_generation", "assignment_seal"):
                     self.assertIn(field, workspace)
-                self.assertRegex(
-                    workspace,
-                    r"ownership_regions: (?:`(?:symbol|heading|json-pointer)`|adapter-equivalent)",
-                )
-                self.assertIn(refusal, workspace)
-                self.assertIn("merge oracle:", workspace)
-                self.assertIn("stable non-overlap at a pinned identity", workspace)
+                self.assertIn("Suggested files are non-binding", workspace)
 
 
 class TestCellClauseSplitter(unittest.TestCase):
@@ -516,7 +503,7 @@ class TestAllowlist(unittest.TestCase):
 # those are fixed. Raising it is a decision, and it belongs in the commit
 # message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 25
+WARNING_CEILING = 9
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two

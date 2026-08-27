@@ -2,33 +2,31 @@
 
 from __future__ import annotations
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
+    from .tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
 else:
-    from tickets_format import CHECKED_BY_KEY, GRANTED_SCOPE_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _scope_entries, _sections, _set_frontmatter_field, _split_commas, effective_write_scope, parse_return_size
+    from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_store import NO_SINK_ERROR, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
-    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from tickets_store import NO_SINK_ERROR, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
     from tickets_worklog import _run_goal, _run_tickets
 if __package__:
-    from .tickets_admission import ADMISSION_PENDING, grade_result, is_receipt
     from .tickets_context import graded_admission, run_snapshot
 else:
-    from tickets_admission import ADMISSION_PENDING, grade_result, is_receipt
     from tickets_context import graded_admission, run_snapshot
 if __package__:
     from .tickets_packet import _claim_is_stale
 else:
     from tickets_packet import _claim_is_stale
 if __package__:
-    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, sealed_after_release, set_status_blanks
+    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, refusal, set_status_blanks
 else:
-    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, GRANTABLE_STATUSES, refusal, sealed_after_release, set_status_blanks
+    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, refusal, set_status_blanks
 # The claim-admission seam lives in `tickets_project`, where the project
 # binding it now grades also lives; re-exported here because the facade and
 # `tickets_dispatch` import these three names from this module.
@@ -37,10 +35,6 @@ if __package__:
 else:
     from tickets_project import CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
-RESULT_GRADE_USAGE = 'result-grade <run> <id>'
-GRANT_USAGE = 'grant <run> <id> --write-scope <path>[,<path>] --by <name>'
-GRANTED_BY_KEY = 'granted_by'
-GRANTED_AT_KEY = 'granted_at'
 CHECK_USAGE = 'check <run> <id> --by <name>'
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
@@ -165,69 +159,6 @@ def _cmd_ready(rest):
             if eligible:
                 ready_items.append(data['summary'])
     return {'ready': ready_items, 'skipped': skipped}
-def _cmd_grant(rest):
-    probe = list(rest)
-    for flag in ('--write-scope', '--by'):
-        _extract_flag(probe, flag)
-    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
-        return _grant_under_run_lock(rest)
-    try:
-        with _run_lock(probe[0]):
-            return _grant_under_run_lock(rest)
-    except OSError as error:
-        return {'error': f'unwritable ticket: {error}'}
-def _grant_under_run_lock(rest):
-    args = list(rest)
-    scope = _extract_flag(args, '--write-scope')
-    granted_by = _extract_flag(args, '--by')
-    if len(args) != 2:
-        return {'error': f'usage: {GRANT_USAGE}'}
-    run, ticket_id = args
-    entries = _split_commas(scope)
-    if not entries:
-        return {'error': f'grant requires --write-scope <path>[,<path>], the paths this widening adds. usage: {GRANT_USAGE}'}
-    if not (granted_by or '').strip():
-        return {'error': f"grant requires --by <name>: the widening is the granting caller's, and an unattributed one is the unrecorded edit this subcommand exists to replace. usage: {GRANT_USAGE}"}
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
-    if not ticket_path.is_file():
-        return {'error': f'ticket not found: {run}/{ticket_id}'}
-    text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return failure
-    data = _parse_frontmatter(text)
-    status = str(data.get('status') or '').strip().strip('`').strip()
-    if status not in GRANTABLE_STATUSES:
-        return {'error': refusal(f"ticket is not claimed (status '{status}')", 'grant', status, note=f"A grant widens the authority of an item already being worked. Before a claim the cut owns the scope — re-place the ticket through `new --file` — and after a terminal status the verdict was already read against the authority the work was done under. ticket: {ticket_path}")}
-    if str(data.get('assignment_seal') or '').strip():
-        return {'error': 'a sealed assignment cannot widen authority in place: suspend it and create a newly validated generation'}
-    original_scope = _scope_entries(data.get('write_scope'))
-    new_paths = [
-        entry for entry in entries
-        if not any(
-            entry.replace('\\', '/').rstrip('/') == scope.replace('\\', '/').rstrip('/')
-            or entry.replace('\\', '/').rstrip('/').startswith(scope.replace('\\', '/').rstrip('/') + '/')
-            for scope in original_scope if scope.strip()
-        )
-    ]
-    if 'mutations' in data and new_paths:
-        sealed = sealed_after_release(data.get('id') or ticket_id, text, _run_snapshot(ticket_path.parent)[0])
-        return {'error': refusal('a ticket carrying a planned mutation vector cannot widen operation authority from path-only grant input: ' + ', '.join(new_paths) + '; the widened operation needs an explicit mutation vector written at cut time', 'recut', status, note='Or suspend the item and let the join open a successor ticket.', sealed=sealed)}
-    granted = _scope_entries(data.get(GRANTED_SCOPE_KEY))
-    for entry in entries:
-        if entry not in granted:
-            granted.append(entry)
-    timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
-    updated = _set_frontmatter_field(text, GRANTED_SCOPE_KEY, f"[{', '.join(granted)}]")
-    updated = _set_frontmatter_field(updated, GRANTED_BY_KEY, granted_by.strip())
-    updated = _set_frontmatter_field(updated, GRANTED_AT_KEY, timestamp)
-    try:
-        _write_text_atomically(ticket_path, updated)
-    except OSError as error:
-        return {'error': f'unwritable ticket: {error}'}
-    return {'grant': {'run': data.get('run') or run, 'id': data.get('id') or ticket_id, 'granted_scope': granted, 'granted_by': granted_by.strip(), 'granted_at': timestamp, 'write_scope': effective_write_scope(_parse_frontmatter(updated))}}
 def _cmd_check(rest):
     probe = list(rest)
     _extract_flag(probe, '--by')
@@ -258,7 +189,7 @@ def _check_under_run_lock(rest):
     data = _parse_frontmatter(text)
     status = str(data.get('status') or '').strip().strip('`').strip()
     if status not in CHECKABLE_STATUSES:
-        return {'error': refusal(f"ticket is not claimed (status '{status}')", 'check', status, note=f"The §10 checker passes over a result an executor has produced under a claim. Before a claim there is nothing to check, and after a terminal status the join has already read the acceptance this field feeds. ticket: {ticket_path}")}
+        return {'error': refusal(f"ticket is not claimed (status '{status}')", 'check', status, note=f"The checker evaluates a result produced under a claim against Goal. ticket: {ticket_path}")}
     independence = str(data.get('independence') or 'checker').strip().strip('`')
     if independence == 'gate' and _executor_of(data) != ROOT_EXECUTOR:
         return {'error': f'ticket {run}/{ticket_id} defers independence to its downstream gate: a non-root gate-deferred ticket has no checker path and cannot carry checked_by'}
@@ -282,41 +213,6 @@ def _cmd_set_status(rest):
             return _set_status_under_run_lock(rest)
     except OSError as error:
         return {'error': f'unable to record status and terminal timing: {error}'}
-def _result_snapshot(run_dir):
-    snapshot = {}
-    for path in sorted(run_dir.glob('*.md')):
-        text, failure = _read_utf8(path)
-        if failure is not None:
-            return (None, failure)
-        snapshot[path.stem] = text
-    return (snapshot, None)
-def _result_grade_snapshot(ticket_path):
-    text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return (None, None, failure)
-    clause, _ = parse_return_size(_sections(text).get('Return fields', ''))
-    if clause is None:
-        return (text, {ticket_path.stem: text}, None)
-    snapshot, failure = _result_snapshot(ticket_path.parent)
-    return (text, snapshot, failure)
-def _cmd_result_grade(rest):
-    if len(rest) != 2:
-        return {'error': f'usage: {RESULT_GRADE_USAGE}'}
-    run, ticket_id = rest
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
-    if not ticket_path.is_file():
-        return {'error': f'ticket not found: {run}/{ticket_id}'}
-    text, snapshot, failure = _result_grade_snapshot(ticket_path)
-    if failure is not None:
-        return failure
-    grade = grade_result(
-        ticket_id, text, snapshot,
-        context={'tickets_root': str(tickets_root), 'run': run},
-    )
-    return {'result_grade': {'run': run, 'id': ticket_id, **grade}}
 def _set_status_under_run_lock(rest):
     args = list(rest)
     if len(args) != 3:
@@ -343,19 +239,6 @@ def _set_status_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
-    if status == 'complete':
-        _, snapshot, failure = _result_grade_snapshot(ticket_path)
-        if failure is not None:
-            return failure
-        grade = grade_result(
-            ticket_id, text, snapshot,
-            context={'tickets_root': str(tickets_root), 'run': run},
-        )
-        if grade['findings']:
-            return {
-                'error': f'ticket {run}/{ticket_id} result does not satisfy return-size',
-                'findings': grade['findings'],
-            }
     items, run_error = _run_tickets(run)
     terminal_transition = False
     terminal_now = False

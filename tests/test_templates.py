@@ -1,25 +1,15 @@
-"""Regression collection for the canonical ticket-template seams.
-
-The case classes live in non-discoverable modules and are re-exported here so
-the stable ``tests.test_templates`` seam remains the collection owner.
-"""
-
+"""Maintained compositions instantiate current ticket stubs."""
 import unittest
+from pathlib import Path
+from scripts import tickets
 
-from tests.test_templates_cases.closure import (
-    TestCanonicalTemplatesClose,
-    TestProducerConsumerClosure,
-    TestTemplateBudgets,
-)
-from tests.test_templates_cases.shape import (
-    TestPlaceholders,
-    TestStubExecutorResolves,
-    TestStubGraph,
-    TestStubShape,
-    TestTemplateManifest,
-    TestTheValidatorRefusesWhatTheOwnerRefuses,
-)
+ROOT = Path(__file__).resolve().parents[1]
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TemplateTest(unittest.TestCase):
+    def test_all_routed_compositions_have_current_ticket_shape(self):
+        findings = []
+        for directory in sorted((ROOT / "compositions").iterdir()):
+            if directory.is_dir() and directory.name != "references":
+                findings.extend((str(path.relative_to(ROOT)), message) for path, message in tickets.template_defects(directory))
+        self.assertEqual([], findings)

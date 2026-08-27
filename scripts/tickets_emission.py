@@ -15,7 +15,7 @@ dependencies that have not run yet and an assignment `seal`
 has not sealed yet. Neither is the emitter's fault and neither can be
 repaired at emission time, so both are deferred. Everything else is the
 emitter's own -- a locator no adapter resolves, an executor its pack does
-not bind, an absent mutation plan -- and is refused where repairing it
+not bind -- and is refused where repairing it
 still costs the flag rather than the dispatch.
 
 ``DEFERRED_CODES`` is the whole of what is deferred, so the law is

@@ -49,12 +49,11 @@
 10. Independence enters every unit before its acceptance is final through
     exactly one mutually exclusive ordinary path for each criterion and
     lens: a
-    completion test whose oracles all carry `pre-existing` oracle
-    provenance ([contracts/work-item.md](../contracts/work-item.md)) and
-    each can fail on the objective (§8); one fresh checker
-    (`orch-critique` under the ticket's own write scope — never a second
+    deterministic repository gates that pre-exist the unit and can fail on
+    Goal (§8); one fresh checker
+    (`orch-critique` in the isolated candidate — never a second
     executor) reviewing the result and its authored checks and
-    correcting per §9, the completion test then re-verified, over the
+    correcting per §9, Goal then re-verified, over the
     entries the checker invalidated, by a context that rendered no part
     of the result — where every invalidated oracle is deterministic that
     context is the join, which re-runs them, and where any is judged one

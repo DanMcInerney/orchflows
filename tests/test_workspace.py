@@ -1,22 +1,14 @@
-"""Compatibility discovery seam for every workspace behavioral case."""
-
-import sys
+"""Candidate workspaces report actual mutations without predicted-scope grading."""
 import unittest
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-from tests.test_workspace_cases.cli_cases import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.contract_cases import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.emission_cases import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.grade_cases import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.operation_cases import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.prepare import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.sharing_cases import *  # noqa: E402,F401,F403
-from tests.test_workspace_cases.start_cases import *  # noqa: E402,F401,F403
+from scripts import workspace
 
 
-if __name__ == "__main__":
-    unittest.main()
+class WorkspaceTest(unittest.TestCase):
+    def test_actual_mutations_include_every_changed_and_new_path(self):
+        self.assertEqual([("change", "a.py"), ("create", "new.py")], workspace._actual_mutations("M\0a.py\0A\0new.py\0"))
+
+    def test_workspace_does_not_import_scope_authority(self):
+        source = Path(workspace.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("workspace_scope", source)
+        self.assertNotIn("tickets_scope", source)

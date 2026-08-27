@@ -10,9 +10,9 @@ silently attributed to whichever session happened to write to the sink
 first while its tickets named a different repository.
 
 Two laws close it, and they are separate laws rather than one applied
-twice.  *Attribution*: a run belongs to the project its ROOT TICKET's
-workspace names, never to the invoking session's directory, so the
-identity the sink records is the cut's fact and not the caller's.
+twice.  *Attribution*: a run belongs to the project recorded by the
+workspace that issues it. Context is semantic evidence, never system
+authority, so a ticket cannot redirect project binding through prose.
 *Admission*: `claim` and terminal-status writes compare the writing
 workspace's resolved project against the run's recorded one and refuse a
 mismatch, so a context standing in the wrong checkout is stopped at the
@@ -36,8 +36,6 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.tickets_format import canonical_json  # noqa: E402
-
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 RUN = "testrun"
@@ -52,25 +50,28 @@ run: {run}
 status: {status}
 executor: orch-decompose
 depends_on: []
-write_scope: scratch/root.txt
 bound: 30m
 ---
 
-## Objective
+## Goal
 
-Bind this run to the project its own workspace names.
+Bind this run to its issuing project.
 
-## Fixed inputs
+## Context
 
-{inputs}
+{context}
 
-## Completion test
+## Result
 
-- the binding holds | oracle: `true` | oracle_class: deterministic | provenance: authored-here
+## Verification
 
-## Return fields
+## Feedback
 
-status
+[]
+
+## Risks
+
+[]
 """
 
 UNIT_TICKET = """---
@@ -79,31 +80,29 @@ run: {run}
 status: {status}
 executor: orch-tdd
 depends_on: []
-write_scope: scratch/{tid}.txt
 bound: 30m
 ---
 
-## Objective
+## Goal
 
 A unit of the bound run.
+
+## Context
+
+[]
+
+## Result
+
+## Verification
+
+## Feedback
+
+[]
+
+## Risks
+
+[]
 """
-
-
-def target_input(workspace: Path) -> str:
-    """The Fixed-input line by which a root ticket names its workspace.
-
-    Canonical exactly as `parse_input_records` demands, and built through
-    the one encoder rather than spelled out, so this fixture cannot drift
-    from the encoding the parser enforces.
-    """
-
-    return "- input: " + canonical_json(
-        {
-            "name": "target-repository",
-            "type": "literal",
-            "value": str(workspace).replace("\\", "/"),
-        }
-    )
 
 
 class ProjectBindingFixture(unittest.TestCase):
@@ -151,9 +150,9 @@ class ProjectBindingFixture(unittest.TestCase):
         return json.loads(completed.stdout or completed.stderr or "{}")
 
     def write_root(self, *, names: Path = None, status: str = "ready"):
-        inputs = target_input(names) if names is not None else ""
+        context = f"- reported workspace: {names}" if names is not None else "[]"
         (self.run_dir / "00-root.md").write_text(
-            ROOT_TICKET.format(run=RUN, status=status, inputs=inputs),
+            ROOT_TICKET.format(run=RUN, status=status, context=context),
             encoding="utf-8",
         )
 
@@ -173,14 +172,14 @@ class ProjectBindingFixture(unittest.TestCase):
 
 
 class TestAttribution(ProjectBindingFixture):
-    """A run is attributed to its root ticket's workspace, not its writer's."""
+    """A run is attributed to its issuing workspace, not semantic Context."""
 
-    def test_run_creation_stamps_the_project_the_root_ticket_names(self):
+    def test_run_creation_stamps_the_issuing_project(self):
         self.write_root(names=self.alpha)
         self.open_run_from(self.beta)
         recorded = self.identity()["project"]
-        self.assertEqual(str(self.alpha), recorded["root"])
-        self.assertEqual("alpha", recorded["name"])
+        self.assertEqual(str(self.beta), recorded["root"])
+        self.assertEqual("beta", recorded["name"])
 
     def test_the_writing_workspace_is_still_recorded_as_a_workspace(self):
         """Attribution moves; the workspace census does not.
@@ -208,20 +207,14 @@ class TestAttribution(ProjectBindingFixture):
         self.open_run_from(self.beta)
         self.assertEqual(str(self.beta), self.identity()["project"]["root"])
 
-    def test_a_recorded_project_is_corrected_to_the_root_tickets(self):
-        """The first writer does not own the attribution.
-
-        A run opened before its root ticket existed -- or opened from the
-        wrong checkout -- carries the caller's project.  The root ticket
-        is the authority, so the next write corrects the record rather
-        than preserving the first writer's mistake forever.
-        """
+    def test_semantic_context_does_not_reassign_a_recorded_project(self):
+        """A Context workspace fact is not lifecycle authority."""
 
         self.open_run_from(self.beta)
         self.assertEqual(str(self.beta), self.identity()["project"]["root"])
         self.write_root(names=self.alpha)
-        self.open_run_from(self.alpha)
-        self.assertEqual(str(self.alpha), self.identity()["project"]["root"])
+        self.open_run_from(self.beta)
+        self.assertEqual(str(self.beta), self.identity()["project"]["root"])
 
 
 class TestClaimAdmission(ProjectBindingFixture):

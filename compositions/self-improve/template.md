@@ -15,7 +15,7 @@ requalifying.
 
 Instantiate with two: `window`, the sessions, runs, projects, or period
 the cycle mines, and `workspace`, the repository holding the proposal's
-causal owner — `01-deliver`'s write scope; `00-mine` is read-only. The
+causal owner — `01-deliver`'s candidate workspace; `00-mine` is read-only. The
 third, `run`, is `instantiate`'s own and takes no `--set`: `01-deliver`
 cites `00-mine`'s Result by identity, and an identity naming a ticket
 names the run it is in.

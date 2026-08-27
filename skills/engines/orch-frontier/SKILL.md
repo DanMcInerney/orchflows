@@ -27,8 +27,8 @@ neither context.
 Readiness, claim, and packet require `root_generation`, `cut_generation`, and
 `assignment_seal` resolving to one sealed snapshot and validation receipt.
 Refuse draft/validated-only, stale, missing, mismatched, or substituted
-generations. An accepted `tickets.py amendment-request` disposition recomputes
-the frontier; only work newly sealed by `tickets.py seal` proceeds.
+generations. Recompute the frontier after lifecycle transitions; only work
+newly sealed by `tickets.py seal` proceeds.
 Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
 A lane runs its ticket's own oracles, nothing wider. After every return is

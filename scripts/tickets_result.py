@@ -1,9 +1,6 @@
 """Ticket result support."""
 
 from __future__ import annotations
-import hashlib
-import importlib
-import json
 from pathlib import Path
 from datetime import datetime, timezone
 try:
@@ -11,9 +8,9 @@ try:
 except ImportError:
     msvcrt = None
 if __package__:
-    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size, successor_context_defects
+    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section
 else:
-    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, count_return_text, parse_return_size, successor_context_defects
+    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section
 if __package__:
     from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
 else:
@@ -29,117 +26,6 @@ RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact 
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
 COVERAGE_RECORD_NAME = 'covered.jsonl'
-
-
-def _return_finding(code, detail):
-    return {'code': code, 'field': 'minimum-complete', 'detail': detail}
-
-
-def _ordered_return_findings(findings):
-    rows = {
-        (str(item.get('code') or ''), str(item.get('field') or ''), str(item.get('detail') or ''))
-        for item in findings
-    }
-    return [
-        {'code': code, 'field': field, 'detail': detail}
-        for code, field, detail in sorted(rows)
-    ]
-
-
-def grade_return_fixture(*, ticket_id, text, siblings, adapter_id, context=None):
-    """Resolve and count the one witness named by an optional return-size.
-
-    The fixed-input grader owns the identity grammar and ordinary resolution
-    findings. This grade adds only the witness relationship: one named text
-    artifact of an allowed kind must fit the clause with its selected built-in
-    counter. Keeping this pure lets ready and claim consume identical bytes.
-    """
-
-    sections = _sections(text)
-    clause, defects = parse_return_size(sections.get('Return fields', ''))
-    if clause is None:
-        marker = 'invalid' if defects else 'unbounded'
-        findings = [
-            {'code': 'return-size-invalid', 'field': 'Return fields', 'detail': defect}
-            for defect in defects
-        ]
-        return {'findings': findings, 'fingerprint': f'return-fixture:{marker}', 'count': None}
-    qualified = f'{__package__}.tickets_inputs' if __package__ else 'tickets_inputs'
-    tickets_inputs = importlib.import_module(qualified)
-    parsed = tickets_inputs.parse_input_records(text)
-    matches = [item for item in parsed['records'] if item.get('name') == clause['minimum-complete']]
-    findings = []
-    if len(matches) != 1:
-        findings.append(_return_finding(
-            'return-fixture-cardinality',
-            f"{clause['minimum-complete']} resolves from {len(matches)} fixed inputs; expected exactly one",
-        ))
-        return {
-            'findings': _ordered_return_findings(findings),
-            'fingerprint': 'return-fixture:error', 'count': None,
-        }
-    record = matches[0]
-    identity = record.get('identity') if record.get('type') == 'identity' else None
-    kind = identity.get('kind') if isinstance(identity, dict) else None
-    if kind not in {'artifact', 'document-revision', 'evidence-packet'}:
-        findings.append(_return_finding(
-            'return-fixture-kind',
-            f"{clause['minimum-complete']} is {kind or record.get('type')}; expected artifact, document-revision, or evidence-packet",
-        ))
-        return {
-            'findings': _ordered_return_findings(findings),
-            'fingerprint': 'return-fixture:error', 'count': None,
-        }
-    data = _parse_frontmatter(text)
-    literals = {
-        item['name']: item.get('value') for item in parsed['records']
-        if item.get('type') == 'literal'
-    }
-    resolution_context = {
-        **dict(context or {}), 'siblings': siblings, 'ticket_id': ticket_id,
-        'run': str(data.get('run') or (context or {}).get('run') or ''),
-        'input_literals': literals, 'input_name': record['name'],
-    }
-    resolved = tickets_inputs.resolve_identity_payload(
-        identity=identity, adapter_id=adapter_id,
-        context=resolution_context, mode='input',
-    )
-    findings.extend(resolved.get('findings') or [])
-    content = resolved.get('bytes')
-    count = None
-    if not findings:
-        if not isinstance(content, bytes):
-            findings.append(_return_finding(
-                'return-fixture-not-bytes', 'resolved witness returned no byte payload',
-            ))
-        else:
-            try:
-                decoded = content.decode('utf-8')
-            except UnicodeDecodeError as error:
-                findings.append(_return_finding(
-                    'return-fixture-not-text', f'UTF-8 decode failed at byte {error.start}',
-                ))
-            else:
-                count = count_return_text(decoded, clause['counter'])
-                if count > clause['maximum']:
-                    findings.append(_return_finding(
-                        'return-fixture-too-large',
-                        f"{clause['counter']}:{count}>{clause['maximum']}",
-                    ))
-    fingerprint_payload = {
-        'counter': clause['counter'], 'count': count,
-        'identity': str(resolved.get('fingerprint') or 'identity:error'),
-        'maximum': clause['maximum'],
-    }
-    encoded = json.dumps(
-        fingerprint_payload, ensure_ascii=False, sort_keys=True, separators=(',', ':'),
-    ).encode('utf-8')
-    return {
-        'findings': _ordered_return_findings(findings),
-        'fingerprint': f"return-fixture:sha256:{hashlib.sha256(encoded).hexdigest()}",
-        'count': count,
-    }
-
 
 def _cmd_result(rest):
     probe = list(rest)
@@ -233,12 +119,6 @@ def _result_under_run_lock(rest):
     if sentinel:
         prior, append = '', False
     write_body, write_append = body, append
-    if canonical == 'Context':
-        if append and prior:
-            write_body, write_append = f'{prior}\n{body}', False
-        defects = successor_context_defects(write_body)
-        if defects:
-            return {'error': '; '.join(defects)}
     if replace and (not sentinel):
         return {'error': f"executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
     try:

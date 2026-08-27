@@ -26,8 +26,8 @@
    that omitting it forces another skill to inline its judgment. Two
    skills whose contracts match the same task is a defect — one owner
    per judgment.
-7. Parallel branches share no write scope; what a branch's reads cost
-   in parallel is [topology.md](topology.md) §3's.
+7. Parallel branches may touch the same paths. Isolation preserves candidates;
+   the join mechanically detects actual overlap and ordinary Git conflicts.
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
 9. Generic skills (kernel, engines, workflows, utilities) never name a
@@ -45,8 +45,8 @@
 11. `Require:`, `Never:`, and `Return:` are binding contract; the
     procedure between them is the default method. An executor may
     substitute its own method only where every Require, Never, Return,
-    bound, and completion-test criterion still holds; a substitution
-    never relaxes a check, a scope, or an oracle, never distorts the
+    bound, and Goal still holds; a substitution never relaxes a deterministic
+    repository gate or distorts the
     record a Return field is contracted to carry — disagreement,
     rationale, and contradiction are recorded as found — and is named
     in the result's `## Feedback`.

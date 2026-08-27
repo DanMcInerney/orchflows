@@ -401,23 +401,10 @@ def plan_shape(response):
     ]
 
 
-def excluded_actions(text: str):
-    """Every `excluded_actions` entry of every stub in one template text,
-    lowercased. A clause's owner is the field it sits in, so what a check
-    asserts is membership of that field."""
-    return [
-        line.strip()[2:].strip().lower()
-        for block in re.findall(
-            r"^excluded_actions:\n((?:  - .*\n)+)", text, re.MULTILINE
-        )
-        for line in block.splitlines()
-    ]
-
-
 # The two authority controls, by the terms the generation contract carries
 # them under: a revision outside `mutation authority`, a self-target candidate
-# that stays `non-control`. Activation is a clause of each campaign template's
-# `excluded_actions` field, so the check reads the field.
+# that stays `non-control`. Each campaign carries the activation fact in its
+# Context; it is not a separate authored authority field.
 RECURSION_ANCHORS = (
     ("active-revision-authority", "mutation authority"),
     ("self-target-control", "non-control"),
@@ -430,12 +417,9 @@ def recursive_target_errors(evolve: str, generation: str, tournament: str):
     errors = [
         name for name, anchor in RECURSION_ANCHORS if anchor not in generation_contract
     ]
-    # Each template excludes it on its own; one carrying the clause never
-    # excuses the other.
-    if not all(
-        any(ACTIVATION_ANCHOR in action for action in excluded_actions(text))
-        for text in (evolve, tournament)
-    ):
+    # Each template states it on its own; one carrying the fact never excuses
+    # the other.
+    if not all(ACTIVATION_ANCHOR in text.lower() for text in (evolve, tournament)):
         errors.append("activation")
     return errors
 

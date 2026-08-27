@@ -82,11 +82,12 @@ class TestHostBlockRendering(unittest.TestCase):
             )
         for lane in (
             "graph shape",
-            "oracle provenance",
             "evidence in context",
-            "one ordinary ticket",
-            "pre-existing deterministic",
-            "authored-here",
+            "semantic payload",
+            "Goal",
+            "Context",
+            "Suggested files",
+            "executor chooses implementation",
             "frozen root",
             "same planner child",
             "`ready` → `claim` → `packet`",

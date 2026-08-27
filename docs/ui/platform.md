@@ -110,7 +110,7 @@ All projections use closed field sets. Run graphs contain ticket identifiers,
 dependency edges, lifecycle statuses, aggregate diagnostics, and event
 counts. The selected-ticket experience projection contains routing and claim
 metadata, canonical readiness facts, parsed verification rows, and the
-Objective, Result, Feedback, and Risks sections as inert strings. A run is
+Goal, Context, Suggested files, Result, Feedback, and Risks sections as inert strings. A run is
 associated with a workflow definition only through an explicit canonical
 association; the reader never infers one from a run slug or executor. Judgment
 detail mechanically presents criterion, verdict, oracle, class, evidence,

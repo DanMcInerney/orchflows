@@ -45,13 +45,11 @@ SUFFIX = "_cases"
 # it would exempt a real class the day its last test was deleted. The
 # exemption test refuses any entry that stops being either half of this.
 BASE_ONLY = frozenset({
-    "test_carriage_cases._support.IsolatedTree",
     "test_cell_linter_cases.pack_cells._IsolatedTree",
     "test_friction_cases.common._IsolatedRepoTestCase",
     "test_friction_cases.storage._ProvenanceTestCase",
     "test_migrate_state_cases.common.MigrationCase",
     "test_state_root_cases.support.SinkFixture",
-    "test_templates_cases.shape._TemplateTree",
     "test_visualize_scripts_cases.support._ScriptCase",
 })
 

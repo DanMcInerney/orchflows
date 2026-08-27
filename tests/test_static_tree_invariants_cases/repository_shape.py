@@ -85,10 +85,9 @@ class TestEveryCaseClassIsRegistered(unittest.TestCase):
             ),
         )
         # Without this the test passes when the walk finds nothing to walk.
-        self.assertGreater(
-            self.survey["scanned"], 400,
-            "the survey reached too few case classes to have looked",
-        )
+        # Do not pin an observed corpus size: removing an obsolete family is
+        # legitimate, while an empty survey is always a broken survey.
+        self.assertTrue(self.survey["scanned"], "the survey found no case classes")
 
     def test_every_exemption_still_names_a_live_base_with_no_test_of_its_own(self):
         """Both halves, so an exemption cannot outlive what justified it.

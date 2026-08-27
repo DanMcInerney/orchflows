@@ -22,8 +22,8 @@ Cells:
   from verdict.md's class policy. The class policy and the overall verdict
   rule stay verdict.md's, and where green is measured follows from them:
   state a deviation, never a paraphrase.
-- `workspace` — what identities, baselines, and write scopes mean in this
-  domain (git revisions and paths; document slots; evidence stores).
+- `workspace` — what identities, isolation, candidate diffs, and conflict
+  handling mean in this domain (git revisions; documents; evidence stores).
   Where it uses a term `craft` defines, the cell cites `craft` for the
   definition instead of restating it. The selected ticket adapter is a
   stable mechanism key in code, never executable pack content. A new identity
@@ -42,11 +42,11 @@ Cells:
 
 Sharing constraints, checked at pack review:
 
-- The assembly item's completion test carries the final gate's criteria.
+- The assembly item's Goal names the final integrated result.
 - The executor's and assembly's Return files per
   [work-item.md](work-item.md)'s filing law — the ticket, or the store
   the packet names.
-- Every write scope the slicing cuts is expressible in `workspace`.
+- Every candidate form the slicing emits is expressible in `workspace`.
 - Every domain term another cell uses — a required spec field, a lens
   criterion, an item extension — is defined once: in `craft`, or inline
   in the cell that uses it.

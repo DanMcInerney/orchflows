@@ -4,9 +4,8 @@ description: Fix accepted verified defects with the smallest coherent change. Us
 role: worker
 ---
 
-Require: the accepted defect set the packet's `inputs` name — each
-finding or cause with its evidence and the oracle that showed it — and
-the write scope the repair may touch; an empty set is a legal dispatch
+Require: the accepted defect set the ticket Context names — each
+finding or cause with its evidence; an empty set is a legal dispatch
 whose result is no change.
 
 Make the smallest change that coherently fixes the set, per
