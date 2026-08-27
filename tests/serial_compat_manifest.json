@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1806,
+  "count": 1811,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -971,6 +971,11 @@
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_a_ticket_that_was_never_claimed_has_no_duration_to_report",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_each_executor_reports_its_median_p90_and_max",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_top_bounds_the_longest_list_and_leaves_the_executor_summary_whole",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_a_class_two_shards_reach_is_named_once_with_its_count",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_a_consistent_tree_reports_nothing",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_a_mixin_is_reported_from_both_sides_with_the_prefix_fix",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_an_unimported_class_is_named_with_its_file_and_both_rules",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_the_law_the_message_states_is_the_law_the_tree_lives_under",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_covers_four_boundaries_whole_and_splits_only_windows",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_does_not_repeat_oracles_already_in_the_sharded_suite",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_restores_a_timing_cache_scoped_to_the_leg_that_wrote_it",
@@ -1809,7 +1814,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "47b976a8fb55ca9d73e69b92c66e8ebb634200a7b9e35e1e66142ecdf3683b3d"
+  "sha256": "04f95b7008115e7ef03109bd2a6abd5766718065cd3e16de0eba79f5f88a3225"
  },
  "mutation_owners": [
   {
