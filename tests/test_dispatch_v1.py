@@ -71,6 +71,17 @@ class DispatchV1Test(unittest.TestCase):
             "dispatch-retire", "run", "T", "--dispatch-id", dispatch_id,
         ])
 
+    def replace(
+        self, dispatch_id="D1", replacement="D2", lease=None, by="worker-2"
+    ):
+        return tickets._dispatch([
+            "dispatch-replace", "run", "T",
+            "--dispatch-id", dispatch_id,
+            "--replacement-dispatch-id", replacement,
+            "--by", by,
+            "--lease-expires-at", lease or self.lease,
+        ])
+
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
         self.assertEqual("opened", opened["dispatch"]["outcome"])
@@ -126,6 +137,57 @@ class DispatchV1Test(unittest.TestCase):
         mismatch = self.commit(dispatch_id="never-opened", record_id="R2")
         self.assertEqual("dispatch-mismatch", mismatch["code"])
         self.assertIn("error", mismatch)
+
+    def test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence(self):
+        self.assertNotIn("error", self.open())
+        committed = self.commit()
+
+        replaced = self.replace()
+        self.assertEqual("replaced", replaced["dispatch"]["outcome"])
+        self.assertEqual("D2", replaced["dispatch"]["dispatch_id"])
+        self.assertEqual("D1", replaced["dispatch"]["replaces"])
+        self.assertEqual(replaced, self.replace())
+
+        self.assertEqual(committed, self.commit())
+        stale = self.commit(record_id="unseen")
+        self.assertEqual("stale-attempt", stale["code"])
+        current = self.commit(dispatch_id="D2", record_id="new")
+        self.assertEqual("new", current["committed_record"]["record_id"])
+
+        state = parse_canonical_json(next(
+            line.partition(":")[2].strip()
+            for line in self.ticket_text().splitlines()
+            if line.startswith("dispatch_v1:")
+        ))
+        self.assertEqual(["replaced", "live"], [item["state"] for item in state["attempts"]])
+
+    def test_retirement_allows_a_unique_new_attempt(self):
+        self.assertNotIn("error", self.open())
+        self.assertNotIn("error", self.retire())
+        reopened = self.open(dispatch_id="D2", by="worker-2")
+        self.assertEqual("opened", reopened["dispatch"]["outcome"])
+
+    def test_expired_attempt_rejects_unseen_records_without_mutation(self):
+        self.assertNotIn("error", self.open())
+        before = self.ticket_text()
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            stale = self.commit(record_id="after-expiry")
+        self.assertEqual("stale-attempt", stale["code"])
+        self.assertEqual(before, self.ticket_text())
+
+    def test_pre_v1_live_claim_requires_owner_cutover(self):
+        self.dispatch("claim", "run", "T", "--by", "legacy-owner")
+        before = self.ticket_text()
+        refusal = self.open()
+        self.assertEqual("legacy-live-claim", refusal["code"])
+        self.assertEqual(before, self.ticket_text())
 
 
 if __name__ == "__main__":
