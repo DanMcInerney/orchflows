@@ -71,6 +71,40 @@ A claimed or suspended historical ticket with no `dispatch_v1` is
 complete or abandon it before installation of a v1 attempt. No command infers
 an attempt, reconstructs history, or rewrites historical state.
 
+## Dispatch-v1 packet projection and receipt
+
+`dispatch-packet` commits exactly one `dispatch-packet` record for a live
+attempt, then returns its stored packet projection. An exact delivery retry
+replays that stored projection even after the attempt ends; different form,
+reply target, or workspace authority for the same record is
+`idempotency-conflict`. The projection fields are generated, never repaired in
+transport:
+
+- `protocol`, `dispatch_id`, `assignment_seal`, and absolute
+  `lease_expires_at` identify the fenced attempt.
+- `executor`, `role`, `profile`, `assigned_name`, `reply_to`, and `workspace`
+  bind the exact child identity and authority; `pack`, `independence`,
+  `isolation`, and `admission` carry its admitted execution mechanics.
+- `form` is `reference` or `inline`; `durability` is `ticket` or `ephemeral`.
+  `source` names the originating ticket. A `reference` names that ticket by
+  `run` and `id`. An `inline` carries the immutable semantic assignment and
+  the same `assignment_seal`.
+
+`dispatch-receive` validates protocol, form, lease, seal, committed projection,
+assigned identity, resolved role and profile, reply target, and workspace
+authority before execution. Unknown or malformed traffic is `packet-invalid`;
+an unavailable referenced ticket is `state-inaccessible`; a changed reference
+or inline snapshot is `assignment-divergent`; actual child name, role, profile,
+or authority disagreements are `identity-mismatch`, `role-mismatch`,
+`profile-mismatch`, or `authority-mismatch`. An ended attempt is
+`stale-attempt`. No refusal changes ticket state.
+
+Reference is the default. Inline is the fallback when the receiver cannot read
+the state sink: it can prove the sealed snapshot and absolute lease but reports
+that durable state was not checked, so a later result still crosses the
+authoritative attempt seam. An inline packet with `durability: ephemeral` has
+no ticket, crash recovery, resumption, or durable stale-lane evidence.
+
 ## Executor records
 
 After the semantic sections, tickets carry executor-owned `## Result`,
@@ -113,3 +147,5 @@ migration mode. Historical user state is not rewritten.
 T0 supersession record sha256:b2d5d570a37764b9c83f305eaf90a98f604ce98c5d479ecbd7abb1059b9c94aa: executor records now enter through the attributed result writer.
 
 T0 supersession record sha256:1d95dfb82a4489f5d05d067d36fc669720c18424359d8b8c84f0857bde3a53fb: `dispatch_v1` adds the sole atomic execution-attempt and committed-record seam.
+
+T0 supersession record sha256:d12f7cb34c27575e52f78faf4aa5348d1c5ee35f5f14bf9fc502103560435fe5: dispatch-v1 adds committed reference or inline packet projection and deterministic receipt validation.

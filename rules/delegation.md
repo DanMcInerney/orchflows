@@ -82,3 +82,9 @@
    only through `contracts/work-item.md`'s dispatch-v1 seam. The ticket write
    is the fence: transport silence, delivery retry, or an external side effect
    never creates a second live attempt or overrides its replay precedence.
+17. A committed packet projection is the only role-bearing delivery for a v1
+    attempt. Reference is normal; inline carries the same sealed assignment
+    only when the receiver cannot read the state sink. Receipt validates the
+    packet's generated identity and authority before any skill runs. A
+    packet-only inline lane is explicitly ephemeral and stops rather than
+    claiming durable recovery, resumption, or stale-lane evidence.

@@ -47,3 +47,20 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("exactly-once external", result)
         self.assertIn("dispatch attempt", delegation.lower())
         self.assertIn("**dispatch attempt**", vocabulary)
+
+    def test_dispatch_v1_contract_owns_packet_projection_and_receipt(self):
+        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
+        roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
+        vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+        for token in (
+            "`dispatch-packet`", "`dispatch-receive`", "`reference`",
+            "`inline`", "`state-inaccessible`", "`assignment-divergent`",
+            "`identity-mismatch`", "`authority-mismatch`",
+            "`role-mismatch`", "`profile-mismatch`",
+        ):
+            self.assertIn(token, work_item)
+        self.assertIn("committed packet projection", delegation)
+        self.assertIn("receipt", roles.lower())
+        self.assertIn("**packet projection**", vocabulary)

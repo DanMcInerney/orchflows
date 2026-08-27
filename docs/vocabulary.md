@@ -214,6 +214,10 @@ composition).
   `orchflows.dispatch.v1`, identified by `dispatch_id` and an absolute lease;
   its ticket record owns opening, committed-record replay, retirement,
   replacement, and expiry precedence.
+- **packet projection** — the immutable dispatch-v1 delivery record generated
+  from one sealed attempt: normally a ticket reference plus seal, or an inline
+  sealed assignment when the receiver cannot read the state sink. Its receipt
+  validates the actual child identity and authority before execution.
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. Suggested files do not attenuate it; actual changes
   are adjudicated at the join.
