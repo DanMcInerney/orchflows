@@ -242,7 +242,10 @@ class RuntimeVenvTests(unittest.TestCase):
         project = (install.REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('"starlette==0.49.3"', project)
         self.assertIn('"uvicorn==0.34.3"', project)
-        self.assertNotIn("Stdlib-only", install.__doc__ or "")
+        # The killed claim, caught however it is spelled or wrapped: a
+        # hyphen or a line break between `stdlib` and `only` does not make
+        # the claim any less restated. `doc_claim` owns that normalisation.
+        self.assertNotIn("stdlib only", doc_claim(install.__doc__))
         self.assertIn("requirements-runtime.txt", (install.REPO_ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8"))
         self.assertIn("requirements-runtime.txt", (install.REPO_ROOT / "README.md").read_text(encoding="utf-8"))
 
