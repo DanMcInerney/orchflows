@@ -50,10 +50,9 @@ compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
 <run> <root-id> --cut-generation <validated cut_generation>`. Only that
 validated digest is sealed and eligible for dispatch; its
 `assignment_seal` records that exact assignment digest. A semantic-root change
-uses the planned successor run once its accepted predecessor result identity
-resolves; cite it in root Context. A later cut may evolve members only under
-unchanged root semantics. An unsupported in-run amendment is a successor
-trigger, never a predecessor-ticket rewrite.
+is unsupported in this physical run; never mint another root ordinal. Resolve
+the accepted predecessor result identity. Put it in the planned successor
+run's root Context. Preserve predecessor bytes.
 
 Never: stamp a pack the cut cannot share; prescribe implementation or tests in
 Goal; restate standards an exemplar's owner already states.

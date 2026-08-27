@@ -169,3 +169,8 @@ workspace establishment is a host-owned pre-dispatch
 transition. `workspace.py start` records `workspace_path` for every supported
 adapter, plus the existing Git branch/baseline observations, and creates the
 canonical run-scoped research evidence store.
+
+T0 supersession record sha256:c6fbeafb3f9daf27e689ae00d80c1bf2a6f9332aca1183e18ecebeee7b2cdb5f:
+each run has one semantic root at ordinal 1; a post-seal semantic change opens
+a successor run linked to the accepted predecessor result identity instead of
+minting an in-run root amendment.
