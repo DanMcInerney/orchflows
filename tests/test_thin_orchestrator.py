@@ -92,7 +92,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**graph**",
             "**spec**",
             "one same planner child",
-            "`ready` → `claim` → `packet`",
+            "`ready` → `dispatch-open` → `dispatch-packet`",
             "outer coordinator",
         ):
             self.assertIn(anchor, collapsed_host)
@@ -119,9 +119,12 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "stamped root",
             "tickets.py ready --run <run>",
-            "tickets.py claim <run> <root> --by <assigned-name>",
-            "tickets.py packet <run> <root> --reply-to <parent-name> "
-            "--by <assigned-name> --workspace <tree>",
+            "tickets.py dispatch-open <run> <root> --by <assigned-name> "
+            "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>",
+            "tickets.py dispatch-packet <run> <root> --dispatch-id "
+            "<dispatch-id> --reply-to <parent-name> --workspace <tree>",
+            "tickets.py dispatch-receive",
+            "accepted receipt",
             "exact `orch-decompose`",
             "matching `orch-planner` child",
             "complete emitted packet",
@@ -131,6 +134,8 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)
+        self.assertNotIn("tickets.py claim", graph)
+        self.assertNotIn("tickets.py packet", graph)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -189,7 +194,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "`orch-decompose` root",
             "distinct outcomes or dependencies",
             "same planner",
-            "`ready` → `claim` → `packet`",
+            "`ready` → `dispatch-open` → `dispatch-packet`",
             "outer coordinator",
             "`orch-frontier`",
         ):

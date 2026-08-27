@@ -14,6 +14,13 @@ requested, not verified. An unsupported or blocked model binding stops
 the dispatch — never substitute; a missing effort control alone is
 requested in the prompt and noted unverified, never a stop.
 
+The caller first commits one attempt with `dispatch-open` and its immutable
+delivery with `dispatch-packet`. It establishes the packet's resolved native
+profile once and sends that stored projection. In the established child,
+`dispatch-receive` compares the actual assigned name, role, profile, reply
+target, and workspace authority before the exact skill runs. A refusal is the
+return; neither side edits packet fields to make them agree.
+
 A host with no native isolation field cannot establish an isolated
 workspace at dispatch: the request rides the prompt, is graded
 requested, not verified, and is never recorded as established. Like a
@@ -32,7 +39,7 @@ establish the matching role child before its exact named body runs.
 
 On Codex, `agent_type` selects the installed profile; `task_name` only
 labels the child. Root explicitly dispatches the exact named skill and
-complete packet to that matching role child. Missing or mismatched
+complete committed packet to that matching role child. Missing or mismatched
 `agent_type` refuses execution; a role child runs its primary skill
 directly. Codex V2 profile selection uses a non-full-history fork
 (`fork_turns="none"` or a positive turn count). These are contractual

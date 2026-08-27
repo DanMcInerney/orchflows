@@ -72,6 +72,8 @@ class TestRoleAgentInstructions(unittest.TestCase):
             "exact primary skill",
             "each exact member",
             "packet-stated ordered sequence",
+            "dispatch-receive",
+            "accepted receipt",
             "directly",
             "never redispatch",
         ):

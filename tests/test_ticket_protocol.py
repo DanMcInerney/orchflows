@@ -75,6 +75,31 @@ class TicketProtocolTest(unittest.TestCase):
             "`role-mismatch`", "`profile-mismatch`",
         ):
             self.assertIn(token, work_item)
+        host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
+        frontier = (root / "skills" / "engines" / "orch-frontier" / "SKILL.md").read_text(encoding="utf-8")
+        profiles = (root / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md").read_text(encoding="utf-8")
+        tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
+        for surface in (host, frontier, profiles, tickets):
+            for command in ("dispatch-open", "dispatch-packet", "dispatch-receive"):
+                self.assertIn(command, surface)
+        loop = (root / "skills" / "engines" / "orch-loop" / "SKILL.md").read_text(encoding="utf-8")
+        for routing in (host, frontier, loop):
+            self.assertNotIn("tickets.py claim", routing)
+            self.assertNotIn("tickets.py packet", routing)
+        collapsed_frontier = " ".join(frontier.split())
+        self.assertIn("transport silence", collapsed_frontier.lower())
+        self.assertIn("same recorded child", collapsed_frontier)
+        self.assertIn("`dispatch-replace`", frontier)
+        self.assertIn("`legacy-live-claim`", tickets)
+        for obsolete in (
+            "completion test", "same write scope", "stale claim sent back",
+            "Hitting an excluded action", "optional\n  `## Context`",
+        ):
+            self.assertNotIn(obsolete, tickets)
+        for current in (
+            "absolute lease", "`dispatch-join`", "outside-independence path",
+        ):
+            self.assertIn(current, tickets)
         self.assertIn("committed packet projection", delegation)
         self.assertIn("receipt", roles.lower())
         self.assertIn("**packet projection**", vocabulary)

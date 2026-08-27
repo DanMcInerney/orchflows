@@ -9,39 +9,58 @@ the shape, [rules/verification.md](rules/verification.md) owns review,
 
 ## One file is the whole work order
 
-A ticket is one markdown file that is the complete delegation packet
-for one job: the worker gets the file path and nothing else. What it
-may know, touch, and must return is all inside. Tickets live in the
+A ticket is one markdown file holding the durable assignment, lifecycle,
+result, and verification truth for one job. A role-bearing child receives a
+committed packet projection, not merely this file path. Tickets live in the
 per-user state sink, outside every repository
 ([rules/visibility.md](rules/visibility.md) §6), which is why a fresh
 context in any checkout resumes a run mid-flight.
 
     ┌─ 00-root.02.md ─────────────────────────────────────────────┐
     │ ---                                                         │
-    │ id, run, status, admission (a hash receipt)                 │
+    │ id, run, status, admission, dispatch_v1                    │
     │ executor: orch-tdd        pack: orch-code-pack              │
     │ depends_on: [00-root.01]  <- graph edge                     │
-    │ write_scope, mutations    <- what it MAY change             │
-    │ excluded_actions          <- what it may NOT do             │
     │ bound: 45m                <- time budget                    │
     │ claimed_by / claimed_at / checked_by                        │
     │ ---                                                         │
-    │ ## Objective         what to do                    ┐        │
-    │ ## Fixed inputs      exact evidence, by identity   │ cut-   │
-    │ ## Completion test   oracles that decide "done"    │ time   │
-    │ ## Return fields     shape of the answer           ┘        │
+    │ ## Goal              observable result             ┐        │
+    │ ## Context           facts and constraints          │ seal   │
+    │ ## Suggested files  optional, non-binding          ┘        │
     │ ## Result            ┐                                      │
     │ ## Verification      │ executor-written,                    │
     │ ## Feedback          │ streamed while the                   │
     │ ## Risks             │ work happens                         │
-    │ ## Context           │                                      │
     │ ## Handoff           ┘                                      │
     └─────────────────────────────────────────────────────────────┘
 
-The top four sections are the **cut** — authored by the planner,
-frozen once anyone claims the ticket. The bottom six belong to the
+The semantic assignment is sealed before dispatch; changing it creates a new
+generation. The result sections belong to the
 executor, written as the work happens, never in one write at the end.
 Field-by-field meaning: [contracts/work-item.md](contracts/work-item.md).
+
+## Dispatch protocol
+
+`orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
+delivery. The caller promotes readiness, opens one attempt with
+`dispatch-open`, and commits its immutable reference or inline projection with
+`dispatch-packet`. The established child runs `dispatch-receive` with its
+actual assigned name, role, profile, reply target, and workspace authority;
+only an accepted receipt permits the exact named executor to run.
+
+The assignment seal identifies semantic generation. The dispatch id identifies
+one attempt and remains fixed across exact delivery retries. Transport silence
+replays the stored projection to the same child; it never creates a second live
+child. Retirement precedes replacement, and `dispatch-replace` performs both
+sides atomically. Results and joins use fixed record ids, so identical replay
+returns stored success while conflicting or unseen stale traffic refuses.
+
+Reference packets are normal. Inline packets carry the same sealed snapshot
+only when the state sink is inaccessible; packet-only inline work is explicitly
+ephemeral. A pre-v1 live claim without an attempt refuses
+`legacy-live-claim`: its existing owner must complete or abandon it before v1
+installation. The normative shapes and precedence live in
+[contracts/work-item.md](contracts/work-item.md).
 
 ## A run is a directory of tickets
 
@@ -77,79 +96,67 @@ The frontmatter carries two related mechanisms:
 
 ## Lifecycle
 
-                admission graded,          a worker takes it,
-                receipt stamped            receipt re-checked
+                admission graded       dispatch-open commits
+                and seal checked       one absolute lease
      pending ─────────────────▶ ready ────────────────▶ claimed
         ▲                                                  │
-        │ amend / recut                                    │ work,
-        │ (pending/ready only,                             ▼ review
-        │  and only unfrozen)                    join adjudicates
+        │ amend / recut                                    │ records,
+        │ before dispatch                                  ▼ join
+        │                                            dispatch-join
         │                                                  │
-        └── stale claim sent back ◀───────┬────────────────┤
-                                          │                ▼
-                                     suspended    complete · blocked
-                                                  stalled · limited
-                                                  failed
+        │                                      ┌───────────────────┤
+        │                                      ▼                   ▼
+        └──────────────────── suspended       complete · blocked
+                                               stalled · limited · failed
 
 **Admission** is the gate into work: `tickets.py` grades the ticket
 against a snapshot of the whole run — dependencies complete, executor
 bound by the stamped pack, workspace policy, inputs resolvable — and
-stamps a hash **receipt** of the frozen cut. Claiming and packet
-emission re-grade and refuse on a mismatched receipt: the worker is
-provably executing the exact cut that was admitted. Corrections
-(`amend`, `recut`) exist only before a claim; after it, the cut is a
+stamps a hash **receipt** of the frozen cut. `dispatch-open` atomically records
+the claim and absolute lease. `dispatch-packet` commits the delivery projection;
+`dispatch-receive` re-grades its seal and actual receiver authority. Corrections
+(`amend`, `recut`) exist only before dispatch; afterward the assignment is a
 fixed target ([rules/verification.md](rules/verification.md) §3).
 
 ## Review
 
-Three moments, each a fresh reader who did not produce the thing
-([rules/verification.md](rules/verification.md) §10–§11):
+Three moments use readers who did not produce the fixed artifact
+([rules/verification.md](rules/verification.md) §7):
 
-    decompose ─▶ CUT CHECK ─▶ units run ─▶ CHECK ─▶ RE-VERIFY ─▶ GATE
-                 before any    parallel     fixes    read-only    critique
-                 unit starts   frontier     in place              -> repair
-                                                                  -> verify
+    decompose ─▶ CUT CHECK ─▶ rolling frontier ─▶ GATE
+                 before units      one outside path    critique
+                                                      -> repair
+                                                      -> verify
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
    issued ticket set as data, corrects it with `amend`/`new`, and is
    accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
-   Once a unit is claimed, cut correction is refused.
-2. **Unit check** — after the executor finishes under its claim,
-   `orch-critique` reviews the result against the ticket's own
-   completion test with the same write scope, fixes what it finds, and
-   records the pass. Skipped when every criterion predates the work
-   (`provenance: pre-existing` — the test is already independent) or
-   when the ticket defers independence to the gate.
-3. **Re-verification** — `orch-verify`, with no write authority,
-   re-runs the completion test at the recorded result identity and
-   files `## Verification` only.
-
-Last, the **composite gate** runs over the integrated whole: critique
-lenses find defects, `orch-repair` fixes the accepted blocking ones,
-verify re-runs the oracles.
+   Once a unit dispatch opens, cut correction is refused.
+2. **Ticket independence** — each result takes one outside-independence path:
+   either a fresh read-only `orch-critique` checker or the downstream composite
+   gate. Critique records blockers; it never repairs its own target.
+3. **Composite gate** — fresh critique lenses read the integrated identity,
+   one `orch-repair` ticket fixes accepted blockers, and a fresh `orch-verify`
+   judges the repaired identity. A clean defect set skips repair work through
+   the attributed join.
 
 ## Errors and feedback
 
 - **Refusals are named, never silent.** A command that cannot proceed
-  returns a structured finding — `dependency-incomplete`,
-  `executor-pack-mismatch`, a stale receipt — instead of doing
+  returns a structured finding — `dependency-incomplete`, `role-mismatch`,
+  `legacy-live-claim`, or `stale-attempt` — instead of doing
   something approximate.
 - **The join rules on everything.** No returned result is trusted until
-  `orch-integrate` adjudicates it, and only the join sets terminal
+  `orch-integrate` adjudicates it. For v1, only `dispatch-join` sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
 - **Silence is explicit.** Findings go to `## Feedback`, hazards to
   `## Risks`; `[]` fills an empty section so nothing is ambiguous.
-  Hitting an excluded action means suspending with a `## Handoff` that
-  a fresh context can resume from, not improvising.
-- **Conclusions travel forward.** At close an executor may file the optional
-  `## Context`:
-  one to five non-empty `- state:` or `- watch:` conclusions, never work
-  narrative. Dispatch inlines each dependency's Context so a fresh agent starts
-  from what matters. Context is the only ticket successor digest, and absence
-  means omitting the section rather than adding filler.
-- **Claims go stale.** Each ticket carries a `bound`; a claim past it
-  with no motion is sent back to `pending` and recut before reclaim.
+  Work that cannot finish within its bound suspends through the join with a
+  concise `## Handoff` rather than improvising.
+- **The absolute lease does not move.** Packet replay, transport activity, and
+  result filing never extend `lease_expires_at`. An ended attempt must be
+  retired or atomically replaced before a successor runs.
 - **Findings fork by severity.** Blocking defects go to `orch-repair`;
   non-blocking ones are recorded as candidate scope for a later pass —
   logged, never dropped.

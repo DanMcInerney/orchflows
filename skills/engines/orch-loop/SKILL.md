@@ -13,8 +13,9 @@ context packet the iterations carry — design it once via
 
 Each iteration: issue `<id>.iter.NN` through `tickets.py new`
 ([contracts/work-item.md](../../../contracts/work-item.md#semantic-assignment),
-Semantic assignment) and claim it through `tickets.py claim` in the dispatched
-child's name; start fresh from the frozen goal plus the worklog
+Semantic assignment), promote it with `tickets.py ready`, and run that ticket
+through `orch-frontier`, which owns its dispatch-v1 attempt and receipt; start
+fresh from the frozen goal plus the worklog
 `tickets.py worklog` renders; dispatch the body per
 [rules/delegation.md](../../../rules/delegation.md), each packet field
 emitted as a canonical JSON `--input` record — sorted keys, no spaces,

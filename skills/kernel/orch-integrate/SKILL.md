@@ -16,8 +16,8 @@ defers review; `checker` requires
 Goal claims yield needs-verify. Grade bare returns by their contract. Suspension resumes
 from `## Handoff`.
 
-The returning name must match `claimed_by`, `checked_by`, or the re-verifier
-named by `tickets.py packet --executor`; reject mismatches and expired claims.
+The returning name and artifact identity must match the committed dispatch-v1
+packet and its accepted receipt; reject mismatches and expired attempts.
 Reject a non-root carrying both `independence: gate` and `checked_by`. But
 on a root, `checked_by` is cut reader bookkeeping, never final checker
 acceptance: the composite gate decides acceptance. Inspect actual candidate
