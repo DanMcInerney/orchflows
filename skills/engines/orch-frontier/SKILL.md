@@ -18,9 +18,11 @@ one separate repair ticket, which invalidates critique verdicts and is
 followed by fresh verification
 ([verification](../../../rules/verification.md) §7).
 
-Each sealed gate critique gets one fresh read-only context. Their accepted
-blockers feed one repair ticket. Dispatch gate.verify once in another fresh
-child at final identity; reuse no critique or repair context.
+For a decomposed root with at least two executor results, regardless of
+dependency order, the one mechanically graph-triggered gate gives each sealed
+critique a fresh read-only context. Their accepted blockers feed at most one
+repair ticket. Dispatch gate.verify once in another fresh child at final
+identity; reuse no critique or repair context.
 
 Readiness, claim, and packet require `root_generation`, `cut_generation`, and
 `assignment_seal` resolving to one sealed snapshot and validation receipt.

@@ -13,9 +13,12 @@
    Suggested files grant no authority. At integration, inspect each actual
    diff, detect overlapping paths and ordinary Git conflicts, resolve them,
    regenerate shared derived artifacts once, and run the final gate.
-5. A decomposed physical run has one root generation and one composite gate:
-   read-only two-pass blocker critiques feed one separate repair and fresh
-   verification. Additional review is a named lens feeding that same gate.
+5. A graph is the mechanically observable shape of two or more executor
+   results, sequential or parallel. Its decomposed physical run has one root
+   generation and one composite gate: read-only two-pass blocker critiques
+   feed at most one repair and fresh verification. Answer and direct-single
+   runs keep their ordinary path. Additional review is a named lens feeding
+   that same gate.
 6. A pack belongs to a ticket, not a run. Incompatible workspace semantics use
    successor roots rather than pretending to share a candidate.
 7. Multi-run work links successor roots by durable accepted results. Sequential

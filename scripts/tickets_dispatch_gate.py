@@ -3,14 +3,14 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import GATE_EXECUTORS, _extract_flag, _parse_frontmatter, _sections, _split_commas, ticket_defects
+    from .tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _split_commas, ticket_defects
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import GATE_EXECUTORS, _extract_flag, _parse_frontmatter, _sections, _split_commas, ticket_defects
+    from tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _split_commas, ticket_defects
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
     from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
@@ -108,6 +108,8 @@ def _gate_under_run_lock(rest, _head_probe=None):
     root_ticket = _load_ticket(root_path)
     if "error" in root_ticket:
         return {"error": root_ticket["error"]}
+    if str(root_ticket.get("executor") or "").strip() != ROOT_EXECUTOR:
+        return {"error": f"gate requires decomposed root executor {ROOT_EXECUTOR}: {run}/{root_id}"}
     root_generation = str(root_ticket.get("root_generation") or "")
     if not root_generation:
         return {"error": "gate requires a stamped root generation"}
@@ -115,6 +117,8 @@ def _gate_under_run_lock(rest, _head_probe=None):
     for path in sorted(directory.glob(f"{root_id}.*.md")):
         if ".gate." not in path.stem:
             units.append(path.stem)
+    if len(units) < 2:
+        return {"error": "composite gate requires two or more executor results"}
     lenses = _split_commas(ordered_arg if ordered_arg is not None else lens_arg)
     if not lenses:
         lenses = [_pack_domain(root_ticket.get("pack"))]
