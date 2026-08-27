@@ -58,4 +58,5 @@ Goal; restate standards an exemplar's owner already states.
 Return: the accepted root ticket's id and path, the durable `successors.md`
 identity (`[]` for one kind), and, after each predecessor resolves, the
 successor root's id, path, and cited predecessor result identity; the
-kind-count decision and its evidence, assumptions, evidence consulted.
+kind-count decision and its evidence, assumptions, evidence consulted, and
+consistency observations against the settled decisions and repository facts.

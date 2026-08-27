@@ -17,4 +17,5 @@ Never: import knowledge outside the evidence set; cross a declared slot
 boundary; exceed the length bound and call it thoroughness; write true things
 in the wrong register or do a sibling's job.
 
-Return: the completed ticket; the draft at its document or slot identity.
+Return: the completed ticket with draft identity and the content pack's
+[evidence record](../../../packs/orch-content-pack/references/evidence.md).

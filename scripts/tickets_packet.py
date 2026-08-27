@@ -187,10 +187,14 @@ def _packet_under_run_lock(rest):
     assigned_name = str(dispatched_name or (loaded.get("claimed_by") if further is None else "") or "").strip() or None
     if further is not None:
         executor = further
-        prompt = [
-            f"Apply skill {executor} to ticket {ticket_path}.",
-            "Evaluate only whether the delivered result achieves Goal without violating factual Context. Report blocker-level findings; do not add style or speculative cleanup.",
-        ]
+        prompt = [f"Apply skill {executor} to ticket {ticket_path}."]
+        if executor == CHECKER_EXECUTOR:
+            prompt.extend([
+                "Read the fixed artifact identity, Goal, Context, executor Result and Verification evidence, and lens.",
+                "Remain read-only. First enumerate every evidence-backed material blocker to Goal; then synthesize and rank the smallest architectural repair set. File findings in Feedback, never rewrite Result or Verification.",
+            ])
+        else:
+            prompt.append("Independently challenge the fixed artifact and executor evidence against Goal and factual Context; file the verdict and observations in Verification without editing the artifact.")
     elif executor_script is not None:
         prompt = [
             f"Run the script {executor_script} with ticket path {ticket_path} from the assigned workspace.",
@@ -212,7 +216,12 @@ def _packet_under_run_lock(rest):
     if further is None and isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(loaded.get("pack")):
         prompt.append("First record the isolated candidate workspace:")
         prompt.append(_command_text(sys.executable, script.with_name("workspace.py"), "start", run_id, loaded["id"]))
-    prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
+    if further == CHECKER_EXECUTOR:
+        prompt.append("File Feedback and Risks as findings are produced; the join alone sets terminal status.")
+    elif further == REVERIFIER_EXECUTOR:
+        prompt.append("File Verification, Feedback, and Risks as evidence is produced; the join alone sets terminal status.")
+    else:
+        prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
     prompt.append(f"Filing channel, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH in the candidate workspace:")
     prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--section", "SECTION", "--file", "PATH", "--append"))
     prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--section", "SECTION", "--text", "TEXT"))

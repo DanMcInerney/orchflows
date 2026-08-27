@@ -5,17 +5,13 @@ depends_on: [03-qualify]
 bound: <= 80 tool calls
 independence: gate
 isolation: required
-profile: orch-worker
+profile: orch-planner
 ---
 
 ## Goal
 
-The triage measurement pass, then the two questions qualification does
-not ask, answered in a context disjoint from every builder and from the
-qualifier: is each case's stated expectation right, and is its probe
-passable without the work.
-Each finding repaired within the remaining allocation or declared as a
-gap naming the case and its class.
+An `orch-critique` report over the fixed package and qualification evidence
+under the audit lens.
 
 ## Context
 
@@ -28,10 +24,7 @@ gap naming the case and its class.
 
 Exceptional constraints:
 
-- render a pass/fail verdict on the benchmark
-- enter an attack artifact into the case set
-- audit only the hard cases
-- leave a hole undeclared
+- Apply the evaluator contract in `skills/kernel/orch-critique/SKILL.md`.
 
 ## Result
 

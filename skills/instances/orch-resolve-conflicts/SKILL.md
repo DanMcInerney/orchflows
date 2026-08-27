@@ -13,12 +13,12 @@ orthogonal; a ruling states which intent won and why. When both sides'
 evidence genuinely conflicts on purpose, not text, stop and return the
 conflict as `blocked` with both intents.
 
-After all rulings, run the workspace's cheapest deterministic oracle;
+After all rulings, run the workspace's cheapest relevant deterministic check;
 a resolution that breaks the build is not a resolution.
 
 Never: pick a side by recency or size; invent a third behavior neither
 side had.
 
 Return: status; result — the resolved revision; verification — the
-oracle result; per-conflict rulings with evidence; any blocked
+check result; per-conflict rulings with evidence; any blocked
 conflicts with both intents.

@@ -37,19 +37,13 @@ def _listed_items(values) -> str:
     return "\n".join(f"- {value}" for value in values) if values else "[]"
 
 
-def _gate_body(kind: str, root_id: str, lens: str = "", _scope=None,
-               _acceptance_id=None, _acceptance="", units=None, run: str = "",
-               chained: bool = False, repaired_by=None):
+def _gate_body(kind: str, root_id: str, lens: str = "", units=None,
+               repaired_by=None):
     units = list(units or [])
     if kind == "critique":
-        action = (
-            "Then repair each accepted blocker, mechanically detect actual overlapping "
-            "candidate diffs and ordinary Git conflicts, resolve them, and regenerate "
-            "shared derived artifacts once."
-        ) if chained else ""
         return [
-            ("Goal", f"Review `{root_id}` and its delivered members under the `{lens or 'default'}` lens; report only evidence-backed blockers to the root Goal. {action}".strip()),
-            ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Suggested files never define review or repair authority."])),
+            ("Goal", f"Review `{root_id}` and its delivered members under the `{lens or 'default'}` lens; enumerate every evidence-backed material blocker to the root Goal, then synthesize the smallest architectural repair set covering the most blockers."),
+            ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Critique is read-only; Suggested files do not define review authority."])),
         ]
     if kind == "repair":
         return [
@@ -130,19 +124,16 @@ def _gate_under_run_lock(rest, _head_probe=None):
         return {"error": str(error)}
     rendered = []
     critique_ids = []
-    chained = len(lenses) == 1
     for lens in lenses:
         critique_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
         critique_ids.append(critique_id)
-        sequence = [GATE_EXECUTORS["critique"], GATE_EXECUTORS["repair"]] if chained else None
-        sections = _gate_sections("critique", root_id, lens, units=units, run=run, chained=chained)
-        rendered.append((critique_id, _gate_stub(run, critique_id, GATE_EXECUTORS["critique"], units, sections=sections, sequence=sequence, root_generation=root_generation)))
-    repaired_by = critique_ids[0] if chained else GATE_REPAIR_ID.format(root=root_id)
-    if not chained:
-        sections = _gate_sections("repair", root_id, units=critique_ids, run=run)
-        rendered.append((repaired_by, _gate_stub(run, repaired_by, GATE_EXECUTORS["repair"], critique_ids, sections=sections, root_generation=root_generation)))
+        sections = _gate_sections("critique", root_id, lens, units=units)
+        rendered.append((critique_id, _gate_stub(run, critique_id, GATE_EXECUTORS["critique"], units, sections=sections, root_generation=root_generation)))
+    repaired_by = GATE_REPAIR_ID.format(root=root_id)
+    sections = _gate_sections("repair", root_id, units=critique_ids)
+    rendered.append((repaired_by, _gate_stub(run, repaired_by, GATE_EXECUTORS["repair"], critique_ids, sections=sections, root_generation=root_generation)))
     verify_id = GATE_VERIFY_ID.format(root=root_id)
-    sections = _gate_sections("verify", root_id, units=units, run=run, repaired_by=repaired_by)
+    sections = _gate_sections("verify", root_id, units=units, repaired_by=repaired_by)
     rendered.append((verify_id, _gate_stub(run, verify_id, GATE_EXECUTORS["verify"], [repaired_by], sections=sections, root_generation=root_generation)))
     for ticket_id, text in rendered:
         defects = ticket_defects(text)
