@@ -201,6 +201,13 @@ def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: P
     )
 
 
+# Every Grok text surface -- dispatch gate, legal frontmatter, skill file and
+# `render_grok_agent` -- lives in installer/managed_text.py, not here beside
+# its Claude and Codex siblings. Not a taxonomy choice: this file measured 483
+# of its 510 tracked-source lines before the Grok column arrived, and the group
+# does not fit in 27.
+
+
 # --- host role agents, parsed from the canonical table -----------------
 
 
@@ -208,18 +215,55 @@ def _parse_binding(cell: str) -> dict:
     return {match.group("key"): match.group("value") for match in _BINDING_RE.finditer(cell)}
 
 
+# The ids `grok models` returned on the host this column was recorded
+# against, and nothing else. An id outside the census cannot be checked
+# before the dispatch that would use it, so it stops the install instead
+# of surfacing as a model error inside a child that already has a packet.
+GROK_MODEL_CENSUS = ("grok-4.6", "grok-4.5")
+# Grok's own effort enumeration. `ultra` is Codex's word and `max` is the
+# top of both, so a value copied across columns is exactly the mistake
+# this rejects.
+GROK_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+
+
+def _check_grok_binding(profiles_md_path: Path, name: str, binding: dict) -> None:
+    """Refuse a Grok row that could not be dispatched as written.
+
+    Named per host: the caller reading the refusal has three columns to
+    look at and the message has to say which one is short."""
+
+    if not {"model", "effort", "subagent_type"} <= set(binding):
+        raise ValueError(f"{profiles_md_path}: incomplete Grok binding for {name}")
+    model = binding["model"]
+    if model not in GROK_MODEL_CENSUS:
+        raise ValueError(
+            f"{profiles_md_path}: Grok model outside the recorded census for {name}: {model}"
+        )
+    effort = binding["effort"]
+    if effort not in GROK_EFFORTS:
+        raise ValueError(f"{profiles_md_path}: invalid Grok effort for {name}: {effort}")
+
+
 def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
     text = profiles_md_path.read_text(encoding="utf-8")
     profiles = {}
     for line in text.splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) != 4 or not cells[0].startswith("`orch-"):
+        # One cell per host column, no fewer: a row that lost a column is a
+        # row this parser cannot read, not a row with an empty binding. Read
+        # loosely it would hand back a host with no model at all.
+        if len(cells) != 5 or not cells[0].startswith("`orch-"):
             continue
         name = cells[0].strip("`")
         role = cells[1]
         if role not in PROFILE_ROLES:
             continue
-        profiles[name] = {"role": role, "codex": _parse_binding(cells[2]), "claude": _parse_binding(cells[3])}
+        profiles[name] = {
+            "role": role,
+            "codex": _parse_binding(cells[2]),
+            "claude": _parse_binding(cells[3]),
+            "grok": _parse_binding(cells[4]),
+        }
     missing = [f"orch-{role}" for role in PROFILE_ROLES if f"orch-{role}" not in profiles]
     if missing:
         raise ValueError(f"{profiles_md_path}: missing role profile row(s) for {', '.join(missing)}")
@@ -249,6 +293,7 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
             raise ValueError(f"{profiles_md_path}: invalid Codex fork_turns for {name}: {fork_turns}")
         if "model" not in profile["claude"]:
             raise ValueError(f"{profiles_md_path}: incomplete Claude binding for {name}")
+        _check_grok_binding(profiles_md_path, name, profile["grok"])
     return profiles
 
 

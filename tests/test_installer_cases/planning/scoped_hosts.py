@@ -404,3 +404,95 @@ class TestScopedHostConfiguration(unittest.TestCase):
         self.assertEqual(1, parsed["agents"]["max_depth"])
         self.assertEqual(3, details["previous"]["agents.max_threads"])
         self.assertEqual(2, details["previous"]["agents.max_depth"])
+
+    # --- Grok ------------------------------------------------------------
+    #
+    # Grok cases live on this class, not on a mixin or a new class of their
+    # own. `tests/test_installer_cases/**` is not discovered: a class here
+    # reaches the suite only by explicit class-name import in a shard module
+    # (`tests/test_installer_hosts.py`), and `tests.test_run_tests` holds the
+    # loaded class name against the one this file declares.
+
+    def _role_bearing(self, packages) -> set:
+        def role(path):
+            head = install.split_frontmatter(path.read_text(encoding="utf-8"))[0]
+            return install.frontmatter_field(head, "role")
+
+        return {path.parent.name for path in packages if role(path) in ("planner", "worker")}
+
+    def test_the_planned_grok_surface_hangs_off_grok_home(self):
+        """One skill per canonical name and invocable template, both role
+        agents, the whole managed rules file and the ``[subagents]`` config.
+
+        The fake home and the fake ``GROK_HOME`` are separate roots on
+        purpose: a surface that landed under ``Path.home()/.grok`` instead
+        would still look right against one shared root, and ``GROK_HOME`` is
+        the only relocation the grok CLI itself reads.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "home"
+            home.mkdir()
+            with isolated_grok_home(Path(tmp)) as grok_home, patch.object(
+                install.Path, "home", return_value=home
+            ), mock_host_clis("grok"):
+                plan = install.build_plan("user", None)
+
+            packages = install.discover_packages()
+            bodies = {dest.parent.name: content for dest, content in plan.grok_skills}
+            self.assertEqual(
+                {path.parent.name for path in packages}
+                | {directory.name for directory, _, _ in install.discover_templates()},
+                set(bodies),
+            )
+            # Two spellings of one directory, because the installer writes
+            # two: a skill body carries the resolved `lib_skill_md`, while the
+            # host block substitutes `_lib_home`'s unresolved path. The forms
+            # coincide on a box whose temp root is already canonical and
+            # diverge on the CI runners -- macOS `/var` -> `/private/var`,
+            # Windows `RUNNER~1` -> `runneradmin` -- so one variable for both
+            # passes locally and fails there.
+            lib_home = (home / ".orchflows" / "lib").resolve()
+            unresolved_lib_home = home / ".orchflows" / "lib"
+            for dest, content in plan.grok_skills:
+                self.assertEqual(grok_home / "skills", dest.parent.parent)
+                self.assertEqual("SKILL.md", dest.name)
+                frontmatter, body = install.split_frontmatter(content)
+                self.assertIn(f"name: {dest.parent.name}", frontmatter)
+                # Grok reads neither key, so a stub carrying them would render
+                # a role binding that looks present and does nothing.
+                self.assertNotIn("role:", frontmatter)
+                self.assertNotIn("context:", frontmatter)
+                # Grok expands no ``@`` include, so a body names its source.
+                self.assertFalse(body.strip().startswith("@"))
+                self.assertIn(str(lib_home), body)
+            gated = {name for name, body in bodies.items() if "spawn_subagent" in body}
+            self.assertEqual(self._role_bearing(packages), gated)
+            self.assertTrue(all(install.FORK_ARRIVAL_CLAUSE in bodies[n] for n in gated))
+
+            self.assertEqual(
+                {grok_home / "agents" / f"{n}.md" for n in ("orch-planner", "orch-worker")},
+                {dest for dest, _ in plan.grok_agents},
+            )
+            for dest, content in plan.grok_agents:
+                self.assertIn(f"name: {dest.stem}", content)
+                self.assertIn("effort:", content)
+
+            start, end = install.template_markers(
+                install.HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
+            )
+            self.assertEqual(grok_home / "rules" / "orchflows.md", plan.grok_rules.dest)
+            rendered = plan.grok_rules.content
+            self.assertTrue(rendered.startswith(start), rendered[:120])
+            self.assertEqual(end, rendered.strip().splitlines()[-1])
+            self.assertNotIn("{{", rendered)
+            self.assertIn(str(unresolved_lib_home), rendered)
+
+            config = {entry.kind: entry for entry in plan.configs}["grok-config"]
+            self.assertEqual(grok_home / "config.toml", config.dest)
+            self.assertTrue(config.content.startswith(install.GROK_LIMITS_START))
+            self.assertIn(install.GROK_LIMITS_END, config.content)
+            if install.tomllib is not None:
+                subagents = install.tomllib.loads(config.content)["subagents"]
+                self.assertEqual(install.GROK_MAX_CONCURRENT, subagents["max_concurrent"])
+                self.assertEqual(install.GROK_MAX_DEPTH, subagents["max_depth"])

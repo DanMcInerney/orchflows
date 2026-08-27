@@ -30,6 +30,9 @@ class RuntimeVenvTests(unittest.TestCase):
             self.project_runtime
         )
         project_python = install.private_runtime_python(self.project_runtime)
+        # Three members, one per detected host: planning unpacks the whole
+        # tuple, so a two-member patch fails loudly here instead of
+        # silently dropping the third host from every plan it builds.
         program = "\n".join(
             (
                 "from pathlib import Path",
@@ -39,7 +42,7 @@ class RuntimeVenvTests(unittest.TestCase):
                 "installer = importlib.util.module_from_spec(spec)",
                 "sys.modules[spec.name] = installer",
                 "spec.loader.exec_module(installer)",
-                f"with patch.object(installer.Path, 'home', return_value=Path({str(self.home)!r})), patch.object(installer, 'detect_hosts', return_value=(False, True)):",
+                f"with patch.object(installer.Path, 'home', return_value=Path({str(self.home)!r})), patch.object(installer, 'detect_hosts', return_value=(False, True, False)):",
                 "    raise SystemExit(installer.main(['--user', '--yes']))",
             )
         )

@@ -8,22 +8,93 @@ from pathlib import Path
 from .application import _load_json, _prune_empty_dirs, _sha256_file
 from .foundation import (
     AUTO_REMOVE_KINDS,
+    GROK_AUTO_REMOVE_KINDS,
+    GROK_LIMITS_END,
+    GROK_LIMITS_START,
     _claude_scope_home,
     _claude_user_home,
     _codex_user_home,
     _frontend_home,
+    _grok_agents_dir,
+    _grok_rules_path,
+    _grok_skills_dir,
+    _grok_user_home,
     _require_project_root,
     _scope_home,
 )
+from .managed_text import without_marked_block
 
 # --- uninstall ---------------------------------------------------------
+
+# Each Grok kind's own directory, tightest first: a receipt entry may only
+# remove a file from the place the installer put that kind. ``grok-config``
+# is the file directly at the home, so the home is its boundary.
+_GROK_BOUNDARIES = {
+    "grok-skill": _grok_skills_dir,
+    "grok-agent": _grok_agents_dir,
+    "grok-rules": lambda: _grok_rules_path().parent,
+    "grok-config": _grok_user_home,
+}
+
+# What the report calls the thing it removed, and what a review line calls
+# the same thing. Defaulting to the skill wording keeps every Claude and
+# Codex line exactly as it was.
+_DEFAULT_NOUNS = ("skill", "skill file")
+_REMOVAL_NOUNS = {
+    "frontend-asset": ("frontend asset", "frontend asset"),
+    "grok-skill": ("Grok skill", "Grok skill file"),
+    "grok-agent": ("Grok role agent", "Grok role agent file"),
+    "grok-rules": ("Grok instruction file", "Grok instruction file"),
+    "grok-config": ("Grok config", "Grok config"),
+}
+
+
+def _grok_config_removal(path: Path, dry_run: bool) -> tuple[bool, str]:
+    """Lift the managed ``[subagents]`` block back out of the Grok config.
+
+    The file is the user's; only the marked block inside it is the
+    installer's, so the removal here is the merge run backwards rather than a
+    delete. A file left holding nothing but whitespace held nothing but that
+    block, so it goes. Returns whether the entry is settled, and its action.
+    """
+
+    if not path.is_file():
+        return True, "already absent"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        return False, f"review Grok config; could not read it: {error}; not changed"
+    try:
+        remainder = without_marked_block(text, GROK_LIMITS_START, GROK_LIMITS_END)
+    except ValueError as error:
+        return False, f"review Grok config; {error}; not changed"
+    if remainder == text:
+        return False, "review Grok config; the managed subagent limits block is not in it; not changed"
+    empty = not remainder.strip()
+    verb = "would remove" if dry_run else "removed"
+    action = (
+        f"{verb} Grok config written by the installer"
+        if empty
+        else f"{verb} the managed subagent limits block from Grok config"
+    )
+    if dry_run:
+        return True, action
+    try:
+        if empty:
+            path.unlink()
+        else:
+            path.write_text(remainder, encoding="utf-8")
+    except OSError as error:
+        return False, f"remove the managed subagent limits block manually; it failed here: {error}"
+    return True, action
 
 
 def _uninstall_boundary(path: Path, scope: str, project_root: Path | None) -> Path:
     """Codex prompts live under the user home even for project installs, and a
-    ``CLAUDE_CONFIG_DIR`` / ``CODEX_HOME`` install lives outside it entirely."""
+    ``CLAUDE_CONFIG_DIR`` / ``CODEX_HOME`` / ``GROK_HOME`` install lives
+    outside it entirely."""
 
-    roots = [_claude_user_home(), _codex_user_home()]
+    roots = [_claude_user_home(), _codex_user_home(), _grok_user_home()]
     if scope == "project":
         roots.insert(0, _require_project_root(project_root))
     for root in roots:
@@ -44,6 +115,8 @@ def _auto_remove_path_is_safe(
         boundary = _claude_scope_home(scope, project_root) / "skills"
     elif kind == "codex-skill":
         boundary = _codex_user_home() / "skills"
+    elif kind in GROK_AUTO_REMOVE_KINDS:
+        boundary = _GROK_BOUNDARIES[kind]()
     else:
         boundary = _codex_user_home() / "prompts"
     if kind == "frontend-asset":
@@ -52,6 +125,8 @@ def _auto_remove_path_is_safe(
         scope_boundary = (
             _require_project_root(project_root) if scope == "project" else _claude_user_home()
         )
+    elif kind in GROK_AUTO_REMOVE_KINDS:
+        scope_boundary = _grok_user_home()
     else:
         scope_boundary = _codex_user_home()
     try:
@@ -105,14 +180,24 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             )
             continue
 
+        noun, review_noun = _REMOVAL_NOUNS.get(kind, _DEFAULT_NOUNS)
         if not _auto_remove_path_is_safe(path, kind, scope, project_root):
-            noun = "frontend asset" if kind == "frontend-asset" else "skill file"
             manual_actions.append(
                 {
                     "path": str(path),
-                    "action": f"review {noun}; path is outside its verified install boundary; not removed",
+                    "action": f"review {review_noun}; path is outside its verified install boundary; not removed",
                 }
             )
+            continue
+
+        # The one entry whose removal is not a delete. It runs ahead of the
+        # hash gate below on purpose: the block is found by its own markers,
+        # so lifting it out stays exact however much of the file around it
+        # the user has changed since the install wrote it.
+        if kind == "grok-config":
+            settled, action = _grok_config_removal(path, dry_run)
+            bucket = skill_actions if settled else manual_actions
+            bucket.append({"path": str(path), "action": action})
             continue
 
         if not path.is_file():
@@ -124,9 +209,9 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
                 {
                     "path": str(path),
                     "action": (
-                        "review installer-replaced skill file; no original backup was recorded; not removed"
+                        f"review installer-replaced {review_noun}; no original backup was recorded; not removed"
                         if install_action == "replaced"
-                        else "review skill file; install action is unknown; not removed"
+                        else f"review {review_noun}; install action is unknown; not removed"
                     ),
                 }
             )
@@ -137,19 +222,18 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             current_hash = _sha256_file(path)
         except OSError as error:
             manual_actions.append(
-                {"path": str(path), "action": f"review skill file; could not verify: {error}"}
+                {"path": str(path), "action": f"review {review_noun}; could not verify: {error}"}
             )
             continue
 
         if not installed_hash or current_hash != installed_hash:
             reason = "no install hash" if not installed_hash else "modified since install"
             manual_actions.append(
-                {"path": str(path), "action": f"review skill file; {reason}; not removed"}
+                {"path": str(path), "action": f"review {review_noun}; {reason}; not removed"}
             )
             continue
 
         if dry_run:
-            noun = "frontend asset" if kind == "frontend-asset" else "skill"
             skill_actions.append({"path": str(path), "action": f"would remove unchanged {noun}"})
             planned_removals.add(path.resolve())
             continue
@@ -157,7 +241,7 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             path.unlink()
         except OSError as error:
             manual_actions.append(
-                {"path": str(path), "action": f"remove skill file manually; automatic removal failed: {error}"}
+                {"path": str(path), "action": f"remove {review_noun} manually; automatic removal failed: {error}"}
             )
             continue
         prune_boundary = (
@@ -166,7 +250,6 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             else _uninstall_boundary(path, scope, project_root)
         )
         _prune_empty_dirs(path.parent, prune_boundary)
-        noun = "frontend asset" if kind == "frontend-asset" else "skill"
         skill_actions.append({"path": str(path), "action": f"removed unchanged {noun}"})
 
     frontend = receipt.get("frontend")

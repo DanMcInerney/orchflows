@@ -63,14 +63,22 @@ class Plan:
     by_name: list = field(default_factory=list)          # (dest, content) — flat name->tiered-source pointers, host-agnostic
     claude_agents: list = field(default_factory=list)    # (dest, content)
     codex_agents: list = field(default_factory=list)     # (dest, content)
+    grok_skills: list = field(default_factory=list)      # (dest, content) — $GROK_HOME/skills/<name>/SKILL.md
+    grok_agents: list = field(default_factory=list)      # (dest, content)
     configs: list = field(default_factory=list)          # ConfigPlan
     blocks: list = field(default_factory=list)           # BlockPlan — inline marker blocks
     host_block: ConfigPlan | None = None                 # ~/.orchflows/host-block.md, user scope only
     claude_import: ImportPlan | None = None              # CLAUDE.md import line, user scope only
+    # $GROK_HOME/rules/orchflows.md: the host block as a whole managed file,
+    # markers retained. Its own field beside `host_block` rather than a
+    # `blocks` entry, because Grok's instruction root is a directory the
+    # installer owns a file in, not a file the user owns a block in.
+    grok_rules: ConfigPlan | None = None                 # user scope only
     warnings: list = field(default_factory=list)         # preflight, informational only
     manage_host_surfaces: bool = True
     claude_enabled: bool = True                          # user scope: a Claude CLI was detected
     codex_enabled: bool = True                           # user scope: a Codex CLI was detected
+    grok_enabled: bool = True                            # user scope: a Grok CLI was detected
     runtime_action: str | None = None                    # create, reuse, repair or refuse
 
 

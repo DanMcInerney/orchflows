@@ -10,6 +10,7 @@ from .foundation import (
     CLAUDE_ADAPTER_SETS,
     CLAUDE_CLI_CANDIDATES,
     CODEX_CLI_CANDIDATES,
+    GROK_CLI_CANDIDATES,
     PROFILE_ROLES,
     REPO_ROOT,
     SHARED_ADAPTER_NAMES,
@@ -24,11 +25,21 @@ from .foundation import (
     _codex_hooks_warnings,
     _codex_user_home,
     _frontend_home,
+    _grok_agents_dir,
+    _grok_config_path,
+    _grok_rules_path,
+    _grok_skills_dir,
     _lib_home,
     _runtime_dirs,
     _scope_home,
 )
-from .managed_text import render_claude_settings, render_codex_agent_limits
+from .managed_text import (
+    grok_skill_text,
+    render_claude_settings,
+    render_codex_agent_limits,
+    render_grok_agent,
+    render_grok_subagent_limits,
+)
 from .models import (
     BlockPlan,
     ConfigPlan,
@@ -55,17 +66,22 @@ from .packages import (
 )
 from .runtime import private_runtime_action
 
-def detect_hosts(home: Path | None = None) -> tuple[bool, bool]:
-    """Return host enablement from runnable CLI presence on ``PATH``.
+def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
+    """Return Claude, Codex and Grok enablement from runnable CLI presence on
+    ``PATH``.
 
     ``home`` remains accepted for caller compatibility, but state/config
-    directories under it are deliberately not installation signals.
+    directories under it are deliberately not installation signals. That holds
+    for Grok too: ``~/.grok`` -- or a ``GROK_HOME`` pointed anywhere else --
+    can outlive the CLI that made it, and the compat directories Grok reads
+    are Claude's, so neither says a grok CLI is runnable here.
     """
 
     del home
     return (
         any(shutil.which(candidate) for candidate in CLAUDE_CLI_CANDIDATES),
         any(shutil.which(candidate) for candidate in CODEX_CLI_CANDIDATES),
+        any(shutil.which(candidate) for candidate in GROK_CLI_CANDIDATES),
     )
 
 
@@ -88,13 +104,17 @@ def _build_user_plan(
     claude_adapter_set: str = "all",
     codex_limits_renderer=render_codex_agent_limits,
     script_name_discoverer=None,
+    grok_limits_renderer=render_grok_subagent_limits,
 ) -> Plan:
     lib_home = _lib_home("user", None)
     scope_home = _scope_home("user", None)
     bin_dir = _bin_dir("user", None)
     home = Path.home()
-    claude_enabled, codex_enabled = detect_hosts(home)
-    if not claude_enabled and not codex_enabled:
+    # Unpacked in full, never sliced: a slice here would discard the third
+    # signal silently, and no check would fail. Every patched stand-in must
+    # therefore return one member per host, and fails loudly when it does not.
+    claude_enabled, codex_enabled, grok_enabled = detect_hosts(home)
+    if not (claude_enabled or codex_enabled or grok_enabled):
         return Plan(
             scope="user",
             project_root=None,
@@ -103,11 +123,12 @@ def _build_user_plan(
             bin_dir=bin_dir,
             receipt_path=scope_home / "receipt.json",
             warnings=[
-                "warning: neither a Claude Code CLI nor a Codex CLI was found "
+                "warning: no Claude Code CLI, Codex CLI or grok CLI was found "
                 "on PATH; nothing was installed."
             ],
             claude_enabled=False,
             codex_enabled=False,
+            grok_enabled=False,
             runtime_action=None,
         )
 
@@ -151,6 +172,7 @@ def _build_user_plan(
     claude_adapters = []
     codex_prompts = []
     codex_skills = []
+    grok_skills = []
     by_name = []
     profiles = load_role_profiles()
     for skill_md in discover_packages():
@@ -200,6 +222,20 @@ def _build_user_plan(
                     ),
                 )
             )
+        if grok_enabled:
+            # Every canonical name, not a curated subset: a Grok skill is
+            # automatically the slash command `/<name>`, so a name left out
+            # here is a name that host cannot invoke at all.
+            grok_skills.append(
+                (
+                    _grok_skills_dir() / name / "SKILL.md",
+                    grok_skill_text(
+                        frontmatter,
+                        lib_skill_md,
+                        profiles[f"orch-{role}"] if role in PROFILE_ROLES else None,
+                    ),
+                )
+            )
 
     # Compositions are invocable by name, so they get the same name surfaces
     # as skills: a by-name pointer, a Claude adapter stub, a Codex prompt,
@@ -234,9 +270,19 @@ def _build_user_plan(
             codex_skills.append(
                 (codex_user_home / "skills" / name / "SKILL.md", pointer)
             )
+        if grok_enabled:
+            # The manifest, not the directory: Grok's body is a read
+            # instruction, and the manifest is the file that reads.
+            grok_skills.append(
+                (
+                    _grok_skills_dir() / name / "SKILL.md",
+                    grok_skill_text(frontmatter, lib_template_dir / TEMPLATE_MANIFEST),
+                )
+            )
 
     claude_agents = []
     codex_agents = []
+    grok_agents = []
     for name in (f"orch-{role}" for role in PROFILE_ROLES):
         profile = profiles[name]
         if claude_enabled:
@@ -249,6 +295,16 @@ def _build_user_plan(
                 (
                     _codex_agents_dir("user", None) / f"{codex_agent_type}.toml",
                     render_codex_agent(name, profile),
+                )
+            )
+        if grok_enabled:
+            # Named by the spawn identifier, as Codex's is: `spawn_subagent`
+            # takes `subagent_type`, so the file a reader finds is the name a
+            # dispatch has to pass.
+            grok_agents.append(
+                (
+                    _grok_agents_dir() / f"{profile['grok']['subagent_type']}.md",
+                    render_grok_agent(name, profile),
                 )
             )
 
@@ -287,11 +343,30 @@ def _build_user_plan(
                 codex_details,
             )
         )
+    if grok_enabled:
+        grok_config_path = _grok_config_path()
+        grok_config_text = grok_config_path.read_text(encoding="utf-8") if grok_config_path.is_file() else ""
+        grok_config, grok_details = grok_limits_renderer(grok_config_text)
+        if not grok_details["toml_checked"]:
+            warnings.append(
+                "warning: this interpreter has no tomllib (Python < 3.11), so "
+                f"{grok_config_path} was merged without a TOML parse check."
+            )
+        configs.append(
+            ConfigPlan(
+                grok_config_path,
+                grok_config,
+                "grok-config",
+                "Grok subagent limits",
+                grok_details,
+            )
+        )
 
     host_block, start_marker, end_marker = _host_block_content()
     blocks = []
     host_block_plan = None
     claude_import_plan = None
+    grok_rules_plan = None
     if claude_enabled:
         host_block_path = scope_home / "host-block.md"
         host_block_plan = ConfigPlan(host_block_path, host_block, "host-block", "Host instruction block")
@@ -311,6 +386,15 @@ def _build_user_plan(
                 end_marker,
                 "Codex AGENTS.md instruction block",
             )
+        )
+    if grok_enabled:
+        # The whole file, markers and all. `$GROK_HOME/rules/*.md` loads as
+        # global project instruction, so the installer owns one file there
+        # rather than upserting a block into an AGENTS.md the user may own --
+        # and the markers stay inside it, so identity and uninstall still read
+        # the same way they do on the other two hosts.
+        grok_rules_plan = ConfigPlan(
+            _grok_rules_path(), host_block, "grok-rules", "Grok instruction file"
         )
 
     return Plan(
@@ -332,14 +416,18 @@ def _build_user_plan(
         by_name=by_name,
         claude_agents=claude_agents,
         codex_agents=codex_agents,
+        grok_skills=grok_skills,
+        grok_agents=grok_agents,
         configs=configs,
         blocks=blocks,
         host_block=host_block_plan,
         claude_import=claude_import_plan,
+        grok_rules=grok_rules_plan,
         receipt_path=scope_home / "receipt.json",
         warnings=warnings,
         claude_enabled=claude_enabled,
         codex_enabled=codex_enabled,
+        grok_enabled=grok_enabled,
         runtime_action=private_runtime_action(),
     )
 
@@ -350,11 +438,15 @@ def build_plan(
     claude_adapter_set: str = "all",
     codex_limits_renderer=render_codex_agent_limits,
     script_name_discoverer=None,
+    grok_limits_renderer=render_grok_subagent_limits,
 ) -> Plan:
     if scope != "user":
         raise ValueError("installation supports user scope only")
     return _build_user_plan(
-        claude_adapter_set, codex_limits_renderer, script_name_discoverer
+        claude_adapter_set,
+        codex_limits_renderer,
+        script_name_discoverer,
+        grok_limits_renderer,
     )
 
 
@@ -377,10 +469,13 @@ def plan_entry_count(plan: Plan) -> int:
         + len(plan.by_name)
         + len(plan.claude_agents)
         + len(plan.codex_agents)
+        + len(plan.grok_skills)
+        + len(plan.grok_agents)
         + len(plan.configs)
         + len(plan.blocks)
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
+        + (1 if plan.grok_rules is not None else 0)
         + (
             1
             if plan.scope == "user" and plan.runtime_action in ("create", "repair")

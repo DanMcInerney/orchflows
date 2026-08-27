@@ -265,3 +265,50 @@ class TestClaudeAdapterSet(unittest.TestCase):
         with self.assertRaises(SystemExit) as raised, redirect_stderr(io.StringIO()):
             parser.parse_args(["--user", "--claude-adapters", "some"])
         self.assertEqual(2, raised.exception.code)
+
+    def test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves(self):
+        """Detecting Grok adds Grok entries and moves nothing else.
+
+        On this class because its subject is already the same one: which
+        surfaces are the same plan either way. Its home is this suite's, not
+        a mixin's -- see the collection note in ``scoped_hosts.py``.
+        """
+
+        with isolated_grok_home(self.home) as grok_home, patch.object(
+            install.Path, "home", return_value=self.home
+        ):
+            with mock_host_clis("claude", "codex"):
+                without = install.build_plan("user", None)
+            with mock_host_clis("claude", "codex", "grok"):
+                with_grok = install.build_plan("user", None)
+
+        self.assertEqual((False, True), (without.grok_enabled, with_grok.grok_enabled))
+        self.assertEqual(
+            ([], [], None, []),
+            (
+                without.grok_skills,
+                without.grok_agents,
+                without.grok_rules,
+                [entry for entry in without.configs if entry.kind == "grok-config"],
+            ),
+        )
+        # Planning writes nothing, on either side of the detection.
+        self.assertFalse((grok_home / "skills").exists())
+
+        for name in (
+            "claude_adapters", "codex_prompts", "codex_skills", "by_name",
+            "claude_agents", "codex_agents", "blocks", "host_block", "claude_import",
+        ):
+            self.assertEqual(getattr(without, name), getattr(with_grok, name), name)
+        self.assertEqual(
+            [(entry.dest, entry.content) for entry in without.configs],
+            [(e.dest, e.content) for e in with_grok.configs if e.kind != "grok-config"],
+        )
+        # The Grok half is counted, so a dry run states what it would write.
+        self.assertEqual(
+            install.plan_entry_count(without)
+            + len(with_grok.grok_skills)
+            + len(with_grok.grok_agents)
+            + 2,
+            install.plan_entry_count(with_grok),
+        )

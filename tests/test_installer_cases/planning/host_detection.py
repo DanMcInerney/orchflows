@@ -6,7 +6,8 @@ from ..support import *  # noqa: F403
 
 
 class TestHostAutoDetection(unittest.TestCase):
-    """Configure only hosts whose runnable CLI is discoverable on PATH."""
+    """Configure only hosts whose runnable CLI is discoverable on PATH, and
+    derive each host's surface from the home that host itself reads."""
 
     def test_state_directories_are_not_installation_signals(self):
         with tempfile.TemporaryDirectory() as tmp, mock_host_clis():
@@ -14,16 +15,19 @@ class TestHostAutoDetection(unittest.TestCase):
             (home / ".claude").mkdir()
             (home / ".codex").mkdir()
 
-            self.assertEqual((False, False), install.detect_hosts(home))
+            self.assertEqual((False, False, False), install.detect_hosts(home))
 
     def test_each_cross_platform_cli_candidate_enables_its_host(self):
         cases = (
-            ("claude", (True, False)),
-            ("claude.exe", (True, False)),
-            ("claude.cmd", (True, False)),
-            ("codex", (False, True)),
-            ("codex.exe", (False, True)),
-            ("codex.cmd", (False, True)),
+            ("claude", (True, False, False)),
+            ("claude.exe", (True, False, False)),
+            ("claude.cmd", (True, False, False)),
+            ("codex", (False, True, False)),
+            ("codex.exe", (False, True, False)),
+            ("codex.cmd", (False, True, False)),
+            ("grok", (False, False, True)),
+            ("grok.exe", (False, False, True)),
+            ("grok.cmd", (False, False, True)),
         )
         for executable, expected in cases:
             with self.subTest(executable=executable), patch.object(
@@ -37,7 +41,32 @@ class TestHostAutoDetection(unittest.TestCase):
 
     def test_both_clis_enable_both_hosts_before_state_directories_exist(self):
         with mock_host_clis("claude", "codex"):
-            self.assertEqual((True, True), install.detect_hosts(Path("missing-home")))
+            self.assertEqual(
+                (True, True, False), install.detect_hosts(Path("missing-home"))
+            )
+
+    def test_every_cli_enables_every_host_before_state_directories_exist(self):
+        with mock_host_clis("claude", "codex", "grok"):
+            self.assertEqual(
+                (True, True, True), install.detect_hosts(Path("missing-home"))
+            )
+
+    def test_a_grok_home_is_not_an_installation_signal_without_the_cli(self):
+        """The Grok signal is the CLI, exactly as it is for the other two.
+
+        A ``GROK_HOME`` an agent runtime left behind, or a bare ``~/.grok``,
+        says nothing about whether a grok CLI is runnable here.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp, mock_host_clis("claude"):
+            root = Path(tmp)
+            (root / ".grok").mkdir()
+            with isolated_grok_home(root) as grok_home:
+                (grok_home / "skills").mkdir()
+
+                self.assertEqual(
+                    (True, False, False), install.detect_hosts(root)
+                )
 
     def test_protected_stale_codex_directory_is_ignored_without_codex_cli(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -137,6 +166,89 @@ class TestHostAutoDetection(unittest.TestCase):
             output = buffer.getvalue()
             self.assertIn("detected Claude Code CLI: yes", output)
             self.assertIn("detected Codex CLI: no", output)
+    # Every Grok surface is derived from one home, and only that home moves.
+    # These live here rather than in a class of their own: `test_installer_hosts`
+    # imports the cases it shards by explicit class name.
+
+    def _grok_paths(self) -> dict:
+        return {
+            "home": foundation._grok_user_home(),
+            "skills": foundation._grok_skills_dir(),
+            "agents": foundation._grok_agents_dir(),
+            "rules": foundation._grok_rules_path(),
+            "config": foundation._grok_config_path(),
+        }
+
+    def test_every_grok_path_defaults_under_the_dot_grok_home(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            with patch.object(install.Path, "home", return_value=home):
+                paths = self._grok_paths()
+
+        grok_home = home / ".grok"
+        self.assertEqual(grok_home, paths["home"])
+        self.assertEqual(grok_home / "skills", paths["skills"])
+        self.assertEqual(grok_home / "agents", paths["agents"])
+        self.assertEqual(grok_home / "rules" / "orchflows.md", paths["rules"])
+        self.assertEqual(grok_home / "config.toml", paths["config"])
+
+    def _other_host_paths(self) -> tuple:
+        return (
+            foundation._claude_user_home(),
+            foundation._claude_agents_dir("user", None),
+            foundation._claude_md_path("user", None),
+            foundation._claude_settings_path("user", None),
+            foundation._codex_user_home(),
+            foundation._codex_agents_dir("user", None),
+            foundation._codex_agents_path("user", None),
+            foundation._codex_config_path("user", None),
+        )
+
+    def test_grok_home_relocates_the_grok_paths_and_only_those(self):
+        """One override, both halves: the Grok surface follows ``GROK_HOME``
+        off its default, and no Claude or Codex path moves with it."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            home.mkdir()
+            with patch.object(install.Path, "home", return_value=home):
+                before = self._other_host_paths()
+                with isolated_grok_home(root) as grok_home:
+                    paths = self._grok_paths()
+                    during = self._other_host_paths()
+
+        for name, path in paths.items():
+            with self.subTest(path=name):
+                self.assertIn(grok_home, [path, *path.parents])
+                self.assertNotIn(home / ".grok", [path, *path.parents])
+        self.assertEqual(before, during)
+
+    def test_the_managed_subagent_limit_markers_bracket_a_toml_comment_pair(self):
+        """The block is merged into ``config.toml``, so its fences are
+        comments; distinct ends are what let a re-install find the old one."""
+
+        start = foundation.GROK_LIMITS_START
+        end = foundation.GROK_LIMITS_END
+        self.assertTrue(start.startswith("#"), start)
+        self.assertTrue(end.startswith("#"), end)
+        self.assertNotEqual(start, end)
+        self.assertNotIn(start, (foundation.CODEX_LIMITS_START, foundation.CODEX_LIMITS_END))
+        self.assertNotIn(end, (foundation.CODEX_LIMITS_START, foundation.CODEX_LIMITS_END))
+
+    def test_the_subagent_depth_limit_is_the_one_grok_enforces(self):
+        """Grok caps subagent depth at 1 -- a subagent that calls
+        ``spawn_subagent`` fails with a depth error -- so a managed block
+        claiming more would promise a nesting the host refuses. Concurrency is
+        the house number the other two hosts already carry."""
+
+        self.assertEqual(1, foundation.GROK_MAX_DEPTH)
+        self.assertEqual(20, foundation.GROK_MAX_CONCURRENT)
+        self.assertEqual(
+            foundation.CLAUDE_MAX_TOOL_USE_CONCURRENCY, foundation.GROK_MAX_CONCURRENT
+        )
+
+
 class DryRunOracleTest(unittest.TestCase):
     """``python install.py --dry-run`` is one of the four required checks.
 

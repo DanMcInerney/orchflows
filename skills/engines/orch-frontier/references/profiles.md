@@ -4,10 +4,10 @@ The starting agent is the orchestrator; only children use profiles. This
 file owns the host bindings: model mappings, child naming,
 dispatch-surface mechanics, and lane watching.
 
-| Profile | Role | Codex | Claude Code |
-| --- | --- | --- | --- |
-| `orch-planner` | planner | agent_type `orch_planner`, fork_turns `none`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `max` |
-| `orch-worker` | worker | agent_type `orch_worker`, fork_turns `none`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` |
+| Profile | Role | Codex | Claude Code | Grok |
+| --- | --- | --- | --- | --- |
+| `orch-planner` | planner | agent_type `orch_planner`, fork_turns `none`, model `gpt-5.6-sol`, model_reasoning_effort `ultra` | model `claude-opus-5`, effort `max` | model `grok-4.6`, effort `xhigh`, subagent_type `orch-planner` |
+| `orch-worker` | worker | agent_type `orch_worker`, fork_turns `none`, model `gpt-5.6-sol`, model_reasoning_effort `high`, service_tier `fast` | model `claude-opus-5`, effort `high` | model `grok-4.6`, effort `high`, subagent_type `orch-worker` |
 
 Use native invocation fields when available; a prompt-only request is
 requested, not verified. An unsupported or blocked model binding stops
@@ -19,7 +19,12 @@ workspace at dispatch: the request rides the prompt, is graded
 requested, not verified, and is never recorded as established. Like a
 missing effort control it is no stop on its own — what an unisolated
 child then shares with its siblings is the caller's to weigh before
-dispatching them.
+dispatching them. Grok is the other side of that line: `spawn_subagent`
+takes a native `isolation` argument, so a ticket carrying `isolation:
+required` is established at dispatch there rather than only requested.
+No profile row above and no rendered agent definition sets isolation on
+any host — it stays the decomposer's field on the ticket, read per
+dispatch.
 
 On Claude Code a role-bearing skill adapter declares `context: fork`
 and `agent: orch-planner` or `agent: orch-worker`; those native fields

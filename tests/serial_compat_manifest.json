@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1724,
+  "count": 1759,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -64,10 +64,13 @@
    "test_doclint.ValidateLinkCheckTest.test_a_dangling_link_in_a_graded_tier_is_an_error",
    "test_doclint.ValidateLinkCheckTest.test_a_link_that_resolves_is_not",
    "test_doclint.ValidateLinkCheckTest.test_an_external_url_is_not_the_repositorys_to_resolve",
+   "test_install_doctor.TestInstallDoctor.test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was",
    "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
    "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
+   "test_install_doctor.TestInstallDoctor.test_each_grok_artifact_reports_presence_and_staleness_by_receipt",
+   "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
    "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
@@ -114,6 +117,7 @@
    "test_installer.TestClaudeAdapterSet.test_the_plan_count_and_printout_follow_the_adapter_set",
    "test_installer.TestClaudeAdapterSet.test_the_receipt_records_only_the_minted_adapters",
    "test_installer.TestClaudeAdapterSet.test_the_shared_four_remain_the_reduced_claude_set",
+   "test_installer.TestClaudeAdapterSet.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_migrates_legacy_inline_block_in_claude_md",
    "test_installer.TestClaudeAlwaysOnImport.test_apply_writes_host_block_file_and_appends_import_line",
    "test_installer.TestClaudeAlwaysOnImport.test_reapply_does_not_duplicate_import_line",
@@ -143,7 +147,9 @@
    "test_installer.TestConservativeUninstall.test_receipt_cannot_remove_skill_outside_verified_boundary",
    "test_installer.TestConservativeUninstall.test_replaced_skill_requires_manual_cleanup",
    "test_installer.TestConservativeUninstall.test_uninstall_auto_removes_unchanged_codex_skill_stub",
+   "test_installer.TestConservativeUninstall.test_uninstall_drops_a_grok_config_the_installer_wrote_whole",
    "test_installer.TestConservativeUninstall.test_uninstall_removes_only_unchanged_skill_entrypoints",
+   "test_installer.TestConservativeUninstall.test_uninstall_removes_the_installed_grok_surface_by_receipt",
    "test_installer.TestDeclaredPythonFloor.test_agents_md_states_the_floor_install_py_enforces",
    "test_installer.TestDeclaredPythonFloor.test_floor_turns_an_unsupported_interpreter_away",
    "test_installer.TestFrontendDistribution.test_apply_repairs_receipts_and_reports_without_a_javascript_toolchain",
@@ -152,15 +158,21 @@
    "test_installer.TestFrontendDistribution.test_frontend_uninstall_dry_run_is_one_consistent_preview",
    "test_installer.TestFrontendDistribution.test_uninstall_removes_an_unchanged_receipted_distribution",
    "test_installer.TestFrontendDistribution.test_user_plan_carries_the_exact_distribution",
+   "test_installer.TestHostAutoDetection.test_a_grok_home_is_not_an_installation_signal_without_the_cli",
    "test_installer.TestHostAutoDetection.test_both_clis_enable_both_hosts_before_state_directories_exist",
    "test_installer.TestHostAutoDetection.test_dry_run_prints_what_it_detected",
    "test_installer.TestHostAutoDetection.test_each_cross_platform_cli_candidate_enables_its_host",
+   "test_installer.TestHostAutoDetection.test_every_cli_enables_every_host_before_state_directories_exist",
+   "test_installer.TestHostAutoDetection.test_every_grok_path_defaults_under_the_dot_grok_home",
+   "test_installer.TestHostAutoDetection.test_grok_home_relocates_the_grok_paths_and_only_those",
    "test_installer.TestHostAutoDetection.test_neither_host_present_dry_run_returns_success_with_no_writes",
    "test_installer.TestHostAutoDetection.test_neither_host_present_returns_success_with_no_writes",
    "test_installer.TestHostAutoDetection.test_only_claude_present_builds_claude_half_only",
    "test_installer.TestHostAutoDetection.test_only_codex_present_builds_codex_half_only",
    "test_installer.TestHostAutoDetection.test_protected_stale_codex_directory_is_ignored_without_codex_cli",
    "test_installer.TestHostAutoDetection.test_state_directories_are_not_installation_signals",
+   "test_installer.TestHostAutoDetection.test_the_managed_subagent_limit_markers_bracket_a_toml_comment_pair",
+   "test_installer.TestHostAutoDetection.test_the_subagent_depth_limit_is_the_one_grok_enforces",
    "test_installer.TestHostBlockDemands.test_host_block_demands_and_read_by_tokens_are_all_stated",
    "test_installer.TestHostBlockDemands.test_host_block_demands_dropped_one_at_a_time_fail_the_check",
    "test_installer.TestHostBlockDemands.test_host_block_demands_fit_the_every_turn_budget",
@@ -169,13 +181,17 @@
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
    "test_installer.TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
+   "test_installer.TestInstallReceipt.test_a_grok_install_writes_the_planned_surface_and_records_its_kind",
+   "test_installer.TestInstallReceipt.test_enabling_grok_leaves_every_claude_and_codex_write_byte_identical",
    "test_installer.TestInstallReceipt.test_legacy_header_role_profile_without_receipt_is_kept",
    "test_installer.TestInstallReceipt.test_modified_receipt_owned_role_profile_is_kept",
    "test_installer.TestInstallReceipt.test_modified_role_profile_is_replaced_when_overwrite_is_chosen",
    "test_installer.TestInstallReceipt.test_receipt_records_actions_and_hashes",
+   "test_installer.TestInstallReceipt.test_reinstall_removes_a_receipt_owned_grok_artifact_the_plan_dropped",
    "test_installer.TestInstallReceipt.test_reinstall_removes_receipt_owned_hyphenated_codex_agent",
    "test_installer.TestInstallReceipt.test_role_profile_that_is_not_a_regular_file_still_refuses",
    "test_installer.TestInstallReceipt.test_shipped_claude_bindings_are_the_documented_defaults",
+   "test_installer.TestInstallReceipt.test_the_printed_plan_and_summary_report_the_grok_surface",
    "test_installer.TestInstallReceipt.test_unowned_role_profile_is_kept_and_the_install_proceeds",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_duplicate_legacy_begin_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_begin_without_end_raises",
@@ -200,10 +216,23 @@
    "test_installer.TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
    "test_installer.TestPluginSubsystemRemoved.test_install_py_source_has_no_plugin_subsystem_reference",
    "test_installer.TestPluginSubsystemRemoved.test_plugin_subsystem_paths_are_absent",
+   "test_installer.TestRoleAgentInstructions.test_a_config_with_no_subagents_table_gets_dotted_keys_above_the_first",
+   "test_installer.TestRoleAgentInstructions.test_a_declared_role_that_the_profile_contradicts_refuses",
+   "test_installer.TestRoleAgentInstructions.test_a_role_none_grok_body_carries_neither_gate_nor_fork_clause",
+   "test_installer.TestRoleAgentInstructions.test_an_absent_config_gains_the_three_managed_settings",
+   "test_installer.TestRoleAgentInstructions.test_an_existing_subagents_table_keeps_its_user_keys",
    "test_installer.TestRoleAgentInstructions.test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling",
    "test_installer.TestRoleAgentInstructions.test_codex_agent_file_names_no_contract_read",
+   "test_installer.TestRoleAgentInstructions.test_grok_agent_binds_no_field_the_profile_row_does_not",
+   "test_installer.TestRoleAgentInstructions.test_grok_agent_carries_the_rows_censused_model_and_valid_effort",
+   "test_installer.TestRoleAgentInstructions.test_grok_agent_is_yaml_frontmatter_with_camelcase_keys_only",
+   "test_installer.TestRoleAgentInstructions.test_grok_frontmatter_drops_the_keys_grok_would_silently_ignore",
+   "test_installer.TestRoleAgentInstructions.test_no_grok_body_is_an_at_include_and_every_one_reads_its_canonical_body",
+   "test_installer.TestRoleAgentInstructions.test_rendering_grok_leaves_the_claude_and_codex_agents_alone",
    "test_installer.TestRoleAgentInstructions.test_role_description_is_the_role_name_and_nothing_to_follow",
    "test_installer.TestRoleAgentInstructions.test_role_instructions_send_no_child_to_read_the_role_contract",
+   "test_installer.TestRoleAgentInstructions.test_the_codex_agent_limits_block_is_untouched_by_the_grok_one",
+   "test_installer.TestRoleAgentInstructions.test_the_role_bearing_grok_body_states_the_explicit_dispatch_gate",
    "test_installer.TestRuntimeDirsSeedTheSink.test_a_real_plan_writes_user_runtime_state_only",
    "test_installer.TestRuntimeDirsSeedTheSink.test_no_planned_line_names_a_dot_orch_friction_path",
    "test_installer.TestRuntimeDirsSeedTheSink.test_the_bin_dir_is_unchanged_in_shape",
@@ -216,6 +245,7 @@
    "test_installer.TestScopedHostConfiguration.test_discover_templates_requires_a_manifest_with_entry",
    "test_installer.TestScopedHostConfiguration.test_invalid_codex_agent_type_is_rejected",
    "test_installer.TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
+   "test_installer.TestScopedHostConfiguration.test_the_planned_grok_surface_hangs_off_grok_home",
    "test_installer.TestScopedHostConfiguration.test_user_plan_merges_limits_and_writes_native_role_agents",
    "test_installer.TestScopedHostConfiguration.test_user_plan_targets_user_config_and_agent_directories",
    "test_installer.TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_codex_skill_stubs",
@@ -734,8 +764,13 @@
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_rejects_duplicate_launches",
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_role_skill_topology_is_enforced",
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_timeout_returns_structured_failure",
+   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_a_row_that_lost_its_grok_cell_is_not_read_as_a_row",
+   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_column_parses_and_grok_is_bound_for_both_roles",
+   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_recorded_model_and_effort_is_admitted",
+   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_exception_during_surface_run_still_cleans_up_temp_agent_file",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_file_tool_activity_fails_the_surface",
+   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_isolation_stays_the_tickets_field_on_every_host",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_probe_sentinel_injection_does_not_require_tomllib",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_role_skill_topology_reports_advisory_when_unsupported",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_stable_surface_accepts_all_sentinels",
@@ -1727,7 +1762,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "c38b2167e8113afab42a99dcc19fbf438dd01ba85a2b591863da572b9a3f5f18"
+  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
  },
  "mutation_owners": [
   {
@@ -2243,6 +2278,15 @@
    ]
   },
   {
+   "module": "tests.test_install_doctor",
+   "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_install_support_packages",
    "owner": "ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
    "restoration": "sharded-module-guard",
@@ -2424,6 +2468,22 @@
   {
    "module": "tests.test_installer_cases.planning.host_detection",
    "owner": "TestHostAutoDetection.test_each_cross_platform_cli_candidate_enables_its_host",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_every_grok_path_defaults_under_the_dot_grok_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.host_detection",
+   "owner": "TestHostAutoDetection.test_grok_home_relocates_the_grok_paths_and_only_those",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -2617,6 +2677,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.runtime",
+   "owner": "TestClaudeAdapterSet.test_without_a_grok_cli_no_grok_entry_is_planned_and_nothing_else_moves",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.runtime",
    "owner": "TestRuntimeDirsSeedTheSink.setUp",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -2701,6 +2769,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_the_planned_grok_surface_hangs_off_grok_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
    "owner": "TestScopedHostConfiguration.test_user_plan_merges_limits_and_writes_native_role_agents",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -2737,6 +2813,38 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.install_receipt",
+   "owner": "TestInstallReceipt._no_runtime_build",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.install_receipt",
+   "owner": "TestInstallReceipt.test_a_grok_install_writes_the_planned_surface_and_records_its_kind",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.install_receipt",
+   "owner": "TestInstallReceipt.test_enabling_grok_leaves_every_claude_and_codex_write_byte_identical",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.install_receipt",
+   "owner": "TestInstallReceipt.test_the_printed_plan_and_summary_report_the_grok_surface",
+   "restoration": "sharded-module-guard",
+   "seams": [
     "monkeypatch"
    ]
   },
@@ -2786,6 +2894,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.support",
+   "owner": "isolated_grok_home",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -2841,7 +2957,23 @@
   },
   {
    "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_uninstall_drops_a_grok_config_the_installer_wrote_whole",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
    "owner": "TestConservativeUninstall.test_uninstall_removes_only_unchanged_skill_entrypoints",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_uninstall_removes_the_installed_grok_surface_by_receipt",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
