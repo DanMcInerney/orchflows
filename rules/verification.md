@@ -19,9 +19,8 @@
    still decide the integrated tip.
 7. Each ticket takes one independence path: a blocker-only `orch-critique`
    checker recorded by `checked_by`, or its downstream composite gate. A
-   non-root gate-deferred ticket cannot carry `checked_by`; a root cut reader is
-   bookkeeping, not final acceptance. Additional review is a uniquely named
-   lens feeding the same one repair and fresh verification.
+   gate-deferred ticket does not use `checked_by`. Additional review is a
+   uniquely named lens feeding the same one repair and fresh verification.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the

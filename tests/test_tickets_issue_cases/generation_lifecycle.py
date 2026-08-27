@@ -1,5 +1,7 @@
 """Executable draft, validation, seal, and correction lifecycle contract."""
 
+import ast
+import inspect
 import os
 import tempfile
 import unittest
@@ -8,34 +10,34 @@ from unittest import mock
 
 from scripts import tickets_admission as admission
 from scripts import tickets_generations as generations
+from scripts import tickets_lifecycle as lifecycle
 from scripts import tickets
 from scripts.tickets_dispatch import _dispatch
 from scripts.tickets_format import _parse_frontmatter, _set_frontmatter_field
+from scripts.tickets_issue_render import _render_ticket
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
-def ticket(ticket_id, *, executor="orch-tdd", objective="deliver", result="", regions=None):
-    fields = [
-        "---", f"id: {ticket_id}", "run: run", "status: pending",
-        "admission: pending", f"executor: {executor}", "pack: orch-code-pack",
-        "independence: gate", "depends_on: []", "write_scope: [scripts/example.py]",
-        "mutations: [change:scripts/example.py]", "isolation: required", "bound: 30m",
-        "claimed_by:", "claimed_at:",
+def ticket(ticket_id, *, executor="orch-tdd", goal="deliver", result=""):
+    fields = {
+        "id": ticket_id, "run": "run", "status": "pending",
+        "admission": "pending", "executor": executor, "pack": "orch-code-pack",
+        "independence": "gate", "depends_on": [],
+        "isolation": "required" if executor == "orch-tdd" else "none",
+        "bound": "30m", "claimed_by": "", "claimed_at": "",
+    }
+    sections = [
+        ("Goal", goal), ("Context", "Use the exact sealed run snapshot."),
+        ("Result", result), ("Verification", ""), ("Feedback", "[]"),
+        ("Risks", "[]"),
     ]
-    fields.append("ownership_regions: " + generations.canonical_json(regions or []))
-    return "\n".join(fields + [
-        "---", "", "## Objective", "", objective, "", "## Fixed inputs", "",
-        '- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"02621f7005b0b4d37fa59b0d450ff742d9c1bfbd"},"name":"baseline","type":"identity"}',
-        '- input: {"name":"fixture","type":"literal","value":1}', "",
-        "## Completion test", "", "- works | oracle: `fixture` | oracle_class: deterministic | provenance: authored-here",
-        "", "## Return fields", "", "status; result", "", "## Result", "", result,
-        "", "## Verification", "", "", "## Feedback", "", "[]", "", "## Risks", "", "[]",
-        "", "## Handoff", "", "",
-    ])
+    return _render_ticket(fields, sections)
 
 
 def snapshot():
     return {
-        "00-root": ticket("00-root", executor="orch-decompose", objective="root"),
+        "00-root": ticket("00-root", executor="orch-decompose", goal="root"),
         "00-root.01": ticket("00-root.01"),
     }
 
@@ -98,14 +100,55 @@ class DraftValidateSealLifecycleTest(unittest.TestCase):
                 ready = _dispatch(["ready", "--run", "run"])
                 self.assertIn("00-root.01", {item["id"] for item in ready["ready"]})
 
-    def test_cut_binds_gate_assignments_and_durable_coverage(self):
+    def test_cut_binds_gate_assignments_and_membership(self):
         current = snapshot()
-        current["00-root.gate.verify"] = ticket("00-root.gate.verify", executor="orch-verify")
-        first = generations.draft_snapshot("00-root", current, coverage_map="criterion: unit\n")
+        current["00-root.gate.verify"] = ticket(
+            "00-root.gate.verify", executor="orch-verify", goal="verify exact"
+        )
+        first = generations.draft_snapshot("00-root", current)
         changed_gate = dict(current)
-        changed_gate["00-root.gate.verify"] = changed_gate["00-root.gate.verify"].replace("deliver", "verify exact")
-        self.assertNotEqual(first["cut_generation"], generations.draft_snapshot("00-root", changed_gate, coverage_map="criterion: unit\n")["cut_generation"])
-        self.assertNotEqual(first["cut_generation"], generations.draft_snapshot("00-root", current, coverage_map="criterion: gate\n")["cut_generation"])
+        changed_gate["00-root.gate.verify"] = changed_gate["00-root.gate.verify"].replace(
+            "verify exact", "verify the exact artifact"
+        )
+        self.assertNotEqual(
+            first["cut_generation"],
+            generations.draft_snapshot("00-root", changed_gate)["cut_generation"],
+        )
+        self.assertNotEqual(
+            first["cut_generation"],
+            generations.draft_snapshot("00-root", snapshot())["cut_generation"],
+        )
+
+    def test_readiness_has_no_post_seal_root_checker_path(self):
+        tree = ast.parse(inspect.getsource(lifecycle))
+        functions = {
+            node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)
+        }
+        self.assertNotIn("_unchecked_cut", functions)
+        ready_names = {
+            node.id for node in ast.walk(functions["_cmd_ready"])
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        self.assertNotIn("CHECKED_BY_KEY", ready_names)
+
+    def test_user_graph_surfaces_have_no_root_rereview_route(self):
+        paths = (
+            ROOT / "README.md",
+            ROOT / "rules" / "verification.md",
+            ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md",
+            ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md",
+        )
+        forbidden = ("cut" + " reader", "cut" + "-reader")
+        findings = []
+        for path in paths:
+            lowered = path.read_text(encoding="utf-8").lower()
+            findings.extend(
+                f"{path.relative_to(ROOT)}:{token}"
+                for token in forbidden if token in lowered
+            )
+        self.assertEqual([], findings)
+        readme = paths[0].read_text(encoding="utf-8")
+        self.assertIn('dec --> frontier["orch-frontier — dispatch ready units"]', readme)
 
 class CorrectionGenerationPolicyTest(unittest.TestCase):
     def test_one_default_correction_and_recurrence_suspends_immediately(self):
@@ -123,7 +166,9 @@ class CorrectionGenerationPolicyTest(unittest.TestCase):
             with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
                 run_dir = Path(directory) / "tickets" / "run"
                 run_dir.mkdir(parents=True)
-                (run_dir / "00-root.md").write_text(ticket("00-root", executor="orch-decompose").replace("ownership_regions: []\n", ""), encoding="utf-8")
+                (run_dir / "00-root.md").write_text(
+                    ticket("00-root", executor="orch-decompose"), encoding="utf-8"
+                )
                 first = _dispatch(["draft-validate", "run", "00-root", "--correction-bound", "2"])
                 self.assertEqual("new-generation", first["correction"]["disposition"])
                 repeated = _dispatch(["draft-validate", "run", "00-root", "--correction-bound", "2"])

@@ -37,8 +37,7 @@ searchable names.
 Stamp routing per [rules/topology.md](../../../rules/topology.md) 5a.
 Write it through
 `tickets.py new <run> <root-id> --executor orch-decompose --pack <the
-stamp> --independence gate …`; the root's `checked_by` is its cut-reader
-bookkeeping, never its final acceptance path.
+stamp> --independence gate …`.
 
 When one executor plus the mandatory `orch-integrate` join owns the whole
 outcome, bind that executor in the root itself rather than `orch-decompose`.

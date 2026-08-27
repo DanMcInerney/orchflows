@@ -112,12 +112,8 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             )
 
     def test_one_independence_path_unique_lenses_and_one_root_gate(self):
-        work_item = read_flat("work-item.md")
         independence = read_bullet_flat("work-item.md", "`independence`")
         checked_by = read_bullet_flat("work-item.md", "`checked_by`")
-        root = work_item.split("## Root ticket", 1)[1].split(
-            "## Template and stub", 1
-        )[0]
         for token in (
             "all authored-here criteria", "regardless of oracle class",
             "exactly one outside-independence path",
@@ -125,20 +121,6 @@ class TestVerificationHomelessLaws(unittest.TestCase):
             self.assertIn(token, independence, f"independence omits {token!r}")
         for token in ("single", "immutable", "non-root", "`gate`"):
             self.assertIn(token, checked_by, f"checked_by omits {token!r}")
-        # The composite-gate shape and the successor plan have one owner
-        # each -- rules/topology.md §5 and §7, asserted below, plus
-        # skills/workflows/orch-spec for `successors.md`. The contract keeps
-        # the root's own independence bookkeeping and points at the rest.
-        for token in (
-            "`independence: gate`", "`checked_by`", "cut reader",
-            "never satisfies", "composite gate", "`orch-spec`",
-        ):
-            self.assertIn(token, root, f"Root ticket omits {token!r}")
-        for token in ("`successors.md`", "sole writer", "completed frontier"):
-            self.assertNotIn(
-                token, root,
-                f"Root ticket restates {token!r}; orch-spec owns it",
-            )
 
         verification = self.law(10)
         for token in (

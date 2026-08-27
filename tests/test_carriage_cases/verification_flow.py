@@ -181,10 +181,6 @@ class ReverificationSplitTest(unittest.TestCase):
                         "`checked_by`",
                     ),
                     "one path": ("one outside-independence path",),
-                    "root cut bookkeeping": (
-                        "on a root", "`checked_by`", "cut reader",
-                        "never", "final checker acceptance", "composite gate",
-                    ),
                 },
             ),
         }
