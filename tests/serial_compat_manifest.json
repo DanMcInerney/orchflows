@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1768,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -141,6 +141,13 @@
    "test_installer.TestCodexHooksPreflight.test_user_plan_says_when_the_codex_config_could_not_be_toml_checked",
    "test_installer.TestCodexHooksPreflight.test_user_plan_surfaces_hooks_warnings",
    "test_installer.TestCodexHooksPreflight.test_warns_on_dangling_orchflows_path",
+   "test_installer.TestConservativeBlockRemoval.test_a_block_holding_only_owned_lines_lifts_out_whole",
+   "test_installer.TestConservativeBlockRemoval.test_a_foreign_line_the_host_appended_inside_the_block_survives",
+   "test_installer.TestConservativeBlockRemoval.test_absent_markers_pass_the_text_through",
+   "test_installer.TestConservativeBlockRemoval.test_an_owned_looking_line_below_the_first_foreign_one_survives_too",
+   "test_installer.TestConservativeBlockRemoval.test_blank_lines_between_owned_ones_do_not_strand_them",
+   "test_installer.TestConservativeBlockRemoval.test_crlf_line_endings_are_preserved_on_what_survives",
+   "test_installer.TestConservativeBlockRemoval.test_duplicate_markers_raise_the_shared_marker_error",
    "test_installer.TestConservativeUninstall.test_dry_run_changes_nothing",
    "test_installer.TestConservativeUninstall.test_manual_config_action_reports_installed_settings",
    "test_installer.TestConservativeUninstall.test_modified_and_unverified_skills_require_manual_cleanup",
@@ -148,6 +155,7 @@
    "test_installer.TestConservativeUninstall.test_replaced_skill_requires_manual_cleanup",
    "test_installer.TestConservativeUninstall.test_uninstall_auto_removes_unchanged_codex_skill_stub",
    "test_installer.TestConservativeUninstall.test_uninstall_drops_a_grok_config_the_installer_wrote_whole",
+   "test_installer.TestConservativeUninstall.test_uninstall_keeps_a_table_grok_appended_inside_the_managed_block",
    "test_installer.TestConservativeUninstall.test_uninstall_removes_only_unchanged_skill_entrypoints",
    "test_installer.TestConservativeUninstall.test_uninstall_removes_the_installed_grok_surface_by_receipt",
    "test_installer.TestDeclaredPythonFloor.test_agents_md_states_the_floor_install_py_enforces",
@@ -218,6 +226,7 @@
    "test_installer.TestPluginSubsystemRemoved.test_plugin_subsystem_paths_are_absent",
    "test_installer.TestRoleAgentInstructions.test_a_config_with_no_subagents_table_gets_dotted_keys_above_the_first",
    "test_installer.TestRoleAgentInstructions.test_a_declared_role_that_the_profile_contradicts_refuses",
+   "test_installer.TestRoleAgentInstructions.test_a_reinstall_keeps_a_table_grok_appended_inside_the_block",
    "test_installer.TestRoleAgentInstructions.test_a_role_none_grok_body_carries_neither_gate_nor_fork_clause",
    "test_installer.TestRoleAgentInstructions.test_an_absent_config_gains_the_three_managed_settings",
    "test_installer.TestRoleAgentInstructions.test_an_existing_subagents_table_keeps_its_user_keys",
@@ -1762,7 +1771,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "7aefaa86b9797b00c6349a5d89c15c37e622255a013e324718d036cc5aa60b7b"
  },
  "mutation_owners": [
   {
@@ -2958,6 +2967,14 @@
   {
    "module": "tests.test_installer_cases.uninstall.conservative",
    "owner": "TestConservativeUninstall.test_uninstall_drops_a_grok_config_the_installer_wrote_whole",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_uninstall_keeps_a_table_grok_appended_inside_the_managed_block",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

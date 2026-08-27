@@ -233,7 +233,9 @@ class TestConservativeUninstall(unittest.TestCase):
         skill, and a ``config.toml`` the user already had. The skill has to
         survive untouched and the config has to come back holding its own
         table -- the installer owns the marked block inside that file, not the
-        file.
+        file, and not everything that ends up inside the block either. Grok's
+        own appended table is planted between the markers midway, so the
+        reinstall and the uninstall are both graded on it.
         """
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -253,6 +255,33 @@ class TestConservativeUninstall(unittest.TestCase):
                     plan = install.build_plan("user", None)
                     install.apply_plan(plan)
                     self.assertIn("max_concurrent", config.read_text(encoding="utf-8"))
+                    # Grok appends its own table within 0.2s of any subcommand,
+                    # and a TOML editor lands it ahead of a trailing END
+                    # comment -- inside the markers. Planted rather than
+                    # provoked: nothing here may execute ``grok.exe``.
+                    config.write_text(
+                        config.read_text(encoding="utf-8").replace(
+                            install.GROK_LIMITS_END,
+                            "[marketplace]\ndefault_skills_installs_purged = true\n"
+                            + install.GROK_LIMITS_END,
+                        ),
+                        encoding="utf-8",
+                    )
+                    install.apply_plan(install.build_plan("user", None))
+                    reinstalled = config.read_text(encoding="utf-8")
+                    self.assertIn("default_skills_installs_purged = true", reinstalled)
+                    self.assertIn("max_concurrent", reinstalled)
+                    # The rewritten block sits above grok's table now, off the
+                    # EOF that invited the append -- so the uninstall would
+                    # never meet it. Grok runs again before the uninstall does,
+                    # which puts a fresh table back inside the markers.
+                    config.write_text(
+                        reinstalled.replace(
+                            install.GROK_LIMITS_END,
+                            "[telemetry]\nenabled = false\n" + install.GROK_LIMITS_END,
+                        ),
+                        encoding="utf-8",
+                    )
                     installed = [dest for dest, _ in plan.grok_skills + plan.grok_agents]
                     installed.append(plan.grok_rules.dest)
                     report = install.run_uninstall("user", None, dry_run=False)
@@ -271,6 +300,8 @@ class TestConservativeUninstall(unittest.TestCase):
                 self.assertNotIn("# BEGIN ORCHFLOWS SUBAGENT LIMITS", remaining)
                 self.assertNotIn("max_concurrent", remaining)
                 self.assertIn('mode = "ask"', remaining)
+                self.assertIn("default_skills_installs_purged = true", remaining)
+                self.assertIn("enabled = false", remaining)
 
     def test_uninstall_drops_a_grok_config_the_installer_wrote_whole(self):
         """No user TOML, no file: the installer's own block was all of it.
