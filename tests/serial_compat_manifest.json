@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1778,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -496,16 +496,26 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_packet",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_spec_route_consumes_the_root_shape_it_sealed",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_content_pack_preserves_whole_artifact_direct_route",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_decompose_builds_the_complete_gate_bearing_draft_before_validation",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_instantiates_current_sealed_format",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_tdd_executor_owns_test_choice",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
+   "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
+   "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_whose_start_cannot_be_read_is_reported_not_measured",
    "test_tickets_bound.BoundCheckCommandTest.test_a_clock_it_cannot_read_is_refused_before_any_run_is_opened",
@@ -584,6 +594,8 @@
    "test_verification_model.GoalEvidenceContractTest.test_non_code_packs_define_artifact_evidence_without_code_tests",
    "test_verification_model.GoalEvidenceContractTest.test_tdd_chooses_tests_and_records_post_work_evidence",
    "test_verification_model.GoalEvidenceContractTest.test_ticket_has_no_extra_success_schema",
+   "test_verification_model.SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
+   "test_verification_model.SeparateRepairGateTest.test_a_single_executor_result_does_not_trigger_a_composite_gate",
    "test_verification_model.SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_repair_verify_tickets",
    "test_verify_at.CallerEnvironmentTest.test_no_git_seam_a_caller_set_reaches_the_command",
    "test_verify_at.CleanupReportHonestyTest.test_a_checkout_that_went_away_is_reported_as_observed_gone",
@@ -1004,6 +1016,7 @@
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_cells_put_proven_seams_on_the_first_frontier",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_no_cut_states_a_superseded_overlap_rule",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_reserves_the_tracer_for_the_unproven_seam",
+   "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_uses_the_current_unit_assignment_shape",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_owner_does_not_turn_suggested_paths_into_cut_authority",
    "tests.test_static_tree_invariants_cases.repository_shape.TestEveryCaseClassIsRegistered.test_every_case_class_its_package_defines_is_collected_by_its_family",
    "tests.test_static_tree_invariants_cases.repository_shape.TestEveryCaseClassIsRegistered.test_every_exemption_still_names_a_live_base_with_no_test_of_its_own",
@@ -1051,14 +1064,20 @@
    "tests.test_suite_check_cases.snapshot.TestSnapshotDirection.test_an_added_entry_in_a_watched_tree_is_a_failure",
    "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_a_stray_write_into_the_sink_fails_the_run",
    "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_harness_end_to_end_against_synthetic_suite",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_content_pack_preserves_whole_artifact_direct_route",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decompose_builds_the_complete_gate_bearing_draft_before_validation",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_instantiates_current_sealed_format",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_tdd_executor_owns_test_choice",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
    "tests.test_ui_cases.active_polling.ActivePollingTest.test_active_polling_preserves_current_next_and_pause_state",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_a_claim_that_can_be_measured_carries_its_meter",
    "tests.test_ui_cases.active_polling.TestActiveBand.test_a_claim_with_nothing_to_measure_is_listed_without_a_meter",
@@ -1762,7 +1781,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "396b4d761e7bc1020943ec9cfe0aaeb7dac2f9ced4fead01c0bd52b818085bf2"
  },
  "mutation_owners": [
   {
@@ -4589,6 +4608,22 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_verification_model",
+   "owner": "SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_verification_model",
+   "owner": "SeparateRepairGateTest.test_a_single_executor_result_does_not_trigger_a_composite_gate",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
