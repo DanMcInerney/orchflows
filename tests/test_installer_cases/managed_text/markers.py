@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from ..support import *  # noqa: F403
 
+from installer import managed_text
+
 
 class TestMarkerEngineMisuse(unittest.TestCase):
     """Marker matching is line equality on ``rstrip("\\r\\n")``. Duplicate,
@@ -117,3 +119,69 @@ class TestMarkerEngineMisuse(unittest.TestCase):
         text = "<!-- END -->\r\nold\r\n<!-- BEGIN -->\r\n"
         with self.assertRaisesRegex(ValueError, "invalid"):
             install.upsert_import_line(text, "@x", "<!-- BEGIN -->", "<!-- END -->")
+
+
+class TestConservativeBlockRemoval(unittest.TestCase):
+    """``without_owned_block`` lifts a managed block out of a file whose own
+    host also edits it. The marker pair is not a safe identity there: a TOML
+    editor appending a table at the end of the document body lands it ahead of
+    a trailing END comment, which is *inside* the span. Only the run of lines
+    the caller owns, from the BEGIN marker down, is the installer's."""
+
+    @staticmethod
+    def _owned(line):
+        return line.lstrip().startswith("owned")
+
+    def test_a_foreign_line_the_host_appended_inside_the_block_survives(self):
+        text = "# BEGIN\nowned = 1\nowned = 2\n[marketplace]\nkey = true\n# END\n"
+
+        self.assertEqual(
+            "[marketplace]\nkey = true\n",
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned),
+        )
+
+    def test_an_owned_looking_line_below_the_first_foreign_one_survives_too(self):
+        # Under `[marketplace]` a bare `owned = 3` is the host's key, not the
+        # installer's: the installer writes its own lines first and contiguously.
+        text = "# BEGIN\nowned = 1\n[marketplace]\nowned = 3\n# END\n"
+
+        self.assertEqual(
+            "[marketplace]\nowned = 3\n",
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned),
+        )
+
+    def test_a_block_holding_only_owned_lines_lifts_out_whole(self):
+        text = "before\n# BEGIN\nowned = 1\nowned = 2\n# END\nafter\n"
+
+        self.assertEqual(
+            install.without_marked_block(text, "# BEGIN", "# END"),
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned),
+        )
+
+    def test_blank_lines_between_owned_ones_do_not_strand_them(self):
+        text = "# BEGIN\nowned = 1\n\nowned = 2\n# END\n"
+
+        self.assertEqual(
+            "", managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
+        )
+
+    def test_absent_markers_pass_the_text_through(self):
+        text = "owned = 1\n"
+
+        self.assertEqual(
+            text, managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
+        )
+
+    def test_duplicate_markers_raise_the_shared_marker_error(self):
+        text = "# BEGIN\nowned = 1\n# BEGIN\n# END\n"
+
+        with self.assertRaisesRegex(ValueError, "invalid"):
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned)
+
+    def test_crlf_line_endings_are_preserved_on_what_survives(self):
+        text = "# BEGIN\r\nowned = 1\r\n[marketplace]\r\nkey = true\r\n# END\r\n"
+
+        self.assertEqual(
+            "[marketplace]\r\nkey = true\r\n",
+            managed_text.without_owned_block(text, "# BEGIN", "# END", self._owned),
+        )

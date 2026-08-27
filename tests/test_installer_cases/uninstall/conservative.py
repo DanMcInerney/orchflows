@@ -233,7 +233,9 @@ class TestConservativeUninstall(unittest.TestCase):
         skill, and a ``config.toml`` the user already had. The skill has to
         survive untouched and the config has to come back holding its own
         table -- the installer owns the marked block inside that file, not the
-        file.
+        file, and not everything that ends up inside the block either. Grok's
+        own appended table is planted between the markers midway, so the
+        reinstall and the uninstall are both graded on it.
         """
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -253,6 +255,33 @@ class TestConservativeUninstall(unittest.TestCase):
                     plan = install.build_plan("user", None)
                     install.apply_plan(plan)
                     self.assertIn("max_concurrent", config.read_text(encoding="utf-8"))
+                    # Grok appends its own table within 0.2s of any subcommand,
+                    # and a TOML editor lands it ahead of a trailing END
+                    # comment -- inside the markers. Planted rather than
+                    # provoked: nothing here may execute ``grok.exe``.
+                    config.write_text(
+                        config.read_text(encoding="utf-8").replace(
+                            install.GROK_LIMITS_END,
+                            "[marketplace]\ndefault_skills_installs_purged = true\n"
+                            + install.GROK_LIMITS_END,
+                        ),
+                        encoding="utf-8",
+                    )
+                    install.apply_plan(install.build_plan("user", None))
+                    reinstalled = config.read_text(encoding="utf-8")
+                    self.assertIn("default_skills_installs_purged = true", reinstalled)
+                    self.assertIn("max_concurrent", reinstalled)
+                    # The rewritten block sits above grok's table now, off the
+                    # EOF that invited the append -- so the uninstall would
+                    # never meet it. Grok runs again before the uninstall does,
+                    # which puts a fresh table back inside the markers.
+                    config.write_text(
+                        reinstalled.replace(
+                            install.GROK_LIMITS_END,
+                            "[telemetry]\nenabled = false\n" + install.GROK_LIMITS_END,
+                        ),
+                        encoding="utf-8",
+                    )
                     installed = [dest for dest, _ in plan.grok_skills + plan.grok_agents]
                     installed.append(plan.grok_rules.dest)
                     report = install.run_uninstall("user", None, dry_run=False)
@@ -271,6 +300,8 @@ class TestConservativeUninstall(unittest.TestCase):
                 self.assertNotIn("# BEGIN ORCHFLOWS SUBAGENT LIMITS", remaining)
                 self.assertNotIn("max_concurrent", remaining)
                 self.assertIn('mode = "ask"', remaining)
+                self.assertIn("default_skills_installs_purged = true", remaining)
+                self.assertIn("enabled = false", remaining)
 
     def test_uninstall_drops_a_grok_config_the_installer_wrote_whole(self):
         """No user TOML, no file: the installer's own block was all of it.
@@ -331,3 +362,76 @@ class TestConservativeUninstall(unittest.TestCase):
                 self.assertFalse(rules.exists())
                 self.assertTrue(mine.is_file())
                 self.assertEqual(2, len(report["skill_actions"]))
+
+    def test_uninstall_keeps_a_table_grok_appended_inside_the_managed_block(self):
+        """The removal is keyed on the installer's own lines, not on the span.
+
+        Within 0.2s of any subcommand grok adds ``[marketplace]`` to its
+        ``config.toml`` -- and a TOML editor appending a table at the end of
+        the document body lands it *ahead of* the trailing END comment, which
+        puts it inside the marked span. This plants exactly that file, since
+        no test here may execute ``grok.exe``. The three installer keys go and
+        grok's table stays, so the file stays too.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with isolated_grok_home(root) as grok_home:
+                config = grok_home / "config.toml"
+                config.write_text(
+                    "# BEGIN ORCHFLOWS SUBAGENT LIMITS\n"
+                    "subagents.max_concurrent = 20\n"
+                    "subagents.max_depth = 4\n"
+                    'subagents.limit_behavior = "queue"\n'
+                    "[marketplace]\n"
+                    "default_skills_installs_purged = true\n"
+                    "# END ORCHFLOWS SUBAGENT LIMITS\n",
+                    encoding="utf-8",
+                )
+                planted = config.read_text(encoding="utf-8")
+                receipt_path = root / ".orchflows" / "receipt.json"
+                receipt_path.parent.mkdir(parents=True)
+                receipt_path.write_text(
+                    json.dumps(
+                        {
+                            "files": [
+                                {
+                                    "path": str(config),
+                                    "kind": "grok-config",
+                                    "install_action": "created",
+                                    "sha256": digest(config),
+                                }
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                with patch.object(install.Path, "home", return_value=root):
+                    dry = install.run_uninstall("user", None, dry_run=True)
+                    self.assertEqual(planted, config.read_text(encoding="utf-8"))
+                    report = install.run_uninstall("user", None, dry_run=False)
+
+                for entry in dry["skill_actions"] + report["skill_actions"]:
+                    self.assertIn("managed subagent limits block", entry["action"])
+                # The receipt line is the only manual one left; the config is
+                # not among them.
+                self.assertEqual([str(receipt_path)], [e["path"] for e in report["manual_actions"]])
+
+                self.assertTrue(config.is_file())
+                remaining = config.read_text(encoding="utf-8")
+                self.assertIn("[marketplace]", remaining)
+                self.assertIn("default_skills_installs_purged = true", remaining)
+                for gone in (
+                    "# BEGIN ORCHFLOWS SUBAGENT LIMITS",
+                    "# END ORCHFLOWS SUBAGENT LIMITS",
+                    "max_concurrent",
+                    "max_depth",
+                    "limit_behavior",
+                ):
+                    self.assertNotIn(gone, remaining)
+                if foundation.tomllib is not None:
+                    parsed = foundation.tomllib.loads(remaining)
+                    self.assertEqual(
+                        {"default_skills_installs_purged": True}, parsed["marketplace"]
+                    )

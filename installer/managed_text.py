@@ -200,15 +200,55 @@ def upsert_marked_block(text: str, block_text: str, start_marker: str, end_marke
     return "".join(lines[:start_i] + [block_text] + lines[end_i + 1 :])
 
 
-def without_marked_block(text: str, start_marker: str, end_marker: str) -> str:
+def _marked_span(text: str, start_marker: str, end_marker: str):
+    """Locate the one managed block. ``(lines, start_i, end_i)``, or ``None``
+    when neither marker is present. Duplicate, unbalanced and inverted pairs
+    raise -- both removals below share this one reading."""
+
     lines = text.splitlines(keepends=True)
     starts = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == start_marker]
     ends = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == end_marker]
     if not starts and not ends:
-        return text
+        return None
     if len(starts) != 1 or len(ends) != 1 or starts[0] > ends[0]:
         raise ValueError(f"invalid managed block markers in target file ({start_marker})")
-    return "".join(lines[: starts[0]] + lines[ends[0] + 1 :])
+    return lines, starts[0], ends[0]
+
+
+def without_marked_block(text: str, start_marker: str, end_marker: str) -> str:
+    span = _marked_span(text, start_marker, end_marker)
+    if span is None:
+        return text
+    lines, start_i, end_i = span
+    return "".join(lines[:start_i] + lines[end_i + 1 :])
+
+
+def without_owned_block(text: str, start_marker: str, end_marker: str, owned) -> str:
+    """``without_marked_block`` for a file the target's own host also edits.
+
+    There the marker pair is not a safe identity for what the installer wrote.
+    A TOML editor appends a table at the end of the *document body*, and a
+    trailing END comment is trivia after that body, so the appended table
+    lands inside the span -- observed on ``$GROK_HOME/config.toml``, where
+    grok adds ``[marketplace]`` between the markers within 0.2s of any
+    subcommand. Lifting the span whole would delete the host's own key.
+
+    The installer writes its lines first and contiguously, so ownership is
+    read as that leading run: every line from the BEGIN marker down that
+    ``owned`` claims, blank lines carrying no TOML meaning passed over.
+    Everything from the first line ``owned`` disclaims survives verbatim --
+    including a line that looks owned but sits under a table the host
+    appended, where it is the host's key and not the installer's."""
+
+    span = _marked_span(text, start_marker, end_marker)
+    if span is None:
+        return text
+    lines, start_i, end_i = span
+    body = lines[start_i + 1 : end_i]
+    foreign = next(
+        (i for i, line in enumerate(body) if line.strip() and not owned(line)), len(body)
+    )
+    return "".join(lines[:start_i] + body[foreign:] + lines[end_i + 1 :])
 
 
 def upsert_import_line(text: str, import_line: str, legacy_start_marker: str, legacy_end_marker: str) -> tuple[str, str]:
@@ -281,8 +321,22 @@ def _toml_scalar(value) -> str:
     return json.dumps(value)
 
 
+def _limit_block_owns(spec: _LimitBlock, line: str) -> bool:
+    """Whether this block's own render wrote ``line`` -- its keys bare under
+    the table, or dotted above the first one. Nothing else inside the markers
+    is the installer's, whoever put it there."""
+
+    return bool(spec.limit_re.match(line) or spec.dotted_limit_re.match(line))
+
+
+def _without_limit_block(text: str, spec: _LimitBlock) -> str:
+    return without_owned_block(
+        text, spec.start, spec.end, lambda line: _limit_block_owns(spec, line)
+    )
+
+
 def _render_limit_block(text: str, spec: _LimitBlock, toml_module) -> tuple[str, dict]:
-    cleaned = without_marked_block(text, spec.start, spec.end)
+    cleaned = _without_limit_block(text, spec)
     had_block = cleaned != text
     if toml_module is not None:
         try:
@@ -393,3 +447,11 @@ def render_grok_subagent_limits(text: str, toml_module=tomllib) -> tuple[str, di
     so these three limits have no project-local equivalent to install."""
 
     return _render_limit_block(text, _GROK_LIMIT_BLOCK, toml_module)
+
+
+def without_grok_subagent_limits(text: str) -> str:
+    """The uninstall side of ``render_grok_subagent_limits``: the three keys
+    go, and whatever grok appended between the markers stays.
+    ``without_owned_block`` carries why the markers alone cannot say."""
+
+    return _without_limit_block(text, _GROK_LIMIT_BLOCK)

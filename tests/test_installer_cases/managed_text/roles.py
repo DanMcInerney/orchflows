@@ -303,6 +303,45 @@ class TestRoleAgentInstructions(unittest.TestCase):
         self.assertIn("[mcp_servers.example]", updated)
         self.assertLess(updated.index("subagents.max_concurrent"), updated.index("[mcp_servers"))
 
+    def test_a_reinstall_keeps_a_table_grok_appended_inside_the_block(self):
+        """Grok adds ``[marketplace]`` to its own config within 0.2s of any
+        subcommand, and a TOML editor lands it ahead of the trailing END
+        comment -- inside the markers. A reinstall re-renders its three keys
+        without carrying grok's table off with the old block. Planted, not
+        provoked: nothing here may execute ``grok.exe``.
+
+        The block also leaves EOF on the way out, which is what invited the
+        append; grok's next table goes below ``[marketplace]``, outside the
+        markers, so the file settles after one reinstall."""
+
+        text = (
+            "# BEGIN ORCHFLOWS SUBAGENT LIMITS\n"
+            "subagents.max_concurrent = 20\n"
+            "subagents.max_depth = 4\n"
+            'subagents.limit_behavior = "queue"\n'
+            "[marketplace]\n"
+            "default_skills_installs_purged = true\n"
+            "# END ORCHFLOWS SUBAGENT LIMITS\n"
+        )
+
+        updated, _details = self._rendered(text)
+
+        self.assertIn("default_skills_installs_purged = true", updated)
+        self.assertEqual(1, updated.count(foundation.GROK_LIMITS_START))
+        self.assertEqual(1, updated.count(foundation.GROK_LIMITS_END))
+        self.assertIn("subagents.max_concurrent = ", updated)
+        self.assertLess(updated.index(foundation.GROK_LIMITS_END), updated.index("[marketplace]"))
+        # 3.9 is the floor and the one leg without stdlib `tomllib`. What it
+        # keeps is proved here rather than only on that leg of the matrix:
+        # the parser gates the check, never the merge.
+        self.assertEqual(
+            updated, managed_text.render_grok_subagent_limits(text, toml_module=None)[0]
+        )
+        if foundation.tomllib is not None:
+            parsed = foundation.tomllib.loads(updated)
+            self.assertTrue(parsed["marketplace"]["default_skills_installs_purged"])
+            self.assertEqual(foundation.GROK_MAX_CONCURRENT, parsed["subagents"]["max_concurrent"])
+
     def test_the_codex_agent_limits_block_is_untouched_by_the_grok_one(self):
         codex, _details = install._render_codex_agent_limits("")
 
