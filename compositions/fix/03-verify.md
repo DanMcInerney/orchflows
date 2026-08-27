@@ -9,9 +9,9 @@ isolation: none
 
 ## Goal
 
-Verdicts over the repaired {{workspace}}: every oracle the failure was
-already gated by, plus the regression guard that keeps {{failure}} from
-returning unobserved.
+An independent verdict on whether the repaired {{workspace}} achieves the
+fix Goal, with fresh evidence capable of exposing {{failure}} and any
+material regression in the affected behavior.
 
 ## Context
 
@@ -20,8 +20,8 @@ returning unobserved.
 
 Exceptional constraints:
 
-- skip the regression guard because the fix looks obvious
-- accept a guard that passes at the pre-repair revision
+- The verifier is read-only over the repaired artifact.
+- Executor claims are evidence inputs, not the verdict.
 
 ## Result
 

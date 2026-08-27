@@ -17,11 +17,9 @@ Cells:
   stands in for the assembly. An empty cell or free prose is malformed.
 - `lens` — the review binding: a named skill, or `orch-critique` with the
   pack's craft `## Lens`.
-- `oracle_policy` — the oracle table: for each criterion kind, the exact
-  oracle and its oracle_class per [verdict.md](verdict.md); any deviation
-  from verdict.md's class policy. The class policy and the overall verdict
-  rule stay verdict.md's, and where green is measured follows from them:
-  state a deviation, never a paraphrase.
+- `evidence` — reference describing the artifact-appropriate evidence an
+  executor records and a verifier may challenge. It names observable methods
+  and identities, not prescribed ticket checks.
 - `workspace` — what identities, isolation, candidate diffs, and conflict
   handling mean in this domain (git revisions; documents; evidence stores).
   Where it uses a term `craft` defines, the cell cites `craft` for the
@@ -57,8 +55,8 @@ checks is `tools/validate.py`'s to say; the rest of purity is checked at
 pack review under the library lens. A pack that wants control flow is a
 signature defect, not a pack feature.
 
-Admission: a domain earns a pack only for a new oracle class or new
-workspace semantics, read strictly. A cell earns its slot only when the
+Admission: a domain earns a pack only for materially different artifact
+evidence or workspace semantics, read strictly. A cell earns its slot only when the
 content behind it would differ between two packs, and no other cell
 already carries that content.
 

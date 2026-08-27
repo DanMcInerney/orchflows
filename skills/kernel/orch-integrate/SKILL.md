@@ -8,12 +8,12 @@ Require: one child return: its completed
 [ticket](../../../contracts/work-item.md), or a bare packet's contracted fields
 and originating dispatch.
 
-Grade tickets against every frozen criterion and identity through one
-outside-independence path per
-[verification.md](../../../rules/verification.md) §10. `independence: gate`
-defers authored checks; `checker` requires
+Grade tickets against Goal and factual Context at the fixed artifact identity
+through one outside-independence path per
+[verification.md](../../../rules/verification.md) §7. `independence: gate`
+defers review; `checker` requires
 [work-item.md](../../../contracts/work-item.md)'s `checked_by`; uncovered
-criteria yield needs-verify. Grade bare returns by their contract. Suspension resumes
+Goal claims yield needs-verify. Grade bare returns by their contract. Suspension resumes
 from `## Handoff`.
 
 The returning name must match `claimed_by`, `checked_by`, or the re-verifier

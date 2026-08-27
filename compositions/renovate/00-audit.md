@@ -5,13 +5,12 @@ depends_on: []
 bound: {{audit_bound}}
 independence: checker
 isolation: none
-profile: orch-worker
+profile: orch-planner
 ---
 
 ## Goal
 
-Ranked findings over {{workspace}}, each naming the evidence it stands
-on, under {{priorities}} as the lens.
+An `orch-critique` report over {{workspace}} under {{priorities}}.
 
 ## Context
 
@@ -19,9 +18,7 @@ on, under {{priorities}} as the lens.
 - input: {"name":"priorities","type":"literal","value":"{{priorities}}"}
 - input: {"name":"audit-bound","type":"literal","value":"{{audit_bound}}"}
 
-Exceptional constraints:
-
-- repair a finding instead of returning it
+- Apply the evaluator contract in `skills/kernel/orch-critique/SKILL.md`.
 
 ## Result
 

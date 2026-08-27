@@ -4,8 +4,8 @@ description: Cut a stamped root ticket into work-item tickets under the pack's s
 role: planner
 ---
 
-Require: root [ticket](../../../contracts/work-item.md#root-ticket), stamped
-pack slicing and oracle_policy. Reject missing parts by name.
+Require: root [ticket](../../../contracts/work-item.md#roots-decomposition-and-integration),
+stamped pack slicing and evidence. Reject missing parts by name.
 
 Goal: minimize critical path; every item an atom under
 [topology](../../../rules/topology.md) §3.

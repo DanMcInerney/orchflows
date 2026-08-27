@@ -19,8 +19,8 @@ Widen the windowed pool: exclude byte-identical duplicates, then
 synthesize one entry-shaped observation, citing its file, per silent
 signal lacking a matching friction entry — a non-terminal worklog, and
 every correction a [ticket](../../../contracts/work-item.md) records: a
-bounce, its `## Feedback`, a checker's appended `## Result` pass, a
-`## Handoff`, a criterion reading FAIL before the join wrote `complete`.
+bounce, its `## Feedback`, a checker's recorded blocker or verdict, a
+`## Handoff`, or verification reading FAIL before the join wrote `complete`.
 
 Cluster and qualify per §3–§4; assign each
 cluster its one causal owner — an entry's `skill` field and a

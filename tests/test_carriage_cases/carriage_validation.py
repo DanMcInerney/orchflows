@@ -123,7 +123,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | executor | `badreturnexecutor` |
 | assembly | none |
 | lens | inline: none |
-| oracle_policy | inline: none |
+| evidence | inline: none |
 | workspace | inline: none |
 | required_spec_fields | inline: none |
 | craft | [references/craft.md](references/craft.md) |
@@ -159,7 +159,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | executor | `gapexecutor` |
 | assembly | none |
 | lens | inline: none |
-| oracle_policy | inline: none |
+| evidence | inline: none |
 | workspace | inline: none |
 | required_spec_fields | inline: none |
 | craft | [references/craft.md](references/craft.md) |

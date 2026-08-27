@@ -1,11 +1,11 @@
 # Custom-item build scopes
 
-Landing zones and oracles per build scope. The user install is the one
+Landing zones and admission evidence per build scope. The user install is the one
 resolver for both user- and project-scope custom items' call edges. Build
 scope chooses where `orch-build` writes an item; it is not an installation
 scope. Canonical work happens in this repository itself and needs no install.
 
-| scope | skills land at | always-on rules land in | oracles |
+| scope | skills land at | always-on rules land in | admission evidence |
 | --- | --- | --- | --- |
 | canonical | this repository's tiers, via PR | `rules/`, the host block template | validator, tests, library lens |
 | user | `~/.orchflows/skills/<name>/SKILL.md` + host integrations | `~/.codex/AGENTS.md` and the user CLAUDE.md, outside managed blocks | library lens |
@@ -33,8 +33,7 @@ scope. Canonical work happens in this repository itself and needs no install.
   is the Codex surface. At that routing call site, resolve the declared role
   through [Role profiles](../../../engines/orch-frontier/references/profiles.md)
   and use the native binding that owner returns.
-- The scope's named oracle (library lens) is the only oracle for a
-  custom item.
+- The library lens is the review evidence for a custom item.
 - Custom workflows instantiate from compositions: pick the nearest
   composition in `compositions/`, pin its open decisions (benchmark,
   bounds, defaults, schedule), and land the result at scope. A proven

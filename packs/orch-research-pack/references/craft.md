@@ -5,7 +5,7 @@ The shape principles every domain shares are
 
 ## Vocabulary
 
-- **claim** — one atomic, checkable statement; the unit every oracle
+- **claim** — one atomic, checkable statement; the smallest research assertion
   acts on.
 - **load-bearing claim** — a claim the conclusion cannot survive
   losing.

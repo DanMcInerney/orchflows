@@ -84,7 +84,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | executor | `{name}executor` |
 | assembly | {assembly} |
 | lens | inline: none |
-| oracle_policy | [references/oracles.md](references/oracles.md) |
+| evidence | [references/evidence.md](references/evidence.md) |
 | workspace | {workspace} |
 | required_spec_fields | inline: none |
 | craft | [references/craft.md](references/craft.md) |
@@ -164,7 +164,7 @@ class _IsolatedTree(unittest.TestCase):
         defaults = {
             "references/craft.md": "# Craft\n\nOnly %s terms.\n" % name,
             "references/slicing.md": "# Slicing\n\nCut into %s widgets.\n" % name,
-            "references/oracles.md": "# Oracles\n\nOne %s row.\n" % name,
+            "references/evidence.md": "# Evidence\n\nOne %s method.\n" % name,
         }
         defaults.update(files or {})
         for rel_path, content in defaults.items():
@@ -371,15 +371,15 @@ class TestCellDuplication(_IsolatedTree):
 
     def test_a_shared_table_header_row_is_not_reported(self):
         table = (
-            "# Oracles\n\n"
-            "| criterion kind | oracle | oracle_class | provenance |\n"
-            "| --- | --- | --- | --- |\n"
+            "# Evidence\n\n"
+            "| artifact kind | method | observation |\n"
+            "| --- | --- | --- |\n"
             "| %s |\n"
         )
-        self._write_pack("hdrapack", files={"references/oracles.md": table % (
-            "behavior | the ticket's named test commands | deterministic | pre-existing")})
-        self._write_pack("hdrbpack", files={"references/oracles.md": table % (
-            "audience fit | a named reader reads the draft aloud | judged | authored-here")})
+        self._write_pack("hdrapack", files={"references/evidence.md": table % (
+            "code | derived tests | red and green results")})
+        self._write_pack("hdrbpack", files={"references/evidence.md": table % (
+            "document | audience reading | fit observations")})
         self.assertNotIn(VERBATIM, self._run().stdout)
 
     def test_a_pointer_cell_is_compared_on_its_reference_file(self):
@@ -406,7 +406,7 @@ class TestCellDuplication(_IsolatedTree):
 
 
 class TestMandatedEchoExemption(_IsolatedTree):
-    """Three echoes an owner outside the pack mandates, so two packs
+    """Two echoes an owner outside the pack mandates, so two packs
     carrying them carry them by obligation. Each pair below is the real
     tree's own pair with the domain nouns swapped for synthetic ones, so
     the synthetic clauses have the real ones' shape and length."""
@@ -423,20 +423,6 @@ class TestMandatedEchoExemption(_IsolatedTree):
         "none — the bench is the assembly",
         "none — the merged batch's finished panels are the assembly",
     )
-    # Both rows end in verdict.md's oracle_class enum and work-item.md's
-    # provenance enum -- the mandated pair -- and nothing to the left of it
-    # is mandated, so the criterion and oracle columns are synthetic too.
-    ORACLE_ROWS = (
-        "| behavior | the ticket's named test commands | deterministic | pre-existing |",
-        "| finish floor | the finish bar's check command at every "
-        "covered station | deterministic | pre-existing |",
-    )
-    ORACLE_TABLE = (
-        "# Oracles\n\n"
-        "| criterion kind | oracle | oracle_class | provenance |\n"
-        "| --- | --- | --- | --- |\n"
-        "%s\n"
-    )
     # packs/*/references/craft.md:3 -- the opener naming the cell the file
     # satisfies, which every pointer cell's reference carries.
     CRAFT_OPENER = "# Craft\n\nThe %s domain's terms and shape, per the signature's craft cell.\n"
@@ -447,15 +433,12 @@ class TestMandatedEchoExemption(_IsolatedTree):
     def _inert(self, name):
         return "none — %s stands in" % name
 
-    def test_the_craft_opener_the_assembly_form_and_the_oracle_enums_are_exempt(self):
+    def test_the_craft_opener_and_assembly_form_are_exempt(self):
         for name, domain in (("openerapack", "alpha"), ("openerbpack", "beta")):
             self._write_pack(name, assembly=self._inert(name),
                              files={"references/craft.md": self.CRAFT_OPENER % domain})
         self._write_pack("formapack", assembly=self.ASSEMBLY[0])
         self._write_pack("formbpack", assembly=self.ASSEMBLY[1])
-        for name, row in (("enumapack", self.ORACLE_ROWS[0]), ("enumbpack", self.ORACLE_ROWS[1])):
-            self._write_pack(name, assembly=self._inert(name),
-                             files={"references/oracles.md": self.ORACLE_TABLE % row})
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn(VERBATIM, result.stdout)

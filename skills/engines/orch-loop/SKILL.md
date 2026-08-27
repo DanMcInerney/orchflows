@@ -32,13 +32,11 @@ in this run's own result, and carry it into the packet's failed-approaches
 digest: §7 forbids promoting a limited exit into `complete`, and a
 limitation nobody restates is one the next iteration re-walks.
 
-Never: count an iteration's own claim as the done-check; end a
-judged-class run on iteration-time green; accept an iteration on checks
-the iterating context authored alone — that acceptance is UNVERIFIED
-under [rules/verification.md](../../../rules/verification.md) §10, so an
-iteration whose criteria are `authored-here` takes its one outside path
-before it counts as progress, and where no such path is available the
-dispatch is refused rather than counted.
+Never: count an iteration's own claim as the done-check; end a judged-class
+run on iteration-time green; accept an iteration solely on its executor's
+claim — it takes one outside evidence path under
+[rules/verification.md](../../../rules/verification.md) §7 before counting
+as progress, and where no such path is available the dispatch is refused.
 
 Return: status, results by identity, final verification, iterations
 run, queued scope, and bounds spent.

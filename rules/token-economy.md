@@ -36,7 +36,7 @@
 10. Shape principles — one name per concept, searchable to every use;
     one unit owning one concern end to end; depth only behind a
     contract strong enough that readers never descend past it; shape
-    for what the oracle observes — live in this clause, never in a
+    for the evidence that demonstrates the Goal — live in this clause, never in a
     pack's craft Shape. A metered, search-navigating reader pays the
     same cost in every domain; a copy per pack only adds a place to
     drift.

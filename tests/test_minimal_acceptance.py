@@ -17,29 +17,27 @@ def _gaps(frontier: str, profiles: str, build: str) -> list[str]:
     profiles = " ".join(profiles.split())
     build = " ".join(build.split())
     required = {
-        "single run": "single-ticket run",
-        "pre-existing minimum": "pre-existing-only",
-        "authored checker": "`authored-here`",
-        "one closer": "one fresh closer",
-        "closer sequence": "orch-critique then orch-repair",
-        "fresh verifier": "another fresh child",
+        "read-only checker": "one read-only `--executor orch-critique`",
+        "fixed evidence": "fixed artifact, Goal, Context, executor evidence",
+        "separate repair": "one separate repair ticket",
+        "fresh verifier": "fresh verification",
         "terminal suite": "required checks exactly once at the accepted terminal identity",
         "terminal profile": "Running the terminal required checks",
         "engine context": "engine's own context",
         "recorded revision": "accepted terminal identity's revision",
         "build gate deferral": "`independence: gate` defers",
-        "ordered bundle": "ordered lens bundle",
+        "build read-only review": "read-only orch-critique path",
     }
     owners = {
         **{name: frontier for name in required if name not in {
             "terminal profile", "engine context", "recorded revision",
-            "build gate deferral", "ordered bundle",
+            "build gate deferral", "build read-only review",
         }},
         "terminal profile": profiles,
         "engine context": profiles,
         "recorded revision": profiles,
         "build gate deferral": build,
-        "ordered bundle": build,
+        "build read-only review": build,
     }
     return [name for name, anchor in required.items() if anchor not in owners[name]]
 
@@ -71,8 +69,8 @@ class MinimalAcceptanceTests(unittest.TestCase):
                 profiles,
                 build,
             ),
-            "closer verifies itself": (
-                frontier.replace("another fresh child", "the same closer", 1),
+            "checker mutates": (
+                frontier.replace("one read-only `--executor orch-critique`", "one correcting `--executor orch-critique`", 1),
                 profiles,
                 build,
             ),

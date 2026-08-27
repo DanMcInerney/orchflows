@@ -20,12 +20,13 @@
    exact named skill in that stated order, one witness in this one
    context at the one role [roles.md](roles.md) §4 resolves — and never
    re-dispatches that primary work. A child identity stops at the ticket
-   boundary and is never reused by another ticket; an ordered lens bundle
-   therefore puts critique and repair on the same ticket.
+   boundary and is never reused by another ticket. Critique and repair are
+   distinct tickets because critique is read-only and repair invalidates its
+   verdict context.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
-   it; no caller states a parallel prose join. A dispatch granting a
-   isolated candidates have repository write authority. The join inspects
+   it; no caller states a parallel prose join. Isolated candidates have
+   repository write authority. The join inspects
    actual diffs and Git conflicts; Suggested files never limit the result.
 6. Every join records its blame class per
    [work-item.md](../contracts/work-item.md)'s blame rule.

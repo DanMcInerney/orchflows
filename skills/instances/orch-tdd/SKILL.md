@@ -18,4 +18,8 @@ to fit the code. Do not perform integration, publish with push, or create
 commits while checked out at the run branch. Send clean slice commits back;
 the join alone applies them to the run revision.
 
+File the code pack's [evidence record](../../../packs/orch-code-pack/references/evidence.md)
+beside the result identity; filing follows
+[result.md](../../../contracts/result.md).
+
 Return: the completed ticket.

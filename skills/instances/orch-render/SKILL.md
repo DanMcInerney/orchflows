@@ -11,9 +11,10 @@ Slice the view so each slice is provable in one capture — one state,
 one breakpoint, one token application. Per slice, under the stamped
 pack's craft: implement the least markup and style that honestly meets
 it; capture at the slice's identities and read the image; reconcile
-every value to a token and its scale; run the ticket's deterministic
+every value to a token and its scale; choose and run relevant workspace
 checks. Commit each verified slice.
 
 Never: claim a visual result without a capture.
 
-Return: the completed ticket; its evidence citing captures by identity.
+Return: the completed ticket with artifact identity and the design pack's
+[evidence record](../../../packs/orch-design-pack/references/evidence.md).

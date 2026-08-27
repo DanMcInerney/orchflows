@@ -1,40 +1,34 @@
 ---
 name: orch-critique
-description: Adversarially test a fixed artifact under a lens and return ranked findings. Use for review, hardening, and audit.
+description: Challenge a fixed artifact and its evidence against Goal under one lens. Use for blocker-only review, hardening, and audit.
 role: planner
 ---
 
-Require: a fixed artifact identity and a lens; its criteria are the
-spec's, per [rules/verification.md](../../../rules/verification.md) §6.
+Require: a fixed artifact identity, the ticket's Goal and Context, the
+executor's Result and Verification evidence, and one lens.
 
-Attack the artifact for omissions and cross-section contradictions the lens
-implies but its authors did not test. Rank findings by evidence and the exact
-criterion or invariant violated; unsupported violations are uncertainties.
+First enumerate every material issue under the lens that can prevent Goal,
+contradict explicit Context, invalidate claimed evidence, violate a required
+invariant, or create a concrete material regression. Tie each finding to the
+artifact identity and evidence that demonstrates its Goal impact. Exclude
+preferences, cosmetic nits, speculative improvements, and issues without
+evidenced Goal impact.
 
-Apply a sealed bundle's lenses once, in order, in this evaluator context;
-identify every finding and completion record by its unique bundle identity.
-After all lenses, send accepted blockers by cause through the sequence's one
-repair pass. Any repair voids this context's verdicts; return no post-repair
-verdict.
+Then make a separate synthesis pass over the complete enumeration. Cluster
+common causes and threads, derive the smallest architectural repair set that
+covers the most blockers, and rank it by Goal harm, evidence strength, and
+repair coverage rather than proposing one patch per symptom.
 
-Refuse §10 checker packets for gate-deferred non-roots or already checked
-tickets: `checked_by` is the single immutable checker identity
-[contracts/work-item.md](../../../contracts/work-item.md) defines. Additional
-review is a unique named root-gate critique lens, read-only and never setting
-`checked_by`.
+The join routes the accepted subset of returned blockers to the run's one
+separate repair executor.
+Any repair voids this critique context's verdicts; fresh verification follows
+the repair, with no second critique or correction pass. Additional root-gate
+review is another uniquely named lens feeding the same repair set.
 
-As the §10 checker ([rules/verification.md](../../../rules/verification.md)
-§10), use the ticket's Goal and Context; for a root, use its packet's cut lens
-and sections. Hunt tautological or weakened checks and results passing without
-meeting their criterion; correct in the isolated candidate per §9, append to
-[contracts/work-item.md](../../../contracts/work-item.md) `## Result`, and
-record `checked_by` through the packet's verbs.
+Never soften a finding because fixing it is costly.
+Never: edit the artifact or sealed ticket, perform a repair, report a
+preference or speculative improvement, or claim a post-repair verdict.
 
-Never: soften a finding because fixing it is costly; report a finding
-without the evidence that shows it; rewrite another context's entries;
-a second correction pass.
-
-Return: ranked findings, each with evidence and the
-`blocking: true|false` its lens decides; uncertainties; and the
-evidence inspected; for an ordered bundle, completion records and findings
-attributed to each unique bundle identity.
+Return: enumerated material findings with Goal impact and evidence; cause
+clusters; the ranked minimal architectural repair set with blocker coverage;
+uncertainties; and evidence inspected. `[]` records no accepted blockers.

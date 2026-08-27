@@ -42,7 +42,7 @@ that needs a different meaning needs a different word.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature (slicing, executor, assembly,
-  lens, oracle policy, workspace, required spec fields, craft).
+  lens, evidence, workspace, required spec fields, craft).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow: a template (below) under
@@ -57,7 +57,7 @@ that needs a different meaning needs a different word.
   bind as a step or loop body, and the leading `Return` fields it must
   carry — status, result identity, verification — per
   `contracts/result.md`.
-- **build scope** — where a built item lands and which oracles gate it:
+- **build scope** — where a built item lands and which admission evidence gates it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
   their scope; bounds per `orch-build`'s scopes reference.
@@ -83,7 +83,7 @@ that needs a different meaning needs a different word.
   tickets' Goals and Context are its frozen statement,
   the ticket files the whole record — no worklog.
 - **unit** — one work item's execution by one context; the scope
-  `rules/verification.md` §10 binds.
+  `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
   `contracts/work-item.md`; input to decomposition; `orch-spec` is its
   only editor, at intake — every other reader, `orch-decompose`
@@ -148,8 +148,8 @@ that needs a different meaning needs a different word.
   work.
 - **assembly item** — the at-most-one terminal work item that integrates
   candidate results into the final artifact before the final gate.
-- **decision gap** — a decomposition return naming the acceptance
-  criteria the stamped slicing cannot cover.
+- **decision gap** — a decomposition return naming a Goal portion the stamped
+  slicing cannot cover.
 - **workspace** — where results live and what identities mean there (git
   revisions, doc slots, evidence store), per the pack's workspace cell.
 - **standards owner** — the workspace's own canonical statement of its
@@ -159,29 +159,20 @@ that needs a different meaning needs a different word.
 
 ## Verification
 
-- **criterion** — one enumerated acceptance check, singly decidable by a
-  named oracle.
-- **oracle** — the exact external check that decides a criterion; never the
-  executor's own claim.
+- **criterion** — in a structured evaluation, one independently decidable
+  question. It is not a ticket section; a ticket's Goal defines success.
+- **oracle** — in a structured evaluation, the method actually used to decide
+  a criterion. It is recorded after execution, not prescribed in a ticket.
 - **oracle class** — deterministic, judged, or evidence, per
-  `contracts/verdict.md`; fixes the loop and gate policy for a criterion.
-- **oracle provenance** — whether a criterion's oracle pre-exists the
-  unit's work or is created by the executing context; values owned by
-  `contracts/work-item.md`, independence law by `rules/verification.md`
-  §10.
-- **independence** — acceptance evidence originating outside the
-  executing context through exactly one ordinary path; sources and law in
-  `rules/verification.md` §10.
-  Research craft narrows the term for sources: no shared upstream.
-- **checker** — the fresh reviewer-corrector context (`orch-critique`
-  dispatched into the isolated candidate)
-  through which independence enters a unit whose checks were authored
-  in-unit; corrects but never renders verdicts; law in
-  `rules/verification.md` §10.
-- **verdict** — PASS, FAIL, or UNVERIFIED for one criterion, with oracle,
-  class, evidence, and covered identities.
-- **evidence** — what an oracle actually produced, cited by identity; the
-  only currency verification accepts.
+  `contracts/verdict.md`; a property of a structured evaluation method.
+- **independence** — acceptance evidence originating outside the executing
+  context through exactly one ordinary path; law in `rules/verification.md`
+  §9. Research craft narrows the term for sources: no shared upstream.
+- **checker** — the fresh read-only `orch-critique` context that challenges a
+  fixed artifact and executor evidence against Goal, Context, and a lens.
+- **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
+- **evidence** — methods, observations, sources, captures, or other records
+  demonstrating or challenging Goal at a fixed artifact identity.
 - **provenance** — the recorded chain from an artifact or claim to its
   source, by identity.
 - **disagreement register** — where disagreement is recorded with both
@@ -189,10 +180,9 @@ that needs a different meaning needs a different word.
 - **lens** — the criteria set a reviewer applies; every additional root-gate
   reviewer has a unique named lens; freshness law `rules/verification.md`
   §6.
-- **ordered lens bundle** — the opt-in canonical ordered Fixed-input list of unique
-  lens identities and their evidence, consumed in order by one sealed
-  critique-and-repair ticket before a fresh separate verifier; shape in
-  `contracts/work-item.md`.
+- **ordered lens bundle** — an opt-in ordered list of unique lens identities;
+  each receives a read-only critique ticket before one shared repair and fresh
+  verifier.
 - **gate** — the one composite critique-fix-verify path a run crosses: one
   or more uniquely named critiques feed one repair and one verification;
   `orch-build`'s admission and a benchmark's

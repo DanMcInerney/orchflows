@@ -30,10 +30,8 @@ CELL_DUPLICATION_ALLOWLIST = (
         "reason": (
             "The code and design packs both run on git, so their workspace "
             "cells share the worktree-per-item clause and the conflict "
-            "binding, their required_spec_fields share the standards-owner "
-            "pointer, and their oracle tables share the build/type and "
-            "standards-shape rows -- both of which ask the workspace's own "
-            "tooling the same question. A "
+            "binding and their required_spec_fields share the standards-owner "
+            "pointer. A "
             "workspace-kind abstraction factoring those mechanics out is not "
             "worth a permanent concept for two packs: this duplication is "
             "paid consciously and revisited when a third git-workspace pack "
@@ -46,10 +44,6 @@ CELL_DUPLICATION_ALLOWLIST = (
         "clauses": (
             "each frontier item gets its own worktree branched from the run's "
             "current revision at dispatch, merged at the join",
-            "build/type the workspace's build and typecheck commands "
-            "deterministic pre-existing",
-            "standards shape the workspace's linter, formatter, or validator "
-            "deterministic pre-existing",
         ),
     },
 )
@@ -204,12 +198,6 @@ SAME_TIER_COMPARED = frozenset({"skills"})
 # both are obliged to carry. Reporting it asks one of them to stop
 # naming its owner.
 #
-# contracts/verdict.md owns the law that a citation must resolve;
-# packs/orch-research-pack/references/oracles.md carries a row saying
-# which oracle decides that criterion in this domain, at which class and
-# provenance. The signature mandates that table, and a pack cannot state
-# an oracle policy without naming the criterion it decides.
-#
 # docs/library-review.md's Constitution principle 8 owns the value that
 # machinery is domain-blind and a domain enters as data, never as control
 # flow; contracts/pack-signature.md states the same fact as its own purity
@@ -235,11 +223,6 @@ LICENSED_COPIES = (
         "docs/library-review.md",
         "templates/host-block.md",
         "rules/visibility.md",
-    ),
-    (
-        "contracts/verdict.md",
-        "packs/orch-research-pack/references/oracles.md",
-        "citation",
     ),
     (
         "skills/instances/orch-synthesize/SKILL.md",
