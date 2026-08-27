@@ -159,8 +159,8 @@ or charts from its relationships. This delivery view points to
 [`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
 [`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
 [verification](rules/verification.md) owns acceptance. This view shows
-only the authored-here checker-or-gate choice; that rule owns the other
-ordinary paths and their details:
+only the checker-or-gate choice; that rule owns the other ordinary paths and
+their details:
 
 ```mermaid
 flowchart TD
@@ -171,7 +171,7 @@ flowchart TD
     cut -->|no| frontier["orch-frontier — dispatch ready units"]
     reader --> frontier
     frontier --> exec["unit executor"]
-    exec --> path{"authored-here coverage"}
+    exec --> path{"independence path"}
     path -->|unit-local| checker["fresh checker"]
     path -->|gate-deferred| join["orch-integrate — each return crosses once"]
     checker --> join
@@ -204,8 +204,8 @@ self-improvement wired into every run.
 ### Legos
 
 - **One brick, one job.** `orch-frontier` runs the graph,
-  `orch-critique` attacks, `orch-verify` decides done against named
-  oracles, `orch-loop` iterates, the `fix` workflow proves the cause
+  `orch-critique` challenges Goal and evidence, `orch-verify` independently
+  decides Goal, `orch-loop` iterates, and the `fix` workflow proves the cause
   before repairing it.
 - **One stud pattern.** Five frozen contracts — work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
@@ -240,17 +240,17 @@ this README does not keep a second copy of it.
 ### Packs
 
     packs/
-    ├── orch-code-pack     — delivers code        · deterministic oracles · executor orch-tdd
+    ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-tdd
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · judged oracles        · executor orch-draft, assembly orch-edit
+    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-draft, assembly orch-edit
     │                        workspace: document tree with outline slots
-    ├── orch-design-pack   — delivers rendered UI · capture oracles       · executor orch-render
+    ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-render
     │                        workspace: git plus render (view × breakpoint × state)
-    └── orch-research-pack — delivers answers     · evidence oracles      · executor orch-investigate, assembly orch-synthesize
+    └── orch-research-pack — delivers answers     · source evidence       · executor orch-investigate, assembly orch-synthesize
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's
-vocabulary, oracle classes, executors, workspace rules, and design
+vocabulary, artifact evidence, executors, workspace rules, and design
 principles, all satisfying one frozen pack-signature, so everything the
 library builds inside a domain stays cohesive. Stamp a different pack
 on the root ticket and the identical pipeline ships code, documents,
@@ -264,8 +264,8 @@ saved workflows are no longer the difference, so this is what is:
 
 - **Cross-harness.** One library drives both Claude Code and Codex.
 - **Verification is contractual, not merely available.** Adversarial
-  review is house advice there; here named oracles and the applicable
-  independent path stand between an executor's claim and "done".
+  review is house advice there; here Goal, executor evidence, and the
+  applicable independent path stand between an executor's claim and "done".
 - **Self-improving.** Nothing there mines runs into fixes; here friction
   and traces feed `orch-self-improve`, including on itself.
 - **Survives session death.** Exit mid-run and a workflow starts fresh

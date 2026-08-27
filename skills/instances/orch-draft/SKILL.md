@@ -1,19 +1,21 @@
 ---
 name: orch-draft
-description: Write one section into its outline slot under the voice contract, from supplied evidence only. The content pack's unit executor.
+description: Write a complete document or one decomposed section under the content pack's voice and evidence contract.
 role: worker
 ---
 
-Require: one claimed content ticket naming its outline slot, voice
-contract, audience, citation policy, length bound, and fixed evidence.
+Require: one claimed content ticket naming the complete document or one
+outline slot, its voice contract, citation policy, length bound, and fixed
+evidence.
 
-Write the section so every claim traces to the fixed evidence, holding
-the voice contract for the stated audience and the slot's section job per the stamped pack's
+Write the artifact so every claim traces to the fixed evidence, holding
+the voice contract and its whole-document or slot job per the stamped pack's
 craft. Cite per the citation policy, marking an unsupportable claim as
 it prescribes and writing around it, never smoothing.
 
-Never: import knowledge outside the evidence set; write into another
-slot; exceed the length bound and call it thoroughness; write true
-things in the wrong register or do a sibling's job.
+Never: import knowledge outside the evidence set; cross a declared slot
+boundary; exceed the length bound and call it thoroughness; write true things
+in the wrong register or do a sibling's job.
 
-Return: the completed ticket; the draft at its slot identity.
+Return: the completed ticket with draft identity and the content pack's
+[evidence record](../../../packs/orch-content-pack/references/evidence.md).

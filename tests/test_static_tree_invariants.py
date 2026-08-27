@@ -1,7 +1,7 @@
-"""Compatibility seam for the static-tree invariant collection.
+"""Discovery seam for the current static-tree invariant collection.
 
-The cases are partitioned by their invariant owner while this module keeps the
-historic ``tests.test_static_tree_invariants`` discovery target intact.
+The cases are partitioned by their invariant owner and collected here for the
+one-process-per-module test runner.
 """
 import unittest
 

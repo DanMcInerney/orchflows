@@ -29,7 +29,10 @@ def root_stub(fixed_inputs: str, pack: str = "orch-synth-pack") -> str:
 
     return stub("A", executor="orch-decompose", scope="scratch/x.txt").replace(
         "executor: orch-decompose", f"executor: orch-decompose\npack: {pack}"
-    ).replace("## Fixed inputs\n\nNone.", f"## Fixed inputs\n\n{fixed_inputs}")
+    ).replace(
+        '- input: {"name":"none","type":"literal","value":null}',
+        fixed_inputs.rstrip("\n"),
+    )
 
 
 class RootStubSpecFieldsTest(unittest.TestCase):
@@ -52,7 +55,7 @@ class RootStubSpecFieldsTest(unittest.TestCase):
             use_sink(tmp)
             make_pack(tmp)
             directory = make_template(tmp, {
-                "A": root_stub("- a directory of items to cut\n"),
+                "A": root_stub('- input: {"name":"directory","type":"literal","value":"items to cut"}\n'),
                 "B": stub("B", "[A]"),
             })
             defects = self.defects(directory)
@@ -68,7 +71,7 @@ class RootStubSpecFieldsTest(unittest.TestCase):
             use_sink(tmp)
             make_pack(tmp)
             directory = make_template(tmp, {
-                "A": root_stub("- the target repository: scripts/\n"),
+                "A": root_stub('- input: {"name":"target-repository","type":"literal","value":"scripts/"}\n'),
                 "B": stub("B", "[A]"),
             })
             self.assertEqual([], self.defects(directory))
@@ -98,7 +101,7 @@ class RootStubSpecFieldsTest(unittest.TestCase):
             use_sink(tmp)
             make_pack(tmp)
             directory = make_template(tmp, {
-                "A": root_stub("- a directory of items to cut\n", pack="{{pack}}"),
+                "A": root_stub('- input: {"name":"directory","type":"literal","value":"items to cut"}\n', pack="{{pack}}"),
                 "B": stub("B", "[A]"),
             })
             self.assertEqual([], self.defects(directory))
@@ -119,7 +122,7 @@ class RootStubSpecFieldsTest(unittest.TestCase):
             tmp = Path(tmp)
             use_sink(tmp)
             directory = make_template(tmp, {
-                "A": root_stub("- a directory of items to cut\n"),
+                "A": root_stub('- input: {"name":"directory","type":"literal","value":"items to cut"}\n'),
                 "B": stub("B", "[A]"),
             })
             self.assertEqual([], self.defects(directory))

@@ -10,7 +10,6 @@ from .foundation import (
     CLAUDE_ADAPTER_SETS,
     CLAUDE_CLI_CANDIDATES,
     CODEX_CLI_CANDIDATES,
-    CODEX_SKILL_REDIRECT_NAMES,
     PROFILE_ROLES,
     REPO_ROOT,
     SHARED_ADAPTER_NAMES,
@@ -187,21 +186,20 @@ def _build_user_plan(
             codex_prompts.append(
                 (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{codex_body}")
             )
-            if name in CODEX_SKILL_REDIRECT_NAMES:
-                codex_skills.append(
-                    (
-                        codex_user_home / "skills" / name / "SKILL.md",
-                        frontmatter
-                        + "\n"
-                        + (
-                            codex_role_adapter_body(
-                                name, role, profiles[f"orch-{role}"], lib_skill_md
-                            )
-                            if role in PROFILE_ROLES
-                            else f"Read {lib_skill_md} and follow it exactly.\n"
-                        ),
-                    )
+            codex_skills.append(
+                (
+                    codex_user_home / "skills" / name / "SKILL.md",
+                    frontmatter
+                    + "\n"
+                    + (
+                        codex_role_adapter_body(
+                            name, role, profiles[f"orch-{role}"], lib_skill_md
+                        )
+                        if role in PROFILE_ROLES
+                        else f"Read {lib_skill_md} and follow it exactly.\n"
+                    ),
                 )
+            )
 
     # Compositions are invocable by name, so they get the same name surfaces
     # as skills: a by-name pointer, a Claude adapter stub, a Codex prompt,
@@ -233,10 +231,9 @@ def _build_user_plan(
             codex_prompts.append(
                 (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{body.strip()}\n")
             )
-            if name in CODEX_SKILL_REDIRECT_NAMES:
-                codex_skills.append(
-                    (codex_user_home / "skills" / name / "SKILL.md", pointer)
-                )
+            codex_skills.append(
+                (codex_user_home / "skills" / name / "SKILL.md", pointer)
+            )
 
     claude_agents = []
     codex_agents = []

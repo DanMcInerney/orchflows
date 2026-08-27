@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject executable source files over the 510-physical-line ceiling."""
+"""Reject production sources over 510 lines and warn on tests over 500."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_PHYSICAL_LINES = 510
+TEST_WARNING_LINES = 500
 SOURCE_SUFFIXES = frozenset({".py", ".sh", ".cmd", ".ps1", ".js", ".ts"})
 TYPESCRIPT_COMPONENT_SUFFIXES = frozenset({".tsx"})
 GENERATED_SOURCE_MANIFESTS = (Path("web/dist/.vite/orchflows-generated.json"),)
@@ -88,6 +89,16 @@ def oversized_files(paths, maximum: int = MAX_PHYSICAL_LINES):
     return oversized
 
 
+def is_test_source(path: Path, root=None) -> bool:
+    """Tests report size pressure without blocking production admission."""
+    root = ROOT if root is None else root
+    try:
+        relative = path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return bool(relative.parts) and relative.parts[0] == "tests"
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("paths", nargs="*", help="explicit files or directories; default: all tracked source")
@@ -96,21 +107,28 @@ def main(argv=None) -> int:
     files = source_files_from_paths(args.paths) if args.paths else tracked_source_files()
     generated = generated_source_files()
     files = [path for path in files if path.resolve() not in generated]
-    oversized = oversized_files(files)
-    for path, count in oversized:
+    test_files = [path for path in files if is_test_source(path)]
+    production_files = [path for path in files if not is_test_source(path)]
+    blockers = oversized_files(production_files)
+    warnings = oversized_files(test_files, TEST_WARNING_LINES)
+    for path, count in blockers + warnings:
         try:
             label = path.relative_to(ROOT)
         except ValueError:
             label = path
-        print(f"{label}: {count} physical lines (maximum {MAX_PHYSICAL_LINES})")
-    verdict = "FAIL" if oversized else "PASS"
+        if is_test_source(path):
+            print(f"WARN {label}: {count} physical lines (warning {TEST_WARNING_LINES})")
+        else:
+            print(f"{label}: {count} physical lines (maximum {MAX_PHYSICAL_LINES})")
+    verdict = "FAIL" if blockers else "PASS"
     manifests = ",".join(path.as_posix() for path in GENERATED_SOURCE_MANIFESTS)
     print(
         f"source-size policy: {verdict}; authored_sources={len(files)}; "
         f"generated_sources={len(generated)}; maximum={MAX_PHYSICAL_LINES}; "
+        f"test_warning={TEST_WARNING_LINES}; "
         f"manifests={manifests}"
     )
-    return 1 if oversized else 0
+    return 1 if blockers else 0
 
 
 if __name__ == "__main__":

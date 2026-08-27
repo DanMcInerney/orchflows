@@ -19,16 +19,11 @@ failure mode, and every ``tickets.py`` call it makes is graded by parsing
 the returned payload, never by exit status.
 
 Exit codes:
-    0  success, including ``isolation: none`` or absent, and an item whose
-       effective write scope is empty -- authority over no path in any
-       workspace, which is the lane ``tickets.py packet`` emits no
-       establishment step for -- so long as no recorded branch carries
-       commits the caller's HEAD lacks; one that does is graded in full,
-       and every path it changed is a breach (4)
+    0  success, including ``isolation: none`` or absent
     1  usage or internal error
     2  isolation-missing
     3  wrong-branch-point
-    4  scope-breach
+    4  dirty-candidate
     5  no-record
     6  wrong-vantage: the caller stood in the workspace it asked about, so
        nothing about the item was graded. Distinct from 2 on purpose -- 2
@@ -76,13 +71,9 @@ import tickets  # noqa: E402  frontmatter and isolation, imported and never copi
 # ``bin`` layout after the directory above has joined ``sys.path``.
 workspace_git = __import__("workspace_git")
 workspace_prepare = __import__("workspace_prepare")
-workspace_scope = __import__("workspace_scope")
-tickets_scope = __import__("tickets_scope")
-ticket_store = __import__("tickets_store")
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
 BASELINE_KEY = "workspace_baseline"
-WRITE_SCOPE_KEY = "write_scope"
 # Every frontmatter key name this script writes or reads, and where. The
 # spellings belong to ``contracts/work-item.md``; ``tests/test_workspace.py``
 # reads this mapping and the contract's own bytes and asserts the two agree
@@ -92,7 +83,6 @@ FRONTMATTER_KEYS = {
     ISOLATION_KEY: "read by check",
     BRANCH_KEY: "written by start, read by check",
     BASELINE_KEY: "written by start",
-    WRITE_SCOPE_KEY: "read by check",
 }
 
 # The value and its normalization both come from ``tickets.py``, never a
@@ -113,23 +103,13 @@ VERDICTS = {
     EXIT_ERROR: "error",
     EXIT_ISOLATION_MISSING: "isolation-missing",
     EXIT_WRONG_BRANCH_POINT: "wrong-branch-point",
-    EXIT_SCOPE_BREACH: "scope-breach",
+    EXIT_SCOPE_BREACH: "dirty-candidate",
     EXIT_NO_RECORD: "no-record",
     EXIT_WRONG_VANTAGE: "wrong-vantage",
     EXIT_SHARED_WORKSPACE: "shared-workspace",
 }
 AMBIGUOUS = workspace_git.AMBIGUOUS
-# ``contracts/work-item.md``: ``write_scope`` is exactly what the item may
-# change -- paths, and this script compares them against the paths a diff
-# names. A space or a parenthesis makes an entry prose ("scripts/ and tests/",
-# "docs/ (tests only)"), which matches no path, so either every change reads
-# as a breach or the grant covers nothing and none does. Refused at ``start``,
-# where the cut can still fix it, rather than graded at the join.
-UNGRADABLE_IN_SCOPE = workspace_scope.UNGRADABLE_IN_SCOPE
-# The two of them a real path can carry, which ``_refuse_ungradable_scope``
-# therefore decides by resolving the entry rather than by the character.
-SPACING = workspace_scope.SPACING
-CONTRACT = workspace_scope.CONTRACT
+# Candidate diffs are reported in full. Suggested files are not read here.
 # One spelling of each subcommand's arguments, joined into ``USAGE`` for the
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {
@@ -138,7 +118,7 @@ COMMAND_USAGE = {
 }
 COMMAND_HELP = {
     "start": "from inside the workspace: record its branch and baseline into the ticket",
-    "check": "from the integrating checkout: grade the item's isolation and write scope",
+    "check": "from the integrating checkout: grade isolation and report the actual diff",
 }
 USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
 HELP_FLAGS = ("--help", "-h")
@@ -179,11 +159,30 @@ def _dirty_paths() -> list:
 _graded = workspace_git._graded
 _locate = workspace_git._locate
 _record = workspace_git._record
-_refuse_ungradable_scope = workspace_scope._refuse_ungradable_scope
-_normalized_scope = workspace_scope._normalized_scope
-_in_scope = workspace_scope._in_scope
-_actual_mutations = workspace_scope._actual_mutations
 _sharers = workspace_git._sharers
+
+
+def _actual_mutations(name_status: str) -> list:
+    """Normalize ``git diff --name-status --no-renames -z`` rows."""
+    tokens = name_status.split("\0")
+    rows = []
+    index = 0
+    operations = {"A": "create", "D": "delete", "M": "change", "T": "change"}
+    while index < len(tokens) and tokens[index]:
+        status = tokens[index]
+        if "\t" in status:
+            status, path = status.split("\t", 1)
+            index += 1
+        elif index + 1 < len(tokens):
+            path = tokens[index + 1]
+            index += 2
+        else:
+            raise Refused("git name-status output ended before its path")
+        operation = operations.get(status[:1])
+        if operation is None:
+            raise Refused(f"git name-status returned unsupported status {status!r}")
+        rows.append((operation, path))
+    return sorted(set(rows))
 
 
 # --- subcommands ------------------------------------------------------------
@@ -203,36 +202,12 @@ def _cmd_start(rest):
     run, ticket_id = _positional(rest, 2, "start")
     root, path = _locate(run, ticket_id)
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
-    if ticket_store.is_document_ticket(data):
-        try:
-            established = ticket_store.establish_document_workspace(
-                run, ticket_id, data
-            )
-        except ValueError as error:
-            raise Refused(str(error)) from error
-        return {
-            "start": {
-                "run": run,
-                "id": ticket_id,
-                "ticket": str(path),
-                "main_root": str(root),
-                "isolated": True,
-                WRITE_SCOPE_KEY: tickets._scope_entries(data.get(WRITE_SCOPE_KEY)),
-                **established,
-            }
-        }, EXIT_OK
     # the snapshot the stamps are written against, taken before the git calls
     # below and not after them: those calls are the seconds a concurrent
     # `set-status` lands in, and a snapshot taken past them absorbs the write
     # this guard exists to report
     prior_text = path.read_text(encoding="utf-8")
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
-    # after `top`, which is the root a relative scope entry resolves against
-    _refuse_ungradable_scope(data.get(WRITE_SCOPE_KEY), top)
-    # both roots: an absolute entry may be written against the workspace it
-    # was cut for or against the checkout the join grades it in, and the two
-    # are different directories holding the same repository
-    scope = _normalized_scope(data.get(WRITE_SCOPE_KEY), top, root)
     branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
     # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
@@ -270,7 +245,6 @@ def _cmd_start(rest):
             "isolated": top != root and not sharing,
             "shared_with": sharing,
             "dirty": dirty,
-            WRITE_SCOPE_KEY: list(scope),
             **prepared,
         }
     }, EXIT_SHARED_WORKSPACE if sharing else EXIT_OK
@@ -329,37 +303,13 @@ def _cmd_check(rest):
         return {"check": reported}, EXIT_OK
     reported[ISOLATION_KEY] = isolation
 
-    if ticket_store.is_document_ticket(data):
-        try:
-            checked = ticket_store.check_document_workspace(run, ticket_id, data)
-        except ValueError as error:
-            raise Refused(str(error), EXIT_SCOPE_BREACH) from error
-        reported.update(checked)
-        reported["verdict"] = "pass"
-        return {"check": reported}, EXIT_OK
-
-    effective = data.get(WRITE_SCOPE_KEY)
-    empty = effective is not None and not tickets._scope_entries(effective)
-    if empty:
-        reported[WRITE_SCOPE_KEY] = []
-
     branch = str(data.get(BRANCH_KEY) or "").strip()
     if not branch:
-        if empty:
-            reported["verdict"] = "not required"
-            return {"check": reported}, EXIT_OK
         raise Refused(
             f"{ticket_id} declares {ISOLATION_KEY}: {REQUIRED} and carries no {BRANCH_KEY}: nothing recorded what it "
             "was executed in",
             EXIT_NO_RECORD,
         )
-    # every checkout of this repository, because an absolute grant written
-    # against the workspace it was cut for names the same repository-relative
-    # path as one written against the checkout grading it
-    scope = _normalized_scope(
-        data.get(WRITE_SCOPE_KEY), root, *workspace_git._checkouts(_git_out)
-    )
-
     ref = workspace_git._tip_ref(branch)
     code, tip, _ = _git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
     unresolved = f"branch {branch!r} does not resolve in this repository"
@@ -370,9 +320,6 @@ def _cmd_check(rest):
         code, tip = (0, moved) if moved else (1, tip)
         unresolved = workspace_git._no_workspace(branch)
     if code != 0:
-        if empty:
-            reported.update({BRANCH_KEY: branch, "verdict": "not required"})
-            return {"check": reported}, EXIT_OK
         raise Refused(unresolved, EXIT_ISOLATION_MISSING)
     tip = tip.strip()
     own = workspace_git._current_branch(_git_out)
@@ -393,17 +340,12 @@ def _cmd_check(rest):
                 "--repo <path>",
                 EXIT_WRONG_VANTAGE,
             )
-        if not empty:
-            raise Refused(
-                f"branch {branch!r} is the caller's own branch: no distinct branch "
-                "carries the work",
-                EXIT_ISOLATION_MISSING,
-            )
+        raise Refused(
+            f"branch {branch!r} is the caller's own branch: no distinct branch carries the work",
+            EXIT_ISOLATION_MISSING,
+        )
     if _is_ancestor(tip, "HEAD"):
         # the caller's own branch lands here too: HEAD is its own ancestor
-        if empty:
-            reported.update({BRANCH_KEY: branch, "tip": tip, "verdict": "not required"})
-            return {"check": reported}, EXIT_OK
         raise Refused(
             f"branch {branch!r} is already an ancestor of the caller's HEAD: no "
             "distinct branch carries the work",
@@ -445,22 +387,10 @@ def _cmd_check(rest):
     actual = _actual_mutations(_git_out(
         "diff", "--name-status", "--no-renames", "-z", f"{base_commit}...{tip}", "--"))
     changed = sorted({path for _, path in actual})
-    operation_breaches = tickets_scope.unplanned_mutations(data, actual) if workspace_scope._operation_plan_required(data) else []
-    path_breaches = [name for name in changed if not _in_scope(name, scope)]
-    breaches = sorted(set(path_breaches) | {path for _, path in operation_breaches})
     reported.update({
         BRANCH_KEY: branch, "tip": tip, "base": base_commit, "changed": changed,
         "mutations": [f"{operation}:{path}" for operation, path in actual],
-        WRITE_SCOPE_KEY: list(scope),
     })
-    if breaches:
-        raise Refused(
-            f"branch {branch!r} changed {len(breaches)} path(s) outside {WRITE_SCOPE_KEY}: {', '.join(breaches)}",
-            EXIT_SCOPE_BREACH,
-            breaches=breaches,
-            changed=changed,
-            operation_breaches=[f"{operation}:{path}" for operation, path in operation_breaches],
-        )
     reported["commits"] = int(
         _git_out("rev-list", "--count", f"{base_commit}..{tip}", "--") or 0
     )

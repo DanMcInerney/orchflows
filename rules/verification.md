@@ -1,89 +1,28 @@
 # Verification
 
-1. Completion is decided by external evidence, never by the model's
-   claim of its own success. A claim is exactly worth its cited oracle
-   output — the executor's, and equally a checker's, a judge's or a
-   gate's, including any part of the caller's framing it repeats back.
-2. The verdict values, which criteria are required, and how the overall
-   verdict is read are
-   [contracts/verdict.md](../contracts/verdict.md)'s.
-3. Freeze criteria and their oracles before the first unit of work; a
-   criterion added mid-run is queued scope, not a moving target. A
-   criterion states the condition its oracle decides, never a reading of
-   current state — a frozen count is a target, not a check.
-4. Verification never edits its target. A verifier that fixes what it
-   checks has become an executor and its verdicts are void.
-5. The class policy is stated once, in that same contract.
-6. Judged verdicts are rendered fresh from the spec in an independent
-   context — never from unit verification output, never by the context
-   that produced the artifact.
-7. A gate returning findings moves the result identity; what that
-   costs the entries covering it is
-   [contracts/verdict.md](../contracts/verdict.md)'s invalidation
-   clause.
-8. An oracle must be able to fail: a check that cannot FAIL when the
-   claim it stands for is false decides nothing, and its PASS is void.
-   Show it against a wrong result built beside the tree, never by
-   mutating the tree under test, which an interrupted pass leaves
-   mutated — shown once: by the cut for a `pre-existing` oracle
-   (`scripts/cutcheck.py`'s discrimination family) and by the
-   executor's own red for an `authored-here` one; a verifier reads that
-   record, never rebuilds it. Building that copy faithfully where the
-   tree is a repository is
-   [cut-lens.md](../skills/kernel/orch-decompose/references/cut-lens.md)'s.
-   A panel of existence and output mutants leaves the silent failures
-   untested, in three shapes. Membership: where a grader aggregates over
-   a set, one mutant changes that set's cardinality, which shrinking to
-   one member otherwise passes silently. Placement: where code sits
-   deliberately outside an adjacent guard, one mutant moves it inside,
-   which every deletion mutant survives. Carriers: before a surviving
-   mutant is read as vacuity, census them — a fact two carriers hold
-   survives losing one, and the pin is intact. A fixture that can
-   express the failure under no mutation is itself the defect found:
-   harden the fixture, not the panel.
-9. A correction consumes causes, not findings: one fix per shared
-   cause, the smallest set that closes the validated findings,
-   preferring the fix that simplifies. A cause whose coherent fix
-   exceeds the frozen spec's license is queued as candidate scope for
-   its own spec, never widened into the correction.
-10. Independence enters every unit before its acceptance is final through
-    exactly one mutually exclusive ordinary path for each criterion and
-    lens: a
-    completion test whose oracles all carry `pre-existing` oracle
-    provenance ([contracts/work-item.md](../contracts/work-item.md)) and
-    each can fail on the objective (§8); one fresh checker
-    (`orch-critique` under the ticket's own write scope — never a second
-    executor) reviewing the result and its authored checks and
-    correcting per §9, the completion test then re-verified, over the
-    entries the checker invalidated, by a context that rendered no part
-    of the result — where every invalidated oracle is deterministic that
-    context is the join, which re-runs them, and where any is non-deterministic one
-    fresh child re-verifies them all; or the downstream gate the ticket's
-    `independence` field names. A non-root gate-deferred ticket cannot
-    carry `checked_by`, and a checker identity is single and immutable;
-    the root cut reader is the distinct exception. Additional adversarial
-    review is a unique named root-gate critique lens feeding the same one
-    repair and terminal verification, never another ordinary independence
-    path. An ordered lens bundle's critique-and-repair context records
-    findings by per-lens identity and evidence in bundle order. Because it
-    may repair, every verdict it renders is void; a fresh separate verifier
-    renders the gate's verdicts after it.
-    Acceptance resting only on checks the executing context authored
-    is UNVERIFIED.
-11. A repair by the context that found the defect is accepted only on a
-    check that did no part of the repair: repairing makes that context an
-    executor from that moment (§4), claiming no verdict of its own. For a
-    cut that check is `scripts/cutcheck.py` re-run against the revision
-    the set was cut from; what its exit status means, and why a verdict is
-    read only on the host that produced it, are
-    `scripts/cutcheck.py --help`'s.
-12. A byte identity names the domain it was taken in — `git-blob` or
-    `filesystem` — and states the normalization applied. One file hashes
-    to two values across those domains, because git converts line endings
-    on the way in and out, so an identity naming neither is decided by
-    host accident rather than by content. A cleanliness oracle names its
-    domain the same way and classifies bytes an oracle itself emitted —
-    the bytecode CPython writes beside what it imports — as emission,
-    never as the item's uncommitted work: an item that ran its own
-    acceptance is not thereby in breach. `scripts/workspace.py check` is
-    that classification's mechanical arm.
+1. Ticket Goal defines success. Executor evidence demonstrates it; critique
+   challenges the fixed artifact and evidence under factual Context. The sealed
+   assignment adds no proof checklist.
+2. Executor records belong to [result.md](../contracts/result.md), outside the
+   semantic seal. Evidence must fit its artifact; each pack's `evidence` cell
+   owns the domain-specific forms.
+3. Verification and critique are read-only. An evaluator that changes the
+   target has become a repair executor and cannot judge that changed identity.
+4. `orch-critique` owns blocker enumeration and root-cause synthesis. Its
+   exclusions and ranking are the shared review model, not a pack variation.
+5. Accepted blockers enter one distinct repair pass. That change invalidates
+   prior critique verdicts; a new verifier reads the repaired identity and no
+   second critique follows.
+6. A proof method must be able to contradict the claim it supports. For a test
+   authored during implementation, the executor records the relevant failing
+   observation before the passing one. Repository-global deterministic gates
+   still decide the integrated tip.
+7. Each ticket takes one independence path: a blocker-only `orch-critique`
+   checker recorded by `checked_by`, or its downstream composite gate. A
+   non-root gate-deferred ticket cannot carry `checked_by`; a root cut reader is
+   bookkeeping, not final acceptance. Additional review is a uniquely named
+   lens feeding the same one repair and fresh verification.
+8. Evidence holds only for the artifact and dependencies it covers. Any
+    covered change invalidates it. Byte identities name their domain and
+    normalization; workspace cleanliness distinguishes tool emissions from the
+    candidate's own changes through `scripts/workspace.py check`.

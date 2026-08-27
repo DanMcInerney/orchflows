@@ -4,7 +4,7 @@
    [delegation packet](../contracts/work-item.md#dispatch), which owns
    what a missing part costs; a dispatch naming an identity that does
    not resolve where it says it is is refused, not repaired. A packet's
-   `bounds` cover reading the `inputs` it names, in whichever currency
+   `bounds` cover reading the Context it names, in whichever currency
    binds first.
 2. Root and `role: none` are glue-only: routing, dispatch mechanics,
    joins, verbatim user interaction, and answers decided by evidence
@@ -15,22 +15,19 @@
 3. Star topology: children never communicate peer to peer; every result
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
-4. Authority attenuates: a child's write scope is a subset of its
-   caller's at every depth. It executes its exact named skill directly
+4. A child executes its exact named skill directly
    — or, when its packet states an ordered `sequence` of skills, each
    exact named skill in that stated order, one witness in this one
    context at the one role [roles.md](roles.md) §4 resolves — and never
-   re-dispatches that primary work, and it gathers nothing outside the
-   `inputs` its packet names — an objective that is itself
-   investigation the one exception. A child identity stops at the ticket
-   boundary and is never reused by another ticket; an ordered lens bundle
-   therefore puts critique and repair on the same ticket.
+   re-dispatches that primary work. A child identity stops at the ticket
+   boundary and is never reused by another ticket. Critique and repair are
+   distinct tickets because critique is read-only and repair invalidates its
+   verdict context.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
-   it; no caller states a parallel prose join. A dispatch granting a
-   non-empty write scope contracts for `changed_artifacts` among its
-   return fields, and the join rejects a result whose `changed_artifacts`
-   exceed the granted scope regardless of its verdicts.
+   it; no caller states a parallel prose join. Isolated candidates have
+   repository write authority. The join inspects
+   actual diffs and Git conflicts; Suggested files never limit the result.
 6. Every join records its blame class per
    [work-item.md](../contracts/work-item.md)'s blame rule.
 7. Fan out only independent breadth-first work; dependent work runs
@@ -64,34 +61,20 @@
     child under-delivered at the join. How a caller watches a lane on a
     given host is
     [profiles.md](../skills/engines/orch-frontier/references/profiles.md)'s.
-12. The caller owns the semantic root: objective; acceptance meaning and
-    oracle set; total authority and scope; fixed evidence; exclusions;
-    bounds; return contract; deliverable kind and pack. Before seal, a
-    decomposer may mechanically correct unit and gate assignment packets,
-    dependency edges, allocation within total authority, mutation
-    projections, stable ownership regions and merge-oracle bindings,
-    coverage map, composite gate layout, lifecycle receipts and generation
-    references, and mechanically derived root projections only when a
-    deterministic equivalence oracle proves the semantic root unchanged.
-    Otherwise the proposed change is semantic and suspends for the caller.
+12. The caller owns Goal, Context, and optional Suggested files. Before seal,
+    a decomposer may mechanically correct dependency edges, exact executor
+    bindings, lifecycle receipts, generation references, and composite gate
+    layout only while Goal and Context remain unchanged.
 13. The default mechanical correction is one generation. A caller or policy
     may instead set another finite positive bound. Recurrence of the same
     normalized validation-failure identity suspends immediately rather than
     consuming another generation.
-14. Under rule 9, once per dispatch a worker needing changed assignment
-    appends one `- amendment-request: <canonical JSON record>` to its own
-    `## Handoff` and parks; it never edits a parent ticket. The record has
-    `request-id`, `requester-ticket`, `parent-ticket`, `root-generation`,
-    `cut-generation`, `change-kind`, `target-fields`, `reason`,
-    `evidence-identities`, and `bound-state`. The caller alone disposes it as
-    `continue`, `amend-and-reseal`, `recut-remaining`, or
-    `successor-or-new-root`; `tickets.py resume-generation` materializes the
-    unchanged packet or the validated, sealed same-ticket authority change.
+14. A worker that cannot achieve Goal within its operational bound records a
+    concise Handoff and parks; it never edits a parent ticket.
 15. Before a worker becomes ready, is claimed, or receives a packet, the
-    caller seals the exact validated assignment digest over objective,
-    inputs, authority, dependencies, acceptance, and executor, its
+    caller seals the exact validated assignment digest over Goal, Context,
+    optional Suggested files, dependencies, and executor, its
     `sequence` included. Those fields are immutable after seal; any change
     creates a new generation. The executor-owned `Result`, `Verification`,
-    `Feedback`, `Risks`, `Context` (`## Context`), and `Handoff` sections remain
-    append-only and outside the sealed assignment; `## Context` alone is the
-    optional successor digest.
+    `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
+    the sealed assignment.

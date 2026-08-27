@@ -1,7 +1,7 @@
 ---
 id: 01-f2-paths
 run: cutcheck-f2-paths
-status: issued
+status: pending
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
@@ -12,6 +12,12 @@ write_scope:
   - scripts/cutcheck.py
 excluded_actions:
   - editing scripts/tickets.py
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:01-f2-paths:1:sha256:65cce69cca875be147fa5b12501a84b70330240d5ca923826c2096254f64f95b
+cut_generation: cut:01-f2-paths:1:sha256:c84426cf4e5ac2348674feb9bf56389a03aaa8b440a822afbc1cd4fa9ece2aab
+assignment_seal: sha256:a145509bdc5f4f8732819c301ac0c67cdd34774ece4ca4d09e36ad1e78f14fc4
 ---
 ## Objective
 
@@ -21,7 +27,7 @@ its file, and a quoted string cited to a location that does not hold it.
 
 ## Fixed inputs
 
-- Baseline: the revision cutcheck is invoked with.
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"462ef52aab37655260bdc9f9f98be4ed2601af2d"},"name":"baseline","type":"identity"}
 
 ## Completion test
 

@@ -84,7 +84,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | executor | `{name}executor` |
 | assembly | {assembly} |
 | lens | inline: none |
-| oracle_policy | [references/oracles.md](references/oracles.md) |
+| evidence | [references/evidence.md](references/evidence.md) |
 | workspace | {workspace} |
 | required_spec_fields | inline: none |
 | craft | [references/craft.md](references/craft.md) |
@@ -164,7 +164,7 @@ class _IsolatedTree(unittest.TestCase):
         defaults = {
             "references/craft.md": "# Craft\n\nOnly %s terms.\n" % name,
             "references/slicing.md": "# Slicing\n\nCut into %s widgets.\n" % name,
-            "references/oracles.md": "# Oracles\n\nOne %s row.\n" % name,
+            "references/evidence.md": "# Evidence\n\nOne %s method.\n" % name,
         }
         defaults.update(files or {})
         for rel_path, content in defaults.items():
@@ -216,13 +216,59 @@ class TestAssemblyForm(_IsolatedTree):
         self.assertNotIn("assembly cell", result.stdout)
 
 
-class V2WorkspaceBindingTest(unittest.TestCase):
-    EXPECTED = {"orch-code-pack": ("`orch-tdd`", "`git`", ("git:", "identities: revisions", "authority: paths", "isolation: branch or worktree"), "absent region proof"), "orch-content-pack": ("`orch-draft`", "`document-tree`", ("document tree:", "identities are document revisions", "isolation is a run-scoped directory", "write scopes are outline slots"), "without region proof"), "orch-design-pack": ("`orch-render`", "`git-plus-render`", ("git plus render:", "identities: [view identity]", "authority: paths", "golden captures:", "run captures: outside write scope"), "failed region proof"), "orch-research-pack": ("`orch-investigate`", "`evidence-store`", ("evidence store:", "identities are [evidence packets]", "isolation is a run-scoped directory", "write scopes are lane stores"), "lacking region proof")}
-    def test_every_shipped_workspace_binds_v2_without_replacing_legacy_meaning(self):
-        packs = {path.parent.name: dict(re.findall(r"^\| ([a-z_]+) \| (.+?) \|\s*$", path.read_text(encoding="utf-8"), re.M)) for path in sorted((ROOT / "packs").glob("*/SKILL.md"))}
+class CurrentWorkspaceBindingTest(unittest.TestCase):
+    EXPECTED = {
+        "orch-code-pack": (
+            "`orch-tdd`", "`git`",
+            ("git:", "repository write authority", "actual diffs", "ordinary Git conflicts"),
+        ),
+        "orch-content-pack": (
+            "`orch-draft`", "`document-tree`",
+            (
+                "document tree:", "identities are document revisions",
+                "one direct owner for a whole artifact", "actual candidate changes",
+            ),
+        ),
+        "orch-design-pack": (
+            "`orch-render`", "`git-plus-render`",
+            (
+                "git plus render:", "identities are [view identities]", "actual diff",
+                "render conflicts",
+            ),
+        ),
+        "orch-research-pack": (
+            "`orch-investigate`", "`evidence-store`",
+            (
+                "evidence store:", "identities are [evidence packets]",
+                "isolation is a run-scoped directory", "actual lane artifacts",
+            ),
+        ),
+    }
+
+    def test_every_shipped_workspace_binds_the_current_ticket_protocol(self):
+        packs = {
+            path.parent.name: dict(
+                re.findall(
+                    r"^\| ([a-z_]+) \| (.+?) \|\s*$",
+                    path.read_text(encoding="utf-8"),
+                    re.M,
+                )
+            )
+            for path in sorted((ROOT / "packs").glob("*/SKILL.md"))
+        }
         self.assertEqual(set(self.EXPECTED), set(packs))
-        for pack, (executor, adapter, legacy, fallback) in self.EXPECTED.items():
-            cells = packs[pack]; workspace = cells["workspace"]; self.assertEqual(executor, cells["executor"]); self.assertIn("ticket adapter: %s" % adapter, workspace); [self.assertIn(fragment, workspace) for fragment in legacy]; [self.assertIn(field, workspace) for field in ("root_generation", "cut_generation", "assignment_seal", "ownership_regions")]; self.assertRegex(workspace, r"ownership_regions: (?:`(?:symbol|heading|json-pointer)`|adapter-equivalent)"); self.assertIn(fallback, workspace); self.assertIn("merge oracle:", workspace); self.assertIn("stable non-overlap at a pinned identity", workspace)
+        for pack, (executor, adapter, substrate) in self.EXPECTED.items():
+            with self.subTest(pack=pack):
+                cells = packs[pack]
+                workspace = cells["workspace"]
+                self.assertEqual(executor, cells["executor"])
+                self.assertIn("ticket adapter: %s" % adapter, workspace)
+                for fragment in substrate:
+                    self.assertIn(fragment, workspace)
+                for field in ("root_generation", "cut_generation", "assignment_seal"):
+                    self.assertIn(field, workspace)
+                self.assertIn("Suggested files are non-binding", workspace)
+
 
 class TestCellClauseSplitter(unittest.TestCase):
     def test_a_semicolon_cuts_one_bullet_into_two_clauses(self):
@@ -325,15 +371,15 @@ class TestCellDuplication(_IsolatedTree):
 
     def test_a_shared_table_header_row_is_not_reported(self):
         table = (
-            "# Oracles\n\n"
-            "| criterion kind | oracle | oracle_class | provenance |\n"
-            "| --- | --- | --- | --- |\n"
+            "# Evidence\n\n"
+            "| artifact kind | method | observation |\n"
+            "| --- | --- | --- |\n"
             "| %s |\n"
         )
-        self._write_pack("hdrapack", files={"references/oracles.md": table % (
-            "behavior | the ticket's named test commands | deterministic | pre-existing")})
-        self._write_pack("hdrbpack", files={"references/oracles.md": table % (
-            "audience fit | a named reader reads the draft aloud | judged | authored-here")})
+        self._write_pack("hdrapack", files={"references/evidence.md": table % (
+            "code | derived tests | red and green results")})
+        self._write_pack("hdrbpack", files={"references/evidence.md": table % (
+            "document | audience reading | fit observations")})
         self.assertNotIn(VERBATIM, self._run().stdout)
 
     def test_a_pointer_cell_is_compared_on_its_reference_file(self):
@@ -360,7 +406,7 @@ class TestCellDuplication(_IsolatedTree):
 
 
 class TestMandatedEchoExemption(_IsolatedTree):
-    """Three echoes an owner outside the pack mandates, so two packs
+    """Two echoes an owner outside the pack mandates, so two packs
     carrying them carry them by obligation. Each pair below is the real
     tree's own pair with the domain nouns swapped for synthetic ones, so
     the synthetic clauses have the real ones' shape and length."""
@@ -377,20 +423,6 @@ class TestMandatedEchoExemption(_IsolatedTree):
         "none — the bench is the assembly",
         "none — the merged batch's finished panels are the assembly",
     )
-    # Both rows end in verdict.md's oracle_class enum and work-item.md's
-    # provenance enum -- the mandated pair -- and nothing to the left of it
-    # is mandated, so the criterion and oracle columns are synthetic too.
-    ORACLE_ROWS = (
-        "| behavior | the ticket's named test commands | deterministic | pre-existing |",
-        "| finish floor | the finish bar's check command at every "
-        "covered station | deterministic | pre-existing |",
-    )
-    ORACLE_TABLE = (
-        "# Oracles\n\n"
-        "| criterion kind | oracle | oracle_class | provenance |\n"
-        "| --- | --- | --- | --- |\n"
-        "%s\n"
-    )
     # packs/*/references/craft.md:3 -- the opener naming the cell the file
     # satisfies, which every pointer cell's reference carries.
     CRAFT_OPENER = "# Craft\n\nThe %s domain's terms and shape, per the signature's craft cell.\n"
@@ -401,15 +433,12 @@ class TestMandatedEchoExemption(_IsolatedTree):
     def _inert(self, name):
         return "none — %s stands in" % name
 
-    def test_the_craft_opener_the_assembly_form_and_the_oracle_enums_are_exempt(self):
+    def test_the_craft_opener_and_assembly_form_are_exempt(self):
         for name, domain in (("openerapack", "alpha"), ("openerbpack", "beta")):
             self._write_pack(name, assembly=self._inert(name),
                              files={"references/craft.md": self.CRAFT_OPENER % domain})
         self._write_pack("formapack", assembly=self.ASSEMBLY[0])
         self._write_pack("formbpack", assembly=self.ASSEMBLY[1])
-        for name, row in (("enumapack", self.ORACLE_ROWS[0]), ("enumbpack", self.ORACLE_ROWS[1])):
-            self._write_pack(name, assembly=self._inert(name),
-                             files={"references/oracles.md": self.ORACLE_TABLE % row})
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn(VERBATIM, result.stdout)
@@ -457,7 +486,7 @@ class TestAllowlist(unittest.TestCase):
 # those are fixed. Raising it is a decision, and it belongs in the commit
 # message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 25
+WARNING_CEILING = 9
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two

@@ -1,7 +1,7 @@
 ---
 id: 01-barenoun
 run: cutcheck-barenoun
-status: issued
+status: pending
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
@@ -11,6 +11,12 @@ write_scope:
   - scripts/cutcheck.py
 excluded_actions:
   - editing scripts/tickets.py
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:01-barenoun:1:sha256:625e63246c712b6fd272c06cb28a9df5609328306684214a35bcdfc9eeab2631
+cut_generation: cut:01-barenoun:1:sha256:2a3efd5d65d5dad92dd0f157300754889a665a9c75031273953ab6c9348038aa
+assignment_seal: sha256:212a6ecaad1088db3ce9ec5d2b677050d48caaf293a38f640be0db250529d1cc
 ---
 ## Objective
 
@@ -22,7 +28,7 @@ it, which has to surface as an extraction gap.
 
 ## Fixed inputs
 
-- Baseline: the revision cutcheck is invoked with.
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"462ef52aab37655260bdc9f9f98be4ed2601af2d"},"name":"baseline","type":"identity"}
 
 ## Completion test
 

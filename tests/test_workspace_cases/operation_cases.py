@@ -1,9 +1,9 @@
-"""Workspace join enforcement of a v1 ticket's declared operations."""
+"""Workspace join enforcement of a ticket's declared operations."""
 
 from .common import *  # noqa: F401,F403
 
 
-def operation_fixture(tmp, ticket_id, mutations, *, v1=True, include_plan=True,
+def operation_fixture(tmp, ticket_id, mutations, *, include_plan=True,
                       status="claimed"):
     main, run_dir = make_repo(tmp)
     commit_in(main, {
@@ -23,10 +23,10 @@ def operation_fixture(tmp, ticket_id, mutations, *, v1=True, include_plan=True,
         (workspace.ISOLATION_KEY, "required"),
         (workspace.BRANCH_KEY, f"{ticket_id}-branch"),
     ]
-    if v1:
-        extra.append(("admission", "v1:pending"))
-        if include_plan:
-            extra.append(("mutations", f"[{', '.join(mutations)}]"))
+    if include_plan:
+        extra.append(("mutations", f"[{', '.join(mutations)}]"))
+    else:
+        extra.append(("mutations", "[]"))
     path = make_ticket(run_dir, ticket_id, scope=("scratch",), extra=extra)
     if status != "claimed":
         text = path.read_text(encoding="utf-8")
@@ -89,26 +89,8 @@ class TestJoinGradesActualOperations(unittest.TestCase):
             self.assertEqual(workspace.EXIT_SCOPE_BREACH, done.returncode, done.stdout)
             self.assertEqual(["scratch/change.txt"], payload_of(done)["dirty"])
 
-    def test_v0_ticket_keeps_path_only_join_grading(self):
-        with tempfile.TemporaryDirectory() as raw:
-            main, base = operation_fixture(Path(raw), "T-v0", (), v1=False)
-            done = run_workspace(main, "check", "testrun", "T-v0", "--base", base)
-            self.assertEqual(0, done.returncode, done.stdout)
-            self.assertNotIn("operation_breaches", payload_of(done)["check"])
-
-    def test_historical_claimed_and_terminal_v1_tickets_keep_path_only_grants(self):
-        for status in ("claimed", "complete"):
-            with self.subTest(status=status), tempfile.TemporaryDirectory() as raw:
-                ticket_id = f"T-historical-{status}"
-                main, base = operation_fixture(
-                    Path(raw), ticket_id, (), include_plan=False, status=status,
-                )
-                done = run_workspace(main, "check", "testrun", ticket_id, "--base", base)
-                self.assertEqual(0, done.returncode, done.stdout)
-                self.assertEqual("pass", payload_of(done)["check"]["verdict"])
-
-    def test_pending_or_ready_v1_ticket_without_a_plan_is_not_grandfathered(self):
-        for status in ("pending", "ready"):
+    def test_every_lifecycle_position_with_an_empty_plan_is_refused(self):
+        for status in ("claimed", "pending", "ready"):
             with self.subTest(status=status), tempfile.TemporaryDirectory() as raw:
                 ticket_id = f"T-unclaimed-{status}"
                 main, base = operation_fixture(

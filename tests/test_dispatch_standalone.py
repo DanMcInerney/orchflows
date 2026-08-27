@@ -128,7 +128,8 @@ class StandaloneDispatchTest(unittest.TestCase):
         )
 
     def test_every_name_the_dispatch_table_reads_is_bound_without_a_package(self):
-        self.assertIn("_cmd_reissue", self.report["needed"])
+        self.assertNotIn("_cmd_reissue", self.report["needed"])
+        self.assertNotIn("reissue", self.report["commands"])
         self.assertIn("_cmd_bound_check", self.report["needed"])
         self.assertIn("_cmd_lint", self.report["needed"])
         self.assertNotIn("errand", self.report["commands"])

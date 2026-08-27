@@ -11,8 +11,12 @@ excluded_actions:
 independence: checker
 isolation: none
 bound: <= 80 tool calls
-admission: v1:plain-artifact:sha256:b0633ea954313d5e870cd50d89838c366d20a601e1ef81abfb1ebc3a06dd314d
-cohort: v1:ticket:investigate
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:investigate:1:sha256:d4c72bbc1a1d1f4885763244357b81ff32347d46fe5d8847f82ac0292ec8e95a
+cut_generation: cut:investigate:1:sha256:7b116167011d5955bed8f33714201d648c1e13b410392abdb1621401c7586271
+assignment_seal: sha256:8c8b9f04c4bfeed798bd3a98800fcd788a9d297696731290b59aa542db37f5a2
 claimed_by: orch-install-catalog-diagnosis-20260825-investigate
 claimed_at: 2026-08-25T17:18:31Z
 checked_by: orch-install-catalog-diagnosis-20260825-investigate-checker

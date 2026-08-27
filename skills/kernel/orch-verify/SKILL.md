@@ -1,32 +1,29 @@
 ---
 name: orch-verify
-description: Run each named oracle against a fixed result and emit verdicts. Use whenever completion must be decided.
+description: Evaluate a fixed artifact and its evidence against Goal. Use for fresh verification or a frozen scored evaluation.
 role: worker
 ---
 
-Require: a fixed result identity and frozen criteria, each naming its
-oracle and oracle_class per
-[contracts/verdict.md](../../../contracts/verdict.md). Prior verdict
-entries may be offered for reuse.
+Require: a fixed artifact identity, Goal and Context, the executor's Result
+and Verification evidence, and any applicable repository standards or frozen
+evaluation scale.
 
-Run every oracle not already covered by a prior entry that still holds
-at the fixed result, when one holds and what invalidates it being
-[contracts/verdict.md](../../../contracts/verdict.md)'s `covers`
-clause's. Prefer the named external check over judgment wherever both
-exist. Render judged criteria fresh from the spec, per
-[rules/verification.md](../../../rules/verification.md) §6. Fill each
-verdict's `evidence` field on
-[verdict.md](../../../contracts/verdict.md)'s terms.
+Choose methods capable of disproving the claimed Goal, then inspect or run
+them independently at the fixed identity. Treat executor evidence as material
+to verify, not as its own verdict. Code may require tests and repository gates;
+research requires traceable claim-to-source support and uncertainty; design
+requires artifact, render, state, interaction, and accessibility evidence;
+content requires artifact, render where applicable, lint, claim, and audience
+evidence; a spec requires recorded decisions and consistency evidence.
 
-Where the criteria carry a score scale, score each separately before
-any overall number, anchored to the evidence its oracle produced; a
-score is never interpolated across criteria.
+Record each method, observation, covered identity, and unresolved gap. Where a
+frozen evaluation carries a score scale, score each dimension separately from
+its evidence before computing an overall score.
 
-Never: edit the target; skip a criterion silently; upgrade UNVERIFIED to
-PASS by inference; reach past the packet's inputs for a sibling candidate
-or score; score authorship or effort.
+Never: edit the target or sealed semantics; require code tests as proof of a
+non-code artifact; skip contradictory evidence; infer PASS from effort or an
+executor's claim; reach into a sibling candidate.
 
-Return: one verdict entry per criterion and the overall verdict stating
-its weakest oracle_class — or a score card, those entries with their
-scores plus the overall score and the confidence it deserves, when the
-criteria carry a scale.
+Return: Goal verdict `PASS|FAIL|UNVERIFIED`; methods and evidence inspected;
+covered identities; contradictions and gaps; or, for a frozen scored
+evaluation, the dimension records, overall score, and warranted confidence.

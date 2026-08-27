@@ -154,25 +154,19 @@ class TestClaudeAdapterSet(unittest.TestCase):
     def _names(pairs):
         return {dest.parent.name for dest, _ in pairs}
 
-    def test_the_shared_four_and_codex_redirect_names_are_explicit(self):
+    def test_the_shared_four_remain_the_reduced_claude_set(self):
         self.assertEqual(
             ("orch-spec", "orch-frontier", "fix", "orch-build"),
             install.SHARED_ADAPTER_NAMES,
         )
-        self.assertEqual(
-            (*install.SHARED_ADAPTER_NAMES, "orch-investigate"),
-            install.CODEX_SKILL_REDIRECT_NAMES,
-        )
 
-    def test_installer_description_says_codex_writes_five_redirect_stubs(self):
+    def test_installer_description_says_codex_redirects_every_canonical_name(self):
         description = install.__doc__ or ""
         _, separator, codex_description = description.partition("- Codex ")
         self.assertTrue(separator, "Codex description paragraph is missing")
         codex_description = codex_description.partition("\n\n")[0]
-        self.assertIn("five redirect skill stubs", codex_description)
-        self.assertNotIn("four redirect skill stubs", codex_description)
-        for redirect_name in install.CODEX_SKILL_REDIRECT_NAMES:
-            self.assertIn(f"``{redirect_name}``", codex_description)
+        self.assertIn("one exact redirect skill", codex_description)
+        self.assertIn("per discovered canonical skill or composition", codex_description)
 
     def test_four_mints_exactly_the_four_shared_adapters(self):
         plan = self._plan("four")

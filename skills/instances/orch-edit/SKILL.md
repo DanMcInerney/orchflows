@@ -13,7 +13,8 @@ for that audience throughout, the whole brought inside budget, every cut logged,
 voice, shape and terms per the stamped pack's craft.
 
 Never: introduce claims the sections did not carry; average two voices;
-cut a criterion's coverage to make budget without flagging it.
+cut Goal coverage to make budget without flagging it.
 
-Return: the completed ticket; the assembled document identity and the
-cut log.
+Return: the completed ticket with assembled document identity, cut log, and
+the content pack's
+[evidence record](../../../packs/orch-content-pack/references/evidence.md).

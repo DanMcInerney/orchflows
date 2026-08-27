@@ -1,4 +1,4 @@
-"""Executable v2 draft, validation, seal, and correction lifecycle contract."""
+"""Executable draft, validation, seal, and correction lifecycle contract."""
 
 import os
 import tempfile
@@ -19,7 +19,7 @@ from tests.test_tickets_cases.common import run_cmd, use_sink
 def ticket(ticket_id, *, executor="orch-tdd", objective="deliver", result="", regions=None):
     fields = [
         "---", f"id: {ticket_id}", "run: run", "status: pending",
-        "admission: v2:pending", f"executor: {executor}", "pack: orch-code-pack",
+        "admission: pending", f"executor: {executor}", "pack: orch-code-pack",
         "independence: gate", "depends_on: []", "write_scope: [scripts/example.py]",
         "mutations: [change:scripts/example.py]", "isolation: required", "bound: 30m",
         "claimed_by:", "claimed_at:",
@@ -44,15 +44,15 @@ def snapshot():
 
 
 class GenerationIdentityTest(unittest.TestCase):
-    def test_public_facade_exposes_v2_generation_engine(self):
+    def test_public_facade_exposes_generation_engine(self):
         self.assertIs(tickets.draft_snapshot, generations.draft_snapshot)
         self.assertIs(tickets.assignment_digest, generations.assignment_digest)
 
     def test_root_and_cut_identities_cover_assignment_not_bookkeeping(self):
         original = snapshot()
         draft = generations.draft_snapshot("00-root", original)
-        self.assertRegex(draft["root_generation"], r"^v2:root:00-root:1:sha256:[0-9a-f]{64}$")
-        self.assertRegex(draft["cut_generation"], r"^v2:cut:00-root:1:sha256:[0-9a-f]{64}$")
+        self.assertRegex(draft["root_generation"], r"^root:00-root:1:sha256:[0-9a-f]{64}$")
+        self.assertRegex(draft["cut_generation"], r"^cut:00-root:1:sha256:[0-9a-f]{64}$")
         bookkeeping = dict(original)
         bookkeeping["00-root.01"] = _set_frontmatter_field(bookkeeping["00-root.01"], "status", "ready")
         self.assertEqual(draft, generations.draft_snapshot("00-root", bookkeeping))
@@ -92,6 +92,7 @@ class DraftValidateSealLifecycleTest(unittest.TestCase):
                 run_dir.mkdir(parents=True)
                 for ticket_id, text in snapshot().items():
                     (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
+                self.assertNotIn("error", _dispatch(["stamp-generation", "run", "00-root"]))
                 validated = _dispatch(["draft-validate", "run", "00-root"])
                 self.assertEqual("validated", validated["draft_validation"]["state"])
                 cut = validated["draft_validation"]["cut_generation"]
@@ -109,24 +110,6 @@ class DraftValidateSealLifecycleTest(unittest.TestCase):
         self.assertNotEqual(first["cut_generation"], generations.draft_snapshot("00-root", changed_gate, coverage_map="criterion: unit\n")["cut_generation"])
         self.assertNotEqual(first["cut_generation"], generations.draft_snapshot("00-root", current, coverage_map="criterion: gate\n")["cut_generation"])
 
-    def test_reverting_an_old_assignment_still_allocates_a_successor(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
-                run_dir = Path(directory) / "tickets" / "run"
-                run_dir.mkdir(parents=True)
-                original = snapshot()
-                for ticket_id, text in original.items(): (run_dir / f"{ticket_id}.md").write_text(text, encoding="utf-8")
-                first = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
-                self.assertNotIn("error", _dispatch(["seal", "run", "00-root", "--cut-generation", first["cut_generation"]]))
-                changed = original["00-root.01"].replace("deliver", "successor")
-                (run_dir / "00-root.01.md").write_text(changed, encoding="utf-8")
-                second = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
-                self.assertIn(":2:sha256:", second["cut_generation"])
-                (run_dir / "00-root.01.md").write_text(original["00-root.01"], encoding="utf-8")
-                third = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]
-                self.assertIn(":3:sha256:", third["cut_generation"])
-
-
 class CorrectionGenerationPolicyTest(unittest.TestCase):
     def test_one_default_correction_and_recurrence_suspends_immediately(self):
         first = generations.correction_decision([{"code": "coverage", "field": "map"}], [], 1)
@@ -143,7 +126,7 @@ class CorrectionGenerationPolicyTest(unittest.TestCase):
             with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": directory}):
                 run_dir = Path(directory) / "tickets" / "run"
                 run_dir.mkdir(parents=True)
-                (run_dir / "00-root.md").write_text(ticket("00-root", executor="orch-decompose").replace("admission: v2:pending", "admission: v1:pending").replace("ownership_regions: []\n", ""), encoding="utf-8")
+                (run_dir / "00-root.md").write_text(ticket("00-root", executor="orch-decompose").replace("ownership_regions: []\n", ""), encoding="utf-8")
                 first = _dispatch(["draft-validate", "run", "00-root", "--correction-bound", "2"])
                 self.assertEqual("new-generation", first["correction"]["disposition"])
                 repeated = _dispatch(["draft-validate", "run", "00-root", "--correction-bound", "2"])

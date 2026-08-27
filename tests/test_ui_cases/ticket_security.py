@@ -34,12 +34,12 @@ class TestUnreadableTicketFile(unittest.TestCase):
             self.assertEqual("oops", ticket["id"])
             self.assertEqual("oops", ticket["file_id"])
             self.assertEqual("", ticket["status"])
-            self.assertEqual("", ticket["objective"])
+            self.assertEqual("", ticket["goal"])
             self.assertEqual({}, ticket["sections"])
 
     def test_the_read_failure_is_marked_rather_than_read_as_an_empty_ticket(self):
         # Same shape, yes -- but not the same *values* as a ticket that read
-        # fine and said nothing. "unset" and "no objective recorded" are what
+        # fine and said nothing. "unset" and "no goal recorded" are what
         # the page draws for a ticket that is there and empty.
         with tempfile.TemporaryDirectory() as tmp:
             root = self.sink(tmp)
@@ -136,7 +136,7 @@ class TestTicketTreeContainment(unittest.TestCase):
         outside = tmp / "outside"
         outside.mkdir()
         (outside / "X1.md").write_text(
-            "---\nid: X1\nstatus: ready\n---\n\n## Objective\n\n%s\n" % self.LEAKED,
+            "---\nid: X1\nstatus: ready\n---\n\n## Goal\n\n%s\n\n## Context\n\n[]\n" % self.LEAKED,
             encoding="utf-8",
         )
         link = main / "tickets" / self.RUN
@@ -368,7 +368,7 @@ class TestSectionRendering(unittest.TestCase):
 
             page = self.detail(main, "run-gamma", "G5")
 
-            self.assertIn("<h2>Objective</h2>", page)
+            self.assertIn("<h2>Goal</h2>", page)
             for absent in ("Verification", "Result", "Risks", "Feedback"):
                 self.assertNotIn("<h2>{0}</h2>".format(absent), page, absent)
 
@@ -398,7 +398,7 @@ class TestSectionRendering(unittest.TestCase):
             page = self.detail(main, "run-gamma", "G7")
 
             self.assertEqual(
-                ["Objective", "Notes on the wire", "Result", "Risks"],
+            ["Goal", "Notes on the wire", "Result", "Risks"],
                 re.findall(r"<h2>(.*?)</h2>", page),
             )
 

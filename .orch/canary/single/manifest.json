@@ -2,7 +2,7 @@
   "schema": "orchflows.single-canary-manifest.v1",
   "ticket": {
     "path": "tickets/canary/repair.md",
-    "sha256": "fe367e970aedcd25c0b3c6b8374a5a377ec4c0205ea90e950f90c9583567f365",
+    "sha256": "ae8078155ed2c04c2e0721660d1b972ff25d593e0850f5e5e64ba33bebc4dd62",
     "result_section_sha256": "282fd70a5c2c279a1b0609b68381bc8291543af6c850c8baa64d7883a897d209"
   },
   "spec": {
@@ -17,7 +17,7 @@
     },
     {
       "path": "admission-replay.json",
-      "sha256": "1dbd5319e42948e0b5985dc20ee7c3f00e879293a883e8e3f8d8b32f9f8a28f2"
+      "sha256": "96e7568dfeaf9d3d1ace80536f8cd8b71f3e243f976d23cb4af2fa0529bf30a3"
     },
     {
       "path": "counterfactual-replay.json",
@@ -29,13 +29,21 @@
     },
     {
       "path": "golden.json",
-      "sha256": "22d4b0bcbb394bddb4240e23c78f36d424986e446931ddf2931fc5e17d927e47"
+      "sha256": "efc420b587fc5715dd1bacdbc2257c16341a3fd13d34437f347ca7bf3a12d82e"
+    },
+    {
+      "path": "runs/orch-install-catalog-repair-20260825/generations/12c115412192ebaf6457e6cabdbeeb49d6b9a917453beb159535c40e9d70057f.sealed.json",
+      "sha256": "3940b50217920dc3c04a2464f7263486397c2190cb8021489ca0f561692f690b"
+    },
+    {
+      "path": "runs/orch-install-catalog-repair-20260825/generations/12c115412192ebaf6457e6cabdbeeb49d6b9a917453beb159535c40e9d70057f.validated.json",
+      "sha256": "1d9547ce0066e5ef317c998328972a49c211201992323bbba96f9b63363ebcfd"
     }
   ],
   "fixed_inputs": [
     {
       "path": "inputs/tickets/orch-install-catalog-diagnosis-20260825/investigate.md",
-      "sha256": "e0639da655d57a48b49236df3d5e554b16de8adbc7ed97bc063d340fa094db76",
+      "sha256": "78c514153fbff067f11b7048725bab39c2c7bff174f900219fcb2f741b09443c",
       "result_section_sha256": "625ca8aaa7a02c5d41fa1af42b9e605ad336097beadf229d5ff5886eaa496b9e"
     },
     {

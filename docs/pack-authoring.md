@@ -16,10 +16,9 @@ what each step feeds the next.
 2. Workspace second — the signature's `workspace` cell, which
    [contracts/pack-signature.md](../contracts/pack-signature.md)
    defines. Every other cell is expressed in those semantics.
-3. Oracle policy third: the exact checks with their classes.
-   Deterministic rows shape the executor's unit loop; each judged
-   dimension owes a craft term, or fresh judges re-invent it per
-   verdict.
+3. Evidence third: the artifact identities, observations, captures, sources,
+   or executable checks appropriate to the domain. These describe what can
+   demonstrate Goal without prescribing a ticket's proof methods.
 4. Craft fourth, from the debts step 3 created. Check each term
    against the T0 contracts and
    [docs/vocabulary.md](vocabulary.md) before keeping it — a
@@ -28,9 +27,8 @@ what each step feeds the next.
 6. Executor and lens sixth: bind an existing instance when its
    contract already matches; write a new one only when the unit loop
    genuinely differs, named by its method.
-7. Required spec fields last — they fall out of the cells above, and
-   every command an oracle row names must arrive through a spec field.
-   Then the description, in the packs' shared idiom, ending in its
+7. Required spec fields last — they fall out of the cells above. Then the
+   description, in the packs' shared idiom, ending in its
    "Stamp when …" sentence.
 
 Close with `orch-build`'s admission.

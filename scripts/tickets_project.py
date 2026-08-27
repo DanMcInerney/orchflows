@@ -33,22 +33,17 @@ except ImportError:
     import state_root
 if __package__:
     from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
-    from .tickets_inputs import parse_input_records
     from .tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
-    from .tickets_admission import is_v1, is_v2
     from .tickets_context import graded_admission
     from .tickets_packet import _claim_is_stale
     from .tickets_transitions import refusal
 else:
     from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
-    from tickets_inputs import parse_input_records
     from tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
-    from tickets_admission import is_v1, is_v2
     from tickets_context import graded_admission
     from tickets_packet import _claim_is_stale
     from tickets_transitions import refusal
 CLAIM_USAGE = 'claim <run> <id> --by <name>'
-TARGET_REPOSITORY_INPUT = 'target-repository'
 CLAIM_REMEDY = 'Claim it from a workspace of {theirs}'
 TERMINAL_REMEDY = 'Record it from a workspace of {theirs}'
 CREATE_REMEDY = 'Use a different run id, or write from a workspace of {theirs}'
@@ -114,26 +109,13 @@ def _root_ticket_text(run: str):
             return text
     return None
 def root_ticket_project(run: str):
-    """The project the run's root ticket's workspace names, or ``None``.
+    """Return no semantic override; issuance records the writer's project.
 
-    The cut names its workspace in one place -- the ``target-repository``
-    fixed input -- and that is the fact this reads.  It is the root
-    ticket's and no other's: a unit inherits the same input, but a run
-    that disagreed with itself would then be attributed by whichever unit
-    sorted first, which is the arbitrariness this replaces.  A root that
-    names nothing returns ``None``, and naming nothing is not an error:
-    it leaves the attribution where it was rather than inventing one.
+    Context is intentionally unstructured and cannot be promoted into
+    system authority. The run identity written at issuance is therefore
+    the sole project binding.
     """
-    text = _root_ticket_text(run)
-    if text is None:
-        return None
-    for record in parse_input_records(text)['records']:
-        if record.get('name') != TARGET_REPOSITORY_INPUT or record.get('type') != 'literal':
-            continue
-        value = record.get('value')
-        if not isinstance(value, str) or not value.strip():
-            return None
-        return _project_at(value)
+    del run
     return None
 def recorded_project(run: str):
     """The project a run's identity records, or ``None`` when it records none.
@@ -236,7 +218,7 @@ def _cmd_claim(rest):
     if prior_text is not None:
         data = _parse_frontmatter(prior_text)
         status = str(data.get('status') or '')
-        if (is_v1(data) or is_v2(data)) and status in ('pending', 'ready'):
+        if status in ('pending', 'ready'):
             grade = graded_admission(ticket_id, prior_text, snapshot, run)
             if grade['findings']:
                 return {'error': 'admission refused', 'findings': grade['findings']}
@@ -248,7 +230,7 @@ def _cmd_claim(rest):
 def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
     """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
     live claim, landing only while that exact snapshot still matches, so a moved ticket,
-    dependency, or cohort loses the race instead of claiming on a stale receipt. `ready`
+    dependency loses the race instead of claiming on a stale receipt. `ready`
     grades on the same `graded_admission` and swaps the same way in `_admit_ready_cas`.
 
     The project binding is graded before any of that, and before the ticket
@@ -280,7 +262,7 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
             return failure
     data = _parse_frontmatter(prior_text)
     status = str(data.get('status') or '')
-    if (is_v1(data) or is_v2(data)) and status in ('pending', 'ready'):
+    if status in ('pending', 'ready'):
         _run_snapshot, _snapshot_matches = _snapshots()
         if snapshot is None:
             snapshot, failures = _run_snapshot(ticket_path.parent)
@@ -291,13 +273,9 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
         if grade['findings']:
             return {'error': 'admission refused', 'findings': grade['findings']}
         if not _snapshot_matches(ticket_path.parent, snapshot, grade.get('snapshot_ids') or [ticket_id]):
-            return {'error': 'ticket, dependencies, or cohort changed since admission grade; lost the claim race'}
-    elif status == 'pending':
-        return {'error': refusal('pending legacy ticket requires `recut` before v1 admission', 'recut', 'pending')}
-    elif (is_v1(data) or is_v2(data)) and status == 'claimed':
-        return {'error': refusal('a v1 claim is live on this ticket', 'claim', 'claimed')}
-    elif not (is_v1(data) or is_v2(data)) and status in ('ready', 'claimed'):
-        return {'error': refusal(f'{status} legacy ticket requires `recut` before v1 admission or reclaim', 'recut', status)}
+            return {'error': 'ticket or dependencies changed since admission grade; lost the claim race'}
+    elif status == 'claimed':
+        return {'error': refusal('a claim is live on this ticket', 'claim', 'claimed')}
     now = datetime.now(timezone.utc)
     result = _do_claim(ticket_path, prior_text, claimed_by, now, grade['receipt'] if grade is not None else None)
     if 'error' in result:

@@ -1,6 +1,6 @@
 ---
 name: orch-content-pack
-description: Domain pack for prose read by humans — judged oracles, document workspace. Stamp when the deliverable is a document.
+description: Domain pack for prose read by humans — document evidence and workspace. Stamp when the deliverable is a document.
 ---
 
 Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
@@ -11,7 +11,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | executor | `orch-draft` |
 | assembly | `orch-edit` |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
-| oracle_policy | [references/oracles.md](references/oracles.md) |
-| workspace | document tree: `workspace.py start` returns a ticket-owned run directory and durable region receipt; `workspace.py check` re-derives that proof and the document revision; write scopes are outline slots; ticket adapter: `document-tree`; ownership selector: `heading` outline slots at a pinned document revision; [rules/topology.md](../../rules/topology.md) §§8–§11 |
+| evidence | [references/evidence.md](references/evidence.md) |
+| workspace | document tree: identities are document revisions; use one direct owner for a whole artifact and slice only genuinely decomposed outcomes; Suggested files are non-binding; integration compares actual candidate changes and resolves overlap; ticket adapter: `document-tree`; assignment metadata: root_generation, cut_generation, assignment_seal |
 | required_spec_fields | target directory; audience; voice contract; length budget; citation policy |
 | craft | [references/craft.md](references/craft.md) |

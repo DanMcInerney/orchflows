@@ -140,19 +140,15 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # Non-navigation occurrences and not-yet-materialized UI design paths. Keys
 # are exact source lines so another occurrence is still graded.
 DOC_PATH_EXEMPT_SITES = frozenset({
-    ("rules/topology.md", 47, "tests/pins.json"),
-    ("contracts/pack-signature.md", 56, "tools/validate.py"),
-    ("contracts/pack-signature.md", 69, "tests/pins.json"),
-    ("contracts/work-item.md", 143, "tests/pins.json"),
-    ("contracts/work-item.md", 194, "tools/validate.py"),
-    ("docs/ui/modularization.md", 17, "app/catalog.ts"),
+    ("contracts/pack-signature.md", 54, "tools/validate.py"),
+    ("contracts/pack-signature.md", 67, "tests/pins.json"),
     ("docs/ui/modularization.md", 7, "web/src/api/client.ts"),
     ("docs/ui/modularization.md", 7, "web/src/api/schema.ts"),
     ("docs/ui/modularization.md", 7, "web/src/app/registry.ts"),
     ("docs/ui/modularization.md", 7, "web/src/feed.ts"),
     ("docs/ui/modularization.md", 7, "web/src/state/location.ts"),
+    ("docs/ui/modularization.md", 17, "app/catalog.ts"),
     ("docs/ui/modularization.md", 55, "web/src/state/location.ts"),
-    ("docs/ui/platform.md", 49, "web/dist"),
     ("docs/ui/workflows.md", 65, "web/src/api/schema.ts"),
     ("docs/ui/workflows.md", 71, "web/src/state/location.ts"),
     ("docs/ui/workflows.md", 73, "web/src/api/schema.ts"),

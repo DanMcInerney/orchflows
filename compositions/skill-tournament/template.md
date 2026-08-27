@@ -17,7 +17,7 @@ only their placeholders.
 
 Instantiate with all seven placeholders: `skill`, the fixed skill
 identity being evolved; `surface`, its declared mutable surface, which
-is `01-campaign`'s write scope and the candidates'; `policy`, the frozen
+belongs to `01-campaign` and the candidates; `policy`, the frozen
 search policy, promotion rule and margin; `bound`, the campaign's
 budget, which the benchmark's own allocation is never drawn from; and
 `sources`, `rigor` and `pack`, which the nested benchmaker manifest

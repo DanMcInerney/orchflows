@@ -129,12 +129,14 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertTrue(any("contracts/nested/probe.md" in line for line in diag.lines()))
 
     def test_an_exemption_does_not_cover_a_second_occurrence(self):
+        where, line_number, token = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
         root = self._tree("No pointer here.\n")
-        topology = root / "rules" / "topology.md"
-        topology.write_text(
-            ("\n" * 46)
-            + "The roster names `tests/pins.json`.\n"
-            "A new pointer names `tests/pins.json`.\n",
+        source = root / where
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            ("\n" * (line_number - 1))
+            + f"The roster names `{token}`.\n"
+            + f"A new pointer names `{token}`.\n",
             encoding="utf-8",
         )
         saved = validate.ROOT
@@ -144,7 +146,7 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
             validate.validate_documented_paths(diag)
         finally:
             validate.ROOT = saved
-        findings = [line for line in diag.lines() if "tests/pins.json" in line]
+        findings = [line for line in diag.lines() if token in line]
         self.assertEqual(1, len(findings), findings)
 
     def test_a_tree_without_the_marker_is_skipped_not_failed(self):
@@ -161,14 +163,7 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertTrue(any(line.startswith("WARN") for line in diag.lines()))
 
     def test_the_exemption_is_one_live_site_and_not_a_blanket(self):
-        """An exemption that outlives its sentence is a hole. Each pair names
-        a file that still carries that token, and `tests/pins.json` erroring
-        in the fixture above is the proof the pass is per-file, not per-name.
-
-        Per-file is the honest word: the key is (file, token), so this guard
-        catches the exemption outliving its sentence entirely, and does not
-        catch a second sentence in the same file reusing the token.
-        """
+        """Every exemption names one still-live source line and token."""
 
         for where, line_number, token in validate.DOC_PATH_EXEMPT_SITES:
             source = _ROOT / where

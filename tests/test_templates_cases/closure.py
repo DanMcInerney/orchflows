@@ -11,6 +11,7 @@ from tests.test_templates_cases.shape import (
     GOOD_STUBS,
     ROOT,
     _TemplateTree,
+    literal_input,
     stub_md,
     template_md,
     tickets,
@@ -20,7 +21,7 @@ from tests.test_templates_cases.shape import (
 class TestTemplateBudgets(_TemplateTree):
     """rules/token-economy.md §11: a stub's instruction and a manifest are
     every-dispatch and every-run units with word ceilings; a stub's fixed
-    inputs are identities and never count."""
+    input records never count."""
 
     EXCLUDED_ACTIONS = (
         "excluded_actions:\n  - adding a third-party dependency\n"
@@ -70,7 +71,10 @@ class TestTemplateBudgets(_TemplateTree):
     def test_fixed_inputs_do_not_count_toward_the_stub_budget(self):
         stubs = dict(GOOD_STUBS)
         text = stub_md("repair", depends="[diagnose]")
-        text = text.replace("- the defect report\n", "- " + " ".join(["identity"] * 400) + "\n")
+        text = text.replace(
+            literal_input("defect", "the defect report"),
+            literal_input("evidence", " ".join(["identity"] * 400)),
+        )
         stubs["repair"] = text
         self.write_template("demo", stubs=stubs)
         result, errors = self.diagnostics()
@@ -83,7 +87,7 @@ class TestTemplateBudgets(_TemplateTree):
         self.assertIn("manifest has", error)
 
 
-DEFAULT_INPUTS = "- the defect report\n"
+DEFAULT_INPUTS = literal_input("defect", "the defect report")
 DEFAULT_RETURNS = "status; result identity; verification\n"
 
 
@@ -99,9 +103,9 @@ def closure_stub(stub_id, inputs, returns=None, depends="[]", criteria=(GOOD_CRI
 
 
 class TestProducerConsumerClosure(_TemplateTree):
-    """contracts/work-item.md: a stub's `## Fixed inputs` name evidence by
-    identity, and inside a template the identities on offer are what the
-    stubs before it return plus what instantiation supplies. A stub reading
+    """contracts/work-item.md: a stub's criteria may read an upstream
+    Result, and inside a template the identities on offer are what the stubs
+    before it return plus what instantiation supplies. A stub reading
     `<other>'s ## Result` for something that stub's `## Return fields` never
     names is a thread with a producer at one end and nothing at the other --
     eleven of eighteen composition threads in the 2026-08-16 review broke
@@ -110,7 +114,7 @@ class TestProducerConsumerClosure(_TemplateTree):
 
     PRODUCER = closure_stub(
         "00",
-        "- the failing command, by identity\n",
+        literal_input("failure", "the failing command"),
         returns="status; result -- the reproduction identity; verification\n",
     )
 
@@ -126,8 +130,13 @@ class TestProducerConsumerClosure(_TemplateTree):
         directory = self._template(
             closure_stub(
                 "01",
-                "- 00's `## Result` -- the promotion rule and the margin\n",
+                DEFAULT_INPUTS,
                 depends="[00]",
+                criteria=(
+                    "the repair holds | oracle: the promotion rule and the margin "
+                    "from 00's Result | oracle_class: deterministic | "
+                    "provenance: pre-existing",
+                ),
             )
         )
         messages = self.messages(directory)
@@ -141,8 +150,13 @@ class TestProducerConsumerClosure(_TemplateTree):
         directory = self._template(
             closure_stub(
                 "01",
-                "- 00's `## Result` -- the reproduction identity\n",
+                inputs=DEFAULT_INPUTS,
                 depends="[00]",
+                criteria=(
+                    "the repair holds | oracle: the reproduction identity from "
+                    "00's Result | oracle_class: deterministic | "
+                    "provenance: pre-existing",
+                ),
             )
         )
         self.assertEqual([], self.messages(directory))
@@ -154,7 +168,7 @@ class TestProducerConsumerClosure(_TemplateTree):
         directory = self._template(
             closure_stub(
                 "01",
-                "- 00's `## Result` -- the reproduction identity\n",
+                DEFAULT_INPUTS,
                 depends="[00]",
                 criteria=(
                     "the repair holds | oracle: the promotion rule from 00's "
@@ -170,8 +184,13 @@ class TestProducerConsumerClosure(_TemplateTree):
         directory = self._template(
             closure_stub(
                 "01",
-                "- 99's `## Result` -- the reproduction identity\n",
                 depends="[00]",
+                inputs=DEFAULT_INPUTS,
+                criteria=(
+                    "the repair holds | oracle: the reproduction identity from "
+                    "99's Result | oracle_class: deterministic | "
+                    "provenance: pre-existing",
+                ),
             )
         )
         messages = self.messages(directory)
@@ -184,7 +203,13 @@ class TestProducerConsumerClosure(_TemplateTree):
 
         directory = self._template(
             closure_stub(
-                "01", "- 00's `## Result` -- the reproduction identity\n"
+                "01",
+                DEFAULT_INPUTS,
+                criteria=(
+                    "the repair holds | oracle: the reproduction identity from "
+                    "00's Result | oracle_class: deterministic | "
+                    "provenance: pre-existing",
+                ),
             ),
             extra={"02": closure_stub("02", DEFAULT_INPUTS, depends="[00, 01]")},
         )
@@ -194,7 +219,7 @@ class TestProducerConsumerClosure(_TemplateTree):
         self.assertIn("00", messages[0])
 
     def test_an_instantiation_supplied_identity_keeps_closure(self):
-        """A `{{placeholder}}` read off an upstream Result is produced by
+        """A canonical literal holding `{{placeholder}}` is produced by
         the manifest, not by a stub; whether it is declared is
         tools/validate.py's, so nothing here reports it twice -- and the
         instantiator, which sees the filled value, agrees with the
@@ -203,7 +228,7 @@ class TestProducerConsumerClosure(_TemplateTree):
         directory = self._template(
             closure_stub(
                 "01",
-                "- 00's `## Result` -- {{target}}, the reproduction identity\n",
+                literal_input("target", "{{target}}"),
                 depends="[00]",
             )
         )
@@ -222,8 +247,13 @@ class TestProducerConsumerClosure(_TemplateTree):
         directory = self._template(
             closure_stub(
                 "01",
-                "- 00's `## Result` -- the promotion rule for {{target}}\n",
                 depends="[00]",
+                inputs=literal_input("target", "{{target}}"),
+                criteria=(
+                    "the repair holds | oracle: the promotion rule for {{target}} "
+                    "from 00's Result | oracle_class: deterministic | "
+                    "provenance: pre-existing",
+                ),
             )
         )
         messages = self.messages(directory)
@@ -241,7 +271,13 @@ class TestProducerConsumerClosure(_TemplateTree):
     def test_the_validator_reports_the_broken_closure_as_one_error(self):
         self._template(
             closure_stub(
-                "01", "- 00's `## Result` -- the promotion rule\n", depends="[00]"
+                "01",
+                DEFAULT_INPUTS,
+                depends="[00]",
+                criteria=(
+                    "the repair holds | oracle: the promotion rule from 00's "
+                    "Result | oracle_class: deterministic | provenance: pre-existing",
+                ),
             )
         )
         error = self.assert_one_error("compositions/demo/01.md")
@@ -250,7 +286,13 @@ class TestProducerConsumerClosure(_TemplateTree):
     def test_instantiate_refuses_a_template_whose_closure_is_broken(self):
         directory = self._template(
             closure_stub(
-                "01", "- 00's `## Result` -- the promotion rule\n", depends="[00]"
+                "01",
+                DEFAULT_INPUTS,
+                depends="[00]",
+                criteria=(
+                    "the repair holds | oracle: the promotion rule from 00's "
+                    "Result | oracle_class: deterministic | provenance: pre-existing",
+                ),
             )
         )
         with _temporary_sink() as sink:

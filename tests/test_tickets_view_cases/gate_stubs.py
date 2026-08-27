@@ -22,7 +22,7 @@ class GateStubsTest(unittest.TestCase):
     def make(self, sink: Path, units=("R.01", "R.02"), pack: str = "") -> Path:
         tickets = {
             "R": ticket(
-                "R", status="claimed", executor="orch-decompose",
+                "R", status="pending", claimed_by="", executor="orch-decompose",
                 objective="the whole delivery lands",
                 criterion="the suite exits 0 | oracle: `python tools/run_tests.py` "
                 "| oracle_class: deterministic | provenance: pre-existing",
@@ -30,8 +30,21 @@ class GateStubsTest(unittest.TestCase):
             )
         }
         for unit in units:
-            tickets[unit] = ticket(unit, deps="[R]", objective=f"unit {unit}")
-        return make_run(sink, tickets)
+            tickets[unit] = ticket(
+                unit, status="pending", claimed_by="", deps="[R]",
+                objective=f"unit {unit}",
+            )
+        run_dir = make_run(sink, tickets)
+        stamped = run_cmd("stamp-generation", "testrun", "R")
+        self.assertNotIn("error", stamped, stamped)
+        validated = run_cmd("draft-validate", "testrun", "R")
+        self.assertNotIn("error", validated, validated)
+        sealed = run_cmd(
+            "seal", "testrun", "R", "--cut-generation",
+            validated["draft_validation"]["cut_generation"],
+        )
+        self.assertNotIn("error", sealed, sealed)
+        return run_dir
 
     def gate(self, *extra):
         return run_cmd(
