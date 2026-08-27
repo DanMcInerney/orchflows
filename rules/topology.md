@@ -21,11 +21,15 @@
    that same gate.
 6. A pack belongs to a ticket, not a run. Incompatible workspace semantics use
    successor roots rather than pretending to share a candidate.
-7. Multi-run work links successor roots by durable accepted results. Sequential
-   successors open after dependencies complete; parallel successors are joined
-   by a later integrator.
+7. Multi-run work links successor roots by durable accepted results. A semantic
+   successor opens only after the accepted predecessor result identity resolves
+   and cites it in the successor root's Context. The predecessor state is not
+   rewritten. Sequential successors open after dependencies complete; parallel
+   successors are joined by a later integrator.
 8. An assignment advances only through draft, validated, and sealed. Validation
    records one exact snapshot; compare-and-swap sealing refuses changed bytes.
+   Within a physical run the `root_generation` ordinal is `1`; cut generations
+   may advance only for deterministic correction before seal.
 9. Public generation references are `root_generation`, `cut_generation`, and
    `assignment_seal`. Digests cover Goal, Context, optional Suggested files,
    dependencies, exact executor binding, and necessary system identity; they

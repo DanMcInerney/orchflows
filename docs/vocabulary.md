@@ -94,9 +94,11 @@ that needs a different meaning needs a different word.
   caller freezes and which deterministic corrections a decomposer may make;
   a correction without deterministic equivalence is semantic and suspends
   for the caller.
-- **assignment generation** — one root or cut assignment fixed by a content
-  digest, named by `root_generation` or `cut_generation`; identity and
-  lifecycle law are `rules/topology.md`'s.
+- **assignment generation** — one assignment fixed by a content digest: the
+  run-local root identity named by `root_generation`, always ordinal 1, or a
+  pre-seal cut draft named by `cut_generation`. Identity and lifecycle law are
+  `rules/topology.md`'s; a sealed semantic change uses a successor run rather
+  than a later root ordinal.
 - **exemplar** — an artifact a root ticket's `## Context` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
@@ -116,8 +118,8 @@ that needs a different meaning needs a different word.
   any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
   any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
   `<id>.gate.verify` completes. A successor root lives in a successor run
-  opened after this root's result identity resolves and cites that identity
-  in its Context; the predecessor run's durable `successors.md`
+  opened after the accepted predecessor result identity resolves and cites
+  that identity in its Context; the predecessor run's durable `successors.md`
   names the planned root until `orch-spec` materializes it on the frontier's
   completion trigger.
 - **gate-only cut** — a decomposed root cut with zero unit tickets because its
@@ -209,8 +211,8 @@ composition).
   dispatch is a ticket the dispatcher does not persist.
 - **assignment seal** — the proof that an exact validated assignment digest
   is immutable for dispatch. A later cut generation may add or change members
-  under the same immutable root semantics; changing sealed root semantics
-  requires a new root ticket under `rules/delegation.md`.
+  under the same immutable root semantics; changing sealed semantic-root fields
+  follows the successor-run lifecycle in `rules/delegation.md`.
 - **dispatch attempt** — one fenced execution of a sealed ticket under
   `orchflows.dispatch.v1`, identified by `dispatch_id` and an absolute lease;
   its ticket record owns opening, committed-record replay, retirement,

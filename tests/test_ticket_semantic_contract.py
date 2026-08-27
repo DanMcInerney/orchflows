@@ -601,6 +601,50 @@ class SemanticTicketContractTest(unittest.TestCase):
             findings.extend(f"{path.relative_to(ROOT)}:{token}" for token in forbidden if token in text)
         self.assertEqual([], findings)
 
+        evolution_requirements = {
+            ROOT / "contracts" / "work-item.md": (
+                "successor run", "accepted predecessor result identity",
+                "not rewritten",
+            ),
+            ROOT / "rules" / "topology.md": (
+                "`root_generation` ordinal is `1`", "cut generations",
+                "accepted predecessor result identity", "not rewritten",
+            ),
+            ROOT / "rules" / "delegation.md": (
+                "semantic-root change", "successor run",
+                "accepted predecessor result identity",
+            ),
+            ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md": (
+                "semantic-root change", "successor run",
+                "accepted predecessor result identity", "unsupported",
+            ),
+            ROOT / "docs" / "vocabulary.md": (
+                "run-local root identity", "successor run",
+                "accepted predecessor result identity",
+            ),
+        }
+        for path, required in evolution_requirements.items():
+            text = " ".join(path.read_text(encoding="utf-8").split())
+            for phrase in required:
+                with self.subTest(path=path.relative_to(ROOT), phrase=phrase):
+                    self.assertIn(phrase, text)
+        self.assertNotIn(
+            "post-seal assignment change is a new generation",
+            " ".join(
+                (ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md")
+                .read_text(encoding="utf-8")
+                .split()
+            ),
+        )
+        self.assertNotIn(
+            "changing sealed assignment fields creates a new assignment generation",
+            " ".join(
+                (ROOT / "docs" / "vocabulary.md")
+                .read_text(encoding="utf-8")
+                .split()
+            ),
+        )
+
     def test_result_contract_binds_records_to_the_current_claim_writer(self):
         result_contract = (ROOT / "contracts" / "result.md").read_text(encoding="utf-8")
         work_item = (ROOT / "contracts" / "work-item.md").read_text(encoding="utf-8")

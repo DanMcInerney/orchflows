@@ -108,6 +108,12 @@ A root is the ticket named by a `root_generation`. A direct root may bind any
 lawful registered executor and owns the whole artifact. A decomposed root binds
 `orch-decompose`; every member and gate ticket uses this same semantic shape.
 
+Each physical run has one root identity. Its `root_generation` uses ordinal
+`1`; only cut drafts can advance before seal. A semantic change after seal is
+not an in-run amendment: after the accepted predecessor result identity
+resolves, it opens a successor run whose root `## Context` cites that identity.
+The predecessor ticket and run remain historical state and are not rewritten.
+
 Decomposition may suggest files, but it does not grant exclusive predicted
 scope and parallel tickets need not predict disjoint paths. Isolated candidates
 receive repository/workspace write authority by default. At integration, the
