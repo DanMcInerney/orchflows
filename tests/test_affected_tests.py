@@ -275,8 +275,8 @@ class TestLiveFacadeMappings(unittest.TestCase):
     def test_the_lint_owner_selects_the_current_protocol_suite(self):
         self.assertIn("tests.test_ticket_protocol", self.for_lint["modules"])
 
-    def test_the_issue_owner_selects_its_own_admission_suite(self):
-        self.assertIn("tests.test_tickets_issue", self.for_issue["modules"])
+    def test_the_issue_owner_selects_the_current_admission_suite(self):
+        self.assertIn("tests.test_ticket_semantic_contract", self.for_issue["modules"])
 
     def test_neither_owner_selects_the_whole_suite(self):
         # Both reach the ticket facade, so both are wide; "wide" is not "all",
