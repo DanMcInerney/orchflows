@@ -327,8 +327,22 @@ def _toml_scalar(value) -> str:
     return json.dumps(value)
 
 
+def _limit_block_owns(spec: _LimitBlock, line: str) -> bool:
+    """Whether this block's own render wrote ``line`` -- its keys bare under
+    the table, or dotted above the first one. Nothing else inside the markers
+    is the installer's, whoever put it there."""
+
+    return bool(spec.limit_re.match(line) or spec.dotted_limit_re.match(line))
+
+
+def _without_limit_block(text: str, spec: _LimitBlock) -> str:
+    return without_owned_block(
+        text, spec.start, spec.end, lambda line: _limit_block_owns(spec, line)
+    )
+
+
 def _render_limit_block(text: str, spec: _LimitBlock, toml_module) -> tuple[str, dict]:
-    cleaned = without_marked_block(text, spec.start, spec.end)
+    cleaned = _without_limit_block(text, spec)
     if toml_module is not None:
         try:
             parsed = toml_module.loads(cleaned)
@@ -431,3 +445,11 @@ def render_grok_subagent_limits(text: str, toml_module=tomllib) -> tuple[str, di
     so these three limits have no project-local equivalent to install."""
 
     return _render_limit_block(text, _GROK_LIMIT_BLOCK, toml_module)
+
+
+def without_grok_subagent_limits(text: str) -> str:
+    """The uninstall side of ``render_grok_subagent_limits``: the three keys
+    go, and whatever grok appended between the markers stays.
+    ``without_owned_block`` carries why the markers alone cannot say."""
+
+    return _without_limit_block(text, _GROK_LIMIT_BLOCK)

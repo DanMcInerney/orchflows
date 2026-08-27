@@ -9,8 +9,6 @@ from .application import _load_json, _prune_empty_dirs, _sha256_file
 from .foundation import (
     AUTO_REMOVE_KINDS,
     GROK_AUTO_REMOVE_KINDS,
-    GROK_LIMITS_END,
-    GROK_LIMITS_START,
     _claude_scope_home,
     _claude_user_home,
     _codex_user_home,
@@ -22,7 +20,7 @@ from .foundation import (
     _require_project_root,
     _scope_home,
 )
-from .managed_text import without_marked_block
+from .managed_text import without_grok_subagent_limits
 
 # --- uninstall ---------------------------------------------------------
 
@@ -52,10 +50,12 @@ _REMOVAL_NOUNS = {
 def _grok_config_removal(path: Path, dry_run: bool) -> tuple[bool, str]:
     """Lift the managed ``[subagents]`` block back out of the Grok config.
 
-    The file is the user's; only the marked block inside it is the
-    installer's, so the removal here is the merge run backwards rather than a
-    delete. A file left holding nothing but whitespace held nothing but that
-    block, so it goes. Returns whether the entry is settled, and its action.
+    The file is the user's and the markers are not a deed to what sits between
+    them -- grok appends its own tables in there. Only the three keys the
+    installer wrote come out, so the removal is the merge run backwards rather
+    than a delete. A file left holding nothing but whitespace held nothing but
+    those keys, so it goes. Returns whether the entry is settled, and its
+    action.
     """
 
     if not path.is_file():
@@ -65,7 +65,7 @@ def _grok_config_removal(path: Path, dry_run: bool) -> tuple[bool, str]:
     except OSError as error:
         return False, f"review Grok config; could not read it: {error}; not changed"
     try:
-        remainder = without_marked_block(text, GROK_LIMITS_START, GROK_LIMITS_END)
+        remainder = without_grok_subagent_limits(text)
     except ValueError as error:
         return False, f"review Grok config; {error}; not changed"
     if remainder == text:
@@ -191,9 +191,9 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             continue
 
         # The one entry whose removal is not a delete. It runs ahead of the
-        # hash gate below on purpose: the block is found by its own markers,
-        # so lifting it out stays exact however much of the file around it
-        # the user has changed since the install wrote it.
+        # hash gate below on purpose: what comes out is keyed on the lines the
+        # installer wrote, so it stays exact however much of the file -- or of
+        # the marked block itself -- has changed since the install wrote it.
         if kind == "grok-config":
             settled, action = _grok_config_removal(path, dry_run)
             bucket = skill_actions if settled else manual_actions

@@ -331,3 +331,76 @@ class TestConservativeUninstall(unittest.TestCase):
                 self.assertFalse(rules.exists())
                 self.assertTrue(mine.is_file())
                 self.assertEqual(2, len(report["skill_actions"]))
+
+    def test_uninstall_keeps_a_table_grok_appended_inside_the_managed_block(self):
+        """The removal is keyed on the installer's own lines, not on the span.
+
+        Within 0.2s of any subcommand grok adds ``[marketplace]`` to its
+        ``config.toml`` -- and a TOML editor appending a table at the end of
+        the document body lands it *ahead of* the trailing END comment, which
+        puts it inside the marked span. This plants exactly that file, since
+        no test here may execute ``grok.exe``. The three installer keys go and
+        grok's table stays, so the file stays too.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with isolated_grok_home(root) as grok_home:
+                config = grok_home / "config.toml"
+                config.write_text(
+                    "# BEGIN ORCHFLOWS SUBAGENT LIMITS\n"
+                    "subagents.max_concurrent = 20\n"
+                    "subagents.max_depth = 4\n"
+                    'subagents.limit_behavior = "queue"\n'
+                    "[marketplace]\n"
+                    "default_skills_installs_purged = true\n"
+                    "# END ORCHFLOWS SUBAGENT LIMITS\n",
+                    encoding="utf-8",
+                )
+                planted = config.read_text(encoding="utf-8")
+                receipt_path = root / ".orchflows" / "receipt.json"
+                receipt_path.parent.mkdir(parents=True)
+                receipt_path.write_text(
+                    json.dumps(
+                        {
+                            "files": [
+                                {
+                                    "path": str(config),
+                                    "kind": "grok-config",
+                                    "install_action": "created",
+                                    "sha256": digest(config),
+                                }
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                with patch.object(install.Path, "home", return_value=root):
+                    dry = install.run_uninstall("user", None, dry_run=True)
+                    self.assertEqual(planted, config.read_text(encoding="utf-8"))
+                    report = install.run_uninstall("user", None, dry_run=False)
+
+                for entry in dry["skill_actions"] + report["skill_actions"]:
+                    self.assertIn("managed subagent limits block", entry["action"])
+                # The receipt line is the only manual one left; the config is
+                # not among them.
+                self.assertEqual([str(receipt_path)], [e["path"] for e in report["manual_actions"]])
+
+                self.assertTrue(config.is_file())
+                remaining = config.read_text(encoding="utf-8")
+                self.assertIn("[marketplace]", remaining)
+                self.assertIn("default_skills_installs_purged = true", remaining)
+                for gone in (
+                    "# BEGIN ORCHFLOWS SUBAGENT LIMITS",
+                    "# END ORCHFLOWS SUBAGENT LIMITS",
+                    "max_concurrent",
+                    "max_depth",
+                    "limit_behavior",
+                ):
+                    self.assertNotIn(gone, remaining)
+                if foundation.tomllib is not None:
+                    parsed = foundation.tomllib.loads(remaining)
+                    self.assertEqual(
+                        {"default_skills_installs_purged": True}, parsed["marketplace"]
+                    )
