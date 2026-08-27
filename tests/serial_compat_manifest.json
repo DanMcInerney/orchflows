@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1768,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -193,6 +193,15 @@
    "test_installer.TestInstallReceipt.test_shipped_claude_bindings_are_the_documented_defaults",
    "test_installer.TestInstallReceipt.test_the_printed_plan_and_summary_report_the_grok_surface",
    "test_installer.TestInstallReceipt.test_unowned_role_profile_is_kept_and_the_install_proceeds",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_a_changed_codex_claim_still_fails_at_every_rewrap",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_a_restated_stdlib_claim_still_fails_however_it_is_spelled",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_a_true_sentence_about_the_stdlib_is_not_the_killed_claim",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_no_test_in_the_tree_asserts_over_the_raw_installer_docstring",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_reading_the_opening_sentence_as_a_line_loses_its_tail",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_codex_claims_survive_every_lawful_rewrap",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_enumeration_names_both_shapes_the_two_broken_sessions_had",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_opening_sentence_keeps_every_host_at_every_rewrap",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_stdlib_claim_stays_absent_at_every_rewrap",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_duplicate_legacy_begin_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_begin_without_end_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_end_without_begin_raises",
@@ -1762,7 +1771,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "faa6f2b20ddb505e08adf8a229020c9399c5e2ea0413acbf16bf61ebcb5d8757"
  },
  "mutation_owners": [
   {

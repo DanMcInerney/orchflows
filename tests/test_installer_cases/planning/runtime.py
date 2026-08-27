@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+
 from ..support import *  # noqa: F403
 
 
@@ -161,10 +163,8 @@ class TestClaudeAdapterSet(unittest.TestCase):
         )
 
     def test_installer_description_says_codex_redirects_every_canonical_name(self):
-        description = install.__doc__ or ""
-        _, separator, codex_description = description.partition("- Codex ")
-        self.assertTrue(separator, "Codex description paragraph is missing")
-        codex_description = codex_description.partition("\n\n")[0]
+        codex_description = doc_bullet(install.__doc__, "- Codex ")
+        self.assertTrue(codex_description, "Codex description bullet is missing")
         self.assertIn("one exact redirect skill", codex_description)
         self.assertIn("per discovered canonical skill or composition", codex_description)
 
@@ -312,3 +312,173 @@ class TestClaudeAdapterSet(unittest.TestCase):
             + 2,
             install.plan_entry_count(with_grok),
         )
+
+
+class TestInstallerDescriptionSurvivesRewrap(unittest.TestCase):
+    """Every assertion over ``install.__doc__`` reads words, not wrap.
+
+    Three facts are pinned off that docstring: the Codex redirect claim
+    asserted above, the absence of the killed stdlib-only claim asserted in
+    ``planning/private_runtime.py``, and the host list its opening sentence
+    names. All three are prose pinned by substring, and where a line break
+    falls in prose is a fact about the source column limit rather than
+    about the installer -- so each is held here to the same docstring
+    reflowed at five column limits, and to the mutant that must still fail
+    it. 60 earns its place among those limits: it is the one that puts a
+    line break inside the summary's host list.
+
+    The negatives are anchored on something the docstring really says. A
+    normaliser that stripped its input to nothing would leave every
+    ``assertNotIn`` reading it green, which is the one way this whole class
+    could pass while checking nothing.
+    """
+
+    WIDTHS = (60, 66, 72, 78, 88)
+
+    def codex_bullet(self, docstring, width):
+        """What ``TestClaudeAdapterSet``'s Codex assertion reads, rewrapped."""
+
+        return doc_bullet(rewrapped_doc(docstring, width), "- Codex ")
+
+    def stdlib_claims(self, docstring, width):
+        """What ``RuntimeVenvTests``' stdlib assertion reads, rewrapped."""
+
+        return doc_claim(rewrapped_doc(docstring, width))
+
+    def test_the_codex_claims_survive_every_lawful_rewrap(self):
+        for width in self.WIDTHS:
+            with self.subTest(width=width):
+                codex = self.codex_bullet(install.__doc__, width)
+                self.assertIn("one exact redirect skill", codex)
+                self.assertIn("per discovered canonical skill or composition", codex)
+
+    def test_a_changed_codex_claim_still_fails_at_every_rewrap(self):
+        mutant = install.__doc__.replace(
+            "one exact redirect skill", "one shared redirect skill", 1
+        )
+        self.assertNotEqual(normalised_doc(install.__doc__), normalised_doc(mutant))
+        for width in self.WIDTHS:
+            with self.subTest(width=width):
+                self.assertNotIn(
+                    "one exact redirect skill", self.codex_bullet(mutant, width)
+                )
+
+    def test_the_stdlib_claim_stays_absent_at_every_rewrap(self):
+        """Anchored, because a negative assertion passes over empty text.
+
+        `doc_claim` could strip its input to nothing and every ``assertNotIn``
+        reading it would still report green. So each width is asked for a
+        phrase the docstring really carries before it is asked what it does
+        not carry.
+        """
+
+        for width in self.WIDTHS:
+            with self.subTest(width=width):
+                claims = self.stdlib_claims(install.__doc__, width)
+                self.assertIn("pathlib throughout, never symlinks", claims)
+                self.assertNotIn("stdlib only", claims)
+
+    def test_a_restated_stdlib_claim_still_fails_however_it_is_spelled(self):
+        for spelling in ("Stdlib-only", "stdlib-only", "Stdlib only"):
+            mutant = install.__doc__.replace(
+                "Cross-platform", spelling + ", cross-platform", 1
+            )
+            self.assertNotEqual(normalised_doc(install.__doc__), normalised_doc(mutant))
+            for width in self.WIDTHS:
+                with self.subTest(spelling=spelling, width=width):
+                    self.assertIn("stdlib only", self.stdlib_claims(mutant, width))
+
+    def test_a_true_sentence_about_the_stdlib_is_not_the_killed_claim(self):
+        """The negative discriminates, rather than refusing a word.
+
+        ``install.py`` really does import nothing outside the stdlib -- it
+        is the runtime it builds that carries pinned dependencies -- so a
+        docstring saying so must pass. An assertion that refused ``stdlib``
+        outright would be a wall around a true sentence.
+        """
+
+        true_sentence = install.__doc__.replace(
+            "Cross-platform",
+            "It imports only the stdlib and builds a runtime that does not."
+            " Cross-platform",
+            1,
+        )
+        for width in self.WIDTHS:
+            with self.subTest(width=width):
+                self.assertNotIn(
+                    "stdlib only", self.stdlib_claims(true_sentence, width)
+                )
+
+    def test_the_opening_sentence_keeps_every_host_at_every_rewrap(self):
+        """The summary's host list, which ``splitlines()[0]`` breaks on reflow.
+
+        Read as a line, the sentence is whole only while the wrap agrees.
+        At 60 columns the real docstring's summary breaks after ``from``,
+        so a reader that stops at the line keeps all three hosts but loses
+        the clause that ends them -- and an extractor delimiting on ``
+        from `` then hands back ``Grok Build from``. The literal triple
+        anchors this, so a `doc_sentence` that parsed nothing cannot pass
+        on empty text.
+        """
+
+        for width in self.WIDTHS:
+            with self.subTest(width=width):
+                sentence = doc_sentence(rewrapped_doc(install.__doc__, width))
+                for host in ("Claude Code", "Codex", "Grok Build"):
+                    self.assertIn(host, sentence)
+                self.assertTrue(sentence.endswith("from a git clone."), sentence)
+                self.assertNotIn("Cross-platform", sentence)
+
+    def test_reading_the_opening_sentence_as_a_line_loses_its_tail(self):
+        """The can-fail direction: what a reflow does to ``splitlines()[0]``.
+
+        Spelled as a literal rather than read off ``install.__doc__``,
+        because this is the one test whose subject is raw text -- reading
+        the real docstring here would be the very shape the guard below
+        refuses, and rightly so.
+        """
+
+        summary = (
+            "Install orchflows for Claude Code, Codex and Grok Build"
+            " from a git clone.\n\nA second paragraph, so the summary ends.\n"
+        )
+        first_line = rewrapped_doc(summary, 40).splitlines()[0]
+        self.assertIn("Claude Code", first_line)
+        self.assertNotIn("Grok Build", first_line)
+        self.assertEqual(summary.partition("\n")[0], doc_sentence(summary))
+        self.assertIn("Grok Build", doc_sentence(rewrapped_doc(summary, 40)))
+
+    def test_no_test_in_the_tree_asserts_over_the_raw_installer_docstring(self):
+        """Read off the tree, so a later assertion cannot reopen the hazard."""
+
+        offenders = [
+            f"{path.relative_to(install.REPO_ROOT).as_posix()}:{line} ({name})"
+            for path in sorted((install.REPO_ROOT / "tests").rglob("*.py"))
+            for name, line in raw_doc_assertions(
+                ast.parse(path.read_text(encoding="utf-8"))
+            )
+        ]
+        self.assertEqual([], offenders, "assert over normalised text instead")
+
+    def test_the_enumeration_names_both_shapes_the_two_broken_sessions_had(self):
+        """Inline, and reached through a local -- the shape that got missed."""
+
+        inline = 'self.assertNotIn("Stdlib-only", install.__doc__ or "")\n'
+        self.assertEqual([("assertNotIn", 1)], raw_doc_assertions(ast.parse(inline)))
+        through_a_local = (
+            'description = install.__doc__ or ""\n'
+            '_, separator, codex = description.partition("- Codex ")\n'
+            'self.assertTrue(separator, "missing")\n'
+            'codex = codex.partition("\\n\\n")[0]\n'
+            'self.assertIn("one exact redirect skill", codex)\n'
+        )
+        self.assertEqual(
+            [("assertTrue", 3), ("assertIn", 5)],
+            raw_doc_assertions(ast.parse(through_a_local)),
+        )
+        normalised = (
+            'codex = doc_bullet(install.__doc__, "- Codex ")\n'
+            'self.assertIn("one exact redirect skill", codex)\n'
+            'self.assertNotIn("stdlib only", doc_claim(install.__doc__))\n'
+        )
+        self.assertEqual([], raw_doc_assertions(ast.parse(normalised)))
