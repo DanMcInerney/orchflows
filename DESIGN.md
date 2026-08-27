@@ -104,14 +104,13 @@ bodies were mostly sequencing, and every recurring shape grew the
 routing table — the one surface every session pays for on every
 request. The replacement:
 
-- **The routing table stays fixed while the named tier grows.** Three
-  branches — answer, ticket, fix — and one closed rule: everything else
+- **The routing table stays fixed while the named tier grows.** Five
+  branches — answer, single, graph, spec, fix — and one closed rule: everything else
   runs only when named. Recurring shapes accumulate as templates under
   `compositions/`, never in the dispatch prose (diluted attention: the
   always-paid cost never grows).
 - **A template is tickets, not a second grammar.** A demoted pattern's
-  law rides its stubs' `excluded_actions` and `## Completion test`; the
-  combinators are the ticket graph's own — a `depends_on` edge, disjoint
+  law rides its stubs' Goal and Context; the combinators are the ticket graph's own — a `depends_on` edge,
   parallel stubs, a loop stub — so `tickets.py instantiate` writes a run
   and `orch-frontier` drains it with no engine, contract or step file to
   keep in step with the ticket contract (cheap generation: the gate is
@@ -121,7 +120,7 @@ request. The replacement:
   predecessor's result identity is a successor's evidence with no
   per-pair glue (search is memory: one return shape, one name).
 
-Its open decisions closed as: ticket sets over a fixed `seq` engine,
+Its open decisions closed as: ticket sets drained by `orch-frontier`,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured
 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
 the delegation contract merged into `work-item.md`; orch-delegate (the
@@ -225,9 +224,7 @@ specifics (component libraries, utility-CSS idioms) stay with the
 workspace's standards owner, as genre stays out of content craft.
 
 Choices on the record: the renderable unit is a **view**, not a
-"surface", because the root ticket already carries affected surfaces as
-`write_scope` ([contracts/work-item.md](contracts/work-item.md), Root
-ticket) — one word, two meanings in one ticket was the alternative.
+"surface", because the latter overloaded generic scope language.
 "Standards owner" moved from code craft to the library vocabulary when
 this pack became its second consumer — one owner per fact. A new unit
 executor, `orch-render`, was admitted with the pack because the unit
@@ -311,12 +308,11 @@ forever while a parser can decay gracefully — `schema_confidence` and
   code, which is `deterministic` — a class is a property of how a
   verdict is produced, not of what it is about. No new workspace
   semantics either, and the reason is stronger than "one consumer":
-  the library already partitions visibility in four places — `orch-verify`'s
+  the library already defines visibility constraints in four places — `orch-verify`'s
   blind scoring, `orch-eval-design`'s candidate-blindness, research lanes,
-  `orch-fixture`'s withheld anchors — and enforces every one at the
-  dispatch layer that [contracts/work-item.md](contracts/work-item.md#dispatch)
-  owns, through `inputs` and `authority`, never in a `workspace` cell.
-  Protected evidence is that construct with the held-back files named. The
+  and `orch-fixture`'s withheld anchors — in their skill or composition
+  contracts, never in a `workspace` cell. Protected evidence policy names
+  the held-back files. The
   paired executor was refused with it: its claimed ground — that an
   oracle's counterexample is constructible only after the oracle exists
   — is false, because a counterexample derives from the behavior, which
@@ -324,8 +320,8 @@ forever while a parser can decay gracefully — `schema_confidence` and
   slice against a fixture per
   [rules/verification.md](rules/verification.md) §8, which is where the
   bullet above already put this. Reversal needs a deliverable whose
-  visibility partition cannot be expressed through a dispatch's
-  `authority` and `inputs`.
+  visibility partition cannot be expressed through an existing skill or
+  composition contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
   admitted because `orch-spec`'s noun source had no owner — not

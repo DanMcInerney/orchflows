@@ -52,11 +52,9 @@ external process is delegation.md §11's: hold the turn until its
 outcome lands in durable state, or record it at launch.
 
 On Claude Code, a named child's return travels only by explicit
-SendMessage to the spawner; plain final text is undelivered. `reply_to`
-per
-[contracts/work-item.md](../../../../contracts/work-item.md#dispatch);
-a child that will itself dispatch is told its own assigned name, since
-that name is its children's `reply_to`.
+SendMessage to the spawner; plain final text is undelivered. A child that
+will itself dispatch is told its own assigned name so its children can
+address their returns.
 
 ## Running the terminal required checks (Claude Code)
 

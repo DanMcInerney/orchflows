@@ -4043,6 +4043,7 @@
   {
    "module": "tests.test_ui",
    "owner": "VisualDiffExitTest.test_changed_capture_exits_nonzero",
+   "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
    ]
