@@ -161,7 +161,9 @@ class SemanticTicketContractTest(unittest.TestCase):
             self.assertNotIn("Objective", sections)
 
     def test_gate_routes_actual_overlap_to_integration(self):
-        self.dispatch("new", "gate", "R", "--executor", "orch-edit", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.")
+        self.dispatch("new", "gate", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
+        for suffix in ("01", "02"):
+            self.dispatch("new", "gate", f"R.{suffix}", "--executor", "orch-tdd", "--goal", f"Deliver candidate {suffix}.", "--context", "The candidate feeds the integrated result.", "--pack", "orch-code-pack", "--independence", "gate", "--isolation", "required")
         self.dispatch("stamp-generation", "gate", "R")
         self.dispatch("gate", "gate", "R")
         repair = "\n".join(path.read_text(encoding="utf-8") for path in (Path(self.temporary.name) / "tickets" / "gate").glob("R.gate.*.md"))
