@@ -66,17 +66,22 @@ class DispatchV1Test(unittest.TestCase):
             "--content", content,
         ])
 
-    def retire(self, dispatch_id="D1"):
+    def retire(self, dispatch_id="D1", record_id="retire-1", seal=None):
         return tickets._dispatch([
             "dispatch-retire", "run", "T", "--dispatch-id", dispatch_id,
+            "--assignment-seal", seal or self.opened_seal,
+            "--record-id", record_id,
         ])
 
     def replace(
-        self, dispatch_id="D1", replacement="D2", lease=None, by="worker-2"
+        self, dispatch_id="D1", replacement="D2", lease=None, by="worker-2",
+        record_id="replace-1", seal=None,
     ):
         return tickets._dispatch([
             "dispatch-replace", "run", "T",
             "--dispatch-id", dispatch_id,
+            "--assignment-seal", seal or self.opened_seal,
+            "--record-id", record_id,
             "--replacement-dispatch-id", replacement,
             "--by", by,
             "--lease-expires-at", lease or self.lease,
@@ -132,7 +137,9 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(text, self.ticket_text())
 
     def test_committed_record_replay_precedes_conflict_retirement_and_mismatch(self):
-        self.assertNotIn("error", self.open())
+        opened = self.open()
+        self.assertNotIn("error", opened)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
         committed = self.commit()
         self.assertEqual("R1", committed["committed_record"]["record_id"])
         self.assertEqual({"value": 1}, committed["committed_record"]["content"])
@@ -156,7 +163,9 @@ class DispatchV1Test(unittest.TestCase):
         self.assertIn("error", mismatch)
 
     def test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence(self):
-        self.assertNotIn("error", self.open())
+        opened = self.open()
+        self.assertNotIn("error", opened)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
         committed = self.commit()
 
         replaced = self.replace()
@@ -179,7 +188,9 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(["replaced", "live"], [item["state"] for item in state["attempts"]])
 
     def test_retirement_allows_a_unique_new_attempt(self):
-        self.assertNotIn("error", self.open())
+        opened = self.open()
+        self.assertNotIn("error", opened)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
         self.assertNotIn("error", self.retire())
         reopened = self.open(dispatch_id="D2", by="worker-2")
         self.assertEqual("opened", reopened["dispatch"]["outcome"])
@@ -262,6 +273,66 @@ class DispatchV1Test(unittest.TestCase):
         stale = self.result(record_id="unseen-after-replacement")
         self.assertEqual("stale-attempt", stale["code"])
         self.assertEqual(replaced_text, self.ticket_text())
+
+    def test_lifecycle_operation_replay_precedes_conflict_and_retirement(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+
+        retired = self.retire()
+        retired_text = self.ticket_text()
+        self.assertEqual(retired, self.retire())
+        self.assertEqual(retired_text, self.ticket_text())
+
+        conflict = self.retire(seal="sha256:changed")
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        unseen = self.retire(record_id="retire-2")
+        self.assertEqual("stale-attempt", unseen["code"])
+        self.assertEqual(retired_text, self.ticket_text())
+
+    def test_join_consumes_a_fixed_result_identity_and_replays_after_retirement(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        result = self.result(record_id="result-fixed")
+        self.assertNotIn("error", result)
+
+        arguments = [
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1",
+            "--result-record-id", "result-fixed",
+            "--by", "root-join",
+            "--status", "complete",
+        ]
+        joined = tickets._dispatch(arguments)
+        self.assertEqual("complete", joined["join"]["status"])
+        joined_text = self.ticket_text()
+        data = _parse_frontmatter(joined_text)
+        self.assertEqual("complete", data["status"])
+        state = parse_canonical_json(data["dispatch_v1"])
+        self.assertEqual("retired", state["attempts"][0]["state"])
+
+        self.assertEqual(joined, tickets._dispatch(arguments))
+        self.assertEqual(joined_text, self.ticket_text())
+
+        changed = list(arguments)
+        changed[-1] = "blocked"
+        conflict = tickets._dispatch(changed)
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        unseen = tickets._dispatch([
+            *arguments[:8], "another-result", *arguments[9:],
+        ])
+        self.assertEqual("stale-attempt", unseen["code"])
+        self.assertEqual(joined_text, self.ticket_text())
+
+    def test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        before = self.ticket_text()
+        for status in ("suspended", "complete", "failed"):
+            with self.subTest(status=status):
+                refusal = tickets._dispatch(["set-status", "run", "T", status])
+                self.assertEqual("dispatch-join-required", refusal["code"])
+                self.assertEqual(before, self.ticket_text())
 
 
 if __name__ == "__main__":

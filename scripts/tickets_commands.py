@@ -15,6 +15,7 @@ if __package__:
     from .tickets_generations import GENERATION_SUBCOMMANDS
     from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_REPLACE_USAGE, DISPATCH_RETIRE_USAGE
     from .tickets_dispatch_packet import DISPATCH_PACKET_USAGE, DISPATCH_RECEIVE_USAGE
+    from .tickets_join import DISPATCH_JOIN_USAGE
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
@@ -32,6 +33,7 @@ else:
     _dispatch_packet = __import__("tickets_dispatch_packet")
     DISPATCH_PACKET_USAGE = _dispatch_packet.DISPATCH_PACKET_USAGE
     DISPATCH_RECEIVE_USAGE = _dispatch_packet.DISPATCH_RECEIVE_USAGE
+    DISPATCH_JOIN_USAGE = __import__("tickets_join").DISPATCH_JOIN_USAGE
 
 LINT_USAGE = "lint (<run> <id> | --file <path> [--executor E] [--pack P]) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
@@ -50,6 +52,7 @@ SUBCOMMAND_USAGE = {
     "dispatch-commit": DISPATCH_COMMIT_USAGE,
     "dispatch-retire": DISPATCH_RETIRE_USAGE,
     "dispatch-replace": DISPATCH_REPLACE_USAGE,
+    "dispatch-join": DISPATCH_JOIN_USAGE,
     "dispatch-packet": DISPATCH_PACKET_USAGE,
     "dispatch-receive": DISPATCH_RECEIVE_USAGE,
     "check": CHECK_USAGE,
@@ -76,6 +79,7 @@ SUBCOMMAND_SUMMARY = {
     "dispatch-commit": "Commit or replay one idempotent record on a live dispatch-v1 attempt.",
     "dispatch-retire": "Retire or replay retirement of one dispatch-v1 attempt.",
     "dispatch-replace": "Atomically replace one live dispatch-v1 attempt with a unique successor.",
+    "dispatch-join": "Commit or replay one result-fenced join and its lifecycle transition.",
     "dispatch-packet": "Commit or replay one reference or inline dispatch-v1 packet projection.",
     "dispatch-receive": "Validate one dispatch-v1 packet against its receipt identity and authority.",
     "check": f"Record one blocker-only checker pass while status is one of {sorted(CHECKABLE_STATUSES)}.",
@@ -99,8 +103,9 @@ VALUE_FLAGS = frozenset({
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--reply-to", "--workspace", "--proposal", "--covered",
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
+    "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
-    "--form", "--role",
+    "--form", "--role", "--result-record-id", "--status",
 })
 
 

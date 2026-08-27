@@ -96,7 +96,7 @@ def _result_under_run_lock(rest):
         'operation': 'result', 'section': canonical, 'writer': written_by,
     }
 
-    def mutate(text, data, attempt):
+    def mutate(text, data, attempt, _state):
         recorded = (str(data.get('run') or '').strip(), str(data.get('id') or '').strip())
         if recorded != (run, ticket_id):
             return text, None, {'error': f'ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded[0] or "<missing>"}/{recorded[1] or "<missing>"}'}

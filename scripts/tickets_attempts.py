@@ -34,9 +34,13 @@ DISPATCH_COMMIT_USAGE = (
     "dispatch-commit <run> <id> --dispatch-id <id> --record-id <id> "
     "--content <canonical-json>"
 )
-DISPATCH_RETIRE_USAGE = "dispatch-retire <run> <id> --dispatch-id <id>"
+DISPATCH_RETIRE_USAGE = (
+    "dispatch-retire <run> <id> --assignment-seal <seal> "
+    "--dispatch-id <id> --record-id <id>"
+)
 DISPATCH_REPLACE_USAGE = (
-    "dispatch-replace <run> <id> --dispatch-id <current-id> "
+    "dispatch-replace <run> <id> --assignment-seal <seal> "
+    "--dispatch-id <current-id> --record-id <id> "
     "--replacement-dispatch-id <new-id> --by <name> "
     "--lease-expires-at <absolute-iso>"
 )
@@ -204,7 +208,7 @@ def _record_response(
 
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
-    expected_seal=None, expected_owner=None,
+    expected_seal=None, expected_owner=None, require_live_lease=True,
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
     normalized = canonical_json(content)
@@ -258,7 +262,10 @@ def _commit_record(
                 return success
             now = datetime.now(timezone.utc)
             expiry = _parse_iso(attempt.get("lease_expires_at"))
-            if attempt.get("state") != "live" or expiry is None or now >= expiry:
+            ended = attempt.get("state") != "live" or expiry is None
+            if require_live_lease:
+                ended = ended or now >= expiry
+            if ended:
                 return _classification(
                     "stale-attempt",
                     f"unseen record '{record_id}' cannot commit on an ended dispatch attempt",
@@ -280,7 +287,7 @@ def _commit_record(
                 success = _record_response(run, ticket_id, dispatch_id, record_id, content)
                 updated = text
             else:
-                updated, success, failure = mutate(text, data, attempt)
+                updated, success, failure = mutate(text, data, attempt, state)
                 if failure is not None:
                     return failure
             records.append({
@@ -317,71 +324,57 @@ def _cmd_dispatch_commit(rest):
 
 def _cmd_dispatch_retire(rest):
     args = list(rest)
+    assignment_seal = _extract_flag(args, "--assignment-seal")
     dispatch_id = _extract_flag(args, "--dispatch-id")
-    if len(args) != 2 or not dispatch_id:
+    record_id = _extract_flag(args, "--record-id")
+    if len(args) != 2 or not all((assignment_seal, dispatch_id, record_id)):
         return {"error": f"usage: {DISPATCH_RETIRE_USAGE}"}
     run, ticket_id = args
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {"error": NO_SINK_ERROR}
-    path = tickets_root / run / f"{ticket_id}.md"
-    try:
-        with _run_lock(run):
-            text, failure = _read_utf8(path)
-            if failure is not None:
-                return failure
-            data = _parse_frontmatter(text)
-            state, failure = _state(data)
-            if failure is not None:
-                return failure
-            if state is None:
-                if str(data.get("status") or "") in ("claimed", "suspended"):
-                    return _classification(
-                        "legacy-live-claim",
-                        "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
-                    )
-                return _classification("dispatch-mismatch", "ticket has no dispatch-v1 attempt")
-            attempt = next(
-                (item for item in state["attempts"] if item.get("dispatch_id") == dispatch_id),
-                None,
+    content = {
+        "assignment_seal": assignment_seal,
+        "dispatch_id": dispatch_id,
+        "operation": "retire",
+    }
+
+    def retire(text, _data, attempt, _state_record):
+        if attempt.get("state") != "live":
+            return text, None, _classification(
+                "stale-attempt",
+                f"dispatch_id '{dispatch_id}' is already {attempt.get('state')}",
             )
-            if attempt is None:
-                return _classification(
-                    "dispatch-mismatch", f"dispatch_id '{dispatch_id}' was never opened for this ticket"
-                )
-            retirement = attempt.get("retirement")
-            if attempt.get("state") == "retired" and isinstance(retirement, dict):
-                return retirement
-            if attempt.get("state") != "live":
-                return _classification(
-                    "stale-attempt", f"dispatch_id '{dispatch_id}' is already {attempt.get('state')}"
-                )
-            attempt["state"] = "retired"
-            attempt["retired_at"] = datetime.now(timezone.utc).strftime(UTC_STAMP)
-            retirement = {"dispatch": {
-                "protocol": PROTOCOL,
-                "outcome": "retired",
-                "run": run,
-                "id": ticket_id,
-                "dispatch_id": dispatch_id,
-                "retired_at": attempt["retired_at"],
-                "state": "retired",
-            }}
-            attempt["retirement"] = retirement
-            updated = _set_frontmatter_field(text, "dispatch_v1", canonical_json(state))
-            _write_text_atomically(path, updated)
-            return retirement
-    except OSError as error:
-        return {"error": f"unable to retire dispatch attempt: {error}"}
+        retired_at = datetime.now(timezone.utc).strftime(UTC_STAMP)
+        response = {"dispatch": {
+            "protocol": PROTOCOL,
+            "outcome": "retired",
+            "run": run,
+            "id": ticket_id,
+            "dispatch_id": dispatch_id,
+            "record_id": record_id,
+            "retired_at": retired_at,
+            "state": "retired",
+        }}
+        attempt["state"] = "retired"
+        attempt["retired_at"] = retired_at
+        attempt["retirement"] = response
+        return text, response, None
+
+    return _commit_record(
+        run, ticket_id, dispatch_id, record_id, content,
+        mutate=retire, expected_seal=assignment_seal, require_live_lease=False,
+    )
 
 
 def _cmd_dispatch_replace(rest):
     args = list(rest)
+    assignment_seal = _extract_flag(args, "--assignment-seal")
     dispatch_id = _extract_flag(args, "--dispatch-id")
+    record_id = _extract_flag(args, "--record-id")
     replacement_id = _extract_flag(args, "--replacement-dispatch-id")
     owner = _extract_flag(args, "--by")
     lease_text = _extract_flag(args, "--lease-expires-at")
-    if len(args) != 2 or not all((dispatch_id, replacement_id, owner, lease_text)):
+    if len(args) != 2 or not all((
+        assignment_seal, dispatch_id, record_id, replacement_id, owner, lease_text,
+    )):
         return {"error": f"usage: {DISPATCH_REPLACE_USAGE}"}
     run, ticket_id = args
     lease = _parse_iso(lease_text)
@@ -390,105 +383,61 @@ def _cmd_dispatch_replace(rest):
             "lease-invalid", "--lease-expires-at must be an absolute ISO timestamp"
         )
     lease = lease.astimezone(timezone.utc)
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {"error": NO_SINK_ERROR}
-    path = tickets_root / run / f"{ticket_id}.md"
-    request = {
+    content = {
+        "assignment_seal": assignment_seal,
         "dispatch_id": replacement_id,
         "lease_expires_at": lease_text,
+        "operation": "replace",
         "owner": owner,
         "replaces": dispatch_id,
     }
-    try:
-        with _run_lock(run):
-            text, failure = _read_utf8(path)
-            if failure is not None:
-                return failure
-            data = _parse_frontmatter(text)
-            state, failure = _state(data)
-            if failure is not None:
-                return failure
-            if state is None:
-                if str(data.get("status") or "") in ("claimed", "suspended"):
-                    return _classification(
-                        "legacy-live-claim",
-                        "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
-                    )
-                return _classification("dispatch-mismatch", "ticket has no dispatch-v1 attempt")
-            current = next(
-                (item for item in state["attempts"] if item.get("dispatch_id") == dispatch_id),
-                None,
+
+    def replace(text, _data, current, state):
+        if any(item.get("dispatch_id") == replacement_id for item in state["attempts"]):
+            return text, None, _classification(
+                "idempotency-conflict",
+                f"replacement dispatch_id '{replacement_id}' was already used",
             )
-            if current is None:
-                return _classification(
-                    "dispatch-mismatch", f"dispatch_id '{dispatch_id}' was never opened for this ticket"
-                )
-            prior = current.get("replacement")
-            if isinstance(prior, dict):
-                if current.get("replacement_request") == request:
-                    return prior
-                return _classification(
-                    "idempotency-conflict",
-                    f"dispatch_id '{dispatch_id}' was already replaced with different content",
-                )
-            if any(
-                item.get("dispatch_id") == replacement_id for item in state["attempts"]
-            ):
-                return _classification(
-                    "idempotency-conflict",
-                    f"replacement dispatch_id '{replacement_id}' was already used",
-                )
-            now = datetime.now(timezone.utc)
-            current_expiry = _parse_iso(current.get("lease_expires_at"))
-            if (
-                current.get("state") != "live"
-                or current_expiry is None
-                or now >= current_expiry
-            ):
-                return _classification(
-                    "stale-attempt", f"dispatch_id '{dispatch_id}' cannot be replaced after it ended"
-                )
-            if lease <= now:
-                return _classification(
-                    "lease-expired", "replacement lease is not later than the replacement time"
-                )
-            seal = str(data.get("assignment_seal") or "").strip()
-            if seal != current.get("assignment_seal") or seal_findings(ticket_id, text):
-                return _classification(
-                    "assignment-mismatch", "dispatch attempt is fenced to another assignment seal"
-                )
-            opened_at = now.strftime(UTC_STAMP)
-            replacement = {
-                "assignment_seal": seal,
-                **request,
-                "opened_at": opened_at,
-                "records": [],
-                "state": "live",
-            }
-            response = {"dispatch": {
-                "protocol": PROTOCOL,
-                "outcome": "replaced",
-                "run": run,
-                "id": ticket_id,
-                "dispatch_id": replacement_id,
-                "replaces": dispatch_id,
-                "assignment_seal": seal,
-                "lease_expires_at": lease_text,
-                "opened_at": opened_at,
-                "state": "live",
-            }}
-            current["state"] = "replaced"
-            current["replaced_at"] = opened_at
-            current["replaced_by"] = replacement_id
-            current["replacement_request"] = request
-            current["replacement"] = response
-            state["attempts"].append(replacement)
-            updated = _set_frontmatter_field(text, "dispatch_v1", canonical_json(state))
-            updated = _set_frontmatter_field(updated, "status", "claimed")
-            updated = _set_frontmatter_field(updated, "claimed_by", owner)
-            updated = _set_frontmatter_field(updated, "claimed_at", opened_at)
-            _write_text_atomically(path, updated)
-            return response
-    except OSError as error:
-        return {"error": f"unable to replace dispatch attempt: {error}"}
+        now = datetime.now(timezone.utc)
+        if lease <= now:
+            return text, None, _classification(
+                "lease-expired", "replacement lease is not later than the replacement time"
+            )
+        opened_at = now.strftime(UTC_STAMP)
+        replacement = {
+            "assignment_seal": assignment_seal,
+            "dispatch_id": replacement_id,
+            "lease_expires_at": lease_text,
+            "opened_at": opened_at,
+            "owner": owner,
+            "records": [],
+            "replaces": dispatch_id,
+            "state": "live",
+        }
+        response = {"dispatch": {
+            "protocol": PROTOCOL,
+            "outcome": "replaced",
+            "run": run,
+            "id": ticket_id,
+            "dispatch_id": replacement_id,
+            "record_id": record_id,
+            "replaces": dispatch_id,
+            "assignment_seal": assignment_seal,
+            "lease_expires_at": lease_text,
+            "opened_at": opened_at,
+            "state": "live",
+        }}
+        current["state"] = "replaced"
+        current["replaced_at"] = opened_at
+        current["replaced_by"] = replacement_id
+        current["replacement"] = response
+        state["attempts"].append(replacement)
+        updated = _set_frontmatter_field(text, "status", "claimed")
+        updated = _set_frontmatter_field(updated, "claimed_by", owner)
+        updated = _set_frontmatter_field(updated, "claimed_at", opened_at)
+        return updated, response, None
+
+    return _commit_record(
+        run, ticket_id, dispatch_id, record_id, content,
+        mutate=replace, expected_seal=assignment_seal,
+    )

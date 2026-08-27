@@ -38,6 +38,10 @@ if __package__:
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
 else:
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
+if __package__:
+    from .tickets_attempts import _classification
+else:
+    from tickets_attempts import _classification
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --by <name>'
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
@@ -308,6 +312,12 @@ def _set_status_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    data = _parse_frontmatter(text)
+    if data.get('dispatch_v1') and (status == 'suspended' or status in TERMINAL_STATES):
+        return _classification(
+            'dispatch-join-required',
+            'dispatch-v1 suspension and terminal transitions require dispatch-join with the fixed result identity',
+        )
     items, run_error = _run_tickets(run)
     terminal_transition = False
     terminal_now = False
