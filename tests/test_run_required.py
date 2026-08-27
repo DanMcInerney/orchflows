@@ -38,6 +38,10 @@ COMMAND_KEYS = {
 RECORD_KEYS = {
     "kind", "repository_identity", "tree_identity", "dirty", "commands", "exit",
 }
+# Spelled out rather than imported: a record's kind is what a reader of the
+# JSON matches on, so renaming the constant must not rename the contract.
+RUN_KIND = "required-check-run/v1"
+REPLAY_KIND = "required-check-replay/v1"
 
 
 def stream_digest(record, tag: str) -> str:
@@ -394,6 +398,45 @@ class TestTextReport(RunRequiredCase):
         self.assertEqual(0, status)
         self.assertEqual(5, text.count("(cached)"))
         self.assertNotIn("stub-out", text)
+
+
+class TestAReplayIsNotAnExecution(RunRequiredCase):
+    """A memo may answer, but never in an execution's name.
+
+    A gate's whole job is a run's one outside execution, and one was handed
+    five green `(cached)` lines at a tree a unit had already proved. The
+    memo was right, but the record it served called itself a run, so
+    nothing downstream could tell the replay from the execution asked for.
+    """
+
+    def test_a_served_verdict_is_named_a_replay_and_not_a_run(self):
+        fresh = self.invoke()[1]
+        self.stub.forget()
+        status, replay, _, _ = self.invoke()
+        self.assertEqual(0, status)
+        self.assertEqual([], self.stub.calls())
+        self.assertEqual(RUN_KIND, fresh["kind"])
+        self.assertEqual(REPLAY_KIND, replay["kind"])
+        self.assertEqual(RECORD_KEYS, set(replay))
+        self.assertEqual([True] * 5, [r["cached"] for r in replay["commands"]])
+
+    def test_a_replay_says_so_on_the_line_every_reader_reads(self):
+        executed = self.invoke("--format", "text")[2]
+        status, _, replayed, _ = self.invoke("--format", "text")
+        self.assertEqual(0, status)
+        self.assertNotIn("replay", executed)
+        self.assertIn("replay", replayed.splitlines()[-1])
+        self.assertIn("--no-cache", replayed.splitlines()[-1])
+
+    def test_asking_for_an_execution_runs_them_at_the_proved_tree(self):
+        fresh = self.invoke()[1]
+        self.stub.forget()
+        status, again, _, _ = self.invoke("--no-cache")
+        self.assertEqual(0, status)
+        self.assertEqual(4, len(self.stub.calls()))
+        self.assertEqual(RUN_KIND, again["kind"])
+        self.assertEqual([False] * 5, [r["cached"] for r in again["commands"]])
+        self.assertEqual(fresh["tree_identity"], again["tree_identity"])
 
 
 class TestConsoleCodec(unittest.TestCase):

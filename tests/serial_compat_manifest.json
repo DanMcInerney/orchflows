@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1762,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -348,6 +348,9 @@
    "test_project_binding.TestTheSeamMoved.test_the_lifecycle_module_and_the_facade_still_export_the_seam",
    "test_project_binding.TestTheSeamMoved.test_the_project_module_owns_the_binding_law",
    "test_project_binding.TestTheSeamMoved.test_the_seam_is_defined_in_the_project_module",
+   "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
+   "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
+   "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
    "test_run_required.TestCacheLocation.test_a_green_clean_run_stores_exactly_one_entry_named_by_its_key",
    "test_run_required.TestCacheLocation.test_the_cache_sits_under_the_runners_own_gitignored_directory",
    "test_run_required.TestCacheLocation.test_the_stored_entry_is_ignored_by_the_checkout",
@@ -1762,7 +1765,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "893c11f21f0b38478b8995bf63f29dc9dc85de5cc735c619d5e59a3fdbe6e16b"
  },
  "mutation_owners": [
   {

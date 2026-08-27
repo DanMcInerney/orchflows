@@ -60,10 +60,17 @@ def load(repo: Path, key: str):
     return entry if servable(entry) else None
 
 
-def serve(entry: dict) -> dict:
-    """The stored record, said again with every command marked cached."""
+def serve(entry: dict, kind: str) -> dict:
+    """The stored record under the caller's replay kind, all commands cached.
 
-    served = dict(entry)
+    The verdict is the stored one; what changes is the name it answers to.
+    A replay that kept the run's kind would be indistinguishable from the
+    execution its caller asked for, which is the one thing a memo may not
+    do. The kind is the runner's to name, so it arrives as an argument
+    rather than as a second spelling of a constant kept there.
+    """
+
+    served = dict(entry, kind=kind)
     served["commands"] = [dict(record, cached=True) for record in entry["commands"]]
     return served
 
