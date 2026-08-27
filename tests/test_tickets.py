@@ -52,6 +52,15 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         validated["draft_validation"]["cut_generation"],
     ])
     tickets_mod._dispatch(["ready", "--run", "testrun"])
+    ticket = sink / "tickets" / "testrun" / "T1.md"
+    established = ticket.read_text(encoding="utf-8")
+    for key, value in (
+        ("workspace_path", str(tmp.resolve())),
+        ("workspace_branch", "candidate-branch"),
+        ("workspace_baseline", "0123456789abcdef clean"),
+    ):
+        established = tickets_mod._set_frontmatter_field(established, key, value)
+    ticket.write_text(established, encoding="utf-8")
     lease = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
     opened = tickets_mod._dispatch([
         "dispatch-open", "testrun", "T1", "--by", by,
@@ -59,15 +68,15 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     ])["dispatch"]
     packet = tickets_mod._dispatch([
         "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
-        "--reply-to", "root", "--form", "reference",
+        "--reply-to", "root", "--workspace", str(tmp.resolve()),
+        "--form", "reference",
     ])["packet"]
     tickets_mod._dispatch([
         "dispatch-receive", "--content",
         json.dumps(packet, sort_keys=True, separators=(",", ":")),
         "--role", packet["role"], "--profile", packet["profile"],
-        "--by", by, "--reply-to", "root",
+        "--by", by, "--reply-to", "root", "--workspace", str(tmp.resolve()),
     ])
-    ticket = sink / "tickets" / "testrun" / "T1.md"
     return ticket, opened["assignment_seal"]
 
 
