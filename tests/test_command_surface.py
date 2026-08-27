@@ -14,7 +14,9 @@ from scripts.tickets_commands import SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
+RULES = ROOT / "rules"
 NAMED_COMMAND = re.compile(r"tickets\.py\s+([a-z][a-z-]*)")
+REMOVED_INLINE_COMMAND = re.compile(r"`(amend|recut)`")
 
 
 def routed_commands() -> set[str]:
@@ -52,6 +54,18 @@ class CurrentCommandSurfaceTest(unittest.TestCase):
         self.assertEqual(set(), {"claim", "packet"} & routed_commands())
         for command in removed:
             self.assertFalse(hasattr(tickets, "_cmd_" + command.replace("-", "_")), command)
+
+    def test_canonical_rules_name_only_current_ticket_commands(self):
+        routed = routed_commands()
+        stale = []
+        for path in sorted(RULES.glob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            for command in NAMED_COMMAND.findall(text):
+                if command not in routed:
+                    stale.append(f"{path.relative_to(ROOT).as_posix()}: {command}")
+            for command in REMOVED_INLINE_COMMAND.findall(text):
+                stale.append(f"{path.relative_to(ROOT).as_posix()}: `{command}`")
+        self.assertEqual([], stale)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1857,
+  "count": 1858,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -23,6 +23,7 @@
    "test_architecture_owners.StatedCeilingTest.test_padding_a_copy_past_the_ceiling_fails_the_check",
    "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
    "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
+   "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_generation_and_gate_operators_are_reachable",
    "test_command_surface.CurrentCommandSurfaceTest.test_help_usage_and_summary_name_one_exact_surface",
@@ -1860,7 +1861,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "156e74b330c6c0a304c551b985c2690ccc304c44658666e6d7d46c434314412c"
+  "sha256": "5a9a0301f33529a138ddf08be5ec240fbb79c924a79fa7ee33eef4e5f44bf53b"
  },
  "mutation_owners": [
   {
