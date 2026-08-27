@@ -9,8 +9,8 @@ import re
 
 if __package__:
     from .tickets_attempts import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, _classification,
-        _commit_record, _identity_failure, _state,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
+        _classification, _commit_record, _identity_failure, _state,
     )
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -21,8 +21,8 @@ if __package__:
     from .tickets_store import _tickets_root
 else:
     from tickets_attempts import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, _classification,
-        _commit_record, _identity_failure, _state,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
+        _classification, _commit_record, _identity_failure, _state,
     )
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -429,7 +429,7 @@ def _validate_durable(packet: dict, text: str, data: dict):
         return _classification("idempotency-conflict", "packet is not the committed projection")
     if attempt.get("owner") != packet["assigned_name"]:
         return _classification("identity-mismatch", "attempt owner diverges from packet")
-    return _live_attempt(attempt)
+    return None
 
 
 def _cmd_dispatch_receive(rest):
@@ -455,7 +455,6 @@ def _cmd_dispatch_receive(rest):
     lease = _parse_iso(packet["lease_expires_at"])
     if lease is None or datetime.now(timezone.utc) >= lease:
         return _classification("stale-attempt", "packet lease is expired")
-    checked = True
     if packet["form"] == "reference":
         text, data, failure = _reference_ticket(packet)
         if failure is not None:
@@ -471,28 +470,35 @@ def _cmd_dispatch_receive(rest):
             return failure
         reference = packet.get("source")
         packet_with_reference = dict(packet, reference=reference)
-        text, data, inaccessible = _reference_ticket(packet_with_reference)
-        if inaccessible is not None:
-            if inaccessible.get("code") != "state-inaccessible":
-                return inaccessible
-            checked = False
-            failure = None
-        else:
+        text, data, failure = _reference_ticket(packet_with_reference)
+        if failure is None:
             failure = _validate_durable(packet, text, data)
     if failure is not None:
         return failure
-    return {"receipt": {
+    receipt = {
         "assignment_seal": packet["assignment_seal"],
         "dispatch_id": packet["dispatch_id"],
         "durability": packet["durability"],
         "form": packet["form"],
         "outcome": "accepted",
         "protocol": PROTOCOL,
-        "state_sink_checked": checked,
-    }}
+        "state_sink_checked": True,
+    }
+
+    def commit_receipt(text, _data, _attempt, _state):
+        return text, {"receipt": receipt}, None
+
+    source = packet["source"]
+    return _commit_record(
+        source["run"], source["id"], packet["dispatch_id"], RECEIPT_RECORD_ID,
+        {"packet": packet, "receipt": receipt}, mutate=commit_receipt,
+        expected_seal=packet["assignment_seal"],
+        expected_owner=packet["assigned_name"], record_kind="receipt",
+    )
 
 
 __all__ = (
     "DISPATCH_PACKET_USAGE", "DISPATCH_RECEIVE_USAGE", "PACKET_FORMS",
-    "PACKET_RECORD_ID", "_cmd_dispatch_packet", "_cmd_dispatch_receive",
+    "PACKET_RECORD_ID", "RECEIPT_RECORD_ID", "_cmd_dispatch_packet",
+    "_cmd_dispatch_receive",
 )

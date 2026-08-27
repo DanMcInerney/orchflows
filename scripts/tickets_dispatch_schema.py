@@ -19,7 +19,10 @@ else:
 PROTOCOL = "orchflows.dispatch.v1"
 OUTCOME_RECORD_ID = "outcome"
 PACKET_RECORD_ID = "dispatch-packet"
-RESERVED_RECORD_IDS = frozenset({OUTCOME_RECORD_ID, PACKET_RECORD_ID})
+RECEIPT_RECORD_ID = "dispatch-receipt"
+RESERVED_RECORD_IDS = frozenset({
+    OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID,
+})
 RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 ATTEMPT_STATES = frozenset({"live", "retired", "replaced"})
@@ -30,7 +33,9 @@ ATTEMPT_KEYS = frozenset({
     "replacement", "replaces",
 })
 RECORD_KEYS = frozenset({"committed_at", "content", "kind", "record_id", "success"})
-RECORD_KINDS = frozenset({"generic", "join", "lifecycle", "outcome", "packet", "result"})
+RECORD_KINDS = frozenset({
+    "generic", "join", "lifecycle", "outcome", "packet", "receipt", "result",
+})
 OUTCOME_SECTIONS = frozenset({"Result", "Verification", "Feedback", "Risks", "Handoff"})
 JOIN_STATUSES = frozenset(TERMINAL_STATES) | {"suspended"}
 
@@ -351,6 +356,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
             kind = record["kind"]
             namespace_ok = {
                 "packet": record_id == PACKET_RECORD_ID,
+                "receipt": record_id == RECEIPT_RECORD_ID,
                 "outcome": record_id == OUTCOME_RECORD_ID,
                 "join": record_id.startswith("join:"),
                 "lifecycle": record_id.startswith("lifecycle:"),

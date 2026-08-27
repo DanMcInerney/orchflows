@@ -107,7 +107,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("accepted", receipt["receipt"]["outcome"])
         self.assertEqual("reference", receipt["receipt"]["form"])
 
-    def test_inline_snapshot_receives_without_the_state_sink(self):
+    def test_inline_snapshot_requires_the_authoritative_state_sink(self):
         packet = self.project(form="inline")["packet"]
         self.assertEqual("inline", packet["form"])
         self.assertEqual("ticket", packet["durability"])
@@ -118,10 +118,29 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertIn("dispatch-outcome", packet["prompt"])
 
         missing = str(Path(self.temporary.name) / "not-mounted")
+        before = self.ticket_state()
         with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            receipt = self.receive(packet)
-        self.assertEqual("accepted", receipt["receipt"]["outcome"])
-        self.assertFalse(receipt["receipt"]["state_sink_checked"])
+            refusal = self.receive(packet)
+        self.assertEqual("state-inaccessible", refusal["code"])
+        self.assertEqual(before, self.ticket_state())
+
+    def test_accepted_receipt_is_a_durable_replayable_attempt_record(self):
+        packet = self.project()["packet"]
+
+        accepted = self.receive(packet)
+        self.assertEqual("accepted", accepted["receipt"]["outcome"])
+        self.assertTrue(accepted["receipt"]["state_sink_checked"])
+
+        records = self.ticket_state()["attempts"][0]["records"]
+        self.assertEqual(
+            ["dispatch-packet", "dispatch-receipt"],
+            [item["record_id"] for item in records],
+        )
+        receipt_record = records[-1]
+        self.assertEqual("receipt", receipt_record["kind"])
+        self.assertEqual(accepted, receipt_record["success"])
+        self.assertEqual(accepted, self.receive(packet))
+        self.assertEqual(2, len(self.ticket_state()["attempts"][0]["records"]))
 
     def test_ticket_inline_cannot_be_downgraded_to_ephemeral(self):
         packet = self.project(form="inline")["packet"]

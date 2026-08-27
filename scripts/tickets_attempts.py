@@ -13,7 +13,8 @@ if __package__:
     from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved, state as _state,
         validate_state as _validate_state,
@@ -31,7 +32,8 @@ else:
     import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved, state as _state,
         validate_state as _validate_state,
@@ -242,6 +244,7 @@ def _commit_record(
         return _classification("record-kind-invalid", f"unknown record kind '{record_kind}'")
     owned = {
         "packet": record_id == PACKET_RECORD_ID,
+        "receipt": record_id == RECEIPT_RECORD_ID,
         "outcome": record_id == OUTCOME_RECORD_ID,
         "join": record_id.startswith("join:"),
         "lifecycle": record_id.startswith("lifecycle:"),
