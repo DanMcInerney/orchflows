@@ -14,8 +14,9 @@ child under [delegation](../../../rules/delegation.md) §1–§2 and its
 the stored packet. The child runs `tickets.py dispatch-receive` against its
 packet-bound identity and authority; only an accepted receipt applies the exact
 executor. Each ticket takes one outside-independence path. A checker result gets
-one distinct read-only `orch-critique` dispatch against its fixed artifact, Goal, Context, executor
-evidence, and lens; gate-deferred and already checked tickets do not. Accepted blockers move to
+one `orch-critique` dispatch against its artifact, Goal, Context, evidence, and
+lens, carrying the `GatePlan` `review_v1` ledger; gate-deferred and already
+checked tickets do not. Accepted blockers move to
 one separate repair ticket, which invalidates critique verdicts and is
 followed by fresh verification
 ([verification](../../../rules/verification.md) §7).

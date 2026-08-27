@@ -120,3 +120,7 @@ unstreamed outcome evidence; receiver acceptance is a reserved durable attempt
 record required before result, outcome, or join; packet carriage is canonical
 ASCII output plus UTF-8 file or standard input, and unauthenticated offline
 inline receipt is refused.
+
+T0 supersession record sha256:008949dad0a49ab76c5bf65645081a895add5e2d2116032c653061c0b0aeafde:
+review-stage joins bind the accepted blocker subset and exact repair or
+verification artifact through the ticket's predecessor-linked review ledger.

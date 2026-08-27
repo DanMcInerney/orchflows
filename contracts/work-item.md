@@ -147,4 +147,10 @@ T0 supersession record sha256:0d3198c3bca64480a60502a7d621be4e6ca6349fc4ef74e9b1
 closed dispatch grammar and reserved outcome return moved to `dispatch.md`;
 public legacy role-bearing routes are removed.
 
-T0 supersession record sha256:0c37ca5c93bc6f4b5042e8fb746f3fc10a6e82f45228d7889e678be500da0d68: suspension retains claimant observations after retiring its attempt, and closing outcome evidence is an unstreamed delta.
+T0 supersession record sha256:0c37ca5c93bc6f4b5042e8fb746f3fc10a6e82f45228d7889e678be500da0d68:
+suspension retains claimant observations after retiring its attempt, and
+closing outcome evidence is an unstreamed delta.
+
+T0 supersession record sha256:85860c216a05aab9272033f2a368fde11d232e082f7d3d5cc82931bcf2e8bf36:
+`review_order` seals composite-lens order and operational `review_v1` records
+the immutable GatePlan through Verification chain.

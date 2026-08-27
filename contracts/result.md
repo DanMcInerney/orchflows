@@ -65,3 +65,7 @@ T0 supersession record sha256:734f7558400198917ee42aa9f0c06052bacdec2e0d9dd93049
 closing outcome evidence is the nonduplicating delta after streamed result
 records, and an unseen executor result is admitted only after the dispatch
 contract's durable accepted receiver receipt.
+
+T0 supersession record sha256:80252b67dd8b7010630831f233be12ba8fe32c31ba98bfccbe277328b9a458eb:
+critique Feedback result records are canonical JSON arrays whose complete value
+and accepted subset are carried by the immutable review adjudication.
