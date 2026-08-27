@@ -31,6 +31,8 @@ RESTORABLE_SEAMS = frozenset(
      "monkeypatch", "warnings"}
 )
 ALL_SEAMS = RESTORABLE_SEAMS | {"threads"}
+# The rulings a reviewer may give a mutation owner; the policy says what each means.
+RESTORATIONS = frozenset({"selected-module-boundary", "sharded-module-guard"})
 EXPECTED_SENTINELS = 14
 REQUIRED_CATEGORIES = frozenset({
     "boundary-restoration", "cutcheck-corpus", "cutcheck-process", "cwd", "discovery",
@@ -72,10 +74,11 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict:
         raise ValueError("serial compatibility mutation owners are missing or duplicated")
     if any(not set(owner.get("seams", [])).issubset(ALL_SEAMS) for owner in owners):
         raise ValueError("serial compatibility mutation owner names an unknown seam")
-    if any(owner.get("restoration") not in {
-        "selected-module-boundary", "sharded-module-guard"
-    } for owner in owners):
-        raise ValueError("serial compatibility mutation owner has no restoration")
+    unruled = [(owner.get("module"), owner.get("owner")) for owner in owners
+               if owner.get("restoration") not in RESTORATIONS]
+    if unruled:
+        raise ValueError("serial compatibility mutation owner has no restoration: "
+                         + ", ".join("%s::%s" % pair for pair in unruled))
     return data
 def manifest_identity(manifest: dict) -> dict:
     encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
