@@ -54,9 +54,11 @@ receipt that will not read is refused, never overwritten as if absent.
 
 ``--dry-run`` builds and prints the exact same plan an install would apply,
 including whether the private runtime would be created, reused or repaired,
-without writing anything. ``--uninstall`` removes only unchanged generated
-skill entrypoints. It prints manual cleanup for every other path in the
-scope's ``receipt.json`` (gracefully, even for a receipt from an older, full
+without writing anything. ``--uninstall`` removes only what it generated
+and finds unchanged: entrypoints and role agents on all three hosts, plus
+the two managed TOML config blocks, lifted key by key rather than deleted.
+It prints manual cleanup for every other path in the scope's
+``receipt.json`` (gracefully, even for a receipt from an older, full
 project install) and retains that receipt until cleanup is complete.
 """
 
@@ -187,8 +189,7 @@ from installer.foundation import (
     tomllib,
 )
 from installer.managed_text import (
-    grok_skill_text, render_grok_agent,
-    render_claude_settings,
+    grok_skill_text, render_grok_agent, render_claude_settings,
     render_codex_agent_limits as _render_codex_agent_limits,
     render_grok_subagent_limits as _render_grok_subagent_limits,
     render_host_block,

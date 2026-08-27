@@ -8,9 +8,11 @@ if _facade is None:
 from tests.test_installer_cases.receipt.install_receipt import TestInstallReceipt
 from tests.test_installer_cases.receipt.source_commit import TestSourceCommit, TestUnreadableReceipt
 from tests.test_installer_cases.uninstall.conservative import TestConservativeUninstall
+from tests.test_installer_cases.uninstall.host_surfaces import TestHostSurfaceUninstall
 
 
 TestInstallReceipt.__module__ = _facade.__name__
 TestSourceCommit.__module__ = _facade.__name__
 TestUnreadableReceipt.__module__ = _facade.__name__
 TestConservativeUninstall.__module__ = _facade.__name__
+TestHostSurfaceUninstall.__module__ = _facade.__name__

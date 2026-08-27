@@ -9,8 +9,10 @@ from typing import Callable, NamedTuple
 from .application import _load_json, _prune_empty_dirs, _sha256_file
 from .foundation import (
     AUTO_REMOVE_KINDS,
+    _claude_agents_dir,
     _claude_scope_home,
     _claude_user_home,
+    _codex_agents_dir,
     _codex_user_home,
     _frontend_home,
     _grok_agents_dir,
@@ -46,6 +48,12 @@ _AUTO_REMOVE_BOUNDARIES = {
     "adapter": lambda scope, root: (
         _claude_scope_home(scope, root) / "skills", _claude_root(scope, root)
     ),
+    "claude-agent": lambda scope, root: (
+        _claude_agents_dir(scope, root), _claude_root(scope, root)
+    ),
+    "codex-agent": lambda scope, root: (
+        _codex_agents_dir(scope, root), _codex_root(scope, root)
+    ),
     "prompt": lambda scope, root: (_codex_user_home() / "prompts", _codex_user_home()),
     "codex-skill": lambda scope, root: (_codex_user_home() / "skills", _codex_user_home()),
     "codex-config": lambda scope, root: (_codex_user_home(), _codex_user_home()),
@@ -62,6 +70,8 @@ _AUTO_REMOVE_BOUNDARIES = {
 _DEFAULT_NOUNS = ("skill", "skill file")
 _REMOVAL_NOUNS = {
     "frontend-asset": ("frontend asset", "frontend asset"),
+    "claude-agent": ("Claude role agent", "Claude role agent file"),
+    "codex-agent": ("Codex role agent", "Codex role agent file"),
     "grok-skill": ("Grok skill", "Grok skill file"),
     "grok-agent": ("Grok role agent", "Grok role agent file"),
     "grok-rules": ("Grok instruction file", "Grok instruction file"),
