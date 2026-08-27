@@ -34,34 +34,43 @@ context in any checkout resumes a run mid-flight.
     │ ## Handoff           ┘                                      │
     └─────────────────────────────────────────────────────────────┘
 
-The semantic assignment is sealed before dispatch; changing it creates a new
-generation. The result sections belong to the
+The semantic assignment is sealed before dispatch. A later semantic change
+opens a successor run whose root Context cites the accepted predecessor result;
+it never rewrites this run or invents an in-run root generation. The result sections belong to the
 executor, written as the work happens, never in one write at the end.
 Field-by-field meaning: [contracts/work-item.md](contracts/work-item.md).
+
+Before issue, `tickets.py lint <run> [<id>] --file <path>` grades the exact
+candidate that `tickets.py new <run> [<id>] --file <path>` would project.
+After issue, `tickets.py show <run> <id>` inspects one ticket's parsed identity
+and sections without mutation.
 
 ## Dispatch protocol
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
 delivery. The caller promotes readiness, opens one attempt with
 `dispatch-open`, and commits its immutable reference or inline projection with
-`dispatch-packet`. The established child runs `dispatch-receive` with its
+`dispatch-packet`. Pass the response `.packet` value—not the response wrapper
+or a reconstructed shell literal—to `dispatch-receive` through `--file <path>`
+or UTF-8 standard input with `--file -`. The established child supplies its
 actual assigned name, role, profile, reply target, and workspace authority;
-only an accepted receipt permits the exact named executor to run.
+only a durable accepted receipt permits the exact named executor to run.
 
 The assignment seal identifies semantic generation. The dispatch id identifies
 one attempt and remains fixed across exact delivery retries. Transport silence
 replays the stored projection to the same child; it never creates a second live
 child. Retirement precedes replacement, and `dispatch-replace` performs both
 sides atomically. The packet carries one reserved `outcome` identity. The
-child commits its closed evidence envelope with `dispatch-outcome`, or an
-offline inline child returns that same envelope for coordinator relay.
-`dispatch-join` consumes only that durable outcome, so recovery never guesses
+child commits its unstreamed closing evidence delta with `dispatch-outcome`.
+`dispatch-join` consumes only that durable outcome after the committed
+`dispatch-receipt`, so recovery never guesses
 which streamed write closed the attempt. Fixed record ids replay identically
 and conflicting or unseen stale traffic refuses.
 
-Reference packets are normal. Inline packets seal the ticket origin, routing,
-lease, and durability when the receiver cannot read the sink; a ticket
-projection cannot be downgraded to ephemeral. A pre-v1 live claim without an attempt refuses
+Reference packets are normal. Inline packets carry the sealed ticket snapshot,
+but the authoritative sink must still authenticate receipt; self-carried
+offline material cannot authorize role-bearing execution. A ticket projection
+cannot be downgraded to ephemeral. A pre-v1 live claim without an attempt refuses
 `legacy-live-claim`: its existing owner must complete or abandon it before v1
 installation. The normative shapes and precedence live in
 [contracts/dispatch.md](contracts/dispatch.md).
@@ -95,8 +104,9 @@ The frontmatter carries two related mechanisms:
   frontier, no phase barriers.
 - **`root_generation`, `cut_generation`, and `assignment_seal`** bind every
   member to one validated immutable snapshot. Direct and decomposed roots use
-  the same generation and seal commands. Corrections create a new generation;
-  a stale or mismatched seal is never dispatched.
+  the same generation and seal commands. Deterministic cut correction happens
+  before seal; a sealed semantic change uses a successor run. A stale or
+  mismatched seal is never dispatched.
 
 ## Lifecycle
 
@@ -120,6 +130,8 @@ the claim and absolute lease. `dispatch-packet` commits the delivery projection;
 `dispatch-receive` re-grades its seal and actual receiver authority. After an
 attempt opens, the assignment is a fixed target
 ([rules/verification.md](rules/verification.md) §3).
+Every joined disposition retires the attempt. A suspended ticket retains its
+claimant observations and `## Handoff`, but it has no live attempt.
 
 ## Review
 
@@ -137,22 +149,28 @@ Three moments use readers who did not produce the fixed artifact
    accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — each result takes one outside-independence path:
-   either a fresh read-only `orch-critique` checker or the downstream composite
-   gate. Critique records blockers; it never repairs its own target. The
-   ordinary checker atomically records a fixed artifact, canonical findings,
-   and accepted subset in the same immutable review ledger before `checked_by`.
-3. **Composite gate** — fresh critique lenses read the integrated identity,
-   one `orch-repair` ticket fixes accepted blockers, and a fresh `orch-verify`
-   judges the repaired identity. A clean defect set skips repair work through
-   the attributed join. `GatePlan`, `CritiqueAdjudication`, `RepairOutcome`,
-   and `Verification` form one predecessor-linked `orchflows.review.v1` chain.
+   either the ordinary durable evaluator/adjudication carrier or the downstream
+   composite gate. Both use fresh read-only `orch-critique`; neither repairs
+   its own target. The ordinary checker atomically records a fixed artifact,
+   canonical findings, and accepted subset in the same immutable review ledger
+   before `checked_by`.
+3. **Composite gate** — `GatePlan` fixes the integrated artifact, root pack,
+   established workspace, normalized isolation `none`, and stable ordered lens
+   identities. Independent critiques remain parallel. `CritiqueAdjudication`
+   binds the full findings and accepted blocker set; `RepairOutcome` binds the
+   repaired identity or proves that set empty; fresh `Verification` evaluates
+   exactly that predecessor identity. Each append-only stage names the prior
+   stage digest, forming one predecessor-linked `orchflows.review.v1` chain.
 
 ## Errors and feedback
 
-- **Refusals are named, never silent.** A command that cannot proceed
-  returns a structured finding — `dependency-incomplete`, `role-mismatch`,
-  `legacy-live-claim`, or `stale-attempt` — instead of doing
-  something approximate.
+- **Refusals are named, never silent.** Packet receipt documents
+  `packet-invalid`, `state-inaccessible`, `assignment-divergent`,
+  `stale-attempt`, `identity-mismatch`, `role-mismatch`, `profile-mismatch`,
+  `authority-mismatch`, `dispatch-mismatch`, `dispatch-record-invalid`, and
+  `idempotency-conflict`; unseen execution records additionally refuse
+  `receipt-required`. Other command families expose their closed codes in
+  `--help` and their owning contracts instead of doing something approximate.
 - **The join rules on everything.** No returned result is trusted until
   `orch-integrate` adjudicates it. For v1, only `dispatch-join` sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
@@ -163,7 +181,8 @@ Three moments use readers who did not produce the fixed artifact
   concise `## Handoff` rather than improvising.
 - **The absolute lease does not move.** Packet replay, transport activity, and
   result filing never extend `lease_expires_at`. An ended attempt must be
-  retired or atomically replaced before a successor runs.
+  retired or atomically replaced before a successor runs. Suspension leaves a
+  retired attempt, never a live predecessor.
 - **Findings fork by severity.** Blocking defects go to `orch-repair`;
   non-blocking ones are recorded as candidate scope for a later pass —
   logged, never dropped.

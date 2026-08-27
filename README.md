@@ -214,12 +214,13 @@ self-improvement wired into every run.
   `orch-critique` challenges Goal and evidence, `orch-verify` independently
   decides Goal, `orch-loop` iterates, and the `fix` workflow proves the cause
   before repairing it.
-- **One stud pattern.** Five frozen contracts — work-item, verdict,
+- **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
-- **One return shape.** Every dispatchable unit returns one result
-  envelope — status, result identity, verification — so any unit's
-  output feeds any successor's evidence. A named workflow is just
+- **One return shape.** Every ticket attempt closes through the dispatch
+  outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
+  status, writer, and evidence. The durable result identity then feeds any
+  successor's evidence. A named workflow is just
   tickets with the edges between them written down, so a chain needs
   no per-pair glue.
 

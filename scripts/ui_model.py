@@ -106,7 +106,7 @@ DIAGNOSTIC_UNREADABLE = "could not be read"
 LIVE_CLAIM_STATUSES = ("claimed",)
 
 # The band answers "who is working right now", which `suspended` is not: it
-# holds the lease with nobody at the keyboard. A wider set here would read
+# retains Handoff observations with nobody at the keyboard. A wider set would read
 # as more parallelism than the run has.
 ACTIVE_STATUS = "claimed"
 
