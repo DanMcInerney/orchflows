@@ -88,7 +88,7 @@ class TestHostBlockRendering(unittest.TestCase):
             "Context",
             "Suggested files",
             "executor chooses implementation",
-            "frozen root",
+            "stamped root",
             "same planner child",
             "`ready` → `claim` → `packet`",
             "known cause",

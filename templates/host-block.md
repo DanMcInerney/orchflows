@@ -10,8 +10,8 @@
   `orch-off` suspends routing. Route smallest-first by graph shape:
   **answer** — evidence in context decides it; **single** — one
   [ticket]({{ORCH_LIB}}/contracts/work-item.md) whose semantic payload is Goal, Context, and
-  optional non-binding Suggested files goes to `orch-frontier`; its executor
-  chooses implementation and verification. **graph** — for a stamped root, run
+  optional non-binding Suggested files goes to `orch-frontier`; its
+  executor chooses implementation and verification. **graph** — for a stamped root, run
   `tickets.py ready <run> <root>`,
   `tickets.py claim <run> <root> --by <assigned-name>`,
   `tickets.py packet <run> <root> --reply-to <parent-name> --by
@@ -31,7 +31,7 @@
 - Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted
   markdown; only installed scripts write them. Root:
   {{ORCH_LIB}}/rules/visibility.md §6. Executors write results.
-- Worktree-isolated session: one command per Bash call; no loops or `&&`; pass
+- In a worktree-isolated session, one command per Bash call; no loops or `&&`; pass
   `rg` globs with `--glob` and ticket text with `--file`.
 - Installed items resolve at {{ORCH_LIB}}/by-name/<orch-name>/SKILL.md; scripts
   run from {{ORCH_BIN}}/ through the friction interpreter. Read installer
