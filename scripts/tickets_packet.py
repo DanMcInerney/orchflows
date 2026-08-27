@@ -185,6 +185,8 @@ def _packet_under_run_lock(rest):
     script = Path(__file__).with_name("tickets.py").resolve()
     executor_script = None if further else _executor_script(executor)
     assigned_name = str(dispatched_name or (loaded.get("claimed_by") if further is None else "") or "").strip() or None
+    if assigned_name is None:
+        return {"error": "packet requires the dispatched child identity through --by when it differs from claimed_by"}
     if further is not None:
         executor = further
         prompt = [f"Apply skill {executor} to ticket {ticket_path}."]
@@ -223,8 +225,8 @@ def _packet_under_run_lock(rest):
     else:
         prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
     prompt.append(f"Filing channel, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH in the candidate workspace:")
-    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--section", "SECTION", "--file", "PATH", "--append"))
-    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--section", "SECTION", "--text", "TEXT"))
+    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--by", assigned_name, "--section", "SECTION", "--file", "PATH", "--append"))
+    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], "--by", assigned_name, "--section", "SECTION", "--text", "TEXT"))
     if assigned_name is not None:
         prompt.append(f"Your assigned name is `{assigned_name}`; use exactly it wherever a command takes --by.")
     if executor in DISPATCHING_EXECUTORS and assigned_name is not None:

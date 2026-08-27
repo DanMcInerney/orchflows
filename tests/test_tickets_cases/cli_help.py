@@ -133,17 +133,32 @@ class TestPacketNamesTheFilingCommand(unittest.TestCase):
 
     def test_a_packet_names_both_filing_forms(self):
         with tempfile.TemporaryDirectory() as tmp:
-            packet = self.packet_for(Path(tmp))
+            tmp = Path(tmp)
+            packet = self.packet_for(tmp)
             lines = filing_lines(packet["prompt"])
             self.assertEqual(2, len(lines), packet["prompt"])
             file_line, text_line = lines
             self.assertEqual(
-                ["--section", "SECTION", "--file", "PATH", "--append"], file_line.split()[5:]
+                ["--by", "agent-a", "--section", "SECTION", "--file", "PATH", "--append"], file_line.split()[5:]
             )
-            self.assertEqual(["--section", "SECTION", "--text", "TEXT"], text_line.split()[5:])
+            self.assertEqual(
+                ["--by", "agent-a", "--section", "SECTION", "--text", "TEXT"],
+                text_line.split()[5:],
+            )
             # the placeholder is answerable from the prompt alone
             for section in tickets_mod.EXECUTOR_SECTIONS:
                 self.assertIn(section, packet["prompt"])
+
+            argv = text_line.split()[2:]
+            argv[argv.index("SECTION")] = "Result"
+            argv[argv.index("TEXT")] = "packet filing reached the ticket"
+            filed = run_cmd(tmp, *argv)
+            self.assertEqual("agent-a", filed["result"]["by"])
+            ticket = tmp / "state-sink" / "tickets" / "testrun" / "T1.md"
+            self.assertIn(
+                "### Written by `agent-a`\n\npacket filing reached the ticket",
+                ticket.read_text(encoding="utf-8"),
+            )
 
     def test_the_packet_filing_line_is_absolute_one_token_per_argument_and_shell_free(self):
         with tempfile.TemporaryDirectory() as tmp:

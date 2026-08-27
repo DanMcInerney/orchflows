@@ -96,6 +96,35 @@ class SemanticTicketContractTest(unittest.TestCase):
         actual = workspace._actual_mutations("M\0other/path.py\0A\0tests/new_guard.py\0")
         self.assertEqual([("change", "other/path.py"), ("create", "tests/new_guard.py")], actual)
 
+    def test_packet_filing_command_carries_claimant_and_writes_the_ticket(self):
+        self.dispatch(
+            "new", "packet", "R1", "--executor", "orch-edit",
+            "--goal", "Create the artifact.", "--context", "Use repository facts.",
+        )
+        self.seal("packet", "R1")
+        self.dispatch("ready", "--run", "packet")
+        self.dispatch("claim", "packet", "R1", "--by", "worker")
+        prompt = self.dispatch(
+            "packet", "packet", "R1", "--reply-to", "root"
+        )["packet"]["prompt"]
+        command = next(
+            line for line in prompt.splitlines()
+            if len(line.split()) > 2
+            and Path(line.split()[1]).name == "tickets.py"
+            and line.split()[2:5] == ["result", "packet", "R1"]
+            and "--text" in line.split()
+        )
+        argv = command.split()[2:]
+        self.assertEqual(["--by", "worker"], argv[3:5])
+        argv[argv.index("SECTION")] = "Result"
+        argv[argv.index("TEXT")] = "filed from emitted packet"
+        filed = self.dispatch(*argv)
+        self.assertEqual("worker", filed["result"]["by"])
+        ticket = (
+            Path(self.temporary.name) / "tickets" / "packet" / "R1.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("### Written by `worker`\n\nfiled from emitted packet", ticket)
+
     def test_decomposed_root_uses_same_semantic_shape(self):
         self.dispatch("new", "cut", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Use the repository facts.")
         self.dispatch("new", "cut", "R.01", "--executor", "orch-edit", "--goal", "Produce one component.", "--context", "It feeds the root result.")
@@ -140,6 +169,80 @@ class SemanticTicketContractTest(unittest.TestCase):
 
         self.assertEqual([], cutcheck.graph_findings(complete))
         self.assertEqual([], cutcheck.graph_findings(sealed))
+
+    def test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate(self):
+        snapshot = {
+            "R": assignment("R", "orch-decompose"),
+            "R.01": assignment("R.01", "orch-tdd"),
+            "R.02": assignment("R.02", "orch-tdd"),
+        }
+        draft = tickets_generations.draft_snapshot("R", snapshot)
+        with self.assertRaisesRegex(tickets_generations.GenerationError, "composite gate"):
+            tickets_generations.validate_draft("R", snapshot, draft)
+        with self.assertRaisesRegex(tickets_generations.GenerationError, "composite gate"):
+            tickets_generations.seal_assignments(
+                "R", snapshot, draft,
+                {
+                    "cut_generation": draft["cut_generation"],
+                    "draft_digest": "unreachable",
+                    "root_generation": draft["root_generation"],
+                    "state": "validated",
+                },
+            )
+
+    def test_clean_gate_uses_attributed_join_noop_and_opens_verification(self):
+        self.dispatch(
+            "new", "clean", "R", "--executor", "orch-decompose",
+            "--goal", "Deliver the integrated result.", "--context", "Use two members.",
+            "--pack", "orch-code-pack", "--independence", "gate",
+        )
+        for suffix in ("01", "02"):
+            self.dispatch(
+                "new", "clean", f"R.{suffix}", "--executor", "orch-tdd",
+                "--goal", f"Deliver member {suffix}.", "--context", "Feed the root.",
+                "--pack", "orch-code-pack", "--independence", "gate",
+                "--isolation", "required",
+            )
+        self.dispatch("stamp-generation", "clean", "R")
+        self.dispatch("gate", "clean", "R")
+        validated = self.dispatch("draft-validate", "clean", "R")
+        self.dispatch(
+            "seal", "clean", "R", "--cut-generation",
+            validated["draft_validation"]["cut_generation"],
+        )
+        self.dispatch("ready", "--run", "clean")
+        for suffix in ("01", "02"):
+            ticket_id = f"R.{suffix}"
+            self.dispatch("claim", "clean", ticket_id, "--by", f"member-{suffix}")
+            self.dispatch(
+                "result", "clean", ticket_id, "--by", f"member-{suffix}",
+                "--section", "Result", "--text", "done",
+            )
+            self.dispatch("set-status", "clean", ticket_id, "complete")
+        ready = self.dispatch("ready", "--run", "clean")
+        critique_id = "R.gate.critique.code"
+        self.assertIn(critique_id, {item["id"] for item in ready["ready"]})
+        self.dispatch("claim", "clean", critique_id, "--by", "critic")
+        self.dispatch(
+            "result", "clean", critique_id, "--by", "critic",
+            "--section", "Feedback", "--text", "[]",
+        )
+        self.dispatch("set-status", "clean", critique_id, "complete")
+        ready = self.dispatch("ready", "--run", "clean")
+        self.assertIn("R.gate.repair", {item["id"] for item in ready["ready"]})
+
+        closed = self.dispatch(
+            "join-noop-repair", "clean", "R.gate.repair", "--by", "root-join"
+        )
+        self.assertEqual("root-join", closed["join_noop_repair"]["by"])
+        ready = self.dispatch("ready", "--run", "clean")
+        self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
+        repair = (
+            Path(self.temporary.name) / "tickets" / "clean" / "R.gate.repair.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("status: complete", repair)
+        self.assertIn("claimed_by: root-join", repair)
+        self.assertIn("### Written by `root-join`\n\n[]", repair)
 
     def test_decompose_builds_the_complete_gate_bearing_draft_before_validation(self):
         skill = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")

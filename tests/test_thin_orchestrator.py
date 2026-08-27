@@ -111,7 +111,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         for anchor in (
             "stamped root",
-            "tickets.py ready <run> <root>",
+            "tickets.py ready --run <run>",
             "tickets.py claim <run> <root> --by <assigned-name>",
             "tickets.py packet <run> <root> --reply-to <parent-name> "
             "--by <assigned-name> --workspace <tree>",
@@ -119,6 +119,8 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "matching `orch-planner` child",
             "complete emitted packet",
             "ticket path is not a packet",
+            "outer coordinator integrates",
+            "starts `orch-frontier`",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)

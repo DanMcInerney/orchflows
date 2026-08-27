@@ -7,7 +7,7 @@ from pathlib import Path
 if __package__:
     from .tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from .tickets_issue import NEW_USAGE
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE
+    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from .tickets_packet import CHECKER_PATH_EXECUTORS, PACKET_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from .tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
@@ -16,7 +16,7 @@ if __package__:
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE
+    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from tickets_packet import CHECKER_PATH_EXECUTORS, PACKET_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
@@ -38,6 +38,7 @@ SUBCOMMAND_USAGE = {
     "claim": "claim <run> <id> --by <name>",
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
+    "join-noop-repair": JOIN_NOOP_REPAIR_USAGE,
     "packet": PACKET_USAGE,
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
@@ -57,6 +58,7 @@ SUBCOMMAND_SUMMARY = {
     "claim": "Claim one ready ticket.",
     "check": f"Record one blocker-only checker pass while status is one of {sorted(CHECKABLE_STATUSES)}.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
+    "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
     "packet": f"Emit a semantic dispatch packet; --executor may be {' or '.join(CHECKER_PATH_EXECUTORS)}.",
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
     "worklog": "Render the run worklog.",

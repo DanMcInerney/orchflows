@@ -11,23 +11,24 @@
   **answer** — evidence in context decides it; **single** — one
   [ticket]({{ORCH_LIB}}/contracts/work-item.md) whose semantic payload is Goal, Context, and
   optional non-binding Suggested files goes to `orch-frontier`; its
-  executor chooses implementation and verification. **graph** — for a stamped root, run
-  `tickets.py ready <run> <root>`,
+  executor chooses implementation, verification. **graph** — for a stamped root, run
+  `tickets.py ready --run <run>`,
   `tickets.py claim <run> <root> --by <assigned-name>`,
   `tickets.py packet <run> <root> --reply-to <parent-name> --by
   <assigned-name> --workspace <tree>`; dispatch the exact `orch-decompose` to
-  the matching `orch-planner` child with the complete emitted packet. A
-  root-input ticket path is not a packet. **spec** — one same planner child runs
+  the matching `orch-planner` child with the complete emitted packet; ticket
+  path is not a packet. The outer coordinator integrates the return and starts
+  `orch-frontier`. **spec** — one same planner child runs
   `orch-spec`: return a sealed direct root for one lawful executor; for distinct
   outcomes or dependencies, take a sealed `orch-decompose` root through
   `ready` → `claim` → `packet`, then run `orch-decompose`. The outer coordinator
-  integrates either, then starts `orch-frontier`. Never persist this as a
-  ticket sequence or start frontier inside planner. A known cause
+  integrates either, then starts `orch-frontier`. Never persist a ticket
+  sequence or start frontier inside planner. A known cause
   enters single; **fix** — an unknown cause →
   `tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run>
   --set failure=<the observed failure> --set workspace=<the tree>`,
-  then `orch-frontier`. Diagnose dispatch machinery with `install.py doctor`
-  without dispatch. `evolve`, `benchmaker` — only when named.
+  then `orch-frontier`. Diagnose dispatch with `install.py doctor`;
+  `evolve`, `benchmaker` — only when named.
 - Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted
   markdown; only installed scripts write them. Root:
   {{ORCH_LIB}}/rules/visibility.md §6. Executors write results.
