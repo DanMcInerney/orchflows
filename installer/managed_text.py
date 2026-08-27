@@ -272,12 +272,6 @@ class _LimitBlock(NamedTuple):
     dotted_limit_re: object
     parse_label: str
     merge_label: str
-    # Codex's dotted branch keeps a whitespace-only prefix, so a reinstall
-    # landing there re-adds a blank line every time and the file grows without
-    # bound. That is a defect in Codex's rendering, which this ticket may not
-    # change -- it is suspended through the ticket's Handoff. Grok drops the
-    # prefix and is idempotent; flipping this flag for Codex is the fix.
-    drop_blank_prefix: bool
 
 
 def _toml_scalar(value) -> str:
@@ -289,6 +283,7 @@ def _toml_scalar(value) -> str:
 
 def _render_limit_block(text: str, spec: _LimitBlock, toml_module) -> tuple[str, dict]:
     cleaned = without_marked_block(text, spec.start, spec.end)
+    had_block = cleaned != text
     if toml_module is not None:
         try:
             parsed = toml_module.loads(cleaned)
@@ -321,7 +316,16 @@ def _render_limit_block(text: str, spec: _LimitBlock, toml_module) -> tuple[str,
             (i for i, line in enumerate(lines) if _TOML_TABLE_RE.match(line.rstrip("\r\n"))), len(lines)
         )
         top_level = [line for line in lines[:first_table] if not spec.dotted_limit_re.match(line)]
-        if spec.drop_blank_prefix and not any(line.strip() for line in top_level):
+        # This branch writes a blank line after its block; removing the block
+        # leaves that separator behind, and reading it back as the user's own
+        # is what made a reinstall prepend one more blank line every time,
+        # without bound. So take back exactly the one this branch wrote, and
+        # only when there was a block to remove -- a first install has no
+        # separator of its own out there, and the blank lines it finds above
+        # the first table are the user's to keep.
+        if had_block and top_level and not top_level[-1].strip():
+            top_level.pop()
+        if not any(line.strip() for line in top_level):
             top_level = []
         if top_level and top_level[-1].strip():
             top_level.append("\n")
@@ -358,7 +362,6 @@ _CODEX_LIMIT_BLOCK = _LimitBlock(
     dotted_limit_re=_AGENTS_DOTTED_LIMIT_RE,
     parse_label="Codex config",
     merge_label="Codex agent limits",
-    drop_blank_prefix=False,
 )
 
 _GROK_LIMIT_BLOCK = _LimitBlock(
@@ -375,7 +378,6 @@ _GROK_LIMIT_BLOCK = _LimitBlock(
     dotted_limit_re=_SUBAGENTS_DOTTED_LIMIT_RE,
     parse_label="Grok config",
     merge_label="Grok subagent limits",
-    drop_blank_prefix=True,
 )
 
 

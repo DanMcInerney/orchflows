@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1762,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -216,6 +216,8 @@
    "test_installer.TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
    "test_installer.TestPluginSubsystemRemoved.test_install_py_source_has_no_plugin_subsystem_reference",
    "test_installer.TestPluginSubsystemRemoved.test_plugin_subsystem_paths_are_absent",
+   "test_installer.TestRoleAgentInstructions.test_a_codex_install_keeps_the_blank_lines_the_user_wrote",
+   "test_installer.TestRoleAgentInstructions.test_a_codex_reinstall_keeps_the_user_content_it_found",
    "test_installer.TestRoleAgentInstructions.test_a_config_with_no_subagents_table_gets_dotted_keys_above_the_first",
    "test_installer.TestRoleAgentInstructions.test_a_declared_role_that_the_profile_contradicts_refuses",
    "test_installer.TestRoleAgentInstructions.test_a_role_none_grok_body_carries_neither_gate_nor_fork_clause",
@@ -228,6 +230,7 @@
    "test_installer.TestRoleAgentInstructions.test_grok_agent_is_yaml_frontmatter_with_camelcase_keys_only",
    "test_installer.TestRoleAgentInstructions.test_grok_frontmatter_drops_the_keys_grok_would_silently_ignore",
    "test_installer.TestRoleAgentInstructions.test_no_grok_body_is_an_at_include_and_every_one_reads_its_canonical_body",
+   "test_installer.TestRoleAgentInstructions.test_reinstalling_over_a_codex_config_leaves_the_block_byte_stable",
    "test_installer.TestRoleAgentInstructions.test_rendering_grok_leaves_the_claude_and_codex_agents_alone",
    "test_installer.TestRoleAgentInstructions.test_role_description_is_the_role_name_and_nothing_to_follow",
    "test_installer.TestRoleAgentInstructions.test_role_instructions_send_no_child_to_read_the_role_contract",
@@ -1762,7 +1765,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
+  "sha256": "174617ddb227eed842924d419cce4bf925ebd6f3fb2338c3cc4ca1abc25b50ab"
  },
  "mutation_owners": [
   {
