@@ -83,14 +83,6 @@ const workflows: WorkflowCatalogItem[] = [
     ),
   },
   {
-    id: "orch-build",
-    type: "workflow-skill",
-    tier: "T1",
-    entry: "callable",
-    description: "Use for any new or amended skill, pack, or contract.",
-    summary: flow(["Specify item", "Build artifact", "Run admission"]),
-  },
-  {
     id: "orch-eval-design",
     type: "workflow-skill",
     tier: "T1",

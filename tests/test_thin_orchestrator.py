@@ -15,7 +15,7 @@ from tools import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_OWNER_LINK = (
-    "[Role profiles](../../../engines/orch-frontier/references/profiles.md)"
+    "[role profiles](../skills/engines/orch-frontier/references/profiles.md)"
 )
 
 
@@ -44,7 +44,6 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         "orch-eval-design": "planner",
         "orch-self-improve": "planner",
         "orch-triage": "planner",
-        "orch-build": "worker",
         "orch-fixture": "worker",
         "orch-repair": "worker",
     }
@@ -97,6 +96,14 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "outer coordinator",
         ):
             self.assertIn(anchor, collapsed_host)
+        authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
+        self.assertEqual(1, host.count(authoring_pointer))
+        self.assertRegex(
+            collapsed_host,
+            re.compile(r"Skill/composition/pack/contract/router work uses those routes; seal .*custom-workflow-authoring\.md` in Context"),
+        )
+        decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("relevant Context", decompose)
         self.assertNotIn("**errand**", collapsed_host)
         self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
@@ -220,7 +227,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-spec", "orch-build"}:
+        for name in {"orch-spec", "orch-repair"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]
@@ -265,9 +272,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 Path("X"),
             )
 
-        scopes = (
-            ROOT / "skills/workflows/orch-build/references/scopes.md"
-        ).read_text(encoding="utf-8")
+        scopes = (ROOT / "docs/custom-workflow-authoring.md").read_text(encoding="utf-8")
         self.assertTrue(_custom_routing_uses_profile_owner(scopes))
         reconstructed = scopes.replace(
             "use the native binding that owner returns",

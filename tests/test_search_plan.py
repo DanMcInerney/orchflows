@@ -464,7 +464,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     tournament_calls = set(CALL_EDGE_RE.findall(tournament))
     if tournament_calls:
         errors.append("tournament-internal-call")
-    if "writer=orch-build" not in normalized(tournament):
+    if "writer=orch-tdd" not in normalized(tournament):
         errors.append("tournament-writer-binding")
     # The campaign's promotion judgment is evolve's, and the tournament may
     # not restate it. Since 2026-08-16 (thread T27) the tournament does name

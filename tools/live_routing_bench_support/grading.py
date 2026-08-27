@@ -7,7 +7,7 @@ import re
 from tools.live_claude_profiles import _json_events
 
 ROUTE_CLASSES = (
-    "answer", "single", "graph", "spec", "doctor", "fix", "build", "named",
+    "answer", "single", "graph", "spec", "doctor", "fix", "named",
 )
 UNROUTED = "unrouted"
 # A session that failed before it could route -- an API error, an
@@ -26,7 +26,6 @@ ROUTING_SKILLS = {
 # executable graph shapes instead of naming one route class.
 TICKET_SKILLS = frozenset(ROUTING_SKILLS)
 FIX_SKILL = "fix"
-BUILD_SKILL = "orch-build"
 SKILL_TOOLS = frozenset({"Skill", "SlashCommand"})
 ANSWER_LINE_RE = re.compile(r"^ROUTE:\s*answer", re.IGNORECASE | re.MULTILINE)
 # Under `--claude-adapters four` an unadapted name has no adapter to invoke,
@@ -51,8 +50,8 @@ def _skill_name(block_input: dict) -> str | None:
 
     `SlashCommand` carries the whole typed line in `command`, arguments
     included, so the first whitespace token is the name and the rest is what
-    was said to it. Reading the line whole graded `/orch-build foo` as
-    `named:orch-build foo` -- a route class no case can expect.
+    was said to it. Reading the line whole can otherwise invent a name that
+    includes its arguments -- a route class no case can expect.
     """
 
     for key in ("skill", "name", "command"):
@@ -67,8 +66,6 @@ def _classify_skill(skill: str) -> str:
         return ROUTING_SKILLS[skill]
     if skill == FIX_SKILL:
         return "fix"
-    if skill == BUILD_SKILL:
-        return "build"
     return f"named:{skill}"
 
 

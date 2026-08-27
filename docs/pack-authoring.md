@@ -2,12 +2,12 @@
 
 The order of work when adding a domain pack — the pack factory of
 [documentation.md](documentation.md) §7, its library instances the four
-under `packs/`, a project's landing per `orch-build`'s scopes. The law
+under `packs/`, a project's landing per
+[custom workflow authoring](custom-workflow-authoring.md). The law
 lives with its owners — admission, cells, sharing constraints, and craft
 budget in [contracts/pack-signature.md](../contracts/pack-signature.md);
 anatomy and body budgets in [rules/composition.md](../rules/composition.md)
-§5; admission in `orch-build`; each existing pack's rationale in
-`DESIGN.md`. This file only orders the work and names
+§5; each existing pack's rationale in `DESIGN.md`. This file only orders the work and names
 what each step feeds the next.
 
 1. Admission first, in writing, against the signature's admission
@@ -31,4 +31,5 @@ what each step feeds the next.
    description, in the packs' shared idiom, ending in its
    "Stamp when …" sentence.
 
-Close with `orch-build`'s admission.
+Close with the admission in
+[custom workflow authoring](custom-workflow-authoring.md).

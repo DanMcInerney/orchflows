@@ -18,7 +18,7 @@
    configuration). The owner fixes the proposal's scope:
    `environment` — host machine state; `project` — the repository the
    friction arose in; `workflow` — library or custom workflow files
-   at any build scope.
+   at any authoring scope.
    Blame classes recorded at joins (caller under-supplied vs child
    under-delivered) are the router.
 4. A proposal qualifies on recurrence — the same owner-assigned

@@ -339,7 +339,7 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
         "DESIGN.md",
         "docs/documentation.md",
         "docs/ui/platform.md",
-        "skills/workflows/orch-build/references/scopes.md",
+        "docs/custom-workflow-authoring.md",
     )
 
     def test_maintained_installation_docs_name_user_scope_and_no_project_install(self):
@@ -356,33 +356,44 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
             with self.subTest(user_anchor=name):
                 self.assertRegex(texts[name].lower(), r"\buser(?:-level|-scope)? install")
 
-    def test_live_routing_cases_teach_user_install_and_keep_project_custom_builds(self):
+    def test_live_routing_cases_teach_user_install_and_keep_project_custom_authoring(self):
         cases = json.loads((ROOT / "benchmarks" / "routing" / "cases.json").read_text())
         by_id = {case["id"]: case for case in cases}
         self.assertNotIn("answer-project-scope", by_id)
         self.assertIn("user install", by_id["answer-install-scope"]["prompt"].lower())
         self.assertEqual("answer", by_id["answer-install-scope"]["expected"])
 
-        project_build = by_id["build-project-custom-skill"]
+        project_build = by_id["author-project-custom-skill"]
         self.assertIn("project-scope custom skill", project_build["prompt"])
         self.assertEqual("single", project_build["expected"])
-        project_composition = by_id["build-project-custom-composition"]
+        project_composition = by_id["author-project-custom-composition"]
         self.assertIn(
             "project-scope custom composition", project_composition["prompt"]
         )
         self.assertEqual("single", project_composition["expected"])
 
-    def test_project_build_scope_remains_a_distinct_custom_item_landing_zone(self):
-        scopes = (
-            ROOT / "skills" / "workflows" / "orch-build" / "references" / "scopes.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("## Project build scope", scopes)
+    def test_project_authoring_scope_remains_a_distinct_custom_item_landing_zone(self):
+        scopes = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(encoding="utf-8")
+        self.assertIn("## Scope and landing", scopes)
         self.assertIn("<repo>/.orchflows/compositions/<name>", scopes)
         project_row = next(
             line for line in scopes.splitlines() if line.startswith("| project |")
         )
         self.assertIn("<repo>/.orchflows/skills/<name>/SKILL.md", project_row)
-        self.assertIn("repo's `AGENTS.md`", project_row)
+        self.assertIn("repository's `AGENTS.md`", project_row)
+
+    def test_custom_authoring_standard_preserves_admission_and_user_scope_boundaries(self):
+        standard = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(encoding="utf-8")
+        for anchor in (
+            "tickets.py instantiate",
+            "context: fork",
+            "matching `agent`",
+            "resolve the declared role",
+            "not git\ncode-pack candidates",
+            "reserved `orch-` prefix",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, standard)
 
 
 if __name__ == "__main__":
