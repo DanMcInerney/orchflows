@@ -12,6 +12,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | none — the repository is the assembly |
 | lens | `orch-critique` with [references/craft.md#lens](references/craft.md#lens) |
 | evidence | [references/evidence.md](references/evidence.md) |
-| workspace | git: isolated branch or worktree candidates have repository write authority; Suggested files are non-binding; integration inspects actual diffs and ordinary Git conflicts, resolves overlaps through `orch-resolve-conflicts`, regenerates shared derived artifacts once, then runs the final gate; ticket adapter: `git`; assignment references: root_generation, cut_generation, assignment_seal |
+| workspace | git: isolated branch or worktree candidates have repository write authority; Suggested files are non-binding; integration inspects actual diffs and ordinary Git conflicts, resolves overlaps through `orch-resolve-conflicts`, regenerates shared derived artifacts once, then runs the final gate; ticket adapter: `git`; assignment references: root_generation, cut_generation, assignment_seal; lifecycle metadata: workspace_path, workspace_branch, workspace_baseline |
 | required_spec_fields | target repository; standards owner by pointer; observable result |
 | craft | [references/craft.md](references/craft.md) |

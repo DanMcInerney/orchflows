@@ -2,14 +2,14 @@
 """Observe and grade one work item's isolated workspace.
 
 Stdlib-only, cross-platform, Python 3.9 and up, no network at run time.
-The ticket is the work item of ``contracts/work-item.md``: ``start``,
-run from inside a workspace, records the lifecycle stamps
-``workspace_branch`` and ``workspace_baseline`` into the main-root
-ticket's frontmatter; ``check`` grades the item's ``isolation``
+The ticket is the work item of ``contracts/work-item.md``: ``start`` records
+the durable ``workspace_path`` for every supported adapter. For a Git
+candidate it runs from inside the already-created workspace and also records
+``workspace_branch`` and ``workspace_baseline``; for an evidence-store lane it
+creates the canonical run-scoped store in the state sink. ``check`` grades the item's ``isolation``
 declaration at the join from the integrating checkout's git -- the
-caller's own, or the one ``--repo`` names. A script observes and
-grades — it never creates, enters or removes a workspace, and ``start``
-never claims.
+caller's own, or the one ``--repo`` names. The script never creates, enters,
+or removes a Git candidate; ``start`` never claims.
 
 Deviation from ``scripts/tickets.py``, stated because a caller reads
 these exit codes: this script does not inherit that script's exit-0
@@ -35,7 +35,7 @@ Exit codes:
        flags: the join must still read what the item was executed in.
 
 Subcommands:
-    start <run> <id>
+    start <run> <id>  # from a Git candidate, or anywhere for evidence-store
     check <run> <id> --base <rev> [--repo <path>]
 
 ``--repo <path>`` aims ``check`` at another checkout: every git call and the
@@ -74,6 +74,7 @@ workspace_prepare = __import__("workspace_prepare")
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
 BASELINE_KEY = "workspace_baseline"
+PATH_KEY = "workspace_path"
 # Every frontmatter key name this script writes or reads, and where. The
 # spellings belong to ``contracts/work-item.md``; ``tests/test_workspace.py``
 # reads this mapping and the contract's own bytes and asserts the two agree
@@ -83,6 +84,7 @@ FRONTMATTER_KEYS = {
     ISOLATION_KEY: "read by check",
     BRANCH_KEY: "written by start, read by check",
     BASELINE_KEY: "written by start",
+    PATH_KEY: "written by start",
 }
 
 # The value and its normalization both come from ``tickets.py``, never a
@@ -117,7 +119,7 @@ COMMAND_USAGE = {
     "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
 }
 COMMAND_HELP = {
-    "start": "from inside the workspace: record its branch and baseline into the ticket",
+    "start": "establish and record the pack workspace; run inside an already-created Git candidate",
     "check": "from the integrating checkout: grade isolation and report the actual diff",
 }
 USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
@@ -197,16 +199,38 @@ def _positional(rest, count: int, command: str) -> list:
 
 
 def _cmd_start(rest):
-    """Record what this workspace is, from inside it. It does not claim."""
+    """Establish and record the pack workspace. It does not claim."""
 
     run, ticket_id = _positional(rest, 2, "start")
-    root, path = _locate(run, ticket_id)
+    path = state_root.tickets_root() / run / f"{ticket_id}.md"
+    if not path.is_file():
+        raise Refused(f"ticket not found: {run}/{ticket_id}")
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     # the snapshot the stamps are written against, taken before the git calls
     # below and not after them: those calls are the seconds a concurrent
     # `set-status` lands in, and a snapshot taken past them absorbs the write
     # this guard exists to report
     prior_text = path.read_text(encoding="utf-8")
+    mechanism = tickets.adapter_id(data.get("pack"))
+    if mechanism == "evidence-store":
+        store = (state_root.state_root() / "research" / run).resolve()
+        store.mkdir(parents=True, exist_ok=True)
+        outcome = _record(path, prior_text, None, None, str(store))
+        if "error" in outcome:
+            raise Refused(outcome["error"])
+        return {
+            "start": {
+                "run": run,
+                "id": ticket_id,
+                "ticket": str(path),
+                "mechanism": mechanism,
+                PATH_KEY: str(store),
+                "workspace_root": str(store),
+            }
+        }, EXIT_OK
+    root, located = _locate(run, ticket_id)
+    if located != path:
+        raise Refused(f"ticket identity changed while locating {run}/{ticket_id}")
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
     branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
@@ -221,7 +245,7 @@ def _cmd_start(rest):
     observed = workspace_git._baseline(head, dirty)
     stamped = str(data.get(BASELINE_KEY) or "").strip()
     baseline = stamped or observed
-    outcome = _record(path, prior_text, branch, baseline)
+    outcome = _record(path, prior_text, branch, baseline, str(top))
     if "error" in outcome:
         raise Refused(outcome["error"])
     # after recording, never before: a tree that cannot be prepared is still
@@ -237,6 +261,7 @@ def _cmd_start(rest):
             "ticket": str(path),
             BRANCH_KEY: branch,
             BASELINE_KEY: baseline,
+            PATH_KEY: str(top),
             # present only on a re-establishment, which its presence declares
             **({"reestablished": observed} if stamped else {}),
             "workspace_root": str(top),

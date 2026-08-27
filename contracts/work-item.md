@@ -34,8 +34,11 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `review_order` — the sealed zero-based order of a composite-gate lens.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
-- `claimed_by`, `claimed_at`, `checked_by`, `workspace_branch`, and
-  `workspace_baseline` — lifecycle observations written by their owning tools.
+- `claimed_by`, `claimed_at`, `checked_by`, `workspace_path`,
+  `workspace_branch`, and `workspace_baseline` — lifecycle observations written
+  by their owning tools. `workspace_path` names the pre-dispatch candidate or
+  canonical run-scoped evidence store; the Git-only fields fix its branch and
+  starting revision.
 - `dispatch_v1` — the canonical JSON `orchflows.dispatch.v1` attempt record.
   It is operational state, excluded from the assignment fingerprint.
 - `review_v1` — the canonical JSON immutable review-stage ledger. It is
@@ -154,3 +157,9 @@ closing outcome evidence is an unstreamed delta.
 T0 supersession record sha256:85860c216a05aab9272033f2a368fde11d232e082f7d3d5cc82931bcf2e8bf36:
 `review_order` seals composite-lens order and operational `review_v1` records
 the immutable GatePlan through Verification chain.
+
+T0 supersession record sha256:73c86dd421ed6da6acf7893e881a652ffeee2badc3e496e3fb810e4661519804:
+workspace establishment is a host-owned pre-dispatch
+transition. `workspace.py start` records `workspace_path` for every supported
+adapter, plus the existing Git branch/baseline observations, and creates the
+canonical run-scoped research evidence store.
