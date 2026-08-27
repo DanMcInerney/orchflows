@@ -47,7 +47,8 @@ that needs a different meaning needs a different word.
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow: a template (below) under
   `compositions/` (canonical) or `<repo>/.orchflows/compositions/`
-  (custom); entry `routed | named`; admitted through `orch-build`.
+  (custom); entry `routed | named`; admitted under
+  `docs/custom-workflow-authoring.md`.
 - **combinator** — one of the three ways a template composes its stubs:
   a `depends_on` edge, disjoint parallel stubs (no dependency path
   between them, so the frontier may run them together), and a loop stub
@@ -57,10 +58,10 @@ that needs a different meaning needs a different word.
   bind as a step or loop body, and the leading `Return` fields it must
   carry — status, result identity, verification — per
   `contracts/result.md`.
-- **build scope** — where a built item lands and which admission evidence gates it:
+- **authoring scope** — where an authored item lands and which admission evidence gates it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
-  their scope; bounds per `orch-build`'s scopes reference.
+  their scope; bounds per `docs/custom-workflow-authoring.md`.
 - **rule** — a clause of cross-cutting law in `rules/`; what any other
   file may do with one is `rules/visibility.md` §3's.
 - **call edge** — a resolved backticked skill name in a skill body; the call
@@ -185,8 +186,7 @@ that needs a different meaning needs a different word.
   verifier.
 - **gate** — the one composite critique-fix-verify path a run crosses: one
   or more uniquely named critiques feed one repair and one verification;
-  `orch-build`'s admission and a benchmark's
-  qualification are not gates.
+  authoring admission and a benchmark's qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: `orch-verify` where the criteria carry a score scale,
   blindness being a property of the packet's `inputs`, not of a skill.

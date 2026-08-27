@@ -8,7 +8,11 @@ cover, contradictions, and gaps. Code tests are one possible method, not a
 ticket-authored criterion. Research, design, content, and specification work
 use the artifact-appropriate evidence in
 [verification.md](../rules/verification.md) §2. These records are append-only
-after seal and do not change the semantic assignment digest.
+after seal and do not change the semantic assignment digest. Every successful
+section write adds exactly one canonical writer attribution, `### Written by <claimed_by>`,
+and returns that identity. The required `--by` value matches `claimed_by` on the
+currently claimed ticket; the command refuses absent or different identities
+and never changes lifecycle state.
 
 A read-only critique records findings in `## Feedback`; it never rewrites the
 executor's Result or Verification. A verifier records its independent verdict
@@ -18,3 +22,5 @@ The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, adjudicates only material blockers against
 Goal and Context, and records terminal status. Deterministic repository-global gates
 run on the integrated tip. Suggested files are never an acceptance boundary.
+
+T0 supersession record sha256:9c4a109ca9158a60109f756f02e28673270cc741d8ad2e6a2fa06529841d5fdd: result section writes now require and return their current claim writer.

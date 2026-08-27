@@ -83,6 +83,8 @@ def physical_line_count(path: Path) -> int:
 def oversized_files(paths, maximum: int = MAX_PHYSICAL_LINES):
     oversized = []
     for path in paths:
+        if not path.is_file():
+            continue
         count = physical_line_count(path)
         if count > maximum:
             oversized.append((path, count))

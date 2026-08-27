@@ -4,13 +4,13 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
+    from .tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section
 else:
-    from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
+    from tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _set_frontmatter_field, _write_section
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
-    from tickets_store import NO_SINK_ERROR, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
@@ -31,11 +31,16 @@ else:
 # binding it now grades also lives; re-exported here because the facade and
 # `tickets_dispatch` import these three names from this module.
 if __package__:
-    from .tickets_project import CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
+    from .tickets_project import CLAIM_REMEDY, CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
 else:
-    from tickets_project import CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
+    from tickets_project import CLAIM_REMEDY, CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
+if __package__:
+    from .tickets_result import RESULT_ATTRIBUTION_PREFIX
+else:
+    from tickets_result import RESULT_ATTRIBUTION_PREFIX
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --by <name>'
+JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
     dangling = [value for value in dependencies if value not in tickets]
@@ -213,6 +218,70 @@ def _cmd_set_status(rest):
             return _set_status_under_run_lock(rest)
     except OSError as error:
         return {'error': f'unable to record status and terminal timing: {error}'}
+
+def _cmd_join_noop_repair(rest):
+    probe = list(rest)
+    _extract_flag(probe, '--by')
+    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
+        return _join_noop_repair_under_run_lock(rest)
+    held = binding_refusal(probe[0], CLAIM_REMEDY)
+    if held is not None:
+        return {'error': held}
+    try:
+        with _run_lock(probe[0]):
+            return _join_noop_repair_under_run_lock(rest)
+    except OSError as error:
+        return {'error': f'unable to complete clean repair at join: {error}'}
+
+def _join_noop_repair_under_run_lock(rest):
+    args = list(rest)
+    written_by = _extract_flag(args, '--by')
+    if len(args) != 2 or not (written_by or '').strip():
+        return {'error': f'usage: {JOIN_NOOP_REPAIR_USAGE}'}
+    written_by = written_by.strip()
+    if any(mark in written_by for mark in ('`', '\r', '\n')):
+        return {'error': 'join-noop-repair --by contains backticks or line breaks'}
+    run, ticket_id = args
+    if not ticket_id.endswith('.gate.repair'):
+        return {'error': 'join-noop-repair requires a .gate.repair ticket'}
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if not ticket_path.is_file():
+        return {'error': f'ticket not found: {run}/{ticket_id}'}
+    text, failure = _read_utf8(ticket_path)
+    if failure is not None:
+        return failure
+    data = _parse_frontmatter(text)
+    if str(data.get('status') or '') != 'ready':
+        return {'error': f'join-noop-repair requires a ready ticket: {run}/{ticket_id}'}
+    if _executor_of(data) != GATE_EXECUTORS['repair']:
+        return {'error': f'join-noop-repair requires executor {GATE_EXECUTORS["repair"]}'}
+    dependencies = [str(value) for value in (data.get('depends_on') or [])]
+    if not dependencies:
+        return {'error': 'join-noop-repair requires completed critique dependencies'}
+    critique_prefix = ticket_id[:-len('repair')] + 'critique.'
+    for dependency in dependencies:
+        loaded = _load_ticket(ticket_path.with_name(f'{dependency}.md'))
+        if ('error' in loaded or not dependency.startswith(critique_prefix)
+                or _executor_of(loaded) != GATE_EXECUTORS['critique']
+                or str(loaded.get('status') or '') != 'complete'):
+            return {'error': f'join-noop-repair dependency is not a completed gate critique: {dependency}'}
+    if _section_body(text, 'Result'):
+        return {'error': 'join-noop-repair requires an empty repair Result'}
+    timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
+    updated = _set_frontmatter_field(text, 'status', 'claimed')
+    updated = _set_frontmatter_field(updated, 'claimed_by', written_by)
+    updated = _set_frontmatter_field(updated, 'claimed_at', timestamp)
+    updated = _write_section(updated, 'Result', f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n[]')
+    updated = _set_frontmatter_field(updated, 'status', 'complete')
+    try:
+        _write_text_atomically(ticket_path, updated)
+    except OSError as error:
+        return {'error': f'unable to complete clean repair at join: {error}'}
+    return {'join_noop_repair': {'run': run, 'id': ticket_id, 'status': 'complete', 'by': written_by, 'claimed_at': timestamp}}
+
 def _set_status_under_run_lock(rest):
     args = list(rest)
     if len(args) != 3:

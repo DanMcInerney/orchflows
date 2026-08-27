@@ -86,14 +86,14 @@ reader. Human legibility is welcome; it is never the design driver.
   after the fact; an observation logged at the moment of friction is
   the only faithful record, so the log's fidelity ceilings the
   library's improvement rate (amnesia).
-- **Scope is data (`orch-build`).** Canonical, user, and project items
-  differ only in landing zone and available oracles, so one build
-  judgment reads those facts from a table — the same move that keeps
-  domains in packs and hosts in the installer. Custom workflows
-  instantiate from compositions, the named-workflow tier, so user
-  reuse never mints new control flow; and an item's scope never
-  exceeds the install scope that resolves its call edges, or the item
-  would dangle (search is memory).
+- **Authoring scope is data.** Canonical, user, and project items differ
+  in landing zone and available oracles, recorded in
+  [custom workflow authoring](docs/custom-workflow-authoring.md), while
+  the work itself takes the ordinary smallest-first code route. Custom
+  workflows instantiate from compositions, the named-workflow tier, so
+  reuse never mints new control flow; an item's scope never exceeds the
+  host surface that resolves its call edges, or the item would dangle
+  (search is memory).
 
 ## Why the named tier is ticket-set templates
 
@@ -252,24 +252,18 @@ drift on rerun because no surveyed library in this space detects
 install drift, and an installer that silently reapplies stale content
 over a newer clone is a bug its own user cannot see.
 
-The fourth is the catalog tax. Codex reads `~/.codex/skills` as one
-global, unscoped catalog whose
-name and description are paid on every turn in every project
-regardless of use, while a skill's body is read live from disk only at
-invocation; mirroring the whole library there would tax every session
-for skills most turns never invoke, so prompts stay Codex's primary
-surface and only the four entry points `install.py` names get a
-redirect stub — a one-line pointer at
-the lib path a live read keeps at zero staleness. The former
+The fourth is live indirection. Codex reads `~/.codex/skills` as one
+global, unscoped catalog, while a skill's body is read live from disk only at
+invocation; every canonical callable therefore gets a small redirect stub to
+the installed library instead of a copied body that can go stale. The former
 repository-local installer path was removed because its routing block
 and day-zero residue were never load-bearing: friction
 logging resolves the user-scope sink through
 `scripts/state_root.py` from any working directory, and a
 project-pinned lib version was never implemented (its receipt recorded
 no source commit). The user install resolves every call edge. Project
-build scope remains a distinct `orch-build` landing zone for custom
-skills and compositions under `<repo>/.orchflows`; it is not an
-installer scope.
+authoring scope remains a distinct landing zone for custom skills and
+compositions under `<repo>/.orchflows`; it is not an installer scope.
 
 ## Why session tracing is post-hoc
 

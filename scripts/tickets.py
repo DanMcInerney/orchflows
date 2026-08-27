@@ -129,7 +129,7 @@ binding_findings = _tickets_admission_module.binding_findings
 grade_admission = _tickets_admission_module.grade_admission
 is_receipt = _tickets_admission_module.is_receipt
 _GENERATION_EXPORTS = frozenset({
-    "assignment_digest", "assignment_payload", "correction_decision", "draft_snapshot",
+    "assignment_digest", "assignment_payload", "composite_gate_findings", "correction_decision", "draft_snapshot",
     "generation_identity", "generation_ordinal", "seal_assignments",
     "seal_findings", "validate_draft",
 })
@@ -203,6 +203,7 @@ _place_ticket = _tickets_issue_module._place_ticket
 _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
 CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE
+JOIN_NOOP_REPAIR_USAGE = _tickets_lifecycle_module.JOIN_NOOP_REPAIR_USAGE
 CLAIM_USAGE = _tickets_lifecycle_module.CLAIM_USAGE
 SET_STATUS_USAGE = _tickets_lifecycle_module.SET_STATUS_USAGE
 _check_under_run_lock = _tickets_lifecycle_module._check_under_run_lock
@@ -210,12 +211,14 @@ _claim_is_stale = _tickets_packet_module._claim_is_stale
 _claim_under_run_lock = _tickets_lifecycle_module._claim_under_run_lock
 _cmd_check = _tickets_lifecycle_module._cmd_check
 _cmd_claim = _tickets_lifecycle_module._cmd_claim
+_cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
 _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
 _do_claim = _tickets_lifecycle_module._do_claim
 _is_stale = _tickets_packet_module._is_stale
 _last_motion = _tickets_packet_module._last_motion
+_join_noop_repair_under_run_lock = _tickets_lifecycle_module._join_noop_repair_under_run_lock
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
 CHECKER_EXECUTOR = _tickets_packet_module.CHECKER_EXECUTOR
 CHECKER_PATH_EXECUTORS = _tickets_packet_module.CHECKER_PATH_EXECUTORS
@@ -328,6 +331,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_ready = _cmd_ready
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
+    _tickets_dispatch_module._cmd_join_noop_repair = _cmd_join_noop_repair
     _tickets_dispatch_module._cmd_packet = _cmd_packet
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog

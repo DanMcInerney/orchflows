@@ -93,19 +93,6 @@
         {"source": "campaign", "target": "promote", "kind": "sequence"}
       ]
     },
-    "orch-build": {
-      "nodes": [
-        {"id": "route", "label": "Route existing machinery"},
-        {"id": "shape", "label": "Shape the scoped item"},
-        {"id": "admit", "label": "Run admission checks"},
-        {"id": "return", "label": "Return acceptance lens"}
-      ],
-      "edges": [
-        {"source": "route", "target": "shape", "kind": "branch"},
-        {"source": "shape", "target": "admit", "kind": "sequence"},
-        {"source": "admit", "target": "return", "kind": "sequence"}
-      ]
-    },
     "orch-eval-design": {
       "nodes": [
         {"id": "boundary", "label": "Fix target and outcome"},

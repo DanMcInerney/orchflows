@@ -15,7 +15,7 @@ from tools import validate
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_OWNER_LINK = (
-    "[Role profiles](../../../engines/orch-frontier/references/profiles.md)"
+    "[role profiles](../skills/engines/orch-frontier/references/profiles.md)"
 )
 
 
@@ -44,7 +44,6 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         "orch-eval-design": "planner",
         "orch-self-improve": "planner",
         "orch-triage": "planner",
-        "orch-build": "worker",
         "orch-fixture": "worker",
         "orch-repair": "worker",
     }
@@ -97,9 +96,41 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "outer coordinator",
         ):
             self.assertIn(anchor, collapsed_host)
+        authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
+        self.assertEqual(1, host.count(authoring_pointer))
+        self.assertRegex(
+            collapsed_host,
+            re.compile(r"Skill/composition/pack/contract/router work uses those routes; seal .*custom-workflow-authoring\.md` in Context"),
+        )
+        decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("relevant Context", decompose)
         self.assertNotIn("**errand**", collapsed_host)
         self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
+
+    def test_graph_lane_emits_the_complete_decompose_packet(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+
+        for anchor in (
+            "stamped root",
+            "tickets.py ready --run <run>",
+            "tickets.py claim <run> <root> --by <assigned-name>",
+            "tickets.py packet <run> <root> --reply-to <parent-name> "
+            "--by <assigned-name> --workspace <tree>",
+            "exact `orch-decompose`",
+            "matching `orch-planner` child",
+            "complete emitted packet",
+            "ticket path is not a packet",
+            "outer coordinator integrates",
+            "starts `orch-frontier`",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, graph)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -144,6 +175,30 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         ):
             self.assertIn(anchor, role_agent)
 
+    def test_spec_route_consumes_the_root_shape_it_sealed(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        spec_route = host.split("**spec**", 1)[1].split("**fix**", 1)[0]
+
+        for anchor in (
+            "direct root",
+            "one lawful executor",
+            "`orch-decompose` root",
+            "distinct outcomes or dependencies",
+            "same planner",
+            "`ready` → `claim` → `packet`",
+            "outer coordinator",
+            "`orch-frontier`",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, spec_route)
+
+        self.assertRegex(spec_route, r"same planner.*`orch-decompose` root")
+        self.assertRegex(spec_route, r"outer coordinator.*`orch-frontier`")
+
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
@@ -172,7 +227,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-spec", "orch-build"}:
+        for name in {"orch-spec", "orch-repair"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]
@@ -217,9 +272,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 Path("X"),
             )
 
-        scopes = (
-            ROOT / "skills/workflows/orch-build/references/scopes.md"
-        ).read_text(encoding="utf-8")
+        scopes = (ROOT / "docs/custom-workflow-authoring.md").read_text(encoding="utf-8")
         self.assertTrue(_custom_routing_uses_profile_owner(scopes))
         reconstructed = scopes.replace(
             "use the native binding that owner returns",

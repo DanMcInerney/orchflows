@@ -31,7 +31,6 @@ ROLE_TABLE = {
     "orch-edit": "worker",
     "orch-resolve-conflicts": "worker",
     "orch-visualize": "worker",
-    "orch-build": "worker",
     "orch-fixture": "worker",
     "orch-repair": "worker",
 }

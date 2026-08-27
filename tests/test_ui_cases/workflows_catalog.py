@@ -49,10 +49,10 @@ class WorkflowCatalogTests(unittest.TestCase):
             self._write(
                 root / "compositions" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-tdd\n"
-                "sequence: [orch-tdd, orch-build]\n"
+                "sequence: [orch-tdd, orch-verify]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
-            for name in ("orch-tdd", "orch-build"):
+            for name in ("orch-tdd", "orch-verify"):
                 self._write(
                     root / "skills" / "instances" / name / "SKILL.md",
                     f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
@@ -64,7 +64,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             edge for edge in detail["edges"] if edge["kind"] == "executor"
         ]
         self.assertEqual(
-            ["skill:orch-tdd", "skill:orch-build"],
+            ["skill:orch-tdd", "skill:orch-verify"],
             [edge["to"] for edge in executor_edges],
         )
         self.assertEqual(executor_edges, [
@@ -80,7 +80,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             self._write(
                 root / "compositions" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-tdd\n"
-                "sequence: [orch-build, orch-tdd]\n"
+                "sequence: [orch-verify, orch-tdd]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
 
@@ -96,7 +96,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             )
             self._write(
                 root / "compositions" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-build]\n"
+                "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-verify]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
 
@@ -135,7 +135,7 @@ class WorkflowCatalogTests(unittest.TestCase):
         self.assertEqual(
             [
                 "benchmaker", "drift-canary", "evolve", "fix", "renovate",
-                "self-improve", "skill-tournament", "orch-build",
+                "self-improve", "skill-tournament",
                 "orch-eval-design", "orch-fixture", "orch-repair",
                 "orch-self-improve", "orch-spec", "orch-triage",
             ],

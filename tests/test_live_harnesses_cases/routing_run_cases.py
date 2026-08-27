@@ -62,23 +62,23 @@ class TestRoutingBenchRun(unittest.TestCase):
             {
                 "id": "matching-child",
                 "prompt": "matching child",
-                "expected": "build",
+                "expected": "named:orch-repair",
                 "note": "",
                 "required_role": "worker",
-                "required_skill": "orch-build",
+                "required_skill": "orch-repair",
             },
             {
                 "id": "parent-only",
                 "prompt": "parent only",
-                "expected": "build",
+                "expected": "named:orch-repair",
                 "note": "",
                 "required_role": "worker",
-                "required_skill": "orch-build",
+                "required_skill": "orch-repair",
             },
         ]
         transcripts = {
             "matching child": [
-                _launch("worker-1", "orch-worker", "Apply orch-build exactly"),
+                _launch("worker-1", "orch-worker", "Apply orch-repair exactly"),
                 {
                     "type": "assistant",
                     "parent_tool_use_id": "worker-1",
@@ -88,13 +88,13 @@ class TestRoutingBenchRun(unittest.TestCase):
                                 "type": "tool_use",
                                 "id": "primary-1",
                                 "name": "Skill",
-                                "input": {"skill": "orch-build"},
+                                "input": {"skill": "orch-repair"},
                             }
                         ]
                     },
                 },
             ],
-            "parent only": [_skill_use("orch-build")],
+            "parent only": [_skill_use("orch-repair")],
         }
 
         def _fake_run(command, **kwargs):

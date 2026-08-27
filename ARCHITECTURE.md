@@ -20,7 +20,8 @@ Ceiling: 850 whitespace-delimited words. Terms are
   vocabulary and domain-only shape.
 - **T3 — [`compositions/`](compositions/):** named workflow templates.
   Their ticket stubs follow the
-  [work-item contract](contracts/work-item.md) via `orch-build`.
+  [work-item contract](contracts/work-item.md); their authoring standard is
+  [custom workflow authoring](docs/custom-workflow-authoring.md).
 
 ## Cross-cutting owners
 

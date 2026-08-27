@@ -18,7 +18,7 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 
 ### T1 workflow skills
 
-- [orch-build](../../skills/workflows/orch-build/SKILL.md) — use for any new or amended skill, pack, or contract.
+Custom-item authoring follows ordinary code routing and is not a callable workflow.
 - [orch-eval-design](../../skills/workflows/orch-eval-design/SKILL.md) — use before benchmark construction or direct judged scoring.
 - [orch-fixture](../../skills/workflows/orch-fixture/SKILL.md) — use when a proven ticket should guard against drift.
 - [orch-repair](../../skills/workflows/orch-repair/SKILL.md) — use inside a gate or for any accepted defect set.

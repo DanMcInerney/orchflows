@@ -51,8 +51,8 @@ Sharing constraints, checked at pack review:
 
 Purity: a pack body contains no delegation language, no stop states, no
 conditionals, and no Return contract. What the validator mechanically
-checks is `tools/validate.py`'s to say; the rest of purity is checked at
-pack review under the library lens. A pack that wants control flow is a
+checks is `tools/validate.py`'s to say; the rest of purity is checked under the
+[authoring lens](../docs/custom-workflow-authoring.md). A pack that wants control flow is a
 signature defect, not a pack feature.
 
 Admission: a domain earns a pack only for materially different artifact
