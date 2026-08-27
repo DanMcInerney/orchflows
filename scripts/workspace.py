@@ -88,9 +88,9 @@ FRONTMATTER_KEYS = {
 }
 
 # The value and its normalization both come from ``tickets.py``, never a
-# second spelling here: that script emits the establishment step off this
-# same declaration, and a grader reading it differently skips the grade at
-# exit 0 while the join reads success.
+# second spelling here: packet projection gates the host establishment off
+# this same declaration, and a grader reading it differently skips the grade
+# at exit 0 while the join reads success.
 REQUIRED = tickets.REQUIRED_ISOLATION
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -390,6 +390,13 @@ def _cmd_check(rest):
 
     ticket_worktree = workspace_git._ticket_worktree(_git_out, branch, tip)
     if ticket_worktree is not None:
+        recorded_workspace = str(data.get(PATH_KEY) or "").strip()
+        if recorded_workspace and Path(recorded_workspace).resolve() != ticket_worktree.resolve():
+            raise Refused(
+                f"branch {branch!r} now stands in {ticket_worktree.resolve()}, not its "
+                f"recorded workspace_path {Path(recorded_workspace).resolve()}",
+                EXIT_ISOLATION_MISSING,
+            )
         dirty = workspace_git._dirty_paths(str(ticket_worktree))
         # Emission, not the item's change: an acceptance oracle imports the
         # tree it grades and CPython writes bytecode beside it, so counting

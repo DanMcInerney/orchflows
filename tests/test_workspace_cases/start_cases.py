@@ -38,6 +38,36 @@ class TestStartEstablishesEvidenceStore(unittest.TestCase):
             self.assertNotIn("workspace_branch", body)
             self.assertNotIn("workspace_baseline", body)
 
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestCheckUsesTheEstablishedCandidate(unittest.TestCase):
+    def test_relocated_branch_does_not_replace_the_recorded_workspace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(
+                run_dir,
+                "T1",
+                extra=((workspace.ISOLATION_KEY, "required"),),
+            )
+            original = add_worktree(main, "item-branch", tmp / "original")
+            started = run_workspace(original, "start", "testrun", "T1")
+            self.assertEqual(0, started.returncode, started.stdout + started.stderr)
+            base = git(main, "rev-parse", "HEAD").strip()
+            commit_in(original, {"scratch/result.txt": "done\n"}, "result")
+            git(main, "worktree", "remove", str(original))
+            relocated = tmp / "relocated"
+            git(main, "worktree", "add", "--quiet", str(relocated), "item-branch")
+
+            checked = run_workspace(
+                main, "check", "testrun", "T1", "--base", base
+            )
+
+            self.assertEqual(workspace.EXIT_ISOLATION_MISSING, checked.returncode)
+            self.assertIn("recorded workspace_path", payload_of(checked)["error"])
+            self.assertIn(str(original.resolve()), payload_of(checked)["error"])
+            self.assertIn(str(relocated.resolve()), payload_of(checked)["error"])
+
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestCheckDisambiguatesItsRevisionRanges(unittest.TestCase):
     """A revision range is not a filename, and git only knows that if it is
