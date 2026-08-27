@@ -1,87 +1,16 @@
 #!/usr/bin/env python3
-"""Mechanical ticket queries over ``<sink>/tickets/<run>/*.md``.
+"""Current sealed ticket commands over the user-scope state sink.
 
-Stdlib-only, cross-platform. Tickets are markdown work items per
-``contracts/work-item.md``; frontmatter is parsed manually (no third-party
-YAML dependency). The root is the one user-scope state sink
-``scripts/state_root.py`` resolves — ``$ORCHFLOWS_STATE_HOME`` or
-``~/.orchflows/state`` — so every workspace in every repository reads and
-writes one run's tickets at one path, and a run outlives the checkout it
-started in. Every subcommand prints exactly one JSON document to stdout.
-Failures are reported as ``{"error": "..."}`` in the JSON payload and
-exit 1; success exits 0. No outcome raises a traceback.
+The author-facing semantic payload is Goal, Context, and optional Suggested
+files. Every command emits one JSON document; a payload carrying ``error``
+exits 1 and every other payload exits 0. ``--help`` owns the live command list.
 
-``--help``, ``-h`` or ``help`` answers usage at the top level, and
-``<subcommand> --help`` for one subcommand: a request for usage is served,
-never rendered as an unknown-subcommand error.
-
-Subcommands:
-    new <run> <id> --executor E --objective TEXT --criterion C
-        [--criterion C ...] [--depends-on a,b] [--write-scope p[,p]]
-        [--bound B] [--pack P] [--input I ...] [--excluded X ...]
-        [--profile P] [--independence gate|checker]
-        [--isolation required|none] [--return-fields TEXT]
-    new <run> --file <path>
-    instantiate <template-dir> --run <run> [--set k=v ...]
-    gate <run> <root-id> [--lens <name>[,<name>] |
-        --ordered-lens-bundle <name>[,<name>]]
-        --write-scope <path>[,<path>] [--acceptance-from <id>]
-    list [--run R]
-    ready [--run R]
-    claim <run> <id> --by <name>
-    grant <run> <id> --write-scope <path>[,<path>] --by <name>
-    set-status <run> <id> <status>
-    result-grade <run> <id>
-    packet <run> <id> --reply-to <name> [--workspace <path>]
-    result <run> <id> --section <name> (--file <path> | --text <string>)
-           [--append | --replace]
-
-``--file`` is the primary filing channel on this host, and ``--text`` the
-one-line convenience beside it. A section body is markdown, and a markdown
-body that is worth filing has newlines, backticks and quotes in it; every
-one of those is a character some shell claims before this script sees it,
-and a multiline argument several hosts refuse outright. So write the body
-to a file and name the file -- or pass ``-`` and pipe it in. Pair it with
-``--append``, which is lawful on an empty section and is what a section
-already carrying content requires: filing as the work is produced is the
-law (``contracts/work-item.md``), and every write after the first is an
-append.
-    worklog <run> [--write]
-    run-state <run> [--tree <name>] (--note <line> |
-             (--artifact <name> [--replace] | --terminal <state>)
-             (--file <path> | --text <string>))
-    improvement --proposal <name> (--file <path> | --text <string>)
-    improvement --covered <line>
-
-``run.json`` — the run's identity document, at ``<sink>/runs/<run>/``
-beside the worklog, written on the run's first state write, appended to
-and never rewritten. This script is its only writer, so its
-specification is stated here rather than in a contract that owns nothing
-else about it:
-
-- ``run`` — the run id; equals the name of the directory holding the file.
-- ``sink_convention`` — integer: the sink layout it was written under.
-- ``opened_at`` — when the run's first write landed; never rewritten.
-- ``orchflows`` — the installed library identity captured when the run opens.
-  ``orchflows.receipt_version`` — the installer receipt schema version, null
-  when the receipt is missing, corrupt or legacy; ``orchflows.source_commit``
-  — the exact installed-from commit from that receipt, likewise null rather
-  than inferred.
-- ``terminal_at`` — the first instant the rendered worklog's terminal becomes
-  non-empty; ``terminal_ticket_id`` and ``terminal_status`` — the ticket and
-  terminal state that caused it; ``elapsed_ms`` — nonnegative milliseconds
-  from ``opened_at``. These four keys are absent while open and on legacy runs
-  whose opening instant was never recorded.
-- ``project`` — which project owns this run id; never rewritten once set.
-  ``project.root`` — absolute path of the **main** checkout, a linked
-  worktree resolved to it and a submodule to its superproject;
-  ``project.origin`` — the origin url, null when the repository has no
-  remote; ``project.name`` — the root's base name, a human label, never
-  compared.
-- ``workspaces`` — every workspace that has written to this run, in
-  first-write order. ``workspaces[].path`` — that workspace itself, **not**
-  its main checkout; ``workspaces[].first_seen`` — when its first write
-  landed.
+The run identity at ``<sink>/runs/<run>/`` records exactly `run`,
+`sink_convention`, `opened_at`, `orchflows`, `orchflows.receipt_version`,
+`orchflows.source_commit`, `terminal_at`, `terminal_ticket_id`,
+`terminal_status`, `elapsed_ms`, `project`, `project.root`, `project.origin`,
+`project.name`, `workspaces`, `workspaces[].path`, and
+`workspaces[].first_seen`.
 """
 
 from __future__ import annotations
@@ -104,7 +33,6 @@ if __package__:
     from . import tickets_worklog as _tickets_worklog_module
     from . import tickets_commands as _tickets_commands_module
     from . import tickets_lint as _tickets_lint_module
-    from . import tickets_reissue as _tickets_reissue_module
     from . import tickets_dispatch as _tickets_dispatch_module
     from . import tickets_admission as _tickets_admission_module
 else:
@@ -120,7 +48,6 @@ else:
     import tickets_worklog as _tickets_worklog_module
     import tickets_commands as _tickets_commands_module
     import tickets_lint as _tickets_lint_module
-    _tickets_reissue_module = __import__('tickets_reissue')
     import tickets_dispatch as _tickets_dispatch_module
     import tickets_admission as _tickets_admission_module
 
@@ -131,7 +58,6 @@ parse_bound = _tickets_bound_module.parse_bound
 should_park = _tickets_bound_module.should_park
 _cmd_bound_check = _tickets_bound_module._cmd_bound_check
 BOUND_CHECK_USAGE = _tickets_commands_module.BOUND_CHECK_USAGE
-CRITERION_BULLET_RE = _tickets_format_module.CRITERION_BULLET_RE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
 CUT_SECTIONS_BY_KEY = _tickets_format_module.CUT_SECTIONS_BY_KEY
 DEFAULT_BOUND_MINUTES = _tickets_format_module.DEFAULT_BOUND_MINUTES
@@ -139,19 +65,12 @@ DISPATCHING_EXECUTORS = _tickets_format_module.DISPATCHING_EXECUTORS
 DURATION_RE = _tickets_format_module.DURATION_RE
 EXECUTOR_SECTIONS = _tickets_format_module.EXECUTOR_SECTIONS
 EXECUTOR_SECTIONS_BY_KEY = _tickets_format_module.EXECUTOR_SECTIONS_BY_KEY
-FIELD_GLOSS_RE = _tickets_format_module.FIELD_GLOSS_RE
-FIELD_WORD_RE = _tickets_format_module.FIELD_WORD_RE
 GIT_WORKSPACE_MECHANISMS = _tickets_format_module.GIT_WORKSPACE_MECHANISMS
-GRANTED_SCOPE_KEY = _tickets_format_module.GRANTED_SCOPE_KEY
 INSTRUCTION_BUDGET = _tickets_format_module.INSTRUCTION_BUDGET
 INSTRUCTION_SECTIONS = _tickets_format_module.INSTRUCTION_SECTIONS
 LINK_TARGET_RE = _tickets_format_module.LINK_TARGET_RE
 LOOP_EXECUTOR = _tickets_format_module.LOOP_EXECUTOR
 OPTIONAL_SECTIONS = _tickets_format_module.OPTIONAL_SECTIONS
-ORACLE_CLASSES = _tickets_format_module.ORACLE_CLASSES
-ORACLE_CLASS_RE = _tickets_format_module.ORACLE_CLASS_RE
-ORACLE_PROVENANCES = _tickets_format_module.ORACLE_PROVENANCES
-ORACLE_RE = _tickets_format_module.ORACLE_RE
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX
 PACK_NAME_SUFFIX = _tickets_format_module.PACK_NAME_SUFFIX
@@ -164,8 +83,6 @@ PACK_WORKSPACE_MECHANISMS = {
 _tickets_format_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
 _tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
 PLACEHOLDER_RE = _tickets_format_module.PLACEHOLDER_RE
-PROVENANCE_RE = _tickets_format_module.PROVENANCE_RE
-REQUIRED_FIELDS_CELL = _tickets_format_module.REQUIRED_FIELDS_CELL
 REQUIRED_ISOLATION = _tickets_format_module.REQUIRED_ISOLATION
 REQUIRED_LIFECYCLE_KEYS = _tickets_format_module.REQUIRED_LIFECYCLE_KEYS
 REQUIRED_SECTIONS = _tickets_format_module.REQUIRED_SECTIONS
@@ -183,10 +100,7 @@ TEMPLATE_FILE = _tickets_format_module.TEMPLATE_FILE
 TERMINAL_STATES = _tickets_format_module.TERMINAL_STATES
 TicketFormatError = _tickets_format_module.TicketFormatError
 VALID_STATUSES = _tickets_format_module.VALID_STATUSES
-MUTATION_OPERATIONS = _tickets_format_module.MUTATION_OPERATIONS
-RETURN_SIZE_COUNTERS = _tickets_format_module.RETURN_SIZE_COUNTERS
 _body_block = _tickets_format_module._body_block
-_criteria = _tickets_format_module._criteria
 _executor_of = _tickets_format_module._executor_of
 _extract_all = _tickets_format_module._extract_all
 _extract_flag = _tickets_format_module._extract_flag
@@ -199,55 +113,30 @@ _parse_frontmatter = _tickets_format_module._parse_frontmatter
 _parse_iso = _tickets_format_module._parse_iso
 _read_utf8 = _tickets_format_module._read_utf8
 _scan_sections = _tickets_format_module._scan_sections
-_scope_entries = _tickets_format_module._scope_entries
 _section_body = _tickets_format_module._section_body
 _sections = _tickets_format_module._sections
 _set_frontmatter_field = _tickets_format_module._set_frontmatter_field
 _split_commas = _tickets_format_module._split_commas
 _unquote = _tickets_format_module._unquote
 _write_section = _tickets_format_module._write_section
-criterion_defects = _tickets_format_module.criterion_defects
-count_return_text = _tickets_format_module.count_return_text
-effective_write_scope = _tickets_format_module.effective_write_scope
 instruction_words = _tickets_format_module.instruction_words
-parse_mutations = _tickets_format_module.parse_mutations
-parse_result_identity = _tickets_format_module.parse_result_identity
-parse_return_size = _tickets_format_module.parse_return_size
 ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
-ADMISSION_V2_PENDING = _tickets_admission_module.ADMISSION_V2_PENDING
-ADMISSION_VERSION = _tickets_admission_module.ADMISSION_VERSION
 ADAPTER_BY_PACK = _tickets_admission_module.ADAPTER_BY_PACK
 PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
-VCS_ACTION_TOKENS = _tickets_admission_module.VCS_ACTION_TOKENS
 adapter_id = _tickets_admission_module.adapter_id
-authority_findings = _tickets_admission_module.authority_findings
-batch_cohort = _tickets_admission_module.batch_cohort
-cohort_sealed = _tickets_admission_module.cohort_sealed
+binding_findings = _tickets_admission_module.binding_findings
 grade_admission = _tickets_admission_module.grade_admission
-grade_result = _tickets_admission_module.grade_result
 is_receipt = _tickets_admission_module.is_receipt
-is_v1 = _tickets_admission_module.is_v1
-is_v2 = _tickets_admission_module.is_v2
-valid_cohort = _tickets_admission_module.valid_cohort
-relevant_snapshot_ids = _tickets_admission_module.relevant_snapshot_ids
-root_cohort = _tickets_admission_module.root_cohort
-ticket_cohort = _tickets_admission_module.ticket_cohort
 _GENERATION_EXPORTS = frozenset({
-    "GenerationError", "append_amendment_request", "assignment_digest",
-    "assignment_payload", "correction_decision", "draft_snapshot",
+    "assignment_digest", "assignment_payload", "correction_decision", "draft_snapshot",
     "generation_identity", "generation_ordinal", "seal_assignments",
-    "validate_draft",
+    "seal_findings", "validate_draft",
 })
 
 
 def __getattr__(name):
-    """Load the additive v2 facade only when a caller asks for it.
-
-    Legacy standalone copies intentionally remain the closed v1 ticket
-    family; installed and package callers still receive the helper's exact
-    objects rather than wrappers.
-    """
+    """Load generation algebra only when a caller asks for it."""
     if name not in _GENERATION_EXPORTS:
         raise AttributeError(name)
     qualified = f"{__package__}.tickets_generations" if __package__ else "tickets_generations"
@@ -301,17 +190,11 @@ def establishes_a_git_workspace(name: str) -> bool:
     _tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
     return _tickets_store_module.establishes_a_git_workspace(name)
 normalized_isolation = _tickets_store_module.normalized_isolation
-AMENDABLE_STATUSES = _tickets_issue_module.AMENDABLE_STATUSES
-AMEND_USAGE = _tickets_issue_module.AMEND_USAGE
 INDEPENDENCE_VALUES = _tickets_issue_module.INDEPENDENCE_VALUES
 ISOLATION_VALUES = _tickets_issue_module.ISOLATION_VALUES
 NEW_DEFAULT_BOUND = _tickets_issue_module.NEW_DEFAULT_BOUND
-NEW_DEFAULT_INPUTS = _tickets_issue_module.NEW_DEFAULT_INPUTS
-NEW_DEFAULT_RETURN_FIELDS = _tickets_issue_module.NEW_DEFAULT_RETURN_FIELDS
 NEW_USAGE = _tickets_issue_module.NEW_USAGE
 _ceiling_error = _tickets_issue_module._ceiling_error
-_cmd_amend = _tickets_issue_module._cmd_amend
-_cmd_recut = _tickets_issue_module._cmd_recut
 _cmd_new = _tickets_issue_module._cmd_new
 _distinct_gate_lenses = _tickets_issue_module._distinct_gate_lenses
 _frontmatter_list = _tickets_issue_module._frontmatter_list
@@ -321,29 +204,18 @@ _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
 CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE
 CLAIM_USAGE = _tickets_lifecycle_module.CLAIM_USAGE
-GRANTABLE_STATUSES = _tickets_lifecycle_module.GRANTABLE_STATUSES
-GRANTED_AT_KEY = _tickets_lifecycle_module.GRANTED_AT_KEY
-GRANTED_BY_KEY = _tickets_lifecycle_module.GRANTED_BY_KEY
-GRANT_USAGE = _tickets_lifecycle_module.GRANT_USAGE
 SET_STATUS_USAGE = _tickets_lifecycle_module.SET_STATUS_USAGE
-RESULT_GRADE_USAGE = _tickets_lifecycle_module.RESULT_GRADE_USAGE
-_cmd_result_grade = _tickets_lifecycle_module._cmd_result_grade
 _check_under_run_lock = _tickets_lifecycle_module._check_under_run_lock
-_cited_paths = _tickets_packet_module._cited_paths
 _claim_is_stale = _tickets_packet_module._claim_is_stale
 _claim_under_run_lock = _tickets_lifecycle_module._claim_under_run_lock
 _cmd_check = _tickets_lifecycle_module._cmd_check
 _cmd_claim = _tickets_lifecycle_module._cmd_claim
-_cmd_grant = _tickets_lifecycle_module._cmd_grant
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
 _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
 _do_claim = _tickets_lifecycle_module._do_claim
-_grant_under_run_lock = _tickets_lifecycle_module._grant_under_run_lock
-_inside_scope = _tickets_packet_module._inside_scope
 _is_stale = _tickets_packet_module._is_stale
 _last_motion = _tickets_packet_module._last_motion
-_scope_segments = _tickets_packet_module._scope_segments
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
 CHECKER_EXECUTOR = _tickets_packet_module.CHECKER_EXECUTOR
 CHECKER_PATH_EXECUTORS = _tickets_packet_module.CHECKER_PATH_EXECUTORS
@@ -358,7 +230,6 @@ REVERIFIER_EXECUTOR = _tickets_packet_module.REVERIFIER_EXECUTOR
 _cmd_packet = _tickets_packet_module._cmd_packet
 _cut_lens_path = _tickets_packet_module._cut_lens_path
 _cut_subtree = _tickets_packet_module._cut_subtree
-_further_child_prompt = _tickets_packet_module._further_child_prompt
 _packet_under_run_lock = _tickets_packet_module._packet_under_run_lock
 COVERAGE_RECORD_NAME = _tickets_result_module.COVERAGE_RECORD_NAME
 IMPROVEMENT_USAGE = _tickets_result_module.IMPROVEMENT_USAGE
@@ -373,35 +244,19 @@ _is_terminal_heading = _tickets_result_module._is_terminal_heading
 _notes_terminal = _tickets_result_module._notes_terminal
 _result_under_run_lock = _tickets_result_module._result_under_run_lock
 _run_state_under_run_lock = _tickets_result_module._run_state_under_run_lock
-CLAIM_CARRIER_RE = _tickets_worklog_module.CLAIM_CARRIER_RE
-CLAIM_CLAUSE_RE = _tickets_worklog_module.CLAIM_CLAUSE_RE
-CLAIM_DASH_RE = _tickets_worklog_module.CLAIM_DASH_RE
-CLAIM_END_RE = _tickets_worklog_module.CLAIM_END_RE
-CLAIM_SPLIT = _tickets_worklog_module.CLAIM_SPLIT
-CLAIM_STEM = _tickets_worklog_module.CLAIM_STEM
-CLAIM_STOPWORDS = _tickets_worklog_module.CLAIM_STOPWORDS
-CLAIM_WORD_RE = _tickets_worklog_module.CLAIM_WORD_RE
 GATE_VERIFY_SUFFIX = _tickets_worklog_module.GATE_VERIFY_SUFFIX
 ITERATION_ID_RE = _tickets_worklog_module.ITERATION_ID_RE
-NUMBERED_ID_RE = _tickets_worklog_module.NUMBERED_ID_RE
-RESULT_READ_RE = _tickets_worklog_module.RESULT_READ_RE
 WORKLOG_NAME = _tickets_worklog_module.WORKLOG_NAME
 WORKLOG_RENDER_MARKER = _tickets_worklog_module.WORKLOG_RENDER_MARKER
 WORKLOG_SECTIONS = _tickets_worklog_module.WORKLOG_SECTIONS
 WORKLOG_USAGE = _tickets_worklog_module.WORKLOG_USAGE
-_bullets = _tickets_worklog_module._bullets
 _claim_order = _tickets_worklog_module._claim_order
-_claim_words = _tickets_worklog_module._claim_words
-_closure_defects = _tickets_worklog_module._closure_defects
 _cmd_worklog = _tickets_worklog_module._cmd_worklog
 _packs_root = _tickets_worklog_module._packs_root
 _quoted = _tickets_worklog_module._quoted
 _render_worklog = _tickets_worklog_module._render_worklog
-_required_spec_fields = _tickets_worklog_module._required_spec_fields
-_result_reads = _tickets_worklog_module._result_reads
 _run_goal = _tickets_worklog_module._run_goal
 _run_tickets = _tickets_worklog_module._run_tickets
-_spec_field_defect = _tickets_worklog_module._spec_field_defect
 _template_order = _tickets_worklog_module._template_order
 _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
@@ -419,8 +274,6 @@ LINT_USAGE = _tickets_lint_module.LINT_USAGE
 apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
-REISSUE_USAGE = _tickets_commands_module.REISSUE_USAGE
-_cmd_reissue = _tickets_reissue_module._cmd_reissue
 _cmd_gate = _tickets_dispatch_module._cmd_gate
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
@@ -437,7 +290,6 @@ _template_stubs = _tickets_dispatch_module._template_stubs
 main = _tickets_dispatch_module.main
 state_root = _tickets_store_module.state_root
 datetime = _tickets_store_module.datetime
-timedelta = _tickets_lifecycle_module.timedelta
 timezone = _tickets_store_module.timezone
 time = _tickets_store_module.time
 msvcrt = _tickets_store_module.msvcrt
@@ -457,7 +309,6 @@ def _sync_seams():
     _tickets_store_module._cwd = _cwd
     _tickets_store_module.datetime = datetime
     _tickets_lifecycle_module.datetime = datetime
-    _tickets_lifecycle_module.grade_result = grade_result
     _tickets_issue_module.datetime = datetime
     _tickets_result_module.datetime = datetime
     _tickets_dispatch_module.datetime = datetime
@@ -473,21 +324,16 @@ def _sync_seams():
     _tickets_result_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._append_one_line = _append_one_line
     _tickets_dispatch_module._cmd_new = _cmd_new
-    _tickets_dispatch_module._cmd_amend = _cmd_amend
-    _tickets_dispatch_module._cmd_recut = _cmd_recut
     _tickets_dispatch_module._cmd_claim = _cmd_claim
     _tickets_dispatch_module._cmd_ready = _cmd_ready
-    _tickets_dispatch_module._cmd_grant = _cmd_grant
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
-    _tickets_dispatch_module._cmd_result_grade = _cmd_result_grade
     _tickets_dispatch_module._cmd_packet = _cmd_packet
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
     _tickets_dispatch_module._cmd_lint = _cmd_lint
     _tickets_dispatch_module._cmd_bound_check = _cmd_bound_check
-    _tickets_dispatch_module._cmd_reissue = _cmd_reissue
     _tickets_lint_module._write_text_atomically = _write_text_atomically
 
 if __name__ == "__main__":

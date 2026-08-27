@@ -1,7 +1,7 @@
 ---
 id: 01-quoted
 run: cutcheck-command-mention
-status: issued
+status: pending
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
@@ -9,6 +9,12 @@ depends_on: []
 bound: 20 tool calls
 write_scope:
   - scripts/cutcheck.py
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:01-quoted:1:sha256:ef676b1783e3d19fcba8a621c4dbc01d70c300e97c3db8d8e02189e8c247bbd7
+cut_generation: cut:01-quoted:1:sha256:1b3251e02670365d2bbe25b9d16787e084631f58073df5780740af1fcf2aa79c
+assignment_seal: sha256:d5ee6fefd3854180e563e8593d212894a4ae6384f43fa321604a307e823c0020
 ---
 ## Objective
 
@@ -21,7 +27,7 @@ falling silent.
 
 ## Fixed inputs
 
-- Baseline: the revision cutcheck is invoked with.
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"462ef52aab37655260bdc9f9f98be4ed2601af2d"},"name":"baseline","type":"identity"}
 
 ## Completion test
 

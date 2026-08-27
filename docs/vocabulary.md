@@ -42,7 +42,7 @@ that needs a different meaning needs a different word.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature (slicing, executor, assembly,
-  lens, oracle policy, workspace, required spec fields, craft).
+  lens, evidence, workspace, required spec fields, craft).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow: a template (below) under
@@ -57,7 +57,7 @@ that needs a different meaning needs a different word.
   bind as a step or loop body, and the leading `Return` fields it must
   carry — status, result identity, verification — per
   `contracts/result.md`.
-- **build scope** — where a built item lands and which oracles gate it:
+- **build scope** — where a built item lands and which admission evidence gates it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
   their scope; bounds per `orch-build`'s scopes reference.
@@ -80,10 +80,10 @@ that needs a different meaning needs a different word.
   run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. When
   decomposed it has one root ticket and one composite gate. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
-  tickets' objectives and completion tests are its frozen statement,
+  tickets' Goals and Context are its frozen statement,
   the ticket files the whole record — no worklog.
 - **unit** — one work item's execution by one context; the scope
-  `rules/verification.md` §10 binds.
+  `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
   `contracts/work-item.md`; input to decomposition; `orch-spec` is its
   only editor, at intake — every other reader, `orch-decompose`
@@ -96,31 +96,30 @@ that needs a different meaning needs a different word.
 - **assignment generation** — one root or cut assignment fixed by a content
   digest, named by `root_generation` or `cut_generation`; identity and
   lifecycle law are `rules/topology.md`'s.
-- **exemplar** — an artifact a root ticket's `## Fixed inputs` names to
+- **exemplar** — an artifact a root ticket's `## Context` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
 - **stamp** — the pack fixed at intake, carried by a ticket's `pack`
   field, which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
   design); selects an item's pack and gate lens, per [topology](../rules/topology.md) 5a.
-- **work item / ticket** — a delegation packet made durable: packet parts
-  ⊕ completion test ⊕ lifecycle ⊕ graph position, per
+- **work item / ticket** — a sealed Goal, Context, optional Suggested files,
+  lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
   to. The two words name the same thing; ticket is the on-disk view.
-- **atom** — a work item at the finest lawful cut: one observable end
-  state, a completion test discriminating it alone, a closed write
-  scope, oracles reading nothing a sibling writes, an instruction
+- **atom** — a work item at the finest lawful cut: one observable Goal,
+  dependency closure, and an instruction
   inside the stub ceiling. Law, and what lies either side of it, in
   `rules/topology.md` §3.
-- **root ticket** — a ticket whose executor is `orch-decompose`; its
-  subtree is any `<id>.NN` unit tickets plus `<id>.gate.*`, checked before
-  its first unit is promoted; it completes when
+- **root ticket** — the ticket named by a `root_generation`, directly bound to
+  any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
+  any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
   `<id>.gate.verify` completes. A successor root lives in a successor run
   opened after this root's result identity resolves and cites that identity
-  among its own fixed inputs; the predecessor run's durable `successors.md`
+  in its Context; the predecessor run's durable `successors.md`
   names the planned root until `orch-spec` materializes it on the frontier's
   completion trigger.
-- **gate-only cut** — a v2 root cut with zero unit tickets because its
+- **gate-only cut** — a decomposed root cut with zero unit tickets because its
   coverage map assigns every root criterion to the composite gate; it is
   not padding, per `rules/topology.md` §3.
 - **template** — a directory of ticket stubs plus its `template.md`
@@ -129,10 +128,10 @@ that needs a different meaning needs a different word.
   takes. Shape per `contracts/work-item.md`.
 - **stub** — a template's unit: a ticket missing only `run`, `status`,
   `claimed_*` and any `{{placeholder}}`.
-- **terminal ticket** — the stub no other stub depends on; its
-  completion test is the template's done check.
+- **terminal ticket** — the stub no other stub depends on; its Goal is the
+  template's final observable result.
 - **ad-hoc ticket** — a work item the orchestrator cuts directly from a
-  one-off request: a delegation packet persisted with a completion test,
+  one-off request: a Goal and Context persisted with system metadata,
   not a separate species — same contract shape, run id
   `<utc-stamp>-adhoc-<slug>`, `ready` at issue.
 - **ad-hoc set** — ad-hoc tickets cut together with dependency edges,
@@ -147,11 +146,10 @@ that needs a different meaning needs a different word.
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the
   work.
-- **assembly item** — the at-most-one terminal work item that rewrites its
-  inputs into the final artifact (edit, synthesize); its completion test
-  carries the final gate.
-- **decision gap** — a decomposition return naming the acceptance
-  criteria the stamped slicing cannot cover.
+- **assembly item** — the at-most-one terminal work item that integrates
+  candidate results into the final artifact before the final gate.
+- **decision gap** — a decomposition return naming a Goal portion the stamped
+  slicing cannot cover.
 - **workspace** — where results live and what identities mean there (git
   revisions, doc slots, evidence store), per the pack's workspace cell.
 - **standards owner** — the workspace's own canonical statement of its
@@ -161,29 +159,20 @@ that needs a different meaning needs a different word.
 
 ## Verification
 
-- **criterion** — one enumerated acceptance check, singly decidable by a
-  named oracle.
-- **oracle** — the exact external check that decides a criterion; never the
-  executor's own claim.
+- **criterion** — in a structured evaluation, one independently decidable
+  question. It is not a ticket section; a ticket's Goal defines success.
+- **oracle** — in a structured evaluation, the method actually used to decide
+  a criterion. It is recorded after execution, not prescribed in a ticket.
 - **oracle class** — deterministic, judged, or evidence, per
-  `contracts/verdict.md`; fixes the loop and gate policy for a criterion.
-- **oracle provenance** — whether a criterion's oracle pre-exists the
-  unit's work or is created by the executing context; values owned by
-  `contracts/work-item.md`, independence law by `rules/verification.md`
-  §10.
-- **independence** — acceptance evidence originating outside the
-  executing context through exactly one ordinary path; sources and law in
-  `rules/verification.md` §10.
-  Research craft narrows the term for sources: no shared upstream.
-- **checker** — the fresh reviewer-corrector context (`orch-critique`
-  dispatched with the ticket's write scope as its packet `authority`)
-  through which independence enters a unit whose checks were authored
-  in-unit; corrects but never renders verdicts; law in
-  `rules/verification.md` §10.
-- **verdict** — PASS, FAIL, or UNVERIFIED for one criterion, with oracle,
-  class, evidence, and covered identities.
-- **evidence** — what an oracle actually produced, cited by identity; the
-  only currency verification accepts.
+  `contracts/verdict.md`; a property of a structured evaluation method.
+- **independence** — acceptance evidence originating outside the executing
+  context through exactly one ordinary path; law in `rules/verification.md`
+  §9. Research craft narrows the term for sources: no shared upstream.
+- **checker** — the fresh read-only `orch-critique` context that challenges a
+  fixed artifact and executor evidence against Goal, Context, and a lens.
+- **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
+- **evidence** — methods, observations, sources, captures, or other records
+  demonstrating or challenging Goal at a fixed artifact identity.
 - **provenance** — the recorded chain from an artifact or claim to its
   source, by identity.
 - **disagreement register** — where disagreement is recorded with both
@@ -191,10 +180,9 @@ that needs a different meaning needs a different word.
 - **lens** — the criteria set a reviewer applies; every additional root-gate
   reviewer has a unique named lens; freshness law `rules/verification.md`
   §6.
-- **ordered lens bundle** — the opt-in canonical ordered Fixed-input list of unique
-  lens identities and their evidence, consumed in order by one sealed
-  critique-and-repair ticket before a fresh separate verifier; shape in
-  `contracts/work-item.md`.
+- **ordered lens bundle** — an opt-in ordered list of unique lens identities;
+  each receives a read-only critique ticket before one shared repair and fresh
+  verifier.
 - **gate** — the one composite critique-fix-verify path a run crosses: one
   or more uniquely named critiques feed one repair and one verification;
   `orch-build`'s admission and a benchmark's
@@ -214,21 +202,17 @@ composition).
 ## Delegation
 
 - **dispatch / delegation packet** — sending one packet to one fresh
-  child, and the packet itself: a ticket's own dispatch fields —
-  objective, inputs, authority, bounds, return contract, reply_to, per
+  child, and the packet itself: Goal, Context, optional Suggested files,
+  operational bound, exact executor binding, and reply_to, per
   `contracts/work-item.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. A packet-only
   dispatch is a ticket the dispatcher does not persist.
 - **assignment seal** — the proof that an exact validated assignment digest
   is immutable for dispatch; changing sealed assignment fields creates a new
   assignment generation under `rules/delegation.md`.
-- **amendment request** — the canonical typed record a worker appends to its
-  `## Handoff` when its assignment must change; the worker parks and the
-  caller alone chooses a disposition under `rules/delegation.md`.
-- **authority** — the write scope plus named excluded actions a dispatch
-  grants; per `contracts/work-item.md`.
-- **write scope** — the capability naming exactly what a child may change,
-  expressed in the pack's workspace semantics.
+- **candidate authority** — repository/workspace write authority granted to
+  an isolated candidate. Suggested files do not attenuate it; actual changes
+  are adjudicated at the join.
 - **join** — the single point where a caller integrates one child
   result, always `orch-integrate`. `rules/delegation.md` owns what
   happens there and names its own terms: the closed **disposition** set
@@ -267,12 +251,8 @@ composition).
   every item an atom. Read with each level's width from
   `scripts/cutcheck.py`'s `graph` block (classes `critical-path`,
   `level-width`).
-- **lane** — any independent parallel branch whose write scope and
-  whose workspace are both disjoint from every other's (sharing =
-  writing the same artifact or slot, not returning same-named fields).
-  Two lanes in one workspace are one lane with two authors: neither
-  one's oracle output is attributable to its own change. Distinct from
-  independence, a property of acceptance evidence.
+- **lane** — an isolated parallel candidate. Lanes may change the same path;
+  actual overlap and Git conflicts are integration inputs, not cut defects.
 - **terminal state** — a closed exit: a ticket status in
   `contracts/work-item.md`'s terminal set; a run's is its root (or loop)
   ticket's, per `contracts/worklog.md`.

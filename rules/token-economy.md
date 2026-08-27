@@ -36,7 +36,7 @@
 10. Shape principles — one name per concept, searchable to every use;
     one unit owning one concern end to end; depth only behind a
     contract strong enough that readers never descend past it; shape
-    for what the oracle observes — live in this clause, never in a
+    for the evidence that demonstrates the Goal — live in this clause, never in a
     pack's craft Shape. A metered, search-navigating reader pays the
     same cost in every domain; a copy per pack only adds a place to
     drift.
@@ -51,8 +51,7 @@
     demands, a project's routing block 400, this repository's
     `AGENTS.md` 300, a role agent file 80; every-dispatch units next —
     kernel, instance and utility bodies 300, pack `SKILL.md` 150, a
-    stub's instruction (objective, completion test, excluded actions,
-    return fields; never its fixed inputs) 300, a pack's craft as
+    stub's semantic instruction (Goal, Context, and optional Suggested files) 300, a pack's craft as
     [contracts/pack-signature.md](../contracts/pack-signature.md)
     mandates; every-run units widest — engine and workflow bodies 450,
     a template manifest 250. Counted in words with link targets

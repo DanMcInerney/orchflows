@@ -46,7 +46,10 @@ NAVIGATION = (
     ("friction", "Friction", "/friction", False, ""),
 )
 VIEW_IDS = {"now", "run-map", "ticket", "sessions", "session-graph", "friction"}
-VISIBLE_SECTIONS = ("Objective", "Result", "Feedback", "Risks")
+VISIBLE_SECTIONS = (
+    "Goal", "Context", "Suggested files", "Result", "Verification",
+    "Feedback", "Risks", "Handoff",
+)
 FRICTION_FIELDS = ("ts", "host", "observed", "expected", "run", "ticket")
 WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^\s`\"'<>]+"
@@ -191,7 +194,7 @@ def _ticket_summary(ticket: dict, explanations: dict, indexed: dict, malformed_i
 
 def _redact_host_paths(text: str, root: Path, ticket: dict) -> str:
     known = [str(root), root.as_posix(), _text(ticket.get("path"))]
-    known.extend(_text(item) for item in ticket.get("write_scope", ()))
+    known.extend(_text(item) for item in ticket.get("suggested_files", ()))
     for marker in sorted((item for item in known if item), key=len, reverse=True):
         text = text.replace(marker, REDACTED_HOST_PATH)
     text = WINDOWS_HOST_PATH_RE.sub(REDACTED_HOST_PATH, text)
@@ -224,14 +227,8 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
         "risks": _text(sections.get("Risks")),
         "rationale": _rationale_identity(sections.get("Rationale")),
     }
-    record["inputs"] = [
-        line.strip()[2:].strip()
-        for line in _redact_host_paths(
-            _text(sections.get("Fixed inputs")), root, ticket
-        ).splitlines()
-        if line.strip().startswith(("- ", "* ", "+ "))
-    ]
-    record["write_scope"] = [_redact_host_paths(_text(item), root, {}) for item in ticket.get("write_scope", ())]
+    record["context"] = _redact_host_paths(_text(sections.get("Context")), root, ticket)
+    record["suggested_files"] = [_redact_host_paths(_text(item), root, {}) for item in ticket.get("suggested_files", ())]
     record["pack"] = _text(ticket.get("pack"))
     events = read_events(root, run)
     record["history"] = [
@@ -384,11 +381,11 @@ def _run_summaries(root: Path) -> list:
         identity = _run_identity(root, found["run"]) or {}
         project = identity.get("project")
         events = read_events(root, found["run"])
-        objective = next(
+        goal = next(
             (
-                _text(item.get("objective"))
+                _text(item.get("goal"))
                 for item in found["tickets"]
-                if item.get("objective")
+                if item.get("goal")
             ),
             "",
         )
@@ -398,7 +395,7 @@ def _run_summaries(root: Path) -> list:
             "execution": detail["execution"] if detail else {"current": [], "next": []},
             "ticket_count": len(found["tickets"]),
             "active": bool(detail and detail["active"]),
-            "objective": objective,
+            "objective": goal,
             "repository": _leaf(project.get("name")) if isinstance(project, dict) else "",
             # No projection-safe client source exists; held open, not guessed.
             "client": "",

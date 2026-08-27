@@ -49,7 +49,7 @@ PACK_SIGNATURE_CELLS = (
     "executor",
     "assembly",
     "lens",
-    "oracle_policy",
+    "evidence",
     "workspace",
     "required_spec_fields",
     "craft",
@@ -61,7 +61,7 @@ PACK_SIGNATURE_CELLS = (
 # once under each cell name (REVIEW-2026-08-15
 # T7). Its row is compared as the text it is, which is three words and
 # so sits under CELL_CLAUSE_MIN_WORDS.
-CRAFT_CELLS_BY_POINTER = ("slicing", "oracle_policy", "craft")
+CRAFT_CELLS_BY_POINTER = ("slicing", "evidence", "craft")
 CRAFT_BUDGET = 60
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s
 # ratio under them the reported pair set is a function of these two and of
@@ -103,12 +103,6 @@ MANDATED_FORM_RES = (
     # phrase between them is the pack's own.
     re.compile(r"^none\s+—\s+"),
     re.compile(r"\b(?:is|are) the assembly$"),
-    # contracts/verdict.md's oracle_class enum -- three tokens -- and
-    # contracts/work-item.md's provenance enum -- two. Both closed, both
-    # T0-pinned, so every oracle row ends in one of six pairs.
-    re.compile(
-        r"\b(?:deterministic|judged|evidence)\s+(?:pre-existing|authored-here)$"
-    ),
 )
 MD_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 LOOP_TRIGGER_RE = re.compile(r"\biterat(?:e|es|ing)\b|\brepeat until\b", re.IGNORECASE)
@@ -156,7 +150,7 @@ ENVELOPE_VOCAB_RES = (
 # contracts/work-item.md missing only `run`, `status` and `claimed_*`,
 # with `{{placeholder}}` where instantiation fills a value. These checks
 # are the admission the spec's enforcement clause names: a cyclic
-# template, a stub without an executor or a completion test, or a
+# template, or a stub without an executor or Goal, or a
 # template with no single terminal stub is rejected here. Since P4-3
 # this is the whole of composition admission: the `.md` step form and
 # its contract are deleted, so there is no second set of checks to keep

@@ -1,14 +1,17 @@
 # Verdict contract
 
-The grammar every oracle emits and every verification, judgment, and gate
-consumes. Vocabulary: [docs/vocabulary.md](../docs/vocabulary.md).
+The grammar used when a benchmark or other structured evaluation needs
+per-criterion verdicts. Ticket success remains its Goal; this contract does
+not add authored ticket criteria. Vocabulary:
+[docs/vocabulary.md](../docs/vocabulary.md).
 
 Per criterion:
 
 - `verdict`: `PASS` | `FAIL` | `UNVERIFIED`. An unrun check is UNVERIFIED,
   never FAIL and never assumed PASS.
-- `oracle`: the exact named check that produced the verdict — a command, a
-  rubric reference, or a source-resolution procedure.
+- `oracle`: the method the evaluator chose and used — a command, a rubric
+  reference, or a source-resolution procedure. It is recorded as evidence,
+  never authored into the sealed ticket.
 - `oracle_class`: `deterministic` | `judged` | `evidence`.
 - `evidence`: what the oracle actually produced, quoted or cited by
   identity. A verdict without evidence is UNVERIFIED, and so is a
@@ -16,12 +19,12 @@ Per criterion:
 - `covers`: the base, result, and dependency identities the verdict holds
   for. A verdict is invalidated when anything it covers changes.
 
-Overall verdict: PASS only when every required criterion is PASS, and it
-states the weakest oracle_class it contains. Every criterion in a spec's
-acceptance and a ticket's completion test is required unless the spec
-explicitly marks it optional; nothing downstream may reclassify one.
+Overall structured verdict: PASS only when every required evaluation
+criterion is PASS, and it states the weakest oracle_class it contains. A
+ticket verdict instead asks whether its observable Goal holds without
+contradicting factual Context.
 
-Class policy, wired into every loop and gate:
+Class policy, wired into every structured evaluation that uses this contract:
 
 - `deterministic` — an executable check. May loop until green within
   bounds; green is green.

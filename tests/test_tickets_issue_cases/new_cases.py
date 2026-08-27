@@ -109,8 +109,8 @@ class NewTest(unittest.TestCase):
                 "--pack", "orch-code-pack",
                 "--write-scope", "scripts/a.py,tests/test_a.py",
                 "--bound", "40m",
-                "--input", "contracts/work-item.md",
-                "--input", "SPEC.md",
+                "--input", '{"name":"contract","type":"literal","value":"contracts/work-item.md"}',
+                "--input", '{"name":"spec","type":"literal","value":"SPEC.md"}',
                 "--excluded", "Editing a dated research document, or any run state",
                 "--profile", "orch-worker",
                 "--independence", "gate",
@@ -143,6 +143,12 @@ class NewTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             use_sink(Path(tmp))
             run_cmd(*new_args("--write-scope", "scratch/a.txt", "--bound", "30m"))
+            run_cmd("stamp-generation", "testrun", "T1")
+            validated = run_cmd("draft-validate", "testrun", "T1")
+            run_cmd(
+                "seal", "testrun", "T1", "--cut-generation",
+                validated["draft_validation"]["cut_generation"],
+            )
             ready = run_cmd("ready", "--run", "testrun")["ready"]
             self.assertEqual(["T1"], [item["id"] for item in ready])
             claimed = run_cmd("claim", "testrun", "T1", "--by", "agent-a")
@@ -308,8 +314,7 @@ class NewTest(unittest.TestCase):
             self.assertNotIn("error", payload)
             text = self.ticket_path(sink).read_text(encoding="utf-8")
             self.assertIn("status: pending", text)
-            self.assertIn("admission: v1:pending", text)
-            self.assertIn("cohort: v1:ticket:T1", text)
+            self.assertIn("admission: pending", text)
 
     def test_a_defective_file_is_refused_and_placed_nowhere(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -391,8 +396,7 @@ class NewTest(unittest.TestCase):
             self.assertEqual("T1", payload["new"]["id"])
             text = self.ticket_path(sink).read_text(encoding="utf-8")
             self.assertIn("status: pending", text)
-            self.assertIn("admission: v1:pending", text)
-            self.assertIn("cohort: v1:ticket:T1", text)
+            self.assertIn("admission: pending", text)
 
     def test_an_id_disagreeing_with_the_file_is_refused_and_placed_nowhere(self):
         with tempfile.TemporaryDirectory() as tmp:

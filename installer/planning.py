@@ -10,7 +10,6 @@ from .foundation import (
     CLAUDE_ADAPTER_SETS,
     CLAUDE_CLI_CANDIDATES,
     CODEX_CLI_CANDIDATES,
-    CODEX_SKILL_REDIRECT_NAMES,
     GROK_CLI_CANDIDATES,
     PROFILE_ROLES,
     REPO_ROOT,
@@ -209,21 +208,20 @@ def _build_user_plan(
             codex_prompts.append(
                 (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{codex_body}")
             )
-            if name in CODEX_SKILL_REDIRECT_NAMES:
-                codex_skills.append(
-                    (
-                        codex_user_home / "skills" / name / "SKILL.md",
-                        frontmatter
-                        + "\n"
-                        + (
-                            codex_role_adapter_body(
-                                name, role, profiles[f"orch-{role}"], lib_skill_md
-                            )
-                            if role in PROFILE_ROLES
-                            else f"Read {lib_skill_md} and follow it exactly.\n"
-                        ),
-                    )
+            codex_skills.append(
+                (
+                    codex_user_home / "skills" / name / "SKILL.md",
+                    frontmatter
+                    + "\n"
+                    + (
+                        codex_role_adapter_body(
+                            name, role, profiles[f"orch-{role}"], lib_skill_md
+                        )
+                        if role in PROFILE_ROLES
+                        else f"Read {lib_skill_md} and follow it exactly.\n"
+                    ),
                 )
+            )
         if grok_enabled:
             # Every canonical name, not a curated subset: a Grok skill is
             # automatically the slash command `/<name>`, so a name left out
@@ -269,10 +267,9 @@ def _build_user_plan(
             codex_prompts.append(
                 (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{body.strip()}\n")
             )
-            if name in CODEX_SKILL_REDIRECT_NAMES:
-                codex_skills.append(
-                    (codex_user_home / "skills" / name / "SKILL.md", pointer)
-                )
+            codex_skills.append(
+                (codex_user_home / "skills" / name / "SKILL.md", pointer)
+            )
         if grok_enabled:
             # The manifest, not the directory: Grok's body is a read
             # instruction, and the manifest is the file that reads.

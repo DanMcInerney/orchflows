@@ -474,19 +474,19 @@ def render_index(discovery: dict) -> str:
         else:
             parts.append(
                 "<table>\n<thead>\n<tr><th>id</th><th>status</th>"
-                "<th>executor</th><th>objective</th></tr>\n</thead>\n<tbody>\n"
+                "<th>executor</th><th>goal</th></tr>\n</thead>\n<tbody>\n"
             )
             for ticket in run["tickets"]:
                 parts.append(
                     '<tr><td><a href="{href}">{id}</a></td><td>{status}</td>'
-                    "<td>{executor}</td><td>{objective}</td></tr>\n".format(
+                    "<td>{executor}</td><td>{goal}</td></tr>\n".format(
                         href=_facade_value("ticket_href", None)(
                             run["run"], ticket["id"]
                         ),
                         id=html.escape(ticket["id"]),
                         status=_facade_value("render_status", None)(ticket["status"]),
                         executor=_facade_value("_cell", None)(ticket["executor"], EMPTY_UNSET),
-                        objective=_facade_value("_cell", None)(ticket["objective"], EMPTY_NO_OBJECTIVE),
+                        goal=_facade_value("_cell", None)(ticket["goal"], EMPTY_NO_GOAL),
                     )
                 )
             parts.append("</tbody>\n</table>\n")

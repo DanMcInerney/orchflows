@@ -24,7 +24,7 @@ CLUSTERS = (
     ("workspace-vantage", r"vantage|wrong worktree|main checkout|integrating checkout"),
     ("missing-node-modules", r"node_modules|pnpm install"),
     ("word-ceiling", r"word ceiling|300-word|word budget|instruction_words"),
-    ("sealed-cohort", r"sealed cohort|cohort .{0,20}seal"),
+    ("sealed-assignment", r"sealed assignment|assignment .{0,20}seal"),
     ("isolation", r"isolation"),
     ("missing-flag", r"missing flag|unknown flag|unrecognized argument|no such option"
                      r"|does not exist for|--\w[\w-]* .{0,30}(not exist|not supported)"),

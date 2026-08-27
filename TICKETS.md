@@ -45,9 +45,10 @@ Field-by-field meaning: [contracts/work-item.md](contracts/work-item.md).
 
 ## A run is a directory of tickets
 
-A delivery run holds one **root ticket** (the whole request, frozen by
-`orch-spec`, cut by `orch-decompose`), the **unit tickets** cut from
-it, and pre-issued **gate stubs** for the end-of-run review:
+A delivery run holds one **root ticket** for the whole request. A direct
+root binds its complete work to one executor. A genuinely decomposed root is
+frozen by `orch-spec`, cut by `orch-decompose`, and joined by pre-issued
+**gate stubs** for the end-of-run review:
 
     <state sink>/tickets/<run>/
     ├── 00-root.md                     the whole job
@@ -63,16 +64,16 @@ Cut shape — what a unit may be, who owns what — is
 
 ## How tickets relate
 
-Two mechanisms, both in the frontmatter:
+The frontmatter carries two related mechanisms:
 
 - **`depends_on`** is the dependency graph. A ticket is admitted only
   when every dependency is `complete`; `orch-frontier` dispatches every
   ticket whose dependencies are done, all in parallel — the rolling
   frontier, no phase barriers.
-- **`cohort`** says who freezes together. A `v1:batch:` cohort freezes
-  every member the moment any one is claimed; a `v1:root:` cohort
-  freezes each member individually, so the planner keeps correcting
-  pending units and adding new ones while their siblings run.
+- **`root_generation`, `cut_generation`, and `assignment_seal`** bind every
+  member to one validated immutable snapshot. Direct and decomposed roots use
+  the same generation and seal commands. Corrections create a new generation;
+  a stale or mismatched seal is never dispatched.
 
 ## Lifecycle
 

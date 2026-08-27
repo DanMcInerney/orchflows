@@ -10,32 +10,26 @@ Dispatch each ticket with complete `depends_on`. `tickets.py claim`; take its
 packet (refusal is a cut defect); spawn a fresh child under
 [delegation](../../../rules/delegation.md) §1–§2 and its
 [role](../../../rules/roles.md) §4/[profile](references/profiles.md), applying
-the executor. Each ticket takes one outside-independence path. In a
-single-ticket run, pre-existing-only acceptance ends with its falsifiable
-oracles; only an unchecked `independence: checker` ticket with an
-`authored-here` oracle gets the claim's `--executor orch-critique` checker
-packet, never for gate-deferred or already checked tickets. Where a
-checker invalidates a judged oracle, dispatch `--executor orch-verify`;
-otherwise re-run invalidated deterministic oracles at the checked identity
-([verification](../../../rules/verification.md) §10).
+the executor. Each ticket takes one outside-independence path. An unchecked
+`independence: checker` ticket gets one read-only `--executor orch-critique`
+packet against its fixed artifact, Goal, Context, executor evidence, and lens;
+gate-deferred and already checked tickets do not. Accepted blockers move to
+one separate repair ticket, which invalidates critique verdicts and is
+followed by fresh verification
+([verification](../../../rules/verification.md) §7).
 
-A sealed ordered-bundle gate critique gets one fresh closer and one sequence
-packet for orch-critique then orch-repair, without evaluator redispatch.
-Dispatch gate.verify once in another fresh child at final identity; reuse
-neither context.
+Each sealed gate critique gets one fresh read-only context. Their accepted
+blockers feed one repair ticket. Dispatch gate.verify once in another fresh
+child at final identity; reuse no critique or repair context.
 
-V2 readiness/claim/packet require `root_generation`, `cut_generation`, and
+Readiness, claim, and packet require `root_generation`, `cut_generation`, and
 `assignment_seal` resolving to one sealed snapshot and validation receipt.
 Refuse draft/validated-only, stale, missing, mismatched, or substituted
-generations. An accepted `tickets.py amendment-request` disposition recomputes
-the frontier; only work newly sealed by `tickets.py seal` proceeds. The absence
-of v2 fields means v1. A root cut reader is the exception: take it with three
-or more `<id>.NN` or after a cutcheck advisory;
-units stay `pending` until `checked_by` and this engine's `cutcheck.py`
-re-verification exits 0. Below that threshold cutcheck accepts the cut alone.
+generations. Recompute the frontier after lifecycle transitions; only work
+newly sealed by `tickets.py seal` proceeds.
 Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
-A lane runs its ticket's own oracles, nothing wider. After every return is
+A lane runs its own chosen proof methods, nothing wider. After every return is
 integrated and its required checker or run gate is closed, run the standards
 owner's required checks exactly once at the accepted terminal identity and
 record its revision, not per merge batch. A red terminal suite blocks

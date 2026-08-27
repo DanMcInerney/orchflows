@@ -1,11 +1,12 @@
-# Content slicing: outline sections plus terminal edit
+# Content slicing
 
-Cut the spec into an outline whose sections partition the argument —
-each section one job the document needs done, no two sections doing it.
+When one executor owns a complete document, issue one direct `orch-draft` root
+for the whole artifact. Goal names the finished document, Context carries the
+voice contract, citation policy, length bound, fixed evidence, and exceptional constraints; Suggested files may point at source or
+destination documents without limiting the executor.
 
-- Each ticket: one outline slot and its role in the whole argument; its
-  share of the fixed evidence; the voice contract; the citation policy;
-  a length bound summing, with slack for the edit, to the document
-  budget.
-- A section item adds its slot position and the sibling slots it must
-  not duplicate.
+Slice content only when outcomes are genuinely independent or dependency
+ordered. Each member uses the same Goal/Context/optional Suggested files shape.
+Parallel members may predict the same files; integration compares their actual
+document changes, resolves overlap, and performs one final editorial pass. One
+terminal assembly ticket names and assembles genuinely decomposed sections.

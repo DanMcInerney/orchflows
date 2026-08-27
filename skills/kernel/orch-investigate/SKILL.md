@@ -17,6 +17,6 @@ Never: invent a claim no source shows; silently drop a contradicting
 source; exceed the source policy.
 
 Return: status; result identity — the evidence packet in its store;
-verification — the verdict against the dispatch's named oracle,
-UNVERIFIED when none was named; then cited findings with confidence,
-contradictions, dead ends, and gaps.
+verification — source-resolution methods, observations, uncertainty, and
+Goal coverage; then cited findings with confidence, contradictions, dead
+ends, and gaps.

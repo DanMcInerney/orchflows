@@ -52,8 +52,6 @@ PROFILE_ROLES = ("planner", "worker")
 # The four names exposed by Claude's bounded adapter set. The routed
 # composition ``fix`` replaced the demoted ``orch-fix`` skill.
 SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix", "orch-build")
-# Codex also exposes its investigation worker as a first-class callable skill.
-CODEX_SKILL_REDIRECT_NAMES = SHARED_ADAPTER_NAMES + ("orch-investigate",)
 CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is

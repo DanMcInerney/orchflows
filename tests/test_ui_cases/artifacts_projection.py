@@ -24,6 +24,11 @@ def _artifact_id(identity: dict) -> str:
 
 
 def _result(ticket: Path, value: str):
+    text = ticket.read_text(encoding="utf-8")
+    marker = "## Result\n\n"
+    if marker in text:
+        ticket.write_text(text.replace(marker, marker + value + "\n", 1), encoding="utf-8")
+        return
     with ticket.open("a", encoding="utf-8") as handle:
         handle.write("\n## Result\n\n{0}\n".format(value))
 

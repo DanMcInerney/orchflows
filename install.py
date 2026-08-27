@@ -26,20 +26,22 @@ without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
   referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>`` import
   line — idempotent, migrating any legacy inline marker block from an older
   install.
-- Codex — five redirect skill stubs (``~/.codex/skills/<name>/SKILL.md`` for
-  ``orch-spec``, ``orch-frontier``, ``fix``, ``orch-build``,
-  ``orch-investigate``) that point at the library instead of duplicating it,
-  plus prompts, role agents, agent-limits config. The always-on layer stays an
-  inline marker block upserted into ``~/.codex/AGENTS.md`` — a read-only probe
-  (``codex debug prompt-input`` against a scratch repo, installed CLI 0.144.0)
-  found ``@file`` imports do not expand there, so Codex keeps the proven
+- Codex — prompts and one exact redirect skill stub
+  per discovered canonical skill or composition, at
+  ``~/.codex/skills/<name>/SKILL.md``. Role-bearing redirects bind the
+  matching role profile, and every redirect points at the library instead of
+  duplicating it. Codex also gets role agents and agent-limits config.
+  The always-on layer stays an inline marker block
+  upserted into ``~/.codex/AGENTS.md`` — a read-only probe (``codex debug
+  prompt-input`` against a scratch repo, installed CLI 0.144.0) found
+  ``@file`` imports do not expand there, so Codex keeps the proven
   marker-block mechanism rather than migrating to an import line. A preflight
   warns (never edits or deletes) if ``~/.codex/hooks.json`` names a
   now-missing orchflows path.
-- Grok Build — full-body skills at ``~/.grok/skills/<name>/SKILL.md``, role
-  agents under ``~/.grok/agents/``, and the ``[subagents]`` block of
-  ``~/.grok/config.toml``. The always-on layer is one whole installer-owned
-  file, ``~/.grok/rules/orchflows.md``.
+- Grok Build — skills at ``~/.grok/skills/<name>/SKILL.md`` whose bodies name
+  the library file to read, role agents under ``~/.grok/agents/``, and the
+  ``[subagents]`` block of ``~/.grok/config.toml``. The always-on layer is one
+  whole installer-owned file, ``~/.grok/rules/orchflows.md``.
 
 Installation has one scope: user. Legacy project receipts remain accepted by
 ``--project PATH --uninstall`` only, so older versions' installations can
@@ -151,7 +153,6 @@ from installer.foundation import (
     CODEX_LIMITS_START,
     CODEX_MAX_DEPTH,
     CODEX_MAX_THREADS,
-    CODEX_SKILL_REDIRECT_NAMES,
     GROK_CLI_CANDIDATES, GROK_LIMITS_END, GROK_LIMITS_START,
     GROK_MAX_CONCURRENT, GROK_MAX_DEPTH,
     HOST_BLOCK_TEMPLATE,

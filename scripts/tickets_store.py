@@ -20,9 +20,9 @@ try:
 except ImportError:
     fcntl = None
 if __package__:
-    from .tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, effective_write_scope
+    from .tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
 else:
-    from tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, effective_write_scope
+    from tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
 
 UTC_STAMP = '%Y-%m-%dT%H:%M:%SZ'
 RUN_IDENTITY_NAME = 'run.json'
@@ -493,8 +493,6 @@ def _load_ticket(path: Path) -> dict:
     result = dict(data)
     result['id'] = ticket_id
     result['path'] = str(path)
-    if 'write_scope' in data:
-        result['write_scope'] = effective_write_scope(data)
     result['summary'] = {'run': data.get('run') or path.parent.name, 'id': ticket_id, 'status': data.get('status'), 'executor': data.get('executor'), 'depends_on': data.get('depends_on') or [], 'path': str(path)}
     if 'error' in result:
         result['summary']['error'] = result['error']

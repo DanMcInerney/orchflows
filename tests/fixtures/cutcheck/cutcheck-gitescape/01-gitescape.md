@@ -1,7 +1,7 @@
 ---
 id: 01-gitescape
 run: cutcheck-gitescape
-status: issued
+status: pending
 executor: orch-tdd
 pack: orch-code-pack
 independence: gate
@@ -11,6 +11,12 @@ write_scope:
   - install.py
 excluded_actions:
   - editing scripts/tickets.py
+admission: pending
+mutations: []
+ownership_regions: []
+root_generation: root:01-gitescape:1:sha256:e790c1e55903b21da3f79651ec7b0ef288cab278dc44f4953cf8fb3a182a1716
+cut_generation: cut:01-gitescape:1:sha256:a827c72ea689e64ce14ed90b4d1c6db419e6bc7771a07440e9179e775784c039
+assignment_seal: sha256:44dcea608ec83fba1399143060b5e8d6ee3074a8e1f8d369e370d32f5ef4e7fb
 ---
 ## Objective
 
@@ -22,7 +28,7 @@ no span of one chooses what runs, and none chooses what is written where.
 
 ## Fixed inputs
 
-- Baseline: the revision cutcheck is invoked with.
+- input: {"identity":{"kind":"git-tree","repo":"run-project","revision":"462ef52aab37655260bdc9f9f98be4ed2601af2d"},"name":"baseline","type":"identity"}
 
 ## Completion test
 
