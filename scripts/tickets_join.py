@@ -85,10 +85,16 @@ def _cmd_dispatch_outcome(rest):
     if len(args) != 2 or content_text is None:
         return {"error": f"usage: {DISPATCH_OUTCOME_USAGE}"}
     run, ticket_id = args
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
     try:
         content = parse_canonical_json(content_text)
     except (TypeError, ValueError) as error:
         return _classification("outcome-invalid", f"outcome is not canonical JSON: {error}")
+    if content_text != canonical_json(content):
+        return _classification("outcome-invalid", "outcome is not canonical JSON")
     failure = _outcome_failure(run, ticket_id, content)
     if failure is not None:
         return failure

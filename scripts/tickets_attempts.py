@@ -10,6 +10,7 @@ if __package__:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from .tickets_generations import seal_findings
+    from .tickets_context import graded_admission, run_snapshot
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
@@ -27,6 +28,7 @@ else:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from tickets_generations import seal_findings
+    from tickets_context import graded_admission, run_snapshot
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
@@ -136,6 +138,15 @@ def _cmd_dispatch_open(rest):
             if failure is not None:
                 return failure
             data = _parse_frontmatter(text)
+            recorded = (
+                str(data.get("run") or "").strip(),
+                str(data.get("id") or "").strip(),
+            )
+            if recorded != (run, ticket_id):
+                return _classification(
+                    "origin-mismatch",
+                    f"ticket origin is {recorded[0] or '<missing>'}/{recorded[1] or '<missing>'}, not {run}/{ticket_id}",
+                )
             state, failure = _state(data)
             if failure is not None:
                 return failure
@@ -170,13 +181,29 @@ def _cmd_dispatch_open(rest):
                     "idempotency-conflict",
                     f"dispatch_id '{dispatch_id}' was already opened with different content",
                 )
+            snapshot, failures = run_snapshot(path.parent)
+            if failures:
+                return failures[0][1]
+            grade = graded_admission(ticket_id, text, snapshot, run)
+            if grade["findings"]:
+                return _classification(
+                    "admission-mismatch", "ticket no longer has a valid sealed admission"
+                )
+            stored_admission = str(data.get("admission") or "")
+            if stored_admission != grade["receipt"]:
+                return _classification(
+                    "admission-mismatch",
+                    "ticket's stored admission receipt is not current",
+                )
             now = datetime.now(timezone.utc)
-            live = []
-            for attempt in attempts:
-                expiry = _parse_iso(attempt.get("lease_expires_at"))
-                if attempt.get("state") == "live" and expiry is not None and now < expiry:
-                    live.append(attempt)
+            live = [attempt for attempt in attempts if attempt.get("state") == "live"]
             if live:
+                live_expiry = _parse_iso(live[-1].get("lease_expires_at"))
+                if live_expiry is None or now >= live_expiry:
+                    return _classification(
+                        "lease-expired",
+                        f"expired dispatch_id '{live[-1].get('dispatch_id')}' must be retired or replaced before a successor opens",
+                    )
                 return _classification(
                     "live-attempt",
                     f"ticket already has live dispatch_id '{live[-1].get('dispatch_id')}'",
@@ -191,10 +218,6 @@ def _cmd_dispatch_open(rest):
                     "ticket-not-ready",
                     f"dispatch-open cannot start from status '{status}'",
                 )
-            for attempt in attempts:
-                if attempt.get("state") == "live":
-                    attempt["state"] = "expired"
-                    attempt["expired_at"] = now.strftime(UTC_STAMP)
             attempt = {
                 **request,
                 "opened_at": now.strftime(UTC_STAMP),
@@ -233,6 +256,10 @@ def _commit_record(
     record_kind="generic",
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
     for kind, value in (("dispatch-id", dispatch_id), ("record-id", record_id)):
         failure = _identity_failure(kind, value)
         if failure is not None:
@@ -260,6 +287,15 @@ def _commit_record(
             if failure is not None:
                 return failure
             data = _parse_frontmatter(text)
+            recorded = (
+                str(data.get("run") or "").strip(),
+                str(data.get("id") or "").strip(),
+            )
+            if recorded != (run, ticket_id):
+                return _classification(
+                    "origin-mismatch",
+                    f"ticket origin is {recorded[0] or '<missing>'}/{recorded[1] or '<missing>'}, not {run}/{ticket_id}",
+                )
             state, failure = _state(data)
             if failure is not None:
                 return failure
@@ -361,6 +397,8 @@ def _cmd_dispatch_commit(rest):
         content = parse_canonical_json(content_text)
     except (TypeError, ValueError) as error:
         return _classification("content-invalid", f"--content is not JSON: {error}")
+    if content_text != canonical_json(content):
+        return _classification("content-invalid", "--content is not canonical JSON")
     if _record_id_is_reserved(record_id):
         return _classification(
             "record-id-reserved",

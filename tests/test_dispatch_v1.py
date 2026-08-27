@@ -221,6 +221,99 @@ class DispatchV1Test(unittest.TestCase):
         reopened = self.open(dispatch_id="D2", by="worker-2")
         self.assertEqual("opened", reopened["dispatch"]["outcome"])
 
+    def test_open_requires_the_current_stored_admission_before_mutation(self):
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(
+            _set_frontmatter_field(text, "admission", "git:sha256:stale"),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.open()
+
+        self.assertEqual("admission-mismatch", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_expiry_cannot_implicitly_open_a_successor(self):
+        soon = (
+            datetime.now(timezone.utc) + timedelta(minutes=1)
+        ).isoformat().replace("+00:00", "Z")
+        opened = self.open(lease=soon)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        before = self.ticket_text()
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            refusal = self.open(
+                dispatch_id="D2", by="worker-2", lease="2101-01-01T00:00:00Z"
+            )
+
+        self.assertEqual("lease-expired", refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+        self.assertNotIn("error", self.retire())
+        reopened = self.open(dispatch_id="D2", by="worker-2")
+        self.assertEqual("opened", reopened["dispatch"]["outcome"])
+
+    def test_all_dispatch_state_operations_refuse_path_aliased_origins(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        envelope = {
+            "assignment_seal": self.opened_seal,
+            "by": "worker", "dispatch_id": "D1",
+            "evidence": {
+                "Result": "delivered", "Verification": "verified",
+                "Feedback": "[]", "Risks": "[]", "Handoff": "",
+            },
+            "id": "T", "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1", "run": "run/../run",
+            "status": "complete",
+        }
+        commands = (
+            [
+                "dispatch-outcome", "run/../run", "T", "--content",
+                json.dumps(envelope, sort_keys=True, separators=(",", ":")),
+            ],
+            [
+                "dispatch-retire", "run/../run", "T", "--dispatch-id", "D1",
+                "--assignment-seal", self.opened_seal,
+                "--record-id", "lifecycle:retire-alias",
+            ],
+            [
+                "dispatch-replace", "run/../run", "T", "--dispatch-id", "D1",
+                "--assignment-seal", self.opened_seal,
+                "--record-id", "lifecycle:replace-alias",
+                "--replacement-dispatch-id", "D2", "--by", "worker-2",
+                "--lease-expires-at", self.lease,
+            ],
+        )
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        before = self.ticket_text()
+
+        for command in commands:
+            with self.subTest(command=command[0]):
+                path.write_text(before, encoding="utf-8")
+                refusal = tickets._dispatch(command)
+                self.assertIn("unsafe run id", refusal["error"])
+                self.assertEqual(before, self.ticket_text())
+
+    def test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch(self):
+        opened = self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(_set_frontmatter_field(text, "id", "other"), encoding="utf-8")
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("origin-mismatch", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
     def test_expired_attempt_rejects_unseen_records_without_mutation(self):
         opened = self.open()
         self.assertNotIn("error", opened)
