@@ -84,6 +84,20 @@ def _root_payload(root_id: str, snapshot: dict) -> dict:
         raise GenerationError(f"root ticket not found in exact snapshot: {root_id}") from error
     return {"assignment": assignment_payload(root_id, root_text)}
 
+def _root_generation(root_id: str, snapshot: dict, ordinal: int, payload: dict) -> str:
+    """Return the root's existing identity, or open its first generation."""
+
+    inherited = str(_parse_frontmatter(snapshot[root_id]).get("root_generation") or "")
+    if not inherited:
+        return generation_identity("root", root_id, ordinal, payload)
+    match = GENERATION_RE.fullmatch(inherited)
+    if match is None or match.group(1) != "root" or match.group(2) != root_id:
+        raise GenerationError("root ticket carries a malformed or foreign root generation")
+    expected = generation_identity("root", root_id, int(match.group(3)), payload)
+    if inherited != expected:
+        raise GenerationError("root generation does not name the current root assignment")
+    return inherited
+
 def _cut_payload(root_id: str, snapshot: dict, root_generation: str, member_ids=None) -> dict:
     members = _cut_members(root_id, snapshot) if member_ids is None else sorted(str(value) for value in member_ids)
     assignments = [
@@ -99,7 +113,7 @@ def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1, member_ids=No
     """Materialize one complete immutable draft from an exact ticket snapshot."""
 
     root_payload = _root_payload(root_id, snapshot)
-    root_generation = generation_identity("root", root_id, ordinal, root_payload)
+    root_generation = _root_generation(root_id, snapshot, ordinal, root_payload)
     cut_payload = _cut_payload(root_id, snapshot, root_generation, member_ids)
     cut_generation = generation_identity("cut", root_id, ordinal, cut_payload)
     return {
@@ -187,8 +201,8 @@ def seal_findings(ticket_id: str, text: str) -> list:
             findings.append({"code": "generation-invalid", "field": field, "detail": f"missing or malformed {kind} generation"})
     if len(parsed) == 2:
         root_match, cut_match = parsed["root_generation"], parsed["cut_generation"]
-        if root_match.group(2) != cut_match.group(2) or root_match.group(3) != cut_match.group(3):
-            findings.append({"code": "generation-pair-mismatch", "field": "cut_generation", "detail": "root and cut generations must name one root and ordinal"})
+        if root_match.group(2) != cut_match.group(2):
+            findings.append({"code": "generation-pair-mismatch", "field": "cut_generation", "detail": "root and cut generations must name one root"})
     return findings
 
 DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
