@@ -44,7 +44,7 @@ wait; unsatisfied exclusions exit with the remainder. Quiescent: read
 `successors.md`. If a `planned` entry exists and the run is complete, return
 the successor trigger and predecessor's accepted `## Result` identity to the
 plan's materialization owner, who materializes and replaces the plan before
-completion ([work-item](../../../contracts/work-item.md#root-ticket)).
+completion ([work-item](../../../contracts/work-item.md#roots-decomposition-and-integration)).
 Otherwise exit; `limited` when bounds leave tickets open.
 
 Never: batch ready tickets; hide blocked subtrees as successes; re-order the

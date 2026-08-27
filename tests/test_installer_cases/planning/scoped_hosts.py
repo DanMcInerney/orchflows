@@ -445,7 +445,15 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 | {directory.name for directory, _, _ in install.discover_templates()},
                 set(bodies),
             )
+            # Two spellings of one directory, because the installer writes
+            # two: a skill body carries the resolved `lib_skill_md`, while the
+            # host block substitutes `_lib_home`'s unresolved path. The forms
+            # coincide on a box whose temp root is already canonical and
+            # diverge on the CI runners -- macOS `/var` -> `/private/var`,
+            # Windows `RUNNER~1` -> `runneradmin` -- so one variable for both
+            # passes locally and fails there.
             lib_home = (home / ".orchflows" / "lib").resolve()
+            unresolved_lib_home = home / ".orchflows" / "lib"
             for dest, content in plan.grok_skills:
                 self.assertEqual(grok_home / "skills", dest.parent.parent)
                 self.assertEqual("SKILL.md", dest.name)
@@ -478,7 +486,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             self.assertTrue(rendered.startswith(start), rendered[:120])
             self.assertEqual(end, rendered.strip().splitlines()[-1])
             self.assertNotIn("{{", rendered)
-            self.assertIn(str(lib_home), rendered)
+            self.assertIn(str(unresolved_lib_home), rendered)
 
             config = {entry.kind: entry for entry in plan.configs}["grok-config"]
             self.assertEqual(grok_home / "config.toml", config.dest)

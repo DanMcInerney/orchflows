@@ -110,6 +110,45 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
 
         self.assertEqual([], self._findings("The oracle is tools/validate.py itself.\n"))
 
+    def test_an_unknown_dead_path_head_is_an_error(self):
+        findings = self._findings("See `unknown/tree/missing.md`.\n")
+        self.assertTrue(any("unknown/tree/missing.md" in line for line in findings))
+
+    def test_nested_contract_prose_is_checked(self):
+        root = self._tree("No pointer here.\n")
+        source = root / "contracts" / "nested" / "probe.md"
+        source.parent.mkdir(parents=True)
+        source.write_text("The oracle is `tools/validate.py`.\n", encoding="utf-8")
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            diag = validate.Diagnostics()
+            validate.validate_documented_paths(diag)
+        finally:
+            validate.ROOT = saved
+        self.assertTrue(any("contracts/nested/probe.md" in line for line in diag.lines()))
+
+    def test_an_exemption_does_not_cover_a_second_occurrence(self):
+        where, line_number, token = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
+        root = self._tree("No pointer here.\n")
+        source = root / where
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            ("\n" * (line_number - 1))
+            + f"The roster names `{token}`.\n"
+            + f"A new pointer names `{token}`.\n",
+            encoding="utf-8",
+        )
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            diag = validate.Diagnostics()
+            validate.validate_documented_paths(diag)
+        finally:
+            validate.ROOT = saved
+        findings = [line for line in diag.lines() if token in line]
+        self.assertEqual(1, len(findings), findings)
+
     def test_a_tree_without_the_marker_is_skipped_not_failed(self):
         root = self._tree("The oracle is `tools/validate.py`.\n")
         (root / "ARCHITECTURE.md").unlink()
@@ -124,21 +163,14 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertTrue(any(line.startswith("WARN") for line in diag.lines()))
 
     def test_the_exemption_is_one_live_site_and_not_a_blanket(self):
-        """An exemption that outlives its sentence is a hole. Each pair names
-        a file that still carries that token, and `tests/pins.json` erroring
-        in the fixture above is the proof the pass is per-file, not per-name.
+        """Every exemption names one still-live source line and token."""
 
-        Per-file is the honest word: the key is (file, token), so this guard
-        catches the exemption outliving its sentence entirely, and does not
-        catch a second sentence in the same file reusing the token.
-        """
-
-        for where, token in validate.DOC_PATH_EXEMPT_SITES:
+        for where, line_number, token in validate.DOC_PATH_EXEMPT_SITES:
             source = _ROOT / where
             self.assertTrue(source.is_file(), f"exempt site {where} is gone")
+            line = source.read_text(encoding="utf-8").splitlines()[line_number - 1]
             self.assertIn(
-                f"`{token}`",
-                source.read_text(encoding="utf-8"),
+                f"`{token}`", line,
                 f"{where} no longer carries `{token}`; drop the exemption",
             )
 

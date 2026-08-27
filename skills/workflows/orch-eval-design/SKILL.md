@@ -5,13 +5,13 @@ role: planner
 ---
 
 Require: one complete
-[delegation packet](../../../contracts/work-item.md#dispatch) whose
-`objective` carries the target identity and intended observable
-outcome; whose `inputs` carry fixed evidence, source identities, source
-policy, and applicable pack craft, lens, and oracle references plus
-judgment permission; whose `bounds` cap design effort and expected
-execution cost; and whose `return_contract` names the evaluation-design
-identity, assumptions, gaps, and changed artifacts.
+[semantic assignment](../../../contracts/work-item.md#semantic-assignment)
+whose Goal names the target identity and intended observable outcome;
+whose Context carries fixed evidence, source identities, source policy,
+applicable pack craft, lens, and oracle references, judgment permission,
+and expected execution cost; and whose system-owned
+[`bound`](../../../contracts/work-item.md#system-owned-metadata) caps design
+effort.
 
 Remain candidate-blind: inspect no candidate, variant, score, or winner
 identity.

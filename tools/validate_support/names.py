@@ -13,14 +13,10 @@ ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
 re = __dep_common.re
 
-NAME_CHECKED_DIRS = ("rules", "docs", "contracts", "templates")
-# Read to the bottom, not just the top level. compositions/ is where every
-# template stub lives and every stub names an executor; a pack keeps its
-# craft, slicing and oracle criteria under references/, and so does a skill.
-# All of it calls skills by name, and none of it was on the surface -- the
-# non-recursive glob over four directories above saw the top level and
-# stopped, which is how a stub could name a deleted skill through exit 0.
-NAME_CHECKED_TREES = ("compositions", "packs", "skills")
+# Every shipped prose tree is recursive; depth does not change a call edge.
+NAME_CHECKED_TREES = (
+    "rules", "docs", "contracts", "templates", "compositions", "packs", "skills"
+)
 NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md", "TICKETS.md")
 # `orch-` alone is the prefix, not a name; a name carries at least one
 # segment after it. Plain text is how the library says "mentioned, not
@@ -66,10 +62,6 @@ def validate_names(packages, diag: Diagnostics) -> None:
         return
     known = {pkg["path"].name for pkg in packages} | set(ROLE_PROFILES)
     paths = []
-    for directory in NAME_CHECKED_DIRS:
-        node = ROOT / directory
-        if node.is_dir():
-            paths.extend(sorted(node.glob("*.md")))
     for directory in NAME_CHECKED_TREES:
         node = ROOT / directory
         if node.is_dir():
@@ -139,7 +131,7 @@ def validate_unique_names(packages, diag: Diagnostics) -> None:
             seen[name] = pkg["skill_md"]
 
 __all__ = (
-    'NAME_CHECKED_DIRS', 'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
+    'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
     'NAME_CHECK_MARKER', 'LENS_ROW_RE', 'LENS_ANCHOR_RE', 'HEADING_RE',
     '_heading_slugs', 'validate_names', 'validate_lens_anchor', 'validate_unique_names',
 )

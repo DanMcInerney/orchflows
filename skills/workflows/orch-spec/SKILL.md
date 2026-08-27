@@ -7,8 +7,9 @@ role: planner
 Require: the request as Goal and relevant workspace facts as Context.
 
 Gather the facts the frozen statement depends on through
-`orch-investigate` — one bounded question: what exists, what
-constrains, what the request actually touches. Settle decisions only the
+`orch-investigate`, carrying one question, the fixed evidence sources or
+source policy from Context, and a bound: what exists, what constrains, what
+the request actually touches. Settle decisions only the
 user can make with the user, one question at a time, each answer
 recorded verbatim, without re-interviewing a settled one.
 
@@ -18,7 +19,7 @@ now, and first persist the ordered remainder through `tickets.py run-state
 <first-run> --artifact successors.md`: kind, pack, proposed successor run and
 root ids, and state `planned` for each entry. This skill is that artifact's
 sole writer and materialization owner. When a drained `orch-frontier` returns
-its successor trigger under [work-item.md](../../../contracts/work-item.md#root-ticket),
+its successor trigger under [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration),
 resolve the predecessor's accepted result identity;
 once resolved, open the next entry's successor run and root, cite that identity among the
 successor root's own `## Context`, then replace `successors.md` with that
@@ -27,7 +28,7 @@ creates a second root in the same run, and an unmaterialized entry is durable
 state, never a promise left only in this Return.
 
 Draft each per
-[contracts/work-item.md](../../../contracts/work-item.md#root-ticket),
+[contracts/work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration),
 with exact nouns and verbs from
 [docs/vocabulary.md](../../../docs/vocabulary.md) and the craft cell of
 the pack the stamp will name, so they read as the deliverable's

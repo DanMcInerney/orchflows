@@ -192,17 +192,31 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
 
 def validate_anatomy(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
+    operative = re.sub(r"(?ms)^(```|~~~).*?^\1[^\n]*$", "", body)
     if pkg["is_pack"]:
         for label in ("Require:", "Never:", "Return:"):
-            if label in body:
+            if label in operative:
                 diag.error(file_label, f"pack body must not contain '{label}' (packs carry no control flow)")
+        flow = r"\bif\b[^.\n]{0,160}\bthen\b|\b(?:delegate|dispatch|spawn|stop|park|refuse)\b"
+        if re.search(flow, operative, re.IGNORECASE):
+            diag.error(file_label, "pack body carries control flow; packs provide data only")
         return
-    if not REQUIRE_RE.search(body):
+    require = REQUIRE_RE.search(operative)
+    never = NEVER_RE.search(operative)
+    return_matches = list(RETURN_RE.finditer(operative))
+    returning = return_matches[-1] if return_matches else None
+    if not require:
         diag.error(file_label, "skill body missing a line starting 'Require:'")
-    if not NEVER_RE.search(body):
+    if not never:
         diag.error(file_label, "skill body missing a line starting 'Never:'")
-    if not RETURN_RE.search(body):
+    if not returning:
         diag.error(file_label, "skill body missing a sentence starting 'Return'")
+    if not (require and never and returning and require.start() < never.start() < returning.start()):
+        diag.error(file_label, "skill body missing ordered Require/procedure/Never/Return anatomy")
+        return
+    return_tail = operative[returning.start():].strip()
+    if len([part for part in re.split(r"\n[ \t]*\n", return_tail) if part.strip()]) > 1:
+        diag.error(file_label, "Return must be the terminal paragraph")
 
 
 def body_words(body: str) -> int:
@@ -238,10 +252,14 @@ def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
 
 def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
-    found = set(PACK_TABLE_CELL_RE.findall(body))
+    rows = PACK_TABLE_CELL_RE.findall(body)
+    found = set(rows)
     missing = [cell for cell in PACK_SIGNATURE_CELLS if cell not in found]
     if missing:
         diag.error(file_label, f"pack signature table missing cell(s): {', '.join(missing)}")
+    repeated = sorted(cell for cell in PACK_SIGNATURE_CELLS if rows.count(cell) > 1)
+    if repeated:
+        diag.error(file_label, f"pack signature table repeats cell(s): {', '.join(repeated)}")
     row = CRAFT_ROW_RE.search(body)
     if row and "(references/craft.md)" not in row.group(1):
         diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")

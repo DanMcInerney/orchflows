@@ -283,9 +283,14 @@ class TestRoleAgentInstructions(unittest.TestCase):
 
         self.assertIn('user_key = "kept"', updated)
         self.assertIn("[mcp_servers.example]", updated)
-        self.assertEqual(3, details["previous"]["subagents.max_concurrent"])
         self.assertNotIn("max_concurrent = 3", updated)
+        # The text assertions above run on every interpreter on purpose: 3.9
+        # is the floor and the one leg without stdlib `tomllib`, so it is the
+        # leg with no parser to catch a bad write. Only the reported previous
+        # value is gated, because reading it requires the parser this leg
+        # lacks -- it is None there, not 3.
         if foundation.tomllib is not None:
+            self.assertEqual(3, details["previous"]["subagents.max_concurrent"])
             parsed = foundation.tomllib.loads(updated)
             self.assertEqual(foundation.GROK_MAX_CONCURRENT, parsed["subagents"]["max_concurrent"])
             self.assertEqual("queue", parsed["subagents"]["limit_behavior"])

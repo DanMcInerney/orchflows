@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1743,
+  "count": 1759,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -554,14 +554,30 @@
    "test_trace.TestTraceV2.test_system_reminder_text_is_never_a_request",
    "test_trace.TestTraceV2.test_text_clip_sets_truncated_flag",
    "test_trace.TestTraceV2.test_thinking_blocks_are_not_narration",
+   "test_ui.VisualDiffExitTest.test_changed_capture_exits_nonzero",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_path_the_installer_never_produces_is_an_error",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_script_resolves_through_the_installers_bin_mapping",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_a_tree_without_the_marker_is_skipped_not_failed",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_an_exemption_does_not_cover_a_second_occurrence",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_an_installed_library_path_resolves",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_an_unknown_dead_path_head_is_an_error",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_nested_contract_prose_is_checked",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_plain_text_mentions_nothing",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_exemption_is_one_live_site_and_not_a_blanket",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_real_library_tree_carries_no_dead_documented_path",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_test_directory_is_an_error",
+   "test_validator.TestMarkdownAnchors.test_a_link_to_a_missing_heading_is_an_error",
+   "test_validator.TestPrivateReferenceAdmission.test_cross_package_private_reference_is_an_error",
+   "test_validator.TestRecursiveNameResolution.test_nested_shipped_prose_resolves_skill_names",
+   "test_validator.TestStructuralAdmissionMutants.test_a_new_executor_is_not_outside_envelope_admission",
+   "test_validator.TestStructuralAdmissionMutants.test_a_return_must_be_the_terminal_paragraph",
+   "test_validator.TestStructuralAdmissionMutants.test_a_utility_call_edge_is_primitive_impurity",
+   "test_validator.TestStructuralAdmissionMutants.test_duplicate_pack_cell_rows_are_rejected",
+   "test_validator.TestStructuralAdmissionMutants.test_envelope_words_in_a_sentence_are_not_an_envelope",
+   "test_validator.TestStructuralAdmissionMutants.test_labels_in_a_fence_do_not_satisfy_skill_anatomy",
+   "test_validator.TestStructuralAdmissionMutants.test_one_unrelated_shared_stem_does_not_carry_an_input",
+   "test_validator.TestStructuralAdmissionMutants.test_pack_control_flow_is_rejected",
+   "test_validator.TestStructuralAdmissionMutants.test_pin_rewrite_requires_a_discriminating_supersession_record",
    "test_verification_model.CritiqueContractTest.test_critique_is_read_only_and_keeps_costly_fix_sentence",
    "test_verification_model.CritiqueContractTest.test_critique_is_two_pass_blocker_only_synthesis",
    "test_verification_model.CritiqueContractTest.test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model",
@@ -1746,7 +1762,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "dade8244499705f109fd9c70125db303d9c3766339e7c00e217d1517bd2eef0b"
+  "sha256": "dde1936429a12ff6a5e33f713cd469695d88a53a43549667e6e3424a5712a06f"
  },
  "mutation_owners": [
   {
@@ -4151,6 +4167,14 @@
   {
    "module": "tests.test_trace",
    "owner": "TestClaudeBoundaryInputs.test_a_transcript_that_cannot_be_read_is_not_full_confidence",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ui",
+   "owner": "VisualDiffExitTest.test_changed_capture_exits_nonzero",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
