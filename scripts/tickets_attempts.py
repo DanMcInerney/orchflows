@@ -335,7 +335,7 @@ def _commit_record(
                 "record_id": record_id,
                 "success": success,
             })
-            failure = _validate_state(state)
+            failure = _validate_state(state, run=run, ticket_id=ticket_id)
             if failure is not None:
                 return failure
             updated = _set_frontmatter_field(updated, "dispatch_v1", canonical_json(state))

@@ -393,6 +393,94 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())
 
+    def test_noncanonical_persisted_state_is_a_byte_preserving_refusal(self):
+        self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        state = _parse_frontmatter(text)["dispatch_v1"]
+        noncanonical = json.dumps(json.loads(state), sort_keys=False)
+        self.assertNotEqual(state, noncanonical)
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", noncanonical),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_forged_stored_success_is_refused_instead_of_replayed(self):
+        self.open()
+        committed = self.commit()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        data = _parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        state["attempts"][0]["records"][0]["success"] = {"forged": True}
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", json.dumps(
+                state, sort_keys=True, separators=(",", ":")
+            )),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertNotEqual(committed, refusal)
+        self.assertEqual(before, path.read_bytes())
+
+    def test_forged_outcome_success_cannot_drive_join(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.outcome()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        data = _parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        record = state["attempts"][0]["records"][0]
+        record["success"]["outcome"]["status"] = "ready"
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", json.dumps(
+                state, sort_keys=True, separators=(",", ":")
+            )),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_orphan_replacement_edge_is_a_byte_preserving_refusal(self):
+        self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        data = _parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        state["attempts"][0]["replaces"] = "never-opened"
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", json.dumps(
+                state, sort_keys=True, separators=(",", ":")
+            )),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
     def test_replacement_identity_injection_is_refused_without_mutation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
