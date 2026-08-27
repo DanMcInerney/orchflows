@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Callable, NamedTuple
 
 from .application import _load_json, _prune_empty_dirs, _sha256_file
 from .foundation import (
     AUTO_REMOVE_KINDS,
-    GROK_AUTO_REMOVE_KINDS,
-    GROK_LIMITS_END,
-    GROK_LIMITS_START,
+    _claude_agents_dir,
     _claude_scope_home,
     _claude_user_home,
+    _codex_agents_dir,
     _codex_user_home,
     _frontend_home,
     _grok_agents_dir,
@@ -22,18 +22,46 @@ from .foundation import (
     _require_project_root,
     _scope_home,
 )
-from .managed_text import without_marked_block
+from .managed_text import without_codex_agent_limits, without_grok_subagent_limits
 
 # --- uninstall ---------------------------------------------------------
 
-# Each Grok kind's own directory, tightest first: a receipt entry may only
-# remove a file from the place the installer put that kind. ``grok-config``
-# is the file directly at the home, so the home is its boundary.
-_GROK_BOUNDARIES = {
-    "grok-skill": _grok_skills_dir,
-    "grok-agent": _grok_agents_dir,
-    "grok-rules": lambda: _grok_rules_path().parent,
-    "grok-config": _grok_user_home,
+
+def _claude_root(scope: str, project_root: Path | None) -> Path:
+    return _require_project_root(project_root) if scope == "project" else _claude_user_home()
+
+
+def _codex_root(scope: str, project_root: Path | None) -> Path:
+    return _require_project_root(project_root) if scope == "project" else _codex_user_home()
+
+
+# Where each auto-removable kind must be found for its receipt entry to be
+# honoured: the directory the installer puts that kind in, and the host root
+# that directory must itself sit inside. Both are recomputed from the scope
+# rather than read off the receipt, so an entry naming a path outside them is
+# refused instead of obeyed. A kind absent here is never removed
+# automatically, whatever the receipt claims -- and the keys are held equal to
+# ``AUTO_REMOVE_KINDS`` by a check rather than by a reader's memory, so a kind
+# widened onto that set without a boundary fails loudly instead of silently
+# falling through to some other host's directory.
+_AUTO_REMOVE_BOUNDARIES = {
+    "adapter": lambda scope, root: (
+        _claude_scope_home(scope, root) / "skills", _claude_root(scope, root)
+    ),
+    "claude-agent": lambda scope, root: (
+        _claude_agents_dir(scope, root), _claude_root(scope, root)
+    ),
+    "codex-agent": lambda scope, root: (
+        _codex_agents_dir(scope, root), _codex_root(scope, root)
+    ),
+    "prompt": lambda scope, root: (_codex_user_home() / "prompts", _codex_user_home()),
+    "codex-skill": lambda scope, root: (_codex_user_home() / "skills", _codex_user_home()),
+    "codex-config": lambda scope, root: (_codex_user_home(), _codex_user_home()),
+    "frontend-asset": lambda scope, root: (_frontend_home(), _frontend_home().parent),
+    "grok-skill": lambda scope, root: (_grok_skills_dir(), _grok_user_home()),
+    "grok-agent": lambda scope, root: (_grok_agents_dir(), _grok_user_home()),
+    "grok-rules": lambda scope, root: (_grok_rules_path().parent, _grok_user_home()),
+    "grok-config": lambda scope, root: (_grok_user_home(), _grok_user_home()),
 }
 
 # What the report calls the thing it removed, and what a review line calls
@@ -42,6 +70,8 @@ _GROK_BOUNDARIES = {
 _DEFAULT_NOUNS = ("skill", "skill file")
 _REMOVAL_NOUNS = {
     "frontend-asset": ("frontend asset", "frontend asset"),
+    "claude-agent": ("Claude role agent", "Claude role agent file"),
+    "codex-agent": ("Codex role agent", "Codex role agent file"),
     "grok-skill": ("Grok skill", "Grok skill file"),
     "grok-agent": ("Grok role agent", "Grok role agent file"),
     "grok-rules": ("Grok instruction file", "Grok instruction file"),
@@ -49,13 +79,38 @@ _REMOVAL_NOUNS = {
 }
 
 
-def _grok_config_removal(path: Path, dry_run: bool) -> tuple[bool, str]:
-    """Lift the managed ``[subagents]`` block back out of the Grok config.
+class _LimitRemoval(NamedTuple):
+    """How one host's managed limit block comes back out of its own config.
 
-    The file is the user's; only the marked block inside it is the
-    installer's, so the removal here is the merge run backwards rather than a
-    delete. A file left holding nothing but whitespace held nothing but that
-    block, so it goes. Returns whether the entry is settled, and its action.
+    Only the transform and the two nouns differ between the hosts, so the
+    arm below has one owner. Nothing about the hazard is one host's: both
+    files are written by the host's own CLI as well as by this installer.
+    """
+
+    remove: Callable[[str], str]
+    noun: str
+    block: str
+
+
+_LIMIT_REMOVALS = {
+    "codex-config": _LimitRemoval(
+        without_codex_agent_limits, "Codex config", "managed agent limits block"
+    ),
+    "grok-config": _LimitRemoval(
+        without_grok_subagent_limits, "Grok config", "managed subagent limits block"
+    ),
+}
+
+
+def _limit_block_removal(path: Path, dry_run: bool, spec: _LimitRemoval) -> tuple[bool, str]:
+    """Lift one host's managed limit block back out of its own config.
+
+    The file is the user's and the markers are not a deed to what sits between
+    them -- a host CLI appends its own tables in there. Only the keys the
+    installer wrote come out, so the removal is the merge run backwards rather
+    than a delete. A file left holding nothing but whitespace held nothing but
+    those keys, so it goes. Returns whether the entry is settled, and its
+    action.
     """
 
     if not path.is_file():
@@ -63,19 +118,19 @@ def _grok_config_removal(path: Path, dry_run: bool) -> tuple[bool, str]:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as error:
-        return False, f"review Grok config; could not read it: {error}; not changed"
+        return False, f"review {spec.noun}; could not read it: {error}; not changed"
     try:
-        remainder = without_marked_block(text, GROK_LIMITS_START, GROK_LIMITS_END)
+        remainder = spec.remove(text)
     except ValueError as error:
-        return False, f"review Grok config; {error}; not changed"
+        return False, f"review {spec.noun}; {error}; not changed"
     if remainder == text:
-        return False, "review Grok config; the managed subagent limits block is not in it; not changed"
+        return False, f"review {spec.noun}; the {spec.block} is not in it; not changed"
     empty = not remainder.strip()
     verb = "would remove" if dry_run else "removed"
     action = (
-        f"{verb} Grok config written by the installer"
+        f"{verb} {spec.noun} written by the installer"
         if empty
-        else f"{verb} the managed subagent limits block from Grok config"
+        else f"{verb} the {spec.block} from {spec.noun}"
     )
     if dry_run:
         return True, action
@@ -85,7 +140,7 @@ def _grok_config_removal(path: Path, dry_run: bool) -> tuple[bool, str]:
         else:
             path.write_text(remainder, encoding="utf-8")
     except OSError as error:
-        return False, f"remove the managed subagent limits block manually; it failed here: {error}"
+        return False, f"remove the {spec.block} manually; it failed here: {error}"
     return True, action
 
 
@@ -109,26 +164,10 @@ def _uninstall_boundary(path: Path, scope: str, project_root: Path | None) -> Pa
 def _auto_remove_path_is_safe(
     path: Path, kind: str, scope: str, project_root: Path | None
 ) -> bool:
-    if kind == "frontend-asset":
-        boundary = _frontend_home()
-    elif kind == "adapter":
-        boundary = _claude_scope_home(scope, project_root) / "skills"
-    elif kind == "codex-skill":
-        boundary = _codex_user_home() / "skills"
-    elif kind in GROK_AUTO_REMOVE_KINDS:
-        boundary = _GROK_BOUNDARIES[kind]()
-    else:
-        boundary = _codex_user_home() / "prompts"
-    if kind == "frontend-asset":
-        scope_boundary = _frontend_home().parent
-    elif kind == "adapter":
-        scope_boundary = (
-            _require_project_root(project_root) if scope == "project" else _claude_user_home()
-        )
-    elif kind in GROK_AUTO_REMOVE_KINDS:
-        scope_boundary = _grok_user_home()
-    else:
-        scope_boundary = _codex_user_home()
+    resolver = _AUTO_REMOVE_BOUNDARIES.get(kind)
+    if resolver is None:
+        return False
+    boundary, scope_boundary = resolver(scope, project_root)
     try:
         boundary.resolve().relative_to(scope_boundary.resolve())
         path.resolve().relative_to(boundary.resolve())
@@ -190,12 +229,12 @@ def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
             )
             continue
 
-        # The one entry whose removal is not a delete. It runs ahead of the
-        # hash gate below on purpose: the block is found by its own markers,
-        # so lifting it out stays exact however much of the file around it
-        # the user has changed since the install wrote it.
-        if kind == "grok-config":
-            settled, action = _grok_config_removal(path, dry_run)
+        # The entries whose removal is not a delete. They run ahead of the
+        # hash gate below on purpose: what comes out is keyed on the lines the
+        # installer wrote, so it stays exact however much of the file -- or of
+        # the marked block itself -- has changed since the install wrote it.
+        if kind in _LIMIT_REMOVALS:
+            settled, action = _limit_block_removal(path, dry_run, _LIMIT_REMOVALS[kind])
             bucket = skill_actions if settled else manual_actions
             bucket.append({"path": str(path), "action": action})
             continue

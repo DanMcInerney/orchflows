@@ -20,10 +20,12 @@ import unittest
 from pathlib import Path
 
 from tools import serial_manifest
+from tools.run_serial_compat import RESTORATIONS, load_manifest
 
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
+POLICY = ROOT / "tools" / "serial-compat-policy.md"
 RUNNER = ROOT / "tools" / "run_serial_compat.py"
 
 ONE_CASE = textwrap.dedent(
@@ -41,6 +43,32 @@ ONE_CASE = textwrap.dedent(
 # `test_two` that landed at column 0 would be a module-level function the
 # loader never sees -- a grown tree that did not grow.
 SECOND_CASE = "\n    def test_two(self):\n        self.assertTrue(True)\n"
+
+# A test that borrows a process seam, so scanning it yields a mutation owner
+# no prior manifest classified: the arrival this file's guard is about.
+BORROWER_CASE = textwrap.dedent(
+    """
+    import os
+    import unittest
+
+
+    class Borrower(unittest.TestCase):
+        def test_borrows_the_environment(self):
+            os.environ["ORCHFLOWS_FIXTURE"] = "1"
+            self.assertEqual(os.environ.get("ORCHFLOWS_FIXTURE"), "1")
+    """
+).lstrip()
+BORROWER = "tests.test_borrower::Borrower.test_borrows_the_environment"
+
+# Every scan emits the synthetic suite baseline, so a fixture manifest that
+# omits its ruling has an unruled owner before the tree contributes one.
+# Only the `restoration` carries: `seams` come from the scan, never the prior.
+RULED_BASELINE = {
+    "module": "<suite>",
+    "owner": "discovery-baseline",
+    "restoration": "selected-module-boundary",
+    "seams": ["environment"],
+}
 
 
 def digest(identities) -> str:
@@ -82,7 +110,7 @@ def fixture_manifest(identities, owners) -> dict:
     }
 
 
-def write_fixture_manifest(path: Path, identities, owners=()) -> str:
+def write_fixture_manifest(path: Path, identities, owners=(RULED_BASELINE,)) -> str:
     text = serial_manifest.render(fixture_manifest(identities, owners))
     path.write_bytes(text.encode("utf-8"))
     return text
@@ -125,7 +153,7 @@ class TestRegeneration(unittest.TestCase):
             serial_manifest.sentinels_block(before),
         )
 
-    def test_a_prior_owner_keeps_its_restoration_and_a_new_owner_has_none(self):
+    def test_a_prior_owner_keeps_its_restoration_and_a_new_owner_is_marked(self):
         previous = [
             {
                 "module": "tests.baseline_pin",
@@ -149,7 +177,14 @@ class TestRegeneration(unittest.TestCase):
                          [("tests.baseline_pin", "_grade"), ("tests.fresh", "arrived")])
         self.assertEqual(merged[0]["restoration"], "sharded-module-guard")
         self.assertEqual(merged[0]["seams"], ["cwd", "monkeypatch"])
-        self.assertNotIn("restoration", merged[1])
+        self.assertEqual(merged[1]["restoration"], serial_manifest.UNCLASSIFIED)
+        self.assertEqual(
+            serial_manifest.unruled(merged), ["tests.fresh::arrived [environment]"]
+        )
+
+    def test_the_marker_is_a_restoration_the_loader_can_never_accept(self):
+        """The written marker and the loader's verdict cannot drift apart."""
+        self.assertNotIn(serial_manifest.UNCLASSIFIED, RESTORATIONS)
 
     def test_the_rendered_manifest_keeps_key_order_indent_and_lf_newlines(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -242,6 +277,58 @@ class TestWriteManifestFlag(unittest.TestCase):
         self.assertIn("discovery agrees", agreed.stdout)
 
 
+class TestUnruledOwners(unittest.TestCase):
+    """A ruling the scan cannot recover stops the flag rather than shipping."""
+
+    def _write(self, tmp, owners):
+        tests_dir = Path(tmp, "tests")
+        tests_dir.mkdir()
+        (tests_dir / "test_borrower.py").write_text(BORROWER_CASE, encoding="utf-8")
+        manifest = Path(tmp, "manifest.json")
+        write_fixture_manifest(manifest, ["stale.identity"], owners)
+        written = subprocess.run(
+            [sys.executable, str(RUNNER), "--write-manifest", "--manifest", str(manifest),
+             "--tests-dir", str(tests_dir)],
+            cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
+        )
+        return written, json.loads(manifest.read_text(encoding="utf-8"))
+
+    def test_an_owner_needing_a_ruling_fails_the_flag_and_is_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            written, after = self._write(tmp, [RULED_BASELINE])
+        self.assertNotEqual(written.returncode, 0, written.stdout)
+        self.assertIn(BORROWER, written.stdout + written.stderr)
+        self.assertIn("serial-compat-policy.md", written.stdout + written.stderr)
+        rows = {(row["module"], row["owner"]): row for row in after["mutation_owners"]}
+        # The regeneration is still on disk: the reviewer rules the marked row
+        # in place instead of hand-writing derived facts nobody recomputed.
+        self.assertEqual(
+            rows[("tests.test_borrower", "Borrower.test_borrows_the_environment")],
+            {"module": "tests.test_borrower",
+             "owner": "Borrower.test_borrows_the_environment",
+             "restoration": serial_manifest.UNCLASSIFIED, "seams": ["environment"]},
+        )
+        self.assertEqual(
+            after["discovery"]["identities"], ["test_borrower.Borrower.test_borrows_the_environment"]
+        )
+
+    def test_the_flag_exits_zero_once_every_scanned_owner_carries_a_ruling(self):
+        ruled = [RULED_BASELINE, {
+            "module": "tests.test_borrower",
+            "owner": "Borrower.test_borrows_the_environment",
+            "restoration": "sharded-module-guard",
+            "seams": ["environment"],
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            written, after = self._write(tmp, ruled)
+        self.assertEqual(written.returncode, 0, written.stdout + written.stderr)
+        self.assertNotIn("ruling", written.stdout)
+        self.assertEqual(
+            sorted({row["restoration"] for row in after["mutation_owners"]}),
+            ["selected-module-boundary", "sharded-module-guard"],
+        )
+
+
 class TestCommittedManifest(unittest.TestCase):
     def test_the_committed_bytes_are_exactly_what_regeneration_would_write(self):
         raw = MANIFEST.read_bytes()
@@ -257,6 +344,26 @@ class TestCommittedManifest(unittest.TestCase):
             [],
             "regeneration must not drop a classification the scan cannot recover",
         )
+        self.assertEqual([row for row in owners if row["restoration"] not in RESTORATIONS], [])
+
+    def test_the_loader_accepts_the_committed_file_and_names_what_it_refuses(self):
+        """The refusal a marked row earns has to say which row earned it."""
+        committed = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        self.assertEqual(load_manifest(MANIFEST)["schema"], "orchflows.serial-compat.v1")
+        marked = dict(committed["mutation_owners"][-1], restoration=serial_manifest.UNCLASSIFIED)
+        committed["mutation_owners"] = committed["mutation_owners"][:-1] + [marked]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp, "manifest.json")
+            path.write_bytes(serial_manifest.render(committed).encode("utf-8"))
+            with self.assertRaises(ValueError) as refusal:
+                load_manifest(path)
+        self.assertIn("%s::%s" % (marked["module"], marked["owner"]), str(refusal.exception))
+
+    def test_the_policy_names_every_ruling_the_loader_accepts(self):
+        """Reviewers rule from the policy, so it owns the ruling vocabulary."""
+        policy = POLICY.read_text(encoding="utf-8")
+        for ruling in sorted(RESTORATIONS):
+            self.assertIn(ruling, policy)
 
 
 if __name__ == "__main__":

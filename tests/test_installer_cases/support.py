@@ -5,6 +5,7 @@
 # the same floor, so the suite runs wherever the installer it covers does.
 from __future__ import annotations
 
+import ast
 import hashlib
 import io
 import json
@@ -14,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path, PurePosixPath
@@ -259,3 +261,206 @@ def isolated_grok_home(root: Path):
 # day the script moved, so the bare form is the contract and this is what
 # reads it.
 BARE_SCRIPT_RE = re.compile(r"\b([a-z_]+\.py)\b")
+
+
+def normalised_doc(docstring: str | None) -> str:
+    """``docstring`` as one line: every run of whitespace becomes one space.
+
+    Where a line break falls in a docstring is a fact about the source
+    column limit, not about the code it describes. An assertion over the raw
+    text reads that break as content and fails on a reflow that changed no
+    word, so every assertion over ``install.__doc__`` reads through here
+    instead. Words are all that survives, and words are all that is pinned.
+    """
+
+    return " ".join((docstring or "").split())
+
+
+def doc_sentence(docstring: str | None) -> str:
+    """The opening sentence of ``docstring`` or of a rendered description.
+
+    ``splitlines()[0]`` is the first *line*, which is the first sentence
+    only for as long as the wrap agrees -- reflow the summary onto two
+    lines and the reader silently loses its tail. For ``install.__doc__``
+    at 60 columns that tail is the clause closing its host list, which is
+    enough to hand a list extractor ``Grok Build from``; narrower, it is a
+    host outright. Normalising first makes the sentence the unit the caller
+    meant. Takes ``argparse``'s rendered description as readily as a
+    docstring, so the two surfaces that must agree on a host list can be
+    read by one caller.
+    """
+
+    normalised = normalised_doc(docstring)
+    head, stop, _ = normalised.partition(". ")
+    return head + "." if stop else normalised
+
+
+def doc_claim(docstring: str | None) -> str:
+    """``docstring`` normalised further, for asserting a claim is absent.
+
+    A negative assertion has the opposite failure mode to a positive one: a
+    wrap does not break it, it *hides* a restatement behind the break, and
+    the assertion passes while the claim is back. So the text is lowered and
+    a hyphen is read as the space it stands in for, which collapses
+    ``Stdlib-only``, ``stdlib only`` and a ``Stdlib-``/``only`` line break
+    to one string. Widening further -- looking for ``stdlib`` alone --
+    would also refuse the true sentence that ``install.py`` itself imports
+    nothing outside the stdlib, which is a different claim.
+    """
+
+    return " ".join(normalised_doc(docstring).lower().replace("-", " ").split())
+
+
+def doc_bullet(docstring: str | None, marker: str) -> str:
+    """The one bullet opening with ``marker``, normalised.
+
+    The bullet -- not the blank-line paragraph -- is the unit, because the
+    host list in ``install.__doc__`` runs unbroken from ``~/.orchflows/`` to
+    Grok Build: splitting on a blank line hands back every bullet after the
+    marker, so an assertion meant for one host reads its neighbours too. A
+    bullet ends at the first line that is not its indented continuation.
+
+    Returns ``""`` when no bullet opens with ``marker``, which fails the
+    caller's assertion about what that bullet says -- a marker that stopped
+    matching is the same defect as a claim that stopped being made.
+    """
+
+    collected: list[str] = []
+    for line in (docstring or "").splitlines():
+        if not collected:
+            if line.startswith(marker):
+                collected.append(line)
+            continue
+        if not line.strip() or not line.startswith((" ", "\t")):
+            break
+        collected.append(line)
+    return normalised_doc(" ".join(collected))
+
+
+# The calls that turn raw docstring text into something an assertion may
+# read. `rewrapped_doc` is deliberately absent: it hands back source text at
+# a different column limit, which is exactly what must not be asserted over.
+DOC_NORMALISERS = frozenset({
+    "normalised_doc", "doc_sentence", "doc_claim", "doc_bullet",
+    "codex_bullet", "stdlib_claims",
+})
+
+
+def _reads_raw_doc(node, tainted: set) -> bool:
+    """Does ``node`` evaluate to docstring text no normaliser has touched?
+
+    ``install.__doc__`` is the source, a name assigned from raw text carries
+    it, and any call that is not a normaliser passes it through -- a
+    ``.partition`` or an ``or ""`` hands back the same line breaks it was
+    given. A normaliser call ends the taint, whatever it was handed.
+    """
+
+    if isinstance(node, ast.Attribute) and node.attr == "__doc__":
+        return isinstance(node.value, ast.Name) and node.value.id == "install"
+    if isinstance(node, ast.Name):
+        return node.id in tainted
+    if isinstance(node, ast.Call):
+        name = node.func.attr if isinstance(node.func, ast.Attribute) else \
+            getattr(node.func, "id", "")
+        if name in DOC_NORMALISERS:
+            return False
+    return any(_reads_raw_doc(child, tainted) for child in ast.iter_child_nodes(node))
+
+
+def _bound_names(target):
+    """Every name ``target`` binds, unpacking included.
+
+    ``_, separator, body = raw.partition(marker)`` binds three names to
+    three pieces of raw text, and reading the assignment target as one name
+    misses all three -- which is how the assertion that actually broke went
+    unnamed the first time this walker was pointed at it.
+    """
+
+    if isinstance(target, ast.Name):
+        yield target.id
+    elif isinstance(target, (ast.Tuple, ast.List)):
+        for element in target.elts:
+            yield from _bound_names(element)
+    elif isinstance(target, ast.Starred):
+        yield from _bound_names(target.value)
+
+
+def raw_doc_assertions(tree) -> list:
+    """``(assertion, line)`` for every assertion reading raw docstring text.
+
+    The two assertions this repository had both pinned prose by substring,
+    and one reached the raw text through a local rather than inline -- so
+    the names are followed to a fixed point before the assertions are read.
+    A fix that repaired only the assertions standing on the day it was
+    written would have a shelf life; this states the law instead.
+    """
+
+    tainted: set = set()
+    while True:
+        found = set()
+        for node in ast.walk(tree):
+            targets = ()
+            if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
+                targets = getattr(node, "targets", None) or [node.target]
+            elif isinstance(node, ast.NamedExpr):
+                targets = [node.target]
+            if targets and node.value is not None and _reads_raw_doc(node.value, tainted):
+                for target in targets:
+                    found.update(_bound_names(target))
+        if found <= tainted:
+            break
+        tainted |= found
+
+    offenders = []
+    for node in ast.walk(tree):
+        called = isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        if not called or not node.func.attr.startswith("assert"):
+            continue
+        if any(_reads_raw_doc(argument, tainted) for argument in node.args):
+            offenders.append((node.func.attr, node.lineno))
+    return offenders
+
+
+def rewrapped_doc(docstring: str | None, width: int) -> str:
+    """``docstring`` reflowed to ``width`` columns: the can-fail fixture.
+
+    A lawful rewrap moves line breaks and nothing else -- paragraphs and
+    bullets keep their order and their words, a bullet keeps its two-space
+    continuation indent, and no word or hyphenated compound is split. It is
+    built beside the tree out of the real docstring rather than by rewriting
+    ``install.py`` (rules/verification.md Section 8), so a test can ask what
+    an assertion would say against a reflow nobody has committed yet.
+    """
+
+    lines: list[str] = []
+    buffer: list[str] = []
+    indent = ""
+
+    def flush() -> None:
+        if buffer:
+            lines.extend(
+                textwrap.wrap(
+                    " ".join(buffer),
+                    width=width,
+                    subsequent_indent=indent,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                )
+            )
+            del buffer[:]
+
+    for line in (docstring or "").splitlines():
+        if not line.strip():
+            flush()
+            indent = ""
+            lines.append("")
+            continue
+        if line.startswith("- "):
+            flush()
+            indent = "  "
+        elif not line.startswith((" ", "\t")):
+            flush()
+            indent = ""
+        buffer.append(line.strip())
+    flush()
+    return "\n".join(lines) + "\n"

@@ -3,7 +3,9 @@
 
 The order and the membership are `AGENTS.md`'s; this runner only decides
 when a check may be skipped, and the answer is: only when an identical tree
-has already been proved green. Stdlib only, Python 3.9+, POSIX and Windows.
+has already been proved green. A skip is served as a replay and named one,
+never as a run, and `--no-cache` is how a caller whose job is an execution
+-- a gate's -- demands one. Stdlib only, 3.9+, POSIX and Windows.
 
 Usage:
     python tools/run_required.py [--repo DIR] [--python EXE]
@@ -29,6 +31,10 @@ from tools.run_required_support import cache, execution, identity  # noqa: E402
 
 ROOT = _FACADE_ROOT
 RECORD_KIND = "required-check-run/v1"
+# A served verdict answers under its own name. The kind is what a reader of
+# the JSON matches on, so a replay carrying the run's kind would be a memo
+# passing itself off as the execution its caller asked for.
+REPLAY_KIND = "required-check-replay/v1"
 REFUSAL_KIND = "required-check-refusal/v1"
 
 # `AGENTS.md`'s five, in `AGENTS.md`'s order. `cheap` is what may share a
@@ -90,7 +96,7 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--no-cache", action="store_true",
-        help="neither read nor write the verdict cache",
+        help="neither read nor write the verdict cache: a gate's execution",
     )
     parser.add_argument(
         "--format", choices=("text", "json"), default="text",
@@ -178,6 +184,22 @@ def display(argv) -> str:
     return " ".join(argv[1:] if Path(argv[0]).is_absolute() else argv)
 
 
+def verdict_note(payload) -> str:
+    """What the verdict line carries beyond the exit status and the tree.
+
+    A replay says so on the one line every reader reads. The per-command
+    ``(cached)`` marks are true, but they are five easy things to skim
+    past, and a caller whose job is an execution -- a gate owes its run
+    one -- should not have to infer that none happened, nor go looking for
+    the spelling that would make one happen. The two notes never meet:
+    only a clean tree is ever stored, so a served verdict is never dirty.
+    """
+
+    if payload["kind"] == REPLAY_KIND:
+        return "  (replay; --no-cache executes the five)"
+    return "  (dirty)" if payload["dirty"] else ""
+
+
 def report(outcomes, payload, form: str) -> None:
     """Put every check's own output in front of a reader, then the verdict."""
 
@@ -202,8 +224,7 @@ def report(outcomes, payload, form: str) -> None:
     emit(
         stream,
         "exit {0}  tree {1}{2}\n".format(
-            payload["exit"], payload["tree_identity"][:12],
-            "  (dirty)" if payload["dirty"] else "",
+            payload["exit"], payload["tree_identity"][:12], verdict_note(payload),
         ),
     )
 
@@ -242,7 +263,7 @@ def _run(args) -> int:
     if not args.no_cache and not dirty:
         stored = cache.load(repo, key)
         if stored is not None:
-            served = cache.serve(stored)
+            served = cache.serve(stored, REPLAY_KIND)
             report([], served, args.format)
             return 0
 

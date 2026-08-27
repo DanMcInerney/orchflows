@@ -303,9 +303,107 @@ class TestRoleAgentInstructions(unittest.TestCase):
         self.assertIn("[mcp_servers.example]", updated)
         self.assertLess(updated.index("subagents.max_concurrent"), updated.index("[mcp_servers"))
 
+    def test_a_reinstall_keeps_a_table_grok_appended_inside_the_block(self):
+        """Grok adds ``[marketplace]`` to its own config within 0.2s of any
+        subcommand, and a TOML editor lands it ahead of the trailing END
+        comment -- inside the markers. A reinstall re-renders its three keys
+        without carrying grok's table off with the old block. Planted, not
+        provoked: nothing here may execute ``grok.exe``.
+
+        The block also leaves EOF on the way out, which is what invited the
+        append; grok's next table goes below ``[marketplace]``, outside the
+        markers, so the file settles after one reinstall."""
+
+        text = (
+            "# BEGIN ORCHFLOWS SUBAGENT LIMITS\n"
+            "subagents.max_concurrent = 20\n"
+            "subagents.max_depth = 4\n"
+            'subagents.limit_behavior = "queue"\n'
+            "[marketplace]\n"
+            "default_skills_installs_purged = true\n"
+            "# END ORCHFLOWS SUBAGENT LIMITS\n"
+        )
+
+        updated, _details = self._rendered(text)
+
+        self.assertIn("default_skills_installs_purged = true", updated)
+        self.assertEqual(1, updated.count(foundation.GROK_LIMITS_START))
+        self.assertEqual(1, updated.count(foundation.GROK_LIMITS_END))
+        self.assertIn("subagents.max_concurrent = ", updated)
+        self.assertLess(updated.index(foundation.GROK_LIMITS_END), updated.index("[marketplace]"))
+        # 3.9 is the floor and the one leg without stdlib `tomllib`. What it
+        # keeps is proved here rather than only on that leg of the matrix:
+        # the parser gates the check, never the merge.
+        self.assertEqual(
+            updated, managed_text.render_grok_subagent_limits(text, toml_module=None)[0]
+        )
+        if foundation.tomllib is not None:
+            parsed = foundation.tomllib.loads(updated)
+            self.assertTrue(parsed["marketplace"]["default_skills_installs_purged"])
+            self.assertEqual(foundation.GROK_MAX_CONCURRENT, parsed["subagents"]["max_concurrent"])
+
     def test_the_codex_agent_limits_block_is_untouched_by_the_grok_one(self):
         codex, _details = install._render_codex_agent_limits("")
 
         self.assertIn(foundation.CODEX_LIMITS_START, codex)
         self.assertNotIn(foundation.GROK_LIMITS_START, codex)
         self.assertNotIn("subagents", codex)
+
+    # --- The managed ``[agents]`` block in ``~/.codex/config.toml`` --------
+    #
+    # Codex's block merges through the same owner as Grok's and answers to the
+    # same law: a reinstall replaces its own block and leaves every other byte
+    # alone. The dotted branch -- no ``[agents]`` table but some other table --
+    # used to keep the whitespace-only prefix that removing the block left
+    # behind, so each reinstall prepended one more blank line and the file grew
+    # without bound. Reinstalling is the ordinary act, not the exotic one,
+    # which is why every merge path is checked three renders deep.
+
+    CODEX_CONFIGS = (
+        ("an absent config", ""),
+        ("a dotted branch above the first table", '[mcp_servers.example]\ncommand = "kept"\n'),
+        ("an existing agents table", '[agents]\nmax_threads = 3\nkept = "yes"\n\n[o]\nv = true\n'),
+        ("top-level keys and no table", 'model = "gpt-5-codex"\n'),
+        ("top-level keys above a table", 'model = "gpt-5-codex"\n\n[mcp_servers.e]\nc = "k"\n'),
+        ("top-level keys spaced off a table", 'model = "gpt-5-codex"\n\n\n[mcp_servers.e]\nc = "k"\n'),
+        ("a comment above a table", '# mine\n\n[mcp_servers.e]\nc = "k"\n'),
+        ("a whitespace-only config", "\n"),
+    )
+
+    def test_reinstalling_over_a_codex_config_leaves_the_block_byte_stable(self):
+        for label, text in self.CODEX_CONFIGS:
+            with self.subTest(config=label):
+                once, _details = managed_text.render_codex_agent_limits(text)
+                twice, _details = managed_text.render_codex_agent_limits(once)
+                thrice, _details = managed_text.render_codex_agent_limits(twice)
+
+                self.assertEqual(once, twice, "a reinstall must not change the rendered bytes")
+                self.assertEqual(twice, thrice, "and the third reinstall must not either")
+                self.assertIn(foundation.CODEX_LIMITS_START, once)
+                self.assertIn(foundation.CODEX_LIMITS_END, once)
+                if foundation.tomllib is not None:
+                    foundation.tomllib.loads(once)
+
+    def test_a_codex_reinstall_keeps_the_user_content_it_found(self):
+        first, _details = managed_text.render_codex_agent_limits(
+            '[mcp_servers.example]\ncommand = "kept"\n'
+        )
+
+        again, _details = managed_text.render_codex_agent_limits(first)
+
+        self.assertFalse(again.startswith("\n"), "no blank line may accumulate above the block")
+        self.assertIn('command = "kept"', again)
+        self.assertLess(again.index("agents.max_threads"), again.index("[mcp_servers"))
+
+    def test_a_codex_install_keeps_the_blank_lines_the_user_wrote(self):
+        # The separator this branch takes back is its own, not any blank line
+        # it finds. A first install has written none, so the two the user put
+        # between their keys and their first table are still two afterwards --
+        # and stay two through every reinstall.
+        text = 'model = "gpt-5-codex"\n\n\n[mcp_servers.e]\nc = "k"\n'
+
+        once, _details = managed_text.render_codex_agent_limits(text)
+        twice, _details = managed_text.render_codex_agent_limits(once)
+
+        self.assertTrue(once.startswith('model = "gpt-5-codex"\n\n\n'), once)
+        self.assertEqual(once, twice)

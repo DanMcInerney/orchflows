@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1778,
+  "count": 1830,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -72,6 +72,11 @@
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
    "test_install_doctor.TestInstallDoctor.test_each_grok_artifact_reports_presence_and_staleness_by_receipt",
    "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_kind_the_receipt_carries_is_a_kind_the_doctor_knows",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_receipt_entry_the_installer_writes_is_one_the_doctor_inspects",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_maximal_plan_exercises_every_field_a_plan_can_carry",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_receipt_on_disk_is_the_receipt_returned",
+   "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_the_written_install_reads_back_coherent_to_the_doctor",
    "test_install_support_packages.ScriptSupportDistributionTest.test_inventory_adds_only_flat_support_modules_for_cut_facades",
    "test_install_support_packages.ScriptSupportDistributionTest.test_project_plan_is_rejected",
    "test_install_support_packages.ScriptSupportDistributionTest.test_user_plan_uses_discovered_inventory_at_bin_root",
@@ -111,6 +116,7 @@
    "test_installer.TestClaudeAdapterSet.test_all_is_the_default_and_mints_every_package_and_template",
    "test_installer.TestClaudeAdapterSet.test_four_changes_nothing_but_the_claude_adapter_list",
    "test_installer.TestClaudeAdapterSet.test_four_mints_exactly_the_shared_adapters",
+   "test_installer.TestClaudeAdapterSet.test_help_names_the_hosts_the_module_docstring_names",
    "test_installer.TestClaudeAdapterSet.test_installer_description_says_codex_redirects_every_canonical_name",
    "test_installer.TestClaudeAdapterSet.test_the_cli_defaults_to_all_and_carries_four_into_the_plan",
    "test_installer.TestClaudeAdapterSet.test_the_four_adapters_carry_the_same_content_they_carry_under_all",
@@ -142,6 +148,13 @@
    "test_installer.TestCodexHooksPreflight.test_user_plan_says_when_the_codex_config_could_not_be_toml_checked",
    "test_installer.TestCodexHooksPreflight.test_user_plan_surfaces_hooks_warnings",
    "test_installer.TestCodexHooksPreflight.test_warns_on_dangling_orchflows_path",
+   "test_installer.TestConservativeBlockRemoval.test_a_block_holding_only_owned_lines_lifts_out_whole",
+   "test_installer.TestConservativeBlockRemoval.test_a_foreign_line_the_host_appended_inside_the_block_survives",
+   "test_installer.TestConservativeBlockRemoval.test_absent_markers_pass_the_text_through",
+   "test_installer.TestConservativeBlockRemoval.test_an_owned_looking_line_below_the_first_foreign_one_survives_too",
+   "test_installer.TestConservativeBlockRemoval.test_blank_lines_between_owned_ones_do_not_strand_them",
+   "test_installer.TestConservativeBlockRemoval.test_crlf_line_endings_are_preserved_on_what_survives",
+   "test_installer.TestConservativeBlockRemoval.test_duplicate_markers_raise_the_shared_marker_error",
    "test_installer.TestConservativeUninstall.test_dry_run_changes_nothing",
    "test_installer.TestConservativeUninstall.test_manual_config_action_reports_installed_settings",
    "test_installer.TestConservativeUninstall.test_modified_and_unverified_skills_require_manual_cleanup",
@@ -149,6 +162,7 @@
    "test_installer.TestConservativeUninstall.test_replaced_skill_requires_manual_cleanup",
    "test_installer.TestConservativeUninstall.test_uninstall_auto_removes_unchanged_codex_skill_stub",
    "test_installer.TestConservativeUninstall.test_uninstall_drops_a_grok_config_the_installer_wrote_whole",
+   "test_installer.TestConservativeUninstall.test_uninstall_keeps_a_table_grok_appended_inside_the_managed_block",
    "test_installer.TestConservativeUninstall.test_uninstall_removes_only_unchanged_skill_entrypoints",
    "test_installer.TestConservativeUninstall.test_uninstall_removes_the_installed_grok_surface_by_receipt",
    "test_installer.TestDeclaredPythonFloor.test_agents_md_states_the_floor_install_py_enforces",
@@ -182,6 +196,17 @@
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
    "test_installer.TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
+   "test_installer.TestHostConfigLimitRemoval.test_a_block_holding_only_the_installers_keys_lifts_out_whole",
+   "test_installer.TestHostConfigLimitRemoval.test_a_table_the_host_appended_inside_the_block_survives_removal",
+   "test_installer.TestHostConfigLimitRemoval.test_absent_markers_pass_the_config_through",
+   "test_installer.TestHostConfigLimitRemoval.test_removing_the_rendered_block_restores_the_config_it_merged_into",
+   "test_installer.TestHostSurfaceUninstall.test_a_managed_config_block_comes_out_and_the_hosts_own_table_stays",
+   "test_installer.TestHostSurfaceUninstall.test_a_managed_config_holding_nothing_else_goes_with_its_block",
+   "test_installer.TestHostSurfaceUninstall.test_a_managed_config_without_its_block_is_left_for_review",
+   "test_installer.TestHostSurfaceUninstall.test_a_role_agent_edited_since_the_install_is_left_for_review",
+   "test_installer.TestHostSurfaceUninstall.test_every_auto_removable_host_config_comes_back_out_by_key",
+   "test_installer.TestHostSurfaceUninstall.test_every_auto_removable_kind_names_the_directory_it_may_be_removed_from",
+   "test_installer.TestHostSurfaceUninstall.test_every_hosts_role_agent_is_removed_on_the_same_terms",
    "test_installer.TestInstallReceipt.test_a_grok_install_writes_the_planned_surface_and_records_its_kind",
    "test_installer.TestInstallReceipt.test_enabling_grok_leaves_every_claude_and_codex_write_byte_identical",
    "test_installer.TestInstallReceipt.test_legacy_header_role_profile_without_receipt_is_kept",
@@ -194,6 +219,15 @@
    "test_installer.TestInstallReceipt.test_shipped_claude_bindings_are_the_documented_defaults",
    "test_installer.TestInstallReceipt.test_the_printed_plan_and_summary_report_the_grok_surface",
    "test_installer.TestInstallReceipt.test_unowned_role_profile_is_kept_and_the_install_proceeds",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_a_changed_codex_claim_still_fails_at_every_rewrap",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_a_restated_stdlib_claim_still_fails_however_it_is_spelled",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_a_true_sentence_about_the_stdlib_is_not_the_killed_claim",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_no_test_in_the_tree_asserts_over_the_raw_installer_docstring",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_reading_the_opening_sentence_as_a_line_loses_its_tail",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_codex_claims_survive_every_lawful_rewrap",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_enumeration_names_both_shapes_the_two_broken_sessions_had",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_opening_sentence_keeps_every_host_at_every_rewrap",
+   "test_installer.TestInstallerDescriptionSurvivesRewrap.test_the_stdlib_claim_stays_absent_at_every_rewrap",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_duplicate_legacy_begin_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_begin_without_end_raises",
    "test_installer.TestMarkerEngineMisuse.test_upsert_import_line_legacy_end_without_begin_raises",
@@ -217,8 +251,11 @@
    "test_installer.TestPartialApplyAfterRmtree.test_crash_mid_copy_leaves_lib_home_partially_repopulated_and_no_receipt",
    "test_installer.TestPluginSubsystemRemoved.test_install_py_source_has_no_plugin_subsystem_reference",
    "test_installer.TestPluginSubsystemRemoved.test_plugin_subsystem_paths_are_absent",
+   "test_installer.TestRoleAgentInstructions.test_a_codex_install_keeps_the_blank_lines_the_user_wrote",
+   "test_installer.TestRoleAgentInstructions.test_a_codex_reinstall_keeps_the_user_content_it_found",
    "test_installer.TestRoleAgentInstructions.test_a_config_with_no_subagents_table_gets_dotted_keys_above_the_first",
    "test_installer.TestRoleAgentInstructions.test_a_declared_role_that_the_profile_contradicts_refuses",
+   "test_installer.TestRoleAgentInstructions.test_a_reinstall_keeps_a_table_grok_appended_inside_the_block",
    "test_installer.TestRoleAgentInstructions.test_a_role_none_grok_body_carries_neither_gate_nor_fork_clause",
    "test_installer.TestRoleAgentInstructions.test_an_absent_config_gains_the_three_managed_settings",
    "test_installer.TestRoleAgentInstructions.test_an_existing_subagents_table_keeps_its_user_keys",
@@ -229,6 +266,7 @@
    "test_installer.TestRoleAgentInstructions.test_grok_agent_is_yaml_frontmatter_with_camelcase_keys_only",
    "test_installer.TestRoleAgentInstructions.test_grok_frontmatter_drops_the_keys_grok_would_silently_ignore",
    "test_installer.TestRoleAgentInstructions.test_no_grok_body_is_an_at_include_and_every_one_reads_its_canonical_body",
+   "test_installer.TestRoleAgentInstructions.test_reinstalling_over_a_codex_config_leaves_the_block_byte_stable",
    "test_installer.TestRoleAgentInstructions.test_rendering_grok_leaves_the_claude_and_codex_agents_alone",
    "test_installer.TestRoleAgentInstructions.test_role_description_is_the_role_name_and_nothing_to_follow",
    "test_installer.TestRoleAgentInstructions.test_role_instructions_send_no_child_to_read_the_role_contract",
@@ -349,6 +387,9 @@
    "test_project_binding.TestTheSeamMoved.test_the_lifecycle_module_and_the_facade_still_export_the_seam",
    "test_project_binding.TestTheSeamMoved.test_the_project_module_owns_the_binding_law",
    "test_project_binding.TestTheSeamMoved.test_the_seam_is_defined_in_the_project_module",
+   "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
+   "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
+   "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
    "test_run_required.TestCacheLocation.test_a_green_clean_run_stores_exactly_one_entry_named_by_its_key",
    "test_run_required.TestCacheLocation.test_the_cache_sits_under_the_runners_own_gitignored_directory",
    "test_run_required.TestCacheLocation.test_the_stored_entry_is_ignored_by_the_checkout",
@@ -465,10 +506,15 @@
    "test_serial_compat_manifest_regression.TestCodexRedirectManifestRegression.test_the_codex_redirect_test_identities_stay_serial_compatible",
    "test_serial_manifest.TestCommittedManifest.test_every_committed_owner_still_carries_its_restoration",
    "test_serial_manifest.TestCommittedManifest.test_the_committed_bytes_are_exactly_what_regeneration_would_write",
-   "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_has_none",
+   "test_serial_manifest.TestCommittedManifest.test_the_loader_accepts_the_committed_file_and_names_what_it_refuses",
+   "test_serial_manifest.TestCommittedManifest.test_the_policy_names_every_ruling_the_loader_accepts",
+   "test_serial_manifest.TestRegeneration.test_a_prior_owner_keeps_its_restoration_and_a_new_owner_is_marked",
    "test_serial_manifest.TestRegeneration.test_regeneration_replaces_stale_discovery_with_the_live_multiset",
+   "test_serial_manifest.TestRegeneration.test_the_marker_is_a_restoration_the_loader_can_never_accept",
    "test_serial_manifest.TestRegeneration.test_the_rendered_manifest_keeps_key_order_indent_and_lf_newlines",
    "test_serial_manifest.TestRegeneration.test_the_sentinels_block_survives_regeneration_byte_for_byte",
+   "test_serial_manifest.TestUnruledOwners.test_an_owner_needing_a_ruling_fails_the_flag_and_is_named",
+   "test_serial_manifest.TestUnruledOwners.test_the_flag_exits_zero_once_every_scanned_owner_carries_a_ruling",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
    "test_skill_fork_governance.SpecStatesItsDirectTicketLane.test_the_direct_lane_names_its_condition_and_its_mechanics",
@@ -754,6 +800,12 @@
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_an_unacquirable_lock_still_writes_and_never_raises",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_concurrent_writers_lose_no_line",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_the_unacquired_path_returns_inside_a_budget_under_one_second",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_a_row_that_lost_its_grok_cell_is_not_read_as_a_row",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_column_parses_and_grok_is_bound_for_both_roles",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_recorded_model_and_effort_is_admitted",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_isolation_stays_the_tickets_field_on_every_host",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_two_rows_binding_one_subagent_type_are_refused",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_condition_command_wires_stop_rule_bound_and_single_reply",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_exit_lines_are_never_dictated_verbatim_in_the_built_command",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_iterations_command_wires_model_effort_and_done_check",
@@ -777,13 +829,8 @@
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_rejects_duplicate_launches",
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_role_skill_topology_is_enforced",
    "tests.test_live_harnesses_cases.profile_cases.TestClaudeLiveProfiles.test_timeout_returns_structured_failure",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_a_row_that_lost_its_grok_cell_is_not_read_as_a_row",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_column_parses_and_grok_is_bound_for_both_roles",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_recorded_model_and_effort_is_admitted",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_exception_during_surface_run_still_cleans_up_temp_agent_file",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_file_tool_activity_fails_the_surface",
-   "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_isolation_stays_the_tickets_field_on_every_host",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_probe_sentinel_injection_does_not_require_tomllib",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_role_skill_topology_reports_advisory_when_unsupported",
    "tests.test_live_harnesses_cases.profile_cases.TestCodexLiveProfiles.test_stable_surface_accepts_all_sentinels",
@@ -936,6 +983,11 @@
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_a_ticket_that_was_never_claimed_has_no_duration_to_report",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_each_executor_reports_its_median_p90_and_max",
    "tests.test_run_report_cases.tickets.TicketDurationTest.test_top_bounds_the_longest_list_and_leaves_the_executor_summary_whole",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_a_class_two_shards_reach_is_named_once_with_its_count",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_a_consistent_tree_reports_nothing",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_a_mixin_is_reported_from_both_sides_with_the_prefix_fix",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_an_unimported_class_is_named_with_its_file_and_both_rules",
+   "tests.test_run_tests_cases.collection_law.TestCollectionLaw.test_the_law_the_message_states_is_the_law_the_tree_lives_under",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_covers_four_boundaries_whole_and_splits_only_windows",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_does_not_repeat_oracles_already_in_the_sharded_suite",
    "tests.test_run_tests_cases.workflow_contract.TestWorkflowContract.test_ci_restores_a_timing_cache_scoped_to_the_leg_that_wrote_it",
@@ -1781,7 +1833,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "e828b81dca705871454c06bc1af50fe7d33bdbb139bab247288860b5b848bf48"
+  "sha256": "5f7ae3a6a8d7b2687faea14f184121b6673abe20d45a01991d517ad6d7a473ec"
  },
  "mutation_owners": [
   {
@@ -2299,6 +2351,15 @@
   {
    "module": "tests.test_install_doctor",
    "owner": "TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_install_doctor_parity",
+   "owner": "TestDoctorInspectsWhatTheInstallerWrites._apply",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment",
@@ -2984,6 +3045,14 @@
   },
   {
    "module": "tests.test_installer_cases.uninstall.conservative",
+   "owner": "TestConservativeUninstall.test_uninstall_keeps_a_table_grok_appended_inside_the_managed_block",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.conservative",
    "owner": "TestConservativeUninstall.test_uninstall_removes_only_unchanged_skill_entrypoints",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -2995,6 +3064,51 @@
    "owner": "TestConservativeUninstall.test_uninstall_removes_the_installed_grok_surface_by_receipt",
    "restoration": "sharded-module-guard",
    "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.host_surfaces",
+   "owner": "TestHostSurfaceUninstall.test_a_managed_config_block_comes_out_and_the_hosts_own_table_stays",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.host_surfaces",
+   "owner": "TestHostSurfaceUninstall.test_a_managed_config_holding_nothing_else_goes_with_its_block",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.host_surfaces",
+   "owner": "TestHostSurfaceUninstall.test_a_managed_config_without_its_block_is_left_for_review",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.host_surfaces",
+   "owner": "TestHostSurfaceUninstall.test_a_role_agent_edited_since_the_install_is_left_for_review",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.uninstall.host_surfaces",
+   "owner": "TestHostSurfaceUninstall.test_every_hosts_role_agent_is_removed_on_the_same_terms",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
     "monkeypatch"
    ]
   },
@@ -3567,6 +3681,14 @@
     "monkeypatch",
     "threads",
     "warnings"
+   ]
+  },
+  {
+   "module": "tests.test_serial_manifest",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

@@ -56,12 +56,35 @@ CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is
 # not a file to delete but a marked block to lift back out, which is why
-# ``installer/uninstall.py`` gives it an arm of its own. Claude's
-# ``host-block`` and ``codex-config`` stay off this list: nobody has asked
-# their hosts for a removal this exact, and widening them is not this
-# installer's to decide in passing.
+# ``installer/uninstall.py`` gives it and its Codex twin an arm of their own.
 GROK_AUTO_REMOVE_KINDS = frozenset(("grok-skill", "grok-agent", "grok-rules", "grok-config"))
-AUTO_REMOVE_KINDS = frozenset(("adapter", "prompt", "codex-skill", "frontend-asset")) | GROK_AUTO_REMOVE_KINDS
+# What the uninstall may remove from the receipt without asking, gated on the
+# recorded hash and on the boundary table in ``installer/uninstall.py``, whose
+# keys a test holds equal to this set. The three hosts sit here on the same
+# terms: role agents for all three, and the two TOML configs lifted key by key
+# rather than deleted, since both are files their own CLI writes as well.
+#
+# Two groups stay off, for reasons that are not "nobody asked":
+#
+# - ``script``, ``lib``, ``by-name`` and ``host-block`` are all inside
+#   ``~/.orchflows``, and so are the retained private runtime and the receipt
+#   driving this very cleanup. That tree is handed over as one manual step
+#   rather than dismantled file by file while it is still being read.
+# - ``claude-config`` is JSON the installer sets one key inside, and there is
+#   no lifting one key back out of JSON the way a marked TOML block comes out
+#   -- ``render_claude_settings`` has no inverse. Its manual line reports the
+#   exact setting instead, which is the undo a user can actually apply.
+AUTO_REMOVE_KINDS = frozenset(
+    (
+        "adapter",
+        "prompt",
+        "claude-agent",
+        "codex-agent",
+        "codex-skill",
+        "codex-config",
+        "frontend-asset",
+    )
+) | GROK_AUTO_REMOVE_KINDS
 CODEX_MAX_THREADS = 20
 CODEX_MAX_DEPTH = 1
 GROK_MAX_CONCURRENT = 20
