@@ -345,7 +345,8 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Install or remove orchflows for Claude Code and Codex.")
+    hosts = (__doc__ or "").splitlines()[0].partition("orchflows for ")[2].partition(" from ")[0]
+    parser = argparse.ArgumentParser(description=f"Install or remove orchflows for {hosts}.")
     parser.add_argument(
         "command",
         nargs="?",
