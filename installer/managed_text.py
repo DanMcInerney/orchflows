@@ -449,6 +449,18 @@ def render_grok_subagent_limits(text: str, toml_module=tomllib) -> tuple[str, di
     return _render_limit_block(text, _GROK_LIMIT_BLOCK, toml_module)
 
 
+def without_codex_agent_limits(text: str) -> str:
+    """The uninstall side of ``render_codex_agent_limits``: the two keys go,
+    and whatever Codex appended between the markers stays.
+
+    Its Grok twin below is the one whose host was caught appending a table in
+    there, and this reads the same way for the same reason: nothing makes a
+    marker pair a deed to a file the host itself edits. Both go through
+    ``_without_limit_block`` so neither can drift back to a span lift."""
+
+    return _without_limit_block(text, _CODEX_LIMIT_BLOCK)
+
+
 def without_grok_subagent_limits(text: str) -> str:
     """The uninstall side of ``render_grok_subagent_limits``: the three keys
     go, and whatever grok appended between the markers stays.
