@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1838,
+  "count": 1846,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -39,6 +39,13 @@
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
    "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_receives_without_the_state_sink",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_only_inline_is_explicitly_ephemeral",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_receipt_refuses_identity_profile_and_authority_mismatches",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
@@ -552,6 +559,7 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_packet",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_spec_route_consumes_the_root_shape_it_sealed",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
+   "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_packet_projection_and_receipt",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
@@ -1841,7 +1849,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "7c799ce35f7aef3c8678c764c682e535265af1b83a8b75c3e283d8ed7190ed1a"
+  "sha256": "c2404420ff5bca7f830551913d5c1e09c52e11ba022f546854ab2c46a0500c3f"
  },
  "mutation_owners": [
   {
@@ -2157,6 +2165,39 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_inline_snapshot_receives_without_the_state_sink",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_packet_only_inline_is_explicitly_ephemeral",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
