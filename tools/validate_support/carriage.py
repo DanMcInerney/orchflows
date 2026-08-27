@@ -146,7 +146,11 @@ def _carriage_item_carried(item: str, target_stems: set):
         if not nouns:
             continue
         last_noun = nouns[-1]
-        if not any(_carriage_stem_variants(n) & target_stems for n in nouns):
+        matched = [n for n in nouns if _carriage_stem_variants(n) & target_stems]
+        if not matched:
+            return False, nouns[-1]
+        # One incidental middle term does not identify a multiword carrier.
+        if len(nouns) > 1 and len(set(matched)) < 2 and matched[0] not in (nouns[-1], "caller"):
             return False, nouns[-1]
     return True, last_noun
 

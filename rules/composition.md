@@ -6,7 +6,7 @@
    enforced for kernel); engines are composites; workflows and
    instances may be either. Invocation policy for templates lives in
    their manifest's `entry` field per
-   [contracts/work-item.md](../contracts/work-item.md#template-and-stub).
+   [contracts/work-item.md](../contracts/work-item.md#template-and-executor-form).
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never

@@ -121,50 +121,38 @@ def validate_markdown_links(diag: Diagnostics) -> None:
 # lib/<relative path>, and scripts/<name>.py lands flat at bin/<name>.py.
 # What ships nowhere -- tools/, tests/, installer/ -- is exactly what the
 # friction record caught executors walking into under lib/.
-#
-# Importing the roster is not the same as being drift-proof, and the gap
-# runs one way. A head this module does not recognize is skipped, not
-# convicted, so dropping a directory from CANONICAL_DIRS turns every
-# pointer into it from correct to unexamined rather than into an error --
-# silence exactly when the defect becomes universal. Two facts are restated
-# and can go stale on their own: SOURCE_ONLY_DIRS below, and the flat bin
-# mapping, which accepts any scripts/<name> present in the checkout while
-# install.py's discover_script_names ships a filtered subset of them.
 try:
     from installer.foundation import CANONICAL_DIRS as _INSTALLED_LIB_DIRS
 except ImportError:  # pragma: no cover - a checkout without the installer
     _INSTALLED_LIB_DIRS = None
 
-# contracts/ is shipped too and is graded the same way, but it still names
-# two uninstalled paths at this tip and is not this unit's to edit; the
-# handoff carries the four sites and this tuple is where they join.
-DOC_PATH_CHECKED_TREES = ("rules", "docs", "skills", "packs", "compositions", "templates")
-# The repository's own build machinery. Present in the checkout, absent from
-# every installed tree, so a backticked mention of one is a dead path for the
-# only reader who matters here -- the one running out of ~/.orchflows/lib.
-# This roster is not yet complete over the repository: web/, benchmarks/ and
-# research/ are equally source-only, and because an unrecognized head is
-# skipped rather than convicted, the backticked web/src/... pointers in
-# docs/ui/*.md are graded by nothing today. Adding them here is one line;
-# it convicts those sites, which is a repair this check's first unit did
-# not hold the scope to make. Green here means no dead pointer under a
-# recognized head, not no dead pointer.
+DOC_PATH_CHECKED_TREES = tuple(_INSTALLED_LIB_DIRS or ())
+# Checkout mechanics never land under lib/. UI, benchmark, and research
+# documents may instead point into their checked-out source trees.
 SOURCE_ONLY_DIRS = ("tools", "tests", "installer")
+CHECKOUT_PATH_DIRS = ("web", "benchmarks", "research")
+# Run-state and schema/scenario identifiers share slash syntax with paths but
+# resolve through their own contracts, not the library filesystem.
+STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
 # and `orch-tdd` are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
-# One site, named rather than hidden. topology.md §3's shared-surface rule
-# lists the artifacts two cut items would both write -- ARCHITECTURE.md, a
-# SKILL.md roster, the pin file -- as repository artifacts under
-# decomposition, not as pointers into the installed library, and
-# tests/test_contracts_cases/topology.py pins that exact spelling. Naming
-# a write surface is not sending a reader anywhere, so the token stays.
-# The key is (file, token), never a bare filename: any other dead token in
-# this same file is still an error. Read the scope exactly, though -- it is
-# not per-sentence. Every occurrence of this token in this file is exempt,
-# so a future sentence here that really does point somewhere would pass
-# unseen. Splitting the pair by line is the fix if that day comes.
-DOC_PATH_EXEMPT_SITES = frozenset()
+# Non-navigation occurrences and not-yet-materialized UI design paths. Keys
+# are exact source lines so another occurrence is still graded.
+DOC_PATH_EXEMPT_SITES = frozenset({
+    ("contracts/pack-signature.md", 54, "tools/validate.py"),
+    ("contracts/pack-signature.md", 67, "tests/pins.json"),
+    ("docs/ui/modularization.md", 7, "web/src/api/client.ts"),
+    ("docs/ui/modularization.md", 7, "web/src/api/schema.ts"),
+    ("docs/ui/modularization.md", 7, "web/src/app/registry.ts"),
+    ("docs/ui/modularization.md", 7, "web/src/feed.ts"),
+    ("docs/ui/modularization.md", 7, "web/src/state/location.ts"),
+    ("docs/ui/modularization.md", 17, "app/catalog.ts"),
+    ("docs/ui/modularization.md", 55, "web/src/state/location.ts"),
+    ("docs/ui/workflows.md", 65, "web/src/api/schema.ts"),
+    ("docs/ui/workflows.md", 71, "web/src/state/location.ts"),
+    ("docs/ui/workflows.md", 73, "web/src/api/schema.ts"),
+})
 
 
 def _documented_path_finding(token: str, source: Path, root: Path):
@@ -183,6 +171,12 @@ def _documented_path_finding(token: str, source: Path, root: Path):
             "following this lands nowhere. Name it in plain text to mention "
             "it without pointing at it"
         )
+    if head in CHECKOUT_PATH_DIRS:
+        if (root / token.rstrip("/")).exists():
+            return None
+        return f"`{token}` names no checkout path: nothing at {token.rstrip('/')} in this tree"
+    if head in STATE_PATH_HEADS or remainder == "v1" or head[:1].isupper():
+        return None
     if head == "scripts":
         # Scripts install flat, so only a top-level script name survives.
         if remainder and "/" not in remainder and (root / "scripts" / remainder).is_file():
@@ -212,21 +206,7 @@ def validate_documented_paths(diag: Diagnostics) -> None:
 
 
 def _validate_documented_paths_impl(diag: Diagnostics) -> None:
-    """Every backticked library-internal path in shipped prose resolves in
-    the tree install.py produces.
-
-    This is validate_names' law one namespace over. There, a backticked
-    `orch-*` is a call edge that has to resolve and plain text is how prose
-    mentions a name without calling it; here, a backticked path is a pointer
-    that has to resolve and plain text is how prose mentions a file without
-    sending anyone to it. Six friction entries across three sessions record
-    executors walking from shipped prose into ~/.orchflows/lib/scripts and
-    lib/tests -- paths the prose named and the installed tree never carried.
-    The reader was not wrong; the doc was.
-
-    Skipped where the tree is not the library, the same guard validate_names
-    uses: a fixture with no ARCHITECTURE.md has no installed tree to model.
-    """
+    """Resolve backticked paths across shipped prose; skip non-library fixtures."""
 
     root = ROOT
     marker = root / "ARCHITECTURE.md"
@@ -236,7 +216,6 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
     if _INSTALLED_LIB_DIRS is None:
         diag.warn("installer", SKIPPED)
         return
-    known_heads = set(_INSTALLED_LIB_DIRS) | set(SOURCE_ONLY_DIRS) | {"scripts"}
     for tree in DOC_PATH_CHECKED_TREES:
         node = root / tree
         if not node.is_dir():
@@ -245,14 +224,14 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
             if not source.is_file():
                 continue
             text = _read_source(source)
-            for token in sorted(set(DOCUMENTED_PATH_RE.findall(text))):
-                if token.split("/", 1)[0] not in known_heads:
-                    continue
-                if (rel(source), token) in DOC_PATH_EXEMPT_SITES:
-                    continue
-                finding = _documented_path_finding(token, source, root)
-                if finding is not None:
-                    diag.error(rel(source), finding)
+            for line_number, line in enumerate(text.splitlines(), 1):
+                for match in DOCUMENTED_PATH_RE.finditer(line):
+                    token = match.group(1)
+                    if (rel(source), line_number, token) in DOC_PATH_EXEMPT_SITES:
+                        continue
+                    finding = _documented_path_finding(token, source, root)
+                    if finding is not None:
+                        diag.error(rel(source), finding)
 
 
 def _run_validation_impl() -> Diagnostics:
@@ -321,6 +300,12 @@ def _main_impl(argv=None) -> int:
     args = parser.parse_args(argv)
 
     if args.pin:
+        diag = Diagnostics()
+        validate_pin_supersessions(diag)
+        if diag.has_errors:
+            for line in diag.lines():
+                print(line)
+            return 1
         pins = write_pins()
         print(f"wrote {len(pins)} pin(s) to {rel(PINS_FILE)}")
         return 0

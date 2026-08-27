@@ -1,10 +1,11 @@
 # Delegation
 
 1. Every dispatch carries a complete
-   [delegation packet](../contracts/work-item.md#dispatch), which owns
+   [semantic assignment](../contracts/work-item.md#semantic-assignment) and
+   its [system-owned metadata](../contracts/work-item.md#system-owned-metadata), which own
    what a missing part costs; a dispatch naming an identity that does
    not resolve where it says it is is refused, not repaired. A packet's
-   `bounds` cover reading the Context it names, in whichever currency
+   `bound` covers reading the Context it names, in whichever currency
    binds first.
 2. Root and `role: none` are glue-only: routing, dispatch mechanics,
    joins, verbatim user interaction, and answers decided by evidence
@@ -28,8 +29,7 @@
    it; no caller states a parallel prose join. Isolated candidates have
    repository write authority. The join inspects
    actual diffs and Git conflicts; Suggested files never limit the result.
-6. Every join records its blame class per
-   [work-item.md](../contracts/work-item.md)'s blame rule.
+6. Every join applies the [result contract](../contracts/result.md).
 7. Fan out only independent breadth-first work; dependent work runs
    through `orch-frontier` or sequentially.
 8. Dispatch names carry behavioral weight: bind executors by their exact

@@ -15,6 +15,6 @@ gaps the packets jointly leave open.
 Never: introduce a claim no packet carries; hide a lane's failure inside
 a smooth narrative; collapse disagreement without evidence.
 
-Return: status; the synthesis identity; the research pack's
+Return: status; the synthesis identity; verification; the research pack's
 [evidence record](../../../packs/orch-research-pack/references/evidence.md);
 then the claim-to-source trace, disagreement register, and gaps.
