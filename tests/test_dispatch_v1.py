@@ -107,13 +107,16 @@ class DispatchV1Test(unittest.TestCase):
             arguments.append("--append")
         return tickets._dispatch(arguments)
 
-    def outcome(self, *, status="complete", by="worker", dispatch_id="D1", seal=None):
+    def outcome(
+        self, *, status="complete", by="worker", dispatch_id="D1", seal=None,
+        result="delivered",
+    ):
         content = {
             "assignment_seal": seal or self.opened_seal,
             "by": by,
             "dispatch_id": dispatch_id,
             "evidence": {
-                "Result": "delivered",
+                "Result": result,
                 "Verification": "verified",
                 "Feedback": "[]",
                 "Risks": "[]",
@@ -259,6 +262,28 @@ class DispatchV1Test(unittest.TestCase):
         self.assertNotIn("error", self.retire())
         reopened = self.open(dispatch_id="D2", by="worker-2")
         self.assertEqual("opened", reopened["dispatch"]["outcome"])
+
+    def test_expired_attempt_can_cross_the_explicit_atomic_replacement(self):
+        soon = (
+            datetime.now(timezone.utc) + timedelta(minutes=1)
+        ).isoformat().replace("+00:00", "Z")
+        opened = self.open(lease=soon)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            replaced = self.replace(
+                replacement="D2", lease="2101-01-01T00:00:00Z", by="worker-2"
+            )
+
+        self.assertEqual("replaced", replaced["dispatch"]["outcome"])
+        state = parse_canonical_json(_parse_frontmatter(self.ticket_text())["dispatch_v1"])
+        self.assertEqual(["replaced", "live"], [item["state"] for item in state["attempts"]])
 
     def test_all_dispatch_state_operations_refuse_path_aliased_origins(self):
         opened = self.open()
@@ -449,6 +474,45 @@ class DispatchV1Test(unittest.TestCase):
         mismatch = tickets._dispatch(unseen)
         self.assertEqual("outcome-record-mismatch", mismatch["code"])
         self.assertEqual(joined_text, self.ticket_text())
+
+    def test_outcome_materializes_only_unstreamed_evidence_once(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.result(body="delivered")
+        streamed = self.ticket_text()
+
+        repeated = self.outcome(result="delivered")
+
+        self.assertEqual("outcome-invalid", repeated["code"])
+        self.assertEqual(streamed, self.ticket_text())
+
+        committed = self.outcome(result="closing result delta")
+        self.assertNotIn("error", committed)
+        closed = self.ticket_text()
+        result_body = _sections(closed)["Result"]
+        self.assertEqual(1, result_body.count("delivered"))
+        self.assertEqual(1, result_body.count("closing result delta"))
+        self.assertEqual(committed, self.outcome(result="closing result delta"))
+        self.assertEqual(closed, self.ticket_text())
+
+    def test_suspended_join_retires_the_attempt_but_retains_claimant_observations(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.outcome(status="suspended")
+
+        joined = tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+
+        self.assertEqual("suspended", joined["join"]["status"])
+        data = _parse_frontmatter(self.ticket_text())
+        self.assertEqual("suspended", data["status"])
+        self.assertEqual("worker", data["claimed_by"])
+        state = parse_canonical_json(data["dispatch_v1"])
+        self.assertEqual("retired", state["attempts"][0]["state"])
 
     def test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join(self):
         opened = self.open()

@@ -54,7 +54,8 @@ The ticket's `dispatch_v1` frontmatter value binds the complete closed
 packets, receipts, outcomes, joins, precedence, and cutover. Ticket lifecycle
 projects its accepted mutations: open creates `claimed`; only the outcome-fenced
 join creates `suspended` or a terminal state. Raw status writes cannot mutate a
-ticket once its dispatch record exists.
+ticket once its dispatch record exists. A suspended ticket retains claimant
+observations for its Handoff, but its joined dispatch attempt is retired.
 
 ## Dispatch-v1 packet projection and receipt
 
@@ -75,7 +76,9 @@ prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
 the executor chooses a fresh record id for each streamed write. At closing,
 every executor commits or returns the reserved
 [dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use
-`[]` when empty.
+`[]` when empty. Outcome evidence is a closing delta: it contains only evidence
+not already materialized by streamed result records, and every item is appended
+exactly once.
 
 ## Roots, decomposition, and integration
 

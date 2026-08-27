@@ -10,7 +10,7 @@ if __package__:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from .tickets_generations import seal_findings
-    from .tickets_context import graded_admission, run_snapshot
+    from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
@@ -28,7 +28,7 @@ else:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from tickets_generations import seal_findings
-    from tickets_context import graded_admission, run_snapshot
+    import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
@@ -138,15 +138,9 @@ def _cmd_dispatch_open(rest):
             if failure is not None:
                 return failure
             data = _parse_frontmatter(text)
-            recorded = (
-                str(data.get("run") or "").strip(),
-                str(data.get("id") or "").strip(),
-            )
-            if recorded != (run, ticket_id):
-                return _classification(
-                    "origin-mismatch",
-                    f"ticket origin is {recorded[0] or '<missing>'}/{recorded[1] or '<missing>'}, not {run}/{ticket_id}",
-                )
+            failure = dispatch_guards.origin_failure(data, run, ticket_id)
+            if failure is not None:
+                return failure
             state, failure = _state(data)
             if failure is not None:
                 return failure
@@ -181,33 +175,13 @@ def _cmd_dispatch_open(rest):
                     "idempotency-conflict",
                     f"dispatch_id '{dispatch_id}' was already opened with different content",
                 )
-            snapshot, failures = run_snapshot(path.parent)
-            if failures:
-                return failures[0][1]
-            grade = graded_admission(ticket_id, text, snapshot, run)
-            if grade["findings"]:
-                return _classification(
-                    "admission-mismatch", "ticket no longer has a valid sealed admission"
-                )
-            stored_admission = str(data.get("admission") or "")
-            if stored_admission != grade["receipt"]:
-                return _classification(
-                    "admission-mismatch",
-                    "ticket's stored admission receipt is not current",
-                )
+            failure = dispatch_guards.admission_failure(path, text, data, run, ticket_id)
+            if failure is not None:
+                return failure
             now = datetime.now(timezone.utc)
-            live = [attempt for attempt in attempts if attempt.get("state") == "live"]
-            if live:
-                live_expiry = _parse_iso(live[-1].get("lease_expires_at"))
-                if live_expiry is None or now >= live_expiry:
-                    return _classification(
-                        "lease-expired",
-                        f"expired dispatch_id '{live[-1].get('dispatch_id')}' must be retired or replaced before a successor opens",
-                    )
-                return _classification(
-                    "live-attempt",
-                    f"ticket already has live dispatch_id '{live[-1].get('dispatch_id')}'",
-                )
+            failure = dispatch_guards.live_attempt_failure(attempts, now)
+            if failure is not None:
+                return failure
             if lease <= now:
                 return _classification(
                     "lease-expired", "--lease-expires-at is not later than the open time"
@@ -287,15 +261,9 @@ def _commit_record(
             if failure is not None:
                 return failure
             data = _parse_frontmatter(text)
-            recorded = (
-                str(data.get("run") or "").strip(),
-                str(data.get("id") or "").strip(),
-            )
-            if recorded != (run, ticket_id):
-                return _classification(
-                    "origin-mismatch",
-                    f"ticket origin is {recorded[0] or '<missing>'}/{recorded[1] or '<missing>'}, not {run}/{ticket_id}",
-                )
+            failure = dispatch_guards.origin_failure(data, run, ticket_id)
+            if failure is not None:
+                return failure
             state, failure = _state(data)
             if failure is not None:
                 return failure
@@ -536,5 +504,6 @@ def _cmd_dispatch_replace(rest):
 
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content,
-        mutate=replace, expected_seal=assignment_seal, record_kind="lifecycle",
+        mutate=replace, expected_seal=assignment_seal, require_live_lease=False,
+        record_kind="lifecycle",
     )

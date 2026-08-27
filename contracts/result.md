@@ -16,6 +16,11 @@ value must match both the dispatch attempt's recorded owner and the currently
 claimed ticket; a reusable human-readable name alone grants no filing
 authority. The command never changes lifecycle state.
 
+The reserved outcome carries only the non-empty closing delta that has not
+already entered these sections through result records. Repeating an attributed
+item is refused before mutation; outcome import therefore materializes every
+evidence item once rather than treating the close as a second snapshot.
+
 The ticket section mutation and its dispatch-v1 committed-record receipt are
 one atomic write. An exact retry of a committed `dispatch_id` plus `record_id`
 returns the stored success without adding content, even after retirement,

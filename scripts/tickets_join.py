@@ -107,9 +107,16 @@ def _cmd_dispatch_outcome(rest):
                 if not body:
                     continue
                 prior = _section_body(updated, section)
+                materialized = (
+                    f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}"
+                )
+                if prior == materialized or f"\n\n{materialized}" in prior:
+                    return text, None, _classification(
+                        "outcome-invalid",
+                        f"outcome {section} repeats evidence already materialized by this dispatch",
+                    )
                 updated = _write_section(
-                    updated, section,
-                    f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}",
+                    updated, section, materialized,
                     bool(prior and prior != SECTION_SENTINEL),
                 )
         except TicketFormatError as error:

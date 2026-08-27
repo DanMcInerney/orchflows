@@ -12,18 +12,21 @@ with unique `dispatch_id` values and at most one `state: live` member.
 
 Each attempt has exactly `assignment_seal`, `dispatch_id`, `owner`, absolute
 `opened_at`, absolute `lease_expires_at`, `outcome_record_id: outcome`, `state`,
-and `records`, plus only the transition fields applicable to expiry,
-retirement, or replacement. States are `live`, `expired`, `retired`, and
-`replaced`. Each record has exactly `record_id`, `kind`, canonical-JSON
+and `records`, plus only the transition fields applicable to retirement or
+replacement. States are `live`, `retired`, and `replaced`; clock expiry never
+writes an implicit state transition. Each record has exactly `record_id`, `kind`, canonical-JSON
 `content`, absolute `committed_at`, and stored `success`. Record ids are unique
 within an attempt. Kinds are `generic`, `packet`, `result`, `outcome`, `join`,
 and `lifecycle`; `dispatch-packet`, `outcome`, `join:*`, and `lifecycle:*` are
 reserved for their owning operations.
 
-Every read and mutation validates the whole closed state first. Unknown fields,
-malformed members, duplicate identities, multiple live attempts, invalid
-absolute times, invalid transition states, and non-canonical stored records are
-`dispatch-record-invalid`; refusal preserves ticket bytes.
+Every read and mutation validates the whole closed state first. Record content
+and stored success are closed per kind and must agree with ticket origin,
+attempt identity, transition, and replacement edges. Unknown fields, malformed
+members, duplicate identities, multiple live attempts, invalid absolute times,
+invalid transition states, orphan replacement edges, forged successes, and
+non-canonical encodings are `dispatch-record-invalid`; refusal preserves ticket
+bytes.
 
 ## Attempt precedence
 
@@ -36,8 +39,10 @@ even after expiry, retirement, or replacement. Different content at that pair
 is `idempotency-conflict`. Only then may an unseen record be classified as
 `dispatch-mismatch`, `assignment-mismatch`, or `stale-attempt`. A second live
 attempt is `live-attempt`. Opening, replacing, retiring, outcome import, and
-joining are atomic ticket writes. The absolute lease is never extended by
-transport or result motion.
+joining are atomic ticket writes. Expiry makes unseen work stale but does not
+authorize or persist a successor: the expired live attempt must cross
+`dispatch-retire` or the atomic `dispatch-replace` transition first. The
+absolute lease is never extended by transport or result motion.
 
 ## Packet and receipt
 
@@ -73,7 +78,9 @@ closed envelope has exactly `protocol`, `run`, `id`, `assignment_seal`,
 `dispatch_id`, `outcome_record_id`, `by`, `status`, and `evidence`. Evidence has
 exactly string bodies for `Result`, `Verification`, `Feedback`, `Risks`, and
 `Handoff`; the first four are non-empty, Handoff is non-empty only for
-`suspended`. `dispatch-outcome` validates the envelope, imports its attributed
+`suspended`. Evidence is the non-empty closing delta not already materialized
+through result records; repeated material is refused so each item is written
+once. `dispatch-outcome` validates the envelope, imports its attributed
 evidence atomically, and commits or replays the reserved outcome record. Thus a
 reference child may commit directly and an offline inline child may return the
 same envelope for its coordinator to relay without inventing another payload.
@@ -81,7 +88,9 @@ same envelope for its coordinator to relay without inventing another payload.
 `dispatch-join` consumes only that distinguished record and derives disposition
 from it. Its id is `join:outcome`; exact replay returns stored success after
 retirement, changed join content conflicts, and an unseen join on an ended
-attempt is stale. Only join writes suspended or terminal ticket status.
+attempt is stale. Only join writes suspended or terminal ticket status. Every
+joined disposition, including suspension, retires its attempt; suspension
+retains claimant observations for handoff but leaves no live dispatch.
 
 ## Cutover
 

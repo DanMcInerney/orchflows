@@ -49,8 +49,9 @@ that snapshot through `tickets.py draft-validate <run> <root-id>`, then
 compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
 <run> <root-id> --cut-generation <validated cut_generation>`. Only that
 validated digest is sealed and eligible for dispatch; its
-`assignment_seal` records that exact assignment digest, and a post-seal
-assignment change is a new generation.
+`assignment_seal` records that exact assignment digest. A later cut generation
+may evolve members under unchanged root semantics; changing sealed root
+semantics requires a new root ticket.
 
 Never: stamp a pack the cut cannot share; prescribe implementation or tests in
 Goal; restate standards an exemplar's owner already states.

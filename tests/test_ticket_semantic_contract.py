@@ -81,8 +81,10 @@ class SemanticTicketContractTest(unittest.TestCase):
             "by": by,
             "dispatch_id": dispatch_id,
             "evidence": {
-                "Result": "done", "Verification": "verified",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
+                "Result": "closing result delta",
+                "Verification": "closing verification delta",
+                "Feedback": "closing feedback delta: []",
+                "Risks": "closing risk delta: []", "Handoff": "",
             },
             "id": ticket_id, "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1", "run": run, "status": status,

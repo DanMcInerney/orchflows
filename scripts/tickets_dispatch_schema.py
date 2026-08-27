@@ -22,10 +22,10 @@ PACKET_RECORD_ID = "dispatch-packet"
 RESERVED_RECORD_IDS = frozenset({OUTCOME_RECORD_ID, PACKET_RECORD_ID})
 RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-ATTEMPT_STATES = frozenset({"live", "expired", "retired", "replaced"})
+ATTEMPT_STATES = frozenset({"live", "retired", "replaced"})
 ATTEMPT_KEYS = frozenset({
     "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-    "outcome_record_id", "owner", "records", "state", "expired_at",
+    "outcome_record_id", "owner", "records", "state",
     "retired_at", "retirement", "replaced_at", "replaced_by",
     "replacement", "replaces",
 })
@@ -258,12 +258,18 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             "outcome_record_id", "by", "status", "joined_at",
         }):
             return _invalid(f"join record '{record_id}' has invalid stored success")
+        outcome_content = parse_canonical_json(outcome["content"])
+        outcome_status = (
+            outcome_content.get("status") if isinstance(outcome_content, dict) else None
+        )
+        if outcome_status not in JOIN_STATUSES:
+            return _invalid(f"join record '{record_id}' consumes an invalid outcome")
         expected_join = {
             "protocol": PROTOCOL, "run": run, "id": ticket_id,
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
             "outcome_record_id": OUTCOME_RECORD_ID, "by": content["joined_by"],
-            "status": parse_canonical_json(outcome["content"])["status"],
+            "status": outcome_status,
             "joined_at": attempt.get("retired_at"),
         }
         if joined != expected_join or attempt.get("retirement") != success:
@@ -309,14 +315,13 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
         state_name = attempt["state"]
         transition_fields = {
             "live": set(),
-            "expired": {"expired_at"},
             "retired": {"retired_at", "retirement"},
             "replaced": {"replaced_at", "replaced_by", "replacement"},
         }
         present = set(attempt) - required - {"replaces"}
         if present != transition_fields[state_name]:
             return classification("dispatch-record-invalid", f"attempt {ordinal} transition fields do not match state '{state_name}'")
-        for time_field in ("expired_at", "retired_at", "replaced_at"):
+        for time_field in ("retired_at", "replaced_at"):
             if time_field in attempt and _parse_iso(attempt[time_field]) is None:
                 return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid {time_field}")
         if "replaced_by" in attempt and identity_failure("dispatch-id", attempt["replaced_by"]) is not None:
@@ -374,6 +379,30 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
         return classification("dispatch-record-invalid", "dispatch_v1 has more than one live attempt")
     attempts_by_id = {attempt["dispatch_id"]: attempt for attempt in attempts}
     for ordinal, attempt in enumerate(attempts):
+        transition_records = [
+            record for record in attempt["records"]
+            if record["kind"] in {"join", "lifecycle"}
+        ]
+        if attempt["state"] == "retired":
+            matching = [
+                record for record in transition_records
+                if record["success"] == attempt.get("retirement")
+                and (
+                    record["kind"] == "join"
+                    or parse_canonical_json(record["content"]).get("operation") == "retire"
+                )
+            ]
+            if len(matching) != 1:
+                return _invalid(f"attempt {ordinal} retirement has no exact lifecycle record")
+        if attempt["state"] == "replaced":
+            matching = [
+                record for record in transition_records
+                if record["kind"] == "lifecycle"
+                and record["success"] == attempt.get("replacement")
+                and parse_canonical_json(record["content"]).get("operation") == "replace"
+            ]
+            if len(matching) != 1:
+                return _invalid(f"attempt {ordinal} replacement has no exact lifecycle record")
         predecessor_id = attempt.get("replaces")
         if predecessor_id is None:
             continue
@@ -383,12 +412,24 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
         if predecessor.get("state") != "replaced" or predecessor.get("replaced_by") != attempt["dispatch_id"]:
             return _invalid(f"attempt {ordinal} replacement edge is not bidirectional")
         replacement = predecessor.get("replacement", {}).get("dispatch", {})
+        predecessor_record = next((
+            record for record in predecessor["records"]
+            if record["kind"] == "lifecycle"
+            and record["success"] == predecessor.get("replacement")
+        ), None)
+        replacement_content = (
+            parse_canonical_json(predecessor_record["content"])
+            if predecessor_record is not None else {}
+        )
         if (
             replacement.get("dispatch_id") != attempt["dispatch_id"]
             or replacement.get("replaces") != predecessor_id
             or replacement.get("opened_at") != attempt["opened_at"]
             or replacement.get("lease_expires_at") != attempt["lease_expires_at"]
             or replacement.get("assignment_seal") != attempt["assignment_seal"]
+            or replacement_content.get("owner") != attempt["owner"]
+            or replacement_content.get("dispatch_id") != attempt["dispatch_id"]
+            or replacement_content.get("lease_expires_at") != attempt["lease_expires_at"]
         ):
             return _invalid(f"attempt {ordinal} differs from its predecessor replacement record")
     for ordinal, attempt in enumerate(attempts):

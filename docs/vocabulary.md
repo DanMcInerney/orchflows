@@ -208,8 +208,9 @@ composition).
   overriding role resolution for that dispatch alone. A packet-only
   dispatch is a ticket the dispatcher does not persist.
 - **assignment seal** — the proof that an exact validated assignment digest
-  is immutable for dispatch; changing sealed assignment fields creates a new
-  assignment generation under `rules/delegation.md`.
+  is immutable for dispatch. A later cut generation may add or change members
+  under the same immutable root semantics; changing sealed root semantics
+  requires a new root ticket under `rules/delegation.md`.
 - **dispatch attempt** — one fenced execution of a sealed ticket under
   `orchflows.dispatch.v1`, identified by `dispatch_id` and an absolute lease;
   its ticket record owns opening, committed-record replay, retirement,

@@ -74,8 +74,9 @@
 15. Before a worker becomes ready, is claimed, or receives a packet, the
     caller seals the exact validated assignment digest over Goal, Context,
     optional Suggested files, dependencies, and executor, its
-    `sequence` included. Those fields are immutable after seal; any change
-    creates a new generation. The executor-owned `Result`, `Verification`,
+    `sequence` included. Those fields are immutable after seal. A later cut
+    generation may evolve member assignments under unchanged root semantics;
+    a sealed root semantic change requires a new root ticket. The executor-owned `Result`, `Verification`,
    `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
    the sealed assignment.
 16. Every role-bearing call and return follows the closed
