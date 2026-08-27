@@ -10,7 +10,7 @@ else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import TERMINAL_STATES, VALID_STATUSES
 
-PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
+PENDING, READY, CLAIMED, SUSPENDED, COMPLETE = "pending", "ready", "claimed", "suspended", "complete"
 STATUSES = tuple(sorted(VALID_STATUSES))
 LEASE_FIELDS = ("claimed_by", "claimed_at")
 CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})
@@ -26,6 +26,7 @@ def set_status_command(target: str) -> str:
 _ROWS = (
     Row("claim", (PENDING, READY), CLAIMED, ("admission", "status") + LEASE_FIELDS, (), "claim it"),
     Row("check", tuple(sorted(CHECKABLE_STATUSES)), None, ("checked_by",), (), "check it"),
+    Row("join-noop-repair", (READY,), COMPLETE, ("status",) + LEASE_FIELDS, (), "complete the clean repair at its join"),
     Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), LEASE_FIELDS, "release it to pending"),
     Row(set_status_command(SUSPENDED), STATUSES, SUSPENDED, ("status",), (), "suspend it"),
 ) + tuple(

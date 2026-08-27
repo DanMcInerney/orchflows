@@ -27,8 +27,9 @@ the integrating checkout (exit 6 is caller-vantage failure).
 
 Record blame on the run-state channel; only this join calls `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
-`<root>.gate.repair` completes that repair here by filing the empty result and
-status, without dispatch. Accepted non-blocking findings go to the run's
+`<root>.gate.repair` completes that repair here without dispatch through
+`tickets.py join-noop-repair <run> <root>.gate.repair --by <join-name>`, the
+atomic attributed join-owned transition. Accepted non-blocking findings go to the run's
 improvement or successor candidates, never that repair.
 
 Never: treat Suggested files as authority, accept unresolved Git conflicts, or repair here.

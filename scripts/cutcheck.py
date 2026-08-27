@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Validate the structural shape of one sealed ticket graph.
+"""Validate the structural shape of one complete assignment graph.
 
-Cut admission is semantic-shape, dependency, exact executor binding, and seal
-validation. Predicted file scopes are not part of the ticket protocol; actual
-diff overlap and ordinary Git conflicts are handled at integration.
+A complete mutable draft and its sealed assignment set have the same structural
+grade. Predicted file scopes are not part of the ticket protocol; actual diff
+overlap and ordinary Git conflicts are handled at integration.
 """
 from __future__ import annotations
 import argparse

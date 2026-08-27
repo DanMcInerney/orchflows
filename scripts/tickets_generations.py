@@ -7,10 +7,10 @@ import json
 import re
 from pathlib import Path
 if __package__:
-    from .tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from .tickets_format import (GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from .tickets_transitions import CLAIMED, stamp
 else:
-    from tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from tickets_format import (GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from tickets_transitions import CLAIMED, stamp
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
@@ -84,6 +84,20 @@ def _root_payload(root_id: str, snapshot: dict) -> dict:
         raise GenerationError(f"root ticket not found in exact snapshot: {root_id}") from error
     return {"assignment": assignment_payload(root_id, root_text)}
 
+def _root_generation(root_id: str, snapshot: dict, ordinal: int, payload: dict) -> str:
+    """Return the root's existing identity, or open its first generation."""
+
+    inherited = str(_parse_frontmatter(snapshot[root_id]).get("root_generation") or "")
+    if not inherited:
+        return generation_identity("root", root_id, ordinal, payload)
+    match = GENERATION_RE.fullmatch(inherited)
+    if match is None or match.group(1) != "root" or match.group(2) != root_id:
+        raise GenerationError("root ticket carries a malformed or foreign root generation")
+    expected = generation_identity("root", root_id, int(match.group(3)), payload)
+    if inherited != expected:
+        raise GenerationError("root generation does not name the current root assignment")
+    return inherited
+
 def _cut_payload(root_id: str, snapshot: dict, root_generation: str, member_ids=None) -> dict:
     members = _cut_members(root_id, snapshot) if member_ids is None else sorted(str(value) for value in member_ids)
     assignments = [
@@ -99,7 +113,7 @@ def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1, member_ids=No
     """Materialize one complete immutable draft from an exact ticket snapshot."""
 
     root_payload = _root_payload(root_id, snapshot)
-    root_generation = generation_identity("root", root_id, ordinal, root_payload)
+    root_generation = _root_generation(root_id, snapshot, ordinal, root_payload)
     cut_payload = _cut_payload(root_id, snapshot, root_generation, member_ids)
     cut_generation = generation_identity("cut", root_id, ordinal, cut_payload)
     return {
@@ -110,6 +124,43 @@ def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1, member_ids=No
         "root_payload": root_payload,
     }
 
+def composite_gate_findings(root_id: str, snapshot: dict, member_ids=None) -> list:
+    """Require the one exact gate around every decomposed multi-result graph."""
+
+    if _executor_of(_parse_frontmatter(snapshot[root_id])) != ROOT_EXECUTOR:
+        return []
+    members = _cut_members(root_id, snapshot) if member_ids is None else sorted(str(value) for value in member_ids)
+    units = sorted(ticket_id for ticket_id in members if ".gate." not in ticket_id)
+    if len(units) < 2:
+        return []
+    prefix = f"{root_id}.gate.critique."
+    repair_id = f"{root_id}.gate.repair"
+    verify_id = f"{root_id}.gate.verify"
+    critiques = sorted(ticket_id for ticket_id in members if ticket_id.startswith(prefix) and ticket_id != prefix)
+    expected_gate_ids = set(critiques) | {repair_id, verify_id}
+    actual_gate_ids = {ticket_id for ticket_id in members if ".gate." in ticket_id}
+    findings = []
+    if not critiques:
+        findings.append({"code": "composite-gate-missing", "field": "members", "detail": "two or more executor members require at least one critique"})
+    for ticket_id in sorted(expected_gate_ids - actual_gate_ids):
+        findings.append({"code": "composite-gate-missing", "field": "members", "ticket": ticket_id})
+    for ticket_id in sorted(actual_gate_ids - expected_gate_ids):
+        findings.append({"code": "composite-gate-extra", "field": "members", "ticket": ticket_id})
+    expected = {
+        **{ticket_id: (GATE_EXECUTORS["critique"], units) for ticket_id in critiques},
+        repair_id: (GATE_EXECUTORS["repair"], critiques),
+        verify_id: (GATE_EXECUTORS["verify"], [repair_id]),
+    }
+    for ticket_id in sorted(expected_gate_ids & actual_gate_ids):
+        data = _parse_frontmatter(snapshot[ticket_id])
+        executor, dependencies = expected[ticket_id]
+        if _executor_of(data) != executor:
+            findings.append({"code": "composite-gate-executor", "field": "executor", "ticket": ticket_id, "detail": f"expected {executor}"})
+        actual_dependencies = sorted(str(value) for value in (data.get("depends_on") or []))
+        if actual_dependencies != sorted(dependencies):
+            findings.append({"code": "composite-gate-dependencies", "field": "depends_on", "ticket": ticket_id, "detail": f"expected {sorted(dependencies)}"})
+    return findings
+
 def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -> dict:
     """Grade exactly one draft snapshot and return its validation receipt."""
 
@@ -117,6 +168,9 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -
     expected = draft_snapshot(root_id, snapshot, ordinal, member_ids)
     if expected != draft:
         raise GenerationError("draft validation failed: supplied draft is not the exact snapshot grade")
+    gate_findings = composite_gate_findings(root_id, snapshot, member_ids)
+    if gate_findings:
+        raise GenerationError("draft validation failed: composite gate topology: " + canonical_json(gate_findings))
     return {
         "cut_generation": draft["cut_generation"],
         "draft_digest": "sha256:" + _digest(draft),
@@ -187,8 +241,8 @@ def seal_findings(ticket_id: str, text: str) -> list:
             findings.append({"code": "generation-invalid", "field": field, "detail": f"missing or malformed {kind} generation"})
     if len(parsed) == 2:
         root_match, cut_match = parsed["root_generation"], parsed["cut_generation"]
-        if root_match.group(2) != cut_match.group(2) or root_match.group(3) != cut_match.group(3):
-            findings.append({"code": "generation-pair-mismatch", "field": "cut_generation", "detail": "root and cut generations must name one root and ordinal"})
+        if root_match.group(2) != cut_match.group(2):
+            findings.append({"code": "generation-pair-mismatch", "field": "cut_generation", "detail": "root and cut generations must name one root"})
     return findings
 
 DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
@@ -286,6 +340,7 @@ def _draft_findings(root_id: str, snapshot: dict) -> list:
             findings.append({"code": "generation-missing", "field": "root_generation", "ticket": ticket_id})
         if status not in (positions | {CLAIMED} if ticket_id == root_id else positions):
             findings.append({"code": "draft-status", "field": "status", "ticket": ticket_id})
+    findings.extend(composite_gate_findings(root_id, snapshot))
     return findings
 
 
@@ -401,7 +456,7 @@ GENERATION_SUBCOMMANDS = {
 
 __all__ = (
     "GENERATION_RE", "GenerationError",
-    "assignment_digest", "assignment_payload", "canonical_json", "correction_decision",
+    "assignment_digest", "assignment_payload", "canonical_json", "composite_gate_findings", "correction_decision",
     "draft_snapshot", "generation_identity", "generation_ordinal", "seal_assignments",
     "validate_draft", "seal_findings",
     "_cmd_draft_validate", "_cmd_seal",

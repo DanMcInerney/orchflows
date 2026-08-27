@@ -14,9 +14,9 @@ if __package__:
 else:
     from tickets_issue import NEW_USAGE, _cmd_new
 if __package__:
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_list, _cmd_ready, _cmd_set_status
+    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status
 else:
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_list, _cmd_ready, _cmd_set_status
+    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status
 if __package__:
     from .tickets_packet import CHECKER_PATH_EXECUTORS, GATE_CRITIQUE_ID, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID, _cmd_packet
 else:
@@ -408,7 +408,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | ready | claim | check | set-status | packet | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | ready | claim | check | set-status | join-noop-repair | packet | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -437,6 +437,8 @@ def _dispatch(argv):
         return _cmd_check(rest)
     if command == 'set-status':
         return _cmd_set_status(rest)
+    if command == 'join-noop-repair':
+        return _cmd_join_noop_repair(rest)
     if command == 'packet':
         return _cmd_packet(rest)
     if command == 'result':

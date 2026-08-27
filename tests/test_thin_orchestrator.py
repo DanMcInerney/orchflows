@@ -101,6 +101,30 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
+    def test_graph_lane_emits_the_complete_decompose_packet(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+
+        for anchor in (
+            "stamped root",
+            "tickets.py ready --run <run>",
+            "tickets.py claim <run> <root> --by <assigned-name>",
+            "tickets.py packet <run> <root> --reply-to <parent-name> "
+            "--by <assigned-name> --workspace <tree>",
+            "exact `orch-decompose`",
+            "matching `orch-planner` child",
+            "complete emitted packet",
+            "ticket path is not a packet",
+            "outer coordinator integrates",
+            "starts `orch-frontier`",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, graph)
+
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
@@ -143,6 +167,30 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "never redispatch",
         ):
             self.assertIn(anchor, role_agent)
+
+    def test_spec_route_consumes_the_root_shape_it_sealed(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        spec_route = host.split("**spec**", 1)[1].split("**fix**", 1)[0]
+
+        for anchor in (
+            "direct root",
+            "one lawful executor",
+            "`orch-decompose` root",
+            "distinct outcomes or dependencies",
+            "same planner",
+            "`ready` → `claim` → `packet`",
+            "outer coordinator",
+            "`orch-frontier`",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, spec_route)
+
+        self.assertRegex(spec_route, r"same planner.*`orch-decompose` root")
+        self.assertRegex(spec_route, r"outer coordinator.*`orch-frontier`")
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
         with tempfile.TemporaryDirectory() as tmp:
