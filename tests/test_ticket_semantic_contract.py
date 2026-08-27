@@ -201,6 +201,17 @@ class SemanticTicketContractTest(unittest.TestCase):
             findings.extend(f"{path.relative_to(ROOT)}:{token}" for token in forbidden if token in text)
         self.assertEqual([], findings)
 
+    def test_result_contract_binds_records_to_the_current_claim_writer(self):
+        result_contract = (ROOT / "contracts" / "result.md").read_text(encoding="utf-8")
+        work_item = (ROOT / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        for phrase in (
+            "exactly one canonical writer attribution",
+            "matches `claimed_by`",
+            "never changes lifecycle state",
+        ):
+            self.assertIn(phrase, result_contract)
+        self.assertIn("`tickets.py result --by <claimed_by>`", work_item)
+
 
 if __name__ == "__main__":
     unittest.main()

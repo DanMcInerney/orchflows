@@ -21,7 +21,8 @@ else:
     from tickets_markdown import SECTION_SENTINEL
 
 TERMINAL_HEADING = '## terminal'
-RESULT_USAGE = f'result <run> <id> --section <name> (--file <path> | --text <string>) [--append | --replace]; an executor-owned section is append-only except over the cut sentinel {SECTION_SENTINEL}, which is not content: the first real write consumes it under any flag'
+RESULT_ATTRIBUTION_PREFIX = '### Written by '
+RESULT_USAGE = f'result <run> <id> --by <claimed_by> --section <name> (--file <path> | --text <string>) [--append | --replace]; every record names the current claimant, and an executor-owned section is append-only except over the cut sentinel {SECTION_SENTINEL}, which is not content: the first real write consumes it under any flag'
 RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact <name> [--replace] | --terminal <state>) (--file <path> | --text <string>))'
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
@@ -29,7 +30,7 @@ COVERAGE_RECORD_NAME = 'covered.jsonl'
 
 def _cmd_result(rest):
     probe = list(rest)
-    for flag in ('--section', '--file', '--text'):
+    for flag in ('--by', '--section', '--file', '--text'):
         _extract_flag(probe, flag)
     probe = [arg for arg in probe if arg not in ('--append', '--replace')]
     if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
@@ -70,6 +71,7 @@ def _result_under_run_lock(rest):
     generator that prefills anything else.
     """
     args = list(rest)
+    written_by = _extract_flag(args, '--by')
     section = _extract_flag(args, '--section')
     file_arg = _extract_flag(args, '--file')
     text_arg = _extract_flag(args, '--text')
@@ -87,6 +89,11 @@ def _result_under_run_lock(rest):
     if len(args) != 2:
         return {'error': f'usage: {RESULT_USAGE}'}
     run, ticket_id = args
+    if not (written_by or '').strip():
+        return {'error': f'result requires --by <claimed_by>: every executor record is attributed to the current claim. usage: {RESULT_USAGE}'}
+    written_by = written_by.strip()
+    if any(mark in written_by for mark in ('`', '\r', '\n')):
+        return {'error': 'result --by contains a character that cannot form one canonical writer attribution: backticks and line breaks are refused'}
     if section is None:
         return {'error': f'result requires --section <name>, one of {list(EXECUTOR_SECTIONS)}'}
     canonical = EXECUTOR_SECTIONS_BY_KEY.get(section.strip().strip('#').strip().lower())
@@ -113,12 +120,28 @@ def _result_under_run_lock(rest):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
+    data = _parse_frontmatter(text)
+    recorded_run = str(data.get('run') or '').strip()
+    recorded_id = str(data.get('id') or '').strip()
+    if recorded_run != run or recorded_id != ticket_id:
+        return {'error': f"ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded_run or '<missing>'}/{recorded_id or '<missing>'}"}
+    status = str(data.get('status') or '').strip().strip('`')
+    if status != 'claimed':
+        return {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
+    claimed_by = str(data.get('claimed_by') or '').strip()
+    if not claimed_by:
+        return {'error': f'result requires the current claim identity, but {run}/{ticket_id} has no claimed_by'}
+    if written_by != claimed_by:
+        return {'error': f"result writer '{written_by}' does not match current claimed_by '{claimed_by}' for {run}/{ticket_id}"}
+    if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
+        return {'error': f"a result body may not contain the canonical writer attribution prefix '{RESULT_ATTRIBUTION_PREFIX}': tickets.py adds exactly one for this write"}
     sections = _sections(text)
     prior = _section_body(text, canonical)
     sentinel = prior == SECTION_SENTINEL
     if sentinel:
         prior, append = '', False
-    write_body, write_append = body, append
+    write_body = f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n{body}'
+    write_append = append
     if replace and (not sentinel):
         return {'error': f"executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}, the one exception; this section does not hold it, so --replace is prohibited: pass --append. ticket: {ticket_path}"}
     try:
@@ -139,7 +162,7 @@ def _result_under_run_lock(rest):
         mode = 'replace'
     else:
         mode = 'write'
-    return {'result': {'run': run, 'id': ticket_id, 'path': str(ticket_path), 'section': canonical, 'mode': mode}}
+    return {'result': {'run': run, 'id': ticket_id, 'path': str(ticket_path), 'section': canonical, 'mode': mode, 'by': written_by}}
 def _is_terminal_heading(line: str) -> bool:
     """Whether one line closes a run's notes.
 

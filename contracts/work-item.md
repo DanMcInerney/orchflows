@@ -50,8 +50,8 @@ compare-and-swap sealing refuses a stale snapshot.
 After the semantic sections, tickets carry executor-owned `## Result`,
 `## Verification`, `## Feedback`, and `## Risks`; `## Handoff` is optional.
 They are append-only after seal and are excluded from assignment fingerprints.
-The executor files them as work is produced. `Feedback` and `Risks` use `[]`
-when empty.
+The executor files them as work is produced through `tickets.py result --by <claimed_by>`
+under [result.md](result.md). `Feedback` and `Risks` use `[]` when empty.
 
 ## Roots, decomposition, and integration
 
@@ -83,3 +83,5 @@ do not replace the semantic sections.
 A named-field change to this contract is an explicit T0 supersession. There is
 one current reader and writer: no compatibility aliases, dual parsing, or
 migration mode. Historical user state is not rewritten.
+
+T0 supersession record sha256:b2d5d570a37764b9c83f305eaf90a98f604ce98c5d479ecbd7abb1059b9c94aa: executor records now enter through the attributed result writer.
