@@ -13,7 +13,7 @@ if __package__:
     from .tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
     from .tickets_generations import GENERATION_SUBCOMMANDS
-    from .tickets_attempts import DISPATCH_OPEN_USAGE
+    from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_RETIRE_USAGE
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
@@ -23,7 +23,10 @@ else:
     from tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE
     GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
-    DISPATCH_OPEN_USAGE = __import__("tickets_attempts").DISPATCH_OPEN_USAGE
+    _attempts = __import__("tickets_attempts")
+    DISPATCH_COMMIT_USAGE = _attempts.DISPATCH_COMMIT_USAGE
+    DISPATCH_OPEN_USAGE = _attempts.DISPATCH_OPEN_USAGE
+    DISPATCH_RETIRE_USAGE = _attempts.DISPATCH_RETIRE_USAGE
 
 LINT_USAGE = "lint (<run> <id> | --file <path> [--executor E] [--pack P]) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
@@ -39,6 +42,8 @@ SUBCOMMAND_USAGE = {
     "ready": "ready [--run R]",
     "claim": "claim <run> <id> --by <name>",
     "dispatch-open": DISPATCH_OPEN_USAGE,
+    "dispatch-commit": DISPATCH_COMMIT_USAGE,
+    "dispatch-retire": DISPATCH_RETIRE_USAGE,
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "join-noop-repair": JOIN_NOOP_REPAIR_USAGE,
@@ -60,6 +65,8 @@ SUBCOMMAND_SUMMARY = {
     "ready": "Promote sealed tickets whose dependencies are complete.",
     "claim": "Claim one ready ticket.",
     "dispatch-open": "Atomically open or replay one fenced dispatch-v1 execution attempt.",
+    "dispatch-commit": "Commit or replay one idempotent record on a live dispatch-v1 attempt.",
+    "dispatch-retire": "Retire or replay retirement of one dispatch-v1 attempt.",
     "check": f"Record one blocker-only checker pass while status is one of {sorted(CHECKABLE_STATUSES)}.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
     "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
@@ -81,7 +88,7 @@ VALUE_FLAGS = frozenset({
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--reply-to", "--workspace", "--proposal", "--covered",
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
-    "--lease-expires-at",
+    "--lease-expires-at", "--record-id", "--content",
 })
 
 

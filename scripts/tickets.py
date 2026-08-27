@@ -214,6 +214,8 @@ _claim_under_run_lock = _tickets_lifecycle_module._claim_under_run_lock
 _cmd_check = _tickets_lifecycle_module._cmd_check
 _cmd_claim = _tickets_lifecycle_module._cmd_claim
 _cmd_dispatch_open = _tickets_attempts_module._cmd_dispatch_open
+_cmd_dispatch_commit = _tickets_attempts_module._cmd_dispatch_commit
+_cmd_dispatch_retire = _tickets_attempts_module._cmd_dispatch_retire
 _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
@@ -332,6 +334,8 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_new = _cmd_new
     _tickets_dispatch_module._cmd_claim = _cmd_claim
     _tickets_dispatch_module._cmd_dispatch_open = _cmd_dispatch_open
+    _tickets_dispatch_module._cmd_dispatch_commit = _cmd_dispatch_commit
+    _tickets_dispatch_module._cmd_dispatch_retire = _cmd_dispatch_retire
     _tickets_attempts_module._write_text_atomically = _write_text_atomically
     _tickets_dispatch_module._cmd_ready = _cmd_ready
     _tickets_dispatch_module._cmd_check = _cmd_check

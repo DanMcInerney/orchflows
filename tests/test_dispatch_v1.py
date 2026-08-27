@@ -58,6 +58,19 @@ class DispatchV1Test(unittest.TestCase):
             Path(self.temporary.name) / "tickets" / "run" / "T.md"
         ).read_text(encoding="utf-8")
 
+    def commit(self, dispatch_id="D1", record_id="R1", content='{"value":1}'):
+        return tickets._dispatch([
+            "dispatch-commit", "run", "T",
+            "--dispatch-id", dispatch_id,
+            "--record-id", record_id,
+            "--content", content,
+        ])
+
+    def retire(self, dispatch_id="D1"):
+        return tickets._dispatch([
+            "dispatch-retire", "run", "T", "--dispatch-id", dispatch_id,
+        ])
+
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
         self.assertEqual("opened", opened["dispatch"]["outcome"])
@@ -89,6 +102,30 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("live-attempt", second["code"])
         self.assertIn("error", second)
         self.assertEqual(text, self.ticket_text())
+
+    def test_committed_record_replay_precedes_conflict_retirement_and_mismatch(self):
+        self.assertNotIn("error", self.open())
+        committed = self.commit()
+        self.assertEqual("R1", committed["committed_record"]["record_id"])
+        self.assertEqual({"value": 1}, committed["committed_record"]["content"])
+
+        retired = self.retire()
+        self.assertEqual("retired", retired["dispatch"]["outcome"])
+
+        replay = self.commit()
+        self.assertEqual(committed, replay)
+
+        conflict = self.commit(content='{"value":2}')
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        self.assertIn("error", conflict)
+
+        stale = self.commit(record_id="R2")
+        self.assertEqual("stale-attempt", stale["code"])
+        self.assertIn("error", stale)
+
+        mismatch = self.commit(dispatch_id="never-opened", record_id="R2")
+        self.assertEqual("dispatch-mismatch", mismatch["code"])
+        self.assertIn("error", mismatch)
 
 
 if __name__ == "__main__":

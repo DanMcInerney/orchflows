@@ -30,6 +30,11 @@ DISPATCH_OPEN_USAGE = (
     "dispatch-open <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso>"
 )
+DISPATCH_COMMIT_USAGE = (
+    "dispatch-commit <run> <id> --dispatch-id <id> --record-id <id> "
+    "--content <canonical-json>"
+)
+DISPATCH_RETIRE_USAGE = "dispatch-retire <run> <id> --dispatch-id <id>"
 
 
 def _classification(code: str, detail: str) -> dict:
@@ -176,3 +181,166 @@ def _cmd_dispatch_open(rest):
     except OSError as error:
         return {"error": f"unable to open dispatch attempt: {error}"}
 
+
+def _record_response(
+    run: str, ticket_id: str, dispatch_id: str, record_id: str, content
+) -> dict:
+    return {"committed_record": {
+        "protocol": PROTOCOL,
+        "run": run,
+        "id": ticket_id,
+        "dispatch_id": dispatch_id,
+        "record_id": record_id,
+        "content": content,
+    }}
+
+
+def _cmd_dispatch_commit(rest):
+    args = list(rest)
+    dispatch_id = _extract_flag(args, "--dispatch-id")
+    record_id = _extract_flag(args, "--record-id")
+    content_text = _extract_flag(args, "--content")
+    if len(args) != 2 or not all((dispatch_id, record_id)) or content_text is None:
+        return {"error": f"usage: {DISPATCH_COMMIT_USAGE}"}
+    run, ticket_id = args
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    try:
+        content = parse_canonical_json(content_text)
+        normalized = canonical_json(content)
+    except (TypeError, ValueError) as error:
+        return _classification("content-invalid", f"--content is not JSON: {error}")
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    path = tickets_root / run / f"{ticket_id}.md"
+    try:
+        with _run_lock(run):
+            text, failure = _read_utf8(path)
+            if failure is not None:
+                return failure
+            data = _parse_frontmatter(text)
+            state, failure = _state(data)
+            if failure is not None:
+                return failure
+            if state is None:
+                if str(data.get("status") or "") in ("claimed", "suspended"):
+                    return _classification(
+                        "legacy-live-claim",
+                        "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
+                    )
+                return _classification("dispatch-mismatch", "ticket has no dispatch-v1 attempt")
+            attempt = next(
+                (item for item in state["attempts"] if item.get("dispatch_id") == dispatch_id),
+                None,
+            )
+            if attempt is None:
+                return _classification(
+                    "dispatch-mismatch", f"dispatch_id '{dispatch_id}' was never opened for this ticket"
+                )
+            records = attempt.get("records")
+            if not isinstance(records, list):
+                return _classification(
+                    "dispatch-record-invalid", "attempt records is not a list"
+                )
+            prior = next(
+                (item for item in records if item.get("record_id") == record_id), None
+            )
+            if prior is not None:
+                if prior.get("content") != normalized:
+                    return _classification(
+                        "idempotency-conflict",
+                        f"record_id '{record_id}' was already committed with different content",
+                    )
+                success = prior.get("success")
+                if not isinstance(success, dict):
+                    return _classification(
+                        "dispatch-record-invalid", "committed record has no stored success"
+                    )
+                return success
+            now = datetime.now(timezone.utc)
+            expiry = _parse_iso(attempt.get("lease_expires_at"))
+            if attempt.get("state") != "live" or expiry is None or now >= expiry:
+                return _classification(
+                    "stale-attempt",
+                    f"unseen record '{record_id}' cannot commit on an ended dispatch attempt",
+                )
+            seal = str(data.get("assignment_seal") or "").strip()
+            if seal != attempt.get("assignment_seal") or seal_findings(ticket_id, text):
+                return _classification(
+                    "assignment-mismatch", "dispatch attempt is fenced to another assignment seal"
+                )
+            success = _record_response(run, ticket_id, dispatch_id, record_id, content)
+            records.append({
+                "committed_at": now.strftime(UTC_STAMP),
+                "content": normalized,
+                "record_id": record_id,
+                "success": success,
+            })
+            updated = _set_frontmatter_field(text, "dispatch_v1", canonical_json(state))
+            _write_text_atomically(path, updated)
+            return success
+    except OSError as error:
+        return {"error": f"unable to commit dispatch record: {error}"}
+
+
+def _cmd_dispatch_retire(rest):
+    args = list(rest)
+    dispatch_id = _extract_flag(args, "--dispatch-id")
+    if len(args) != 2 or not dispatch_id:
+        return {"error": f"usage: {DISPATCH_RETIRE_USAGE}"}
+    run, ticket_id = args
+    tickets_root = _tickets_root()
+    if tickets_root is None:
+        return {"error": NO_SINK_ERROR}
+    path = tickets_root / run / f"{ticket_id}.md"
+    try:
+        with _run_lock(run):
+            text, failure = _read_utf8(path)
+            if failure is not None:
+                return failure
+            data = _parse_frontmatter(text)
+            state, failure = _state(data)
+            if failure is not None:
+                return failure
+            if state is None:
+                if str(data.get("status") or "") in ("claimed", "suspended"):
+                    return _classification(
+                        "legacy-live-claim",
+                        "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
+                    )
+                return _classification("dispatch-mismatch", "ticket has no dispatch-v1 attempt")
+            attempt = next(
+                (item for item in state["attempts"] if item.get("dispatch_id") == dispatch_id),
+                None,
+            )
+            if attempt is None:
+                return _classification(
+                    "dispatch-mismatch", f"dispatch_id '{dispatch_id}' was never opened for this ticket"
+                )
+            retirement = attempt.get("retirement")
+            if attempt.get("state") == "retired" and isinstance(retirement, dict):
+                return retirement
+            if attempt.get("state") != "live":
+                return _classification(
+                    "stale-attempt", f"dispatch_id '{dispatch_id}' is already {attempt.get('state')}"
+                )
+            attempt["state"] = "retired"
+            attempt["retired_at"] = datetime.now(timezone.utc).strftime(UTC_STAMP)
+            retirement = {"dispatch": {
+                "protocol": PROTOCOL,
+                "outcome": "retired",
+                "run": run,
+                "id": ticket_id,
+                "dispatch_id": dispatch_id,
+                "retired_at": attempt["retired_at"],
+                "state": "retired",
+            }}
+            attempt["retirement"] = retirement
+            updated = _set_frontmatter_field(text, "dispatch_v1", canonical_json(state))
+            _write_text_atomically(path, updated)
+            return retirement
+    except OSError as error:
+        return {"error": f"unable to retire dispatch attempt: {error}"}
