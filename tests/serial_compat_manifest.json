@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1759,
+  "count": 1760,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -746,6 +746,7 @@
    "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_recorded_model_and_effort_is_admitted",
    "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
    "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_isolation_stays_the_tickets_field_on_every_host",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_two_rows_binding_one_subagent_type_are_refused",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_condition_command_wires_stop_rule_bound_and_single_reply",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_exit_lines_are_never_dictated_verbatim_in_the_built_command",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_iterations_command_wires_model_effort_and_done_check",
@@ -1762,7 +1763,7 @@
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
    "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint"
   ],
-  "sha256": "bf1c1793ec8834440fbc46ddaaa5338594508465ca6474bb1ed75f092f5c9c8a"
+  "sha256": "4acb835b15a56fa870eef934268810989885586f81bb32925f06893a2bb85cc4"
  },
  "mutation_owners": [
   {

@@ -24,6 +24,7 @@ class TestGrokRoleProfiles(unittest.TestCase):
 
     packages = installer_packages
     PLANNER = "model `grok-4.6`, effort `xhigh`, subagent_type `orch-planner`"
+    WORKER = "model `grok-4.6`, effort `high`, subagent_type `orch-worker`"
     REFUSED = (
         ("model `grok-4.6`", "incomplete Grok binding for orch-planner"),
         ("effort `xhigh`, subagent_type `orch-planner`", "incomplete Grok binding"),
@@ -69,6 +70,18 @@ class TestGrokRoleProfiles(unittest.TestCase):
             with self.subTest(cell=cell):
                 with self.assertRaisesRegex(ValueError, re.escape(message)):
                     self.packages.load_role_profiles(self.table((self.PLANNER, cell)))
+
+    def test_two_rows_binding_one_subagent_type_are_refused(self):
+        """The rendered role agents are named by `subagent_type`, so two
+        rows sharing one would write one `$GROK_HOME/agents/<type>.md`
+        and the second would silently clobber the first -- a whole role
+        dispatched onto the other's model and effort. Codex refuses its
+        exact equivalent, a duplicate `agent_type`."""
+
+        with self.assertRaisesRegex(
+                ValueError, r"duplicate Grok subagent_type: orch-planner"):
+            self.packages.load_role_profiles(self.table(
+                (self.WORKER, self.WORKER.replace("orch-worker", "orch-planner"))))
 
     def test_every_recorded_model_and_effort_is_admitted(self):
         """The census is what `grok models` returned on this host. A

@@ -226,11 +226,15 @@ GROK_MODEL_CENSUS = ("grok-4.6", "grok-4.5")
 GROK_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
-def _check_grok_binding(profiles_md_path: Path, name: str, binding: dict) -> None:
+def _check_grok_binding(profiles_md_path: Path, name: str, binding: dict, claimed: set) -> None:
     """Refuse a Grok row that could not be dispatched as written.
 
     Named per host: the caller reading the refusal has three columns to
-    look at and the message has to say which one is short."""
+    look at and the message has to say which one is short. `claimed`
+    carries the subagent_types earlier rows took, because the rendered
+    agent file is named by that field: two rows sharing one resolve to a
+    single `$GROK_HOME/agents/<type>.md` and the later write wins
+    silently, dispatching a whole role onto the other's binding."""
 
     if not {"model", "effort", "subagent_type"} <= set(binding):
         raise ValueError(f"{profiles_md_path}: incomplete Grok binding for {name}")
@@ -242,6 +246,10 @@ def _check_grok_binding(profiles_md_path: Path, name: str, binding: dict) -> Non
     effort = binding["effort"]
     if effort not in GROK_EFFORTS:
         raise ValueError(f"{profiles_md_path}: invalid Grok effort for {name}: {effort}")
+    subagent_type = binding["subagent_type"]
+    if subagent_type in claimed:
+        raise ValueError(f"{profiles_md_path}: duplicate Grok subagent_type: {subagent_type}")
+    claimed.add(subagent_type)
 
 
 def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
@@ -275,6 +283,7 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
                 f"{profiles_md_path}: role profile {name} must declare role {role}, got {declared}"
             )
     codex_agent_types = set()
+    grok_subagent_types = set()
     for name, profile in profiles.items():
         if not {"agent_type", "fork_turns", "model", "model_reasoning_effort"} <= set(
             profile["codex"]
@@ -293,7 +302,7 @@ def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
             raise ValueError(f"{profiles_md_path}: invalid Codex fork_turns for {name}: {fork_turns}")
         if "model" not in profile["claude"]:
             raise ValueError(f"{profiles_md_path}: incomplete Claude binding for {name}")
-        _check_grok_binding(profiles_md_path, name, profile["grok"])
+        _check_grok_binding(profiles_md_path, name, profile["grok"], grok_subagent_types)
     return profiles
 
 
