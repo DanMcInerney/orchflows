@@ -144,6 +144,30 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         ):
             self.assertIn(anchor, role_agent)
 
+    def test_spec_route_consumes_the_root_shape_it_sealed(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        spec_route = host.split("**spec**", 1)[1].split("**fix**", 1)[0]
+
+        for anchor in (
+            "direct root",
+            "one lawful executor",
+            "`orch-decompose` root",
+            "distinct outcomes or dependencies",
+            "same planner",
+            "`ready` → `claim` → `packet`",
+            "outer coordinator",
+            "`orch-frontier`",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, spec_route)
+
+        self.assertRegex(spec_route, r"same planner.*`orch-decompose` root")
+        self.assertRegex(spec_route, r"outer coordinator.*`orch-frontier`")
+
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)

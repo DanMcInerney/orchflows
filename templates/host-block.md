@@ -1,30 +1,31 @@
 <!-- BEGIN ORCHFLOWS (managed block — do not edit inside; reinstall to update) -->
 # orchflows
 
-Four-tier orchestrator > subagent library. Skills are
-prefixed `orch-`; terms mean exactly what {{ORCH_DOCS}}/vocabulary.md
-defines.
+Four-tier orchestrator > subagent library. `orch-` terms mean exactly what
+{{ORCH_DOCS}}/vocabulary.md defines.
 
 - Root coordinates: route, establish child profile, send the complete packet,
-  join the return, relay a `kind: user-only` question verbatim. It
+  join returns, relay a `kind: user-only` question verbatim. It
   never authors role-bearing payloads or modifies outputs; missing/wrong profile refuses.
   `role: none` covers orchestration mechanics, not artifact authorship.
-  `orch-off` suspends routing. Otherwise route smallest-first by graph shape:
+  `orch-off` suspends routing. Route smallest-first by graph shape:
   **answer** — evidence in context decides it; **single** — one
-  [ticket]({{ORCH_LIB}}/contracts/work-item.md) whose
-  semantic payload is Goal, Context, and optional non-binding Suggested files,
-  sent to `orch-frontier`; the executor chooses implementation, tests, and
-  verification. **graph** — a frozen root goes to a planner for
-  `orch-decompose`; outer coordinator integrates it and
-  starts `orch-frontier`. **spec** — one same planner child runs `orch-spec`,
-  takes its root through `ready` → `claim` → `packet`, then runs
-  `orch-decompose`; outer coordinator integrates it and starts
-  `orch-frontier`. Never persist this as a ticket sequence or start frontier
-  inside planner. A known cause enters single; **fix** — an unknown cause →
+  [ticket]({{ORCH_LIB}}/contracts/work-item.md) whose semantic payload is Goal, Context, and
+  optional non-binding Suggested files goes to `orch-frontier`; its executor chooses implementation, tests, and
+  verification. **graph** — a planner runs `orch-decompose` on a frozen root;
+  outer coordinator integrates it and
+  starts `orch-frontier`. **spec** — one same planner child runs `orch-spec`. It
+  returns a sealed direct root for one lawful executor; for distinct outcomes
+  or dependencies, it takes a sealed `orch-decompose` root through
+  `ready` → `claim` → `packet`, then
+  runs `orch-decompose`. The outer coordinator integrates either return and
+  starts `orch-frontier`. Never persist this as a ticket sequence or start frontier
+  inside planner. Known cause enters single; **fix** — unknown cause →
   `tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run>
   --set failure=<the observed failure> --set workspace=<the tree>`,
   then `orch-frontier`. Diagnose dispatch machinery with `install.py doctor`
-  without dispatch. Other templates — `evolve`, `benchmaker` — run only when named.
+  without dispatch.
+  Other templates — `evolve`, `benchmaker` — only when named.
 - Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted
   markdown, written only through installed scripts;
   root: {{ORCH_LIB}}/rules/visibility.md §6. Executors write results.
@@ -38,9 +39,8 @@ defines.
 
 ## Friction law (always on)
 
-On a step past two attempts; a missing input, tool, or document;
-surprising output; a skill, rule, or contract gap; or a workaround, log
-it immediately, then continue:
+After two attempts, or on missing input/tool/document, surprising output, a
+skill/rule/contract gap, or a workaround, log immediately, then continue:
 
 {{FRICTION_COMMANDS}}
 
