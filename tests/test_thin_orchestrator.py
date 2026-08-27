@@ -101,6 +101,28 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
+    def test_graph_lane_emits_the_complete_decompose_packet(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+
+        for anchor in (
+            "stamped root",
+            "tickets.py ready <run> <root>",
+            "tickets.py claim <run> <root> --by <assigned-name>",
+            "tickets.py packet <run> <root> --reply-to <parent-name> "
+            "--by <assigned-name> --workspace <tree>",
+            "exact `orch-decompose`",
+            "matching `orch-planner` child",
+            "complete emitted packet",
+            "ticket path is not a packet",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, graph)
+
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
