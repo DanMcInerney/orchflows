@@ -8,6 +8,7 @@ if __package__:
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
+    from .tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_review import ReviewError, review_records, state_from_text
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
@@ -18,6 +19,7 @@ else:
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
+    from tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
     from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from tickets_review import ReviewError, review_records, state_from_text
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
@@ -174,13 +176,6 @@ def _checker_stage_under_run_lock(rest):
     return {"checker_stage": {"run": run, "target": target_id, "ticket": stage_id, "outcome": "created"}}
 
 
-def _sealed_derived_stage(text: str, ticket_id: str, cut_generation: str) -> str:
-    text = _set_frontmatter_field(text, "cut_generation", cut_generation)
-    return _set_frontmatter_field(
-        text, "assignment_seal", assignment_digest(ticket_id, text),
-    )
-
-
 def _checker_gate_under_run_lock(
     run: str, target_id: str, target: dict, directory, *, has_lens_options: bool,
 ):
@@ -229,57 +224,22 @@ def _checker_gate_under_run_lock(
     cut_generation = str(target.get("cut_generation") or "")
     if not root_generation or not cut_generation:
         return {"error": "ordinary checker continuation requires one sealed target assignment"}
-    repair_id = GATE_REPAIR_ID.format(root=target_id)
-    verify_id = GATE_VERIFY_ID.format(root=target_id)
-    rendered = [
-        (
-            repair_id,
-            _sealed_derived_stage(
-                _gate_stub(
-                    run, repair_id, GATE_EXECUTORS["repair"], [stage_id],
-                    sections=_gate_sections("repair", target_id, units=[stage_id]),
-                    root_generation=root_generation, pack=target.get("pack"),
-                    isolation="none",
-                ),
-                repair_id, cut_generation,
-            ),
-        ),
-        (
-            verify_id,
-            _sealed_derived_stage(
-                _gate_stub(
-                    run, verify_id, GATE_EXECUTORS["verify"], [repair_id],
-                    sections=_gate_sections(
-                        "verify", target_id, repaired_by=repair_id,
-                    ),
-                    root_generation=root_generation, pack=target.get("pack"),
-                    isolation="none",
-                ),
-                verify_id, cut_generation,
-            ),
-        ),
-    ]
+    rendered = ordinary_stages(run, target_id, target)
     existing = [directory / f"{ticket_id}.md" for ticket_id, _ in rendered]
     if any(path.exists() for path in existing):
         if not all(path.exists() for path in existing):
             return {"error": "ordinary checker continuation is partial; refusing to guess the missing stage"}
         for (ticket_id, expected), path in zip(rendered, existing):
             loaded = _load_ticket(path)
-            expected_data = _parse_frontmatter(expected)
             try:
                 actual_text = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
                 actual_text = ""
             if (
                 "error" in loaded
-                or bool(seal_findings(ticket_id, actual_text))
-                or _executor_of(loaded) != _executor_of(expected_data)
-                or list(loaded.get("depends_on") or [])
-                != list(expected_data.get("depends_on") or [])
-                or str(loaded.get("root_generation") or "") != root_generation
-                or str(loaded.get("cut_generation") or "") != cut_generation
-                or str(loaded.get("assignment_seal") or "")
-                != str(expected_data.get("assignment_seal") or "")
+                or not ordinary_stage_matches(
+                    ticket_id, actual_text, expected,
+                )
             ):
                 return {"error": f"ordinary checker continuation stage already exists with different content: {ticket_id}"}
         return {"gate": {
@@ -329,11 +289,13 @@ def _gate_under_run_lock(rest, _head_probe=None):
     root_ticket = _load_ticket(root_path)
     if "error" in root_ticket:
         return {"error": root_ticket["error"]}
-    if str(root_ticket.get("executor") or "").strip() != ROOT_EXECUTOR:
+    if str(root_ticket.get("independence") or "checker") == "checker":
         return _checker_gate_under_run_lock(
             run, root_id, root_ticket, directory,
             has_lens_options=lens_arg is not None or ordered_arg is not None,
         )
+    if str(root_ticket.get("executor") or "").strip() != ROOT_EXECUTOR:
+        return {"error": f"gate requires decomposed root executor {ROOT_EXECUTOR}: {run}/{root_id}"}
     root_generation = str(root_ticket.get("root_generation") or "")
     if not root_generation:
         return {"error": "gate requires a stamped root generation"}

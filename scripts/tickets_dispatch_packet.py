@@ -238,9 +238,6 @@ def _cmd_dispatch_packet(rest):
     form = (_extract_flag(args, "--form") or "reference").strip()
     if len(args) != 2 or not dispatch_id or not reply_to or form not in PACKET_FORMS:
         return {"error": f"usage: {DISPATCH_PACKET_USAGE}"}
-    failure = _identity_failure("reply-to", reply_to)
-    if failure is not None:
-        return failure
     run, ticket_id = args
     root = _tickets_root()
     if root is None:
@@ -258,6 +255,9 @@ def _cmd_dispatch_packet(rest):
     )
     if replay is not None:
         return replay
+    failure = _identity_failure("reply-to", reply_to)
+    if failure is not None:
+        return failure
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure

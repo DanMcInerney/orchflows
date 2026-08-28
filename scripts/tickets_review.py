@@ -378,6 +378,22 @@ def replay_review_failure(text: str, expected) -> str | None:
         return str(error)
 
 
+def canonical_finding_array(value: str, subject: str) -> str:
+    """Validate one closed finding array and return its canonical encoding."""
+
+    try:
+        parsed = parse_canonical_json(value)
+    except (TypeError, ValueError) as error:
+        raise ReviewError(f"{subject} must be a valid JSON array: {error}") from error
+    if not isinstance(parsed, list):
+        raise ReviewError(f"{subject} must be a valid JSON array")
+    try:
+        _finding_values(parsed, subject)
+    except SchemaError as error:
+        raise ReviewError(str(error)) from error
+    return canonical_json(parsed)
+
+
 def adjudicate(
     state: dict, feedback: str, accepted_text: str | None, by: str, lens: str,
 ) -> dict:

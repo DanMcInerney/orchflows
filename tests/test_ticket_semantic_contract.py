@@ -242,6 +242,25 @@ class SemanticTicketContractTest(unittest.TestCase):
             refused["error"],
         )
 
+    def test_the_over_ceiling_exemption_reserves_the_only_stampable_root(self):
+        goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
+        self.dispatch(
+            "new", "reserved-root", "X", "--executor", "orch-edit",
+            "--goal", goal, "--context", "[]",
+        )
+        self.dispatch(
+            "new", "reserved-root", "R", "--executor", "orch-edit",
+            "--goal", "Deliver the actual run.", "--context", "[]",
+        )
+
+        refused = tickets._dispatch([
+            "stamp-generation", "reserved-root", "R",
+        ])
+
+        self.assertIn("provisional root", refused["error"])
+        stamped = self.dispatch("stamp-generation", "reserved-root", "X")
+        self.assertEqual("X", stamped["stamp_generation"]["root_id"])
+
     def test_a_malformed_first_attempt_cannot_consume_the_root_exemption(self):
         goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
         malformed = tickets._dispatch([
@@ -727,10 +746,11 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_distinct_checker_records_the_same_immutable_adjudication_carrier(self):
         self.dispatch(
-            "new", "checker", "R", "--executor", "orch-tdd",
+            "new", "checker", "R", "--executor", tickets.ROOT_EXECUTOR,
             "--goal", "Deliver the checked result.",
             "--context", "The artifact and evidence are authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
+            "--pack", "orch-code-pack", "--isolation", "none",
+            "--independence", "checker",
         )
         self.seal("checker", "R")
         self.dispatch("ready", "--run", "checker")
@@ -792,7 +812,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "goal_impact": "The target Goal is false.",
             "id": "B1",
             "repair": "Repair test-x.",
-            "summary": "test-x is red.",
+            "summary": "test-x is red — repair required.",
         }], sort_keys=True, separators=(",", ":"))
         self.dispatch(
             "result", "checker", "R.check",
@@ -803,12 +823,20 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.commit_outcome(
             "checker", "R.check", stage_opened, "checker-a", "checker-D1"
         )
-        self.dispatch(
+        first_join = self.dispatch(
             "dispatch-join", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--accepted", findings,
         )
+        equivalent = json.dumps(json.loads(findings), ensure_ascii=False, indent=2)
+        replayed_join = self.dispatch(
+            "dispatch-join", "checker", "R.check",
+            "--assignment-seal", stage_opened["assignment_seal"],
+            "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--accepted", equivalent,
+        )
+        self.assertEqual(first_join, replayed_join)
         stage_path = (
             Path(self.temporary.name) / "tickets" / "checker" / "R.check.md"
         )
@@ -864,6 +892,34 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.assertFalse(list(stage_path.parent.glob("R.gate.critique.*.md")))
 
+        repair_path = stage_path.parent / "R.gate.repair.md"
+        canonical_repair = repair_path.read_bytes()
+        substituted = canonical_repair.decode("utf-8").replace(
+            "Resolve accepted blockers for `R`",
+            "Perform an unrelated operation for `R`",
+        )
+        substituted = tickets._set_frontmatter_field(
+            substituted, "assignment_seal",
+            tickets.assignment_digest("R.gate.repair", substituted),
+        )
+        repair_path.write_text(substituted, encoding="utf-8")
+        replay_refused = tickets._dispatch(["gate", "checker", "R"])
+        self.assertIn("different content", replay_refused["error"])
+        substituted_ready = self.dispatch("ready", "--run", "checker")
+        self.assertNotIn(
+            "R.gate.repair",
+            {item["id"] for item in substituted_ready["ready"]},
+        )
+        repair_skip = next(
+            item for item in substituted_ready["skipped"]
+            if item["id"] == "R.gate.repair"
+        )
+        self.assertIn(
+            "ordinary-review-stage-mismatch",
+            {item["code"] for item in repair_skip["findings"]},
+        )
+        repair_path.write_bytes(canonical_repair)
+
         ready = self.dispatch("ready", "--run", "checker")
         self.assertIn(
             "R.gate.repair", {item["id"] for item in ready["ready"]}, ready,
@@ -917,6 +973,23 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.assertEqual("RepairOutcome", repair_review["records"][-1]["kind"])
 
+        verify_path = stage_path.parent / "R.gate.verify.md"
+        canonical_verify = verify_path.read_bytes()
+        substituted_verify = canonical_verify.decode("utf-8").replace(
+            "Verify `R`'s Goal on the integrated tip",
+            "Perform an unrelated verification for `R`",
+        )
+        substituted_verify = tickets._set_frontmatter_field(
+            substituted_verify, "assignment_seal",
+            tickets.assignment_digest("R.gate.verify", substituted_verify),
+        )
+        verify_path.write_text(substituted_verify, encoding="utf-8")
+        verify_ready = self.dispatch("ready", "--run", "checker")
+        self.assertNotIn(
+            "R.gate.verify", {item["id"] for item in verify_ready["ready"]},
+        )
+        verify_path.write_bytes(canonical_verify)
+
         ready = self.dispatch("ready", "--run", "checker")
         self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
         verify_opened = self.open_attempt(
@@ -967,6 +1040,18 @@ class SemanticTicketContractTest(unittest.TestCase):
             [record["kind"] for record in terminal["records"]],
         )
         self.assertEqual("PASS", terminal["records"][-1]["verdict"])
+
+    def test_frontier_guidance_distinguishes_all_three_review_states(self):
+        skill = (
+            ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        for phrase in (
+            "accepted checked target",
+            "clean checked target",
+            "gate-deferred root",
+        ):
+            self.assertIn(phrase, skill)
+        self.assertNotIn("Gate-deferred and checked tickets do not", skill)
 
     def test_checker_stage_refuses_a_packless_target_without_state_mutation(self):
         self.dispatch(

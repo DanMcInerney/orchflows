@@ -188,6 +188,32 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_bytes())
         self.assertEqual([], self.ticket_state()["attempts"][0]["records"])
 
+    def test_committed_historical_reply_to_replays_before_current_validation(self):
+        self.project()
+        text = self.ticket_path.read_text(encoding="utf-8")
+        state = parse_canonical_json(
+            tickets._parse_frontmatter(text)["dispatch_v1"]
+        )
+        packet_record = state["attempts"][0]["records"][0]
+        stored = parse_canonical_json(packet_record["content"])
+        stored["packet"]["reply_to"] = "/root"
+        packet_record["content"] = canonical_json(stored)
+        packet_record["success"]["committed_record"]["content"] = stored
+        self.ticket_path.write_text(
+            tickets._set_frontmatter_field(
+                text, "dispatch_v1", canonical_json(state),
+            ),
+            encoding="utf-8",
+        )
+
+        replayed = tickets._dispatch([
+            "dispatch-packet", "run", "T", "--dispatch-id", "D1",
+            "--reply-to", "/root", "--workspace", "C:/candidate",
+        ])
+
+        self.assertEqual(stored, replayed)
+        self.assertEqual("/root", replayed["packet"]["reply_to"])
+
     def test_legacy_gate_repair_replays_stored_packet_across_head_change(self):
         committed = self.project()
         old_head = subprocess.run(

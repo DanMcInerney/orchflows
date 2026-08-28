@@ -82,19 +82,15 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
     if ticket_id.endswith(".check") and dependencies == [
         ticket_id[:-len(".check")]
     ]:
-        return dependencies[0]
+        return dependencies[0], None
     target_id = None
-    executor = _executor_of(data)
+    kind = None
     if ticket_id.endswith(".gate.repair"):
         target_id = ticket_id[:-len(".gate.repair")]
-        expected = [f"{target_id}.check"]
-        if executor != GATE_EXECUTORS["repair"] or dependencies != expected:
-            return None
+        kind = "repair"
     elif ticket_id.endswith(".gate.verify"):
         target_id = ticket_id[:-len(".gate.verify")]
-        expected = [f"{target_id}.gate.repair"]
-        if executor != GATE_EXECUTORS["verify"] or dependencies != expected:
-            return None
+        kind = "verify"
     else:
         return None
     target_text = siblings.get(target_id)
@@ -110,13 +106,14 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
         or str(checker.get("status") or "") != "complete"
         or _executor_of(checker) != GATE_EXECUTORS["critique"]
         or list(checker.get("depends_on") or []) != [target_id]
-        or str(data.get("root_generation") or "")
-        != str(target.get("root_generation") or "")
-        or str(data.get("cut_generation") or "")
-        != str(target.get("cut_generation") or "")
     ):
         return None
-    return target_id
+    run = str(target.get("run") or data.get("run") or "")
+    if __package__:
+        from .tickets_ordinary_review import ordinary_stage_text
+    else:
+        from tickets_ordinary_review import ordinary_stage_text
+    return target_id, ordinary_stage_text(run, target_id, target, kind)
 
 
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
@@ -172,7 +169,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                 ticket_id, data, dependencies, siblings,
             )
             if review_target is not None:
-                target_id = review_target
+                target_id, expected_stage = review_target
                 target_text = siblings.get(target_id)
                 target = _parse_frontmatter(target_text) if target_text is not None else {}
                 if sealed_assignments.get(target_id) != target.get("assignment_seal"):
@@ -184,6 +181,19 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                         "sealed state does not bind the checker target"
                         if ticket_id.endswith(".check")
                         else "sealed state does not bind the ordinary review target",
+                    ))
+                if expected_stage is not None:
+                    if __package__:
+                        from .tickets_ordinary_review import ordinary_stage_matches
+                    else:
+                        from tickets_ordinary_review import ordinary_stage_matches
+                if expected_stage is not None and not ordinary_stage_matches(
+                    ticket_id, text, expected_stage,
+                ):
+                    findings.append(finding(
+                        "ordinary-review-stage-mismatch", "assignment_seal",
+                        "ordinary repair or verification assignment differs from "
+                        "the canonical checked-target continuation",
                     ))
             elif sealed_assignments.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed state does not bind this assignment"))

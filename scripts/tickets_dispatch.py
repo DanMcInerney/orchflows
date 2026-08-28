@@ -44,6 +44,7 @@ else:
 if __package__:
     from .tickets_emission import grade_run_emission; from .tickets_context import run_snapshot; from .tickets_generations import GENERATION_RE, _root_payload, canonical_json, draft_snapshot, generation_identity, seal_assignments, validate_draft; from .tickets_transitions import pending_admission, stamp; from .tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check
     from .tickets_generations import GENERATION_SUBCOMMANDS
+    from .tickets_root_reservation import mismatch as _root_reservation_mismatch
     from .tickets_dispatch_gate import _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain; from .tickets_dispatch_gate import _cmd_checker_stage, _cmd_gate as _gate_command
 else:
     from tickets_emission import grade_run_emission; from tickets_context import run_snapshot; from tickets_transitions import pending_admission, stamp; _generations = __import__('tickets_generations'); GENERATION_RE = _generations.GENERATION_RE; _root_payload = _generations._root_payload; canonical_json = _generations.canonical_json; draft_snapshot = _generations.draft_snapshot; generation_identity = _generations.generation_identity; seal_assignments = _generations.seal_assignments; validate_draft = _generations.validate_draft; from tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
@@ -52,6 +53,7 @@ else:
     _gate_stub = _gate_module._gate_stub; _gate_under_run_lock = _gate_module._gate_under_run_lock; _input_name = _gate_module._input_name; _listed_items = _gate_module._listed_items; _pack_domain = _gate_module._pack_domain
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
+    _root_reservation_mismatch = __import__('tickets_root_reservation').mismatch
 def _cmd_gate(rest):
     """`gate`, with this module's HEAD probe sealed into the family.
 
@@ -295,6 +297,14 @@ def _cmd_stamp_generation(rest):
     run_dir = tickets_root / run
     try:
         with _run_lock(run):
+            runs_root = _runs_root()
+            if runs_root is None:
+                return {'error': NO_SINK_ERROR}
+            reservation_error = _root_reservation_mismatch(
+                runs_root, run, root_id,
+            )
+            if reservation_error is not None:
+                return {'error': reservation_error}
             snapshot, unreadable = run_snapshot(run_dir) if run_dir.is_dir() else ({}, [])
             if unreadable:
                 return {'error': f'unreadable ticket: {unreadable[0][0]}'}

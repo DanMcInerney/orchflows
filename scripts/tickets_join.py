@@ -20,7 +20,7 @@ if __package__:
     from .tickets_store import _terminal_identity_update, _write_identity
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
     from .tickets_review import (
-        REVIEW_FIELD, ReviewError, adjudicate, repair_outcome,
+        REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
         state_from_text, verification_outcome,
     )
 else:
@@ -39,7 +39,7 @@ else:
     from tickets_store import _terminal_identity_update, _write_identity
     from tickets_project import TERMINAL_REMEDY, binding_refusal
     from tickets_review import (
-        REVIEW_FIELD, ReviewError, adjudicate, repair_outcome,
+        REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
         state_from_text, verification_outcome,
     )
 
@@ -224,6 +224,13 @@ def _cmd_dispatch_join(rest):
         failure = _identity_failure(kind, value)
         if failure is not None:
             return failure
+    if accepted is not None and (
+        ".gate.critique." in ticket_id or ticket_id.endswith(".check")
+    ):
+        try:
+            accepted = canonical_finding_array(accepted, "critique accepted")
+        except ReviewError as error:
+            return _classification("review-invalid", str(error))
 
     join_record_id = f"join:{outcome_record_id}"
     content = {
