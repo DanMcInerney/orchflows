@@ -1,12 +1,12 @@
 {
-  "_SummaryFlow-2zDShVCJ.js": {
-    "file": "assets/SummaryFlow-2zDShVCJ.js",
+  "_SummaryFlow-CVkFirrA.js": {
+    "file": "assets/SummaryFlow-CVkFirrA.js",
     "name": "SummaryFlow",
     "imports": [
       "_createLucideIcon-Ct0G_dhG.js"
     ],
     "css": [
-      "assets/styles-BqB27cyb.css"
+      "assets/styles-CdSuMJxw.css"
     ]
   },
   "_arrow-left-Dp5AE850.js": {
@@ -142,9 +142,9 @@
       "_createLucideIcon-Ct0G_dhG.js"
     ]
   },
-  "_styles-BqB27cyb.css": {
-    "file": "assets/styles-BqB27cyb.css",
-    "src": "_styles-BqB27cyb.css"
+  "_styles-CdSuMJxw.css": {
+    "file": "assets/styles-CdSuMJxw.css",
+    "src": "_styles-CdSuMJxw.css"
   },
   "_triangle-alert-BtUBX7nb.js": {
     "file": "assets/triangle-alert-BtUBX7nb.js",
@@ -154,7 +154,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-DCeViOod.js",
+    "file": "assets/index-UgRZLqam.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -221,7 +221,7 @@
     ]
   },
   "src/features/now/NowView.tsx": {
-    "file": "assets/NowView-Brwnf8Qo.js",
+    "file": "assets/NowView-DIpUoo12.js",
     "name": "NowView",
     "src": "src/features/now/NowView.tsx",
     "isDynamicEntry": true,
@@ -233,7 +233,7 @@
       "_radio-nz6-ow8o.js",
       "_triangle-alert-BtUBX7nb.js",
       "_executionRoutes-DvI61L8d.js",
-      "_SummaryFlow-2zDShVCJ.js"
+      "_SummaryFlow-CVkFirrA.js"
     ],
     "css": [
       "assets/NowView-DMGYwLRL.css"
@@ -259,7 +259,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-DDoH6f-n.js",
+    "file": "assets/SessionGraphView-lYm150vh.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -279,7 +279,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-DvzAYK9m.js",
+    "file": "assets/SessionsView-CwctgnW-.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
@@ -297,7 +297,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowCatalogView.tsx": {
-    "file": "assets/WorkflowCatalogView-BdpicDi3.js",
+    "file": "assets/WorkflowCatalogView-7bT-4cTW.js",
     "name": "WorkflowCatalogView",
     "src": "src/features/workflows/view/WorkflowCatalogView.tsx",
     "isDynamicEntry": true,
@@ -306,14 +306,14 @@
       "_git-branch-Oc79H51m.js",
       "_search-x-_EkLKMuR.js",
       "index.html",
-      "_SummaryFlow-2zDShVCJ.js"
+      "_SummaryFlow-CVkFirrA.js"
     ],
     "css": [
-      "assets/styles-BqB27cyb.css"
+      "assets/styles-CdSuMJxw.css"
     ]
   },
   "src/features/workflows/view/WorkflowDetailView.tsx": {
-    "file": "assets/WorkflowDetailView-C_pxHpcC.js",
+    "file": "assets/WorkflowDetailView-Bz_u9gBu.js",
     "name": "WorkflowDetailView",
     "src": "src/features/workflows/view/WorkflowDetailView.tsx",
     "isDynamicEntry": true,
@@ -328,11 +328,11 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-BqB27cyb.css"
+      "assets/styles-CdSuMJxw.css"
     ]
   },
   "src/features/workflows/view/WorkflowSourceView.tsx": {
-    "file": "assets/WorkflowSourceView-BaOb-AK_.js",
+    "file": "assets/WorkflowSourceView-sL6_8ZyY.js",
     "name": "WorkflowSourceView",
     "src": "src/features/workflows/view/WorkflowSourceView.tsx",
     "isDynamicEntry": true,
@@ -345,7 +345,7 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-BqB27cyb.css"
+      "assets/styles-CdSuMJxw.css"
     ]
   }
 }

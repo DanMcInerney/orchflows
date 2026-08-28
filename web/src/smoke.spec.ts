@@ -118,19 +118,32 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
     await expect(page.getByRole("button", { name: "Select loop relation: 02-campaign loops to 02-campaign" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Skills called, step by step" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Select Definition-time ticket template 02-campaign" })).toBeVisible();
-    await expect(page.getByText("02-campaign loops to 02-campaign — bounded generations")).toBeVisible();
+    await expect(page.getByText("02-campaign loops to 02-campaign — Write candidates; verify eligibility; score blind; select by the frozen rule; repeat {{bound}}")).toBeVisible();
+    await expect(page.locator(".workflow-detail__hero dd")).toHaveText(["8", "8"]);
+    const verifyOccurrences = page.getByRole("button", { name: "Select Called skill orch-verify" });
+    await expect(verifyOccurrences).toHaveCount(2);
+    await verifyOccurrences.nth(1).click();
+    await expect(verifyOccurrences.nth(0)).toHaveAttribute("aria-pressed", "false");
+    await expect(verifyOccurrences.nth(1)).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Select Composition definition evolve" }).click();
+    await page.locator(".workflow-graph").evaluate((element) => { element.scrollLeft = 0; });
     if (identity.breakpoint === "compact") {
       const inspector = await page.locator(".workflow-inspector").boundingBox();
       const graph = await page.locator(".workflow-detail__graph-panel").boundingBox();
       expect(inspector, `${identity.identity}: inspector is rendered`).not.toBeNull();
       expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
-      expect(inspector.y, `${identity.identity}: inspector precedes graph`).toBeLessThan(graph.y);
+      expect(graph.y, `${identity.identity}: primary graph precedes inspector`).toBeLessThan(inspector.y);
+      const sourceOrder = await page.locator(".workflow-detail__graph-panel").evaluate((graphElement) => Boolean(
+        graphElement.compareDocumentPosition(document.querySelector(".workflow-inspector")) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ));
+      expect(sourceOrder, `${identity.identity}: graph precedes inspector in source order`).toBe(true);
     }
   }
   if (identity.identity.startsWith("workflow-detail--callable--")) {
     await expect(page.getByRole("heading", { name: "Skills and scripts called" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Select Called skill orch-investigate" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Select Called script bin/tickets.py" })).toBeVisible();
+    await expect(page.locator(".workflow-detail__hero dd")).toHaveText(["6", "5"]);
+    await expect(page.locator("[data-call-source='workflow:orch-spec']")).toHaveCount(5);
+    await expect(page.locator("[data-call-target='skill:orch-frontier'], [data-call-target='skill:orch-integrate']")).toHaveCount(2);
   }
   if (identity.identity.startsWith("workflow-source--missing-source--")) {
     await expect(page.getByRole("heading", { name: "Source not found" })).toBeVisible();

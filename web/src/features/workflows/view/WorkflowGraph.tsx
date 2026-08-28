@@ -4,10 +4,8 @@ import { layoutTopology } from "../../../layout";
 import type { WorkflowDetailEdge, WorkflowDetailModel, WorkflowDetailNode } from "../model";
 
 export type WorkflowSelection =
-  | { type: "node"; value: WorkflowDetailNode }
-  | { type: "edge"; value: WorkflowDetailEdge };
-
-const STEP_STRIDE = 286;
+  | { type: "node"; value: WorkflowDetailNode; occurrenceId: string }
+  | { type: "edge"; value: WorkflowDetailEdge; occurrenceId: string };
 
 function relationVerb(edge: WorkflowDetailEdge): string {
   if (edge.kind === "loop") return "loops to";
@@ -52,24 +50,28 @@ function stableWorkOrder(model: WorkflowDetailModel): WorkflowDetailNode[] {
 function NodeButton({
   node,
   context,
+  occurrenceId,
   selection,
   onSelect,
 }: {
   node: WorkflowDetailNode;
   context: string;
+  occurrenceId: string;
   selection: WorkflowSelection;
   onSelect(selection: WorkflowSelection): void;
 }) {
-  const selected = selection.type === "node" && selection.value.id === node.id;
+  const selected = selection.type === "node" && selection.occurrenceId === occurrenceId;
   return (
     <button
       type="button"
       className="workflow-graph__node"
       data-kind={node.kind}
       data-node-id={node.id}
+      data-occurrence-id={occurrenceId}
       aria-label={`Select ${context} ${node.label}`}
       aria-pressed={selected}
-      onClick={() => onSelect({ type: "node", value: node })}
+      aria-controls="workflow-inspector"
+      onClick={() => onSelect({ type: "node", value: node, occurrenceId })}
     >
       <span>{context}</span>
       <strong>{node.label}</strong>
@@ -92,8 +94,15 @@ function RelationControl({
 }) {
   const from = labels.get(edge.from) ?? edge.from;
   const to = labels.get(edge.to) ?? edge.to;
+  const occurrenceId = `edge:${edge.id}`;
   return (
-    <div className="workflow-graph__relation" data-kind={edge.kind} data-compact={compact ? "true" : "false"}>
+    <div
+      className="workflow-graph__relation"
+      data-kind={edge.kind}
+      data-compact={compact ? "true" : "false"}
+      data-edge-from={edge.from}
+      data-edge-to={edge.to}
+    >
       <span
         className="workflow-graph__connector"
         data-workflow-connector={edge.id}
@@ -105,9 +114,11 @@ function RelationControl({
         type="button"
         className="workflow-graph__edge"
         data-kind={edge.kind}
+        data-occurrence-id={occurrenceId}
         aria-label={`Select ${relationType(edge)} relation: ${from} ${relationVerb(edge)} ${to}`}
-        aria-pressed={selection.type === "edge" && selection.value.id === edge.id}
-        onClick={() => onSelect({ type: "edge", value: edge })}
+        aria-pressed={selection.type === "edge" && selection.occurrenceId === occurrenceId}
+        aria-controls="workflow-inspector"
+        onClick={() => onSelect({ type: "edge", value: edge, occurrenceId })}
       >
         <span aria-hidden="true">{edge.kind === "loop" ? "↻" : "→"}</span>
         {edge.label || relationType(edge)}
@@ -123,7 +134,9 @@ function CompositionFlow({ model, selection, onSelect }: WorkflowGraphProps) {
   const executorEdges = model.edges.filter((edge) => edge.kind === "executor");
   const dependencyEdges = model.edges.filter((edge) => edge.kind === "dependency");
   const loopEdges = model.edges.filter((edge) => edge.kind === "loop");
+  const definition = model.nodes.find((node) => node.kind === "workflow");
   const presentedNodeIds = new Set(steps.map((node) => node.id));
+  if (definition) presentedNodeIds.add(definition.id);
   for (const edge of executorEdges) presentedNodeIds.add(edge.to);
   const remainingNodes = model.nodes.filter((node) => !presentedNodeIds.has(node.id));
   const presentedEdgeIds = new Set([...executorEdges, ...dependencyEdges, ...loopEdges].map((edge) => edge.id));
@@ -131,6 +144,18 @@ function CompositionFlow({ model, selection, onSelect }: WorkflowGraphProps) {
 
   return (
     <div className="workflow-step-flow" data-flow-kind="composition">
+      {definition && (
+        <div className="workflow-composition-origin">
+          <NodeButton
+            node={definition}
+            context="Composition definition"
+            occurrenceId={`node:${definition.id}:definition`}
+            selection={selection}
+            onSelect={onSelect}
+          />
+          <p>This canonical definition owns the reusable step sequence below; it is context, not an additional call.</p>
+        </div>
+      )}
       <ol className="workflow-step-flow__sequence" aria-label="Workflow skill sequence">
         {steps.map((work, index) => {
           const executors = executorEdges.filter((edge) => edge.from === work.id);
@@ -151,6 +176,7 @@ function CompositionFlow({ model, selection, onSelect }: WorkflowGraphProps) {
                         key={`${work.id}:${edge.id}`}
                         node={executor}
                         context="Called skill"
+                        occurrenceId={`node:${edge.id}:target`}
                         selection={selection}
                         onSelect={onSelect}
                       />
@@ -167,6 +193,7 @@ function CompositionFlow({ model, selection, onSelect }: WorkflowGraphProps) {
                   <NodeButton
                     node={work}
                     context="Definition-time ticket template"
+                    occurrenceId={`node:${work.id}:template`}
                     selection={selection}
                     onSelect={onSelect}
                   />
@@ -194,7 +221,14 @@ function CompositionFlow({ model, selection, onSelect }: WorkflowGraphProps) {
           <h3 id="workflow-additional-calls">Additional canonical calls</h3>
           <div>
             {remainingNodes.map((node) => (
-              <NodeButton key={node.id} node={node} context={`${node.kind} definition`} selection={selection} onSelect={onSelect} />
+              <NodeButton
+                key={node.id}
+                node={node}
+                context={`${node.kind} definition`}
+                occurrenceId={`node:${node.id}:additional`}
+                selection={selection}
+                onSelect={onSelect}
+              />
             ))}
             {remainingEdges.map((edge) => (
               <RelationControl key={edge.id} edge={edge} labels={labels} selection={selection} onSelect={onSelect} compact />
@@ -219,7 +253,13 @@ function CallableFlow({ model, selection, onSelect }: WorkflowGraphProps) {
     <div className="workflow-step-flow" data-flow-kind="callable">
       {caller && (
         <div className="workflow-callable-origin">
-          <NodeButton node={caller} context="Workflow definition" selection={selection} onSelect={onSelect} />
+          <NodeButton
+            node={caller}
+            context="Workflow definition"
+            occurrenceId={`node:${caller.id}:definition`}
+            selection={selection}
+            onSelect={onSelect}
+          />
           <p>This callable workflow invokes the skills and scripts below in canonical relation order.</p>
         </div>
       )}
@@ -227,8 +267,17 @@ function CallableFlow({ model, selection, onSelect }: WorkflowGraphProps) {
         {calls.map((edge, index) => {
           const target = nodes.get(edge.to);
           return (
-            <li className="workflow-step-flow__item" key={edge.id}>
+            <li
+              className="workflow-step-flow__item"
+              key={edge.id}
+              data-call-source={edge.from}
+              data-call-target={edge.to}
+            >
               <div className="workflow-step-flow__handoff workflow-step-flow__handoff--call">
+                <span className="workflow-callable-source">
+                  <small>From</small>
+                  <strong>{labels.get(edge.from) ?? edge.from}</strong>
+                </span>
                 <RelationControl edge={edge} labels={labels} selection={selection} onSelect={onSelect} />
               </div>
               <article className="workflow-step-card workflow-step-card--call">
@@ -237,6 +286,7 @@ function CallableFlow({ model, selection, onSelect }: WorkflowGraphProps) {
                   <NodeButton
                     node={target}
                     context={target.kind === "script" ? "Called script" : "Called skill"}
+                    occurrenceId={`node:${edge.id}:target`}
                     selection={selection}
                     onSelect={onSelect}
                   />
@@ -251,7 +301,14 @@ function CallableFlow({ model, selection, onSelect }: WorkflowGraphProps) {
           <h3 id="workflow-additional-relations">Additional canonical relations</h3>
           <div>
             {remainingNodes.map((node) => (
-              <NodeButton key={node.id} node={node} context={`${node.kind} definition`} selection={selection} onSelect={onSelect} />
+              <NodeButton
+                key={node.id}
+                node={node}
+                context={`${node.kind} definition`}
+                occurrenceId={`node:${node.id}:additional`}
+                selection={selection}
+                onSelect={onSelect}
+              />
             ))}
             {remainingEdges.map((edge) => (
               <RelationControl key={edge.id} edge={edge} labels={labels} selection={selection} onSelect={onSelect} compact />
@@ -271,7 +328,7 @@ export interface WorkflowGraphProps {
 
 export function WorkflowGraph({ model, selection, onSelect }: WorkflowGraphProps) {
   const graphRef = useRef<HTMLDivElement>(null);
-  const workOrder = useMemo(() => stableWorkOrder(model), [model]);
+  const previousOccurrence = useRef(selection.occurrenceId);
   const topology = useMemo(() => ({
     nodes: model.nodes.map((node) => ({ id: node.id })),
     edges: model.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to })),
@@ -285,13 +342,12 @@ export function WorkflowGraph({ model, selection, onSelect }: WorkflowGraphProps
 
   useEffect(() => {
     const graph = graphRef.current;
-    if (!graph || graph.clientWidth <= 0) return;
-    const selectedId = selection.type === "node" ? selection.value.id : selection.value.from;
-    const direct = workOrder.findIndex((node) => node.id === selectedId);
-    const executor = model.edges.find((edge) => edge.kind === "executor" && edge.to === selectedId);
-    const index = direct >= 0 ? direct : workOrder.findIndex((node) => node.id === executor?.from);
-    if (index >= 0) graph.scrollLeft = Math.max(0, index * STEP_STRIDE - graph.clientWidth / 2);
-  }, [model.edges, selection, workOrder]);
+    if (!graph || previousOccurrence.current === selection.occurrenceId) return;
+    previousOccurrence.current = selection.occurrenceId;
+    const selected = Array.from(graph.querySelectorAll<HTMLElement>("[data-occurrence-id]"))
+      .find((element) => element.dataset.occurrenceId === selection.occurrenceId);
+    selected?.scrollIntoView?.({ block: "nearest", inline: "center" });
+  }, [selection.occurrenceId]);
 
   return (
     <div ref={graphRef} className="workflow-graph" role="group" aria-label={`Exact topology for ${model.id}`}>
