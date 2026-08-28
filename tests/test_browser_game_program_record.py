@@ -135,7 +135,7 @@ REQUIRED_RECORDS = {
     ),
     "successor_plans": (
         "successorPlanRevision",
-        {"AUTH-05", "PJ-28"},
+        {"AUTH-05", "PJ-18", "PJ-19", "PJ-28"},
         {
             "ordered_artifact_kinds",
             "packs",
@@ -143,6 +143,7 @@ REQUIRED_RECORDS = {
             "root_identities",
             "dependencies",
             "current_status",
+            "ordered_artifacts",
         },
     ),
 }
@@ -210,6 +211,13 @@ INTAKE_FIELDS = {
         "license_revalidation_cadence", "compatibility_revalidation_cadence",
         "adoption_revalidation_cadence", "security_revalidation_cadence",
     },
+}
+
+SUCCESSOR_KIND_PACKS = {
+    "research": "orch-research-pack",
+    "prose": "orch-content-pack",
+    "code": "orch-code-pack",
+    "rendered-interface": "orch-design-pack",
 }
 
 
@@ -321,6 +329,62 @@ class TestBrowserGameProgramRecord(unittest.TestCase):
                         for field_schema in bucket["properties"].values()
                     )
                 )
+
+    def test_successor_plan_keeps_kind_bound_artifacts_and_successor_roots_distinct(self):
+        plan = self.defs["successorPlanRevision"]
+        self.assertIn("ordered_artifacts", plan["required"])
+        ordered = plan["properties"]["ordered_artifacts"]
+        self.assertEqual("array", ordered["type"])
+        self.assertEqual(1, ordered["minItems"])
+        self.assertTrue(ordered["uniqueItems"])
+        self.assertEqual("#/$defs/successorArtifact", ordered["items"]["$ref"])
+
+        artifact = self.defs["successorArtifact"]
+        self.assertFalse(artifact["additionalProperties"])
+        self.assertEqual(
+            {
+                "artifact_identity",
+                "artifact_kind",
+                "pack",
+                "run_identity",
+                "root_identity",
+                "dependencies",
+                "current_status",
+            },
+            set(artifact["required"]),
+        )
+        self.assertEqual(
+            set(SUCCESSOR_KIND_PACKS),
+            set(artifact["properties"]["artifact_kind"]["enum"]),
+        )
+        self.assertEqual(
+            {"planned", "opened"},
+            set(artifact["properties"]["current_status"]["enum"]),
+        )
+        self.assertEqual(
+            "#/$defs/stableIdentity",
+            artifact["properties"]["artifact_identity"]["$ref"],
+        )
+        self.assertEqual(
+            "#/$defs/stableIdentity",
+            artifact["properties"]["run_identity"]["$ref"],
+        )
+        self.assertEqual(
+            "#/$defs/stableIdentity",
+            artifact["properties"]["root_identity"]["$ref"],
+        )
+        self.assertEqual(
+            "#/$defs/stableIdentity",
+            artifact["properties"]["dependencies"]["items"]["$ref"],
+        )
+        self.assertTrue(artifact["properties"]["dependencies"]["uniqueItems"])
+
+        bindings = {
+            clause["if"]["properties"]["artifact_kind"]["const"]:
+            clause["then"]["properties"]["pack"]["const"]
+            for clause in artifact["allOf"]
+        }
+        self.assertEqual(SUCCESSOR_KIND_PACKS, bindings)
 
 
 if __name__ == "__main__":

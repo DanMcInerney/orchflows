@@ -809,11 +809,12 @@
     },
     "successorPlanRevision": {
       "type": "object",
-      "x-governing-identities": ["AUTH-05", "PJ-28"],
+      "description": "PJ-18 and PJ-19 preserve each artifact kind as a separate identity and carry only the predecessor result, fixed evidence, required user decisions, and exceptional constraints into successor roots. AUTH-05 owns opening and linking; PJ-28 owns this plan record.",
+      "x-governing-identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
       "allOf": [{"$ref": "#/$defs/recordRevision"}],
       "required": [
         "ordered_artifact_kinds", "packs", "run_identities", "root_identities",
-        "dependencies", "current_status"
+        "dependencies", "current_status", "ordered_artifacts"
       ],
       "properties": {
         "ordered_artifact_kinds": {"$ref": "#/$defs/materialField"},
@@ -821,9 +822,64 @@
         "run_identities": {"$ref": "#/$defs/materialField"},
         "root_identities": {"$ref": "#/$defs/materialField"},
         "dependencies": {"$ref": "#/$defs/materialField"},
-        "current_status": {"$ref": "#/$defs/materialField"}
+        "current_status": {"$ref": "#/$defs/materialField"},
+        "ordered_artifacts": {
+          "description": "The ordered, kind-separated successor entries. Each entry fixes its own artifact and proposed successor-root identities; this plan does not open the run.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/successorArtifact"}
+        }
       },
       "unevaluatedProperties": false
+    },
+    "successorArtifact": {
+      "type": "object",
+      "description": "One proposed artifact and its lawful successor-root coordinates. The kind selects the existing stamped pack; planned changes to opened only when orch-spec materializes the successor under AUTH-05.",
+      "x-governing-identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
+      "additionalProperties": false,
+      "required": [
+        "artifact_identity", "artifact_kind", "pack", "run_identity",
+        "root_identity", "dependencies", "current_status"
+      ],
+      "properties": {
+        "artifact_identity": {"$ref": "#/$defs/stableIdentity"},
+        "artifact_kind": {
+          "enum": ["research", "prose", "code", "rendered-interface"]
+        },
+        "pack": {
+          "enum": [
+            "orch-research-pack", "orch-content-pack", "orch-code-pack",
+            "orch-design-pack"
+          ]
+        },
+        "run_identity": {"$ref": "#/$defs/stableIdentity"},
+        "root_identity": {"$ref": "#/$defs/stableIdentity"},
+        "dependencies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableIdentity"}
+        },
+        "current_status": {"enum": ["planned", "opened"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"artifact_kind": {"const": "research"}}},
+          "then": {"properties": {"pack": {"const": "orch-research-pack"}}}
+        },
+        {
+          "if": {"properties": {"artifact_kind": {"const": "prose"}}},
+          "then": {"properties": {"pack": {"const": "orch-content-pack"}}}
+        },
+        {
+          "if": {"properties": {"artifact_kind": {"const": "code"}}},
+          "then": {"properties": {"pack": {"const": "orch-code-pack"}}}
+        },
+        {
+          "if": {"properties": {"artifact_kind": {"const": "rendered-interface"}}},
+          "then": {"properties": {"pack": {"const": "orch-design-pack"}}}
+        }
+      ]
     }
   }
 }
