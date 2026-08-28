@@ -214,6 +214,43 @@ class TestGuardedSeams(unittest.TestCase):
         self.assertIn("FAILED MODULE: test_fixture (exit 7)", report)
 
 
+class TestCaseTreeReach(unittest.TestCase):
+    """Every `*_cases/` package is reached by something discovery collects.
+
+    `discover` globs `test*.py` at the top level only, so a case package is
+    reached solely through a module that imports it. Delete that module and
+    the package stops running while every count stays green -- which is how
+    six packages sat unrun for two days after commit 932706a3 removed their
+    drivers and left them behind. A count cannot see this: the tests are not
+    failing, they are absent. So the reach is checked structurally.
+    """
+
+    def test_every_case_package_is_imported_by_a_collected_module(self):
+        tests_dir = REPO_ROOT / "tests"
+        packages = sorted(tests_dir.glob("*_cases"))
+        # An empty corpus agrees with any rule; say so before comparing.
+        self.assertTrue(packages)
+        unreached = []
+        for package in packages:
+            if not any(package.glob("*.py")):
+                unreached.append(f"{package.name}: no module, delete the directory")
+                continue
+            # An importer names the package; the package's own files are
+            # excluded from being their own witness by the name check below.
+            importers = [
+                path for path in sorted(tests_dir.rglob("*.py"))
+                if package.name not in path.parts
+                and package.name in path.read_text(encoding="utf-8", errors="replace")
+            ]
+            if not importers:
+                unreached.append(
+                    f"{package.name}: nothing outside it names it -- "
+                    f"add tests/{package.name[:-len('_cases')]}.py re-exporting "
+                    f"its cases, or delete the package"
+                )
+        self.assertEqual([], unreached, "\n".join(unreached))
+
+
 class TestSchedule(unittest.TestCase):
     def test_installer_cases_are_exactly_once_across_process_visible_shards(self):
         modules = [

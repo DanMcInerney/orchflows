@@ -13,7 +13,30 @@ from .common import *  # noqa: F401,F403
 from scripts import tickets_generations as generations
 from scripts.tickets_dispatch import _dispatch
 from scripts.tickets_format import _parse_frontmatter
-from tests.test_tickets_issue_cases.generation_lifecycle import snapshot
+from scripts.tickets_issue_render import _render_ticket
+
+
+def ticket(ticket_id, *, executor="orch-tdd", goal="deliver", result=""):
+    fields = {
+        "id": ticket_id, "run": "run", "status": "pending",
+        "admission": "pending", "executor": executor, "pack": "orch-code-pack",
+        "independence": "gate", "depends_on": [],
+        "isolation": "required" if executor == "orch-tdd" else "none",
+        "bound": "30m", "claimed_by": "", "claimed_at": "",
+    }
+    sections = [
+        ("Goal", goal), ("Context", "Use the exact sealed run snapshot."),
+        ("Result", result), ("Verification", ""), ("Feedback", "[]"),
+        ("Risks", "[]"),
+    ]
+    return _render_ticket(fields, sections)
+
+
+def snapshot():
+    return {
+        "00-root": ticket("00-root", executor="orch-decompose", goal="root"),
+        "00-root.01": ticket("00-root.01"),
+    }
 
 # Everything a shell is entitled to mangle, plus one glyph with no cp1252
 # encoding at all, so a wrong-codepage write cannot pass by round-tripping.
