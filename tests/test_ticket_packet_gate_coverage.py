@@ -85,10 +85,11 @@ class TicketPacketGateCoverageTest(unittest.TestCase):
         fossils = (
             TESTS / "test_tickets_cases" / "gate_blocking.py",
             TESTS / "test_tickets_view_cases" / "gate_stubs.py",
+            # The whole package went with the drivers commit 932706a3 deleted;
+            # ReviewBundleContractTest lived here and is gone with it.
+            TESTS / "test_contracts_cases" / "rules.py",
         )
         self.assertEqual([], [str(path.relative_to(ROOT)) for path in fossils if path.exists()])
-        rules = (TESTS / "test_contracts_cases" / "rules.py").read_text(encoding="utf-8")
-        self.assertNotIn("class ReviewBundleContractTest", rules)
         manifest = (TESTS / "serial_compat_manifest.json").read_text(encoding="utf-8")
         for module in (
             "tests.test_tickets_cases.gate_blocking",

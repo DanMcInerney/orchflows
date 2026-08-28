@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1997,
+  "count": 1998,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -529,6 +529,7 @@
    "test_run_required.TestWhatIsNeverStored.test_a_stored_red_command_is_never_served",
    "test_run_required.TestWhatIsNeverStored.test_a_tree_changed_by_the_checks_themselves_is_not_stored",
    "test_run_required.TestWhatIsNeverStored.test_an_unreadable_entry_is_never_served",
+   "test_run_tests.TestCaseTreeReach.test_every_case_package_is_imported_by_a_collected_module",
    "test_run_tests.TestChildEnv.test_every_other_variable_survives",
    "test_run_tests.TestChildEnv.test_the_childs_stdio_is_pinned_to_utf8",
    "test_run_tests.TestEmit.test_a_stdout_with_no_byte_buffer_still_receives_the_text",
@@ -2000,7 +2001,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "3a01ac5998492440b13b183c93ed96ed1bd12894f733b4ce7a4b3faabbfa75fe"
+  "sha256": "0c88cfd17a7b18d3a30e4205678193a4a3c765589bb526ff04d3b3379e7f68e9"
  },
  "mutation_owners": [
   {
@@ -2070,14 +2071,6 @@
    ]
   },
   {
-   "module": "tests.test_benchmaker_cases.shared",
-   "owner": "ticket_law",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
    "module": "tests.test_browser_game_composition",
    "owner": "BrowserGameCompositionTests.test_template_is_discoverable_instantiable_and_has_one_terminal",
    "restoration": "selected-module-boundary",
@@ -2086,244 +2079,11 @@
    ]
   },
   {
-   "module": "tests.test_carriage_cases._support",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
    "module": "tests.test_cell_linter_cases.pack_cells",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_contracts_cases.support",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.confinement",
-   "owner": "SymlinkCapabilityGuardTest._incapable",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "CutTimeDecidabilityTest._class",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "GitNoHistoryDispositionTest.test_every_git_span_is_executed_rather_than_excused_for_its_head",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "HeadHalfNonReadingTest._class",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "HeadHalfNonReadingTest.test_the_two_halves_refuse_the_same_pair_of_non_readings",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "NodeIdOracleGapTest._report",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "UnreadHalfTest.test_a_baseline_reading_that_decided_nothing_says_so",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "UnreadHalfTest.test_a_head_reading_that_decided_nothing_says_so_too",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "UnreadHalfTest.test_a_library_with_no_packs_grades_family_6_against_nothing_and_says_so",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.decidability",
-   "owner": "UnreadHalfTest.test_cut_time_is_a_stated_ladder_and_not_an_unread_half",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.evaluation",
-   "owner": "ExecutionCacheTest.test_a_command_extracted_twice_for_one_tree_runs_once",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.evaluation",
-   "owner": "ExecutionCacheTest.test_the_other_tree_is_its_own_execution",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.evaluation",
-   "owner": "ExecutionCacheTest.test_the_status_read_is_paid_once_per_execution_and_never_on_a_hit",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.evaluation",
-   "owner": "ScratchTreeHistoryTest.test_the_trees_own_top_level_is_the_tree_not_the_enclosing_checkout",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "cwd"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.extraction",
-   "owner": "BareCommandNounTest.test_the_mention_reaches_no_executor",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.extraction",
-   "owner": "ParserReuseTest.test_lower_policy_hooks_keep_their_portable_codes",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "module-cache"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.layout",
-   "owner": "RootGateLayoutTest.test_command_rejects_the_independent_roots_and_partial_gate",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.scope",
-   "owner": "SearchSpanMatcherTest.test_no_process_is_started_for_a_search_span",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.scratch",
-   "owner": "BytecodeAdvisoryTest._classes",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.scratch",
-   "owner": "ScratchCleanupReportingTest._main_naming_its_scratch_root",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.scratch",
-   "owner": "ScratchCleanupReportingTest.setUp",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "cwd"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.scratch",
-   "owner": "ScratchCleanupReportingTest.test_a_failing_removal_is_reported",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.scratch",
-   "owner": "ScratchCleanupReportingTest.test_a_failing_removal_stays_out_of_the_graded_report",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.shared_test_module",
-   "owner": "SharedTestModuleReportTest.setUp",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.state",
-   "owner": "TestCutcheckResolvesSink.launched_from",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "cwd",
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.state",
-   "owner": "TestCutcheckResolvesSink.test_a_run_nowhere_is_still_the_named_absence",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_cutcheck_cases.state",
-   "owner": "TestCutcheckResolvesSink.test_a_sink_resident_run_is_graded_end_to_end",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
    ]
   },
   {
@@ -4176,22 +3936,6 @@
    ]
   },
   {
-   "module": "tests.test_templates_cases.closure",
-   "owner": "_temporary_sink",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_templates_cases.shape",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
    "module": "tests.test_thin_orchestrator",
    "owner": "ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "restoration": "sharded-module-guard",
@@ -4480,46 +4224,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "cwd"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_issue_cases.common",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_issue_cases.common",
-   "owner": "use_sink",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_issue_cases.console_cases",
-   "owner": "NarrowConsoleTest.test_a_payload_holding_an_unencodable_character_still_prints",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_issue_cases.generation_lifecycle",
-   "owner": "CorrectionGenerationPolicyTest.test_command_path_applies_bound_and_recurring_failure_policy",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_issue_cases.generation_lifecycle",
-   "owner": "DraftValidateSealLifecycleTest.test_commands_validate_seal_and_release_units_to_ready",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
    ]
   },
   {
