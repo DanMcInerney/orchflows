@@ -853,6 +853,121 @@ class SemanticTicketContractTest(unittest.TestCase):
             review["records"][1]["predecessor"],
         )
 
+        continued = self.dispatch("gate", "checker", "R")
+        self.assertEqual(
+            ["R.gate.repair", "R.gate.verify"],
+            continued["gate"]["tickets"],
+        )
+        self.assertEqual(
+            "replayed",
+            self.dispatch("gate", "checker", "R")["gate"]["outcome"],
+        )
+        self.assertFalse(list(stage_path.parent.glob("R.gate.critique.*.md")))
+
+        ready = self.dispatch("ready", "--run", "checker")
+        self.assertIn(
+            "R.gate.repair", {item["id"] for item in ready["ready"]}, ready,
+        )
+        repair_opened = self.open_attempt(
+            "checker", "R.gate.repair", "repairer", "repair-D1"
+        )
+        repair_packet = self.dispatch(
+            "dispatch-packet", "checker", "R.gate.repair",
+            "--dispatch-id", "repair-D1", "--reply-to", "root",
+            "--artifact", artifact, "--workspace", str(ROOT),
+        )["packet"]
+        self.assertIn(review["records"][1]["identity"], repair_packet["prompt"])
+        self.dispatch(
+            "dispatch-receive", "--content",
+            json.dumps(repair_packet, sort_keys=True, separators=(",", ":")),
+            "--role", repair_packet["role"],
+            "--profile", repair_packet["profile"],
+            "--by", "repairer", "--reply-to", "root",
+            "--workspace", str(ROOT),
+        )
+        repair_outcome = {
+            "assignment_seal": repair_opened["assignment_seal"],
+            "by": "repairer", "dispatch_id": "repair-D1",
+            "evidence": {
+                "Result": "Repaired every accepted checker blocker.",
+                "Verification": "Targeted repair checks are green.",
+                "Feedback": "[]", "Risks": "[]", "Handoff": "",
+            },
+            "id": "R.gate.repair", "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1", "run": "checker",
+            "status": "complete",
+        }
+        self.dispatch(
+            "dispatch-outcome", "checker", "R.gate.repair", "--content",
+            json.dumps(repair_outcome, sort_keys=True, separators=(",", ":")),
+        )
+        self.dispatch(
+            "dispatch-join", "checker", "R.gate.repair",
+            "--assignment-seal", repair_opened["assignment_seal"],
+            "--dispatch-id", "repair-D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--artifact", artifact,
+        )
+        repair_text = (
+            stage_path.parent / "R.gate.repair.md"
+        ).read_text(encoding="utf-8")
+        repair_review = json.loads(_parse_frontmatter(repair_text)["review_v1"])
+        self.assertEqual(
+            [record["identity"] for record in review["records"]],
+            [record["identity"] for record in repair_review["records"][:2]],
+        )
+        self.assertEqual("RepairOutcome", repair_review["records"][-1]["kind"])
+
+        ready = self.dispatch("ready", "--run", "checker")
+        self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
+        verify_opened = self.open_attempt(
+            "checker", "R.gate.verify", "verifier", "verify-D1"
+        )
+        verify_packet = self.dispatch(
+            "dispatch-packet", "checker", "R.gate.verify",
+            "--dispatch-id", "verify-D1", "--reply-to", "root",
+            "--artifact", artifact, "--workspace", str(ROOT),
+        )["packet"]
+        self.dispatch(
+            "dispatch-receive", "--content",
+            json.dumps(verify_packet, sort_keys=True, separators=(",", ":")),
+            "--role", verify_packet["role"],
+            "--profile", verify_packet["profile"],
+            "--by", "verifier", "--reply-to", "root",
+            "--workspace", str(ROOT),
+        )
+        verify_outcome = {
+            "assignment_seal": verify_opened["assignment_seal"],
+            "by": "verifier", "dispatch_id": "verify-D1",
+            "evidence": {
+                "Result": "verified repaired artifact",
+                "Verification": "PASS: fresh checks cover the repaired artifact",
+                "Feedback": "[]", "Risks": "[]", "Handoff": "",
+            },
+            "id": "R.gate.verify", "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1", "run": "checker",
+            "status": "complete",
+        }
+        self.dispatch(
+            "dispatch-outcome", "checker", "R.gate.verify", "--content",
+            json.dumps(verify_outcome, sort_keys=True, separators=(",", ":")),
+        )
+        joined = self.dispatch(
+            "dispatch-join", "checker", "R.gate.verify",
+            "--assignment-seal", verify_opened["assignment_seal"],
+            "--dispatch-id", "verify-D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--artifact", artifact,
+        )
+        self.assertEqual("complete", joined["join"]["status"])
+        verify_text = (
+            stage_path.parent / "R.gate.verify.md"
+        ).read_text(encoding="utf-8")
+        terminal = json.loads(_parse_frontmatter(verify_text)["review_v1"])
+        self.assertEqual(
+            ["GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification"],
+            [record["kind"] for record in terminal["records"]],
+        )
+        self.assertEqual("PASS", terminal["records"][-1]["verdict"])
+
     def test_checker_stage_refuses_a_packless_target_without_state_mutation(self):
         self.dispatch(
             "new", "packless-checker", "R", "--executor", "orch-tdd",

@@ -256,6 +256,34 @@ def aggregate_adjudication(ticket_path: Path, dependencies) -> dict:
     )
 
 
+def repair_predecessor_state(ticket_path: Path, dependencies) -> dict:
+    dependencies = [str(value) for value in dependencies]
+    if len(dependencies) == 1 and dependencies[0].endswith(".check"):
+        records = review_records(state_from_text(
+            _dependency_text(ticket_path, dependencies[0]), required=True,
+            allow_legacy=True,
+        ), allow_legacy=True)
+        if (
+            [record["kind"] for record in records]
+            != ["GatePlan", "CritiqueAdjudication"]
+            or records[0]["mode"] != "checker"
+            or records[0]["root"] != _gate_root(ticket_path.stem)
+            or [item["ticket"] for item in records[0]["criteria"]]
+            != dependencies
+            or records[1]["lens"] != "checker"
+        ):
+            raise ReviewError("ordinary repair predecessor is not its target's closed checker adjudication")
+        if not records[1]["accepted"]:
+            raise ReviewError("ordinary checker accepted no blockers")
+        return _review_state(records, allow_legacy=True)
+    aggregate = aggregate_adjudication(ticket_path, dependencies)
+    plan = review_records(state_from_text(
+        _dependency_text(ticket_path, dependencies[0] if dependencies else ""),
+        required=True, allow_legacy=True,
+    ), allow_legacy=True)[0]
+    return _review_state([plan, aggregate], allow_legacy=True)
+
+
 def packet_state(
     ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
 ) -> dict | None:
@@ -274,12 +302,10 @@ def packet_state(
             gate_plan(ticket_path, artifact or "", workspace or "")
         ])
     if executor == GATE_EXECUTORS["repair"] and ticket_id.endswith(".gate.repair"):
-        aggregate = aggregate_adjudication(ticket_path, data.get("depends_on") or [])
-        plan = review_records(state_from_text(
-            _dependency_text(ticket_path, str((data.get("depends_on") or [""])[0])),
-            required=True, allow_legacy=True,
-        ), allow_legacy=True)[0]
-        state = _review_state([plan, aggregate], allow_legacy=True)
+        state = repair_predecessor_state(
+            ticket_path, data.get("depends_on") or [],
+        )
+        plan = review_records(state, allow_legacy=True)[0]
         if artifact is not None and artifact != plan["artifact"]:
             raise ReviewError("repair packet artifact differs from GatePlan")
         if workspace is not None:
@@ -444,6 +470,6 @@ __all__ = (
     "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate",
     "aggregate_adjudication", "canonical_json", "packet_mutation", "packet_state_result",
     "replay_review_failure",
-    "repair_outcome", "review_records", "state_from_text",
+    "repair_outcome", "repair_predecessor_state", "review_records", "state_from_text",
     "verification_outcome",
 )
