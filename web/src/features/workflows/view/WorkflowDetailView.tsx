@@ -33,6 +33,13 @@ function SourceLink({ node, route }: { node: WorkflowDetailNode; route: Workflow
   return <a href={sourceHref(route, node.sourceId)}>View source for {node.label}</a>;
 }
 
+function nodeKindLabel(node: WorkflowDetailNode): string {
+  if (node.kind === "work") return "Definition-time ticket template";
+  if (node.kind === "workflow") return "Workflow definition";
+  if (node.kind === "skill") return "Skill definition";
+  return "Script definition";
+}
+
 function Inspector({ route, selection }: { route: WorkflowDetailRoute; selection: WorkflowSelection }) {
   if (selection.type === "node") {
     const node = selection.value;
@@ -40,11 +47,13 @@ function Inspector({ route, selection }: { route: WorkflowDetailRoute; selection
       <aside className="workflow-inspector" aria-labelledby="workflow-inspector-title">
         <header><p className="eyebrow"><Braces aria-hidden="true" /> Selected node</p><h2 id="workflow-inspector-title">{node.label}</h2></header>
         <dl>
-          <div><dt>Kind</dt><dd>{node.kind}</dd></div>
+          <div><dt>Kind</dt><dd>{nodeKindLabel(node)}</dd></div>
           <div><dt>Identity</dt><dd><code>{node.id}</code></dd></div>
           <div><dt>Source</dt><dd><SourceLink node={node} route={route} /></dd></div>
         </dl>
-        <p className="workflow-inspector__note">Exact projected metadata. Select any node or relation to inspect it.</p>
+        <p className="workflow-inspector__note">{node.kind === "work"
+          ? "Exact projected metadata. Ticket templates define future work; they are not runtime tickets."
+          : "Exact projected metadata for this canonical definition."}</p>
       </aside>
     );
   }
@@ -65,16 +74,47 @@ function Inspector({ route, selection }: { route: WorkflowDetailRoute; selection
 
 function TopologyCompanion({ model, route }: { model: WorkflowDetailModel; route: WorkflowDetailRoute }) {
   const labels = new Map(model.nodes.map((node) => [node.id, node.label]));
+  const work = model.nodes.filter((node) => node.kind === "work");
+  const calls = model.edges.filter((edge) => edge.kind === "skill-call" || edge.kind === "script-call");
   return (
     <section className="workflow-companion" role="region" aria-label="Complete ordered topology">
       <header><p className="eyebrow">Nonvisual equivalent</p><h3>Complete ordered topology</h3></header>
+      <section className="workflow-companion__sequence" aria-labelledby="workflow-companion-sequence">
+        <h4 id="workflow-companion-sequence">{model.type === "composition" ? "Step sequence" : "Call sequence"}</h4>
+        {model.type === "composition" ? (
+          <ol aria-label="Workflow steps">
+            {work.map((template, index) => {
+              const executors = model.edges
+                .filter((edge) => edge.kind === "executor" && edge.from === template.id)
+                .map((edge) => labels.get(edge.to) ?? edge.to);
+              const loops = model.edges.filter((edge) => edge.kind === "loop" && edge.from === template.id);
+              return (
+                <li key={template.id}>
+                  <b>Step {index + 1}: {executors.join(", ") || "Unresolved executor"}</b>
+                  <span>Called skill for definition-time ticket template <code>{template.label}</code>.</span>
+                  {loops.map((edge) => <small key={edge.id}>Repeats: {edge.label}.</small>)}
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <ol aria-label="Workflow calls">
+            {calls.map((edge, index) => (
+              <li key={edge.id}>
+                <b>Call {index + 1}: {labels.get(edge.to) ?? edge.to}</b>
+                <span>{edge.kind === "skill-call" ? "Called skill" : "Called script"} from {labels.get(edge.from) ?? edge.from}.</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
       <div>
         <section aria-labelledby="workflow-companion-nodes">
           <h4 id="workflow-companion-nodes">Nodes</h4>
           <ol aria-label="Workflow nodes">
             {model.nodes.map((node) => (
               <li key={node.id}>
-                <span><b>{node.label}</b><small>{node.kind}</small></span>
+                <span><b>{node.label}</b><small>{nodeKindLabel(node)}</small></span>
                 <SourceLink node={node} route={route} />
               </li>
             ))}
@@ -134,7 +174,16 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
   const inspector = <Inspector route={route} selection={selection} />;
   const graph = (
     <article className="workflow-detail__graph-panel">
-      <header><div><p className="eyebrow"><GitBranch aria-hidden="true" /> Canonical topology</p><h2>Skills, scripts, work, and calls</h2></div><span>Observe only</span></header>
+      <header>
+        <div>
+          <p className="eyebrow"><GitBranch aria-hidden="true" /> {model.type === "composition" ? "Composition flow" : "Callable workflow"}</p>
+          <h2>{model.type === "composition" ? "Skills called, step by step" : "Skills and scripts called"}</h2>
+          <p>{model.type === "composition"
+            ? "Each skill is paired with the reusable ticket template that defines its work. Runtime tickets are created later."
+            : "The workflow definition calls each skill or script below; relation order remains canonical."}</p>
+        </div>
+        <span>Observe only</span>
+      </header>
       <WorkflowGraph model={model} selection={selection} onSelect={select} />
       <TopologyCompanion model={model} route={route} />
     </article>
@@ -147,7 +196,7 @@ export function WorkflowDetailView({ route, state }: WorkflowDetailViewProps) {
         <a href={listRoute.build({ fixture: route.fixture })}>Workflows</a><span aria-hidden="true">/</span><span aria-current="page">{model.id}</span>
       </nav>
       <header className="workflow-detail__hero">
-        <div><p className="eyebrow"><Network aria-hidden="true" /> Exact definition · {model.tier}</p><h1>{model.id}</h1><p>{model.type === "composition" ? "Composition work, executors, dependencies, and loops." : "Workflow skill calls and invoked scripts."}</p></div>
+        <div><p className="eyebrow"><Network aria-hidden="true" /> Exact definition · {model.tier}</p><h1>{model.id}</h1><p>{model.type === "composition" ? "A reusable composition shown as the ordered skills it calls." : "A callable workflow shown as its ordered skill and script calls."}</p></div>
         <dl aria-label="Topology summary"><div><dt>Nodes</dt><dd>{model.nodes.length}</dd></div><div><dt>Relations</dt><dd>{model.edges.length}</dd></div></dl>
       </header>
 

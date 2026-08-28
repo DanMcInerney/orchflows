@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { FeatureState } from "../../../shared/transport/types";
-import { detailFixture } from "../fixtures";
+import { detailFixture, workflowSkillDetailFixture } from "../fixtures";
 import type { WorkflowDetailModel } from "../model";
 import { WorkflowDetailView } from "../view/WorkflowDetailView";
 
@@ -27,16 +27,22 @@ describe("WorkflowDetailView", () => {
     expect(screen.getByRole("heading", { name: "evolve" })).not.toBeNull();
     expect(screen.getByRole("link", { name: "Workflows" }).getAttribute("href")).toBe("/workflows?fixture=complex-loop");
     const graph = screen.getByRole("group", { name: "Exact topology for evolve" });
-    expect(within(graph).getAllByRole("button")).toHaveLength(
-      detailFixture.nodes.length + detailFixture.edges.length,
+    expect(screen.getByRole("heading", { name: "Skills called, step by step" })).not.toBeNull();
+    expect(screen.getByText(/runtime tickets are created later/i)).not.toBeNull();
+    expect(within(graph).getAllByRole("button").filter((button) => button.classList.contains("workflow-graph__edge"))).toHaveLength(detailFixture.edges.length);
+    expect(new Set(Array.from(graph.querySelectorAll("[data-node-id]")).map((node) => node.getAttribute("data-node-id")))).toEqual(
+      new Set(detailFixture.nodes.map((node) => node.id)),
     );
     expect(graph.querySelectorAll("[data-workflow-connector]")).toHaveLength(detailFixture.edges.length);
-    expect(graph.querySelectorAll("path[data-edge-kind='loop'][data-self-loop='true']")).toHaveLength(1);
+    expect(graph.querySelectorAll("[data-edge-kind='loop'][data-self-loop='true']")).toHaveLength(1);
+    expect(within(graph).getAllByRole("button", { name: "Select Called skill orch-verify" })).toHaveLength(2);
+    expect(within(graph).getAllByRole("button", { name: /^Select Definition-time ticket template / })).toHaveLength(4);
 
     const companion = screen.getByRole("region", { name: "Complete ordered topology" });
     const companionNodes = within(companion).getByRole("list", { name: "Workflow nodes" });
     const companionRelations = within(companion).getByRole("list", { name: "Workflow relations" });
     expect(within(companionNodes).getAllByRole("listitem")).toHaveLength(detailFixture.nodes.length);
+    expect(within(companion).getByRole("list", { name: "Workflow steps" }).children).toHaveLength(4);
     expect(within(companionRelations).getAllByRole("listitem").map((item) => item.getAttribute("data-edge-id"))).toEqual(
       detailFixture.relations.map((relation) => relation.id),
     );
@@ -71,7 +77,7 @@ describe("WorkflowDetailView", () => {
     const user = userEvent.setup();
     render(<WorkflowDetailView route={{ workflowId: "evolve", fixture: "complex-loop" }} state={ready(detailFixture)} />);
 
-    const campaign = screen.getByRole("button", { name: "Select work 02-campaign" });
+    const campaign = screen.getByRole("button", { name: "Select Definition-time ticket template 02-campaign" });
     const graph = screen.getByRole("group", { name: "Exact topology for evolve" });
     Object.defineProperty(graph, "clientWidth", { configurable: true, value: 320 });
     campaign.focus();
@@ -83,11 +89,29 @@ describe("WorkflowDetailView", () => {
       "/workflows/evolve/sources/src_campaign?fixture=complex-loop",
     );
 
-    const loop = screen.getByRole("button", { name: "Select loop 02-campaign loops to 02-campaign" });
+    const loop = screen.getByRole("button", { name: "Select loop relation: 02-campaign loops to 02-campaign" });
     loop.focus();
     await user.keyboard(" ");
     expect(screen.getByRole("heading", { name: "bounded generations" })).not.toBeNull();
     expect(screen.getByText("Loop relation")).not.toBeNull();
+  });
+
+  it("shows a callable workflow as ordered skill and script calls", () => {
+    render(
+      <WorkflowDetailView
+        route={{ workflowId: "orch-spec", fixture: "callable" }}
+        state={ready(workflowSkillDetailFixture)}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Skills and scripts called" })).not.toBeNull();
+    const graph = screen.getByRole("group", { name: "Exact topology for orch-spec" });
+    expect(within(graph).getByRole("button", { name: "Select Workflow definition orch-spec" })).not.toBeNull();
+    expect(within(graph).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(graph).getByRole("button", { name: "Select Called skill orch-investigate" })).not.toBeNull();
+    expect(within(graph).getByRole("button", { name: "Select Called script bin/tickets.py" })).not.toBeNull();
+    expect(graph.querySelectorAll("[data-workflow-connector]")).toHaveLength(workflowSkillDetailFixture.edges.length);
+    expect(screen.getByRole("list", { name: "Workflow calls" }).children).toHaveLength(3);
   });
 
   it("keeps canonical diagnostics explicit and mutation controls absent", () => {

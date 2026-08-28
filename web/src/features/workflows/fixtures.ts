@@ -170,6 +170,29 @@ export const detailFixture: WorkflowDetailModel = {
   diagnostics: [],
 };
 
+export const workflowSkillDetailFixture: WorkflowDetailModel = {
+  id: "orch-spec",
+  type: "workflow-skill",
+  tier: "T1",
+  nodes: [
+    { id: "workflow:orch-spec", kind: "workflow", label: "orch-spec", sourceId: "src_orch_spec" },
+    { id: "skill:orch-investigate", kind: "skill", label: "orch-investigate", sourceId: "src_orch_investigate" },
+    { id: "skill:orch-decompose", kind: "skill", label: "orch-decompose", sourceId: "src_orch_decompose" },
+    { id: "script:bin/tickets.py", kind: "script", label: "bin/tickets.py", sourceId: "src_tickets" },
+  ],
+  edges: [
+    { id: "call-investigate", kind: "skill-call", from: "workflow:orch-spec", to: "skill:orch-investigate", label: "calls skill" },
+    { id: "call-decompose", kind: "skill-call", from: "workflow:orch-spec", to: "skill:orch-decompose", label: "calls skill" },
+    { id: "call-tickets", kind: "script-call", from: "workflow:orch-spec", to: "script:bin/tickets.py", label: "calls script" },
+  ],
+  relations: [
+    { id: "call-investigate", kind: "skill-call", from: "workflow:orch-spec", to: "skill:orch-investigate", label: "calls skill" },
+    { id: "call-decompose", kind: "skill-call", from: "workflow:orch-spec", to: "skill:orch-decompose", label: "calls skill" },
+    { id: "call-tickets", kind: "script-call", from: "workflow:orch-spec", to: "script:bin/tickets.py", label: "calls script" },
+  ],
+  diagnostics: [],
+};
+
 export const sourceFixture: WorkflowSourceModel = {
   schema: "orchflows.workflow-source.v1",
   id: "src_fixture",

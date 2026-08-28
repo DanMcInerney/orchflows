@@ -115,7 +115,9 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
     await expect(page.getByRole("heading", { name: "1 topology diagnostic" })).toBeVisible();
   }
   if (identity.identity.startsWith("workflow-detail--complex-loop--")) {
-    await expect(page.getByRole("button", { name: "Select loop 02-campaign loops to 02-campaign" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Select loop relation: 02-campaign loops to 02-campaign" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Skills called, step by step" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Select Definition-time ticket template 02-campaign" })).toBeVisible();
     await expect(page.getByText("02-campaign loops to 02-campaign — bounded generations")).toBeVisible();
     if (identity.breakpoint === "compact") {
       const inspector = await page.locator(".workflow-inspector").boundingBox();
@@ -124,6 +126,11 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
       expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
       expect(inspector.y, `${identity.identity}: inspector precedes graph`).toBeLessThan(graph.y);
     }
+  }
+  if (identity.identity.startsWith("workflow-detail--callable--")) {
+    await expect(page.getByRole("heading", { name: "Skills and scripts called" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Select Called skill orch-investigate" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Select Called script bin/tickets.py" })).toBeVisible();
   }
   if (identity.identity.startsWith("workflow-source--missing-source--")) {
     await expect(page.getByRole("heading", { name: "Source not found" })).toBeVisible();

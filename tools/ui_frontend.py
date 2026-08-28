@@ -343,8 +343,8 @@ def _view_manifest(path: str) -> dict:
     if manifest.get("schema") != "orchflows.view-manifest.v1":
         raise RuntimeError("unsupported view manifest schema")
     identities = [item.get("identity") for item in manifest.get("views", ())]
-    if len(identities) != 62 or len(set(identities)) != 62:
-        raise RuntimeError("view manifest must carry 62 unique identities")
+    if len(identities) != 64 or len(set(identities)) != 64:
+        raise RuntimeError("view manifest must carry 64 unique identities")
     return manifest
 
 
