@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "codex",
+  "display_name": "Codex",
+  "cli_candidates": ["codex", "codex.exe", "codex.cmd"],
+  "home": {"environment": "CODEX_HOME", "default": ".codex"},
+  "managed_markers": {
+    "host_instructions": {
+      "target": "AGENTS.md",
+      "mode": "inline",
+      "start": "<!-- BEGIN ORCHFLOWS (managed block — do not edit inside; reinstall to update) -->",
+      "end": "<!-- END ORCHFLOWS -->"
+    },
+    "agent_limits": {
+      "target": "config.toml",
+      "mode": "owned-prefix",
+      "start": "# BEGIN ORCHFLOWS AGENT LIMITS",
+      "end": "# END ORCHFLOWS AGENT LIMITS"
+    }
+  },
+  "installed_items": {
+    "prompt": "prompts/{name}.md",
+    "skill": "skills/{name}/SKILL.md",
+    "role_agent": "agents/{agent_type}.toml",
+    "instructions": "AGENTS.md",
+    "settings": "config.toml"
+  },
+  "frontmatter": {
+    "legal_keys": ["name", "description", "role"],
+    "role_fields": {}
+  },
+  "launch": {
+    "verb": "spawn_agent",
+    "native_fields": ["agent_type", "fork_turns", "model", "model_reasoning_effort", "service_tier"]
+  },
+  "role_profiles": {
+    "planner": {
+      "name": "orch-planner",
+      "binding": {
+        "agent_type": "orch_planner",
+        "fork_turns": "none",
+        "model": "gpt-5.6-sol",
+        "model_reasoning_effort": "ultra"
+      }
+    },
+    "worker": {
+      "name": "orch-worker",
+      "binding": {
+        "agent_type": "orch_worker",
+        "fork_turns": "none",
+        "model": "gpt-5.6-sol",
+        "model_reasoning_effort": "high",
+        "service_tier": "fast"
+      }
+    }
+  },
+  "capabilities": {"isolation": "requested", "effort": "native"}
+}

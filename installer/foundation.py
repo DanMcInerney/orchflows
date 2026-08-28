@@ -30,6 +30,8 @@ except ModuleNotFoundError:  # tomllib is 3.11+; MIN_PYTHON is lower.
     tomllib = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+HOSTS_DIR = REPO_ROOT / "hosts"
+HOST_ADAPTERS_DIR = REPO_ROOT / "installer" / "host_adapters"
 CANONICAL_DIRS = (
     "contracts",
     "rules",
@@ -38,6 +40,7 @@ CANONICAL_DIRS = (
     "packs",
     "compositions",
     "templates",
+    "hosts",
 )
 CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
 CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")

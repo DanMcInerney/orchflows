@@ -3,6 +3,69 @@
 from __future__ import annotations
 
 from ..support import *  # noqa: F403
+from tools import render_hosts
+
+
+class HostAdapterRenderingTest(unittest.TestCase):
+    def test_repository_adapters_are_a_deterministic_render_of_host_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rendered = Path(tmp) / "adapters"
+
+            first = render_hosts.render_all(install.HOSTS_DIR, rendered)
+            first_bytes = {
+                path.name: path.read_bytes() for path in sorted(rendered.glob("*.json"))
+            }
+            second = render_hosts.render_all(install.HOSTS_DIR, rendered)
+
+            self.assertEqual(("claude", "codex", "grok"), tuple(first))
+            self.assertEqual(first, second)
+            self.assertEqual(
+                first_bytes,
+                {path.name: path.read_bytes() for path in sorted(rendered.glob("*.json"))},
+            )
+            self.assertEqual(
+                first_bytes,
+                {
+                    path.name: path.read_bytes()
+                    for path in sorted(install.HOST_ADAPTERS_DIR.glob("*.json"))
+                },
+            )
+
+    def test_each_host_record_carries_the_complete_binding_shape(self):
+        hosts = render_hosts.load_sources(install.HOSTS_DIR)
+
+        self.assertEqual({"claude", "codex", "grok"}, set(hosts))
+        for name, host in hosts.items():
+            with self.subTest(host=name):
+                self.assertEqual(name, host["id"])
+                self.assertTrue(host["managed_markers"])
+                self.assertTrue(host["installed_items"])
+                self.assertTrue(host["frontmatter"]["legal_keys"])
+                self.assertTrue(host["launch"]["verb"])
+                self.assertEqual({"planner", "worker"}, set(host["role_profiles"]))
+                self.assertEqual(
+                    {"isolation", "effort"}, set(host["capabilities"])
+                )
+                self.assertLessEqual(
+                    set(host["capabilities"].values()), {"native", "requested"}
+                )
+
+    def test_same_target_marker_collision_is_refused_before_render(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "hosts"
+            shutil.copytree(install.HOSTS_DIR, source)
+            codex_path = source / "codex.json"
+            codex = json.loads(codex_path.read_text(encoding="utf-8"))
+            blocks = list(codex["managed_markers"].values())
+            self.assertGreaterEqual(len(blocks), 2)
+            blocks[1]["target"] = blocks[0]["target"]
+            blocks[1]["start"] = blocks[0]["start"]
+            codex_path.write_text(json.dumps(codex), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                ValueError, "codex: managed marker collision"
+            ):
+                render_hosts.render_all(source, Path(tmp) / "adapters")
 
 
 class RoleProfileRefusalTest(unittest.TestCase):

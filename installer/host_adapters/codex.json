@@ -1,0 +1,83 @@
+{
+  "adapter_version": 1,
+  "host": {
+    "capabilities": {
+      "effort": "native",
+      "isolation": "requested"
+    },
+    "cli_candidates": [
+      "codex",
+      "codex.exe",
+      "codex.cmd"
+    ],
+    "display_name": "Codex",
+    "frontmatter": {
+      "legal_keys": [
+        "name",
+        "description",
+        "role"
+      ],
+      "role_fields": {}
+    },
+    "home": {
+      "default": ".codex",
+      "environment": "CODEX_HOME"
+    },
+    "id": "codex",
+    "installed_items": {
+      "instructions": "AGENTS.md",
+      "prompt": "prompts/{name}.md",
+      "role_agent": "agents/{agent_type}.toml",
+      "settings": "config.toml",
+      "skill": "skills/{name}/SKILL.md"
+    },
+    "launch": {
+      "native_fields": [
+        "agent_type",
+        "fork_turns",
+        "model",
+        "model_reasoning_effort",
+        "service_tier"
+      ],
+      "verb": "spawn_agent"
+    },
+    "managed_markers": {
+      "agent_limits": {
+        "end": "# END ORCHFLOWS AGENT LIMITS",
+        "mode": "owned-prefix",
+        "start": "# BEGIN ORCHFLOWS AGENT LIMITS",
+        "target": "config.toml"
+      },
+      "host_instructions": {
+        "end": "<!-- END ORCHFLOWS -->",
+        "mode": "inline",
+        "start": "<!-- BEGIN ORCHFLOWS (managed block \u2014 do not edit inside; reinstall to update) -->",
+        "target": "AGENTS.md"
+      }
+    },
+    "role_profiles": {
+      "planner": {
+        "binding": {
+          "agent_type": "orch_planner",
+          "fork_turns": "none",
+          "model": "gpt-5.6-sol",
+          "model_reasoning_effort": "ultra"
+        },
+        "name": "orch-planner"
+      },
+      "worker": {
+        "binding": {
+          "agent_type": "orch_worker",
+          "fork_turns": "none",
+          "model": "gpt-5.6-sol",
+          "model_reasoning_effort": "high",
+          "service_tier": "fast"
+        },
+        "name": "orch-worker"
+      }
+    },
+    "schema_version": 1
+  },
+  "source": "hosts/codex.json",
+  "source_sha256": "7a1d1f00dce1dd8dd6650c5f5c238e0a3e02d1f9c316ae5e08a6c53f9b517883"
+}
