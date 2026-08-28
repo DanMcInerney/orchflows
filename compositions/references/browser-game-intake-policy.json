@@ -1,0 +1,72 @@
+{
+  "policy_version": "1.0.0",
+  "program_record_contract": "browser-game-program-record.schema.json",
+  "governing_identities": ["PJ-06", "PJ-09", "PJ-10", "PJ-22", "PJ-23"],
+  "intake_source": {
+    "record": "product_brief",
+    "questions": [
+      "Q-01", "Q-02", "Q-03", "Q-04", "Q-05", "Q-06",
+      "Q-07", "Q-08", "Q-09", "Q-10", "Q-11", "Q-12"
+    ],
+    "unit": "atomic-field"
+  },
+  "field_dispositions": [
+    "answered",
+    "deferred",
+    "experiment",
+    "not-applicable"
+  ],
+  "authority": {
+    "user-only": {
+      "categories": [
+        "product_intent",
+        "commercial_or_legal_acceptance",
+        "accessibility_promises",
+        "risk_appetite",
+        "target_cohorts",
+        "public_release_commitments"
+      ],
+      "missing_field_state": "open-question",
+      "question_envelope": {
+        "required": [
+          "kind",
+          "question",
+          "field_id",
+          "open_question_id",
+          "program_revision_id"
+        ],
+        "constants": {"kind": "user-only"},
+        "question_handling": "verbatim",
+        "relay_owner": "root"
+      },
+      "settled_by": "verbatim-user-answer",
+      "evidence_effect": "attach-only"
+    },
+    "empirical": {
+      "missing_routes": ["open-decision", "experiment"],
+      "settled_by": "matched-experiment-evidence",
+      "independently_schedulable": true,
+      "blocked_by_unrelated_user_only_gap": false
+    }
+  },
+  "default_prohibitions": [
+    "stack",
+    "cohort",
+    "support_promise",
+    "numeric_budget",
+    "fallback",
+    "provider",
+    "license_acceptance",
+    "release_policy",
+    "renderer",
+    "engine",
+    "webgpu",
+    "worker_topology",
+    "performance_number",
+    "functional_fallback",
+    "qa_ladder",
+    "release_model",
+    "ai_policy",
+    "transport"
+  ]
+}

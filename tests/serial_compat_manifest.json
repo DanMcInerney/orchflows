@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1961,
+  "count": 1966,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -31,6 +31,11 @@
    "test_browser_game_composition.BrowserGameCompositionTests.test_installer_adapter_exposes_exact_required_settings_without_legacy",
    "test_browser_game_composition.BrowserGameCompositionTests.test_named_invocation_closes_inputs_outputs_questions_and_dispositions",
    "test_browser_game_composition.BrowserGameCompositionTests.test_template_is_discoverable_instantiable_and_has_one_terminal",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_atomic_intake_uses_the_versioned_program_record_contract",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_empirical_gaps_remain_independent_and_require_evidence",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_intake_policy_has_no_product_default_escape_hatch",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_record_ticket_links_both_intake_contracts",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_user_only_gaps_have_one_verbatim_root_relay_shape",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_contract_and_program_revisions_are_versioned",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_each_required_record_is_present_or_has_a_stable_open_identity",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_material_fields_cannot_disappear_into_null_or_a_default",
@@ -1964,7 +1969,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "dd6e9cb8001f3c8ed1d61d9d2249c6198bebe7b53e681c1f02b1b4e90d70b55a"
+  "sha256": "3eae976b23a9802a37bd2fdd3adf19ef67054c36cceff3c83183c8e39c1070a8"
  },
  "mutation_owners": [
   {
