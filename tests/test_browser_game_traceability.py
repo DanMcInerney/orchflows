@@ -10,6 +10,7 @@ from pathlib import Path
 
 from tools.validate_support import browser_game
 from tools.validate_support.packages import Diagnostics
+import tools.validate as validate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -103,6 +104,21 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
         findings = self._findings(root)
 
         self.assertTrue(any("qa_oracle_map" in line and "governing identities" in line for line in findings), findings)
+
+    def test_repository_validator_runs_the_browser_game_audit(self):
+        root = self._copy_tree()
+        schema_path = root / "compositions/references/browser-game-program-record.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        schema["$defs"]["releaseContractRevision"]["required"].remove("recovery")
+        schema_path.write_text(json.dumps(schema, indent=2) + "\n", encoding="utf-8")
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            findings = validate.run_validation().lines()
+        finally:
+            validate.ROOT = saved
+
+        self.assertTrue(any("release_contracts" in line and "recovery" in line for line in findings), findings)
 
 
 if __name__ == "__main__":

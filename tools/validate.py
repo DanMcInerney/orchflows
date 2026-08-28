@@ -42,6 +42,7 @@ from tools.validate_support import packages as _packages_module
 from tools.validate_support import structure as _structure_module
 from tools.validate_support.common import *
 from tools.validate_support.carriage import *
+from tools.validate_support.browser_game import *
 from tools.validate_support.friction import *
 from tools.validate_support.packages import *
 from tools.validate_support.duplication import *
@@ -264,6 +265,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_cross_tier_duplication(packages, diag)
     validate_envelope(packages, diag)
     validate_templates(diag)
+    validate_browser_game_traceability(diag, root=ROOT)
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
