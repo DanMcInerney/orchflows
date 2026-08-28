@@ -30,9 +30,9 @@ refusal leaves the ticket byte-identical.
 An unseen result requires the attempt's durable `dispatch-receipt`, proving the
 established receiver accepted the exact committed packet before execution.
 
-A read-only critique records findings in `## Feedback`; it never rewrites the
-executor's Result or Verification. A verifier records its independent verdict
-and evidence in `## Verification`.
+A read-only critique never rewrites the reviewed executor's Result or
+Verification. A verifier records its independent verdict and evidence in
+`## Verification`.
 Gate and ordinary-checker critique findings are streamed in either `Result` or `Feedback` as one JSON array. Each finding object has exactly `blocking` (boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty strings), and `evidence` (a non-empty array of non-empty strings). Finding ids are unique in the array. The join accepts any valid JSON encoding of the findings and accepted arrays, normalizes both, and binds the complete findings and exact accepted subset in the review ledger.
 
 The join reads the fixed candidate identity and its actual diff, checks the

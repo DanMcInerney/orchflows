@@ -86,6 +86,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertIn("equivalent JSON serializations are interchangeable", skill)
         self.assertIn("has exactly", result_contract)
         self.assertIn("valid JSON encoding", result_contract)
+        self.assertNotIn("records findings in `## Feedback`", result_contract)
 
     def test_critique_join_normalizes_result_findings_and_accepted_json(self):
         findings = [{
