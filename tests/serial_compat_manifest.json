@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1928,
+  "count": 1942,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -605,9 +605,14 @@
    "test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model",
    "test_ticket_protocol.TicketProtocolTest.test_result_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_semantic_change_moves_assignment",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_a_malformed_first_attempt_cannot_consume_the_root_exemption",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_an_over_ceiling_ordinary_unit_is_refused_regardless_of_executor",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_checker_stage_refuses_a_packless_target_without_state_mutation",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_content_pack_preserves_whole_artifact_direct_route",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_finding_contract_publishes_closed_shape_and_carriage",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_join_normalizes_result_findings_and_accepted_json",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_decompose_builds_the_complete_gate_bearing_draft_before_validation",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
@@ -617,6 +622,7 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
@@ -712,6 +718,8 @@
    "test_verification_model.SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
    "test_verification_model.SeparateRepairGateTest.test_a_single_executor_result_does_not_trigger_a_composite_gate",
    "test_verification_model.SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_repair_verify_tickets",
+   "test_verification_model.SpecSuccessorLifecycleTest.test_successor_trigger_has_a_fresh_authorized_materialization_path",
+   "test_verification_model.SpecSuccessorLifecycleTest.test_topology_references_resolve_to_current_numbered_clauses",
    "test_verify_at.CallerEnvironmentTest.test_no_git_seam_a_caller_set_reaches_the_command",
    "test_verify_at.CleanupReportHonestyTest.test_a_checkout_that_went_away_is_reported_as_observed_gone",
    "test_verify_at.CleanupReportHonestyTest.test_a_kept_checkout_says_kept_and_claims_no_removal",
@@ -1184,9 +1192,14 @@
    "tests.test_suite_check_cases.snapshot.TestSnapshotDirection.test_an_added_entry_in_a_watched_tree_is_a_failure",
    "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_a_stray_write_into_the_sink_fails_the_run",
    "tests.test_suite_check_cases.subprocess.TestHarnessSubprocess.test_harness_end_to_end_against_synthetic_suite",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_a_malformed_first_attempt_cannot_consume_the_root_exemption",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_an_over_ceiling_ordinary_unit_is_refused_regardless_of_executor",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_checker_stage_refuses_a_packless_target_without_state_mutation",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_content_pack_preserves_whole_artifact_direct_route",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_finding_contract_publishes_closed_shape_and_carriage",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_join_normalizes_result_findings_and_accepted_json",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decompose_builds_the_complete_gate_bearing_draft_before_validation",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
@@ -1196,6 +1209,7 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
@@ -1931,7 +1945,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e30086e83cac76ee1d7a48a327cd6bcf0536c3628456540a6e059058c9fe02d5"
+  "sha256": "f5b8da319b3cb3145daa96866a5638dbe3b94024932e40d42d19454e613a32cf"
  },
  "mutation_owners": [
   {
