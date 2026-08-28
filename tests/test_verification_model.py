@@ -14,12 +14,60 @@ from scripts.tickets_issue_render import _render_ticket
 
 ROOT = Path(__file__).resolve().parents[1]
 
+SPEC_POLICY_REQUIREMENTS = {
+    "Evidence identities": (
+        r"\bcite\b.*\bby identity\b",
+        r"\bnever\b.*\binline rationale\b",
+    ),
+    "Root contents": (
+        r"\bcarry only settled observable behavior\b",
+        r"\bexecutor cannot infer\b",
+    ),
+    "Executor authority": (
+        r"\bleave\b.*\bfiles\b.*\bschemas\b.*\btests\b",
+        r"\bproof methods\b.*\binternal mechanics\b.*\bto the executor\b",
+    ),
+    "Seal blockers": (
+        r"\bvague quality adjectives settle nothing\b",
+        r"\bdo not seal\b.*\bchoice\b.*\bcontradiction\b.*\bimpossible acceptance threshold\b",
+    ),
+    "Reference resolution": (
+        r"\bvalidate fixed identities\b.*\bcanonical-owner references\b.*\bbefore seal\b",
+        r"\blocators must resolve\b",
+    ),
+    "Review eligibility": (
+        r"\brecommend one outside blocker-only review only when\b",
+        r"\bseveral independent semantic policies\b|\bcross-cutting\b.*\bcontract surfaces\b",
+    ),
+    "Review finality": (
+        r"\bcorrected root\b.*\balready addresses a review\b.*\bnever recommends another critique\b",
+        r"\bdeterministic admission\b.*\bdownstream verification decide what follows\b",
+    ),
+}
+
+SPEC_POLICY_INVERSIONS = {
+    "Evidence identities": "Inline long evidence and rationale; identities are optional.",
+    "Root contents": "Carry inferred implementation details and omit settled behavior.",
+    "Executor authority": "The planner prescribes files, schemas, tests, proof methods, and mechanics.",
+    "Seal blockers": "Seal while choices, contradictions, or impossible thresholds remain.",
+    "Reference resolution": "Seal without validating fixed identities or resolving locators.",
+    "Review eligibility": "Always recommend outside blocker-only review, even for one simple policy.",
+    "Review finality": "A corrected root recommends another critique before admission or verification.",
+}
+
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
 
 
 class GoalEvidenceContractTest(unittest.TestCase):
+    def assert_spec_semantics(self, fields):
+        self.assertEqual(set(SPEC_POLICY_REQUIREMENTS), set(fields))
+        for name, patterns in SPEC_POLICY_REQUIREMENTS.items():
+            value = " ".join(fields[name].lower().split())
+            for pattern in patterns:
+                self.assertRegex(value, pattern, msg=f"{name} lost semantic policy: {pattern}")
+
     def test_ticket_has_no_extra_success_schema(self):
         contract = read("contracts/work-item.md")
         semantic = contract.split("## System-owned metadata", 1)[0]
@@ -75,7 +123,20 @@ class GoalEvidenceContractTest(unittest.TestCase):
             "Review eligibility",
             "Review finality",
         }, set(fields))
-        self.assertTrue(all(value.strip() for value in fields.values()))
+        self.assert_spec_semantics(fields)
+        for name in SPEC_POLICY_REQUIREMENTS:
+            with self.subTest(policy=name, mutation="removed"):
+                removed = {**fields, name: ""}
+                with self.assertRaises(AssertionError):
+                    self.assert_spec_semantics(removed)
+            with self.subTest(policy=name, mutation="inverted"):
+                inverted = {**fields, name: SPEC_POLICY_INVERSIONS[name]}
+                with self.assertRaises(AssertionError):
+                    self.assert_spec_semantics(inverted)
+
+        all_values_erased = dict.fromkeys(fields, "x")
+        with self.assertRaises(AssertionError):
+            self.assert_spec_semantics(all_values_erased)
 
 
 class CritiqueContractTest(unittest.TestCase):
