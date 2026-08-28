@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1972,
+  "count": 1978,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -48,6 +48,12 @@
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_product_brief_exposes_every_intake_question_and_atomic_field_state",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_section_3_2_record_roster_and_minimum_fields_are_complete",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_successor_plan_keeps_kind_bound_artifacts_and_successor_roots_distinct",
+   "test_browser_game_traceability.BrowserGameTraceabilityTests.test_governed_minimum_schema_field_cannot_be_removed",
+   "test_browser_game_traceability.BrowserGameTraceabilityTests.test_governing_identity_on_schema_row_cannot_drift",
+   "test_browser_game_traceability.BrowserGameTraceabilityTests.test_implemented_behavior_without_a_normative_identity_is_rejected",
+   "test_browser_game_traceability.BrowserGameTraceabilityTests.test_real_composition_has_a_closed_traceability_seam",
+   "test_browser_game_traceability.BrowserGameTraceabilityTests.test_repository_validator_runs_the_browser_game_audit",
+   "test_browser_game_traceability.BrowserGameTraceabilityTests.test_test_or_help_identity_disagreement_is_rejected",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_generation_and_gate_operators_are_reachable",
@@ -1975,7 +1981,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0c23337ee1c065f3dbf395ef2f0b6a98506d948059d83a6b01cd52165c314cb0"
+  "sha256": "2eb0d666aa6e0c370812fa7bd9112b6985f9a2ed4b032a1834844c156109b334"
  },
  "mutation_owners": [
   {
