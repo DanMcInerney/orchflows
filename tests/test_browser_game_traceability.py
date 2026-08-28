@@ -67,20 +67,31 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
         self.assertTrue(any("normative identity" in line for line in findings), findings)
 
     def test_test_or_help_identity_disagreement_is_rejected(self):
-        root = self._copy_tree()
-        test_path = root / "tests/test_browser_game_traceability.py"
-        text = test_path.read_text(encoding="utf-8")
-        test_path.write_text(
-            text.replace(
-                "BGW-TRACE[" + "checkpoint-disposition|PJ-05]",
-                "BGW-TRACE[" + "checkpoint-disposition|PJ-24]",
-            ),
-            encoding="utf-8",
-        )
+        for surface, relative in (
+            ("test", "tests/test_browser_game_traceability.py"),
+            ("help", "compositions/browser-game/template.md"),
+        ):
+            with self.subTest(surface=surface):
+                root = self._copy_tree()
+                surface_path = root / relative
+                text = surface_path.read_text(encoding="utf-8")
+                surface_path.write_text(
+                    text.replace(
+                        "BGW-TRACE[" + "checkpoint-disposition|PJ-05]",
+                        "BGW-TRACE[" + "checkpoint-disposition|PJ-24]",
+                    ),
+                    encoding="utf-8",
+                )
 
-        findings = self._findings(root)
+                findings = self._findings(root)
 
-        self.assertTrue(any("checkpoint-disposition" in line and "test" in line for line in findings), findings)
+                self.assertTrue(
+                    any(
+                        "checkpoint-disposition" in line and surface in line
+                        for line in findings
+                    ),
+                    findings,
+                )
 
     def test_governed_minimum_schema_field_cannot_be_removed(self):
         root = self._copy_tree()
