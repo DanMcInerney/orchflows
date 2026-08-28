@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1970,
+  "count": 1972,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -28,6 +28,7 @@
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_covered_candidate_or_evidence_change_invalidates_disposition",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_one_disposition_is_bound_to_fixed_candidate_and_evidence",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_time_sensitive_evidence_carries_its_dated_q12_boundary",
+   "test_browser_game_composition.BrowserGameCompositionTests.test_checkpoint_consumes_the_kind_separated_successor_plan_contract",
    "test_browser_game_composition.BrowserGameCompositionTests.test_installer_adapter_exposes_exact_required_settings_without_legacy",
    "test_browser_game_composition.BrowserGameCompositionTests.test_named_invocation_closes_inputs_outputs_questions_and_dispositions",
    "test_browser_game_composition.BrowserGameCompositionTests.test_template_is_discoverable_instantiable_and_has_one_terminal",
@@ -46,6 +47,7 @@
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_product_brief_cannot_silently_omit_atomic_intake_fields",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_product_brief_exposes_every_intake_question_and_atomic_field_state",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_section_3_2_record_roster_and_minimum_fields_are_complete",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_successor_plan_keeps_kind_bound_artifacts_and_successor_roots_distinct",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_generation_and_gate_operators_are_reachable",
@@ -1973,7 +1975,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "3ba0a012765d59da2ae34b01e5faebd5a53e5a1b4ba8181724e05d2cba15f159"
+  "sha256": "0c23337ee1c065f3dbf395ef2f0b6a98506d948059d83a6b01cd52165c314cb0"
  },
  "mutation_owners": [
   {
