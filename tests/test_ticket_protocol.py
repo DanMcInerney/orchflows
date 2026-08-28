@@ -126,6 +126,7 @@ class TicketProtocolTest(unittest.TestCase):
         for phrase in (
             "response `.packet` value", "`--file -`", "durable accepted receipt",
             "GatePlan", "CritiqueAdjudication", "RepairOutcome",
+            "tickets.py checker-stage", "--stage <id>.check",
             "tickets.py show", "tickets.py lint <run> [<id>] --file",
             "retired attempt", "successor run",
         ):

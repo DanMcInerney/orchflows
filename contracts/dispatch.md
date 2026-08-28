@@ -19,6 +19,10 @@ writes an implicit state transition. Each record has exactly `record_id`, `kind`
 within an attempt. Kinds are `generic`, `packet`, `receipt`, `result`, `outcome`,
 `join`, and `lifecycle`; `dispatch-packet`, `dispatch-receipt`, `outcome`,
 `join:*`, and `lifecycle:*` are reserved for their owning operations.
+Execution events are an ordered grammar, not a bag: one packet precedes its
+accepted receipt; only then may result records occur; the one outcome follows
+results; join follows outcome. Removing or reordering the receipt makes the
+whole persisted state invalid without mutation.
 
 Every read and mutation validates the whole closed state first. Record content
 and stored success are closed per kind and must agree with ticket origin,
@@ -104,7 +108,17 @@ retains claimant observations for handoff but leaves no live dispatch.
 For review-stage tickets the same atomic join also advances the ticket's
 validated `orchflows.review.v1` chain: critique requires the canonical accepted
 subset, repair requires the exact output artifact, and verification must match
-that artifact and carry a `PASS`, `FAIL`, or `UNVERIFIED` verdict.
+that artifact and carry a `PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review
+kind has one closed field schema, and the ledger tip equals the
+protocol-owned join's `review_identity`. `GatePlan` seals the normalized
+workspace; a code artifact is a full Git commit that resolves to that
+workspace's exact HEAD before packet commit and after repair.
+
+The ordinary checker is a derived `<id>.check` review-stage ticket. It uses
+the same committed packet, accepted receipt, outcome, and join as gate review.
+Only `check <run> <id> --stage <id>.check` attaches its authenticated receiver
+identity to the target's `checked_by`; direct caller-supplied findings are not
+a protocol operation.
 
 ## Cutover
 

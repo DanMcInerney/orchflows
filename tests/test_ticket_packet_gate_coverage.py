@@ -1,6 +1,7 @@
 """Canonical witnesses for the accepted ticket/packet/gate discrepancy register."""
 
 import importlib
+import io
 import unittest
 from pathlib import Path
 
@@ -47,6 +48,8 @@ COVERAGE = {
     "B3": (
         witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_accepted_receipt_is_a_durable_replayable_attempt_record"),
         witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_result_outcome_and_join_require_the_accepted_receipt"),
+        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_the_receipt_is_a_byte_preserving_refusal"),
+        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_receipt_after_outcome_is_a_byte_preserving_refusal"),
     ),
     "B4": (witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_receipt_refuses_identity_profile_and_authority_mismatches"),),
     "C1": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
@@ -56,7 +59,10 @@ COVERAGE = {
         witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch"),
     ),
     "C4": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink"),),
-    "D1": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification"),),
+    "D1": (
+        witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification"),
+        witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass"),
+    ),
     "D2": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification"),),
     "D3": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_clean_gate_uses_attributed_join_noop_and_opens_verification"),),
     "D4": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order"),),
@@ -101,6 +107,7 @@ class TicketPacketGateCoverageTest(unittest.TestCase):
         self.assertEqual(expected, set(COVERAGE))
         canonical_modules = set(run_tests.discover(TESTS)[2])
         loaded = {}
+        selected = {}
         for discrepancy, witnesses in COVERAGE.items():
             self.assertTrue(witnesses, discrepancy)
             for carrier, identity in witnesses:
@@ -109,8 +116,14 @@ class TicketPacketGateCoverageTest(unittest.TestCase):
                     suite = unittest.defaultTestLoader.loadTestsFromModule(
                         importlib.import_module(carrier)
                     )
-                    loaded[carrier] = {case.id() for case in self._cases(suite)}
+                    loaded[carrier] = {case.id(): case for case in self._cases(suite)}
                 self.assertIn(identity, loaded[carrier], discrepancy)
+                selected.setdefault(identity, loaded[carrier][identity])
+        stream = io.StringIO()
+        result = unittest.TextTestRunner(stream=stream, verbosity=0).run(
+            unittest.TestSuite(selected.values())
+        )
+        self.assertTrue(result.wasSuccessful(), stream.getvalue())
 
     @classmethod
     def _cases(cls, suite):

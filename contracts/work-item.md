@@ -34,11 +34,14 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `review_order` — the sealed zero-based order of a composite-gate lens.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
-- `claimed_by`, `claimed_at`, `checked_by`, `workspace_path`,
+- `claimed_by`, `claimed_at`, `checked_by`, `review_stage`, `workspace_path`,
   `workspace_branch`, and `workspace_baseline` — lifecycle observations written
   by their owning tools. `workspace_path` names the pre-dispatch candidate or
   canonical run-scoped evidence store; the Git-only fields fix its branch and
   starting revision.
+- `review_stage` names the completed derived `<id>.check` ticket whose
+  protocol-owned join authenticates `checked_by`; it is never a caller's
+  findings payload.
 - `dispatch_v1` — the canonical JSON `orchflows.dispatch.v1` attempt record.
   It is operational state, excluded from the assignment fingerprint.
 - `review_v1` — the canonical JSON immutable review-stage ledger. It is

@@ -20,17 +20,19 @@ or stdin; the child uses `dispatch-receive --file <path>` or `--file -`. Only
 its durable accepted receipt, bound to its identity and authority,
 applies the exact executor.
 
-Each ticket takes one outside-independence path. An ordinary checker durably
-makes one read-only `orch-critique` dispatch with fixed artifact,
-Goal, Context, executor evidence, and one lens, then records the accepted set.
-Accepted blockers move to a repair ticket, which invalidates
-critique verdicts and is followed by fresh verification
-([verification](../../../rules/verification.md) §7). Gate-deferred and already
-checked tickets do not.
+Each ticket takes one independence path. For ordinary review, create
+`<id>.check` with `checker-stage`. Minimum: one distinct read-only `orch-critique` dispatch.
+It crosses packet, accepted receipt, outcome, and
+join; then run
+`check <run> <id> --stage <id>.check`.
+Its `GatePlan` carries fixed artifact, Goal, Context, executor evidence,
+lens, Result, and Verification.
+Accepted blockers get one separate repair ticket and fresh verification
+([verification](../../../rules/verification.md) §7). Gate-deferred and checked
+tickets do not.
 
-Transport silence replays the committed packet to the same recorded child. Abandon through join
-or `dispatch-retire`; replace through `dispatch-replace`. Never extend leases
-or infer abandonment.
+Transport silence replays to the same recorded child. Abandon through join or
+`dispatch-retire`; replace through `dispatch-replace`. Never extend leases.
 
 For [topology](../../../rules/topology.md) §5 graphs, `GatePlan` fixes artifact,
 root pack, workspace, isolation `none`, and lens order. Parallel critiques feed
@@ -47,7 +49,7 @@ grade isolation and integrate per pack; conflicts use its binding.
 Commit unstreamed closing evidence as `outcome`; join consumes it only after
 accepted receipt.
 A lane runs its own chosen proof methods, nothing wider. After every return is
-integrated and its required checker/gate is closed, run the standards
+integrated and required checker/gate is closed, run the standards
 owner's required checks exactly once at the accepted terminal identity and
 record its revision, not per merge batch. A red terminal suite blocks
 completion.

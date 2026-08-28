@@ -126,9 +126,7 @@ USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
 HELP_FLAGS = ("--help", "-h")
 Refused = workspace_git.Refused
 
-
 # --- git, in the tree under grade -------------------------------------------
-
 
 # The checkout every ``_git`` call runs in. ``None`` -- the caller's own tree,
 # and subprocess's own default, so an unaimed call is what it always was. Set
@@ -136,12 +134,10 @@ Refused = workspace_git.Refused
 # whose facts came from two checkouts is not a grade.
 _GIT_CWD = None
 
-
 def _git(*args: str):
     """Run git in the tree under grade: the caller's own, or ``--repo``'s."""
 
     return workspace_git._git(_GIT_CWD, *args)
-
 
 def _git_out(*args: str) -> str:
     code, out, err = _git(*args)
@@ -149,20 +145,16 @@ def _git_out(*args: str) -> str:
         raise Refused(f"git {' '.join(args)}: {err.strip()}")
     return out.strip()
 
-
 def _dirty_paths() -> list:
     """``workspace_git._dirty_paths``, in the tree under grade."""
     return workspace_git._dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
 
-
 # --- the ticket, always at the main repository root -------------------------
-
 
 _graded = workspace_git._graded
 _locate = workspace_git._locate
 _record = workspace_git._record
 _sharers = workspace_git._sharers
-
 
 def _actual_mutations(name_status: str) -> list:
     """Normalize ``git diff --name-status --no-renames -z`` rows."""
@@ -186,9 +178,23 @@ def _actual_mutations(name_status: str) -> list:
         rows.append((operation, path))
     return sorted(set(rows))
 
+def _validate_write_paths(entries, root: Path) -> None:
+    """Refuse prose-shaped write declarations before a candidate starts."""
+
+    if not isinstance(entries, list):
+        return
+    for declared in entries:
+        entry = str(declared or "").strip().strip("`").strip()
+        candidate = Path(entry).expanduser()
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        if "(" in entry or ")" in entry or (" " in entry and not candidate.exists()):
+            raise Refused(
+                f"write_scope entry {entry!r} is not a path; "
+                "see contracts/work-item.md"
+            )
 
 # --- subcommands ------------------------------------------------------------
-
 
 def _positional(rest, count: int, command: str) -> list:
     args = list(rest)
@@ -196,7 +202,6 @@ def _positional(rest, count: int, command: str) -> list:
     if stray is not None or len(args) != count:
         raise Refused(f"{command} takes <run> <id>. {USAGE}")
     return args
-
 
 def _cmd_start(rest):
     """Establish and record the pack workspace. It does not claim."""
@@ -232,6 +237,7 @@ def _cmd_start(rest):
     if located != path:
         raise Refused(f"ticket identity changed while locating {run}/{ticket_id}")
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
+    _validate_write_paths(data.get("write_scope"), top)
     branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
     # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
@@ -274,7 +280,6 @@ def _cmd_start(rest):
         }
     }, EXIT_SHARED_WORKSPACE if sharing else EXIT_OK
 
-
 def _extract_flag(args: list, flag: str):
     if flag in args:
         index = args.index(flag)
@@ -285,10 +290,8 @@ def _extract_flag(args: list, flag: str):
         del args[index : index + 1]
     return None
 
-
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
     return workspace_git._is_ancestor(_git, ancestor, descendant)
-
 
 def _cmd_check(rest):
     """Grade the item at the join, every fact re-derived from the integrating
@@ -429,7 +432,6 @@ def _cmd_check(rest):
     reported["verdict"] = "pass"
     return {"check": reported}, EXIT_OK
 
-
 def _help_text(command=None) -> str:
     """Usage for the whole script, or for one subcommand.
 
@@ -445,7 +447,6 @@ def _help_text(command=None) -> str:
     lines += ["", "exit codes:"]
     lines += [f"  {code}  {verdict}" for code, verdict in sorted(VERDICTS.items())]
     return "\n".join(lines)
-
 
 def main(argv=None) -> int:
     # A refusal quotes a path and a ticket's own words, either of which can
@@ -494,7 +495,6 @@ def main(argv=None) -> int:
         return EXIT_ERROR
     print(json.dumps(payload, ensure_ascii=False))
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

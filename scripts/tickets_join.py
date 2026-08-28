@@ -76,6 +76,21 @@ def _critique_findings(attempt: dict, outcome_feedback: str) -> str:
     return canonical_json(findings) if found else outcome_feedback
 
 
+def _attempt_workspace(attempt: dict) -> str | None:
+    record = next((
+        item for item in attempt.get("records", [])
+        if item.get("kind") == "packet" and item.get("record_id") == "dispatch-packet"
+    ), None)
+    if record is None:
+        return None
+    try:
+        content = parse_canonical_json(record["content"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    packet = content.get("packet") if isinstance(content, dict) else None
+    return packet.get("workspace") if isinstance(packet, dict) else None
+
+
 def _outcome_failure(run: str, ticket_id: str, content):
     required = {
         "assignment_seal", "by", "dispatch_id", "evidence", "id",
@@ -194,7 +209,7 @@ def _cmd_dispatch_join(rest):
         "operation": "join",
         "outcome_record_id": outcome_record_id,
     }
-    if ".gate." in ticket_id:
+    if ".gate." in ticket_id or ticket_id.endswith(".check"):
         content["review"] = {"accepted": accepted, "artifact": artifact}
 
     def join(text, _data, attempt, _state):
@@ -223,21 +238,24 @@ def _cmd_dispatch_join(rest):
             )
         status = outcome["status"]
         try:
-            review = state_from_text(text)
-            if ".gate.critique." in ticket_id:
-                lens = ticket_id.split(".gate.critique.", 1)[1]
+            review = state_from_text(text, allow_legacy=True)
+            if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+                lens = (
+                    "checker" if ticket_id.endswith(".check")
+                    else ticket_id.split(".gate.critique.", 1)[1]
+                )
                 review = adjudicate(
                     review, _critique_findings(
                         attempt, outcome["evidence"]["Feedback"],
                     ), accepted,
-                    joined_by, lens,
+                    outcome["by"], lens,
                 )
             elif ticket_id.endswith(".gate.repair"):
                 if accepted is not None:
                     raise ReviewError("repair join does not accept --accepted")
                 review = repair_outcome(
                     review, artifact or "", outcome["evidence"]["Result"],
-                    joined_by,
+                    joined_by, workspace=_attempt_workspace(attempt),
                 )
             elif ticket_id.endswith(".gate.verify"):
                 if accepted is not None:

@@ -4,9 +4,12 @@ from pathlib import Path
 from scripts import workspace
 
 from tests.test_workspace_cases.start_cases import (  # noqa: F401
+    TestCheckDisambiguatesItsRevisionRanges,
     TestCheckUsesTheEstablishedCandidate,
     TestStartEstablishesEvidenceStore,
+    TestStartFailureBehavior,
     TestStartRecordsWhatItObserved,
+    TestTicketsPayloadIsGradedNotItsExitStatus,
     TestTheStampPreservesTheTicketsByteDomain,
 )
 

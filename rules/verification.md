@@ -15,8 +15,8 @@
    second critique follows.
 6. A proof method must be able to contradict the claim it supports. For a test
    authored during implementation, the executor records the relevant failing
-   observation before the passing one. Repository-global deterministic gates
-   still decide the integrated tip.
+   observation before the passing one. The integrated candidate still answers
+   to repository-wide deterministic gates.
 7. Each ticket takes one independence path: a blocker-only `orch-critique`
    checker recorded by `checked_by`, or its downstream composite gate. A
    gate-deferred ticket does not use `checked_by`. Additional review is a
@@ -25,9 +25,11 @@
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
     candidate's own changes through `scripts/workspace.py check`.
-9. Composite review and the ordinary checker use the ticket's immutable
-   `orchflows.review.v1` predecessor ledger. A review packet must fix the
-   artifact and criteria identity before evaluation; adjudication records the
-   full findings and accepted subset; repair records the exact output artifact
-   or proves no-op only from an empty accepted set; verification records an
-   exact matching artifact and `PASS`, `FAIL`, or `UNVERIFIED` verdict.
+9. Composite and ordinary review share an immutable `orchflows.review.v1`
+   chain. `GatePlan` freezes criteria plus artifact/workspace; Git requires
+   equality with that workspace's HEAD. `CritiqueAdjudication` carries all
+   observations and only the chosen blockers. `RepairOutcome` repeats those
+   blockers and identifies the successor artifact; only an empty set permits
+   `no_op`. `Verification` accepts that successor identity and a `PASS`, `FAIL`,
+   or `UNVERIFIED` verdict. Ordinary checks are derived tickets crossing the
+   dispatch lifecycle; callers cannot inject findings.

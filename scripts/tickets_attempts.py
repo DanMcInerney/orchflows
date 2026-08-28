@@ -62,7 +62,6 @@ DISPATCH_REPLACE_USAGE = (
     "--lease-expires-at <absolute-iso>"
 )
 
-
 def attempt_window(data: dict):
     """Return the current attempt's immutable clock from the state owner."""
     state, failure = _state(data)
@@ -89,7 +88,6 @@ def attempt_window(data: dict):
         "lease_expires_at": expires,
     }, None
 
-
 def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dict:
     return {"dispatch": {
         "protocol": PROTOCOL,
@@ -103,7 +101,6 @@ def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dic
         "outcome_record_id": attempt["outcome_record_id"],
         "state": attempt["state"],
     }}
-
 
 def _cmd_dispatch_open(rest):
     args = list(rest)
@@ -212,7 +209,6 @@ def _cmd_dispatch_open(rest):
     except OSError as error:
         return {"error": f"unable to open dispatch attempt: {error}"}
 
-
 def _record_response(
     run: str, ticket_id: str, dispatch_id: str, record_id: str, content
 ) -> dict:
@@ -224,7 +220,6 @@ def _record_response(
         "record_id": record_id,
         "content": content,
     }}
-
 
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
@@ -355,7 +350,6 @@ def _commit_record(
     except OSError as error:
         return {"error": f"unable to commit dispatch record: {error}"}
 
-
 def _cmd_dispatch_commit(rest):
     args = list(rest)
     dispatch_id = _extract_flag(args, "--dispatch-id")
@@ -382,7 +376,6 @@ def _cmd_dispatch_commit(rest):
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content, record_kind="generic"
     )
-
 
 def _cmd_dispatch_retire(rest):
     args = list(rest)
@@ -427,7 +420,6 @@ def _cmd_dispatch_retire(rest):
         mutate=retire, expected_seal=assignment_seal, require_live_lease=False,
         record_kind="lifecycle",
     )
-
 
 def _cmd_dispatch_replace(rest):
     args = list(rest)

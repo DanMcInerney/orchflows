@@ -248,7 +248,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     if kind == "join":
         if not isinstance(content, dict):
             return _invalid(f"join record '{record_id}' has invalid content")
-        review_stage = ".gate." in ticket_id
+        review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
         expected = {
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
@@ -364,164 +364,11 @@ def accepted_receipt_failure(attempt: dict):
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None):
-    if set(state) != {"attempts", "protocol"}:
-        return classification("dispatch-record-invalid", "dispatch_v1 has unknown or missing top-level fields")
-    attempts = state.get("attempts")
-    if not isinstance(attempts, list) or not attempts:
-        return classification("dispatch-record-invalid", "dispatch_v1 attempts must be a non-empty list")
-    dispatch_ids = set()
-    live = 0
-    for ordinal, attempt in enumerate(attempts):
-        if not isinstance(attempt, dict) or not set(attempt).issubset(ATTEMPT_KEYS):
-            return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid shape")
-        required = {
-            "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-            "outcome_record_id", "owner", "records", "state",
-        }
-        if not required.issubset(attempt):
-            return classification("dispatch-record-invalid", f"attempt {ordinal} is incomplete")
-        for kind, value in (
-            ("assignment-seal", attempt.get("assignment_seal")),
-            ("dispatch-id", attempt.get("dispatch_id")),
-            ("owner", attempt.get("owner")),
-            ("outcome-record-id", attempt.get("outcome_record_id")),
-        ):
-            failure = identity_failure(kind, value)
-            if failure is not None:
-                return classification("dispatch-record-invalid", failure["error"])
-        if attempt["outcome_record_id"] != OUTCOME_RECORD_ID:
-            return classification("dispatch-record-invalid", f"attempt {ordinal} has a non-canonical outcome record id")
-        dispatch_id = attempt["dispatch_id"]
-        if dispatch_id in dispatch_ids:
-            return classification("dispatch-record-invalid", f"duplicate dispatch_id '{dispatch_id}'")
-        dispatch_ids.add(dispatch_id)
-        if attempt.get("state") not in ATTEMPT_STATES:
-            return classification("dispatch-record-invalid", f"attempt {ordinal} has an unknown state")
-        state_name = attempt["state"]
-        transition_fields = {
-            "live": set(),
-            "retired": {"retired_at", "retirement"},
-            "replaced": {"replaced_at", "replaced_by", "replacement"},
-        }
-        present = set(attempt) - required - {"replaces"}
-        if present != transition_fields[state_name]:
-            return classification("dispatch-record-invalid", f"attempt {ordinal} transition fields do not match state '{state_name}'")
-        for time_field in ("retired_at", "replaced_at"):
-            if time_field in attempt and _parse_iso(attempt[time_field]) is None:
-                return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid {time_field}")
-        if "replaced_by" in attempt and identity_failure("dispatch-id", attempt["replaced_by"]) is not None:
-            return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid replacement identity")
-        if "replaces" in attempt and identity_failure("dispatch-id", attempt["replaces"]) is not None:
-            return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid predecessor identity")
-        live += attempt.get("state") == "live"
-        opened = _parse_iso(attempt.get("opened_at"))
-        expires = _parse_iso(attempt.get("lease_expires_at"))
-        if opened is None or expires is None or expires <= opened:
-            return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid absolute lease window")
-        records = attempt.get("records")
-        if not isinstance(records, list):
-            return classification("dispatch-record-invalid", f"attempt {ordinal} records is not a list")
-        record_ids = set()
-        for record_ordinal, record in enumerate(records):
-            if not isinstance(record, dict) or set(record) != RECORD_KEYS:
-                return classification("dispatch-record-invalid", f"attempt {ordinal} record {record_ordinal} has an invalid shape")
-            record_id = record.get("record_id")
-            failure = identity_failure("record-id", record_id)
-            if failure is not None or record_id in record_ids:
-                detail = failure["error"] if failure is not None else f"duplicate record_id '{record_id}'"
-                return classification("dispatch-record-invalid", detail)
-            record_ids.add(record_id)
-            if record.get("kind") not in RECORD_KINDS:
-                return classification("dispatch-record-invalid", f"record '{record_id}' has an unknown kind")
-            kind = record["kind"]
-            namespace_ok = {
-                "packet": record_id == PACKET_RECORD_ID,
-                "receipt": record_id == RECEIPT_RECORD_ID,
-                "outcome": record_id == OUTCOME_RECORD_ID,
-                "join": record_id.startswith("join:"),
-                "lifecycle": record_id.startswith("lifecycle:"),
-                "generic": not record_id_is_reserved(record_id),
-                "result": not record_id_is_reserved(record_id),
-            }
-            if not namespace_ok[kind]:
-                return classification("dispatch-record-invalid", f"record '{record_id}' does not belong to kind '{kind}'")
-            if not isinstance(record.get("content"), str) or not isinstance(record.get("success"), dict):
-                return classification("dispatch-record-invalid", f"record '{record_id}' has invalid content or success")
-            try:
-                content = parse_canonical_json(record["content"])
-            except (TypeError, ValueError):
-                return classification("dispatch-record-invalid", f"record '{record_id}' content is not canonical JSON")
-            if record["content"] != canonical_json(content):
-                return classification("dispatch-record-invalid", f"record '{record_id}' content is not canonical JSON")
-            if _parse_iso(record.get("committed_at")) is None:
-                return classification("dispatch-record-invalid", f"record '{record_id}' has no absolute commit time")
-            if run is not None and ticket_id is not None:
-                failure = _record_failure(
-                    record, content, run=run, ticket_id=ticket_id, attempt=attempt,
-                )
-                if failure is not None:
-                    return failure
-    if live > 1:
-        return classification("dispatch-record-invalid", "dispatch_v1 has more than one live attempt")
-    attempts_by_id = {attempt["dispatch_id"]: attempt for attempt in attempts}
-    for ordinal, attempt in enumerate(attempts):
-        transition_records = [
-            record for record in attempt["records"]
-            if record["kind"] in {"join", "lifecycle"}
-        ]
-        if attempt["state"] == "retired":
-            matching = [
-                record for record in transition_records
-                if record["success"] == attempt.get("retirement")
-                and (
-                    record["kind"] == "join"
-                    or parse_canonical_json(record["content"]).get("operation") == "retire"
-                )
-            ]
-            if len(matching) != 1:
-                return _invalid(f"attempt {ordinal} retirement has no exact lifecycle record")
-        if attempt["state"] == "replaced":
-            matching = [
-                record for record in transition_records
-                if record["kind"] == "lifecycle"
-                and record["success"] == attempt.get("replacement")
-                and parse_canonical_json(record["content"]).get("operation") == "replace"
-            ]
-            if len(matching) != 1:
-                return _invalid(f"attempt {ordinal} replacement has no exact lifecycle record")
-        predecessor_id = attempt.get("replaces")
-        if predecessor_id is None:
-            continue
-        predecessor = attempts_by_id.get(predecessor_id)
-        if predecessor is None or attempts.index(predecessor) >= ordinal:
-            return _invalid(f"attempt {ordinal} has an orphan or forward replacement edge")
-        if predecessor.get("state") != "replaced" or predecessor.get("replaced_by") != attempt["dispatch_id"]:
-            return _invalid(f"attempt {ordinal} replacement edge is not bidirectional")
-        replacement = predecessor.get("replacement", {}).get("dispatch", {})
-        predecessor_record = next((
-            record for record in predecessor["records"]
-            if record["kind"] == "lifecycle"
-            and record["success"] == predecessor.get("replacement")
-        ), None)
-        replacement_content = (
-            parse_canonical_json(predecessor_record["content"])
-            if predecessor_record is not None else {}
-        )
-        if (
-            replacement.get("dispatch_id") != attempt["dispatch_id"]
-            or replacement.get("replaces") != predecessor_id
-            or replacement.get("opened_at") != attempt["opened_at"]
-            or replacement.get("lease_expires_at") != attempt["lease_expires_at"]
-            or replacement.get("assignment_seal") != attempt["assignment_seal"]
-            or replacement_content.get("owner") != attempt["owner"]
-            or replacement_content.get("dispatch_id") != attempt["dispatch_id"]
-            or replacement_content.get("lease_expires_at") != attempt["lease_expires_at"]
-        ):
-            return _invalid(f"attempt {ordinal} differs from its predecessor replacement record")
-    for ordinal, attempt in enumerate(attempts):
-        if attempt.get("state") == "replaced" and attempt.get("replaced_by") not in attempts_by_id:
-            return _invalid(f"attempt {ordinal} replacement successor does not exist")
-    return None
+    if __package__:
+        from .tickets_dispatch_validate import validate_state as validate
+    else:
+        from tickets_dispatch_validate import validate_state as validate
+    return validate(state, run=run, ticket_id=ticket_id)
 
 
 def state(data: dict):
@@ -539,4 +386,46 @@ def state(data: dict):
     run = str(data.get("run") or "").strip()
     ticket_id = str(data.get("id") or "").strip()
     failure = validate_state(parsed, run=run, ticket_id=ticket_id)
-    return (None, failure) if failure is not None else (parsed, None)
+    if failure is not None:
+        return None, failure
+    review_text = str(data.get("review_v1") or "").strip()
+    review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
+    if review_text and review_stage:
+        try:
+            if __package__:
+                from .tickets_review import review_records
+            else:
+                from tickets_review import review_records
+            review = review_records(review_text, allow_legacy=True)
+        except (ImportError, ValueError) as error:
+            return None, classification(
+                "dispatch-record-invalid", f"review_v1 is invalid: {error}",
+            )
+        joins = [
+            record
+            for attempt in parsed["attempts"]
+            for record in attempt["records"]
+            if record.get("kind") == "join"
+        ]
+        if joins:
+            if len(joins) != 1:
+                return None, classification(
+                    "dispatch-record-invalid",
+                    "review stage has more than one protocol-owned join",
+                )
+            joined = joins[0].get("success", {}).get("join", {})
+            if not review or joined.get("review_identity") != review[-1]["identity"]:
+                return None, classification(
+                    "dispatch-record-invalid",
+                    "review_v1 tip is not anchored to its protocol-owned join",
+                )
+            if review[-1]["kind"] == "CritiqueAdjudication":
+                attempt = next(
+                    item for item in parsed["attempts"] if joins[0] in item["records"]
+                )
+                if review[-1].get("adjudicated_by") != attempt.get("owner"):
+                    return None, classification(
+                        "dispatch-record-invalid",
+                        "critique adjudication authority differs from the accepted receiver",
+                    )
+    return parsed, None

@@ -8,11 +8,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
 from unittest import mock
 
 from scripts import cutcheck
 from scripts import tickets
 from scripts import tickets_generations
+from scripts import tickets_review
+from scripts import tickets_lifecycle
 from scripts.tickets_format import (
     _parse_frontmatter, _remove_frontmatter_field, _sections,
 )
@@ -416,11 +419,14 @@ class SemanticTicketContractTest(unittest.TestCase):
         critique_id = "R.gate.critique.code"
         self.assertIn(critique_id, {item["id"] for item in ready["ready"]})
         opened = self.open_attempt("clean", critique_id, "critic", "critic-D1")
-        artifact = "git:" + "a" * 40
+        artifact = "git:" + subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+            capture_output=True, check=True,
+        ).stdout.strip()
         packet = self.dispatch(
             "dispatch-packet", "clean", critique_id,
             "--dispatch-id", "critic-D1", "--reply-to", "root",
-            "--artifact", artifact,
+            "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn('"kind":"GatePlan"', packet["prompt"])
         self.dispatch(
@@ -428,6 +434,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             json.dumps(packet, sort_keys=True, separators=(",", ":")),
             "--role", packet["role"], "--profile", packet["profile"],
             "--by", "critic", "--reply-to", "root",
+            "--workspace", str(ROOT),
         )
         self.dispatch(
             "result", "clean", critique_id,
@@ -453,6 +460,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             [record["kind"] for record in review["records"]],
         )
         self.assertEqual(artifact, review["records"][0]["artifact"])
+        self.assertEqual(str(ROOT.resolve()), review["records"][0]["workspace"])
         self.assertEqual([], review["records"][1]["accepted"])
         self.assertEqual(
             review["records"][0]["identity"],
@@ -488,13 +496,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         mismatch = tickets._dispatch([
             "dispatch-packet", "clean", verify_id,
             "--dispatch-id", "verify-D1", "--reply-to", "root",
-            "--artifact", "git:" + "f" * 40,
+            "--artifact", "git:" + "f" * 40, "--workspace", str(ROOT),
         ])
         self.assertEqual("review-invalid", mismatch["code"])
         verify_packet = self.dispatch(
             "dispatch-packet", "clean", verify_id,
             "--dispatch-id", "verify-D1", "--reply-to", "root",
-            "--artifact", artifact,
+            "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn('"kind":"RepairOutcome"', verify_packet["prompt"])
         self.dispatch(
@@ -503,6 +511,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--role", verify_packet["role"],
             "--profile", verify_packet["profile"],
             "--by", "verifier", "--reply-to", "root",
+            "--workspace", str(ROOT),
         )
         verify_outcome = {
             "assignment_seal": verify_opened["assignment_seal"],
@@ -581,34 +590,205 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.seal("checker", "R")
         self.dispatch("ready", "--run", "checker")
-        self.open_attempt("checker", "R", "worker", "worker-D1")
         ticket = Path(self.temporary.name) / "tickets" / "checker" / "R.md"
-        artifact = "git:" + "b" * 40
+        established = ticket.read_text(encoding="utf-8")
+        for key, value in (
+            ("workspace_path", str(ROOT)),
+            ("workspace_branch", "integration"),
+            ("workspace_baseline", "0123456789abcdef clean"),
+        ):
+            established = tickets._set_frontmatter_field(established, key, value)
+        ticket.write_text(established, encoding="utf-8")
+        opened = self.open_attempt("checker", "R", "worker", "worker-D1")
+        self.accept_packet(
+            "checker", "R", "worker", "worker-D1", workspace=str(ROOT),
+        )
+        self.commit_outcome("checker", "R", opened, "worker", "worker-D1")
+        self.dispatch(
+            "dispatch-join", "checker", "R",
+            "--assignment-seal", opened["assignment_seal"],
+            "--dispatch-id", "worker-D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        )
+        artifact = "git:" + subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+            capture_output=True, check=True,
+        ).stdout.strip()
         before = ticket.read_bytes()
         refused = tickets._dispatch([
             "check", "checker", "R", "--by", "checker-a",
+            "--artifact", artifact, "--findings", "[]", "--accepted", "[]",
         ])
-        self.assertEqual("review-invalid", refused["code"])
+        self.assertIn("usage: check", refused["error"])
         self.assertEqual(before, ticket.read_bytes())
 
-        findings = '[{"evidence":"test-x failed","id":"B1"}]'
+        stage = self.dispatch("checker-stage", "checker", "R")
+        self.assertEqual("R.check", stage["checker_stage"]["ticket"])
+        ready = self.dispatch("ready", "--run", "checker")
+        self.assertIn("R.check", {item["id"] for item in ready["ready"]})
+        stage_opened = self.open_attempt(
+            "checker", "R.check", "checker-a", "checker-D1"
+        )
+        packet = self.dispatch(
+            "dispatch-packet", "checker", "R.check",
+            "--dispatch-id", "checker-D1", "--reply-to", "root",
+            "--artifact", artifact, "--workspace", str(ROOT),
+        )["packet"]
+        self.dispatch(
+            "dispatch-receive", "--content",
+            json.dumps(packet, sort_keys=True, separators=(",", ":")),
+            "--role", packet["role"], "--profile", packet["profile"],
+            "--by", "checker-a", "--reply-to", "root",
+            "--workspace", str(ROOT),
+        )
+        findings = json.dumps([{
+            "blocking": True,
+            "class": "correctness",
+            "evidence": ["test-x failed"],
+            "goal_impact": "The target Goal is false.",
+            "id": "B1",
+            "repair": "Repair test-x.",
+            "summary": "test-x is red.",
+        }], sort_keys=True, separators=(",", ":"))
+        self.dispatch(
+            "result", "checker", "R.check",
+            "--assignment-seal", stage_opened["assignment_seal"],
+            "--dispatch-id", "checker-D1", "--record-id", "feedback-1",
+            "--by", "checker-a", "--section", "Feedback", "--text", findings,
+        )
+        self.commit_outcome(
+            "checker", "R.check", stage_opened, "checker-a", "checker-D1"
+        )
+        self.dispatch(
+            "dispatch-join", "checker", "R.check",
+            "--assignment-seal", stage_opened["assignment_seal"],
+            "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--accepted", findings,
+        )
+        stage_path = (
+            Path(self.temporary.name) / "tickets" / "checker" / "R.check.md"
+        )
+        anchored_bytes = stage_path.read_bytes()
+        stage_text = anchored_bytes.decode("utf-8")
+        rewritten = json.loads(_parse_frontmatter(stage_text)["review_v1"])
+        rewritten_record = rewritten["records"][-1]
+        rewritten_record["accepted"] = []
+        rewritten_record["identity"] = tickets_review._digest({
+            key: value for key, value in rewritten_record.items() if key != "identity"
+        })
+        stage_path.write_text(
+            tickets._set_frontmatter_field(
+                stage_text, "review_v1", tickets_review.canonical_json(rewritten),
+            ),
+            encoding="utf-8",
+        )
+        unanchored = tickets._dispatch([
+            "check", "checker", "R", "--stage", "R.check",
+        ])
+        self.assertEqual("dispatch-record-invalid", unanchored["code"])
+        stage_path.write_bytes(anchored_bytes)
         checked = self.dispatch(
-            "check", "checker", "R", "--by", "checker-a",
-            "--artifact", artifact,
-            "--findings", findings, "--accepted", findings,
+            "check", "checker", "R", "--stage", "R.check",
         )
         self.assertEqual("checker-a", checked["check"]["checked_by"])
         data = _parse_frontmatter(ticket.read_text(encoding="utf-8"))
-        review = json.loads(data["review_v1"])
+        self.assertEqual("R.check", data["review_stage"])
+        self.assertNotIn("review_v1", data)
+        stage_text = stage_path.read_text(encoding="utf-8")
+        review = json.loads(_parse_frontmatter(stage_text)["review_v1"])
         self.assertEqual(
             ["GatePlan", "CritiqueAdjudication"],
             [record["kind"] for record in review["records"]],
         )
         self.assertEqual("checker", review["records"][0]["mode"])
         self.assertEqual(json.loads(findings), review["records"][1]["accepted"])
+        self.assertEqual("checker-a", review["records"][1]["adjudicated_by"])
         self.assertEqual(
             review["records"][0]["identity"],
             review["records"][1]["predecessor"],
+        )
+
+    def test_review_schemas_reject_field_deletion_and_noop_bypass(self):
+        artifact = "git:" + subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+            capture_output=True, check=True,
+        ).stdout.strip()
+        plan = tickets_review._record(
+            "GatePlan", None, artifact=artifact,
+            criteria=[{
+                "identity": "sha256:criterion", "lens": "code",
+                "order": 0, "ticket": "R.check",
+            }],
+            isolation="none", mode="checker", pack="orch-code-pack",
+            root="R", workspace=str(ROOT.resolve()),
+        )
+        finding = {
+            "blocking": True, "class": "correctness",
+            "evidence": ["test-x failed"],
+            "goal_impact": "The Goal is false.", "id": "B1",
+            "repair": "Repair test-x.", "summary": "test-x is red.",
+        }
+        member = tickets_review._record(
+            "CritiqueAdjudication", plan["identity"], accepted=[finding],
+            adjudicated_by="checker-a", artifact=artifact,
+            findings=[finding], lens="code",
+        )
+        aggregate = tickets_review._record(
+            "CritiqueAdjudication", plan["identity"], accepted=[finding],
+            adjudicated_by="system:aggregate", adjudications=[member],
+            artifact=artifact, findings=[finding], lens="*",
+        )
+        state = {"protocol": "orchflows.review.v1", "records": [plan, aggregate]}
+        tickets_review.review_records(state)
+
+        missing_authority = json.loads(tickets_review.canonical_json(state))
+        del missing_authority["records"][1]["adjudicated_by"]
+        record = missing_authority["records"][1]
+        record["identity"] = tickets_review._digest({
+            key: value for key, value in record.items() if key != "identity"
+        })
+        with self.assertRaises(tickets_review.ReviewError):
+            tickets_review.review_records(missing_authority)
+
+        rewritten_accepted = json.loads(tickets_review.canonical_json(state))
+        record = rewritten_accepted["records"][1]
+        record["accepted"] = []
+        record["identity"] = tickets_review._digest({
+            key: value for key, value in record.items() if key != "identity"
+        })
+        with self.assertRaises(tickets_review.ReviewError):
+            tickets_review.review_records(rewritten_accepted)
+
+        with self.assertRaises(tickets_review.ReviewError):
+            tickets_review.repair_outcome(
+                state, artifact, "no change", "root", no_op=True,
+                workspace=str(ROOT),
+            )
+
+    def test_downstream_waits_for_checker_but_checker_stage_can_start(self):
+        target = {
+            "id": "R", "status": "complete", "independence": "checker",
+            "checked_by": "",
+        }
+        stage = {"id": "R.check", "status": "pending", "depends_on": ["R"]}
+        downstream = {"id": "R.next", "status": "pending", "depends_on": ["R"]}
+        tickets_by_id = {"R": target, "R.check": stage, "R.next": downstream}
+
+        self.assertTrue(
+            tickets_lifecycle.readiness_facts(stage, tickets_by_id)[
+                "dependencies_complete"
+            ]
+        )
+        self.assertFalse(
+            tickets_lifecycle.readiness_facts(downstream, tickets_by_id)[
+                "dependencies_complete"
+            ]
+        )
+        target["checked_by"] = "checker-a"
+        self.assertTrue(
+            tickets_lifecycle.readiness_facts(downstream, tickets_by_id)[
+                "dependencies_complete"
+            ]
         )
 
     def test_decompose_builds_the_complete_gate_bearing_draft_before_validation(self):

@@ -169,8 +169,10 @@ that needs a different meaning needs a different word.
   context through exactly one ordinary path; law in `rules/verification.md`
   §9. Research craft narrows the term for sources: no shared upstream.
 - **checker** — the durable evaluator/adjudication carrier for the ordinary
-  outside-independence path: a fresh read-only `orch-critique` challenges one
-  fixed artifact and its evidence, then the caller records the accepted set.
+  outside-independence path: an explicit derived review-stage ticket whose
+  fresh read-only `orch-critique` accepts the exact packet, challenges one
+  fixed artifact and its evidence, and joins its accepted set before the
+  target can record `checked_by`.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
 - **evidence** — methods, observations, sources, captures, or other records
   demonstrating or challenging Goal at a fixed artifact identity.

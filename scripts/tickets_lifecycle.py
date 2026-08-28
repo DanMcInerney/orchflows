@@ -43,19 +43,29 @@ if __package__:
 else:
     from tickets_attempts import _classification
 if __package__:
-    from .tickets_review import REVIEW_FIELD, ReviewError, checker_state, packet_state, repair_outcome
+    from .tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome, review_records, state_from_text
+    from .tickets_dispatch_schema import state as _dispatch_state
 else:
-    from tickets_review import REVIEW_FIELD, ReviewError, checker_state, packet_state, repair_outcome
+    from tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome, review_records, state_from_text
+    from tickets_dispatch_schema import state as _dispatch_state
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
-CHECK_USAGE = ('check <run> <id> --by <name> --artifact <fixed-identity> '
-               '--findings <canonical-json-array> --accepted <canonical-json-array>')
+CHECK_USAGE = 'check <run> <id> --stage <id.check>'
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
     dangling = [value for value in dependencies if value not in tickets]
+    ticket_id = str(ticket.get('id') or '')
+    checker_target = ticket_id[:-len('.check')] if ticket_id.endswith('.check') else None
     incomplete = [
         value for value in dependencies
-        if value in tickets and tickets[value].get('status') != 'complete'
+        if value in tickets and (
+            tickets[value].get('status') != 'complete'
+            or (
+                str(tickets[value].get('independence') or 'checker') == 'checker'
+                and not str(tickets[value].get(CHECKED_BY_KEY) or '').strip()
+                and checker_target != value
+            )
+        )
     ]
     status = str(ticket.get('status') or '')
     return {
@@ -186,8 +196,7 @@ def _cmd_ready(rest):
     return {'ready': ready_items, 'skipped': skipped}
 def _cmd_check(rest):
     probe = list(rest)
-    for flag in ('--by', '--artifact', '--findings', '--accepted'):
-        _extract_flag(probe, flag)
+    _extract_flag(probe, '--stage')
     if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
         return _check_under_run_lock(rest)
     try:
@@ -197,14 +206,9 @@ def _cmd_check(rest):
         return {'error': f'unable to record check: {error}'}
 def _check_under_run_lock(rest):
     args = list(rest)
-    checked_by = _extract_flag(args, '--by')
-    artifact = _extract_flag(args, '--artifact')
-    findings = _extract_flag(args, '--findings')
-    accepted = _extract_flag(args, '--accepted')
-    if len(args) != 2:
+    stage_id = _extract_flag(args, '--stage')
+    if len(args) != 2 or not (stage_id or '').strip():
         return {'error': f'usage: {CHECK_USAGE}'}
-    if not (checked_by or '').strip():
-        return {'error': f"check requires --by <name>: the pass is a named further context's, and an unattributed one is the executor's own word again. usage: {CHECK_USAGE}"}
     run, ticket_id = args
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -217,30 +221,59 @@ def _check_under_run_lock(rest):
         return failure
     data = _parse_frontmatter(text)
     status = str(data.get('status') or '').strip().strip('`').strip()
-    if status not in CHECKABLE_STATUSES:
-        return {'error': refusal(f"ticket is not claimed (status '{status}')", 'check', status, note=f"The checker evaluates a result produced under a claim against Goal. ticket: {ticket_path}")}
+    if status != 'complete':
+        return {'error': f"check requires the target executor outcome to be joined complete (status '{status}')"}
     independence = str(data.get('independence') or 'checker').strip().strip('`')
     if independence == 'gate' and _executor_of(data) != ROOT_EXECUTOR:
         return {'error': f'ticket {run}/{ticket_id} defers independence to its downstream gate: a non-root gate-deferred ticket has no checker path and cannot carry checked_by'}
     prior_checker = str(data.get(CHECKED_BY_KEY) or '').strip().strip('`')
     if prior_checker:
         return {'error': f"ticket {run}/{ticket_id} is already checked by '{prior_checker}': one ticket has one checker identity. An additional adversarial reviewer must be a distinctly named root-gate lens"}
+    stage_id = stage_id.strip()
+    if stage_id != f'{ticket_id}.check':
+        return {'error': f"check stage must be the target's explicit review ticket {ticket_id}.check"}
+    stage_path = tickets_root / run / f'{stage_id}.md'
+    stage_text, failure = _read_utf8(stage_path)
+    if failure is not None:
+        return failure
+    stage = _parse_frontmatter(stage_text)
+    if (str(stage.get('status') or '') != 'complete'
+            or _executor_of(stage) != GATE_EXECUTORS['critique']
+            or list(stage.get('depends_on') or []) != [ticket_id]):
+        return {'error': f'checker stage is not a completed review of {ticket_id}: {stage_id}'}
+    dispatch_state, dispatch_failure = _dispatch_state(stage)
+    if dispatch_failure is not None:
+        return dispatch_failure
     try:
-        review = checker_state(
-            ticket_path, artifact, findings, accepted, checked_by.strip()
-        )
+        review = state_from_text(stage_text, required=True)
+        records = review_records(review)
+        if [record['kind'] for record in records] != ['GatePlan', 'CritiqueAdjudication']:
+            raise ReviewError('checker stage has no closed adjudication')
+        plan, adjudication = records
+        if (plan['mode'] != 'checker' or plan['root'] != ticket_id
+                or [item['ticket'] for item in plan['criteria']] != [stage_id]
+                or adjudication['lens'] != 'checker'):
+            raise ReviewError('checker stage ledger names a different target or lens')
+        checked_by = adjudication['adjudicated_by']
+        attempts = dispatch_state['attempts']
+        joined = next((
+            attempt for attempt in attempts
+            if any(record.get('kind') == 'join' for record in attempt['records'])
+        ), None)
+        if joined is None or joined['owner'] != checked_by:
+            raise ReviewError('checker adjudication is not owned by the accepted receiver')
     except ReviewError as error:
         return _classification('review-invalid', str(error))
     try:
-        updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by.strip())
-        updated = _set_frontmatter_field(updated, REVIEW_FIELD, canonical_json(review))
+        updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by)
+        updated = _set_frontmatter_field(updated, 'review_stage', stage_id)
     except ValueError as error:
         return {'error': str(error)}
     try:
         _write_text_atomically(ticket_path, updated)
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
-    return {'check': {'run': data.get('run') or run, 'id': data.get('id') or ticket_id, 'checked_by': checked_by.strip()}}
+    return {'check': {'run': data.get('run') or run, 'id': data.get('id') or ticket_id, 'checked_by': checked_by, 'stage': stage_id}}
 def _cmd_set_status(rest):
     if len(rest) != 3 or _segment_error('run id', rest[0]) is not None:
         return _set_status_under_run_lock(rest)
@@ -302,7 +335,7 @@ def _join_noop_repair_under_run_lock(rest):
     if _section_body(text, 'Result'):
         return {'error': 'join-noop-repair requires an empty repair Result'}
     try:
-        review = packet_state(ticket_path, text, None)
+        review = packet_state(ticket_path, text, None, None)
         review = repair_outcome(review, '', '[]', written_by, no_op=True)
     except ReviewError as error:
         return _classification('review-invalid', str(error))

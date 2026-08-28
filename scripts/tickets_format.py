@@ -53,8 +53,8 @@ ALLOWED_TICKET_KEYS = frozenset({
     'profile', 'independence', 'depends_on', 'isolation', 'bound',
     'claimed_by', 'claimed_at', 'checked_by', 'root_generation',
     'cut_generation', 'assignment_seal', 'workspace_branch',
-    'workspace_baseline', 'dispatch_v1',
-    'review_order', 'review_v1',
+    'workspace_baseline', 'workspace_path', 'dispatch_v1',
+    'review_order', 'review_v1', 'review_stage',
 })
 DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')

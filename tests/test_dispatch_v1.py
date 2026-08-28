@@ -12,7 +12,8 @@ from unittest import mock
 
 from scripts import tickets
 from scripts.tickets_format import (
-    _parse_frontmatter, _sections, _set_frontmatter_field, parse_canonical_json,
+    _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json,
+    parse_canonical_json,
 )
 
 
@@ -36,6 +37,15 @@ class DispatchV1Test(unittest.TestCase):
             validated["draft_validation"]["cut_generation"],
         )
         self.dispatch("ready", "--run", "run")
+        ticket = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        established = ticket.read_text(encoding="utf-8")
+        for key, value in (
+            ("workspace_path", "C:/candidate"),
+            ("workspace_branch", "candidate-branch"),
+            ("workspace_baseline", "0123456789abcdef clean"),
+        ):
+            established = tickets._set_frontmatter_field(established, key, value)
+        ticket.write_text(established, encoding="utf-8")
         self.lease = (
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
@@ -596,9 +606,7 @@ class DispatchV1Test(unittest.TestCase):
         state = parse_canonical_json(data["dispatch_v1"])
         state["attempts"][0]["records"][0]["success"] = {"forged": True}
         path.write_text(
-            _set_frontmatter_field(text, "dispatch_v1", json.dumps(
-                state, sort_keys=True, separators=(",", ":")
-            )),
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
             encoding="utf-8",
         )
         before = path.read_bytes()
@@ -624,9 +632,7 @@ class DispatchV1Test(unittest.TestCase):
         )
         record["success"]["outcome"]["status"] = "ready"
         path.write_text(
-            _set_frontmatter_field(text, "dispatch_v1", json.dumps(
-                state, sort_keys=True, separators=(",", ":")
-            )),
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
             encoding="utf-8",
         )
         before = path.read_bytes()
@@ -637,6 +643,53 @@ class DispatchV1Test(unittest.TestCase):
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join",
         ])
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_persisted_execution_without_the_receipt_is_a_byte_preserving_refusal(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.outcome()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
+        records = state["attempts"][0]["records"]
+        state["attempts"][0]["records"] = [
+            record for record in records if record["record_id"] != "dispatch-receipt"
+        ]
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit(record_id="probe-after-missing-receipt")
+
+        self.assertEqual("receipt-required", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_persisted_receipt_after_outcome_is_a_byte_preserving_refusal(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.outcome()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
+        records = state["attempts"][0]["records"]
+        receipt = next(record for record in records if record["kind"] == "receipt")
+        state["attempts"][0]["records"] = [
+            record for record in records if record is not receipt
+        ] + [receipt]
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit(record_id="probe-after-reordered-receipt")
 
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())

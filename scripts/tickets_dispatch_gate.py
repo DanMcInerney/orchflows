@@ -3,20 +3,23 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _split_commas, ticket_defects
+    from .tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_generations import assignment_digest, seal_findings
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _split_commas, ticket_defects
+    from tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_generations import assignment_digest, seal_findings
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
     from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
 
 GATE_USAGE = "gate <run> <root-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
+CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
 
 
 def _pack_domain(pack) -> str:
@@ -66,7 +69,8 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
         "sequence": metadata.get("sequence"), "pack": pack,
-        "independence": "gate", "depends_on": list(depends_on),
+        "independence": metadata.get("independence") or "gate",
+        "depends_on": list(depends_on),
         "isolation": metadata.get("isolation"), "bound": NEW_DEFAULT_BOUND,
         "review_order": metadata.get("review_order"),
         "claimed_by": "", "claimed_at": "",
@@ -86,6 +90,82 @@ def _cmd_gate(rest):
             return _gate_under_run_lock(rest)
     except OSError as error:
         return {"error": f"unable to create gate: {error}"}
+
+
+def _cmd_checker_stage(rest):
+    if len(rest) != 2 or _segment_error("run id", rest[0]) is not None:
+        return _checker_stage_under_run_lock(rest)
+    try:
+        with _run_lock(rest[0]):
+            return _checker_stage_under_run_lock(rest)
+    except OSError as error:
+        return {"error": f"unable to create checker stage: {error}"}
+
+
+def _checker_stage_under_run_lock(rest):
+    if len(rest) != 2:
+        return {"error": f"usage: {CHECKER_STAGE_USAGE}"}
+    run, target_id = rest
+    for kind, value in (("run id", run), ("ticket id", target_id)):
+        held = _segment_error(kind, value)
+        if held is not None:
+            return held
+    root = _tickets_root()
+    if root is None:
+        return {"error": NO_SINK_ERROR}
+    directory = root / run
+    target_path = directory / f"{target_id}.md"
+    if not target_path.is_file():
+        return {"error": f"checker target not found: {run}/{target_id}"}
+    target = _load_ticket(target_path)
+    if "error" in target:
+        return {"error": target["error"]}
+    if str(target.get("independence") or "checker") != "checker":
+        return {"error": f"ticket {run}/{target_id} defers independence to its downstream gate"}
+    if str(target.get("checked_by") or "").strip():
+        return {"error": f"ticket {run}/{target_id} is already checked"}
+    root_generation = str(target.get("root_generation") or "")
+    if not root_generation:
+        return {"error": "checker-stage requires one stamped target assignment"}
+    stage_id = f"{target_id}.check"
+    stage_path = directory / f"{stage_id}.md"
+    if stage_path.exists():
+        loaded = _load_ticket(stage_path)
+        try:
+            stage_text = stage_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            stage_text = ""
+        if (
+            "error" not in loaded
+            and list(loaded.get("depends_on") or []) == [target_id]
+            and _executor_of(loaded) == GATE_EXECUTORS["critique"]
+            and str(loaded.get("root_generation") or "") == root_generation
+            and not seal_findings(stage_id, stage_text)
+        ):
+            return {"checker_stage": {"run": run, "target": target_id, "ticket": stage_id, "outcome": "replayed"}}
+        return {"error": f"checker stage already exists with different content: {stage_id}"}
+    sections = _gate_sections("critique", target_id, "checker", units=[target_id])
+    text = _gate_stub(
+        run, stage_id, GATE_EXECUTORS["critique"], [target_id],
+        sections=sections, root_generation=root_generation,
+        pack=target.get("pack"), isolation="none", review_order=0,
+        independence="gate",
+    )
+    cut_generation = str(target.get("cut_generation") or "")
+    if not cut_generation:
+        return {"error": "checker-stage requires one sealed target cut"}
+    text = _set_frontmatter_field(text, "cut_generation", cut_generation)
+    text = _set_frontmatter_field(
+        text, "assignment_seal", assignment_digest(stage_id, text),
+    )
+    defects = ticket_defects(text)
+    if defects:
+        return {"error": f"checker stage {stage_id} is off contract: " + "; ".join(defects)}
+    try:
+        _create_text_exclusively(stage_path, text)
+    except OSError as error:
+        return {"error": f"unable to create checker stage: {error}"}
+    return {"checker_stage": {"run": run, "target": target_id, "ticket": stage_id, "outcome": "created"}}
 
 
 def _gate_under_run_lock(rest, _head_probe=None):
@@ -174,7 +254,8 @@ def _gate_under_run_lock(rest, _head_probe=None):
 
 
 __all__ = (
-    "GATE_USAGE", "_cmd_gate", "_gate_body", "_gate_input", "_gate_sections",
+    "CHECKER_STAGE_USAGE", "GATE_USAGE", "_cmd_checker_stage", "_cmd_gate",
+    "_gate_body", "_gate_input", "_gate_sections",
     "_gate_stub", "_gate_under_run_lock", "_input_name", "_listed_items",
     "_pack_domain",
 )

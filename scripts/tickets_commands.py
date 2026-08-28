@@ -40,12 +40,14 @@ else:
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 GATE_USAGE = "gate <run> <root-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
+CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
 STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
 SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
     "instantiate": INSTANTIATE_USAGE,
     "gate": GATE_USAGE,
+    "checker-stage": CHECKER_STAGE_USAGE,
     "stamp-generation": STAMP_GENERATION_USAGE,
     "list": "list [--run R]",
     "show": "show <run> <id>",
@@ -73,6 +75,7 @@ SUBCOMMAND_SUMMARY = {
     "new": "Create one Goal/Context ticket; Suggested files are optional and non-binding.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
     "gate": "Create blocker-only critique/repair/verify tickets; repair handles actual overlap and Git conflicts.",
+    "checker-stage": "Create or replay one explicit ordinary read-only checker stage.",
     "stamp-generation": "Stamp one unclaimed direct or decomposed root and its members.",
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
@@ -85,7 +88,7 @@ SUBCOMMAND_SUMMARY = {
     "dispatch-join": "Commit or replay one outcome-fenced join and its lifecycle transition.",
     "dispatch-packet": "Commit or replay one reference or inline dispatch-v1 packet projection.",
     "dispatch-receive": "Validate one dispatch-v1 packet against its receipt identity and authority.",
-    "check": f"Record one blocker-only checker pass while status is one of {sorted(CHECKABLE_STATUSES)}.",
+    "check": "Anchor one completed durable checker stage to its target's checked_by field.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
     "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
@@ -107,7 +110,7 @@ VALUE_FLAGS = frozenset({
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
-    "--form", "--role", "--outcome-record-id", "--status",
+    "--form", "--role", "--outcome-record-id", "--status", "--stage",
 })
 
 

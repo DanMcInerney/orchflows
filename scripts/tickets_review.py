@@ -2,21 +2,30 @@
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
+import re
+import subprocess
 
 if __package__:
     from .tickets_format import (
-        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
+        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, adapter_id, canonical_json,
         parse_canonical_json,
     )
     from .tickets_store import _load_ticket
+    from .tickets_review_schema import (
+        SchemaError, digest as _digest, finding_values as _finding_values,
+        nonempty as _nonempty, validate_records,
+    )
 else:
     from tickets_format import (
-        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
+        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, adapter_id, canonical_json,
         parse_canonical_json,
     )
     from tickets_store import _load_ticket
+    from tickets_review_schema import (
+        SchemaError, digest as _digest, finding_values as _finding_values,
+        nonempty as _nonempty, validate_records,
+    )
 
 
 REVIEW_PROTOCOL = "orchflows.review.v1"
@@ -24,14 +33,11 @@ REVIEW_FIELD = "review_v1"
 REVIEW_KINDS = (
     "GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification",
 )
+GIT_ARTIFACT_RE = re.compile(r"^git:([0-9a-f]{40}|[0-9a-f]{64})$")
 
 
 class ReviewError(ValueError):
     """A review record is absent, divergent, or not closed."""
-
-
-def _digest(value) -> str:
-    return "sha256:" + hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
 def _record(kind: str, predecessor, **fields) -> dict:
@@ -44,52 +50,69 @@ def _record(kind: str, predecessor, **fields) -> dict:
     return {**content, "identity": _digest(content)}
 
 
-def _review_state(records) -> dict:
+def _review_state(records, *, allow_legacy: bool = False) -> dict:
     state = {"protocol": REVIEW_PROTOCOL, "records": list(records)}
-    review_records(state)
+    review_records(state, allow_legacy=allow_legacy)
     return state
 
 
-def review_records(value) -> list:
-    if isinstance(value, str):
-        try:
-            parsed = parse_canonical_json(value)
-        except (TypeError, ValueError) as error:
-            raise ReviewError(f"{REVIEW_FIELD} is not canonical JSON: {error}") from error
-        if canonical_json(parsed) != value:
-            raise ReviewError(f"{REVIEW_FIELD} is not canonical JSON")
-        value = parsed
-    if not isinstance(value, dict) or set(value) != {"protocol", "records"}:
-        raise ReviewError(f"{REVIEW_FIELD} has unknown or missing fields")
-    if value.get("protocol") != REVIEW_PROTOCOL or not isinstance(value.get("records"), list):
-        raise ReviewError(f"{REVIEW_FIELD} has an invalid protocol or record list")
-    records = value["records"]
-    prior = None
-    for index, record in enumerate(records):
-        if not isinstance(record, dict):
-            raise ReviewError(f"review record {index} is not an object")
-        required = {"identity", "kind", "predecessor", "protocol"}
-        if not required.issubset(record):
-            raise ReviewError(f"review record {index} is incomplete")
-        if record.get("protocol") != REVIEW_PROTOCOL or record.get("kind") not in REVIEW_KINDS:
-            raise ReviewError(f"review record {index} has an invalid protocol or kind")
-        content = {key: item for key, item in record.items() if key != "identity"}
-        if record.get("identity") != _digest(content):
-            raise ReviewError(f"review record {index} identity diverged")
-        if record.get("predecessor") != prior:
-            raise ReviewError(f"review record {index} does not name its exact predecessor")
-        prior = record["identity"]
-    return records
+def review_records(value, *, allow_legacy: bool = False) -> list:
+    try:
+        return validate_records(value, allow_legacy=allow_legacy)
+    except SchemaError as error:
+        raise ReviewError(str(error)) from error
 
 
-def state_from_text(text: str, *, required: bool = False) -> dict | None:
+def state_from_text(
+    text: str, *, required: bool = False, allow_legacy: bool = False,
+) -> dict | None:
     encoded = _parse_frontmatter(text).get(REVIEW_FIELD)
     if encoded is None:
         if required:
             raise ReviewError(f"ticket has no {REVIEW_FIELD} predecessor ledger")
         return None
-    records = review_records(encoded)
-    return _review_state(records)
+    records = review_records(encoded, allow_legacy=allow_legacy)
+    return _review_state(records, allow_legacy=allow_legacy)
+
+
+def _workspace_identity(workspace) -> str:
+    if not isinstance(workspace, str) or not workspace.strip():
+        raise ReviewError("review requires --workspace <established-path>")
+    path = Path(workspace).expanduser()
+    if not path.is_dir():
+        raise ReviewError(f"review workspace does not exist: {workspace}")
+    return str(path.resolve())
+
+
+def validate_fixed_artifact(pack, artifact: str, workspace) -> tuple[str, str]:
+    normalized_workspace = _workspace_identity(workspace)
+    if adapter_id(pack) != "git":
+        if not _nonempty(artifact):
+            raise ReviewError("review requires --artifact <fixed-identity>")
+        return artifact.strip(), normalized_workspace
+    match = GIT_ARTIFACT_RE.fullmatch(str(artifact or "").strip())
+    if match is None:
+        raise ReviewError("code review artifact must be git:<full-commit-id>")
+    expected = match.group(1)
+    commands = (
+        ("rev-parse", "--verify", f"{expected}^{{commit}}"),
+        ("rev-parse", "HEAD"),
+    )
+    observed = []
+    for command in commands:
+        completed = subprocess.run(
+            ["git", *command], cwd=normalized_workspace, text=True,
+            capture_output=True, check=False,
+        )
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip()
+            raise ReviewError(f"code review artifact does not resolve: {detail}")
+        observed.append(completed.stdout.strip().lower())
+    if observed[0] != expected or observed[1] != expected:
+        raise ReviewError(
+            "code review artifact does not equal the established workspace HEAD"
+        )
+    return f"git:{expected}", normalized_workspace
 
 
 def _lens(ticket_id: str) -> str:
@@ -125,9 +148,11 @@ def _critique_paths(ticket_path: Path) -> list[Path]:
     return [item[1] for item in ranked]
 
 
-def gate_plan(ticket_path: Path, artifact: str) -> dict:
-    if not isinstance(artifact, str) or not artifact.strip():
-        raise ReviewError("gate review requires --artifact <fixed-identity>")
+def gate_plan(ticket_path: Path, artifact: str, workspace: str) -> dict:
+    data = _load_ticket(ticket_path)
+    artifact, workspace = validate_fixed_artifact(
+        data.get("pack"), artifact, workspace,
+    )
     criteria = []
     for path in _critique_paths(ticket_path):
         data = _load_ticket(path)
@@ -137,12 +162,11 @@ def gate_plan(ticket_path: Path, artifact: str) -> dict:
         criteria.append({
             "identity": seal,
             "lens": _lens(path.stem),
-            "order": data["review_order"],
+            "order": int(data["review_order"]),
             "ticket": path.stem,
         })
     if not criteria:
         raise ReviewError("gate plan has no critique criteria")
-    data = _load_ticket(ticket_path)
     return _record(
         "GatePlan", None,
         artifact=artifact.strip(),
@@ -151,14 +175,19 @@ def gate_plan(ticket_path: Path, artifact: str) -> dict:
         mode="gate",
         pack=data.get("pack"),
         root=_gate_root(ticket_path.stem),
+        workspace=workspace,
     )
 
 
-def checker_plan(ticket_path: Path, artifact: str) -> dict:
-    if not isinstance(artifact, str) or not artifact.strip():
-        raise ReviewError("ordinary check requires --artifact <fixed-identity>")
+def checker_plan(
+    ticket_path: Path, artifact: str, workspace: str, *, stage_path: Path | None = None,
+) -> dict:
     data = _load_ticket(ticket_path)
-    seal = str(data.get("assignment_seal") or "")
+    stage = _load_ticket(stage_path or ticket_path)
+    artifact, workspace = validate_fixed_artifact(
+        data.get("pack"), artifact, workspace,
+    )
+    seal = str(stage.get("assignment_seal") or "")
     if not seal:
         raise ReviewError("ordinary check target is not sealed")
     criterion = {
@@ -170,23 +199,14 @@ def checker_plan(ticket_path: Path, artifact: str) -> dict:
         }),
         "lens": "checker",
         "order": 0,
-        "ticket": str(data.get("id") or ticket_path.stem),
+        "ticket": str(stage.get("id") or (stage_path or ticket_path).stem),
     }
     return _record(
         "GatePlan", None,
         artifact=artifact.strip(), criteria=[criterion],
-        isolation=str(data.get("isolation") or "none"), mode="checker",
+        isolation="none", mode="checker",
         pack=data.get("pack"), root=str(data.get("id") or ticket_path.stem),
-    )
-
-
-def checker_state(
-    ticket_path: Path, artifact: str | None, findings: str | None,
-    accepted: str | None, by: str,
-) -> dict:
-    plan = checker_plan(ticket_path, artifact or "")
-    return adjudicate(
-        _review_state([plan]), findings or "", accepted, by, "checker",
+        workspace=workspace,
     )
 
 
@@ -202,7 +222,13 @@ def aggregate_adjudication(ticket_path: Path, dependencies) -> dict:
     adjudications = []
     plan = None
     for dependency in dependencies:
-        records = review_records(state_from_text(_dependency_text(ticket_path, dependency), required=True))
+        records = review_records(
+            state_from_text(
+                _dependency_text(ticket_path, dependency), required=True,
+                allow_legacy=True,
+            ),
+            allow_legacy=True,
+        )
         if [record["kind"] for record in records] != ["GatePlan", "CritiqueAdjudication"]:
             raise ReviewError(f"critique dependency has no closed adjudication: {dependency}")
         if plan is None:
@@ -222,6 +248,7 @@ def aggregate_adjudication(ticket_path: Path, dependencies) -> dict:
     return _record(
         "CritiqueAdjudication", plan["identity"],
         accepted=[item for record in ordered for item in record["accepted"]],
+        adjudicated_by="system:aggregate",
         adjudications=ordered,
         artifact=plan["artifact"],
         findings=[item for record in ordered for item in record["findings"]],
@@ -229,39 +256,67 @@ def aggregate_adjudication(ticket_path: Path, dependencies) -> dict:
     )
 
 
-def packet_state(ticket_path: Path, text: str, artifact: str | None) -> dict | None:
+def packet_state(
+    ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
+) -> dict | None:
     data = _parse_frontmatter(text)
     ticket_id = str(data.get("id") or ticket_path.stem)
     executor = _executor_of(data)
+    if executor == GATE_EXECUTORS["critique"] and ticket_id.endswith(".check"):
+        target_path = ticket_path.with_name(f"{ticket_id[:-len('.check')]}.md")
+        return _review_state([
+            checker_plan(
+                target_path, artifact or "", workspace or "", stage_path=ticket_path,
+            )
+        ])
     if executor == GATE_EXECUTORS["critique"] and ".gate.critique." in ticket_id:
-        return _review_state([gate_plan(ticket_path, artifact or "")])
+        return _review_state([
+            gate_plan(ticket_path, artifact or "", workspace or "")
+        ])
     if executor == GATE_EXECUTORS["repair"] and ticket_id.endswith(".gate.repair"):
         aggregate = aggregate_adjudication(ticket_path, data.get("depends_on") or [])
         plan = review_records(state_from_text(
             _dependency_text(ticket_path, str((data.get("depends_on") or [""])[0])),
-            required=True,
-        ))[0]
-        state = _review_state([plan, aggregate])
+            required=True, allow_legacy=True,
+        ), allow_legacy=True)[0]
+        state = _review_state([plan, aggregate], allow_legacy=True)
         if artifact is not None and artifact != plan["artifact"]:
             raise ReviewError("repair packet artifact differs from GatePlan")
+        if workspace is not None:
+            if "workspace" in plan and _workspace_identity(workspace) != plan["workspace"]:
+                raise ReviewError("repair packet workspace differs from GatePlan")
+            validate_fixed_artifact(
+                plan["pack"], plan["artifact"], workspace or plan.get("workspace"),
+            )
         return state
     if executor == GATE_EXECUTORS["verify"] and ticket_id.endswith(".gate.verify"):
         dependencies = list(data.get("depends_on") or [])
         if len(dependencies) != 1:
             raise ReviewError("verification requires one repair predecessor")
-        state = state_from_text(_dependency_text(ticket_path, str(dependencies[0])), required=True)
-        records = review_records(state)
+        state = state_from_text(
+            _dependency_text(ticket_path, str(dependencies[0])), required=True,
+            allow_legacy=True,
+        )
+        records = review_records(state, allow_legacy=True)
         if not records or records[-1]["kind"] != "RepairOutcome":
             raise ReviewError("verification predecessor has no RepairOutcome")
         if artifact is None or artifact != records[-1]["artifact"]:
             raise ReviewError("verification packet must name the exact repaired artifact")
-        return _review_state(records)
+        plan = records[0]
+        if "workspace" in plan and _workspace_identity(workspace) != plan["workspace"]:
+            raise ReviewError("verification packet workspace differs from GatePlan")
+        validate_fixed_artifact(
+            plan["pack"], records[-1]["artifact"], workspace or plan.get("workspace"),
+        )
+        return _review_state(records, allow_legacy=True)
     return None
 
 
-def packet_state_result(ticket_path: Path, text: str, artifact: str | None):
+def packet_state_result(
+    ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
+):
     try:
-        return packet_state(ticket_path, text, artifact), None
+        return packet_state(ticket_path, text, artifact, workspace), None
     except ReviewError as error:
         return None, str(error)
 
@@ -312,6 +367,11 @@ def adjudicate(
         raise ReviewError("critique join requires --accepted <canonical-json-array>")
     if canonical_json(findings) != feedback or canonical_json(accepted) != accepted_text:
         raise ReviewError("critique findings and accepted set must use canonical JSON")
+    try:
+        _finding_values(findings, "critique findings")
+        _finding_values(accepted, "critique accepted")
+    except SchemaError as error:
+        raise ReviewError(str(error)) from error
     finding_values = {canonical_json(item) for item in findings}
     if any(canonical_json(item) not in finding_values for item in accepted):
         raise ReviewError("accepted blocker set is not a subset of critique findings")
@@ -329,8 +389,11 @@ def adjudicate(
     return _review_state([plan, record])
 
 
-def repair_outcome(state: dict, artifact: str, result: str, by: str, *, no_op=False) -> dict:
-    records = review_records(state)
+def repair_outcome(
+    state: dict, artifact: str, result: str, by: str, *, no_op=False,
+    workspace: str | None = None,
+) -> dict:
+    records = review_records(state, allow_legacy=True)
     if not records or records[-1]["kind"] != "CritiqueAdjudication":
         raise ReviewError("repair requires a CritiqueAdjudication predecessor")
     adjudication = records[-1]
@@ -340,6 +403,11 @@ def repair_outcome(state: dict, artifact: str, result: str, by: str, *, no_op=Fa
         artifact = adjudication["artifact"]
     elif not isinstance(artifact, str) or not artifact.strip():
         raise ReviewError("repair join requires --artifact <fixed-identity>")
+    plan = records[0]
+    if workspace is not None or plan.get("workspace") is not None:
+        artifact, _ = validate_fixed_artifact(
+            plan["pack"], artifact, workspace or plan.get("workspace"),
+        )
     record = _record(
         "RepairOutcome", adjudication["identity"],
         accepted=adjudication["accepted"],
@@ -349,11 +417,11 @@ def repair_outcome(state: dict, artifact: str, result: str, by: str, *, no_op=Fa
         no_op=bool(no_op),
         result=result,
     )
-    return _review_state([*records, record])
+    return _review_state([*records, record], allow_legacy=True)
 
 
 def verification_outcome(state: dict, artifact: str | None, verification: str, by: str) -> dict:
-    records = review_records(state)
+    records = review_records(state, allow_legacy=True)
     if not records or records[-1]["kind"] != "RepairOutcome":
         raise ReviewError("verification requires a RepairOutcome predecessor")
     repaired = records[-1]
@@ -371,11 +439,11 @@ def verification_outcome(state: dict, artifact: str | None, verification: str, b
         evidence=verification,
         verdict=verdict,
     )
-    return _review_state([*records, record])
+    return _review_state([*records, record], allow_legacy=True)
 
 
 __all__ = (
-    "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate", "checker_state",
+    "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate",
     "aggregate_adjudication", "canonical_json", "packet_mutation", "packet_state_result",
     "replay_review_failure",
     "repair_outcome", "review_records", "state_from_text",

@@ -19,6 +19,7 @@ if __package__:
     from .tickets_generations import assignment_payload, seal_findings
     from .tickets_packet import _packet_under_run_lock, workspace_establishment_finding
     from .tickets_dispatch_receipt import actual_mismatch, read_packet_payload
+    from .tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from .tickets_review import packet_mutation, packet_state_result, replay_review_failure
     from .tickets_store import _tickets_root
 else:
@@ -33,6 +34,7 @@ else:
     from tickets_generations import assignment_payload, seal_findings
     from tickets_packet import _packet_under_run_lock, workspace_establishment_finding
     from tickets_dispatch_receipt import actual_mismatch, read_packet_payload
+    from tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from tickets_review import packet_mutation, packet_state_result, replay_review_failure
     from tickets_store import _tickets_root
 
@@ -45,7 +47,6 @@ DISPATCH_RECEIVE_USAGE = (
     "--role <worker|planner> "
     "--profile <name> --by <name> --reply-to <name> [--workspace <path>]"
 )
-PACKET_FORMS = frozenset({"reference", "inline"})
 ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
 
 
@@ -247,7 +248,9 @@ def _cmd_dispatch_packet(rest):
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure
-    review_state, review_error = packet_state_result(path, text, artifact)
+    review_state, review_error = packet_state_result(
+        path, text, artifact, workspace,
+    )
     if review_error is not None:
         return _classification("review-invalid", review_error)
     replay = _replay_projection(
@@ -288,62 +291,6 @@ def _cmd_dispatch_packet(rest):
     return committed["committed_record"]["content"]
 
 
-def _packet_shape(value):
-    if isinstance(value, dict) and set(value) == {"packet"}:
-        return _classification(
-            "packet-invalid",
-            "dispatch-receive expects the response .packet value, not its wrapper",
-        )
-    if not isinstance(value, dict) or value.get("protocol") != PROTOCOL:
-        return _classification("packet-invalid", f"packet must name {PROTOCOL}")
-    form = value.get("form")
-    if form not in PACKET_FORMS:
-        return _classification("packet-invalid", "packet form is unknown")
-    required = (
-        "assigned_name", "assignment_seal", "dispatch_id", "executor",
-        "lease_expires_at", "outcome_record_id", "profile", "reply_to", "role",
-    )
-    if any(not isinstance(value.get(key), str) or not value[key] for key in required):
-        return _classification("packet-invalid", "packet identity or routing field is missing")
-    if value.get("durability") not in ("ticket", "ephemeral"):
-        return _classification("packet-invalid", "packet durability is unknown")
-    base = {
-        "admission", "assigned_name", "assignment_seal", "dispatch_id",
-        "durability", "executor", "form", "independence", "isolation",
-        "lease_expires_at", "outcome_record_id", "pack", "profile", "prompt",
-        "protocol", "reply_to", "role", "source", "workspace",
-    }
-    expected = base | ({"reference"} if form == "reference" else {"inline"})
-    if set(value) != expected:
-        return _classification("packet-invalid", "packet has unknown or missing fields")
-    source = value.get("source")
-    if not isinstance(source, dict) or set(source) != {"id", "run"} or any(
-        not isinstance(source.get(key), str) or not source[key] for key in ("id", "run")
-    ):
-        return _classification("packet-invalid", "packet source is incomplete")
-    if form == "reference":
-        reference = value.get("reference")
-        if not isinstance(reference, dict) or set(reference) != {"id", "run"} or reference != source:
-            return _classification("packet-invalid", "packet reference does not equal its origin")
-    else:
-        inline = value.get("inline")
-        if not isinstance(inline, dict) or set(inline) != {"assignment", "envelope_seal"}:
-            return _classification("packet-invalid", "inline packet shape is incomplete")
-    if value.get("workspace") is not None:
-        failure = _identity_failure("workspace", value["workspace"], allow_path=True)
-        if failure is not None:
-            return _classification("packet-invalid", failure["error"])
-    if value["outcome_record_id"] != OUTCOME_RECORD_ID:
-        return _classification("packet-invalid", "packet outcome identity is not canonical")
-    for kind, identity in (
-        ("dispatch-id", value["dispatch_id"]),
-        ("owner", value["assigned_name"]),
-        ("reply-to", value["reply_to"]),
-    ):
-        failure = _identity_failure(kind, identity)
-        if failure is not None:
-            return _classification("packet-invalid", failure["error"])
-    return None
 
 
 def _inline_assignment_failure(packet: dict, assignment: dict):

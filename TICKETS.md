@@ -151,11 +151,15 @@ Three moments use readers who did not produce the fixed artifact
 2. **Ticket independence** — each result takes one outside-independence path:
    either the ordinary durable evaluator/adjudication carrier or the downstream
    composite gate. Both use fresh read-only `orch-critique`; neither repairs
-   its own target. The ordinary checker atomically records a fixed artifact,
-   canonical findings, and accepted subset in the same immutable review ledger
-   before `checked_by`.
-3. **Composite gate** — `GatePlan` fixes the integrated artifact, root pack,
-   established workspace, normalized isolation `none`, and stable ordered lens
+   its own target. `tickets.py checker-stage <run> <id>` derives one explicit
+   `<id>.check` review ticket from the sealed target. That stage uses the same
+   `dispatch-packet` → accepted `dispatch-receive` → `dispatch-outcome` →
+   `dispatch-join` carrier as every role-bearing execution. Only
+   `tickets.py check <run> <id> --stage <id>.check` may attach the joined,
+   identity-anchored adjudication to `checked_by`; callers cannot write trusted
+   findings directly.
+3. **Composite gate** — `GatePlan` fixes the resolvable integrated artifact,
+   normalized established workspace, root pack, isolation `none`, and stable ordered lens
    identities. Independent critiques remain parallel. `CritiqueAdjudication`
    binds the full findings and accepted blocker set; `RepairOutcome` binds the
    repaired identity or proves that set empty; fresh `Verification` evaluates
