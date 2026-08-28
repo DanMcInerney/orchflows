@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://orchflows.dev/schemas/browser-game/program-record/v1.json",
-  "title": "Browser-game versioned program record",
+  "title": "Browser-game versioned program-record contract",
   "description": "The observable PJ-03 program-record contract. Required record kinds and minimum fields come from the authoritative browser-game workflow specification section 3.2; PJ-07 requires every unresolved material value to retain a stable open-question or decision identity.",
   "type": "object",
   "additionalProperties": false,
