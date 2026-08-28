@@ -157,6 +157,13 @@ class DispatchV1Test(unittest.TestCase):
             json.dumps(content, sort_keys=True, separators=(",", ":")),
         ])
 
+    def test_replace_help_states_lifecycle_record_id_namespace(self):
+        payload = tickets._dispatch(["dispatch-replace", "--help"])
+
+        self.assertIn(
+            "--record-id <lifecycle:id>", payload["help"]["usage"],
+        )
+
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
         self.assertEqual("opened", opened["dispatch"]["outcome"])

@@ -57,7 +57,7 @@ DISPATCH_RETIRE_USAGE = (
 )
 DISPATCH_REPLACE_USAGE = (
     "dispatch-replace <run> <id> --assignment-seal <seal> "
-    "--dispatch-id <current-id> --record-id <id> "
+    "--dispatch-id <current-id> --record-id <lifecycle:id> "
     "--replacement-dispatch-id <new-id> --by <name> "
     "--lease-expires-at <absolute-iso>"
 )
