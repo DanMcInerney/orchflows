@@ -33,8 +33,7 @@ established receiver accepted the exact committed packet before execution.
 A read-only critique records findings in `## Feedback`; it never rewrites the
 executor's Result or Verification. A verifier records its independent verdict
 and evidence in `## Verification`.
-Gate and ordinary-checker critique Feedback is a canonical JSON array so the
-review ledger can bind the complete findings and an exact accepted subset.
+Gate and ordinary-checker critique findings are streamed in either `Result` or `Feedback` as one JSON array. Each finding object has exactly `blocking` (boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty strings), and `evidence` (a non-empty array of non-empty strings). Finding ids are unique in the array. The join accepts any valid JSON encoding of the findings and accepted arrays, normalizes both, and binds the complete findings and exact accepted subset in the review ledger.
 
 The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, and adjudicates only material blockers
@@ -69,3 +68,7 @@ contract's durable accepted receiver receipt.
 T0 supersession record sha256:80252b67dd8b7010630831f233be12ba8fe32c31ba98bfccbe277328b9a458eb:
 critique Feedback result records are canonical JSON arrays whose complete value
 and accepted subset are carried by the immutable review adjudication.
+
+T0 supersession record sha256:ecac1cfcd4758e3389a36eb1da88d6856f0499ad34e5943fbdb23d321f6ce2fc:
+critique finding records may use Result or Feedback, and join normalizes valid
+JSON encodings before it compares and binds the accepted subset.

@@ -67,6 +67,23 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertNotIn("error", result, result)
         return result
 
+    def test_critique_finding_contract_publishes_closed_shape_and_carriage(self):
+        skill = (ROOT / "skills" / "kernel" / "orch-critique" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        result_contract = (ROOT / "contracts" / "result.md").read_text(
+            encoding="utf-8"
+        )
+        closed_shape = (
+            "exactly `blocking` (boolean), `class`, `goal_impact`, `id`, "
+            "`repair`, `summary` (non-empty strings), and `evidence` "
+            "(a non-empty array of non-empty strings)"
+        )
+        for text in (skill, result_contract):
+            self.assertIn(closed_shape, text)
+            self.assertIn("either `Result` or `Feedback`", text)
+            self.assertIn("valid JSON encoding", text)
+
     def seal(self, run, root):
         self.dispatch("stamp-generation", run, root)
         validated = self.dispatch("draft-validate", run, root)
