@@ -23,10 +23,12 @@ dependencies, and status.
 - input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
 - input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this composition instance"}
 - input: {"name":"empirical-evidence","type":"literal","value":"the accepted 01-evidence Result identity in this composition instance"}
+- checkpoint-contract: `../references/browser-game-checkpoint.schema.json`
 
 Exceptional constraints:
 
 - infer `advance` from task completion
+- emit a disposition that does not validate against the checkpoint contract
 - answer a `kind: user-only` question, paraphrase it for the root, or block unrelated empirical work on it
 - open or dispatch a successor whose kind, pack, accepted predecessor identity, dependency, or root identity is unresolved
 - hide research, prose, code, or rendered outcomes behind another artifact kind's identity

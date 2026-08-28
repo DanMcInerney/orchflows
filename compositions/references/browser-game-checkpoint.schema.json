@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.local/browser-game/checkpoint/v1.json",
+  "title": "Browser-game product checkpoint",
+  "description": "One evidence-bound product disposition. This is distinct from the canonical orchflows review Gate and verdict.",
+  "type": "object",
+  "x-governing-identities": ["PJ-05", "PJ-08", "PJ-24", "PJ-25"],
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "checkpoint_id",
+    "governing_requirement_identity",
+    "candidate_identity",
+    "program_record_revision_identity",
+    "evidence",
+    "disposition",
+    "invalidation",
+    "q12_revalidation"
+  ],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "checkpoint_id": {"$ref": "#/$defs/stableIdentity"},
+    "governing_requirement_identity": {
+      "type": "string",
+      "pattern": "^(AUTH|U|CR|EX|PJ|D)-[0-9]{2}$"
+    },
+    "candidate_identity": {"$ref": "#/$defs/stableIdentity"},
+    "program_record_revision_identity": {"$ref": "#/$defs/stableIdentity"},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/evidenceBinding"}
+    },
+    "disposition": {
+      "enum": [
+        "advance",
+        "revise",
+        "experiment",
+        "user-decision-required",
+        "stop"
+      ]
+    },
+    "invalidation": {"$ref": "#/$defs/invalidationBoundary"},
+    "q12_revalidation": {"$ref": "#/$defs/q12RevalidationState"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["disposition"],
+        "properties": {
+          "disposition": {"enum": ["advance", "revise", "stop"]}
+        }
+      },
+      "then": {
+        "properties": {
+          "q12_revalidation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "boundary"],
+            "properties": {
+              "status": {"const": "settled"},
+              "boundary": {"$ref": "#/$defs/settledQ12Boundary"}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stableIdentity": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]*$"
+    },
+    "evidenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_identity", "observed_on", "subject"],
+      "properties": {
+        "evidence_identity": {"$ref": "#/$defs/stableIdentity"},
+        "observed_on": {"type": "string", "format": "date"},
+        "subject": {
+          "enum": [
+            "browser",
+            "engine",
+            "model",
+            "tool",
+            "license",
+            "compatibility",
+            "adoption",
+            "vendor-terms",
+            "security",
+            "other"
+          ]
+        },
+        "revalidation_boundary": {"$ref": "#/$defs/settledQ12Boundary"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["subject"],
+            "properties": {
+              "subject": {
+                "enum": [
+                  "browser",
+                  "engine",
+                  "model",
+                  "tool",
+                  "license",
+                  "compatibility",
+                  "adoption",
+                  "vendor-terms",
+                  "security"
+                ]
+              }
+            }
+          },
+          "then": {"required": ["revalidation_boundary"]}
+        }
+      ]
+    },
+    "invalidationBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "covered_candidate_identity",
+        "covered_program_record_revision_identity",
+        "covered_evidence_identities",
+        "candidate_change",
+        "program_record_change",
+        "evidence_change"
+      ],
+      "properties": {
+        "covered_candidate_identity": {"$ref": "#/$defs/stableIdentity"},
+        "covered_program_record_revision_identity": {"$ref": "#/$defs/stableIdentity"},
+        "covered_evidence_identities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableIdentity"}
+        },
+        "candidate_change": {"const": "invalidate"},
+        "program_record_change": {"const": "invalidate"},
+        "evidence_change": {"const": "invalidate"}
+      }
+    },
+    "settledQ12Boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "q12_cadence_decision_identity",
+        "last_revalidated_on",
+        "revalidate_by_or_trigger"
+      ],
+      "properties": {
+        "q12_cadence_decision_identity": {"$ref": "#/$defs/stableIdentity"},
+        "last_revalidated_on": {"type": "string", "format": "date"},
+        "revalidate_by_or_trigger": {"type": "string", "minLength": 1}
+      }
+    },
+    "q12RevalidationState": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "boundary"],
+          "properties": {
+            "status": {"const": "settled"},
+            "boundary": {"$ref": "#/$defs/settledQ12Boundary"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "open_decision_identity"],
+          "properties": {
+            "status": {"const": "open"},
+            "open_decision_identity": {"$ref": "#/$defs/stableIdentity"}
+          }
+        }
+      ]
+    }
+  }
+}
