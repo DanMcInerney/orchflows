@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1925,
+  "count": 1926,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -704,6 +704,7 @@
    "test_verification_model.CritiqueContractTest.test_critique_is_two_pass_blocker_only_synthesis",
    "test_verification_model.CritiqueContractTest.test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model",
    "test_verification_model.GoalEvidenceContractTest.test_non_code_packs_define_artifact_evidence_without_code_tests",
+   "test_verification_model.GoalEvidenceContractTest.test_spec_distills_evidence_into_one_executable_semantic_root",
    "test_verification_model.GoalEvidenceContractTest.test_tdd_chooses_tests_and_records_post_work_evidence",
    "test_verification_model.GoalEvidenceContractTest.test_ticket_has_no_extra_success_schema",
    "test_verification_model.SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
@@ -1928,7 +1929,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2be47510bd758d8424c97f17cdaa80ce1094b05108867e9314e124b302c977cd"
+  "sha256": "96a6c806b3241eb1f603e2d895963205258b178612773d7bfd49a79e1f4fad6d"
  },
  "mutation_owners": [
   {
