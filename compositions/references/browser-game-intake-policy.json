@@ -68,5 +68,136 @@
     "release_model",
     "ai_policy",
     "transport"
-  ]
+  ],
+  "experiment_match": {
+    "field_disposition": "experiment",
+    "field_resolution_state": "decision",
+    "match_key": "decision_id",
+    "required_fields": [
+      "experiment_id",
+      "predeclared_decision",
+      "frozen_candidates",
+      "workload_corpus_or_cohort",
+      "environment",
+      "metrics",
+      "stopping_rule",
+      "falsifiable_oracle",
+      "result_identity",
+      "transfer_boundary"
+    ],
+    "result_identity_required": true,
+    "transfer_boundary_required": true,
+    "settles_matched_cells_only": true,
+    "preserve_negative_null_and_inconclusive": true,
+    "may_settle_user_only": false
+  },
+  "conditional_activation": {
+    "required_trigger_identity": [
+      "governing_identity",
+      "decision_id",
+      "trigger_record_id",
+      "trigger_revision_id"
+    ],
+    "state_without_recorded_trigger": "inactive",
+    "controls": {
+      "CR-01": {
+        "trigger": "staged_delivery_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-02": {
+        "trigger": "coupled_mutable_concerns_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-03": {
+        "trigger": "simulation_stability_or_determinism_risk_recorded",
+        "recorded_trigger_required": true
+      },
+      "CR-04": {
+        "trigger": "two_dimensional_scope_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-05": {
+        "trigger": "three_dimensional_scope_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-06": {
+        "trigger": "support_cohort_or_graphics_ladder_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-07": {
+        "trigger": "parallel_topology_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-08": {
+        "trigger": "asset_pipeline_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-09": {
+        "trigger": "performance_claim_or_budget_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-10": {
+        "trigger": "material_defect_class_recorded",
+        "recorded_trigger_required": true
+      },
+      "CR-11": {
+        "trigger": "wcag_conformance_in_scope",
+        "recorded_trigger_required": true
+      },
+      "CR-12": {
+        "trigger": "input_or_localization_promise_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-13": {
+        "trigger": "deployment_controls_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-14": {
+        "trigger": "ai_use_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-15": {
+        "trigger": "repository_practice_import_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-16": {
+        "trigger": "research_transfer_proposed",
+        "recorded_trigger_required": true
+      }
+    },
+    "experiments": {
+      "EX-01": {
+        "trigger": "library_family_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-02": {
+        "trigger": "graphics_backend_or_dispatch_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-03": {
+        "trigger": "parallel_topology_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-04": {
+        "trigger": "product_budget_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-05": {
+        "trigger": "transport_or_compensation_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-06": {
+        "trigger": "ai_task_class_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-07": {
+        "trigger": "accessible_play_support_promise_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-08": {
+        "trigger": "offline_rollout_or_rollback_promise_proposed",
+        "recorded_trigger_required": true
+      }
+    }
+  }
 }

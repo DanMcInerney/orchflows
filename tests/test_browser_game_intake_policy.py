@@ -44,6 +44,20 @@ REQUIRED_DEFAULT_PROHIBITIONS = {
     "ai_policy",
     "transport",
 }
+EXPERIMENT_FIELDS = {
+    "experiment_id",
+    "predeclared_decision",
+    "frozen_candidates",
+    "workload_corpus_or_cohort",
+    "environment",
+    "metrics",
+    "stopping_rule",
+    "falsifiable_oracle",
+    "result_identity",
+    "transfer_boundary",
+}
+CONDITIONAL_CONTROLS = {f"CR-{number:02d}" for number in range(1, 17)}
+CONDITIONAL_EXPERIMENTS = {f"EX-{number:02d}" for number in range(1, 9)}
 
 
 class BrowserGameIntakePolicyTests(unittest.TestCase):
@@ -116,6 +130,48 @@ class BrowserGameIntakePolicyTests(unittest.TestCase):
         record = (COMPOSITION / "00-record.md").read_text(encoding="utf-8")
         self.assertIn("browser-game-program-record.schema.json", record)
         self.assertIn("browser-game-intake-policy.json", record)
+
+    def test_experiment_matches_one_open_decision_and_only_its_cells(self):
+        experiment = self.policy["experiment_match"]
+        self.assertEqual("experiment", experiment["field_disposition"])
+        self.assertEqual("decision", experiment["field_resolution_state"])
+        self.assertEqual("decision_id", experiment["match_key"])
+        self.assertEqual(EXPERIMENT_FIELDS, set(experiment["required_fields"]))
+        self.assertTrue(experiment["result_identity_required"])
+        self.assertTrue(experiment["transfer_boundary_required"])
+        self.assertTrue(experiment["settles_matched_cells_only"])
+        self.assertTrue(experiment["preserve_negative_null_and_inconclusive"])
+        self.assertFalse(experiment["may_settle_user_only"])
+
+    def test_conditional_controls_are_inactive_without_a_recorded_trigger(self):
+        activation = self.policy["conditional_activation"]
+        self.assertEqual(
+            {
+                "governing_identity",
+                "decision_id",
+                "trigger_record_id",
+                "trigger_revision_id",
+            },
+            set(activation["required_trigger_identity"]),
+        )
+        self.assertEqual("inactive", activation["state_without_recorded_trigger"])
+        self.assertEqual(CONDITIONAL_CONTROLS, set(activation["controls"]))
+        for identity, rule in activation["controls"].items():
+            with self.subTest(identity=identity):
+                self.assertTrue(rule["recorded_trigger_required"])
+                self.assertTrue(rule["trigger"])
+
+    def test_conditional_experiments_are_inactive_without_their_promotion_trigger(self):
+        activation = self.policy["conditional_activation"]
+        self.assertEqual(CONDITIONAL_EXPERIMENTS, set(activation["experiments"]))
+        for identity, rule in activation["experiments"].items():
+            with self.subTest(identity=identity):
+                self.assertTrue(rule["recorded_trigger_required"])
+                self.assertTrue(rule["trigger"])
+
+    def test_evidence_ticket_consumes_the_intake_policy(self):
+        evidence = (COMPOSITION / "01-evidence.md").read_text(encoding="utf-8")
+        self.assertIn("browser-game-intake-policy.json", evidence)
 
 
 if __name__ == "__main__":
