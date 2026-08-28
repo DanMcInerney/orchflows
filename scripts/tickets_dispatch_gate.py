@@ -124,6 +124,8 @@ def _checker_stage_under_run_lock(rest):
         return {"error": f"ticket {run}/{target_id} defers independence to its downstream gate"}
     if str(target.get("checked_by") or "").strip():
         return {"error": f"ticket {run}/{target_id} is already checked"}
+    if not str(target.get("pack") or "").strip().strip("`"):
+        return {"error": "checker-stage requires target pack authority"}
     root_generation = str(target.get("root_generation") or "")
     if not root_generation:
         return {"error": "checker-stage requires one stamped target assignment"}

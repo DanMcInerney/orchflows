@@ -766,12 +766,36 @@ class SemanticTicketContractTest(unittest.TestCase):
             [record["kind"] for record in review["records"]],
         )
         self.assertEqual("checker", review["records"][0]["mode"])
+        self.assertEqual("orch-code-pack", review["records"][0]["pack"])
         self.assertEqual(json.loads(findings), review["records"][1]["accepted"])
         self.assertEqual("checker-a", review["records"][1]["adjudicated_by"])
         self.assertEqual(
             review["records"][0]["identity"],
             review["records"][1]["predecessor"],
         )
+
+    def test_checker_stage_refuses_a_packless_target_without_state_mutation(self):
+        self.dispatch(
+            "new", "packless-checker", "R", "--executor", "orch-tdd",
+            "--goal", "Deliver the checked result.",
+            "--context", "The artifact and evidence are authoritative.",
+            "--pack", "orch-code-pack",
+            "--isolation", "required",
+        )
+        self.seal("packless-checker", "R")
+        run_dir = Path(self.temporary.name) / "tickets" / "packless-checker"
+        target = run_dir / "R.md"
+        target.write_text(
+            _remove_frontmatter_field(target.read_text(encoding="utf-8"), "pack"),
+            encoding="utf-8",
+        )
+        before = target.read_bytes()
+
+        refused = tickets._dispatch(["checker-stage", "packless-checker", "R"])
+
+        self.assertIn("pack", refused["error"])
+        self.assertEqual(before, target.read_bytes())
+        self.assertFalse((run_dir / "R.check.md").exists())
 
     def test_review_schemas_reject_field_deletion_and_noop_bypass(self):
         artifact = "git:" + subprocess.run(
