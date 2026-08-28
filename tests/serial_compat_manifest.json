@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1926,
+  "count": 1928,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -49,6 +49,7 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_command_emits_codepage_independent_canonical_ascii",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_a_workspace_other_than_the_recorded_candidate",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_an_unrecorded_candidate_workspace",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_noncanonical_reply_to_before_commit",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_receipt_refuses_identity_profile_and_authority_mismatches",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_ticket_packet_cannot_be_downgraded_to_ephemeral",
@@ -83,6 +84,7 @@
    "test_dispatch_v1.DispatchV1Test.test_pre_v1_live_claim_requires_owner_cutover",
    "test_dispatch_v1.DispatchV1Test.test_protocol_owned_record_ids_cannot_be_squatted",
    "test_dispatch_v1.DispatchV1Test.test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join",
+   "test_dispatch_v1.DispatchV1Test.test_replace_help_states_lifecycle_record_id_namespace",
    "test_dispatch_v1.DispatchV1Test.test_replacement_identity_injection_is_refused_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
    "test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation",
@@ -1929,7 +1931,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "96a6c806b3241eb1f603e2d895963205258b178612773d7bfd49a79e1f4fad6d"
+  "sha256": "e30086e83cac76ee1d7a48a327cd6bcf0536c3628456540a6e059058c9fe02d5"
  },
  "mutation_owners": [
   {
