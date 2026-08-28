@@ -5,6 +5,19 @@ entry: named
 placeholders: [brief, workspace]
 ---
 
+<!-- BGW-TRACE[traceability|PJ-21] -->
+<!-- BGW-TRACE[program-record|PJ-03,PJ-07] -->
+<!-- BGW-TRACE[question-authority|PJ-06,PJ-09,PJ-10] -->
+<!-- BGW-TRACE[checkpoint-disposition|PJ-05] -->
+<!-- BGW-TRACE[experiment-validity|PJ-16,PJ-17] -->
+<!-- BGW-TRACE[kind-separation|AUTH-05,PJ-18,PJ-28] -->
+<!-- BGW-TRACE[closed-surface|PJ-20] -->
+<!-- BGW-TRACE[decision-safety|PJ-22] -->
+<!-- BGW-TRACE[conditional-fidelity|PJ-23] -->
+<!-- BGW-TRACE[evidence-identity|PJ-08,PJ-24] -->
+<!-- BGW-TRACE[revalidation|PJ-25] -->
+<!-- BGW-TRACE[migration|PJ-01,PJ-26,U-03] -->
+
 One incomplete product request enters as `brief`; `workspace` is the
 git-backed product repository. Those are the only required invocation
 inputs. The workflow returns a versioned program record, fixed evidence

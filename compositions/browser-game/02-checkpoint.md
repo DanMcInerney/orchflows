@@ -8,6 +8,10 @@ isolation: none
 profile: orch-planner
 ---
 
+<!-- BGW-TRACE[checkpoint-disposition|PJ-05] -->
+<!-- BGW-TRACE[kind-separation|AUTH-05,PJ-18,PJ-28] -->
+<!-- BGW-TRACE[evidence-identity|PJ-08,PJ-24] -->
+
 ## Goal
 
 Exactly one product checkpoint disposition — `advance`, `revise`,

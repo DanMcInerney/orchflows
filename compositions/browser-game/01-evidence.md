@@ -9,6 +9,10 @@ isolation: required
 profile: orch-worker
 ---
 
+<!-- BGW-TRACE[experiment-validity|PJ-16,PJ-17] -->
+<!-- BGW-TRACE[conditional-fidelity|PJ-23] -->
+<!-- BGW-TRACE[revalidation|PJ-25] -->
+
 ## Goal
 
 One fixed evidence packet for the independently schedulable empirical fields

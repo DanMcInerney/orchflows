@@ -9,6 +9,10 @@ isolation: required
 profile: orch-worker
 ---
 
+<!-- BGW-TRACE[program-record|PJ-03,PJ-07] -->
+<!-- BGW-TRACE[question-authority|PJ-06,PJ-09,PJ-10] -->
+<!-- BGW-TRACE[decision-safety|PJ-22] -->
+
 ## Goal
 
 One versioned browser-game program record in {{workspace}} for {{brief}},
