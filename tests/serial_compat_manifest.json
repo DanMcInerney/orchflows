@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1923,
+  "count": 1925,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -45,6 +45,7 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_file_and_standard_input_carry_the_packet_without_shell_reconstruction",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_legacy_gate_repair_replays_stored_packet_across_head_change",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_command_emits_codepage_independent_canonical_ascii",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_a_workspace_other_than_the_recorded_candidate",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_an_unrecorded_candidate_workspace",
@@ -55,6 +56,7 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_research_projection_requires_the_recorded_store_to_exist",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_result_outcome_and_join_require_the_accepted_receipt",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_ticket_inline_cannot_be_downgraded_to_ephemeral",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_uncommitted_projection_still_runs_current_review_validation",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_wrapper_and_malformed_file_refuse_without_ticket_mutation",
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
@@ -1926,7 +1928,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "8d198828c3d41979b7d95fd4e735e10010c000a722c6d7819ba06529fc7b5d75"
+  "sha256": "2be47510bd758d8424c97f17cdaa80ce1094b05108867e9314e124b302c977cd"
  },
  "mutation_owners": [
   {
@@ -2283,6 +2285,14 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_uncommitted_projection_still_runs_current_review_validation",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

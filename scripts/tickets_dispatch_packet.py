@@ -20,7 +20,8 @@ if __package__:
     from .tickets_packet import _packet_under_run_lock, workspace_establishment_finding
     from .tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from .tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
-    from .tickets_review import packet_mutation, packet_state_result, replay_review_failure
+    from .tickets_dispatch_schema import stored_state
+    from .tickets_review import packet_mutation, packet_state_result
     from .tickets_store import _tickets_root
 else:
     from tickets_attempts import (
@@ -35,7 +36,8 @@ else:
     from tickets_packet import _packet_under_run_lock, workspace_establishment_finding
     from tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
-    from tickets_review import packet_mutation, packet_state_result, replay_review_failure
+    from tickets_dispatch_schema import stored_state
+    from tickets_review import packet_mutation, packet_state_result
     from tickets_store import _tickets_root
 
 DISPATCH_PACKET_USAGE = (
@@ -55,8 +57,8 @@ def _semantic_digest(value) -> str:
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
-def _attempt(data: dict, dispatch_id: str):
-    state, failure = _state(data)
+def _attempt(data: dict, dispatch_id: str, *, stored_only: bool = False):
+    state, failure = (stored_state(data) if stored_only else _state(data))
     if failure is not None:
         return None, failure
     if state is None:
@@ -245,6 +247,14 @@ def _cmd_dispatch_packet(rest):
     if failure is not None:
         return _classification("state-inaccessible", failure["error"])
     data = _parse_frontmatter(text)
+    attempt, failure = _attempt(data, dispatch_id, stored_only=True)
+    if failure is not None:
+        return failure
+    replay = _replay_projection(
+        attempt, run, ticket_id, form, reply_to, workspace
+    )
+    if replay is not None:
+        return replay
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure
@@ -253,14 +263,6 @@ def _cmd_dispatch_packet(rest):
     )
     if review_error is not None:
         return _classification("review-invalid", review_error)
-    replay = _replay_projection(
-        attempt, run, ticket_id, form, reply_to, workspace
-    )
-    if replay is not None:
-        divergence = replay_review_failure(text, review_state)
-        if "error" not in replay and divergence is not None:
-            return _classification("review-invalid", divergence)
-        return replay
     finding = workspace_establishment_finding(data, workspace)
     if finding is not None:
         return _classification(*finding)

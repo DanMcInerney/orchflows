@@ -371,7 +371,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
     return validate(state, run=run, ticket_id=ticket_id)
 
 
-def state(data: dict):
+def stored_state(data: dict):
     encoded = str(data.get("dispatch_v1") or "").strip()
     if not encoded:
         return None, None
@@ -388,6 +388,14 @@ def state(data: dict):
     failure = validate_state(parsed, run=run, ticket_id=ticket_id)
     if failure is not None:
         return None, failure
+    return parsed, None
+
+
+def state(data: dict):
+    parsed, failure = stored_state(data)
+    if failure is not None or parsed is None:
+        return parsed, failure
+    ticket_id = str(data.get("id") or "").strip()
     review_text = str(data.get("review_v1") or "").strip()
     review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
     if review_text and review_stage:

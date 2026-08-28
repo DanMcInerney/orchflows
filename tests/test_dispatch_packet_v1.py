@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from scripts import tickets
+from scripts import tickets, tickets_review
 from scripts.tickets_packet import workspace_establishment_finding
 from scripts.tickets_format import canonical_json, parse_canonical_json
 
@@ -138,6 +138,80 @@ class DispatchPacketV1Test(unittest.TestCase):
         receipt = self.receive(packet)
         self.assertEqual("accepted", receipt["receipt"]["outcome"])
         self.assertEqual("reference", receipt["receipt"]["form"])
+
+    def test_uncommitted_projection_still_runs_current_review_validation(self):
+        before = self.ticket_bytes()
+        owner = tickets._tickets_dispatch_packet_module
+        with mock.patch.object(
+            owner, "packet_state_result", return_value=(None, "current review is invalid"),
+        ):
+            refusal = self.project()
+
+        self.assertEqual("review-invalid", refusal["code"])
+        self.assertEqual(before, self.ticket_bytes())
+        self.assertEqual([], self.ticket_state()["attempts"][0]["records"])
+
+    def test_legacy_gate_repair_replays_stored_packet_across_head_change(self):
+        committed = self.project()
+        old_head = subprocess.run(
+            ["git", "rev-parse", "HEAD^"], cwd=Path(__file__).resolve().parents[1],
+            text=True, capture_output=True, check=True,
+        ).stdout.strip()
+        current_head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[1],
+            text=True, capture_output=True, check=True,
+        ).stdout.strip()
+        self.assertNotEqual(old_head, current_head)
+
+        legacy_id = "T.gate.repair"
+        stored_packet = dict(committed["packet"])
+        stored_packet.update({
+            "executor": "orch-repair",
+            "reference": {"id": legacy_id, "run": "run"},
+            "source": {"id": legacy_id, "run": "run"},
+        })
+        stored = {"packet": stored_packet}
+        text = self.ticket_path.read_text(encoding="utf-8")
+        data = tickets._parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        packet_record = state["attempts"][0]["records"][0]
+        packet_record["content"] = canonical_json(stored)
+        packet_record["success"] = {"committed_record": {
+            "content": stored, "dispatch_id": "D1", "id": legacy_id,
+            "protocol": "orchflows.dispatch.v1", "record_id": "dispatch-packet",
+            "run": "run",
+        }}
+        legacy_plan = tickets_review._record(
+            "GatePlan", None, artifact=f"git:{old_head}",
+            criteria=[{
+                "identity": "sha256:" + "a" * 64, "lens": "code",
+                "order": 0, "ticket": "T.gate.critique.code",
+            }],
+            isolation="none", mode="gate", pack="orch-code-pack", root="T",
+        )
+        text = tickets._set_frontmatter_field(text, "id", legacy_id)
+        text = tickets._set_frontmatter_field(text, "executor", "orch-repair")
+        text = tickets._set_frontmatter_field(
+            text, "dispatch_v1", canonical_json(state),
+        )
+        text = tickets._set_frontmatter_field(
+            text, "review_v1", canonical_json({
+                "protocol": "orchflows.review.v1", "records": [legacy_plan],
+            }),
+        )
+        legacy_path = self.ticket_path.with_name(f"{legacy_id}.md")
+        legacy_path.write_text(text, encoding="utf-8")
+        before = legacy_path.read_bytes()
+
+        replayed = tickets._dispatch([
+            "dispatch-packet", "run", legacy_id, "--dispatch-id", "D1",
+            "--reply-to", "root", "--workspace", "C:/candidate",
+            "--artifact", f"git:{old_head}", "--form", "reference",
+        ])
+
+        self.assertEqual(stored, replayed)
+        self.assertEqual(packet_record["content"], canonical_json(replayed))
+        self.assertEqual(before, legacy_path.read_bytes())
 
     def test_projection_refuses_an_unrecorded_candidate_workspace(self):
         text = self.ticket_path.read_text(encoding="utf-8")
