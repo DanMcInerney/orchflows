@@ -6,59 +6,64 @@ role: planner
 
 Require: the request as Goal and relevant workspace facts as Context.
 
-Gather the facts the frozen statement depends on through
-`orch-investigate`, carrying one question, the fixed evidence sources or
-source policy from Context, and a bound: what exists, what constrains, what
-the request actually touches. Settle decisions only the
-user can make with the user, one question at a time, each answer
-recorded verbatim, without re-interviewing a settled one.
+Use `orch-investigate` for one bounded question against Context's source
+policy. Ask unresolved user decisions one at a time; record verbatim without
+re-interviewing settled ones.
 
-Count the deliverable kinds the end state spans. One kind → one
-pack-stamped root ticket. Two or more → open only the first kind's root
-now, and first persist the ordered remainder through `tickets.py run-state
-<first-run> --artifact successors.md`: kind, pack, proposed successor run and
-root ids, and state `planned` for each entry. This skill is that artifact's
-sole writer and materialization owner. When a drained `orch-frontier` returns
-its successor trigger under [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration),
-resolve the predecessor's accepted result identity;
-once resolved, open the next entry's successor run and root, cite that identity among the
-successor root's own `## Context`, then replace `successors.md` with that
-entry `opened` and the next entry still `planned`. A kind boundary never
-creates a second root in the same run, and an unmaterialized entry is durable
-state, never a promise left only in this Return.
+Semantic root policy:
 
-Draft each per
-[contracts/work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration),
-with exact nouns and verbs from
-[docs/vocabulary.md](../../../docs/vocabulary.md) and the craft cell of
-the pack the stamp will name, so they read as the deliverable's
-searchable names.
+- **Evidence identities**: Cite long evidence and exemplars by identity, never
+  inline rationale.
+- **Root contents**: Carry only settled observable behavior and authority,
+  precedence, lifecycle, persistence, trust, compatibility, or non-goal
+  boundaries an executor cannot infer.
+- **Executor authority**: Leave files, functions, schemas, commands, tests,
+  proof methods, and internal mechanics to the executor.
+- **Seal blockers**: Vague quality adjectives settle nothing. Do not seal while
+  a choice, contradiction, or impossible acceptance threshold remains.
+- **Reference resolution**: Validate fixed identities and canonical-owner
+  references before seal; locators must resolve.
+- **Review eligibility**: Recommend one outside blocker-only review only when
+  the root spans several independent semantic policies or cross-cutting
+  authority, lifecycle, or contract surfaces.
+- **Review finality**: A corrected root that already addresses a review never
+  recommends another critique. Deterministic admission and downstream
+  verification decide what follows.
 
-Stamp routing per [rules/topology.md](../../../rules/topology.md) 5a.
-Write it through
-`tickets.py new <run> <root-id> --executor orch-decompose --pack <the
-stamp> --independence gate …`.
+Lifecycle:
 
-When one executor plus the mandatory `orch-integrate` join owns the whole
-outcome, bind that executor in the root itself rather than `orch-decompose`.
+Count deliverable kinds. One gets a pack-stamped root. For multiple,
+open first and persist the ordered remainder through `tickets.py run-state
+<first-run> --artifact successors.md`; each entry names kind, pack,
+successor run and root ids, and state `planned`. This skill is the
+`successors.md` sole writer and materialization owner. When a drained
+`orch-frontier` returns its successor trigger under
+[work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration),
+resolve the accepted predecessor result identity; open the next successor run
+and root, cite the resolved identity in `## Context`, then replace
+`successors.md` with that entry `opened` and the next `planned`. Never create a
+second root in the same run; an unmaterialized entry remains durable.
 
-For every new root, open the generation lifecycle through
-`tickets.py stamp-generation <run> <root-id>`, which derives `root_generation`
-as `root:<root-id>:<ordinal>:sha256:<digest>`. Finish its `draft`, validate
-that snapshot through `tickets.py draft-validate <run> <root-id>`, then
-compare-and-swap the recorded receipt to `sealed` through `tickets.py seal
-<run> <root-id> --cut-generation <validated cut_generation>`. Only that
-validated digest is sealed and eligible for dispatch; its
-`assignment_seal` records that exact assignment digest. A semantic-root change
-is unsupported in this physical run; never mint another root ordinal. Resolve
-the accepted predecessor result identity. Put it in the planned successor
-run's root Context. Preserve predecessor bytes.
+Draft per [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration)
+using vocabulary and pack craft. Route per
+[topology.md](../../../rules/topology.md) 5a. When one executor plus the
+mandatory `orch-integrate` join owns the outcome, bind it directly rather than
+`orch-decompose`; otherwise write the decomposed root through `tickets.py new
+<run> <root-id> --executor orch-decompose --pack <stamp> --independence gate …`.
+
+For each root, run `tickets.py stamp-generation`, finish and validate `draft`
+with `tickets.py draft-validate`, then seal its receipt by compare-and-swap via
+`tickets.py seal --cut-generation <validated cut_generation>`.
+`assignment_seal` fixes the digest for dispatch. A semantic-root change is
+unsupported in this physical run: after the accepted predecessor result
+identity resolves, open a successor run, cite it in Context, preserve
+predecessor bytes, and never mint another root ordinal.
 
 Never: stamp a pack the cut cannot share; prescribe implementation or tests in
-Goal; restate standards an exemplar's owner already states.
+Goal; restate canonical-owner standards or exemplar rationale.
 
 Return: the accepted root ticket's id and path, the durable `successors.md`
 identity (`[]` for one kind), and, after each predecessor resolves, the
 successor root's id, path, and cited predecessor result identity; the
-kind-count decision and its evidence, assumptions, evidence consulted, and
+kind-count decision, assumptions, evidence consulted, and
 consistency observations against the settled decisions and repository facts.

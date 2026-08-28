@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -52,6 +53,29 @@ class GoalEvidenceContractTest(unittest.TestCase):
                 self.assertNotIn("code tests are required", body.lower())
         spec = read("skills/workflows/orch-spec/SKILL.md")
         self.assertIn("consistency observations", spec)
+
+    def test_spec_distills_evidence_into_one_executable_semantic_root(self):
+        spec = read("skills/workflows/orch-spec/SKILL.md")
+        match = re.search(r"(?s)Semantic root policy:\n\n(.*?)\n\nLifecycle:", spec)
+        self.assertIsNotNone(match)
+        fields = {}
+        for line in match.group(1).splitlines():
+            field = re.match(r"^- \*\*([^*]+)\*\*: (.*)$", line)
+            if field:
+                fields[field.group(1)] = field.group(2)
+            elif line.startswith("  ") and fields:
+                latest = next(reversed(fields))
+                fields[latest] += " " + line.strip()
+        self.assertEqual({
+            "Evidence identities",
+            "Root contents",
+            "Executor authority",
+            "Seal blockers",
+            "Reference resolution",
+            "Review eligibility",
+            "Review finality",
+        }, set(fields))
+        self.assertTrue(all(value.strip() for value in fields.values()))
 
 
 class CritiqueContractTest(unittest.TestCase):
