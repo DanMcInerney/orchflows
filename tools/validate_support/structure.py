@@ -210,6 +210,17 @@ def _reference_owner(path: Path, composition_names):
     return None
 
 
+def _script_owner(path: Path, composition_names):
+    """Resolve a script module's composition by a normalized stem boundary."""
+
+    stem = path.stem.lower()
+    for composition in sorted(composition_names, key=lambda item: (-len(item), item)):
+        normalized = composition.lower().replace("-", "_")
+        if stem == normalized or stem.startswith(normalized + "_"):
+            return composition
+    return None
+
+
 def validate_composition_admission(
     diag: Diagnostics, allowlist=COMPOSITION_PROTOCOL_ALLOWLIST
 ) -> None:
@@ -241,6 +252,14 @@ def validate_composition_admission(
             owner = _reference_owner(path, names) if kind else None
             if owner:
                 findings.append((owner, path, kind))
+    scripts = ROOT / "scripts"
+    if scripts.is_dir():
+        for path in sorted(scripts.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in COMPOSITION_SCRIPT_SUFFIXES:
+                continue
+            owner = _script_owner(path, names)
+            if owner:
+                findings.append((owner, path, "composition-named script machinery"))
 
     excepted = {}
     for composition, path, kind in findings:
@@ -462,7 +481,7 @@ __all__ = (
     'validate_call_graph', '_envelope_first_clause', '_envelope_missing', 'validate_envelope',
     'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
     'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',
-    'discover_templates', '_composition_artifact_kind', '_reference_owner',
+    'discover_templates', '_composition_artifact_kind', '_reference_owner', '_script_owner',
     'validate_composition_admission', '_doclint', '_ticket_law', '_validate_template_manifest',
     '_validate_stub_executor', '_tree_skill_names', 'validate_templates',
 )

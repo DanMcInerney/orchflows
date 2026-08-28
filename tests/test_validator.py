@@ -302,6 +302,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self._write(
             "compositions/references/browser-game-instance-fixtures.json", "{}\n"
         )
+        self._write("scripts/browser_game_validate.py", "# legacy validator\n")
 
         findings = self._findings()
 
@@ -317,6 +318,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         ]
         self.assertEqual(1, len(exception), findings)
         self.assertIn("2026-08-28", exception[0])
+        self.assertIn("script", exception[0])
 
     def test_removing_the_browser_game_entry_exposes_its_protocol_artifacts(self):
         self._write("compositions/browser-game/template.md")
@@ -326,12 +328,26 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self._write(
             "compositions/references/browser-game-instance-fixtures.json", "{}\n"
         )
+        self._write("scripts/browser_game_validate.py", "# legacy validator\n")
 
         findings = self._findings(allowlist={})
 
         errors = [line for line in findings if line.startswith("ERROR ")]
-        self.assertEqual(2, len(errors), findings)
+        self.assertEqual(3, len(errors), findings)
         self.assertTrue(all("composition 'browser-game'" in line for line in errors))
+
+    def test_a_script_module_named_for_a_composition_is_refused_by_boundary(self):
+        self._write("compositions/probe/template.md")
+        self._write("scripts/probe_validate.py", "# composition machinery\n")
+        self._write("scripts/probeish.py", "# unrelated bounded stem\n")
+
+        findings = self._findings()
+
+        errors = [line for line in findings if line.startswith("ERROR ")]
+        self.assertEqual(1, len(errors), findings)
+        self.assertTrue(errors[0].startswith("ERROR scripts/probe_validate.py"), errors)
+        self.assertIn("composition 'probe'", errors[0])
+        self.assertIn("composition-named script machinery", errors[0])
 
 
 if __name__ == "__main__":
