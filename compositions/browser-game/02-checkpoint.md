@@ -21,8 +21,8 @@ dependencies, and status.
 ## Context
 
 - input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
-- input: {"identity":{"kind":"ticket-section","run":"{{run}}","section":"Result","ticket":"00-record"},"name":"program-record","type":"identity"}
-- input: {"identity":{"kind":"ticket-section","run":"{{run}}","section":"Result","ticket":"01-evidence"},"name":"empirical-evidence","type":"identity"}
+- input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this composition instance"}
+- input: {"name":"empirical-evidence","type":"literal","value":"the accepted 01-evidence Result identity in this composition instance"}
 
 Exceptional constraints:
 

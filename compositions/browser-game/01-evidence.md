@@ -19,7 +19,7 @@ results remain visible.
 
 ## Context
 
-- input: {"identity":{"kind":"ticket-section","run":"{{run}}","section":"Result","ticket":"00-record"},"name":"program-record","type":"identity"}
+- input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this composition instance"}
 - input: {"name":"evidence-store-root","type":"literal","value":"the run-scoped evidence store recorded by workspace_path"}
 - input: {"name":"question","type":"literal","value":"Which independently schedulable empirical gaps in the current program record need evidence before its next transition?"}
 - input: {"name":"source-policy","type":"literal","value":"current primary specifications, vendor terms, release records, repositories, and inspectable measurements; secondary sources only for discovery"}
@@ -27,7 +27,7 @@ results remain visible.
 
 Exceptional constraints:
 
-- answer or reclassify a `kind: user-only` field
+- settle or change the authority of a user-only field
 - promote a renderer, engine, backend, topology, performance number, fallback, QA ladder, release model, AI policy, or transport to a universal default
 - authorize a time-sensitive choice without its observation date and revalidation trigger
 
