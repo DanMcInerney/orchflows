@@ -66,7 +66,7 @@ describe("Workflows application integration", () => {
     const detail = matchCatalog(featureCatalog, location("/workflows/evolve", "?fixture=complex-loop"));
     if (detail === null) throw new Error("expected workflow detail match");
     const detailRender = render(<detail.View />);
-    expect(await screen.findByRole("button", { name: "Select loop 02-campaign loops to 02-campaign" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Select loop relation: 02-campaign loops to 02-campaign" })).toBeTruthy();
     detailRender.unmount();
 
     const source = matchCatalog(featureCatalog, location(

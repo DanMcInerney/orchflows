@@ -40,7 +40,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"[schema](../../web/src/api/schema.ts)",
         )
         self.assertEqual(
-            "144F3C395583B53D4AD2DF06A1848D0244D0A33D981837C24ED3686D2A72361D",
+            "7D72EA7FA8D208E9B31F8B69BA33F2533B8EBD6E86D64F2A9829F0E98369D0D1",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
@@ -142,7 +142,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             "session-graph": ["populated", "diagnostic"],
             "friction": ["populated", "empty"],
             "workflow-catalog": ["populated", "empty"],
-            "workflow-detail": ["unreadable", "complex-loop"],
+            "workflow-detail": ["unreadable", "complex-loop", "callable"],
             "workflow-source": ["missing-source", "unreadable-source"],
         }
         expected = {
@@ -154,7 +154,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertEqual("orchflows.view-manifest.v1", manifest["schema"])
         self.assertEqual({"wide": [1440, 1024], "compact": [1024, 768]}, manifest["breakpoints"])
         self.assertEqual(expected, {item["identity"] for item in manifest["views"]})
-        self.assertEqual(62, len(manifest["views"]))
+        self.assertEqual(64, len(manifest["views"]))
         for item in manifest["views"]:
             self.assertEqual(item["identity"], "{view}--{state}--{breakpoint}".format(**item))
             self.assertTrue(item["path"].startswith("/"))

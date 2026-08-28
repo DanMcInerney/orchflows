@@ -2,7 +2,7 @@ import { createElement, type ComponentType } from "react";
 
 import type { FeatureState } from "../../shared/transport/types";
 import { catalogData, detailData, sourceData } from "./data/useFeed";
-import { catalogFixture, detailFixture, sourceFixture } from "./fixtures";
+import { catalogFixture, detailFixture, sourceFixture, workflowSkillDetailFixture } from "./fixtures";
 import type {
   WorkflowCatalogModel,
   WorkflowDetailModel,
@@ -57,6 +57,7 @@ function catalogState(route: WorkflowListRoute): FeatureState<WorkflowCatalogMod
 
 function detailState(route: WorkflowDetailRoute): FeatureState<WorkflowDetailModel> | null {
   if (route.fixture === "complex-loop") return ready(detailFixture);
+  if (route.fixture === "callable") return ready(workflowSkillDetailFixture);
   if (route.fixture === "empty") {
     return ready({
       id: route.workflowId,

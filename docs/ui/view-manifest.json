@@ -36,6 +36,8 @@
     {"identity": "workflow-detail--unreadable--compact", "view": "workflow-detail", "state": "unreadable", "breakpoint": "compact", "path": "/workflows/evolve?fixture=unreadable"},
     {"identity": "workflow-detail--complex-loop--wide", "view": "workflow-detail", "state": "complex-loop", "breakpoint": "wide", "path": "/workflows/evolve?fixture=complex-loop"},
     {"identity": "workflow-detail--complex-loop--compact", "view": "workflow-detail", "state": "complex-loop", "breakpoint": "compact", "path": "/workflows/evolve?fixture=complex-loop"},
+    {"identity": "workflow-detail--callable--wide", "view": "workflow-detail", "state": "callable", "breakpoint": "wide", "path": "/workflows/orch-spec?fixture=callable"},
+    {"identity": "workflow-detail--callable--compact", "view": "workflow-detail", "state": "callable", "breakpoint": "compact", "path": "/workflows/orch-spec?fixture=callable"},
     {"identity": "workflow-source--missing-source--wide", "view": "workflow-source", "state": "missing-source", "breakpoint": "wide", "path": "/workflows/evolve/sources/src_missing?fixture=missing-source"},
     {"identity": "workflow-source--missing-source--compact", "view": "workflow-source", "state": "missing-source", "breakpoint": "compact", "path": "/workflows/evolve/sources/src_missing?fixture=missing-source"},
     {"identity": "workflow-source--unreadable-source--wide", "view": "workflow-source", "state": "unreadable-source", "breakpoint": "wide", "path": "/workflows/evolve/sources/src_campaign?fixture=unreadable-source"},
