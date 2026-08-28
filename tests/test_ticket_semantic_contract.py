@@ -118,6 +118,66 @@ class SemanticTicketContractTest(unittest.TestCase):
             json.dumps(content, sort_keys=True, separators=(",", ":")),
         )
 
+    def test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping(self):
+        """The first valid ticket is the physical run's pre-stamp root."""
+
+        goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
+        for executor in ("orch-edit", tickets.ROOT_EXECUTOR):
+            run = "root-" + executor.removeprefix("orch-")
+            with self.subTest(executor):
+                created = tickets._dispatch([
+                    "new", run, "R", "--executor", executor,
+                    "--goal", goal, "--context", "[]",
+                ])
+                self.assertNotIn("error", created, created)
+                path = Path(created["new"]["path"])
+                self.assertNotIn(
+                    "root_generation",
+                    _parse_frontmatter(path.read_text(encoding="utf-8")),
+                )
+                stamped = tickets._dispatch(["stamp-generation", run, "R"])
+                self.assertNotIn("error", stamped, stamped)
+                self.assertRegex(
+                    stamped["stamp_generation"]["root_generation"],
+                    r"^root:R:1:sha256:[0-9a-f]{64}$",
+                )
+                linted = tickets._dispatch(["lint", run, "R"])
+                self.assertNotIn(
+                    "instruction-ceiling",
+                    {item["code"] for item in linted["lint"]["findings"]},
+                )
+
+    def test_an_over_ceiling_ordinary_unit_is_refused_regardless_of_executor(self):
+        self.dispatch(
+            "new", "unit-ceiling", "R", "--executor", "orch-edit",
+            "--goal", "Deliver the run.", "--context", "[]",
+        )
+        goal = " ".join(["word"] * tickets.INSTRUCTION_BUDGET)
+        refused = tickets._dispatch([
+            "new", "unit-ceiling", "R.01", "--executor", tickets.ROOT_EXECUTOR,
+            "--goal", goal, "--context", "[]",
+        ])
+        self.assertIn("error", refused)
+        self.assertIn(
+            f"{tickets.INSTRUCTION_BUDGET + 1}-word instruction",
+            refused["error"],
+        )
+
+    def test_a_malformed_first_attempt_cannot_consume_the_root_exemption(self):
+        goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
+        malformed = tickets._dispatch([
+            "new", "malformed-root", "R", "--executor", "orch-edit",
+            "--goal", goal,
+        ])
+        self.assertIn("error", malformed)
+        run_dir = Path(self.temporary.name) / "tickets" / "malformed-root"
+        self.assertFalse(run_dir.exists())
+        accepted = tickets._dispatch([
+            "new", "malformed-root", "R", "--executor", "orch-edit",
+            "--goal", goal, "--context", "[]",
+        ])
+        self.assertNotIn("error", accepted, accepted)
+
     def test_goal_context_only_direct_root_lifecycle(self):
         self.dispatch(
             "new", "direct", "R1", "--executor", "orch-edit",

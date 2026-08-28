@@ -5,19 +5,17 @@ from __future__ import annotations
 if __package__:
     from .tickets_format import (
         GATE_ID_MARKER,
-        ROOT_EXECUTOR,
-        _executor_of,
         _parse_frontmatter,
         ceiling_sentence,
     )
+    from .tickets_generations import GENERATION_RE
 else:
     from tickets_format import (
         GATE_ID_MARKER,
-        ROOT_EXECUTOR,
-        _executor_of,
         _parse_frontmatter,
         ceiling_sentence,
     )
+    from tickets_generations import GENERATION_RE
 
 
 def _frontmatter_list(key: str, values) -> list:
@@ -47,11 +45,28 @@ def _render_ticket(fields: dict, sections: list) -> str:
     return "\n".join(lines) + "\n" + "".join(body)
 
 
-def _ceiling_error(subject: str, ticket_id: str, text: str):
+def _root_generation_names(ticket_id: str, text: str) -> bool:
+    """Whether one stamped assignment is the physical run's root."""
+
+    generation = str(_parse_frontmatter(text).get("root_generation") or "")
+    match = GENERATION_RE.fullmatch(generation)
+    return bool(
+        match is not None
+        and match.group(1) == "root"
+        and match.group(2) == str(ticket_id or "")
+        and int(match.group(3)) == 1
+    )
+
+
+def _ceiling_error(
+    subject: str, ticket_id: str, text: str, *, pre_generation_root: bool = False
+):
     """Return the instruction-ceiling refusal for one non-root unit."""
-    if GATE_ID_MARKER in str(ticket_id or ""):
-        return None
-    if _executor_of(_parse_frontmatter(text)) == ROOT_EXECUTOR:
+    if (
+        GATE_ID_MARKER in str(ticket_id or "")
+        or pre_generation_root
+        or _root_generation_names(ticket_id, text)
+    ):
         return None
     sentence = ceiling_sentence(subject, text)
     return None if sentence is None else {"error": sentence}
@@ -60,5 +75,6 @@ def _ceiling_error(subject: str, ticket_id: str, text: str):
 __all__ = (
     "_ceiling_error",
     "_frontmatter_list",
+    "_root_generation_names",
     "_render_ticket",
 )
