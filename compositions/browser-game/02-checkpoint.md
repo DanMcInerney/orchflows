@@ -15,8 +15,9 @@ Exactly one product checkpoint disposition — `advance`, `revise`,
 requirement, fixed program-record revision, and evidence identity. The result
 names its invalidation and revalidation boundary and either one verbatim
 user-only question, a matched experiment, or a lawful pack-separated
-successor plan with ordered artifact kinds, packs, run/root identities,
-dependencies, and status.
+successor plan whose ordered entries each preserve an artifact identity,
+artifact kind, matching pack, proposed run/root identities, dependencies,
+and `planned` or `opened` status.
 
 ## Context
 
@@ -24,6 +25,7 @@ dependencies, and status.
 - input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this composition instance"}
 - input: {"name":"empirical-evidence","type":"literal","value":"the accepted 01-evidence Result identity in this composition instance"}
 - checkpoint-contract: `../references/browser-game-checkpoint.schema.json`
+- input: {"name":"successor-plan-contract","type":"literal","value":"the definition at compositions/references/browser-game-program-record.schema.json#/$defs/successorPlanRevision in the orchflows library"}
 
 Exceptional constraints:
 

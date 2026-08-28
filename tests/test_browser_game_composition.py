@@ -119,6 +119,23 @@ class BrowserGameCompositionTests(unittest.TestCase):
         for forbidden in LEGACY_INPUTS + OBSOLETE_EXECUTORS:
             self.assertNotIn(forbidden, admitted)
 
+    def test_checkpoint_consumes_the_kind_separated_successor_plan_contract(self):
+        checkpoint = (COMPOSITION / "02-checkpoint.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "compositions/references/browser-game-program-record.schema.json"
+            "#/$defs/successorPlanRevision",
+            checkpoint,
+        )
+        for field in (
+            "artifact identity",
+            "artifact kind",
+            "pack",
+            "run/root identities",
+            "dependencies",
+            "status",
+        ):
+            self.assertIn(field, " ".join(checkpoint.split()))
+
 
 if __name__ == "__main__":
     unittest.main()
