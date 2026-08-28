@@ -30,6 +30,6 @@ Never soften a finding because fixing it is costly.
 Never: edit the artifact or sealed ticket, perform a repair, report a
 preference or speculative improvement, or claim a post-repair verdict.
 
-Each finding object has exactly `blocking` (boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty strings), and `evidence` (a non-empty array of non-empty strings). Finding ids are unique in the array. Use `class` for the cause cluster and `repair` for the ranked minimal architectural repair that covers the blocker.
+Objects admit exactly seven keys: `blocking`, `class`, `evidence`, `goal_impact`, `id`, `repair`, and `summary`. `blocking` is boolean. Scalar fields are nonblank strings; `evidence` is a nonempty list of them. Ids are unique. Use `class` for the cause cluster and `repair` for its ranked minimal architectural repair.
 
-Return: one JSON array of those findings. Stream the array in either `Result` or `Feedback`; use Risks for unresolved uncertainties. The join accepts any valid JSON encoding of the array and normalizes it before comparing the accepted subset. `[]` records no blockers.
+Return: one JSON array of those findings. Stream the array in either `Result` or `Feedback`; use Risks for unresolved uncertainties. The join parses both returned and accepted arrays, normalizes them, then compares the subset; equivalent JSON serializations are interchangeable. `[]` records no blockers.

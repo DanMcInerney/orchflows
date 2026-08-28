@@ -49,11 +49,23 @@ DISPATCH_OUTCOME_USAGE = "dispatch-outcome <run> <id> --content <canonical-json>
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> "
-    "[--accepted <canonical-json-array>] [--artifact <fixed-identity>]"
+    "[--accepted <json-array>] [--artifact <fixed-identity>]"
 )
 
 
-def _critique_findings(attempt: dict, outcome_feedback: str) -> str:
+def _finding_array(body, subject: str):
+    if not isinstance(body, str):
+        return None
+    try:
+        value = parse_canonical_json(body)
+    except (TypeError, ValueError) as error:
+        if body.lstrip().startswith("["):
+            raise ReviewError(f"{subject} is not a valid JSON array: {error}") from error
+        return None
+    return value if isinstance(value, list) else None
+
+
+def _critique_findings(attempt: dict, outcome_evidence: dict) -> str:
     findings = []
     found = False
     for record in attempt.get("records", []):
@@ -63,17 +75,29 @@ def _critique_findings(attempt: dict, outcome_feedback: str) -> str:
             content = parse_canonical_json(record["content"])
         except (KeyError, TypeError, ValueError) as error:
             raise ReviewError(f"critique findings result is not canonical JSON: {error}") from error
-        if not isinstance(content, dict) or content.get("section") != "Feedback":
+        if not isinstance(content, dict) or content.get("section") not in {
+            "Result", "Feedback",
+        }:
             continue
-        found = True
-        try:
-            values = parse_canonical_json(content.get("body"))
-        except (TypeError, ValueError) as error:
-            raise ReviewError(f"critique findings must be a canonical JSON array: {error}") from error
-        if not isinstance(values, list):
-            raise ReviewError("critique findings must be a canonical JSON array")
-        findings.extend(values)
-    return canonical_json(findings) if found else outcome_feedback
+        values = _finding_array(
+            content.get("body"), f"critique {content.get('section')} result"
+        )
+        if values is not None:
+            found = True
+            findings.extend(values)
+    if isinstance(outcome_evidence, dict):
+        for section in ("Result", "Feedback"):
+            values = _finding_array(
+                outcome_evidence.get(section), f"critique outcome {section}"
+            )
+            if values is not None:
+                found = True
+                findings.extend(values)
+    if not found:
+        raise ReviewError(
+            "critique findings must be a JSON array in Result or Feedback"
+        )
+    return canonical_json(findings)
 
 
 def _attempt_workspace(attempt: dict) -> str | None:
@@ -246,7 +270,7 @@ def _cmd_dispatch_join(rest):
                 )
                 review = adjudicate(
                     review, _critique_findings(
-                        attempt, outcome["evidence"]["Feedback"],
+                        attempt, outcome["evidence"],
                     ), accepted,
                     outcome["by"], lens,
                 )

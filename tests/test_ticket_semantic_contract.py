@@ -14,6 +14,7 @@ from unittest import mock
 from scripts import cutcheck
 from scripts import tickets
 from scripts import tickets_generations
+from scripts import tickets_join
 from scripts import tickets_review
 from scripts import tickets_lifecycle
 from scripts.tickets_format import (
@@ -74,15 +75,75 @@ class SemanticTicketContractTest(unittest.TestCase):
         result_contract = (ROOT / "contracts" / "result.md").read_text(
             encoding="utf-8"
         )
-        closed_shape = (
-            "exactly `blocking` (boolean), `class`, `goal_impact`, `id`, "
-            "`repair`, `summary` (non-empty strings), and `evidence` "
-            "(a non-empty array of non-empty strings)"
-        )
         for text in (skill, result_contract):
-            self.assertIn(closed_shape, text)
+            for field in (
+                "`blocking`", "`class`", "`evidence`", "`goal_impact`",
+                "`id`", "`repair`", "`summary`",
+            ):
+                self.assertIn(field, text)
             self.assertIn("either `Result` or `Feedback`", text)
-            self.assertIn("valid JSON encoding", text)
+        self.assertIn("admit exactly seven keys", skill)
+        self.assertIn("equivalent JSON serializations are interchangeable", skill)
+        self.assertIn("has exactly", result_contract)
+        self.assertIn("valid JSON encoding", result_contract)
+
+    def test_critique_join_normalizes_result_findings_and_accepted_json(self):
+        findings = [{
+            "blocking": True,
+            "class": "correctness",
+            "evidence": ["render says ‘game over’"],
+            "goal_impact": "The target Goal is false.",
+            "id": "B1",
+            "repair": "Repair the state transition.",
+            "summary": "The final state is wrong — play cannot finish.",
+        }]
+        streamed = json.dumps(findings, ensure_ascii=False, indent=2)
+        accepted = json.dumps(
+            findings, ensure_ascii=True, sort_keys=True, separators=(",", ":")
+        )
+        attempt = {"records": [
+            {
+                "kind": "result",
+                "content": tickets_review.canonical_json({
+                    "body": streamed,
+                    "section": "Result",
+                }),
+            },
+            {
+                "kind": "result",
+                "content": tickets_review.canonical_json({
+                    "body": "Inspected the fixed render and transition trace.",
+                    "section": "Feedback",
+                }),
+            },
+        ]}
+        extracted = tickets_join._critique_findings(
+            attempt, {
+                "Result": "No unstreamed finding delta.",
+                "Feedback": "Inspected evidence already streamed.",
+            }
+        )
+        self.assertEqual(tickets_review.canonical_json(findings), extracted)
+
+        artifact = "git:" + subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+            capture_output=True, check=True,
+        ).stdout.strip()
+        plan = tickets_review._record(
+            "GatePlan", None, artifact=artifact,
+            criteria=[{
+                "identity": "sha256:criterion", "lens": "code",
+                "order": 0, "ticket": "R.gate.critique.code",
+            }],
+            isolation="required", mode="gate", pack="orch-code-pack",
+            root="R", workspace=str(ROOT.resolve()),
+        )
+        adjudicated = tickets_review.adjudicate(
+            {"protocol": "orchflows.review.v1", "records": [plan]},
+            extracted, accepted, "root-join", "code",
+        )
+        self.assertEqual(findings, adjudicated["records"][-1]["findings"])
+        self.assertEqual(findings, adjudicated["records"][-1]["accepted"])
 
     def seal(self, run, root):
         self.dispatch("stamp-generation", run, root)

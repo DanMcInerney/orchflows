@@ -362,11 +362,9 @@ def adjudicate(
         findings = parse_canonical_json(feedback)
         accepted = parse_canonical_json(accepted_text) if accepted_text is not None else None
     except (TypeError, ValueError) as error:
-        raise ReviewError(f"critique findings and accepted set must be canonical JSON arrays: {error}") from error
+        raise ReviewError(f"critique findings and accepted set must be valid JSON arrays: {error}") from error
     if not isinstance(findings, list) or not isinstance(accepted, list):
-        raise ReviewError("critique join requires --accepted <canonical-json-array>")
-    if canonical_json(findings) != feedback or canonical_json(accepted) != accepted_text:
-        raise ReviewError("critique findings and accepted set must use canonical JSON")
+        raise ReviewError("critique join requires --accepted <json-array>")
     try:
         _finding_values(findings, "critique findings")
         _finding_values(accepted, "critique accepted")
