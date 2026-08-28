@@ -249,6 +249,91 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         self.assertEqual(0, accepted.returncode, accepted.stdout)
 
 
+class TestCompositionProtocolAdmission(_IsolatedTree):
+    """A composition is ticket control flow, never a private protocol tier."""
+
+    def _write(self, relative: str, body: str = "fixture\n") -> None:
+        path = self.tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+
+    def _findings(self, allowlist=None):
+        saved = validate.ROOT
+        try:
+            validate._bind_root(self.tmp_path)
+            diag = validate.Diagnostics()
+            if allowlist is None:
+                validate.validate_composition_admission(diag)
+            else:
+                validate.validate_composition_admission(diag, allowlist=allowlist)
+            return diag.lines()
+        finally:
+            validate._bind_root(saved)
+
+    def test_schema_fixture_format_and_script_are_refused(self):
+        self._write("compositions/probe/template.md")
+        self._write("compositions/probe/state.schema.json", "{}\n")
+        self._write("compositions/probe/replay-fixtures.json", "{}\n")
+        self._write("compositions/probe/validate.py", "# executable machinery\n")
+
+        findings = self._findings()
+
+        for relative, kind in (
+            ("compositions/probe/state.schema.json", "schema"),
+            ("compositions/probe/replay-fixtures.json", "fixture format"),
+            ("compositions/probe/validate.py", "script"),
+        ):
+            with self.subTest(relative=relative):
+                self.assertTrue(
+                    any(
+                        line.startswith("ERROR " + relative)
+                        and "composition 'probe'" in line
+                        and kind in line
+                        for line in findings
+                    ),
+                    findings,
+                )
+
+    def test_browser_game_is_the_one_dated_visible_exception(self):
+        self._write("compositions/browser-game/template.md")
+        self._write(
+            "compositions/references/browser-game-checkpoint.schema.json", "{}\n"
+        )
+        self._write(
+            "compositions/references/browser-game-instance-fixtures.json", "{}\n"
+        )
+
+        findings = self._findings()
+
+        self.assertEqual(
+            {"browser-game": "2026-08-28"},
+            validate.COMPOSITION_PROTOCOL_ALLOWLIST,
+        )
+        self.assertFalse(any(line.startswith("ERROR ") for line in findings), findings)
+        exception = [
+            line
+            for line in findings
+            if line.startswith("WARN ") and "browser-game" in line
+        ]
+        self.assertEqual(1, len(exception), findings)
+        self.assertIn("2026-08-28", exception[0])
+
+    def test_removing_the_browser_game_entry_exposes_its_protocol_artifacts(self):
+        self._write("compositions/browser-game/template.md")
+        self._write(
+            "compositions/references/browser-game-checkpoint.schema.json", "{}\n"
+        )
+        self._write(
+            "compositions/references/browser-game-instance-fixtures.json", "{}\n"
+        )
+
+        findings = self._findings(allowlist={})
+
+        errors = [line for line in findings if line.startswith("ERROR ")]
+        self.assertEqual(2, len(errors), findings)
+        self.assertTrue(all("composition 'browser-game'" in line for line in errors))
+
+
 if __name__ == "__main__":
     unittest.main()
 
