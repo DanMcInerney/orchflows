@@ -349,6 +349,25 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self.assertIn("composition 'probe'", errors[0])
         self.assertIn("composition-named script machinery", errors[0])
 
+    def test_authoring_standard_states_the_protocol_boundary_and_exception(self):
+        text = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(
+            encoding="utf-8"
+        )
+        admission = text.split("## Composition admission", 1)
+
+        self.assertEqual(2, len(admission), "missing Composition admission section")
+        for term in (
+            "schema",
+            "fixture format",
+            "script",
+            "composition-named",
+            "browser-game",
+            "2026-08-28",
+            "warning",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, admission[1])
+
 
 if __name__ == "__main__":
     unittest.main()
