@@ -5,18 +5,20 @@ entry: named
 placeholders: [brief, workspace]
 ---
 
-<!-- BGW-TRACE[traceability|PJ-21] -->
-<!-- BGW-TRACE[program-record|PJ-03,PJ-07] -->
-<!-- BGW-TRACE[question-authority|PJ-06,PJ-09,PJ-10] -->
-<!-- BGW-TRACE[checkpoint-disposition|PJ-05] -->
-<!-- BGW-TRACE[experiment-validity|PJ-16,PJ-17] -->
-<!-- BGW-TRACE[kind-separation|AUTH-05,PJ-18,PJ-28] -->
-<!-- BGW-TRACE[closed-surface|PJ-20] -->
-<!-- BGW-TRACE[decision-safety|PJ-22] -->
-<!-- BGW-TRACE[conditional-fidelity|PJ-23] -->
-<!-- BGW-TRACE[evidence-identity|PJ-08,PJ-24] -->
-<!-- BGW-TRACE[revalidation|PJ-25] -->
-<!-- BGW-TRACE[migration|PJ-01,PJ-26,U-03] -->
+<!-- BGW-TRACE[help:traceability|PJ-21] -->
+<!-- BGW-TRACE[help:program-record|PJ-03,PJ-07] -->
+<!-- BGW-TRACE[help:question-authority|PJ-06,PJ-09,PJ-10] -->
+<!-- BGW-TRACE[help:checkpoint-disposition|PJ-05] -->
+<!-- BGW-TRACE[help:experiment-validity|PJ-16,PJ-17] -->
+<!-- BGW-TRACE[help:kind-separation|AUTH-05,PJ-18,PJ-19,PJ-28] -->
+<!-- BGW-TRACE[implementation:closed-surface|PJ-20] -->
+<!-- BGW-TRACE[help:closed-surface|PJ-20] -->
+<!-- BGW-TRACE[help:decision-safety|PJ-22] -->
+<!-- BGW-TRACE[help:conditional-fidelity|PJ-23] -->
+<!-- BGW-TRACE[help:evidence-identity|PJ-08,PJ-24] -->
+<!-- BGW-TRACE[help:revalidation|PJ-25] -->
+<!-- BGW-TRACE[help:migration|PJ-01,PJ-26,U-03] -->
+<!-- BGW-TRACE[help:instance-validation|PJ-05,PJ-06,PJ-09,PJ-10,PJ-22,PJ-24,PJ-25,PJ-28] -->
 
 One incomplete product request enters as `brief`; `workspace` is the
 git-backed product repository. Those are the only required invocation

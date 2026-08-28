@@ -110,6 +110,27 @@ class BrowserGameIntakePolicyTests(unittest.TestCase):
         self.assertEqual("verbatim", envelope["question_handling"])
         self.assertEqual("root", envelope["relay_owner"])
 
+    def test_atomic_authority_rule_is_deterministic(self):
+        classifier = self.policy["atomic_authority"]
+        self.assertEqual(
+            ["question_id", "field_id", "authority_source"],
+            classifier["decision_key"],
+        )
+        self.assertEqual("empirical-evidence", classifier["default_source"])
+        self.assertEqual(
+            "commercial_or_legal_acceptance",
+            classifier["overrides"]["Q-02"]["commercial_license_constraints"],
+        )
+        self.assertEqual(
+            "accessibility_promises",
+            classifier["overrides"]["Q-06"]["accessibility_conformance_target"],
+        )
+        self.assertEqual(
+            "target_cohorts",
+            classifier["overrides"]["Q-01"]["target_browser_cohorts"],
+        )
+        self.assertEqual("empirical", classifier["source_kinds"]["empirical-evidence"])
+
     def test_empirical_gaps_remain_independent_and_require_evidence(self):
         empirical = self.policy["authority"]["empirical"]
         self.assertEqual(

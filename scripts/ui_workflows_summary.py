@@ -13,6 +13,7 @@ DEFAULT_MANIFEST = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 SUMMARY_SCHEMA = "orchflows.workflow-summary.v1"
 CANONICAL_WORKFLOW_IDS = frozenset({
     "benchmaker",
+    "browser-game",
     "drift-canary",
     "evolve",
     "fix",

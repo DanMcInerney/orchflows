@@ -9,9 +9,9 @@ isolation: required
 profile: orch-worker
 ---
 
-<!-- BGW-TRACE[experiment-validity|PJ-16,PJ-17] -->
-<!-- BGW-TRACE[conditional-fidelity|PJ-23] -->
-<!-- BGW-TRACE[revalidation|PJ-25] -->
+<!-- BGW-TRACE[implementation:experiment-validity|PJ-16,PJ-17] -->
+<!-- BGW-TRACE[implementation:conditional-fidelity|PJ-23] -->
+<!-- BGW-TRACE[implementation:revalidation|PJ-25] -->
 
 ## Goal
 

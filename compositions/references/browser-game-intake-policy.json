@@ -16,6 +16,114 @@
     "experiment",
     "not-applicable"
   ],
+  "atomic_authority": {
+    "decision_key": ["question_id", "field_id", "authority_source"],
+    "default_source": "empirical-evidence",
+    "source_kinds": {
+      "product_intent": "user-only",
+      "commercial_or_legal_acceptance": "user-only",
+      "accessibility_promises": "user-only",
+      "risk_appetite": "user-only",
+      "target_cohorts": "user-only",
+      "public_release_commitments": "user-only",
+      "empirical-evidence": "empirical"
+    },
+    "overrides": {
+      "Q-01": {
+        "player": "product_intent",
+        "audience": "product_intent",
+        "genre": "product_intent",
+        "core_loop": "product_intent",
+        "target_browser_cohorts": "target_cohorts",
+        "target_os_cohorts": "target_cohorts",
+        "target_device_cohorts": "target_cohorts",
+        "target_webview_cohorts": "target_cohorts",
+        "target_pwa_cohorts": "target_cohorts",
+        "support_horizon": "public_release_commitments"
+      },
+      "Q-02": {
+        "dimensional_scope": "product_intent",
+        "commercial_license_constraints": "commercial_or_legal_acceptance"
+      },
+      "Q-03": {
+        "boot_budget": "risk_appetite",
+        "memory_budget": "risk_appetite",
+        "cpu_budget": "risk_appetite",
+        "gpu_budget": "risk_appetite",
+        "frame_budget": "risk_appetite",
+        "input_budget": "risk_appetite",
+        "network_budget": "risk_appetite",
+        "thermal_budget": "risk_appetite",
+        "power_budget": "risk_appetite",
+        "quality_budget": "risk_appetite",
+        "bundle_budget": "risk_appetite"
+      },
+      "Q-04": {
+        "legal_provenance": "commercial_or_legal_acceptance",
+        "content_bundles": "product_intent",
+        "content_lifetimes": "public_release_commitments"
+      },
+      "Q-05": {
+        "player_mode": "product_intent",
+        "ugc": "risk_appetite",
+        "cloud_save_conflicts": "risk_appetite",
+        "recovery": "public_release_commitments",
+        "server_operations": "public_release_commitments"
+      },
+      "Q-06": {
+        "accessibility_conformance_target": "accessibility_promises",
+        "browser_at_matrix": "accessibility_promises",
+        "caption_design": "accessibility_promises",
+        "narration_design": "accessibility_promises",
+        "spatial_assist_design": "accessibility_promises",
+        "timing_tradeoffs": "risk_appetite",
+        "difficulty_tradeoffs": "risk_appetite",
+        "competitive_tradeoffs": "risk_appetite",
+        "participant_cohorts": "target_cohorts",
+        "residual_exclusions": "accessibility_promises"
+      },
+      "Q-07": {
+        "jurisdiction": "commercial_or_legal_acceptance",
+        "age_policy": "commercial_or_legal_acceptance",
+        "children_policy": "commercial_or_legal_acceptance",
+        "privacy_policy": "commercial_or_legal_acceptance",
+        "consent_policy": "commercial_or_legal_acceptance",
+        "advertising_policy": "commercial_or_legal_acceptance",
+        "payments_policy": "commercial_or_legal_acceptance",
+        "telemetry_policy": "commercial_or_legal_acceptance",
+        "replay_policy": "commercial_or_legal_acceptance",
+        "retention": "commercial_or_legal_acceptance",
+        "data_residency": "commercial_or_legal_acceptance",
+        "incident_notification": "public_release_commitments",
+        "providers": "commercial_or_legal_acceptance",
+        "sla_obligations": "public_release_commitments"
+      },
+      "Q-08": {
+        "offline_mode": "public_release_commitments",
+        "pwa_mode": "public_release_commitments",
+        "rollout_cohort": "target_cohorts",
+        "rollback_window": "risk_appetite",
+        "rpo": "risk_appetite",
+        "rto": "risk_appetite"
+      },
+      "Q-09": {
+        "commercial_content_rights": "commercial_or_legal_acceptance",
+        "art_approval": "commercial_or_legal_acceptance",
+        "audio_approval": "commercial_or_legal_acceptance",
+        "long_term_maintenance_policy": "public_release_commitments"
+      },
+      "Q-12": {
+        "browser_revalidation_cadence": "risk_appetite",
+        "engine_revalidation_cadence": "risk_appetite",
+        "model_revalidation_cadence": "risk_appetite",
+        "tool_revalidation_cadence": "risk_appetite",
+        "license_revalidation_cadence": "commercial_or_legal_acceptance",
+        "compatibility_revalidation_cadence": "risk_appetite",
+        "adoption_revalidation_cadence": "risk_appetite",
+        "security_revalidation_cadence": "risk_appetite"
+      }
+    }
+  },
   "authority": {
     "user-only": {
       "categories": [

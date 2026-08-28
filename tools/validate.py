@@ -150,9 +150,9 @@ DOC_PATH_EXEMPT_SITES = frozenset({
     ("docs/ui/modularization.md", 7, "web/src/state/location.ts"),
     ("docs/ui/modularization.md", 17, "app/catalog.ts"),
     ("docs/ui/modularization.md", 55, "web/src/state/location.ts"),
-    ("docs/ui/workflows.md", 65, "web/src/api/schema.ts"),
-    ("docs/ui/workflows.md", 71, "web/src/state/location.ts"),
-    ("docs/ui/workflows.md", 73, "web/src/api/schema.ts"),
+    ("docs/ui/workflows.md", 66, "web/src/api/schema.ts"),
+    ("docs/ui/workflows.md", 72, "web/src/state/location.ts"),
+    ("docs/ui/workflows.md", 74, "web/src/api/schema.ts"),
 })
 
 

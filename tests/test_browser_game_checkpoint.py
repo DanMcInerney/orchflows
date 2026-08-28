@@ -56,6 +56,7 @@ class BrowserGameCheckpointContractTests(unittest.TestCase):
                 "program_record_revision_identity",
                 "evidence",
                 "disposition",
+                "branch",
                 "invalidation",
                 "q12_revalidation",
             },
@@ -68,6 +69,26 @@ class BrowserGameCheckpointContractTests(unittest.TestCase):
         )
         self.assertEqual(1, self.schema["properties"]["evidence"]["minItems"])
         self.assertTrue(self.schema["properties"]["evidence"]["uniqueItems"])
+
+    def test_each_disposition_is_bound_to_one_branch_shape(self):
+        clauses = self.schema["allOf"][1:]
+        bindings = {}
+        for clause in clauses:
+            disposition = clause["if"]["properties"]["disposition"]
+            values = disposition.get("enum", [disposition.get("const")])
+            branch_ref = clause["then"]["properties"]["branch"]["$ref"]
+            for value in values:
+                bindings[value] = branch_ref
+        self.assertEqual(
+            {
+                "advance": "#/$defs/successorPlanBranch",
+                "revise": "#/$defs/successorPlanBranch",
+                "stop": "#/$defs/successorPlanBranch",
+                "experiment": "#/$defs/experimentBranch",
+                "user-decision-required": "#/$defs/userQuestionBranch",
+            },
+            bindings,
+        )
 
     def test_covered_candidate_or_evidence_change_invalidates_disposition(self):
         invalidation = self.defs["invalidationBoundary"]

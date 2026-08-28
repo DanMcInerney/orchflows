@@ -1,0 +1,178 @@
+{
+  "program_record": {
+    "contract_version": "1.0.0",
+    "program_id": "program:browser-game-fixture",
+    "program_revision_id": "program-revision:1",
+    "supersedes_program_revision_id": null,
+    "records": {
+      "product_brief": {
+        "state": "present",
+        "entries": [
+          {
+            "record_id": "record:product-brief",
+            "revision_id": "program-revision:1",
+            "revision_status": "settled",
+            "supersedes_revision_id": null,
+            "recorded_at": "2026-08-28T00:00:00Z",
+            "questions": {
+              "Q-01": {
+                "target_browser_cohorts": {
+                  "field_id": "target_browser_cohorts",
+                  "disposition": "deferred",
+                  "authority_source": "target_cohorts",
+                  "authority_kind": "user-only",
+                  "verbatim_question": "Which browser cohorts are accepted?",
+                  "resolution": {
+                    "state": "open-question",
+                    "open_question_id": "question:browser-cohorts",
+                    "authority_kind": "user-only",
+                    "kind": "user-only",
+                    "question": "Which browser cohorts are accepted?"
+                  },
+                  "owner": {"state": "settled", "value": "root"},
+                  "rationale": {"state": "settled", "value": "Only the user can accept a cohort."},
+                  "evidence": {"state": "settled", "value": []},
+                  "revision": "field-revision:cohorts:1"
+                }
+              },
+              "Q-02": {
+                "commercial_license_constraints": {
+                  "field_id": "commercial_license_constraints",
+                  "disposition": "answered",
+                  "authority_source": "commercial_or_legal_acceptance",
+                  "authority_kind": "user-only",
+                  "resolution": {
+                    "state": "settled",
+                    "value": "No copyleft runtime dependency.",
+                    "settled_by": "verbatim-user-answer",
+                    "verbatim_user_answer": "No copyleft runtime dependency."
+                  },
+                  "owner": {"state": "settled", "value": "root"},
+                  "rationale": {"state": "settled", "value": "Recorded verbatim."},
+                  "evidence": {"state": "settled", "value": []},
+                  "revision": "field-revision:license:1"
+                }
+              },
+              "Q-06": {
+                "accessibility_conformance_target": {
+                  "field_id": "accessibility_conformance_target",
+                  "disposition": "deferred",
+                  "authority_source": "accessibility_promises",
+                  "authority_kind": "user-only",
+                  "verbatim_question": "What accessibility conformance is promised?",
+                  "resolution": {
+                    "state": "open-question",
+                    "open_question_id": "question:accessibility-promise",
+                    "authority_kind": "user-only",
+                    "kind": "user-only",
+                    "question": "What accessibility conformance is promised?"
+                  },
+                  "owner": {"state": "settled", "value": "root"},
+                  "rationale": {"state": "settled", "value": "Only the user can make the promise."},
+                  "evidence": {"state": "settled", "value": []},
+                  "revision": "field-revision:accessibility:1"
+                }
+              },
+              "Q-10": {
+                "gpu_memory_evidence": {
+                  "field_id": "gpu_memory_evidence",
+                  "disposition": "experiment",
+                  "authority_source": "empirical-evidence",
+                  "authority_kind": "empirical",
+                  "resolution": {"state": "decision", "decision_id": "decision:gpu-memory"},
+                  "owner": {"state": "settled", "value": "evidence-worker"},
+                  "rationale": {"state": "settled", "value": "Measure the fixed candidate."},
+                  "evidence": {"state": "open-question", "open_question_id": "evidence:gpu-memory", "authority_kind": "empirical", "kind": "empirical"},
+                  "revision": "field-revision:gpu-memory:1"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "successor_plans": {
+        "state": "present",
+        "entries": [
+          {
+            "record_id": "record:successor-plan",
+            "revision_id": "successor-plan-revision:1",
+            "revision_status": "settled",
+            "supersedes_revision_id": null,
+            "recorded_at": "2026-08-28T00:00:00Z",
+            "ordered_artifact_kinds": {"state": "settled", "value": ["code"]},
+            "packs": {"state": "settled", "value": ["orch-code-pack"]},
+            "run_identities": {"state": "settled", "value": ["run:browser-game-code"]},
+            "root_identities": {"state": "settled", "value": ["root:browser-game-code"]},
+            "dependencies": {"state": "settled", "value": [["artifact:brief"]]},
+            "current_status": {"state": "settled", "value": ["planned"]},
+            "ordered_artifacts": [
+              {
+                "artifact_identity": "artifact:code",
+                "artifact_kind": "code",
+                "pack": "orch-code-pack",
+                "run_identity": "run:browser-game-code",
+                "root_identity": "root:browser-game-code",
+                "dependencies": ["artifact:brief"],
+                "current_status": "planned"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "checkpoint": {
+    "contract_version": "1.0.0",
+    "checkpoint_id": "checkpoint:1",
+    "governing_requirement_identity": "PJ-05",
+    "candidate_identity": "candidate:browser-game:1",
+    "program_record_revision_identity": "program-revision:1",
+    "evidence": [
+      {"evidence_identity": "evidence:checkpoint:1", "observed_on": "2026-08-28", "subject": "other"}
+    ],
+    "disposition": "advance",
+    "invalidation": {
+      "covered_candidate_identity": "candidate:browser-game:1",
+      "covered_program_record_revision_identity": "program-revision:1",
+      "covered_evidence_identities": ["evidence:checkpoint:1"],
+      "candidate_change": "invalidate",
+      "program_record_change": "invalidate",
+      "evidence_change": "invalidate"
+    },
+    "q12_revalidation": {
+      "status": "settled",
+      "boundary": {
+        "q12_cadence_decision_identity": "decision:q12:1",
+        "last_revalidated_on": "2026-08-28",
+        "revalidate_by_or_trigger": "2026-09-28 or browser release"
+      }
+    },
+    "branch": {
+      "kind": "successor-plan",
+      "successor_plan": {
+        "record_id": "record:successor-plan",
+        "revision_id": "successor-plan-revision:1",
+        "revision_status": "settled",
+        "supersedes_revision_id": null,
+        "recorded_at": "2026-08-28T00:00:00Z",
+        "ordered_artifact_kinds": {"state": "settled", "value": ["code"]},
+        "packs": {"state": "settled", "value": ["orch-code-pack"]},
+        "run_identities": {"state": "settled", "value": ["run:browser-game-code"]},
+        "root_identities": {"state": "settled", "value": ["root:browser-game-code"]},
+        "dependencies": {"state": "settled", "value": [["artifact:brief"]]},
+        "current_status": {"state": "settled", "value": ["planned"]},
+        "ordered_artifacts": [
+          {
+            "artifact_identity": "artifact:code",
+            "artifact_kind": "code",
+            "pack": "orch-code-pack",
+            "run_identity": "run:browser-game-code",
+            "root_identity": "root:browser-game-code",
+            "dependencies": ["artifact:brief"],
+            "current_status": "planned"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -301,6 +301,7 @@ class TestBrowserGameProgramRecord(unittest.TestCase):
                 "field_id",
                 "disposition",
                 "resolution",
+                "authority_source",
                 "authority_kind",
                 "owner",
                 "rationale",

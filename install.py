@@ -81,6 +81,7 @@ if sys.version_info < MIN_PYTHON:
     )
 
 SCRIPT_NAMES = (
+    "browser_game_validate.py",
     "cutcheck.py",
     "doclint.py",
     "friction.py",

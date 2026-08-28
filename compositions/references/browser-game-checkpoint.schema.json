@@ -14,6 +14,7 @@
     "program_record_revision_identity",
     "evidence",
     "disposition",
+    "branch",
     "invalidation",
     "q12_revalidation"
   ],
@@ -41,6 +42,7 @@
         "stop"
       ]
     },
+    "branch": {"$ref": "#/$defs/checkpointBranch"},
     "invalidation": {"$ref": "#/$defs/invalidationBoundary"},
     "q12_revalidation": {"$ref": "#/$defs/q12RevalidationState"}
   },
@@ -65,6 +67,27 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "required": ["disposition"],
+        "properties": {"disposition": {"const": "user-decision-required"}}
+      },
+      "then": {"properties": {"branch": {"$ref": "#/$defs/userQuestionBranch"}}}
+    },
+    {
+      "if": {
+        "required": ["disposition"],
+        "properties": {"disposition": {"const": "experiment"}}
+      },
+      "then": {"properties": {"branch": {"$ref": "#/$defs/experimentBranch"}}}
+    },
+    {
+      "if": {
+        "required": ["disposition"],
+        "properties": {"disposition": {"enum": ["advance", "revise", "stop"]}}
+      },
+      "then": {"properties": {"branch": {"$ref": "#/$defs/successorPlanBranch"}}}
     }
   ],
   "$defs": {
@@ -72,6 +95,47 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/#-]*$"
+    },
+    "checkpointBranch": {
+      "oneOf": [
+        {"$ref": "#/$defs/userQuestionBranch"},
+        {"$ref": "#/$defs/experimentBranch"},
+        {"$ref": "#/$defs/successorPlanBranch"}
+      ]
+    },
+    "userQuestionBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "question", "field_id", "open_question_id", "program_revision_id"],
+      "properties": {
+        "kind": {"const": "user-question"},
+        "question": {"type": "string", "minLength": 1},
+        "field_id": {"$ref": "#/$defs/stableIdentity"},
+        "open_question_id": {"$ref": "#/$defs/stableIdentity"},
+        "program_revision_id": {"$ref": "#/$defs/stableIdentity"}
+      }
+    },
+    "experimentBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "decision_id", "experiment_id", "result_identity"],
+      "properties": {
+        "kind": {"const": "experiment"},
+        "decision_id": {"$ref": "#/$defs/stableIdentity"},
+        "experiment_id": {"$ref": "#/$defs/stableIdentity"},
+        "result_identity": {"$ref": "#/$defs/stableIdentity"}
+      }
+    },
+    "successorPlanBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "successor_plan"],
+      "properties": {
+        "kind": {"const": "successor-plan"},
+        "successor_plan": {
+          "$ref": "https://orchflows.local/browser-game/program-record/v1.json#/$defs/successorPlanRevision"
+        }
+      }
     },
     "evidenceBinding": {
       "type": "object",

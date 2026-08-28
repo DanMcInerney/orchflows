@@ -9,9 +9,9 @@ isolation: required
 profile: orch-worker
 ---
 
-<!-- BGW-TRACE[program-record|PJ-03,PJ-07] -->
-<!-- BGW-TRACE[question-authority|PJ-06,PJ-09,PJ-10] -->
-<!-- BGW-TRACE[decision-safety|PJ-22] -->
+<!-- BGW-TRACE[implementation:program-record|PJ-03,PJ-07] -->
+<!-- BGW-TRACE[implementation:question-authority|PJ-06,PJ-09,PJ-10] -->
+<!-- BGW-TRACE[implementation:decision-safety|PJ-22] -->
 
 ## Goal
 
@@ -31,6 +31,7 @@ block an independently schedulable empirical field.
 - input: {"name":"target-directory","type":"literal","value":"{{workspace}}"}
 - input: {"name":"program-record-contract","type":"literal","value":"compositions/references/browser-game-program-record.schema.json"}
 - input: {"name":"intake-authority-policy","type":"literal","value":"compositions/references/browser-game-intake-policy.json"}
+- input: {"name":"instance-validator","type":"literal","value":"browser_game_validate.py; run it against the emitted program record before filing Result"}
 - input: {"name":"audience","type":"literal","value":"browser-game product owners and delivery executors"}
 - input: {"name":"voice-contract","type":"literal","value":"concise operational record; explicit identities, authority kinds, and open state"}
 - input: {"name":"length-budget","type":"literal","value":"the smallest complete record; tables may carry repeated fields"}
@@ -42,6 +43,7 @@ Exceptional constraints:
 - settle a user-only field from evidence or paraphrase its question before root relay
 - represent absence as agreement or silently overwrite a settled decision
 - combine research, prose, code, and rendered outcomes into one artifact identity
+- file a program record that the instance validator rejects
 
 ## Result
 

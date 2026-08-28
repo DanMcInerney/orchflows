@@ -15,18 +15,18 @@ import tools.validate as validate
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# BGW-TRACE[traceability|PJ-21]
-# BGW-TRACE[program-record|PJ-03,PJ-07]
-# BGW-TRACE[question-authority|PJ-06,PJ-09,PJ-10]
-# BGW-TRACE[checkpoint-disposition|PJ-05]
-# BGW-TRACE[experiment-validity|PJ-16,PJ-17]
-# BGW-TRACE[kind-separation|AUTH-05,PJ-18,PJ-28]
-# BGW-TRACE[closed-surface|PJ-20]
-# BGW-TRACE[decision-safety|PJ-22]
-# BGW-TRACE[conditional-fidelity|PJ-23]
-# BGW-TRACE[evidence-identity|PJ-08,PJ-24]
-# BGW-TRACE[revalidation|PJ-25]
-# BGW-TRACE[migration|PJ-01,PJ-26,U-03]
+# BGW-TRACE[test:traceability|PJ-21]
+# BGW-TRACE[test:program-record|PJ-03,PJ-07]
+# BGW-TRACE[test:question-authority|PJ-06,PJ-09,PJ-10]
+# BGW-TRACE[test:checkpoint-disposition|PJ-05]
+# BGW-TRACE[test:experiment-validity|PJ-16,PJ-17]
+# BGW-TRACE[test:kind-separation|AUTH-05,PJ-18,PJ-19,PJ-28]
+# BGW-TRACE[test:closed-surface|PJ-20]
+# BGW-TRACE[test:decision-safety|PJ-22]
+# BGW-TRACE[test:conditional-fidelity|PJ-23]
+# BGW-TRACE[test:evidence-identity|PJ-08,PJ-24]
+# BGW-TRACE[test:revalidation|PJ-25]
+# BGW-TRACE[test:migration|PJ-01,PJ-26,U-03]
 
 
 class BrowserGameTraceabilityTests(unittest.TestCase):
@@ -36,7 +36,11 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
         for relative in (
             Path("compositions/browser-game"),
             Path("compositions/references/browser-game-program-record.schema.json"),
+            Path("compositions/references/browser-game-intake-policy.json"),
+            Path("compositions/references/browser-game-instance-fixtures.json"),
+            Path("scripts/browser_game_validate.py"),
             Path("tests/test_browser_game_traceability.py"),
+            Path("tests/test_browser_game_instances.py"),
         ):
             source = ROOT / relative
             target = temporary / relative
@@ -77,8 +81,8 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
                 text = surface_path.read_text(encoding="utf-8")
                 surface_path.write_text(
                     text.replace(
-                        "BGW-TRACE[" + "checkpoint-disposition|PJ-05]",
-                        "BGW-TRACE[" + "checkpoint-disposition|PJ-24]",
+                        "BGW-TRACE[" + surface + ":checkpoint-disposition|PJ-05]",
+                        "BGW-TRACE[" + surface + ":checkpoint-disposition|PJ-24]",
                     ),
                     encoding="utf-8",
                 )
@@ -92,6 +96,53 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
                     ),
                     findings,
                 )
+
+    def test_unlisted_implementation_marker_is_rejected(self):
+        root = self._copy_tree()
+        implementation = root / "compositions/browser-game/00-record.md"
+        implementation.write_text(
+            implementation.read_text(encoding="utf-8")
+            + "\n<!-- BGW-TRACE[" + "implementation:unlisted-behavior|PJ-21] -->\n",
+            encoding="utf-8",
+        )
+
+        findings = self._findings(root)
+
+        self.assertTrue(any("unlisted-behavior" in line and "manifest" in line for line in findings), findings)
+
+    def test_orphan_manifest_row_is_rejected(self):
+        root = self._copy_tree()
+        manifest_path = root / "compositions/browser-game/traceability.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["behaviors"].append(
+            {
+                "behavior": "orphan-behavior",
+                "identities": ["PJ-21"],
+                "implementation": "compositions/browser-game/00-record.md",
+                "test": "tests/test_browser_game_traceability.py",
+                "help": "compositions/browser-game/template.md",
+            }
+        )
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+        findings = self._findings(root)
+
+        self.assertTrue(any("orphan-behavior" in line and "marker" in line for line in findings), findings)
+
+    def test_identity_present_on_only_two_surfaces_is_rejected(self):
+        root = self._copy_tree()
+        help_path = root / "compositions/browser-game/template.md"
+        help_path.write_text(
+            help_path.read_text(encoding="utf-8").replace(
+                "BGW-TRACE[" + "help:checkpoint-disposition|PJ-05]",
+                "BGW-TRACE[" + "help:checkpoint-disposition|PJ-24]",
+            ),
+            encoding="utf-8",
+        )
+
+        findings = self._findings(root)
+
+        self.assertTrue(any("checkpoint-disposition" in line and "help" in line for line in findings), findings)
 
     def test_governed_minimum_schema_field_cannot_be_removed(self):
         root = self._copy_tree()

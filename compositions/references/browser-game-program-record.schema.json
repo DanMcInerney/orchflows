@@ -274,7 +274,9 @@
           "required": ["state", "value"],
           "properties": {
             "state": {"const": "settled"},
-            "value": {}
+            "value": {},
+            "settled_by": {"const": "verbatim-user-answer"},
+            "verbatim_user_answer": {}
           }
         },
         {
@@ -284,7 +286,9 @@
           "properties": {
             "state": {"const": "open-question"},
             "open_question_id": {"$ref": "#/$defs/stableIdentity"},
-            "authority_kind": {"enum": ["user-only", "empirical"]}
+            "authority_kind": {"enum": ["user-only", "empirical"]},
+            "kind": {"enum": ["user-only", "empirical"]},
+            "question": {"type": "string", "minLength": 1}
           }
         },
         {
@@ -328,6 +332,7 @@
         "field_id",
         "disposition",
         "resolution",
+        "authority_source",
         "authority_kind",
         "owner",
         "rationale",
@@ -340,7 +345,19 @@
           "enum": ["answered", "deferred", "experiment", "not-applicable"]
         },
         "resolution": {"$ref": "#/$defs/materialField"},
+        "authority_source": {
+          "enum": [
+            "product_intent",
+            "commercial_or_legal_acceptance",
+            "accessibility_promises",
+            "risk_appetite",
+            "target_cohorts",
+            "public_release_commitments",
+            "empirical-evidence"
+          ]
+        },
         "authority_kind": {"enum": ["user-only", "empirical"]},
+        "verbatim_question": {"type": "string", "minLength": 1},
         "owner": {"$ref": "#/$defs/materialField"},
         "rationale": {"$ref": "#/$defs/materialField"},
         "evidence": {"$ref": "#/$defs/materialField"},

@@ -2,8 +2,8 @@
   "format": "orchflows.browser-game-traceability.v1",
   "specification": "document:sha256:e147d8609f74d25cf913b313d360c6fc1692dff2ed0f989d8f1168adee9a52e8",
   "self_trace": [
-    "BGW-TRACE[traceability|PJ-21]",
-    "BGW-TRACE[migration|PJ-01,PJ-26,U-03]"
+    "BGW-TRACE[implementation:traceability|PJ-21]",
+    "BGW-TRACE[implementation:migration|PJ-01,PJ-26,U-03]"
   ],
   "behaviors": [
     {
@@ -43,7 +43,7 @@
     },
     {
       "behavior": "kind-separation",
-      "identities": ["AUTH-05", "PJ-18", "PJ-28"],
+      "identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
       "implementation": "compositions/browser-game/02-checkpoint.md",
       "test": "tests/test_browser_game_traceability.py",
       "help": "compositions/browser-game/template.md"
@@ -88,6 +88,13 @@
       "identities": ["PJ-01", "PJ-26", "U-03"],
       "implementation": "compositions/browser-game/traceability.json",
       "test": "tests/test_browser_game_traceability.py",
+      "help": "compositions/browser-game/template.md"
+    },
+    {
+      "behavior": "instance-validation",
+      "identities": ["PJ-05", "PJ-06", "PJ-09", "PJ-10", "PJ-22", "PJ-24", "PJ-25", "PJ-28"],
+      "implementation": "scripts/browser_game_validate.py",
+      "test": "tests/test_browser_game_instances.py",
       "help": "compositions/browser-game/template.md"
     }
   ],
@@ -247,14 +254,15 @@
       {
         "record": "successor_plans",
         "definition": "successorPlanRevision",
-        "identities": ["AUTH-05", "PJ-28"],
+        "identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
         "required_fields": [
           "ordered_artifact_kinds",
           "packs",
           "run_identities",
           "root_identities",
           "dependencies",
-          "current_status"
+          "current_status",
+          "ordered_artifacts"
         ]
       }
     ]
