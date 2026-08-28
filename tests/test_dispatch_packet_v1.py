@@ -139,6 +139,31 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("accepted", receipt["receipt"]["outcome"])
         self.assertEqual("reference", receipt["receipt"]["form"])
 
+        filing = [
+            line.split()[2:]
+            for line in packet["prompt"].splitlines()
+            if len(line.split()) > 2
+            and Path(line.split()[1]).name == "tickets.py"
+            and line.split()[2] == "result"
+        ]
+        self.assertEqual(2, len(filing), packet["prompt"])
+        for command in filing:
+            self.assertIn("--append", command)
+
+        text_command = next(command for command in filing if "--text" in command)
+        text_command[text_command.index("SECTION")] = "Result"
+        text_command[text_command.index("TEXT")] = "first emitted text record"
+        text_command[text_command.index("RECORD_ID")] = "R1"
+        first_result = self.dispatch(*text_command)
+        self.assertEqual("append", first_result["result"]["mode"])
+        text_command[text_command.index("first emitted text record")] = "second emitted text record"
+        text_command[text_command.index("R1")] = "R2"
+        second_result = self.dispatch(*text_command)
+        self.assertEqual("append", second_result["result"]["mode"])
+        body = self.ticket_path.read_text(encoding="utf-8")
+        self.assertIn("first emitted text record", body)
+        self.assertIn("second emitted text record", body)
+
     def test_uncommitted_projection_still_runs_current_review_validation(self):
         before = self.ticket_bytes()
         owner = tickets._tickets_dispatch_packet_module

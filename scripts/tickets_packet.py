@@ -284,7 +284,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             "--record-id", "RECORD_ID",
         ]
     prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--file", "PATH", "--append"))
-    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT"))
+    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT", "--append"))
     if assigned_name is not None:
         prompt.append(f"Your assigned name is `{assigned_name}`; use exactly it wherever a command takes --by.")
     if executor in DISPATCHING_EXECUTORS and assigned_name is not None:
