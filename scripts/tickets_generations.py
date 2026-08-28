@@ -15,7 +15,8 @@ else:
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
 ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "independence", "isolation", "pack", "profile", "sequence",
+    "bound", "independence", "isolation", "pack", "profile", "review_order",
+    "sequence",
 )
 
 
@@ -85,17 +86,25 @@ def _root_payload(root_id: str, snapshot: dict) -> dict:
     return {"assignment": assignment_payload(root_id, root_text)}
 
 def _root_generation(root_id: str, snapshot: dict, ordinal: int, payload: dict) -> str:
-    """Return the root's existing identity, or open its first generation."""
+    """Return the run's one root identity; later ordinals belong to cuts."""
 
     inherited = str(_parse_frontmatter(snapshot[root_id]).get("root_generation") or "")
     if not inherited:
-        return generation_identity("root", root_id, ordinal, payload)
+        return generation_identity("root", root_id, 1, payload)
     match = GENERATION_RE.fullmatch(inherited)
     if match is None or match.group(1) != "root" or match.group(2) != root_id:
         raise GenerationError("root ticket carries a malformed or foreign root generation")
-    expected = generation_identity("root", root_id, int(match.group(3)), payload)
+    if int(match.group(3)) != 1:
+        raise GenerationError(
+            "an in-run root amendment generation is unsupported; open a successor run "
+            "whose root Context cites the accepted predecessor result identity"
+        )
+    expected = generation_identity("root", root_id, 1, payload)
     if inherited != expected:
-        raise GenerationError("root generation does not name the current root assignment")
+        raise GenerationError(
+            "a sealed semantic-root change requires a successor run whose root Context "
+            "cites the accepted predecessor result identity"
+        )
     return inherited
 
 def _cut_payload(root_id: str, snapshot: dict, root_generation: str, member_ids=None) -> dict:
@@ -241,6 +250,12 @@ def seal_findings(ticket_id: str, text: str) -> list:
             findings.append({"code": "generation-invalid", "field": field, "detail": f"missing or malformed {kind} generation"})
     if len(parsed) == 2:
         root_match, cut_match = parsed["root_generation"], parsed["cut_generation"]
+        if int(root_match.group(3)) != 1:
+            findings.append({
+                "code": "root-generation-successor-required",
+                "field": "root_generation",
+                "detail": "an in-run root amendment generation is unsupported; open a successor run linked to the accepted predecessor result",
+            })
         if root_match.group(2) != cut_match.group(2):
             findings.append({"code": "generation-pair-mismatch", "field": "cut_generation", "detail": "root and cut generations must name one root"})
     return findings

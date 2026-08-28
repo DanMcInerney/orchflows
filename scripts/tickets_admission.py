@@ -44,7 +44,12 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     findings = []
     executor = _executor_of(data)
     pack = str(data.get("pack") or "").strip()
-    unbound = executor.startswith(SCRIPT_EXECUTOR_PREFIX) or executor == ROOT_EXECUTOR or ".gate." in ticket_id
+    unbound = (
+        executor.startswith(SCRIPT_EXECUTOR_PREFIX)
+        or executor == ROOT_EXECUTOR
+        or ".gate." in ticket_id
+        or ticket_id.endswith(".check")
+    )
     bindings = executor_bindings(pack) if pack and not unbound else set()
     if pack and not unbound and executor not in bindings:
         findings.append(finding(
@@ -121,7 +126,20 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             draft = validated.get("draft") if isinstance(validated, dict) else None
             if not isinstance(draft, dict) or sealed_record.get("receipt") != validated.get("receipt") or draft.get("cut_generation") != cut_generation:
                 findings.append(finding("validation-receipt-mismatch", "cut_generation", "sealed state does not bind the validation receipt"))
-            if (sealed_record.get("assignment_seals") or {}).get(ticket_id) != data.get("assignment_seal"):
+            sealed_assignments = sealed_record.get("assignment_seals") or {}
+            derived_checker = ticket_id.endswith(".check") and dependencies == [
+                ticket_id[:-len(".check")]
+            ]
+            if derived_checker:
+                target_id = dependencies[0]
+                target_text = siblings.get(target_id)
+                target = _parse_frontmatter(target_text) if target_text is not None else {}
+                if sealed_assignments.get(target_id) != target.get("assignment_seal"):
+                    findings.append(finding(
+                        "sealed-checker-target-mismatch", "assignment_seal",
+                        "sealed state does not bind the checker target",
+                    ))
+            elif sealed_assignments.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed state does not bind this assignment"))
     ordered = _ordered(findings)
     receipt = ADMISSION_PENDING

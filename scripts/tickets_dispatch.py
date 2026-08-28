@@ -14,9 +14,9 @@ if __package__:
 else:
     from tickets_issue import NEW_USAGE, _cmd_new
 if __package__:
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status
+    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
 else:
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status
+    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
 if __package__:
     from .tickets_packet import CHECKER_PATH_EXECUTORS, GATE_CRITIQUE_ID, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID, _cmd_packet
 else:
@@ -44,11 +44,11 @@ else:
 if __package__:
     from .tickets_emission import grade_run_emission; from .tickets_context import run_snapshot; from .tickets_generations import GENERATION_RE, _root_payload, canonical_json, draft_snapshot, generation_identity, seal_assignments, validate_draft; from .tickets_transitions import pending_admission, stamp; from .tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check
     from .tickets_generations import GENERATION_SUBCOMMANDS
-    from .tickets_dispatch_gate import _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain; from .tickets_dispatch_gate import _cmd_gate as _gate_command
+    from .tickets_dispatch_gate import _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain; from .tickets_dispatch_gate import _cmd_checker_stage, _cmd_gate as _gate_command
 else:
     from tickets_emission import grade_run_emission; from tickets_context import run_snapshot; from tickets_transitions import pending_admission, stamp; _generations = __import__('tickets_generations'); GENERATION_RE = _generations.GENERATION_RE; _root_payload = _generations._root_payload; canonical_json = _generations.canonical_json; draft_snapshot = _generations.draft_snapshot; generation_identity = _generations.generation_identity; seal_assignments = _generations.seal_assignments; validate_draft = _generations.validate_draft; from tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check
-    _gate_module = __import__('tickets_dispatch_gate'); _gate_command = _gate_module._cmd_gate; _gate_body = _gate_module._gate_body; _gate_input = _gate_module._gate_input; _gate_sections = _gate_module._gate_sections
+    _gate_module = __import__('tickets_dispatch_gate'); _cmd_checker_stage = _gate_module._cmd_checker_stage; _gate_command = _gate_module._cmd_gate; _gate_body = _gate_module._gate_body; _gate_input = _gate_module._gate_input; _gate_sections = _gate_module._gate_sections
     _gate_stub = _gate_module._gate_stub; _gate_under_run_lock = _gate_module._gate_under_run_lock; _input_name = _gate_module._input_name; _listed_items = _gate_module._listed_items; _pack_domain = _gate_module._pack_domain
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
@@ -416,7 +416,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | stamp-generation | draft-validate | seal | list | ready | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -435,8 +435,11 @@ def _dispatch(argv):
     if command == 'seal': return GENERATION_SUBCOMMANDS[command][2](rest)
     if command == 'instantiate': return _cmd_instantiate(rest)
     if command == 'gate': return _cmd_gate(rest)
+    if command == 'checker-stage': return _cmd_checker_stage(rest)
     if command == 'list':
         return _cmd_list(rest)
+    if command == 'show':
+        return _cmd_show(rest)
     if command == 'ready':
         return _cmd_ready(rest)
     if command == 'dispatch-open':
@@ -481,5 +484,12 @@ def main(argv=None):
     except Exception as error:
         result = {'error': str(error)}
     exit_code = result.pop('exit_code', None) if isinstance(result, dict) else None
-    print(json.dumps(result, ensure_ascii=False))
+    encoded = json.dumps(
+        result, ensure_ascii=True, separators=(',', ':'), sort_keys=True,
+    ) + '\n'
+    try:
+        sys.stdout.buffer.write(encoded.encode('ascii'))
+        sys.stdout.buffer.flush()
+    except AttributeError:
+        sys.stdout.write(encoded)
     return (1 if 'error' in result else 0) if exit_code is None else int(exit_code)

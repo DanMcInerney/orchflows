@@ -435,14 +435,13 @@ class TestElapsedMeter(unittest.TestCase):
         self.assertEqual(67, meter["percent"])
         self.assertFalse(meter["over"])
 
-    def test_a_claim_past_its_bound_caps_at_full_and_says_so(self):
+    def test_a_suspended_ticket_has_no_live_claim_meter(self):
         meter = ui.claim_meter(
             {"status": "suspended", "bound": "30m", "claimed_at": "2026-01-01T00:00:00Z"},
             self.NOW,
         )
 
-        self.assertEqual(100, meter["percent"])
-        self.assertTrue(meter["over"])
+        self.assertIsNone(meter)
 
     def test_nothing_is_measured_without_two_operands_and_a_live_claim(self):
         for front in (
@@ -450,6 +449,7 @@ class TestElapsedMeter(unittest.TestCase):
             {"status": "claimed", "bound": "90m"},
             {"status": "claimed", "bound": "90m", "claimed_at": "yesterday"},
             {"status": "complete", "bound": "90m", "claimed_at": "2026-01-01T00:00:00Z"},
+            {"status": "suspended", "bound": "90m", "claimed_at": "2026-01-01T00:00:00Z"},
             {"status": "pending", "bound": "90m", "claimed_at": "2026-01-01T00:00:00Z"},
             {},
         ):

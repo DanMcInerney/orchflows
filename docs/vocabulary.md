@@ -94,9 +94,11 @@ that needs a different meaning needs a different word.
   caller freezes and which deterministic corrections a decomposer may make;
   a correction without deterministic equivalence is semantic and suspends
   for the caller.
-- **assignment generation** — one root or cut assignment fixed by a content
-  digest, named by `root_generation` or `cut_generation`; identity and
-  lifecycle law are `rules/topology.md`'s.
+- **assignment generation** — one assignment fixed by a content digest: the
+  run-local root identity named by `root_generation`, always ordinal 1, or a
+  pre-seal cut draft named by `cut_generation`. Identity and lifecycle law are
+  `rules/topology.md`'s; a sealed semantic change uses a successor run rather
+  than a later root ordinal.
 - **exemplar** — an artifact a root ticket's `## Context` names to
   imitate, by pointer plus each property the imitation must carry
   (`contracts/work-item.md`); always non-normative.
@@ -116,13 +118,10 @@ that needs a different meaning needs a different word.
   any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
   any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
   `<id>.gate.verify` completes. A successor root lives in a successor run
-  opened after this root's result identity resolves and cites that identity
-  in its Context; the predecessor run's durable `successors.md`
+  opened after the accepted predecessor result identity resolves and cites
+  that identity in its Context; the predecessor run's durable `successors.md`
   names the planned root until `orch-spec` materializes it on the frontier's
   completion trigger.
-- **gate-only cut** — a decomposed root cut with zero unit tickets because its
-  coverage map assigns every root criterion to the composite gate; it is
-  not padding, per `rules/topology.md` §3.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
   instantiate` and run by `orch-frontier`; the one form a composition
@@ -169,8 +168,11 @@ that needs a different meaning needs a different word.
 - **independence** — acceptance evidence originating outside the executing
   context through exactly one ordinary path; law in `rules/verification.md`
   §9. Research craft narrows the term for sources: no shared upstream.
-- **checker** — the fresh read-only `orch-critique` context that challenges a
-  fixed artifact and executor evidence against Goal, Context, and a lens.
+- **checker** — the durable evaluator/adjudication carrier for the ordinary
+  outside-independence path: an explicit derived review-stage ticket whose
+  fresh read-only `orch-critique` accepts the exact packet, challenges one
+  fixed artifact and its evidence, and joins its accepted set before the
+  target can record `checked_by`.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
 - **evidence** — methods, observations, sources, captures, or other records
   demonstrating or challenging Goal at a fixed artifact identity.
@@ -181,12 +183,14 @@ that needs a different meaning needs a different word.
 - **lens** — the criteria set a reviewer applies; every additional root-gate
   reviewer has a unique named lens; freshness law `rules/verification.md`
   §6.
-- **ordered lens bundle** — an opt-in ordered list of unique lens identities;
-  each receives a read-only critique ticket before one shared repair and fresh
-  verifier.
-- **gate** — the one composite critique-fix-verify path a run crosses: one
-  or more uniquely named critiques feed one repair and one verification;
-  authoring admission and a benchmark's qualification are not gates.
+- **ordered lens bundle** — an opt-in stable adjudication order of unique lens
+  identities. Their independent critique tickets remain parallel; the order
+  does not add execution dependencies.
+- **gate** — a decomposed run's immutable predecessor-linked `GatePlan` →
+  `CritiqueAdjudication` → `RepairOutcome` → `Verification` path. It fixes
+  reviewed and repaired artifact identities, accepted blockers, root pack,
+  established workspace, and normalized isolation `none`; authoring admission
+  and benchmark qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: `orch-verify` where the criteria carry a score scale,
   blindness being a property of the packet's `inputs`, not of a skill.
@@ -205,19 +209,21 @@ composition).
   child, and the packet itself: Goal, Context, optional Suggested files,
   operational bound, exact executor binding, and reply_to, per
   `contracts/work-item.md` and `contracts/dispatch.md`, plus an optional one-shot `profile`
-  overriding role resolution for that dispatch alone. A packet-only
-  dispatch is a ticket the dispatcher does not persist.
+  overriding role resolution for that dispatch alone. Role-bearing dispatch is
+  ticket-durable.
 - **assignment seal** — the proof that an exact validated assignment digest
-  is immutable for dispatch; changing sealed assignment fields creates a new
-  assignment generation under `rules/delegation.md`.
+  is immutable for dispatch. A later cut generation may add or change members
+  under the same immutable root semantics; changing sealed semantic-root fields
+  opens a successor run citing the accepted predecessor result under the
+  successor-run lifecycle in `rules/delegation.md`.
 - **dispatch attempt** — one fenced execution of a sealed ticket under
   `orchflows.dispatch.v1`, identified by `dispatch_id` and an absolute lease;
   its ticket record owns opening, committed-record replay, retirement,
   replacement, and expiry precedence.
 - **packet projection** — the immutable dispatch-v1 delivery record generated
   from one sealed attempt: normally a ticket reference plus seal, or an inline
-  sealed assignment when the receiver cannot read the state sink. Its receipt
-  validates the actual child identity and authority before execution.
+  sealed snapshot. Its durable accepted receipt validates exact committed bytes
+  and actual child identity and authority before execution.
 - **dispatch outcome** — one attempt's distinguished durable return envelope,
   reserved as `outcome`; it carries the closing evidence and disposition for
   direct commit or unchanged inline relay before join.
@@ -271,8 +277,7 @@ composition).
   directory per `contracts/worklog.md`, never a second hand-written
   file; what makes fresh-context iteration and resumption possible.
 - **handoff** — the suspension, resumption, or escalation record: a
-  ticket's `## Handoff` section, per `contracts/work-item.md`; a
-  packet-only dispatch has none, and stops instead.
+  ticket's `## Handoff` section, per `contracts/work-item.md`.
 
 ## Improvement
 

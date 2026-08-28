@@ -137,6 +137,30 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("tickets.py claim", graph)
         self.assertNotIn("tickets.py packet", graph)
 
+    def test_host_and_frontier_establish_the_workspace_before_dispatch(self):
+        host = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
+        )
+        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+        frontier = re.sub(
+            r"\s+",
+            " ",
+            (ROOT / "skills/engines/orch-frontier/SKILL.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+
+        for text in (graph, frontier):
+            with self.subTest(owner="graph" if text is graph else "frontier"):
+                self.assertIn("workspace.py start", text)
+                self.assertIn("workspace_path", text)
+                self.assertLess(
+                    text.index("workspace.py start"),
+                    text.index("dispatch-open"),
+                )
+
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)

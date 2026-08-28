@@ -206,7 +206,13 @@ def _locate(run: str, ticket_id: str, where=None):
     return root, path
 
 
-def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
+def _record(
+    ticket_path,
+    prior_text: str,
+    branch,
+    baseline,
+    workspace_path: str,
+) -> dict:
     """Write both stamps against the snapshot the caller read."""
 
     try:
@@ -216,8 +222,17 @@ def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the frontmatter write race, retry"}
     try:
-        updated = tickets._set_frontmatter_field(prior_text, "workspace_branch", branch)
-        updated = tickets._set_frontmatter_field(updated, "workspace_baseline", baseline)
+        updated = prior_text
+        recorded = {"workspace_path": workspace_path}
+        if branch is not None:
+            updated = tickets._set_frontmatter_field(updated, "workspace_branch", branch)
+            recorded["workspace_branch"] = branch
+        if baseline is not None:
+            updated = tickets._set_frontmatter_field(updated, "workspace_baseline", baseline)
+            recorded["workspace_baseline"] = baseline
+        updated = tickets._set_frontmatter_field(
+            updated, "workspace_path", workspace_path
+        )
         # The sink's own writer, not ``write_text``: it pins ``newline='\n'``
         # so a two-scalar stamp stays a two-line diff instead of translating
         # every ending to the platform's, and it replaces atomically so a
@@ -228,10 +243,7 @@ def _record(ticket_path, prior_text: str, branch: str, baseline: str) -> dict:
     except (OSError, ValueError) as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
-        "recorded": {
-            "workspace_branch": branch,
-            "workspace_baseline": baseline,
-        }
+        "recorded": recorded
     }
 
 

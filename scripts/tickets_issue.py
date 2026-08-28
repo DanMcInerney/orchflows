@@ -133,32 +133,51 @@ def _cmd_new(rest):
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
 
-def _place_ticket(run: str, source: str, declared_id=None):
+def _project_file_ticket(
+    run: str, text: str, declared_id=None, *, source="ticket file"
+):
+    """Project one unissued file exactly as ``new --file`` would persist it."""
     invalid = _segment_error("run id", run)
     if invalid is not None:
-        return invalid
-    text, failure = _read_utf8(source, "ticket file")
-    if failure is not None:
-        return failure
+        return None, invalid
     data = _parse_frontmatter(text)
     ticket_id = data.get("id") if isinstance(data.get("id"), str) else None
     if not ticket_id:
-        return {"error": f"ticket file {source} names no 'id' in its frontmatter"}
+        return None, {"error": f"ticket file {source} names no 'id' in its frontmatter"}
     if "admission" in data:
-        return {"error": f"ticket file {source} must omit the issue-time lifecycle field 'admission'"}
+        return None, {
+            "error": f"ticket file {source} must omit the issue-time lifecycle field 'admission'"
+        }
     invalid = _segment_error("ticket id", ticket_id)
     if invalid is not None:
-        return invalid
+        return None, invalid
     if declared_id is not None and declared_id.strip() != ticket_id.strip():
-        return {"error": f"placed as '{declared_id}', but ticket file names '{ticket_id}'"}
+        return None, {
+            "error": f"placed as '{declared_id}', but ticket file names '{ticket_id}'"
+        }
     declared = data.get("run")
     if isinstance(declared, str) and declared.strip() and declared.strip() != run:
-        return {"error": f"ticket file names run '{declared.strip()}', placed into run '{run}'"}
+        return None, {
+            "error": f"ticket file names run '{declared.strip()}', placed into run '{run}'"
+        }
     text = _set_frontmatter_field(text, "run", run)
     text = _set_frontmatter_field(text, "status", "pending")
     text = _invalidate_assignment(text)
     text = _set_frontmatter_field(text, "claimed_by", "")
     text = _set_frontmatter_field(text, "claimed_at", "")
+    return (ticket_id, text), None
+
+
+def _place_ticket(run: str, source: str, declared_id=None):
+    text, failure = _read_utf8(source, "ticket file")
+    if failure is not None:
+        return failure
+    projected, failure = _project_file_ticket(
+        run, text, declared_id, source=source
+    )
+    if failure is not None:
+        return failure
+    ticket_id, text = projected
     return _issue_ticket(run, ticket_id, text)
 
 
@@ -223,5 +242,5 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
 __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
     "_cmd_new", "_distinct_gate_lenses", "_frontmatter_list", "_issue_defects",
-    "_issue_ticket", "_place_ticket", "_render_ticket",
+    "_issue_ticket", "_place_ticket", "_project_file_ticket", "_render_ticket",
 )

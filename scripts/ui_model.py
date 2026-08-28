@@ -100,14 +100,13 @@ EMPTY_NO_DEPTH = "no spawn depth recorded"
 # shape of.
 DIAGNOSTIC_UNREADABLE = "could not be read"
 
-# `contracts/work-item.md`: `suspended` "stays claimed", so the lease keeps
-# running and elapsed-against-bound still measures something. Under every
-# other status the claim is not live and a growing meter would be a lie --
-# no ticket records when work stopped.
-LIVE_CLAIM_STATUSES = ("claimed", "suspended")
+# Only `claimed` has a live dispatch attempt. A suspended ticket retains its
+# claimant observations for Handoff, but join has retired the attempt, so a
+# growing elapsed-against-bound meter would be a lie.
+LIVE_CLAIM_STATUSES = ("claimed",)
 
 # The band answers "who is working right now", which `suspended` is not: it
-# holds the lease with nobody at the keyboard. A wider set here would read
+# retains Handoff observations with nobody at the keyboard. A wider set would read
 # as more parallelism than the run has.
 ACTIVE_STATUS = "claimed"
 

@@ -2,14 +2,14 @@
 """Observe and grade one work item's isolated workspace.
 
 Stdlib-only, cross-platform, Python 3.9 and up, no network at run time.
-The ticket is the work item of ``contracts/work-item.md``: ``start``,
-run from inside a workspace, records the lifecycle stamps
-``workspace_branch`` and ``workspace_baseline`` into the main-root
-ticket's frontmatter; ``check`` grades the item's ``isolation``
+The ticket is the work item of ``contracts/work-item.md``: ``start`` records
+the durable ``workspace_path`` for every supported adapter. For a Git
+candidate it runs from inside the already-created workspace and also records
+``workspace_branch`` and ``workspace_baseline``; for an evidence-store lane it
+creates the canonical run-scoped store in the state sink. ``check`` grades the item's ``isolation``
 declaration at the join from the integrating checkout's git -- the
-caller's own, or the one ``--repo`` names. A script observes and
-grades — it never creates, enters or removes a workspace, and ``start``
-never claims.
+caller's own, or the one ``--repo`` names. The script never creates, enters,
+or removes a Git candidate; ``start`` never claims.
 
 Deviation from ``scripts/tickets.py``, stated because a caller reads
 these exit codes: this script does not inherit that script's exit-0
@@ -35,7 +35,7 @@ Exit codes:
        flags: the join must still read what the item was executed in.
 
 Subcommands:
-    start <run> <id>
+    start <run> <id>  # from a Git candidate, or anywhere for evidence-store
     check <run> <id> --base <rev> [--repo <path>]
 
 ``--repo <path>`` aims ``check`` at another checkout: every git call and the
@@ -74,6 +74,7 @@ workspace_prepare = __import__("workspace_prepare")
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
 BASELINE_KEY = "workspace_baseline"
+PATH_KEY = "workspace_path"
 # Every frontmatter key name this script writes or reads, and where. The
 # spellings belong to ``contracts/work-item.md``; ``tests/test_workspace.py``
 # reads this mapping and the contract's own bytes and asserts the two agree
@@ -83,12 +84,13 @@ FRONTMATTER_KEYS = {
     ISOLATION_KEY: "read by check",
     BRANCH_KEY: "written by start, read by check",
     BASELINE_KEY: "written by start",
+    PATH_KEY: "written by start",
 }
 
 # The value and its normalization both come from ``tickets.py``, never a
-# second spelling here: that script emits the establishment step off this
-# same declaration, and a grader reading it differently skips the grade at
-# exit 0 while the join reads success.
+# second spelling here: packet projection gates the host establishment off
+# this same declaration, and a grader reading it differently skips the grade
+# at exit 0 while the join reads success.
 REQUIRED = tickets.REQUIRED_ISOLATION
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -117,16 +119,14 @@ COMMAND_USAGE = {
     "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
 }
 COMMAND_HELP = {
-    "start": "from inside the workspace: record its branch and baseline into the ticket",
+    "start": "establish and record the pack workspace; run inside an already-created Git candidate",
     "check": "from the integrating checkout: grade isolation and report the actual diff",
 }
 USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
 HELP_FLAGS = ("--help", "-h")
 Refused = workspace_git.Refused
 
-
 # --- git, in the tree under grade -------------------------------------------
-
 
 # The checkout every ``_git`` call runs in. ``None`` -- the caller's own tree,
 # and subprocess's own default, so an unaimed call is what it always was. Set
@@ -134,12 +134,10 @@ Refused = workspace_git.Refused
 # whose facts came from two checkouts is not a grade.
 _GIT_CWD = None
 
-
 def _git(*args: str):
     """Run git in the tree under grade: the caller's own, or ``--repo``'s."""
 
     return workspace_git._git(_GIT_CWD, *args)
-
 
 def _git_out(*args: str) -> str:
     code, out, err = _git(*args)
@@ -147,20 +145,16 @@ def _git_out(*args: str) -> str:
         raise Refused(f"git {' '.join(args)}: {err.strip()}")
     return out.strip()
 
-
 def _dirty_paths() -> list:
     """``workspace_git._dirty_paths``, in the tree under grade."""
     return workspace_git._dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
 
-
 # --- the ticket, always at the main repository root -------------------------
-
 
 _graded = workspace_git._graded
 _locate = workspace_git._locate
 _record = workspace_git._record
 _sharers = workspace_git._sharers
-
 
 def _actual_mutations(name_status: str) -> list:
     """Normalize ``git diff --name-status --no-renames -z`` rows."""
@@ -184,9 +178,23 @@ def _actual_mutations(name_status: str) -> list:
         rows.append((operation, path))
     return sorted(set(rows))
 
+def _validate_write_paths(entries, root: Path) -> None:
+    """Refuse prose-shaped write declarations before a candidate starts."""
+
+    if not isinstance(entries, list):
+        return
+    for declared in entries:
+        entry = str(declared or "").strip().strip("`").strip()
+        candidate = Path(entry).expanduser()
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        if "(" in entry or ")" in entry or (" " in entry and not candidate.exists()):
+            raise Refused(
+                f"write_scope entry {entry!r} is not a path; "
+                "see contracts/work-item.md"
+            )
 
 # --- subcommands ------------------------------------------------------------
-
 
 def _positional(rest, count: int, command: str) -> list:
     args = list(rest)
@@ -195,19 +203,41 @@ def _positional(rest, count: int, command: str) -> list:
         raise Refused(f"{command} takes <run> <id>. {USAGE}")
     return args
 
-
 def _cmd_start(rest):
-    """Record what this workspace is, from inside it. It does not claim."""
+    """Establish and record the pack workspace. It does not claim."""
 
     run, ticket_id = _positional(rest, 2, "start")
-    root, path = _locate(run, ticket_id)
+    path = state_root.tickets_root() / run / f"{ticket_id}.md"
+    if not path.is_file():
+        raise Refused(f"ticket not found: {run}/{ticket_id}")
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     # the snapshot the stamps are written against, taken before the git calls
     # below and not after them: those calls are the seconds a concurrent
     # `set-status` lands in, and a snapshot taken past them absorbs the write
     # this guard exists to report
     prior_text = path.read_text(encoding="utf-8")
+    mechanism = tickets.adapter_id(data.get("pack"))
+    if mechanism == "evidence-store":
+        store = (state_root.state_root() / "research" / run).resolve()
+        store.mkdir(parents=True, exist_ok=True)
+        outcome = _record(path, prior_text, None, None, str(store))
+        if "error" in outcome:
+            raise Refused(outcome["error"])
+        return {
+            "start": {
+                "run": run,
+                "id": ticket_id,
+                "ticket": str(path),
+                "mechanism": mechanism,
+                PATH_KEY: str(store),
+                "workspace_root": str(store),
+            }
+        }, EXIT_OK
+    root, located = _locate(run, ticket_id)
+    if located != path:
+        raise Refused(f"ticket identity changed while locating {run}/{ticket_id}")
     top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
+    _validate_write_paths(data.get("write_scope"), top)
     branch, head = workspace_git._head_and_branch(_git_out)
     dirty = sorted(set(_dirty_paths()))
     # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
@@ -221,7 +251,7 @@ def _cmd_start(rest):
     observed = workspace_git._baseline(head, dirty)
     stamped = str(data.get(BASELINE_KEY) or "").strip()
     baseline = stamped or observed
-    outcome = _record(path, prior_text, branch, baseline)
+    outcome = _record(path, prior_text, branch, baseline, str(top))
     if "error" in outcome:
         raise Refused(outcome["error"])
     # after recording, never before: a tree that cannot be prepared is still
@@ -237,6 +267,7 @@ def _cmd_start(rest):
             "ticket": str(path),
             BRANCH_KEY: branch,
             BASELINE_KEY: baseline,
+            PATH_KEY: str(top),
             # present only on a re-establishment, which its presence declares
             **({"reestablished": observed} if stamped else {}),
             "workspace_root": str(top),
@@ -249,7 +280,6 @@ def _cmd_start(rest):
         }
     }, EXIT_SHARED_WORKSPACE if sharing else EXIT_OK
 
-
 def _extract_flag(args: list, flag: str):
     if flag in args:
         index = args.index(flag)
@@ -260,10 +290,8 @@ def _extract_flag(args: list, flag: str):
         del args[index : index + 1]
     return None
 
-
 def _is_ancestor(ancestor: str, descendant: str) -> bool:
     return workspace_git._is_ancestor(_git, ancestor, descendant)
-
 
 def _cmd_check(rest):
     """Grade the item at the join, every fact re-derived from the integrating
@@ -365,6 +393,13 @@ def _cmd_check(rest):
 
     ticket_worktree = workspace_git._ticket_worktree(_git_out, branch, tip)
     if ticket_worktree is not None:
+        recorded_workspace = str(data.get(PATH_KEY) or "").strip()
+        if recorded_workspace and Path(recorded_workspace).resolve() != ticket_worktree.resolve():
+            raise Refused(
+                f"branch {branch!r} now stands in {ticket_worktree.resolve()}, not its "
+                f"recorded workspace_path {Path(recorded_workspace).resolve()}",
+                EXIT_ISOLATION_MISSING,
+            )
         dirty = workspace_git._dirty_paths(str(ticket_worktree))
         # Emission, not the item's change: an acceptance oracle imports the
         # tree it grades and CPython writes bytecode beside it, so counting
@@ -397,7 +432,6 @@ def _cmd_check(rest):
     reported["verdict"] = "pass"
     return {"check": reported}, EXIT_OK
 
-
 def _help_text(command=None) -> str:
     """Usage for the whole script, or for one subcommand.
 
@@ -413,7 +447,6 @@ def _help_text(command=None) -> str:
     lines += ["", "exit codes:"]
     lines += [f"  {code}  {verdict}" for code, verdict in sorted(VERDICTS.items())]
     return "\n".join(lines)
-
 
 def main(argv=None) -> int:
     # A refusal quotes a path and a ticket's own words, either of which can
@@ -462,7 +495,6 @@ def main(argv=None) -> int:
         return EXIT_ERROR
     print(json.dumps(payload, ensure_ascii=False))
     return code
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

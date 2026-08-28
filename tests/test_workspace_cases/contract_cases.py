@@ -121,8 +121,8 @@ class TestContractKeySeam(unittest.TestCase):
             key for keys, text in bullets for key in keys if "workspace.py" in text
         }
         self.assertEqual(
-            3, len(workspace_keys),
-            f"expected the contract's three workspace keys, found {sorted(workspace_keys)}",
+            4, len(workspace_keys),
+            f"expected the contract's four workspace keys, found {sorted(workspace_keys)}",
         )
         self.assertEqual(
             [], sorted(workspace_keys - code_keys),

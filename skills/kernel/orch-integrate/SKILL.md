@@ -18,9 +18,9 @@ from `## Handoff`.
 
 The returning name and artifact identity must match the committed dispatch-v1
 packet and its accepted receipt; reject mismatches and expired attempts.
-Inspect actual candidate diffs and Git conflicts, resolve overlaps, regenerate
-shared derived artifacts once, and, for required isolation, run `workspace.py check` from
-the integrating checkout (exit 6 is caller-vantage failure).
+Inspect candidate Git state. Resolve every overlap/conflict and regenerate
+shared outputs once. For required isolation, run `workspace.py check` from the
+integrating checkout (exit 6 is caller-vantage failure).
 
 Record blame on the run-state channel. For dispatch v1, only this join calls
 `tickets.py dispatch-join` with the packet's assignment seal and dispatch id,
@@ -34,6 +34,12 @@ An accepted defect set of `[]` from every critique feeding
 `tickets.py join-noop-repair <run> <root>.gate.repair --by <join-name>`, the
 atomic attributed join-owned transition. Accepted non-blocking findings go to the run's
 improvement or successor candidates, never that repair.
+For each critique join, pass the canonical accepted subset through
+`dispatch-join --accepted <json-array>`; for repair and verification packet and
+join operations, pass the fixed artifact with `--artifact`. For ordinary
+`<id>.check`, join with `--accepted`. Apply it using
+`check <run> <id> --stage <id>.check`; it accepts no findings, and must succeed
+before `checked_by` is trusted.
 
 Never: treat Suggested files as authority, accept unresolved Git conflicts, or repair here.
 

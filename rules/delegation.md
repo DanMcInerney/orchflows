@@ -74,10 +74,13 @@
 15. Before a worker becomes ready, is claimed, or receives a packet, the
     caller seals the exact validated assignment digest over Goal, Context,
     optional Suggested files, dependencies, and executor, its
-    `sequence` included. Those fields are immutable after seal; any change
-    creates a new generation. The executor-owned `Result`, `Verification`,
-   `Feedback`, `Risks`, and `Handoff` sections remain append-only and outside
-   the sealed assignment.
+    `sequence` included. Those fields are immutable after seal. A semantic-root
+    change cannot create an in-run amendment generation: a later cut may evolve
+    members only under unchanged root semantics. The caller waits for the
+    accepted predecessor result identity, opens a successor run, and cites that
+    identity in the successor root's Context. The executor-owned `Result`,
+    `Verification`, `Feedback`, `Risks`, and `Handoff` sections remain
+    append-only and outside the sealed assignment.
 16. Every role-bearing call and return follows the closed
    [dispatch contract](../contracts/dispatch.md). The ticket write is the
    fence; transport behavior never changes its attempt precedence or absolute

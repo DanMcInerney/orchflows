@@ -2,6 +2,72 @@
 
 from .common import *  # noqa: F401,F403
 
+
+class TestStartEstablishesEvidenceStore(unittest.TestCase):
+    """A research lane's workspace is the run-scoped evidence store.
+
+    The host runs ``start`` before dispatch, so the command must create and
+    durably name that store without requiring the caller to stand in a Git
+    checkout that has no meaning for the research adapter.
+    """
+
+    def test_research_pack_creates_and_records_the_canonical_run_store(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            sink = use_sink(tmp)
+            run_dir = sink / "tickets" / "testrun"
+            run_dir.mkdir(parents=True)
+            ticket = make_ticket(
+                run_dir,
+                "T1",
+                extra=(("pack", "orch-research-pack"),),
+            )
+
+            done = run_workspace(tmp, "start", "testrun", "T1")
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            store = (sink / "research" / "testrun").resolve()
+            self.assertTrue(store.is_dir())
+            body = payload_of(done)["start"]
+            self.assertEqual("evidence-store", body["mechanism"])
+            self.assertEqual(str(store), body["workspace_root"])
+            self.assertIn(
+                f"workspace_path: {store}\n",
+                ticket.read_text(encoding="utf-8"),
+            )
+            self.assertNotIn("workspace_branch", body)
+            self.assertNotIn("workspace_baseline", body)
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestCheckUsesTheEstablishedCandidate(unittest.TestCase):
+    def test_relocated_branch_does_not_replace_the_recorded_workspace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(
+                run_dir,
+                "T1",
+                extra=((workspace.ISOLATION_KEY, "required"),),
+            )
+            original = add_worktree(main, "item-branch", tmp / "original")
+            started = run_workspace(original, "start", "testrun", "T1")
+            self.assertEqual(0, started.returncode, started.stdout + started.stderr)
+            base = git(main, "rev-parse", "HEAD").strip()
+            commit_in(original, {"scratch/result.txt": "done\n"}, "result")
+            git(main, "worktree", "remove", str(original))
+            relocated = tmp / "relocated"
+            git(main, "worktree", "add", "--quiet", str(relocated), "item-branch")
+
+            checked = run_workspace(
+                main, "check", "testrun", "T1", "--base", base
+            )
+
+            self.assertEqual(workspace.EXIT_ISOLATION_MISSING, checked.returncode)
+            self.assertIn("recorded workspace_path", payload_of(checked)["error"])
+            self.assertIn(str(original.resolve()), payload_of(checked)["error"])
+            self.assertIn(str(relocated.resolve()), payload_of(checked)["error"])
+
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestCheckDisambiguatesItsRevisionRanges(unittest.TestCase):
     """A revision range is not a filename, and git only knows that if it is
@@ -85,13 +151,18 @@ class TestStartRecordsWhatItObserved(unittest.TestCase):
             after = ticket.read_text(encoding="utf-8")
             self.assertIn("workspace_branch: wt-branch\n", after)
             self.assertIn(f"workspace_baseline: {head} clean\n", after)
-            # the targeted write: two lines inserted before the closing ---,
+            self.assertIn(f"workspace_path: {worktree.resolve()}\n", after)
+            # the targeted write: three lines inserted before the closing ---,
             # every other byte of the ticket left as it was found
             self.assertEqual(
                 before.replace(
                     "---\n\n## Objective",
                     f"workspace_branch: wt-branch\n"
                     f"workspace_baseline: {head} clean\n---\n\n## Objective",
+                ).replace(
+                    "workspace_baseline: " + head + " clean\n---",
+                    "workspace_baseline: " + head + " clean\n"
+                    f"workspace_path: {worktree.resolve()}\n---",
                 ),
                 after,
             )
@@ -101,6 +172,7 @@ class TestStartRecordsWhatItObserved(unittest.TestCase):
             )
             body = payload_of(done)["start"]
             self.assertEqual("wt-branch", body["workspace_branch"])
+            self.assertEqual(str(worktree.resolve()), body["workspace_path"])
             self.assertTrue(body["isolated"])
 
     def test_in_the_main_checkout_it_exits_zero_and_records(self):
@@ -260,7 +332,9 @@ class TestStartFailureBehavior(unittest.TestCase):
             winner = stale.replace("status: claimed", "status: suspended")
             ticket.write_text(winner, encoding="utf-8")
 
-            outcome = workspace._record(ticket, stale, "wt-branch", "deadbeef clean")
+            outcome = workspace._record(
+                ticket, stale, "wt-branch", "deadbeef clean", str(main.resolve())
+            )
 
             self.assertIn("error", outcome)
             self.assertIn("lost the", outcome["error"])
@@ -394,10 +468,10 @@ class TestTicketsPayloadIsGradedNotItsExitStatus(unittest.TestCase):
 
 
 class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
-    """``start`` stamps two frontmatter scalars; it must not rewrite every
+    """``start`` stamps three frontmatter scalars; it must not rewrite every
     other line's ending to do it. ``Path.write_text`` applies the platform
     line separator, so on Windows a pure-LF ticket came back pure CRLF and a
-    two-scalar change produced a whole-file byte diff -- defeating byte-level
+    three-scalar change produced a whole-file byte diff -- defeating byte-level
     audit of the record, and contradicting the byte-domain clause this run
     shipped. Every other sink writer pins ``newline='\n'`` explicitly
     (``tickets_store._write_text_atomically``, ``_create_text_exclusively``);
@@ -408,7 +482,9 @@ class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
             ticket = Path(tmp) / "T1.md"
             ticket.write_bytes(body)
             prior = ticket.read_text(encoding="utf-8")
-            result = workspace_git._record(ticket, prior, "a-branch", "abc123 clean")
+            result = workspace_git._record(
+                ticket, prior, "a-branch", "abc123 clean", str(Path(tmp).resolve())
+            )
             self.assertNotIn("error", result, result)
             return ticket.read_bytes()
 
@@ -419,7 +495,7 @@ class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
         self.assertEqual(0, after.count(b"\r\n"), after)
         self.assertEqual(b"## Objective", after.splitlines()[-3])
 
-    def test_only_the_two_stamped_lines_differ_from_the_prior_bytes(self):
+    def test_only_the_three_stamped_lines_differ_from_the_prior_bytes(self):
         body = b"---\nid: T1\nrun: testrun\nstatus: claimed\n---\n\n## Objective\n\nx\n"
         before = body.split(b"\n")
         after = self._stamped(body).split(b"\n")
@@ -427,6 +503,8 @@ class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
         added = [line for line in after if line not in before]
         self.assertEqual(
             [b"workspace_branch: a-branch", b"workspace_baseline: abc123 clean"],
-            added,
+            added[:2],
         )
+        self.assertEqual(3, len(added), added)
+        self.assertTrue(added[2].startswith(b"workspace_path: "), added)
         self.assertEqual([], [line for line in before if line not in after])

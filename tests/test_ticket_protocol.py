@@ -74,7 +74,8 @@ class TicketProtocolTest(unittest.TestCase):
             "`dispatch-packet`", "`dispatch-receive`", "`reference`",
             "`inline`", "`state-inaccessible`", "`assignment-divergent`",
             "`identity-mismatch`", "`authority-mismatch`",
-            "`role-mismatch`", "`profile-mismatch`",
+            "`role-mismatch`", "`profile-mismatch`", "`dispatch-receipt`",
+            "`receipt-required`", "`--file -`", "ASCII-escaped canonical JSON",
         ):
             self.assertIn(token, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
@@ -105,3 +106,49 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("committed packet", delegation)
         self.assertIn("receipt", roles.lower())
         self.assertIn("**packet projection**", vocabulary)
+
+    def test_public_documents_project_the_current_dispatch_and_gate_model(self):
+        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        readme = (root / "README.md").read_text(encoding="utf-8")
+        design = (root / "DESIGN.md").read_text(encoding="utf-8")
+        tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
+        vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+        worklog = (root / "contracts" / "worklog.md").read_text(encoding="utf-8")
+
+        for projection in (readme, design):
+            self.assertIn("six", projection.lower())
+            self.assertIn("dispatch", projection.lower())
+        for field in (
+            "assignment_seal", "dispatch_id", "outcome_record_id", "evidence",
+        ):
+            self.assertIn(field, readme)
+
+        for phrase in (
+            "response `.packet` value", "`--file -`", "durable accepted receipt",
+            "GatePlan", "CritiqueAdjudication", "RepairOutcome",
+            "tickets.py checker-stage", "--stage <id>.check",
+            "tickets.py show", "tickets.py lint <run> [<id>] --file",
+            "retired attempt", "successor run",
+        ):
+            self.assertIn(phrase, tickets)
+        self.assertIn("decomposed root-ticket run", worklog)
+        self.assertNotIn("packet-only dispatch", vocabulary)
+        self.assertNotIn("packet-only ticket", vocabulary)
+        self.assertNotIn("gate-only cut", vocabulary)
+
+    def test_host_skill_and_ui_project_established_non_live_suspension(self):
+        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
+        frontier = (
+            root / "skills" / "engines" / "orch-frontier" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        ui_model = (root / "scripts" / "ui_model.py").read_text(encoding="utf-8")
+
+        for projection in (host, frontier):
+            self.assertIn("response `.packet`", projection)
+            self.assertIn("--file", projection)
+            self.assertIn("workspace", projection.lower())
+            self.assertIn("evidence store", projection.lower())
+        self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)
+        self.assertNotIn("Parked claims stay live", frontier)
+        self.assertNotIn("holds the lease", ui_model)

@@ -16,16 +16,25 @@ value must match both the dispatch attempt's recorded owner and the currently
 claimed ticket; a reusable human-readable name alone grants no filing
 authority. The command never changes lifecycle state.
 
+The reserved outcome carries only the non-empty closing delta that has not
+already entered these sections through result records. Repeating an attributed
+item is refused before mutation; outcome import therefore materializes every
+evidence item once rather than treating the close as a second snapshot.
+
 The ticket section mutation and its dispatch-v1 committed-record receipt are
 one atomic write. An exact retry of a committed `dispatch_id` plus `record_id`
 returns the stored success without adding content, even after retirement,
 replacement, or lease expiry. Changed operation content for that pair is an
 `idempotency-conflict`; an unseen record on an ended attempt is stale. Every
 refusal leaves the ticket byte-identical.
+An unseen result requires the attempt's durable `dispatch-receipt`, proving the
+established receiver accepted the exact committed packet before execution.
 
 A read-only critique records findings in `## Feedback`; it never rewrites the
 executor's Result or Verification. A verifier records its independent verdict
 and evidence in `## Verification`.
+Gate and ordinary-checker critique Feedback is a canonical JSON array so the
+review ledger can bind the complete findings and an exact accepted subset.
 
 The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, and adjudicates only material blockers
@@ -51,3 +60,12 @@ the attempt that produced it.
 
 T0 supersession record sha256:47f6855da46fd692a6dd8e42408ef721e719400d655f5e74e85dcdb50f924dd3: the
 distinguished outcome envelope is the sole durable return consumed by join.
+
+T0 supersession record sha256:734f7558400198917ee42aa9f0c06052bacdec2e0d9dd9304976e937e88b9873:
+closing outcome evidence is the nonduplicating delta after streamed result
+records, and an unseen executor result is admitted only after the dispatch
+contract's durable accepted receiver receipt.
+
+T0 supersession record sha256:80252b67dd8b7010630831f233be12ba8fe32c31ba98bfccbe277328b9a458eb:
+critique Feedback result records are canonical JSON arrays whose complete value
+and accepted subset are carried by the immutable review adjudication.

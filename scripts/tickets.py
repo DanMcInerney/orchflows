@@ -229,6 +229,7 @@ _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
 _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
+_cmd_show = _tickets_lifecycle_module._cmd_show
 _do_claim = _tickets_lifecycle_module._do_claim
 _is_stale = _tickets_packet_module._is_stale
 _last_motion = _tickets_packet_module._last_motion
@@ -352,6 +353,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
     _tickets_attempts_module._write_text_atomically = _write_text_atomically
     _tickets_dispatch_module._cmd_ready = _cmd_ready
+    _tickets_dispatch_module._cmd_show = _cmd_show
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
     _tickets_dispatch_module._cmd_join_noop_repair = _cmd_join_noop_repair

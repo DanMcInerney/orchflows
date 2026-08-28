@@ -12,7 +12,8 @@ from unittest import mock
 
 from scripts import tickets
 from scripts.tickets_format import (
-    _parse_frontmatter, _sections, _set_frontmatter_field, parse_canonical_json,
+    _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json,
+    parse_canonical_json,
 )
 
 
@@ -36,6 +37,15 @@ class DispatchV1Test(unittest.TestCase):
             validated["draft_validation"]["cut_generation"],
         )
         self.dispatch("ready", "--run", "run")
+        ticket = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        established = ticket.read_text(encoding="utf-8")
+        for key, value in (
+            ("workspace_path", "C:/candidate"),
+            ("workspace_branch", "candidate-branch"),
+            ("workspace_baseline", "0123456789abcdef clean"),
+        ):
+            established = tickets._set_frontmatter_field(established, key, value)
+        ticket.write_text(established, encoding="utf-8")
         self.lease = (
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
@@ -67,6 +77,20 @@ class DispatchV1Test(unittest.TestCase):
             "--dispatch-id", dispatch_id,
             "--record-id", record_id,
             "--content", content,
+        ])
+
+    def authorize(self, dispatch_id="D1", by="worker"):
+        packet = tickets._dispatch([
+            "dispatch-packet", "run", "T", "--dispatch-id", dispatch_id,
+            "--reply-to", "root", "--workspace", "C:/candidate",
+            "--form", "reference",
+        ])["packet"]
+        return tickets._dispatch([
+            "dispatch-receive", "--content",
+            json.dumps(packet, sort_keys=True, separators=(",", ":")),
+            "--role", "worker", "--profile", "orch-worker",
+            "--by", by, "--reply-to", "root",
+            "--workspace", "C:/candidate",
         ])
 
     def retire(self, dispatch_id="D1", record_id="lifecycle:retire-1", seal=None):
@@ -107,13 +131,16 @@ class DispatchV1Test(unittest.TestCase):
             arguments.append("--append")
         return tickets._dispatch(arguments)
 
-    def outcome(self, *, status="complete", by="worker", dispatch_id="D1", seal=None):
+    def outcome(
+        self, *, status="complete", by="worker", dispatch_id="D1", seal=None,
+        result="delivered",
+    ):
         content = {
             "assignment_seal": seal or self.opened_seal,
             "by": by,
             "dispatch_id": dispatch_id,
             "evidence": {
-                "Result": "delivered",
+                "Result": result,
                 "Verification": "verified",
                 "Feedback": "[]",
                 "Risks": "[]",
@@ -221,6 +248,121 @@ class DispatchV1Test(unittest.TestCase):
         reopened = self.open(dispatch_id="D2", by="worker-2")
         self.assertEqual("opened", reopened["dispatch"]["outcome"])
 
+    def test_open_requires_the_current_stored_admission_before_mutation(self):
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(
+            _set_frontmatter_field(text, "admission", "git:sha256:stale"),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.open()
+
+        self.assertEqual("admission-mismatch", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_expiry_cannot_implicitly_open_a_successor(self):
+        soon = (
+            datetime.now(timezone.utc) + timedelta(minutes=1)
+        ).isoformat().replace("+00:00", "Z")
+        opened = self.open(lease=soon)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        before = self.ticket_text()
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            refusal = self.open(
+                dispatch_id="D2", by="worker-2", lease="2101-01-01T00:00:00Z"
+            )
+
+        self.assertEqual("lease-expired", refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+        self.assertNotIn("error", self.retire())
+        reopened = self.open(dispatch_id="D2", by="worker-2")
+        self.assertEqual("opened", reopened["dispatch"]["outcome"])
+
+    def test_expired_attempt_can_cross_the_explicit_atomic_replacement(self):
+        soon = (
+            datetime.now(timezone.utc) + timedelta(minutes=1)
+        ).isoformat().replace("+00:00", "Z")
+        opened = self.open(lease=soon)
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            replaced = self.replace(
+                replacement="D2", lease="2101-01-01T00:00:00Z", by="worker-2"
+            )
+
+        self.assertEqual("replaced", replaced["dispatch"]["outcome"])
+        state = parse_canonical_json(_parse_frontmatter(self.ticket_text())["dispatch_v1"])
+        self.assertEqual(["replaced", "live"], [item["state"] for item in state["attempts"]])
+
+    def test_all_dispatch_state_operations_refuse_path_aliased_origins(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        envelope = {
+            "assignment_seal": self.opened_seal,
+            "by": "worker", "dispatch_id": "D1",
+            "evidence": {
+                "Result": "delivered", "Verification": "verified",
+                "Feedback": "[]", "Risks": "[]", "Handoff": "",
+            },
+            "id": "T", "outcome_record_id": "outcome",
+            "protocol": "orchflows.dispatch.v1", "run": "run/../run",
+            "status": "complete",
+        }
+        commands = (
+            [
+                "dispatch-outcome", "run/../run", "T", "--content",
+                json.dumps(envelope, sort_keys=True, separators=(",", ":")),
+            ],
+            [
+                "dispatch-retire", "run/../run", "T", "--dispatch-id", "D1",
+                "--assignment-seal", self.opened_seal,
+                "--record-id", "lifecycle:retire-alias",
+            ],
+            [
+                "dispatch-replace", "run/../run", "T", "--dispatch-id", "D1",
+                "--assignment-seal", self.opened_seal,
+                "--record-id", "lifecycle:replace-alias",
+                "--replacement-dispatch-id", "D2", "--by", "worker-2",
+                "--lease-expires-at", self.lease,
+            ],
+        )
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        before = self.ticket_text()
+
+        for command in commands:
+            with self.subTest(command=command[0]):
+                path.write_text(before, encoding="utf-8")
+                refusal = tickets._dispatch(command)
+                self.assertIn("unsafe run id", refusal["error"])
+                self.assertEqual(before, self.ticket_text())
+
+    def test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch(self):
+        opened = self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(_set_frontmatter_field(text, "id", "other"), encoding="utf-8")
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("origin-mismatch", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
     def test_expired_attempt_rejects_unseen_records_without_mutation(self):
         opened = self.open()
         self.assertNotIn("error", opened)
@@ -255,6 +397,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_write_and_receipt_are_one_replayable_operation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
 
         committed = self.result()
         self.assertEqual("orchflows.dispatch.v1", committed["result"]["protocol"])
@@ -281,6 +424,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         before = self.ticket_text()
 
         wrong_seal = self.result(seal="sha256:not-the-assignment")
@@ -319,6 +463,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_join_consumes_a_fixed_result_identity_and_replays_after_retirement(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
         outcome = self.outcome()
         self.assertNotIn("error", outcome)
 
@@ -357,6 +502,47 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("outcome-record-mismatch", mismatch["code"])
         self.assertEqual(joined_text, self.ticket_text())
 
+    def test_outcome_materializes_only_unstreamed_evidence_once(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.result(body="delivered")
+        streamed = self.ticket_text()
+
+        repeated = self.outcome(result="delivered")
+
+        self.assertEqual("outcome-invalid", repeated["code"])
+        self.assertEqual(streamed, self.ticket_text())
+
+        committed = self.outcome(result="closing result delta")
+        self.assertNotIn("error", committed)
+        closed = self.ticket_text()
+        result_body = _sections(closed)["Result"]
+        self.assertEqual(1, result_body.count("delivered"))
+        self.assertEqual(1, result_body.count("closing result delta"))
+        self.assertEqual(committed, self.outcome(result="closing result delta"))
+        self.assertEqual(closed, self.ticket_text())
+
+    def test_suspended_join_retires_the_attempt_but_retains_claimant_observations(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.outcome(status="suspended")
+
+        joined = tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+
+        self.assertEqual("suspended", joined["join"]["status"])
+        data = _parse_frontmatter(self.ticket_text())
+        self.assertEqual("suspended", data["status"])
+        self.assertEqual("worker", data["claimed_by"])
+        state = parse_canonical_json(data["dispatch_v1"])
+        self.assertEqual("retired", state["attempts"][0]["state"])
+
     def test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
@@ -390,6 +576,141 @@ class DispatchV1Test(unittest.TestCase):
         path.write_text(malformed, encoding="utf-8")
         before = path.read_bytes()
         refusal = self.commit()
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_noncanonical_persisted_state_is_a_byte_preserving_refusal(self):
+        self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        state = _parse_frontmatter(text)["dispatch_v1"]
+        noncanonical = json.dumps(json.loads(state), sort_keys=False)
+        self.assertNotEqual(state, noncanonical)
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", noncanonical),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_forged_stored_success_is_refused_instead_of_replayed(self):
+        self.open()
+        committed = self.commit()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        data = _parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        state["attempts"][0]["records"][0]["success"] = {"forged": True}
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertNotEqual(committed, refusal)
+        self.assertEqual(before, path.read_bytes())
+
+    def test_forged_outcome_success_cannot_drive_join(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.outcome()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        data = _parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        record = next(
+            item for item in state["attempts"][0]["records"]
+            if item["record_id"] == "outcome"
+        )
+        record["success"]["outcome"]["status"] = "ready"
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_persisted_execution_without_the_receipt_is_a_byte_preserving_refusal(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.outcome()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
+        records = state["attempts"][0]["records"]
+        state["attempts"][0]["records"] = [
+            record for record in records if record["record_id"] != "dispatch-receipt"
+        ]
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit(record_id="probe-after-missing-receipt")
+
+        self.assertEqual("receipt-required", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_persisted_receipt_after_outcome_is_a_byte_preserving_refusal(self):
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.outcome()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
+        records = state["attempts"][0]["records"]
+        receipt = next(record for record in records if record["kind"] == "receipt")
+        state["attempts"][0]["records"] = [
+            record for record in records if record is not receipt
+        ] + [receipt]
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit(record_id="probe-after-reordered-receipt")
+
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertEqual(before, path.read_bytes())
+
+    def test_orphan_replacement_edge_is_a_byte_preserving_refusal(self):
+        self.open()
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        text = path.read_text(encoding="utf-8")
+        data = _parse_frontmatter(text)
+        state = parse_canonical_json(data["dispatch_v1"])
+        state["attempts"][0]["replaces"] = "never-opened"
+        path.write_text(
+            _set_frontmatter_field(text, "dispatch_v1", json.dumps(
+                state, sort_keys=True, separators=(",", ":")
+            )),
+            encoding="utf-8",
+        )
+        before = path.read_bytes()
+
+        refusal = self.commit()
+
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())
 

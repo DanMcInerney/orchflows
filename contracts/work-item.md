@@ -31,12 +31,21 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `depends_on` — ticket ids that must complete first.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate and workspace mechanics.
+- `review_order` — the sealed zero-based order of a composite-gate lens.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
-- `claimed_by`, `claimed_at`, `checked_by`, `workspace_branch`, and
-  `workspace_baseline` — lifecycle observations written by their owning tools.
+- `claimed_by`, `claimed_at`, `checked_by`, `review_stage`, `workspace_path`,
+  `workspace_branch`, and `workspace_baseline` — lifecycle observations written
+  by their owning tools. `workspace_path` names the pre-dispatch candidate or
+  canonical run-scoped evidence store; the Git-only fields fix its branch and
+  starting revision.
+- `review_stage` names the completed derived `<id>.check` ticket whose
+  protocol-owned join authenticates `checked_by`; it is never a caller's
+  findings payload.
 - `dispatch_v1` — the canonical JSON `orchflows.dispatch.v1` attempt record.
   It is operational state, excluded from the assignment fingerprint.
+- `review_v1` — the canonical JSON immutable review-stage ledger. It is
+  operational state, excluded from the assignment fingerprint.
 
 `status` is `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`,
 `stalled`, `failed`, or `limited`. Admission alone creates `ready`; claim alone
@@ -54,7 +63,8 @@ The ticket's `dispatch_v1` frontmatter value binds the complete closed
 packets, receipts, outcomes, joins, precedence, and cutover. Ticket lifecycle
 projects its accepted mutations: open creates `claimed`; only the outcome-fenced
 join creates `suspended` or a terminal state. Raw status writes cannot mutate a
-ticket once its dispatch record exists.
+ticket once its dispatch record exists. A suspended ticket retains claimant
+observations for its Handoff, but its joined dispatch attempt is retired.
 
 ## Dispatch-v1 packet projection and receipt
 
@@ -62,6 +72,22 @@ Packet projection and receipt are the [dispatch contract](dispatch.md)'s wire
 boundary. Reference is the normal projection. Inline seals the whole routing
 envelope for an offline receiver and returns the same reserved outcome envelope
 for atomic coordinator relay; it never creates a second ticket truth.
+
+## Review-stage ledger
+
+`review_v1` is a closed `orchflows.review.v1` object with an ordered `records`
+list. Every record carries its canonical content digest as `identity` and the
+exact prior record identity as `predecessor`. `GatePlan` fixes the artifact,
+pack, normalized isolation, and ordered lens assignment identities;
+`CritiqueAdjudication` fixes complete findings and their accepted subset;
+`RepairOutcome` fixes the resulting artifact or proves no-op from an empty
+accepted set; `Verification` fixes its artifact, verdict, and evidence.
+
+Composite gate packets copy only the validated predecessor chain. Critique,
+repair, and verification joins append their stage atomically with the lifecycle
+join. The ordinary distinct checker writes the same `GatePlan` and
+`CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
+artifact, complete canonical findings, and accepted subset.
 
 ## Executor records
 
@@ -75,13 +101,21 @@ prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
 the executor chooses a fresh record id for each streamed write. At closing,
 every executor commits or returns the reserved
 [dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use
-`[]` when empty.
+`[]` when empty. Outcome evidence is a closing delta: it contains only evidence
+not already materialized by streamed result records, and every item is appended
+exactly once.
 
 ## Roots, decomposition, and integration
 
 A root is the ticket named by a `root_generation`. A direct root may bind any
 lawful registered executor and owns the whole artifact. A decomposed root binds
 `orch-decompose`; every member and gate ticket uses this same semantic shape.
+
+Each physical run has one root identity. Its `root_generation` uses ordinal
+`1`; only cut drafts can advance before seal. A semantic change after seal is
+not an in-run amendment: after the accepted predecessor result identity
+resolves, it opens a successor run whose root `## Context` cites that identity.
+The predecessor ticket and run remain historical state and are not rewritten.
 
 Decomposition may suggest files, but it does not grant exclusive predicted
 scope and parallel tickets need not predict disjoint paths. Isolated candidates
@@ -124,3 +158,22 @@ attempt lease; raw status writes cannot terminate or suspend a v1 attempt.
 T0 supersession record sha256:0d3198c3bca64480a60502a7d621be4e6ca6349fc4ef74e9b18f30951fdec956: the
 closed dispatch grammar and reserved outcome return moved to `dispatch.md`;
 public legacy role-bearing routes are removed.
+
+T0 supersession record sha256:0c37ca5c93bc6f4b5042e8fb746f3fc10a6e82f45228d7889e678be500da0d68:
+suspension retains claimant observations after retiring its attempt, and
+closing outcome evidence is an unstreamed delta.
+
+T0 supersession record sha256:85860c216a05aab9272033f2a368fde11d232e082f7d3d5cc82931bcf2e8bf36:
+`review_order` seals composite-lens order and operational `review_v1` records
+the immutable GatePlan through Verification chain.
+
+T0 supersession record sha256:73c86dd421ed6da6acf7893e881a652ffeee2badc3e496e3fb810e4661519804:
+workspace establishment is a host-owned pre-dispatch
+transition. `workspace.py start` records `workspace_path` for every supported
+adapter, plus the existing Git branch/baseline observations, and creates the
+canonical run-scoped research evidence store.
+
+T0 supersession record sha256:c6fbeafb3f9daf27e689ae00d80c1bf2a6f9332aca1183e18ecebeee7b2cdb5f:
+each run has one semantic root at ordinal 1; a post-seal semantic change opens
+a successor run linked to the accepted predecessor result identity instead of
+minting an in-run root amendment.

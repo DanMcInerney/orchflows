@@ -10,28 +10,28 @@ from pathlib import Path
 if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
-        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
-        LOOP_EXECUTOR, REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of,
+        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, adapter_id,
+        LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
+        canonical_json,
     )
     from .tickets_sequence import sequence_block
     from .tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock,
-        _segment_error, _tickets_root, establishes_a_git_workspace,
-        normalized_isolation,
+        _segment_error, _tickets_root, normalized_isolation,
     )
 else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
-        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
-        LOOP_EXECUTOR, REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of,
+        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, adapter_id,
+        LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
+        canonical_json,
     )
     from tickets_sequence import sequence_block
     from tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock,
-        _segment_error, _tickets_root, establishes_a_git_workspace,
-        normalized_isolation,
+        _segment_error, _tickets_root, normalized_isolation,
     )
 
 PACKET_SECTIONS = (("goal", "Goal"), ("context", "Context"))
@@ -55,6 +55,42 @@ def _command_text(*arguments) -> str:
     if sys.platform == "win32":
         return "& " + " ".join("'" + value.replace("'", "''") + "'" for value in values)
     return shlex.join(values)
+
+
+def workspace_establishment_finding(data: dict, workspace):
+    """Return the refusal code/detail for a non-established packet workspace."""
+
+    adapter = adapter_id(data.get("pack"))
+    required = adapter == "evidence-store" or (
+        adapter == "git" and normalized_isolation(data.get("isolation")) == "required"
+    )
+    if not required:
+        return None
+    recorded = str(data.get("workspace_path") or "").strip()
+    if not recorded:
+        return (
+            "workspace-unestablished",
+            "required workspace has no pre-dispatch workspace_path record",
+        )
+    if workspace != recorded:
+        return (
+            "workspace-mismatch",
+            "dispatch workspace does not equal the recorded candidate workspace",
+        )
+    if adapter == "git" and any(
+        not str(data.get(key) or "").strip()
+        for key in ("workspace_branch", "workspace_baseline")
+    ):
+        return (
+            "workspace-unestablished",
+            "Git candidate lacks its pre-dispatch branch or baseline record",
+        )
+    if adapter == "evidence-store" and not Path(recorded).is_dir():
+        return (
+            "workspace-unestablished",
+            "recorded evidence-store workspace is unavailable",
+        )
+    return None
 
 
 def _last_motion(ticket_path: Path, result_text: str = "", _unused=()):
@@ -137,7 +173,7 @@ def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
     return lines
 
 
-def _packet_under_run_lock(rest, *, result_attempt=None):
+def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     args = list(rest)
     reply_to = _extract_flag(args, "--reply-to")
     dispatched_name = _extract_flag(args, "--by")
@@ -227,10 +263,12 @@ def _packet_under_run_lock(rest, *, result_attempt=None):
         prompt.append(f"Each pass works toward Goal and stops when it is achieved or the operational bound {loaded.get('bound')} is exhausted.")
     if workspace:
         prompt.append(f"Workspace: {workspace}")
+    if review_state is not None:
+        prompt.extend((
+            "Immutable review ledger; consume this exact predecessor chain:",
+            canonical_json(review_state),
+        ))
     isolation = normalized_isolation(loaded.get("isolation"))
-    if further is None and isolation == REQUIRED_ISOLATION and establishes_a_git_workspace(loaded.get("pack")):
-        prompt.append("First record the isolated candidate workspace:")
-        prompt.append(_command_text(sys.executable, script.with_name("workspace.py"), "start", run_id, loaded["id"]))
     if further == CHECKER_EXECUTOR:
         prompt.append("File Feedback and Risks as findings are produced; the join alone sets terminal status.")
     elif further == REVERIFIER_EXECUTOR:

@@ -36,7 +36,8 @@ reader. Human legibility is welcome; it is never the design driver.
 ## Structure → constraint
 
 - **A narrow, hash-pinned waist (`contracts/`).** N workflows, M
-  packs, and H hosts meet in five data shapes: N+M+H mutual
+  packs, and H hosts meet in six data shapes, including dispatch:
+  N+M+H mutual
   understandings instead of N×M×H. Hash-pinned because the reader
   drifts shapes helpfully — renaming a field to a nicer synonym reads
   as a favor and breaks every consumer silently; the pin turns drift
@@ -115,10 +116,11 @@ request. The replacement:
   and `orch-frontier` drains it with no engine, contract or step file to
   keep in step with the ticket contract (cheap generation: the gate is
   the same graded ticket shape every other item has).
-- **The envelope closes the algebra.** Every dispatchable unit returns
-  one envelope — status, result identity, verification — so a
-  predecessor's result identity is a successor's evidence with no
-  per-pair glue (search is memory: one return shape, one name).
+- **The envelope closes the algebra.** Every ticket attempt closes through
+  the dispatch outcome envelope, fenced to its assignment, attempt, reserved
+  outcome identity, writer, status, and evidence. Its accepted durable result
+  identity becomes successor evidence with no per-pair glue (search is memory:
+  one return shape, one name).
 
 Its open decisions closed as: ticket sets drained by `orch-frontier`,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured

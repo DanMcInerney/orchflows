@@ -190,9 +190,8 @@ class TestActiveBand(unittest.TestCase):
             page = self.index(tmp)
 
             self.assertEqual(["A2", "G3", "G4", "G5"], band_ids(page))
-            # G7 is suspended and G2 blocked: both hold a claim, neither is
-            # an executor at work, and the meter's wider notion of live is
-            # not this band's.
+            # G7 is suspended and retains claimant observations; its joined
+            # attempt is retired. G2 is blocked. Neither is at work.
             self.assertNotIn("G7", band_ids(page))
             self.assertNotIn("G2", band_ids(page))
 
@@ -393,8 +392,8 @@ class TestPolling(unittest.TestCase):
 
             self.assertEqual("yes", self.live(main, detail_url("run-gamma", "G3")))
             self.assertEqual("no", self.live(main, detail_url("run-gamma", "G1")))
-            # `suspended` holds the lease with nobody at the keyboard: the
-            # meter keeps running, the page has nothing to wait for.
+            # `suspended` retains Handoff observations but has no live attempt,
+            # so the page has nothing to wait for.
             self.assertEqual("no", self.live(main, detail_url("run-gamma", "G7")))
 
     def test_a_page_with_no_ticket_in_view_polls_at_the_idle_interval(self):

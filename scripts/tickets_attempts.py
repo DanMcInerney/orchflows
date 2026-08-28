@@ -10,9 +10,11 @@ if __package__:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from .tickets_generations import seal_findings
+    from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
+        RECORD_KINDS, accepted_receipt_failure,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved, state as _state,
         validate_state as _validate_state,
@@ -27,9 +29,11 @@ else:
         _set_frontmatter_field, canonical_json, parse_canonical_json,
     )
     from tickets_generations import seal_findings
+    import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL, RECORD_KINDS,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
+        RECORD_KINDS, accepted_receipt_failure,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved, state as _state,
         validate_state as _validate_state,
@@ -58,7 +62,6 @@ DISPATCH_REPLACE_USAGE = (
     "--lease-expires-at <absolute-iso>"
 )
 
-
 def attempt_window(data: dict):
     """Return the current attempt's immutable clock from the state owner."""
     state, failure = _state(data)
@@ -85,7 +88,6 @@ def attempt_window(data: dict):
         "lease_expires_at": expires,
     }, None
 
-
 def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dict:
     return {"dispatch": {
         "protocol": PROTOCOL,
@@ -99,7 +101,6 @@ def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dic
         "outcome_record_id": attempt["outcome_record_id"],
         "state": attempt["state"],
     }}
-
 
 def _cmd_dispatch_open(rest):
     args = list(rest)
@@ -136,6 +137,9 @@ def _cmd_dispatch_open(rest):
             if failure is not None:
                 return failure
             data = _parse_frontmatter(text)
+            failure = dispatch_guards.origin_failure(data, run, ticket_id)
+            if failure is not None:
+                return failure
             state, failure = _state(data)
             if failure is not None:
                 return failure
@@ -170,17 +174,13 @@ def _cmd_dispatch_open(rest):
                     "idempotency-conflict",
                     f"dispatch_id '{dispatch_id}' was already opened with different content",
                 )
+            failure = dispatch_guards.admission_failure(path, text, data, run, ticket_id)
+            if failure is not None:
+                return failure
             now = datetime.now(timezone.utc)
-            live = []
-            for attempt in attempts:
-                expiry = _parse_iso(attempt.get("lease_expires_at"))
-                if attempt.get("state") == "live" and expiry is not None and now < expiry:
-                    live.append(attempt)
-            if live:
-                return _classification(
-                    "live-attempt",
-                    f"ticket already has live dispatch_id '{live[-1].get('dispatch_id')}'",
-                )
+            failure = dispatch_guards.live_attempt_failure(attempts, now)
+            if failure is not None:
+                return failure
             if lease <= now:
                 return _classification(
                     "lease-expired", "--lease-expires-at is not later than the open time"
@@ -191,10 +191,6 @@ def _cmd_dispatch_open(rest):
                     "ticket-not-ready",
                     f"dispatch-open cannot start from status '{status}'",
                 )
-            for attempt in attempts:
-                if attempt.get("state") == "live":
-                    attempt["state"] = "expired"
-                    attempt["expired_at"] = now.strftime(UTC_STAMP)
             attempt = {
                 **request,
                 "opened_at": now.strftime(UTC_STAMP),
@@ -213,7 +209,6 @@ def _cmd_dispatch_open(rest):
     except OSError as error:
         return {"error": f"unable to open dispatch attempt: {error}"}
 
-
 def _record_response(
     run: str, ticket_id: str, dispatch_id: str, record_id: str, content
 ) -> dict:
@@ -226,13 +221,16 @@ def _record_response(
         "content": content,
     }}
 
-
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
     expected_seal=None, expected_owner=None, require_live_lease=True,
     record_kind="generic",
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
     for kind, value in (("dispatch-id", dispatch_id), ("record-id", record_id)):
         failure = _identity_failure(kind, value)
         if failure is not None:
@@ -241,6 +239,7 @@ def _commit_record(
         return _classification("record-kind-invalid", f"unknown record kind '{record_kind}'")
     owned = {
         "packet": record_id == PACKET_RECORD_ID,
+        "receipt": record_id == RECEIPT_RECORD_ID,
         "outcome": record_id == OUTCOME_RECORD_ID,
         "join": record_id.startswith("join:"),
         "lifecycle": record_id.startswith("lifecycle:"),
@@ -260,6 +259,9 @@ def _commit_record(
             if failure is not None:
                 return failure
             data = _parse_frontmatter(text)
+            failure = dispatch_guards.origin_failure(data, run, ticket_id)
+            if failure is not None:
+                return failure
             state, failure = _state(data)
             if failure is not None:
                 return failure
@@ -321,6 +323,10 @@ def _commit_record(
                 return _classification(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
+            if record_kind in ("result", "outcome", "join"):
+                failure = accepted_receipt_failure(attempt)
+                if failure is not None:
+                    return failure
             if mutate is None:
                 success = _record_response(run, ticket_id, dispatch_id, record_id, content)
                 updated = text
@@ -335,7 +341,7 @@ def _commit_record(
                 "record_id": record_id,
                 "success": success,
             })
-            failure = _validate_state(state)
+            failure = _validate_state(state, run=run, ticket_id=ticket_id)
             if failure is not None:
                 return failure
             updated = _set_frontmatter_field(updated, "dispatch_v1", canonical_json(state))
@@ -343,7 +349,6 @@ def _commit_record(
             return success
     except OSError as error:
         return {"error": f"unable to commit dispatch record: {error}"}
-
 
 def _cmd_dispatch_commit(rest):
     args = list(rest)
@@ -361,6 +366,8 @@ def _cmd_dispatch_commit(rest):
         content = parse_canonical_json(content_text)
     except (TypeError, ValueError) as error:
         return _classification("content-invalid", f"--content is not JSON: {error}")
+    if content_text != canonical_json(content):
+        return _classification("content-invalid", "--content is not canonical JSON")
     if _record_id_is_reserved(record_id):
         return _classification(
             "record-id-reserved",
@@ -369,7 +376,6 @@ def _cmd_dispatch_commit(rest):
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content, record_kind="generic"
     )
-
 
 def _cmd_dispatch_retire(rest):
     args = list(rest)
@@ -414,7 +420,6 @@ def _cmd_dispatch_retire(rest):
         mutate=retire, expected_seal=assignment_seal, require_live_lease=False,
         record_kind="lifecycle",
     )
-
 
 def _cmd_dispatch_replace(rest):
     args = list(rest)
@@ -498,5 +503,6 @@ def _cmd_dispatch_replace(rest):
 
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content,
-        mutate=replace, expected_seal=assignment_seal, record_kind="lifecycle",
+        mutate=replace, expected_seal=assignment_seal, require_live_lease=False,
+        record_kind="lifecycle",
     )
