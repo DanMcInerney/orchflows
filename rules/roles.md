@@ -1,5 +1,8 @@
 # Roles
 
+The generated [receiver lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
+names the worker-or-planner authority established at receipt.
+
 1. The starting agent is the orchestrator. It owns user questions, scope
    decisions, and undelegated irreversible effects; it never delegates
    accountability.

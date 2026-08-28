@@ -31,6 +31,7 @@ for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
         sys.path.insert(0, str(_import_root))
 
 import doclint
+from tools import render_lifecycle as _render_lifecycle
 
 from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
@@ -115,6 +116,29 @@ def validate_markdown_links(diag: Diagnostics) -> None:
         _lint_module.validate_markdown_links(diag)
     finally:
         _restore_support(state)
+
+
+def validate_lifecycle_render(diag: Diagnostics) -> None:
+    """Refuse a missing or hand-edited lifecycle view."""
+    owners = (
+        ROOT / "scripts" / "tickets_transitions.py",
+        ROOT / "scripts" / "tickets_lifecycle.py",
+    )
+    target = ROOT / "docs" / "lifecycle.md"
+    missing = [path for path in owners if not path.is_file()]
+    if missing:
+        diag.warn("docs/lifecycle.md", "lifecycle render check skipped: transition owners are absent")
+        return
+    try:
+        actual = target.read_text(encoding="utf-8")
+    except OSError as error:
+        diag.error("docs/lifecycle.md", f"generated lifecycle table is unreadable: {error}")
+        return
+    if actual != _render_lifecycle.render():
+        diag.error(
+            "docs/lifecycle.md",
+            "generated lifecycle table drifted from transition code; run tools/render_lifecycle.py",
+        )
 
 # --- documented paths resolve in the installed tree --------------------
 # install.py owns the installed layout, so its directory roster is imported
@@ -270,6 +294,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
     validate_markdown_links(diag)
+    validate_lifecycle_render(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)
     validate_pins(diag)

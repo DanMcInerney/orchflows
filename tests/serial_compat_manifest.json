@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2003,
+  "count": 2008,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -439,6 +439,11 @@
    "test_isolate.TestIsolateCopiesFromSink.test_the_sink_is_read_and_never_written",
    "test_isolate.TestIsolateCopiesFromSink.test_the_snapshot_keeps_the_sinks_own_layout",
    "test_isolate.TestIsolateCopiesFromSink.test_the_source_names_no_state_path_of_its_own",
+   "test_lifecycle_render.LifecycleTableTest.test_a_hand_edit_fails_closed",
+   "test_lifecycle_render.LifecycleTableTest.test_each_generated_row_names_its_code_identity",
+   "test_lifecycle_render.LifecycleTableTest.test_every_public_lifecycle_event_has_the_owned_seven_cells",
+   "test_lifecycle_render.LifecycleTableTest.test_the_committed_table_is_exactly_the_rendered_code",
+   "test_lifecycle_render.LifecycleTableTest.test_the_repository_validator_refuses_a_hand_edit",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_category_free_entry_does_not_gain_one",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_historical_category_value_is_preserved",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_line_that_is_not_json_is_carried_across_unaltered",
@@ -2006,7 +2011,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4d83253200df5cf1a1c1ae2f2b863db7ca3f38dd918b7af26c653b76ce7566d6"
+  "sha256": "06383e9fc8b4f898cc2af3ed6974c2b24dea9b76ceeaf4eeb2135da30a1c8b50"
  },
  "mutation_owners": [
   {

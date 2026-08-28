@@ -1,5 +1,8 @@
 # Result contract
 
+The generated [result lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
+names the receipt required before this contract's executor records may enter.
+
 The executor files work into its ticket's `## Result`, `## Verification`,
 `## Feedback`, `## Risks`, and optional `## Handoff` sections as it is
 produced. `Result` identifies the delivered artifact. `Verification` records

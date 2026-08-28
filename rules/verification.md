@@ -1,5 +1,8 @@
 # Verification
 
+The generated [result and check cells](../docs/lifecycle.md#ticket-lifecycle)
+place this evidence law in the ticket lifecycle.
+
 1. Ticket Goal defines success. Executor evidence demonstrates it; critique
    challenges the fixed artifact and evidence under factual Context. The sealed
    assignment adds no proof checklist.

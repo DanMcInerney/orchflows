@@ -3,6 +3,8 @@
 `orchflows.dispatch.v1` is the sole role-bearing communication protocol. This
 contract owns its closed wire and persisted shapes; tickets bind the record but
 do not redefine it.
+The generated [dispatch lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
+place those records between their authorized predecessor and result states.
 
 ## Persisted state
 

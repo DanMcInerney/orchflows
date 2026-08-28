@@ -24,9 +24,9 @@ if __package__:
 else:
     from tickets_packet import _claim_is_stale
 if __package__:
-    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, refusal, set_status_blanks
+    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 else:
-    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, refusal, set_status_blanks
+    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 # The claim-admission seam lives in `tickets_project`, where the project
 # binding it now grades also lives; re-exported here because the facade and
 # `tickets_dispatch` import these three names from this module.
@@ -51,6 +51,11 @@ else:
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --stage <id.check>'
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
+
+
+def lifecycle_rows() -> tuple:
+    """Public lifecycle declaration consumed by the documentation renderer."""
+    return _declared_lifecycle_rows()
 def readiness_facts(ticket: dict, tickets: dict) -> dict:
     dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
     dangling = [value for value in dependencies if value not in tickets]

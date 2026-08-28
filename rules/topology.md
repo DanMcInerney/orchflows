@@ -1,5 +1,8 @@
 # Topology
 
+The generated [readiness lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
+connects this law to the admission-owned state transition.
+
 1. Every run composes from: freeze the contract; dispatch through the
    delegation boundary; execute as one item, parallel candidates, a rolling
    dependency frontier, or a bounded loop; join; verify; escalate at most once.
