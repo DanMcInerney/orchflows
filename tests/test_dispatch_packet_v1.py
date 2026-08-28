@@ -176,6 +176,18 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_bytes())
         self.assertEqual([], self.ticket_state()["attempts"][0]["records"])
 
+    def test_projection_refuses_noncanonical_reply_to_before_commit(self):
+        before = self.ticket_bytes()
+
+        refusal = tickets._dispatch([
+            "dispatch-packet", "run", "T", "--dispatch-id", "D1",
+            "--reply-to", "/root", "--workspace", "C:/candidate",
+        ])
+
+        self.assertEqual("reply-to-invalid", refusal["code"], refusal)
+        self.assertEqual(before, self.ticket_bytes())
+        self.assertEqual([], self.ticket_state()["attempts"][0]["records"])
+
     def test_legacy_gate_repair_replays_stored_packet_across_head_change(self):
         committed = self.project()
         old_head = subprocess.run(
