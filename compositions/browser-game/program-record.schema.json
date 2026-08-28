@@ -1,0 +1,829 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orchflows.dev/schemas/browser-game/program-record/v1.json",
+  "title": "Browser-game versioned program record",
+  "description": "The observable PJ-03 program-record contract. Required record kinds and minimum fields come from the authoritative browser-game workflow specification section 3.2; PJ-07 requires every unresolved material value to retain a stable open-question or decision identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "program_id",
+    "program_revision_id",
+    "supersedes_program_revision_id",
+    "records"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "program_id": {
+      "$ref": "#/$defs/stableIdentity"
+    },
+    "program_revision_id": {
+      "$ref": "#/$defs/stableIdentity"
+    },
+    "supersedes_program_revision_id": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/stableIdentity"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "records": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_brief",
+        "decision_ledger",
+        "risk_register",
+        "support_contracts",
+        "experiment_register",
+        "asset_contracts",
+        "performance_contracts",
+        "qa_oracle_map",
+        "release_contracts",
+        "successor_plans"
+      ],
+      "properties": {
+        "product_brief": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/productBriefRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "decision_ledger": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/decisionRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "risk_register": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/riskRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "support_contracts": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/supportContractRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "experiment_register": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/experimentRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "asset_contracts": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/assetContractRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "performance_contracts": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/performanceContractRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "qa_oracle_map": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/qaOracleRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "release_contracts": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/releaseContractRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        },
+        "successor_plans": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "entries"],
+              "properties": {
+                "state": {"const": "present"},
+                "entries": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/successorPlanRevision"}
+                }
+              }
+            },
+            {"$ref": "#/$defs/openQuestion"},
+            {"$ref": "#/$defs/openDecision"}
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stableIdentity": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "openQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "open_question_id", "authority_kind"],
+      "properties": {
+        "state": {"const": "open-question"},
+        "open_question_id": {"$ref": "#/$defs/stableIdentity"},
+        "authority_kind": {"enum": ["user-only", "empirical"]}
+      }
+    },
+    "openDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "decision_id"],
+      "properties": {
+        "state": {"const": "decision"},
+        "decision_id": {"$ref": "#/$defs/stableIdentity"}
+      }
+    },
+    "materialField": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "value"],
+          "properties": {
+            "state": {"const": "settled"},
+            "value": {}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "open_question_id", "authority_kind"],
+          "properties": {
+            "state": {"const": "open-question"},
+            "open_question_id": {"$ref": "#/$defs/stableIdentity"},
+            "authority_kind": {"enum": ["user-only", "empirical"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "decision_id"],
+          "properties": {
+            "state": {"const": "decision"},
+            "decision_id": {"$ref": "#/$defs/stableIdentity"}
+          }
+        }
+      ]
+    },
+    "recordRevision": {
+      "type": "object",
+      "x-governing-identities": ["PJ-03", "PJ-07"],
+      "required": [
+        "record_id",
+        "revision_id",
+        "revision_status",
+        "supersedes_revision_id",
+        "recorded_at"
+      ],
+      "properties": {
+        "record_id": {"$ref": "#/$defs/stableIdentity"},
+        "revision_id": {"$ref": "#/$defs/stableIdentity"},
+        "revision_status": {"enum": ["draft", "settled", "superseded"]},
+        "supersedes_revision_id": {
+          "oneOf": [
+            {"$ref": "#/$defs/stableIdentity"},
+            {"type": "null"}
+          ]
+        },
+        "recorded_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "productBriefField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field_id",
+        "disposition",
+        "resolution",
+        "authority_kind",
+        "owner",
+        "rationale",
+        "evidence",
+        "revision"
+      ],
+      "properties": {
+        "field_id": {"$ref": "#/$defs/stableIdentity"},
+        "disposition": {
+          "enum": ["answered", "deferred", "experiment", "not-applicable"]
+        },
+        "resolution": {"$ref": "#/$defs/materialField"},
+        "authority_kind": {"enum": ["user-only", "empirical"]},
+        "owner": {"$ref": "#/$defs/materialField"},
+        "rationale": {"$ref": "#/$defs/materialField"},
+        "evidence": {"$ref": "#/$defs/materialField"},
+        "revision": {"$ref": "#/$defs/stableIdentity"}
+      }
+    },
+    "productBriefRevision": {
+      "type": "object",
+      "x-governing-identities": ["PJ-03", "PJ-06", "PJ-09", "PJ-10"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": ["questions"],
+      "properties": {
+        "questions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "Q-01", "Q-02", "Q-03", "Q-04", "Q-05", "Q-06",
+            "Q-07", "Q-08", "Q-09", "Q-10", "Q-11", "Q-12"
+          ],
+          "properties": {
+            "Q-01": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "player", "audience", "genre", "core_loop", "target_browser_cohorts",
+                "target_os_cohorts", "target_device_cohorts", "target_webview_cohorts",
+                "target_pwa_cohorts", "display_modes", "input_modes", "support_horizon"
+              ],
+              "properties": {
+                "player": {"$ref": "#/$defs/productBriefField"},
+                "audience": {"$ref": "#/$defs/productBriefField"},
+                "genre": {"$ref": "#/$defs/productBriefField"},
+                "core_loop": {"$ref": "#/$defs/productBriefField"},
+                "target_browser_cohorts": {"$ref": "#/$defs/productBriefField"},
+                "target_os_cohorts": {"$ref": "#/$defs/productBriefField"},
+                "target_device_cohorts": {"$ref": "#/$defs/productBriefField"},
+                "target_webview_cohorts": {"$ref": "#/$defs/productBriefField"},
+                "target_pwa_cohorts": {"$ref": "#/$defs/productBriefField"},
+                "display_modes": {"$ref": "#/$defs/productBriefField"},
+                "input_modes": {"$ref": "#/$defs/productBriefField"},
+                "support_horizon": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-02": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dimensional_scope", "engine", "renderer", "editor", "physics", "app_shell",
+                "dependency_assembly", "commercial_license_constraints"
+              ],
+              "properties": {
+                "dimensional_scope": {"$ref": "#/$defs/productBriefField"},
+                "engine": {"$ref": "#/$defs/productBriefField"},
+                "renderer": {"$ref": "#/$defs/productBriefField"},
+                "editor": {"$ref": "#/$defs/productBriefField"},
+                "physics": {"$ref": "#/$defs/productBriefField"},
+                "app_shell": {"$ref": "#/$defs/productBriefField"},
+                "dependency_assembly": {"$ref": "#/$defs/productBriefField"},
+                "commercial_license_constraints": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-03": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "representative_slice", "corpus", "device_lab_evidence", "boot_budget",
+                "memory_budget", "cpu_budget", "gpu_budget", "frame_budget", "input_budget",
+                "network_budget", "thermal_budget", "power_budget", "quality_budget", "bundle_budget"
+              ],
+              "properties": {
+                "representative_slice": {"$ref": "#/$defs/productBriefField"},
+                "corpus": {"$ref": "#/$defs/productBriefField"},
+                "device_lab_evidence": {"$ref": "#/$defs/productBriefField"},
+                "boot_budget": {"$ref": "#/$defs/productBriefField"},
+                "memory_budget": {"$ref": "#/$defs/productBriefField"},
+                "cpu_budget": {"$ref": "#/$defs/productBriefField"},
+                "gpu_budget": {"$ref": "#/$defs/productBriefField"},
+                "frame_budget": {"$ref": "#/$defs/productBriefField"},
+                "input_budget": {"$ref": "#/$defs/productBriefField"},
+                "network_budget": {"$ref": "#/$defs/productBriefField"},
+                "thermal_budget": {"$ref": "#/$defs/productBriefField"},
+                "power_budget": {"$ref": "#/$defs/productBriefField"},
+                "quality_budget": {"$ref": "#/$defs/productBriefField"},
+                "bundle_budget": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-04": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "asset_corpus", "image_recipe", "texture_recipe", "audio_recipe", "video_recipe",
+                "font_recipe", "localization_recipe", "legal_provenance", "quality_thresholds",
+                "content_bundles", "content_lifetimes", "shader_pipeline"
+              ],
+              "properties": {
+                "asset_corpus": {"$ref": "#/$defs/productBriefField"},
+                "image_recipe": {"$ref": "#/$defs/productBriefField"},
+                "texture_recipe": {"$ref": "#/$defs/productBriefField"},
+                "audio_recipe": {"$ref": "#/$defs/productBriefField"},
+                "video_recipe": {"$ref": "#/$defs/productBriefField"},
+                "font_recipe": {"$ref": "#/$defs/productBriefField"},
+                "localization_recipe": {"$ref": "#/$defs/productBriefField"},
+                "legal_provenance": {"$ref": "#/$defs/productBriefField"},
+                "quality_thresholds": {"$ref": "#/$defs/productBriefField"},
+                "content_bundles": {"$ref": "#/$defs/productBriefField"},
+                "content_lifetimes": {"$ref": "#/$defs/productBriefField"},
+                "shader_pipeline": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-05": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "player_mode", "authority_model", "transport", "tick_model", "snapshot_model",
+                "rollback_model", "anti_cheat", "ugc", "backend", "cloud_save_conflicts",
+                "recovery", "server_operations"
+              ],
+              "properties": {
+                "player_mode": {"$ref": "#/$defs/productBriefField"},
+                "authority_model": {"$ref": "#/$defs/productBriefField"},
+                "transport": {"$ref": "#/$defs/productBriefField"},
+                "tick_model": {"$ref": "#/$defs/productBriefField"},
+                "snapshot_model": {"$ref": "#/$defs/productBriefField"},
+                "rollback_model": {"$ref": "#/$defs/productBriefField"},
+                "anti_cheat": {"$ref": "#/$defs/productBriefField"},
+                "ugc": {"$ref": "#/$defs/productBriefField"},
+                "backend": {"$ref": "#/$defs/productBriefField"},
+                "cloud_save_conflicts": {"$ref": "#/$defs/productBriefField"},
+                "recovery": {"$ref": "#/$defs/productBriefField"},
+                "server_operations": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-06": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "accessibility_conformance_target", "browser_at_matrix", "caption_design",
+                "narration_design", "spatial_assist_design", "timing_tradeoffs",
+                "difficulty_tradeoffs", "competitive_tradeoffs", "participant_cohorts",
+                "residual_exclusions"
+              ],
+              "properties": {
+                "accessibility_conformance_target": {"$ref": "#/$defs/productBriefField"},
+                "browser_at_matrix": {"$ref": "#/$defs/productBriefField"},
+                "caption_design": {"$ref": "#/$defs/productBriefField"},
+                "narration_design": {"$ref": "#/$defs/productBriefField"},
+                "spatial_assist_design": {"$ref": "#/$defs/productBriefField"},
+                "timing_tradeoffs": {"$ref": "#/$defs/productBriefField"},
+                "difficulty_tradeoffs": {"$ref": "#/$defs/productBriefField"},
+                "competitive_tradeoffs": {"$ref": "#/$defs/productBriefField"},
+                "participant_cohorts": {"$ref": "#/$defs/productBriefField"},
+                "residual_exclusions": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-07": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "jurisdiction", "age_policy", "children_policy", "privacy_policy", "consent_policy",
+                "advertising_policy", "payments_policy", "telemetry_policy", "replay_policy",
+                "retention", "data_residency", "incident_notification", "providers", "sla_obligations"
+              ],
+              "properties": {
+                "jurisdiction": {"$ref": "#/$defs/productBriefField"},
+                "age_policy": {"$ref": "#/$defs/productBriefField"},
+                "children_policy": {"$ref": "#/$defs/productBriefField"},
+                "privacy_policy": {"$ref": "#/$defs/productBriefField"},
+                "consent_policy": {"$ref": "#/$defs/productBriefField"},
+                "advertising_policy": {"$ref": "#/$defs/productBriefField"},
+                "payments_policy": {"$ref": "#/$defs/productBriefField"},
+                "telemetry_policy": {"$ref": "#/$defs/productBriefField"},
+                "replay_policy": {"$ref": "#/$defs/productBriefField"},
+                "retention": {"$ref": "#/$defs/productBriefField"},
+                "data_residency": {"$ref": "#/$defs/productBriefField"},
+                "incident_notification": {"$ref": "#/$defs/productBriefField"},
+                "providers": {"$ref": "#/$defs/productBriefField"},
+                "sla_obligations": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-08": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "offline_mode", "pwa_mode", "cdn", "hosting", "rollout", "rollout_cohort",
+                "cache_policy", "service_worker_policy", "state_migration", "rollback_window",
+                "rpo", "rto", "incident_drills"
+              ],
+              "properties": {
+                "offline_mode": {"$ref": "#/$defs/productBriefField"},
+                "pwa_mode": {"$ref": "#/$defs/productBriefField"},
+                "cdn": {"$ref": "#/$defs/productBriefField"},
+                "hosting": {"$ref": "#/$defs/productBriefField"},
+                "rollout": {"$ref": "#/$defs/productBriefField"},
+                "rollout_cohort": {"$ref": "#/$defs/productBriefField"},
+                "cache_policy": {"$ref": "#/$defs/productBriefField"},
+                "service_worker_policy": {"$ref": "#/$defs/productBriefField"},
+                "state_migration": {"$ref": "#/$defs/productBriefField"},
+                "rollback_window": {"$ref": "#/$defs/productBriefField"},
+                "rpo": {"$ref": "#/$defs/productBriefField"},
+                "rto": {"$ref": "#/$defs/productBriefField"},
+                "incident_drills": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-09": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "ai_provider", "ai_model", "ai_feature", "ai_privacy", "commercial_content_rights",
+                "art_approval", "audio_approval", "provenance_format", "task_class_pilot", "cost",
+                "latency", "long_term_maintenance_policy"
+              ],
+              "properties": {
+                "ai_provider": {"$ref": "#/$defs/productBriefField"},
+                "ai_model": {"$ref": "#/$defs/productBriefField"},
+                "ai_feature": {"$ref": "#/$defs/productBriefField"},
+                "ai_privacy": {"$ref": "#/$defs/productBriefField"},
+                "commercial_content_rights": {"$ref": "#/$defs/productBriefField"},
+                "art_approval": {"$ref": "#/$defs/productBriefField"},
+                "audio_approval": {"$ref": "#/$defs/productBriefField"},
+                "provenance_format": {"$ref": "#/$defs/productBriefField"},
+                "task_class_pilot": {"$ref": "#/$defs/productBriefField"},
+                "cost": {"$ref": "#/$defs/productBriefField"},
+                "latency": {"$ref": "#/$defs/productBriefField"},
+                "long_term_maintenance_policy": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-10": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "safari_profiler_parity", "firefox_profiler_parity", "gpu_memory_evidence",
+                "thermal_evidence", "power_evidence", "variable_refresh_measurement",
+                "action_to_photon_measurement", "codec_quirks", "controller_quirks",
+                "device_quirks", "webgpu_field_reliability"
+              ],
+              "properties": {
+                "safari_profiler_parity": {"$ref": "#/$defs/productBriefField"},
+                "firefox_profiler_parity": {"$ref": "#/$defs/productBriefField"},
+                "gpu_memory_evidence": {"$ref": "#/$defs/productBriefField"},
+                "thermal_evidence": {"$ref": "#/$defs/productBriefField"},
+                "power_evidence": {"$ref": "#/$defs/productBriefField"},
+                "variable_refresh_measurement": {"$ref": "#/$defs/productBriefField"},
+                "action_to_photon_measurement": {"$ref": "#/$defs/productBriefField"},
+                "codec_quirks": {"$ref": "#/$defs/productBriefField"},
+                "controller_quirks": {"$ref": "#/$defs/productBriefField"},
+                "device_quirks": {"$ref": "#/$defs/productBriefField"},
+                "webgpu_field_reliability": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-11": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "canonical_item_overlap", "canonical_item_roster", "composition_graph",
+                "workspace_semantics", "render_semantics", "evidence_semantics", "fixtures",
+                "registry_supersession", "r17_mig_001_numbering"
+              ],
+              "properties": {
+                "canonical_item_overlap": {"$ref": "#/$defs/productBriefField"},
+                "canonical_item_roster": {"$ref": "#/$defs/productBriefField"},
+                "composition_graph": {"$ref": "#/$defs/productBriefField"},
+                "workspace_semantics": {"$ref": "#/$defs/productBriefField"},
+                "render_semantics": {"$ref": "#/$defs/productBriefField"},
+                "evidence_semantics": {"$ref": "#/$defs/productBriefField"},
+                "fixtures": {"$ref": "#/$defs/productBriefField"},
+                "registry_supersession": {"$ref": "#/$defs/productBriefField"},
+                "r17_mig_001_numbering": {"$ref": "#/$defs/productBriefField"}
+              }
+            },
+            "Q-12": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "browser_revalidation_cadence", "engine_revalidation_cadence",
+                "model_revalidation_cadence", "tool_revalidation_cadence",
+                "license_revalidation_cadence", "compatibility_revalidation_cadence",
+                "adoption_revalidation_cadence", "security_revalidation_cadence"
+              ],
+              "properties": {
+                "browser_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "engine_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "model_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "tool_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "license_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "compatibility_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "adoption_revalidation_cadence": {"$ref": "#/$defs/productBriefField"},
+                "security_revalidation_cadence": {"$ref": "#/$defs/productBriefField"}
+              }
+            }
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "decisionRevision": {
+      "type": "object",
+      "x-governing-identities": ["PJ-03"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "decision_id", "status", "alternatives", "evidence", "class",
+        "owner", "date", "invalidation_trigger"
+      ],
+      "properties": {
+        "decision_id": {"$ref": "#/$defs/stableIdentity"},
+        "status": {"$ref": "#/$defs/materialField"},
+        "alternatives": {"$ref": "#/$defs/materialField"},
+        "evidence": {"$ref": "#/$defs/materialField"},
+        "class": {"$ref": "#/$defs/materialField"},
+        "owner": {"$ref": "#/$defs/materialField"},
+        "date": {"$ref": "#/$defs/materialField"},
+        "invalidation_trigger": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "riskRevision": {
+      "type": "object",
+      "x-governing-identities": ["PJ-04"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "risk", "affected_outcome", "likelihood_basis", "consequence",
+        "cost_of_delayed_discovery", "retirement_action", "owner"
+      ],
+      "properties": {
+        "risk": {"$ref": "#/$defs/materialField"},
+        "affected_outcome": {"$ref": "#/$defs/materialField"},
+        "likelihood_basis": {"$ref": "#/$defs/materialField"},
+        "consequence": {"$ref": "#/$defs/materialField"},
+        "cost_of_delayed_discovery": {"$ref": "#/$defs/materialField"},
+        "retirement_action": {"$ref": "#/$defs/materialField"},
+        "owner": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "supportContractRevision": {
+      "type": "object",
+      "x-governing-identities": ["CR-06", "CR-11", "CR-12", "PJ-13"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "browser_cells", "os_cells", "device_cells", "webview_cells", "pwa_cells",
+        "input_cells", "locale_cells", "accessibility_cells", "promised_tier",
+        "acquisition_failure_behavior", "context_or_device_loss_behavior",
+        "missing_input_behavior", "unsupported_execution_behavior"
+      ],
+      "properties": {
+        "browser_cells": {"$ref": "#/$defs/materialField"},
+        "os_cells": {"$ref": "#/$defs/materialField"},
+        "device_cells": {"$ref": "#/$defs/materialField"},
+        "webview_cells": {"$ref": "#/$defs/materialField"},
+        "pwa_cells": {"$ref": "#/$defs/materialField"},
+        "input_cells": {"$ref": "#/$defs/materialField"},
+        "locale_cells": {"$ref": "#/$defs/materialField"},
+        "accessibility_cells": {"$ref": "#/$defs/materialField"},
+        "promised_tier": {"$ref": "#/$defs/materialField"},
+        "acquisition_failure_behavior": {"$ref": "#/$defs/materialField"},
+        "context_or_device_loss_behavior": {"$ref": "#/$defs/materialField"},
+        "missing_input_behavior": {"$ref": "#/$defs/materialField"},
+        "unsupported_execution_behavior": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "experimentRevision": {
+      "type": "object",
+      "x-governing-identities": [
+        "EX-01", "EX-02", "EX-03", "EX-04", "EX-05", "EX-06", "EX-07", "EX-08", "PJ-16"
+      ],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "experiment_id", "predeclared_decision", "frozen_candidates",
+        "workload_corpus_or_cohort", "environment", "metrics", "stopping_rule",
+        "falsifiable_oracle", "result_identity", "transfer_boundary"
+      ],
+      "properties": {
+        "experiment_id": {"$ref": "#/$defs/stableIdentity"},
+        "predeclared_decision": {"$ref": "#/$defs/materialField"},
+        "frozen_candidates": {"$ref": "#/$defs/materialField"},
+        "workload_corpus_or_cohort": {"$ref": "#/$defs/materialField"},
+        "environment": {"$ref": "#/$defs/materialField"},
+        "metrics": {"$ref": "#/$defs/materialField"},
+        "stopping_rule": {"$ref": "#/$defs/materialField"},
+        "falsifiable_oracle": {"$ref": "#/$defs/materialField"},
+        "result_identity": {"$ref": "#/$defs/materialField"},
+        "transfer_boundary": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "assetContractRevision": {
+      "type": "object",
+      "x-governing-identities": ["CR-08"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "source_runtime_boundary", "runtime_formats", "bundle_boundaries",
+        "provenance", "versioned_manifest_decision", "validation_oracles"
+      ],
+      "properties": {
+        "source_runtime_boundary": {"$ref": "#/$defs/materialField"},
+        "runtime_formats": {"$ref": "#/$defs/materialField"},
+        "bundle_boundaries": {"$ref": "#/$defs/materialField"},
+        "provenance": {"$ref": "#/$defs/materialField"},
+        "versioned_manifest_decision": {"$ref": "#/$defs/materialField"},
+        "validation_oracles": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "performanceContractRevision": {
+      "type": "object",
+      "x-governing-identities": ["CR-09", "PJ-14"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "device_scenario_metric_cells", "physical_device_coverage", "device",
+        "os_browser_backend", "display_condition", "power_thermal_condition",
+        "scenario", "build_identity", "warm_cold_state", "metric_definition",
+        "sample_distribution", "baseline_distribution", "comparison_baseline",
+        "distribution_tails", "thresholds", "invalidation_rules"
+      ],
+      "properties": {
+        "device_scenario_metric_cells": {"$ref": "#/$defs/materialField"},
+        "physical_device_coverage": {"$ref": "#/$defs/materialField"},
+        "device": {"$ref": "#/$defs/materialField"},
+        "os_browser_backend": {"$ref": "#/$defs/materialField"},
+        "display_condition": {"$ref": "#/$defs/materialField"},
+        "power_thermal_condition": {"$ref": "#/$defs/materialField"},
+        "scenario": {"$ref": "#/$defs/materialField"},
+        "build_identity": {"$ref": "#/$defs/materialField"},
+        "warm_cold_state": {"$ref": "#/$defs/materialField"},
+        "metric_definition": {"$ref": "#/$defs/materialField"},
+        "sample_distribution": {"$ref": "#/$defs/materialField"},
+        "baseline_distribution": {"$ref": "#/$defs/materialField"},
+        "comparison_baseline": {"$ref": "#/$defs/materialField"},
+        "distribution_tails": {"$ref": "#/$defs/materialField"},
+        "thresholds": {"$ref": "#/$defs/materialField"},
+        "invalidation_rules": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "qaOracleRevision": {
+      "type": "object",
+      "x-governing-identities": ["CR-10"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": ["defect_class", "falsifiable_oracle", "environment", "cadence", "evidence_identity"],
+      "properties": {
+        "defect_class": {"$ref": "#/$defs/materialField"},
+        "falsifiable_oracle": {"$ref": "#/$defs/materialField"},
+        "environment": {"$ref": "#/$defs/materialField"},
+        "cadence": {"$ref": "#/$defs/materialField"},
+        "evidence_identity": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "releaseContractRevision": {
+      "type": "object",
+      "x-governing-identities": ["CR-13"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "build_identity", "security_controls", "rollout", "state_api_compatibility",
+        "cache_behavior", "recovery"
+      ],
+      "properties": {
+        "build_identity": {"$ref": "#/$defs/materialField"},
+        "security_controls": {"$ref": "#/$defs/materialField"},
+        "rollout": {"$ref": "#/$defs/materialField"},
+        "state_api_compatibility": {"$ref": "#/$defs/materialField"},
+        "cache_behavior": {"$ref": "#/$defs/materialField"},
+        "recovery": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    },
+    "successorPlanRevision": {
+      "type": "object",
+      "x-governing-identities": ["AUTH-05", "PJ-28"],
+      "allOf": [{"$ref": "#/$defs/recordRevision"}],
+      "required": [
+        "ordered_artifact_kinds", "packs", "run_identities", "root_identities",
+        "dependencies", "current_status"
+      ],
+      "properties": {
+        "ordered_artifact_kinds": {"$ref": "#/$defs/materialField"},
+        "packs": {"$ref": "#/$defs/materialField"},
+        "run_identities": {"$ref": "#/$defs/materialField"},
+        "root_identities": {"$ref": "#/$defs/materialField"},
+        "dependencies": {"$ref": "#/$defs/materialField"},
+        "current_status": {"$ref": "#/$defs/materialField"}
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

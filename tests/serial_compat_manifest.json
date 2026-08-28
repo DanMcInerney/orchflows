@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1947,
+  "count": 1953,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -23,6 +23,12 @@
    "test_architecture_owners.StatedCeilingTest.test_padding_a_copy_past_the_ceiling_fails_the_check",
    "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
    "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_contract_and_program_revisions_are_versioned",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_each_required_record_is_present_or_has_a_stable_open_identity",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_material_fields_cannot_disappear_into_null_or_a_default",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_product_brief_cannot_silently_omit_atomic_intake_fields",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_product_brief_exposes_every_intake_question_and_atomic_field_state",
+   "test_browser_game_program_record.TestBrowserGameProgramRecord.test_section_3_2_record_roster_and_minimum_fields_are_complete",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_generation_and_gate_operators_are_reachable",
@@ -1950,7 +1956,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4fdf335ff882ccd7f861a63213f3e0b5946968b8883e6ae818649e907d8b9f55"
+  "sha256": "f5f4d12c88f541c9152ef56fa52cc359d17f0b673a69b441910d947850a04f4c"
  },
  "mutation_owners": [
   {
