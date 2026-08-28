@@ -39,7 +39,7 @@ else:
 
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
-GATE_USAGE = "gate <run> <root-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
+GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
 STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
@@ -74,7 +74,7 @@ SUBCOMMAND_USAGE = {
 SUBCOMMAND_SUMMARY = {
     "new": "Create one Goal/Context ticket; Suggested files are optional and non-binding.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
-    "gate": "Create blocker-only critique/repair/verify tickets; repair handles actual overlap and Git conflicts.",
+    "gate": "Create a composite gate, or materialize repair and fresh verification after an ordinary checker accepts blockers.",
     "checker-stage": "Create or replay one explicit ordinary read-only checker stage.",
     "stamp-generation": "Stamp one unclaimed direct or decomposed root and its members.",
     "list": "List tickets.",

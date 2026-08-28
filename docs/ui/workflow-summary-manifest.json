@@ -1,6 +1,19 @@
 {
   "schema": "orchflows.workflow-summary.v1",
   "workflows": {
+    "browser-game": {
+      "nodes": [
+        {"id": "record", "label": "Establish the program record"},
+        {"id": "evidence", "label": "Resolve empirical questions"},
+        {"id": "checkpoint", "label": "Fix the checkpoint disposition"},
+        {"id": "successors", "label": "Authorize successor delivery"}
+      ],
+      "edges": [
+        {"source": "record", "target": "evidence", "kind": "sequence"},
+        {"source": "evidence", "target": "checkpoint", "kind": "sequence"},
+        {"source": "checkpoint", "target": "successors", "kind": "branch"}
+      ]
+    },
     "fix": {
       "nodes": [
         {"id": "reproduce", "label": "Reproduce the failure"},

@@ -1,0 +1,311 @@
+{
+  "policy_version": "1.0.0",
+  "program_record_contract": "browser-game-program-record.schema.json",
+  "governing_identities": ["PJ-06", "PJ-09", "PJ-10", "PJ-22", "PJ-23"],
+  "intake_source": {
+    "record": "product_brief",
+    "questions": [
+      "Q-01", "Q-02", "Q-03", "Q-04", "Q-05", "Q-06",
+      "Q-07", "Q-08", "Q-09", "Q-10", "Q-11", "Q-12"
+    ],
+    "unit": "atomic-field"
+  },
+  "field_dispositions": [
+    "answered",
+    "deferred",
+    "experiment",
+    "not-applicable"
+  ],
+  "atomic_authority": {
+    "decision_key": ["question_id", "field_id", "authority_source"],
+    "default_source": "empirical-evidence",
+    "source_kinds": {
+      "product_intent": "user-only",
+      "commercial_or_legal_acceptance": "user-only",
+      "accessibility_promises": "user-only",
+      "risk_appetite": "user-only",
+      "target_cohorts": "user-only",
+      "public_release_commitments": "user-only",
+      "empirical-evidence": "empirical"
+    },
+    "overrides": {
+      "Q-01": {
+        "player": "product_intent",
+        "audience": "product_intent",
+        "genre": "product_intent",
+        "core_loop": "product_intent",
+        "target_browser_cohorts": "target_cohorts",
+        "target_os_cohorts": "target_cohorts",
+        "target_device_cohorts": "target_cohorts",
+        "target_webview_cohorts": "target_cohorts",
+        "target_pwa_cohorts": "target_cohorts",
+        "support_horizon": "public_release_commitments"
+      },
+      "Q-02": {
+        "dimensional_scope": "product_intent",
+        "commercial_license_constraints": "commercial_or_legal_acceptance"
+      },
+      "Q-03": {
+        "boot_budget": "risk_appetite",
+        "memory_budget": "risk_appetite",
+        "cpu_budget": "risk_appetite",
+        "gpu_budget": "risk_appetite",
+        "frame_budget": "risk_appetite",
+        "input_budget": "risk_appetite",
+        "network_budget": "risk_appetite",
+        "thermal_budget": "risk_appetite",
+        "power_budget": "risk_appetite",
+        "quality_budget": "risk_appetite",
+        "bundle_budget": "risk_appetite"
+      },
+      "Q-04": {
+        "legal_provenance": "commercial_or_legal_acceptance",
+        "content_bundles": "product_intent",
+        "content_lifetimes": "public_release_commitments"
+      },
+      "Q-05": {
+        "player_mode": "product_intent",
+        "ugc": "risk_appetite",
+        "cloud_save_conflicts": "risk_appetite",
+        "recovery": "public_release_commitments",
+        "server_operations": "public_release_commitments"
+      },
+      "Q-06": {
+        "accessibility_conformance_target": "accessibility_promises",
+        "browser_at_matrix": "accessibility_promises",
+        "caption_design": "accessibility_promises",
+        "narration_design": "accessibility_promises",
+        "spatial_assist_design": "accessibility_promises",
+        "timing_tradeoffs": "risk_appetite",
+        "difficulty_tradeoffs": "risk_appetite",
+        "competitive_tradeoffs": "risk_appetite",
+        "participant_cohorts": "target_cohorts",
+        "residual_exclusions": "accessibility_promises"
+      },
+      "Q-07": {
+        "jurisdiction": "commercial_or_legal_acceptance",
+        "age_policy": "commercial_or_legal_acceptance",
+        "children_policy": "commercial_or_legal_acceptance",
+        "privacy_policy": "commercial_or_legal_acceptance",
+        "consent_policy": "commercial_or_legal_acceptance",
+        "advertising_policy": "commercial_or_legal_acceptance",
+        "payments_policy": "commercial_or_legal_acceptance",
+        "telemetry_policy": "commercial_or_legal_acceptance",
+        "replay_policy": "commercial_or_legal_acceptance",
+        "retention": "commercial_or_legal_acceptance",
+        "data_residency": "commercial_or_legal_acceptance",
+        "incident_notification": "public_release_commitments",
+        "providers": "commercial_or_legal_acceptance",
+        "sla_obligations": "public_release_commitments"
+      },
+      "Q-08": {
+        "offline_mode": "public_release_commitments",
+        "pwa_mode": "public_release_commitments",
+        "rollout_cohort": "target_cohorts",
+        "rollback_window": "risk_appetite",
+        "rpo": "risk_appetite",
+        "rto": "risk_appetite"
+      },
+      "Q-09": {
+        "commercial_content_rights": "commercial_or_legal_acceptance",
+        "art_approval": "commercial_or_legal_acceptance",
+        "audio_approval": "commercial_or_legal_acceptance",
+        "long_term_maintenance_policy": "public_release_commitments"
+      },
+      "Q-12": {
+        "browser_revalidation_cadence": "risk_appetite",
+        "engine_revalidation_cadence": "risk_appetite",
+        "model_revalidation_cadence": "risk_appetite",
+        "tool_revalidation_cadence": "risk_appetite",
+        "license_revalidation_cadence": "commercial_or_legal_acceptance",
+        "compatibility_revalidation_cadence": "risk_appetite",
+        "adoption_revalidation_cadence": "risk_appetite",
+        "security_revalidation_cadence": "risk_appetite"
+      }
+    }
+  },
+  "authority": {
+    "user-only": {
+      "categories": [
+        "product_intent",
+        "commercial_or_legal_acceptance",
+        "accessibility_promises",
+        "risk_appetite",
+        "target_cohorts",
+        "public_release_commitments"
+      ],
+      "missing_field_state": "open-question",
+      "question_envelope": {
+        "required": [
+          "kind",
+          "question",
+          "field_id",
+          "open_question_id",
+          "program_revision_id"
+        ],
+        "constants": {"kind": "user-only"},
+        "question_handling": "verbatim",
+        "relay_owner": "root"
+      },
+      "settled_by": "verbatim-user-answer",
+      "evidence_effect": "attach-only"
+    },
+    "empirical": {
+      "missing_routes": ["open-decision", "experiment"],
+      "settled_by": "matched-experiment-evidence",
+      "independently_schedulable": true,
+      "blocked_by_unrelated_user_only_gap": false
+    }
+  },
+  "default_prohibitions": [
+    "stack",
+    "cohort",
+    "support_promise",
+    "numeric_budget",
+    "fallback",
+    "provider",
+    "license_acceptance",
+    "release_policy",
+    "renderer",
+    "engine",
+    "webgpu",
+    "worker_topology",
+    "performance_number",
+    "functional_fallback",
+    "qa_ladder",
+    "release_model",
+    "ai_policy",
+    "transport"
+  ],
+  "experiment_match": {
+    "field_disposition": "experiment",
+    "field_resolution_state": "decision",
+    "match_key": "decision_id",
+    "required_fields": [
+      "experiment_id",
+      "predeclared_decision",
+      "frozen_candidates",
+      "workload_corpus_or_cohort",
+      "environment",
+      "metrics",
+      "stopping_rule",
+      "falsifiable_oracle",
+      "result_identity",
+      "transfer_boundary"
+    ],
+    "result_identity_required": true,
+    "transfer_boundary_required": true,
+    "settles_matched_cells_only": true,
+    "preserve_negative_null_and_inconclusive": true,
+    "may_settle_user_only": false
+  },
+  "conditional_activation": {
+    "required_trigger_identity": [
+      "governing_identity",
+      "decision_id",
+      "trigger_record_id",
+      "trigger_revision_id"
+    ],
+    "state_without_recorded_trigger": "inactive",
+    "controls": {
+      "CR-01": {
+        "trigger": "staged_delivery_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-02": {
+        "trigger": "coupled_mutable_concerns_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-03": {
+        "trigger": "simulation_stability_or_determinism_risk_recorded",
+        "recorded_trigger_required": true
+      },
+      "CR-04": {
+        "trigger": "two_dimensional_scope_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-05": {
+        "trigger": "three_dimensional_scope_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-06": {
+        "trigger": "support_cohort_or_graphics_ladder_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-07": {
+        "trigger": "parallel_topology_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-08": {
+        "trigger": "asset_pipeline_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-09": {
+        "trigger": "performance_claim_or_budget_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-10": {
+        "trigger": "material_defect_class_recorded",
+        "recorded_trigger_required": true
+      },
+      "CR-11": {
+        "trigger": "wcag_conformance_in_scope",
+        "recorded_trigger_required": true
+      },
+      "CR-12": {
+        "trigger": "input_or_localization_promise_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-13": {
+        "trigger": "deployment_controls_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-14": {
+        "trigger": "ai_use_selected",
+        "recorded_trigger_required": true
+      },
+      "CR-15": {
+        "trigger": "repository_practice_import_proposed",
+        "recorded_trigger_required": true
+      },
+      "CR-16": {
+        "trigger": "research_transfer_proposed",
+        "recorded_trigger_required": true
+      }
+    },
+    "experiments": {
+      "EX-01": {
+        "trigger": "library_family_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-02": {
+        "trigger": "graphics_backend_or_dispatch_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-03": {
+        "trigger": "parallel_topology_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-04": {
+        "trigger": "product_budget_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-05": {
+        "trigger": "transport_or_compensation_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-06": {
+        "trigger": "ai_task_class_default_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-07": {
+        "trigger": "accessible_play_support_promise_proposed",
+        "recorded_trigger_required": true
+      },
+      "EX-08": {
+        "trigger": "offline_rollout_or_rollback_promise_proposed",
+        "recorded_trigger_required": true
+      }
+    }
+  }
+}

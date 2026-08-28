@@ -8,6 +8,7 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 
 ### T3 compositions
 
+- [browser-game](../../compositions/browser-game/template.md) — `named`; turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.
 - [fix](../../compositions/fix/template.md) — `routed`; any bug or defect with unknown or unverified cause.
 - [benchmaker](../../compositions/benchmaker/template.md) — `named`; build and qualify a runnable benchmark.
 - [evolve](../../compositions/evolve/template.md) — `named`; run bounded candidate generations against a frozen evaluation; manual only.

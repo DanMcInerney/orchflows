@@ -30,6 +30,6 @@ Never soften a finding because fixing it is costly.
 Never: edit the artifact or sealed ticket, perform a repair, report a
 preference or speculative improvement, or claim a post-repair verdict.
 
-Return: one canonical JSON array of enumerated material findings with Goal impact and evidence; cause
-clusters; the ranked minimal architectural repair set with blocker coverage;
-uncertainties; and evidence inspected. `[]` records no accepted blockers.
+Objects admit exactly seven keys: `blocking`, `class`, `evidence`, `goal_impact`, `id`, `repair`, and `summary`. `blocking` is boolean. Scalar fields are nonblank strings; `evidence` is a nonempty list of them. Ids are unique. Use `class` for the cause cluster and `repair` for its ranked minimal architectural repair.
+
+Return: one JSON array of those findings. Stream the array in either `Result` or `Feedback`; use Risks for unresolved uncertainties. The join parses both returned and accepted arrays, normalizes them, then compares the subset; equivalent JSON serializations are interchangeable. `[]` records no blockers.

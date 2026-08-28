@@ -8,13 +8,13 @@ from pathlib import Path
 
 if __package__:
     from .tickets_format import (
-        ADAPTER_BY_PACK, PACK_EXECUTOR_BINDINGS, PLAIN_ADAPTER,
+        ADAPTER_BY_PACK, GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS, PLAIN_ADAPTER,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         executor_bindings, _executor_of, _parse_frontmatter,
     )
 else:
     from tickets_format import (
-        ADAPTER_BY_PACK, PACK_EXECUTOR_BINDINGS, PLAIN_ADAPTER,
+        ADAPTER_BY_PACK, GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS, PLAIN_ADAPTER,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         executor_bindings, _executor_of, _parse_frontmatter,
     )
@@ -78,6 +78,44 @@ def _canonical_json(value) -> bytes:
     return canonical_json(value).encode("utf-8")
 
 
+def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
+    if ticket_id.endswith(".check") and dependencies == [
+        ticket_id[:-len(".check")]
+    ]:
+        return dependencies[0], None
+    target_id = None
+    kind = None
+    if ticket_id.endswith(".gate.repair"):
+        target_id = ticket_id[:-len(".gate.repair")]
+        kind = "repair"
+    elif ticket_id.endswith(".gate.verify"):
+        target_id = ticket_id[:-len(".gate.verify")]
+        kind = "verify"
+    else:
+        return None
+    target_text = siblings.get(target_id)
+    checker_text = siblings.get(f"{target_id}.check")
+    if target_text is None or checker_text is None:
+        return None
+    target = _parse_frontmatter(target_text)
+    checker = _parse_frontmatter(checker_text)
+    if (
+        str(target.get("independence") or "checker") != "checker"
+        or not str(target.get("checked_by") or "").strip()
+        or str(target.get("review_stage") or "") != f"{target_id}.check"
+        or str(checker.get("status") or "") != "complete"
+        or _executor_of(checker) != GATE_EXECUTORS["critique"]
+        or list(checker.get("depends_on") or []) != [target_id]
+    ):
+        return None
+    run = str(target.get("run") or data.get("run") or "")
+    if __package__:
+        from .tickets_ordinary_review import ordinary_stage_text
+    else:
+        from tickets_ordinary_review import ordinary_stage_text
+    return target_id, ordinary_stage_text(run, target_id, target, kind)
+
+
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
     """Grade one exact sealed snapshot and return its portable receipt."""
     context = dict(context or {})
@@ -127,17 +165,35 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             if not isinstance(draft, dict) or sealed_record.get("receipt") != validated.get("receipt") or draft.get("cut_generation") != cut_generation:
                 findings.append(finding("validation-receipt-mismatch", "cut_generation", "sealed state does not bind the validation receipt"))
             sealed_assignments = sealed_record.get("assignment_seals") or {}
-            derived_checker = ticket_id.endswith(".check") and dependencies == [
-                ticket_id[:-len(".check")]
-            ]
-            if derived_checker:
-                target_id = dependencies[0]
+            review_target = _ordinary_review_target(
+                ticket_id, data, dependencies, siblings,
+            )
+            if review_target is not None:
+                target_id, expected_stage = review_target
                 target_text = siblings.get(target_id)
                 target = _parse_frontmatter(target_text) if target_text is not None else {}
                 if sealed_assignments.get(target_id) != target.get("assignment_seal"):
                     findings.append(finding(
-                        "sealed-checker-target-mismatch", "assignment_seal",
-                        "sealed state does not bind the checker target",
+                        "sealed-checker-target-mismatch"
+                        if ticket_id.endswith(".check")
+                        else "sealed-review-target-mismatch",
+                        "assignment_seal",
+                        "sealed state does not bind the checker target"
+                        if ticket_id.endswith(".check")
+                        else "sealed state does not bind the ordinary review target",
+                    ))
+                if expected_stage is not None:
+                    if __package__:
+                        from .tickets_ordinary_review import ordinary_stage_matches
+                    else:
+                        from tickets_ordinary_review import ordinary_stage_matches
+                if expected_stage is not None and not ordinary_stage_matches(
+                    ticket_id, text, expected_stage,
+                ):
+                    findings.append(finding(
+                        "ordinary-review-stage-mismatch", "assignment_seal",
+                        "ordinary repair or verification assignment differs from "
+                        "the canonical checked-target continuation",
                     ))
             elif sealed_assignments.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed state does not bind this assignment"))

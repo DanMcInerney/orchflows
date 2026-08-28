@@ -64,6 +64,10 @@ memorize.
     > research the top three auth libraries, then integrate the winner
     # two root tickets, the second waiting on the first, automatically
 
+    > browser-game this incomplete cooperative puzzle-game brief
+    # a versioned program record, evidence-bound checkpoint, and
+    # pack-stamped successor plan without invented product defaults
+
 Small requests stay small; medium and large work earn structure only when
 their graph does. Those sizes are explanatory, never fields on the work.
 Nothing marks "done" except an external check passing.

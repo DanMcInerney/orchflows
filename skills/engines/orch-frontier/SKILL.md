@@ -4,35 +4,35 @@ description: Execute ticket runs by rolling frontier dispatch — every ready ti
 role: none
 ---
 
-Require: finite acyclic `tickets.py` run graph and root/caller bound.
+Require: acyclic `tickets.py` run graph and root/caller bound.
 
 Enter the pack workspace/evidence store, run `workspace.py start`, and retain
 `workspace_path`, per
 [workspace establishment](references/workspaces.md), before `dispatch-open`.
-Choose unique
-assigned name, dispatch id, and absolute lease. `tickets.py dispatch-open`
+Choose assigned-name/dispatch-id/lease. `tickets.py dispatch-open`
 claims it; `tickets.py dispatch-packet` commits its
-projection. Establish one
-child under [delegation](../../../rules/delegation.md) §1–§2 and its
+projection. Establish the
+same recorded child under [delegation](../../../rules/delegation.md) §1–§2 and its
 [role](../../../rules/roles.md) §4/[profile](references/profiles.md), and send
-the response `.packet` through a file
-or stdin; the child uses `dispatch-receive --file <path>` or `--file -`. Only
+response `.packet` via file/stdin; the child uses
+`dispatch-receive --file <path>` or `--file -`. Only
 its durable accepted receipt, bound to its identity and authority,
 applies the exact executor.
 
-Each ticket takes one independence path. For ordinary review, create
-`<id>.check` with `checker-stage`. Minimum: one distinct read-only `orch-critique` dispatch.
-It crosses packet, accepted receipt, outcome, and
-join; then run
-`check <run> <id> --stage <id>.check`.
-Its `GatePlan` carries fixed artifact, Goal, Context, executor evidence,
-lens, Result, and Verification.
-Accepted blockers get one separate repair ticket and fresh verification
-([verification](../../../rules/verification.md) §7). Gate-deferred and checked
-tickets do not.
+Each ticket takes one independence path. Ordinary review creates `<id>.check`
+with `checker-stage`, dispatches one distinct read-only `orch-critique` dispatch through
+packet, receipt, outcome, and join, then runs `check <run> <id> --stage
+<id>.check`. `GatePlan` carries fixed artifact, Goal, Context, executor evidence,
+Result, and Verification. Then:
 
-Transport silence replays to the same recorded child. Abandon through join or
-`dispatch-retire`; replace through `dispatch-replace`. Never extend leases.
+- an accepted checked target invokes `gate <run> <id>` for one separate repair ticket and
+  fresh verification without another critique;
+- a clean checked target closes without repair; and
+- a gate-deferred root invokes `gate <run> <root>` for its composite gate,
+  never `checker-stage` ([verification](../../../rules/verification.md) §7).
+
+Replay; abandon with `dispatch-retire`, replace with
+`dispatch-replace`; never extend leases.
 
 For [topology](../../../rules/topology.md) §5 graphs, `GatePlan` fixes artifact,
 root pack, workspace, isolation `none`, and lens order. Parallel critiques feed
@@ -48,14 +48,14 @@ Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
 Commit unstreamed closing evidence as `outcome`; join consumes it only after
 accepted receipt.
-A lane runs its own chosen proof methods, nothing wider. After every return is
+Lanes choose proof methods. After every return is
 integrated and required checker/gate is closed, run the standards
 owner's required checks exactly once at the accepted terminal identity and
 record its revision, not per merge batch. A red terminal suite blocks
 completion.
 
 Watch per [profiles](references/profiles.md); recompute on outcomes, tickets,
-suspensions, or stale claims. `bound-check` parks overdue work without
+suspensions, or transport silence. `bound-check` parks overdue work without
 post-bound motion as `suspended` through `dispatch-join`, Handoff naming bound and
 `last_motion_at`; motion reports `over-bound`. Promote with `tickets.py ready`;
 report `skipped` and terminal blockers. Suspended tickets retain claimant

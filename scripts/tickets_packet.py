@@ -275,6 +275,8 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         prompt.append("File Verification, Feedback, and Risks as evidence is produced; the join alone sets terminal status.")
     else:
         prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
+    if executor == REVERIFIER_EXECUTOR:
+        prompt.append("Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or `UNVERIFIED:` so the join can bind the verdict to the verified artifact.")
     prompt.append(f"Filing channel, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH in the candidate workspace:")
     result_identity = []
     if result_attempt is not None:
@@ -284,7 +286,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             "--record-id", "RECORD_ID",
         ]
     prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--file", "PATH", "--append"))
-    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT"))
+    prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT", "--append"))
     if assigned_name is not None:
         prompt.append(f"Your assigned name is `{assigned_name}`; use exactly it wherever a command takes --by.")
     if executor in DISPATCHING_EXECUTORS and assigned_name is not None:

@@ -255,6 +255,9 @@ def _cmd_dispatch_packet(rest):
     )
     if replay is not None:
         return replay
+    failure = _identity_failure("reply-to", reply_to)
+    if failure is not None:
+        return failure
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure

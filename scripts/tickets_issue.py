@@ -15,9 +15,10 @@ if __package__:
     from .tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
     from .tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
-        _load_ticket, _run_lock, _segment_error, _tickets_root,
-        _write_identity,
+        _run_lock, _runs_root, _segment_error, _tickets_root,
+        _write_identity, _write_text_atomically,
     )
+    from .tickets_root_reservation import reserve as _reserve_root
 else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_emission import grade_run_emission
@@ -30,9 +31,10 @@ else:
     from tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
     from tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
-        _load_ticket, _run_lock, _segment_error, _tickets_root,
-        _write_identity,
+        _run_lock, _runs_root, _segment_error, _tickets_root,
+        _write_identity, _write_text_atomically,
     )
+    from tickets_root_reservation import reserve as _reserve_root
 
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
@@ -202,9 +204,6 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
     defects = _issue_defects(text)
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
-    over = _ceiling_error(f"ticket {run}/{ticket_id}", ticket_id, text)
-    if over is not None:
-        return over
     if GATE_ID_MARKER in ticket_id:
         return {"error": f"ticket id '{ticket_id}' is reserved for tickets.py gate"}
     root = _tickets_root()
@@ -215,14 +214,28 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         with _run_lock(run):
             if path.exists():
                 return {"error": f"ticket id '{ticket_id}' is already issued in run '{run}': {path}"}
+            existing = list(path.parent.glob("*.md")) if path.parent.is_dir() else []
+            strict_over = _ceiling_error(
+                f"ticket {run}/{ticket_id}", ticket_id, text,
+                pre_generation_root=False,
+            )
+            over = _ceiling_error(
+                f"ticket {run}/{ticket_id}", ticket_id, text,
+                pre_generation_root=not existing,
+            )
+            if over is not None:
+                return over
             if (held := grade_run_emission("new", run, path.parent, {ticket_id: text})) is not None:
                 return held
-            data = _parse_frontmatter(text)
-            if _executor_of(data) == ROOT_EXECUTOR:
-                for other in sorted(path.parent.glob("*.md")) if path.parent.is_dir() else []:
-                    loaded = _load_ticket(other)
-                    if "error" not in loaded and _executor_of(loaded) == ROOT_EXECUTOR:
-                        return {"error": f"run '{run}' already has root ticket '{loaded.get('id') or other.stem}'"}
+            if not existing and strict_over is not None:
+                runs_root = _runs_root()
+                if runs_root is None:
+                    return {"error": NO_SINK_ERROR}
+                _, reservation_error = _reserve_root(
+                    runs_root, run, ticket_id, _write_text_atomically,
+                )
+                if reservation_error is not None:
+                    return {"error": reservation_error}
             identity_dir, identity, held = _identity_update(run, datetime.now(timezone.utc))
             if held is not None:
                 return held

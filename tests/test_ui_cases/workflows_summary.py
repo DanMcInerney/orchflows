@@ -14,6 +14,7 @@ MANIFEST = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 
 EXPECTED_WORKFLOWS = {
     "benchmaker",
+    "browser-game",
     "drift-canary",
     "evolve",
     "fix",

@@ -139,6 +139,54 @@ class GoalEvidenceContractTest(unittest.TestCase):
             self.assert_spec_semantics(all_values_erased)
 
 
+class SpecSuccessorLifecycleTest(unittest.TestCase):
+    def test_topology_references_resolve_to_current_numbered_clauses(self):
+        spec = read("skills/workflows/orch-spec/SKILL.md")
+        topology = read("rules/topology.md")
+        clauses = set(re.findall(r"(?m)^(\d+)\.", topology))
+        references = re.findall(
+            r"\[[^]]*topology(?:\.md)?\]\([^)]*rules/topology\.md\)"
+            r"\s*(?:§§?)?\s*(\d+[a-z]?)",
+            spec,
+            flags=re.IGNORECASE,
+        )
+        self.assertTrue(references, "orch-spec must cite the topology owner")
+        self.assertEqual(
+            [],
+            [reference for reference in references if reference not in clauses],
+            "orch-spec cites a topology clause that does not exist",
+        )
+
+    def test_successor_trigger_has_a_fresh_authorized_materialization_path(self):
+        spec = " ".join(read("skills/workflows/orch-spec/SKILL.md").split())
+        required = (
+            "fresh materialization run",
+            "fresh planner ticket bound to this exact skill",
+            "`tickets.py ready`",
+            "`tickets.py dispatch-open`",
+            "`tickets.py dispatch-packet`",
+            "`tickets.py dispatch-receive`",
+            "durable accepted receipt",
+            "accepted predecessor `## Result` identity",
+            "fresh successor run",
+            "`root_generation` ordinal `1`",
+            "`tickets.py new`",
+            "`tickets.py stamp-generation`",
+            "`tickets.py draft-validate`",
+            "`tickets.py seal`",
+            "`planned` to `opened`",
+            "next entry `planned`",
+            "`orch-integrate`",
+            "`orch-frontier`",
+        )
+        for token in required:
+            with self.subTest(token=token):
+                self.assertIn(token, spec)
+        self.assertIn("never send a follow-up", spec.lower())
+        self.assertIn("predecessor bytes", spec)
+        self.assertIn("never create a second root in the same run", spec.lower())
+
+
 class CritiqueContractTest(unittest.TestCase):
     def test_critique_is_two_pass_blocker_only_synthesis(self):
         critique = read("skills/kernel/orch-critique/SKILL.md")

@@ -7,63 +7,70 @@ role: planner
 Require: the request as Goal and relevant workspace facts as Context.
 
 Use `orch-investigate` for one bounded question against Context's source
-policy. Ask unresolved user decisions one at a time; record verbatim without
-re-interviewing settled ones.
+policy. Ask unresolved user decisions singly; record verbatim.
 
 Semantic root policy:
 
 - **Evidence identities**: Cite long evidence and exemplars by identity, never
   inline rationale.
-- **Root contents**: Carry only settled observable behavior and authority,
-  precedence, lifecycle, persistence, trust, compatibility, or non-goal
-  boundaries an executor cannot infer.
-- **Executor authority**: Leave files, functions, schemas, commands, tests,
-  proof methods, and internal mechanics to the executor.
+- **Root contents**: Carry only settled observable behavior and boundaries an
+  executor cannot infer.
+- **Executor authority**: Leave files, schemas, tests, proof methods, and
+  internal mechanics to the executor.
 - **Seal blockers**: Vague quality adjectives settle nothing. Do not seal while
   a choice, contradiction, or impossible acceptance threshold remains.
 - **Reference resolution**: Validate fixed identities and canonical-owner
   references before seal; locators must resolve.
 - **Review eligibility**: Recommend one outside blocker-only review only when
-  the root spans several independent semantic policies or cross-cutting
-  authority, lifecycle, or contract surfaces.
+  several independent semantic policies or cross-cutting contract surfaces
+  require it.
 - **Review finality**: A corrected root that already addresses a review never
   recommends another critique. Deterministic admission and downstream
   verification decide what follows.
 
 Lifecycle:
 
-Count deliverable kinds. One gets a pack-stamped root. For multiple,
-open first and persist the ordered remainder through `tickets.py run-state
-<first-run> --artifact successors.md`; each entry names kind, pack,
-successor run and root ids, and state `planned`. This skill is the
-`successors.md` sole writer and materialization owner. When a drained
-`orch-frontier` returns its successor trigger under
-[work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration),
-resolve the accepted predecessor result identity; open the next successor run
-and root, cite the resolved identity in `## Context`, then replace
-`successors.md` with that entry `opened` and the next `planned`. Never create a
-second root in the same run; an unmaterialized entry remains durable.
+One kind gets a pack-stamped root. For multiple, open; persist remainder
+through `tickets.py run-state <first-run> --artifact
+successors.md`; entries name kind, pack, run/root ids, and `planned` state.
+This skill is the `successors.md` sole writer and materialization
+owner.
+
+A drained `orch-frontier` successor trigger grants no role authority. Caller
+opens a fresh materialization run: ordinal-1 root, fresh planner ticket bound
+to this exact skill. Seal it; run `tickets.py ready`, `tickets.py
+dispatch-open`, and `tickets.py dispatch-packet`; send packet to matching
+child. It runs `tickets.py dispatch-receive`.
+Receiver identity, authority, and committed bytes must agree before its durable
+accepted receipt permits successor materialization. Never send a follow-up
+after the prior planner outcome closed.
+
+Resolve the accepted predecessor `## Result` identity; semantic-root change is
+unsupported without that accepted predecessor result identity. Once resolved,
+fresh successor run: create root via `tickets.py new`; `root_generation`
+ordinal `1`; make `## Context` cite it; preserve predecessor bytes. Never
+create a second root in the same run.
 
 Draft per [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration)
-using vocabulary and pack craft. Route per
-[topology.md](../../../rules/topology.md) 5a. When one executor plus the
-mandatory `orch-integrate` join owns the outcome, bind it directly rather than
-`orch-decompose`; otherwise write the decomposed root through `tickets.py new
+using vocabulary and pack craft. Route per [topology](../../../rules/topology.md)
+§2: bind one executor plus `orch-integrate` directly rather than
+`orch-decompose`. Use it only for a [topology](../../../rules/topology.md) §5
+graph, through `tickets.py new
 <run> <root-id> --executor orch-decompose --pack <stamp> --independence gate …`.
 
-For each root, run `tickets.py stamp-generation`, finish and validate `draft`
-with `tickets.py draft-validate`, then seal its receipt by compare-and-swap via
-`tickets.py seal --cut-generation <validated cut_generation>`.
-`assignment_seal` fixes the digest for dispatch. A semantic-root change is
-unsupported in this physical run: after the accepted predecessor result
-identity resolves, open a successor run, cite it in Context, preserve
-predecessor bytes, and never mint another root ordinal.
+Run `tickets.py stamp-generation`, `tickets.py draft-validate`, then
+`tickets.py seal` with the validated `--cut-generation`; `assignment_seal`
+fixes dispatch identity. After seal, replace `successors.md` through `tickets.py
+run-state --artifact successors.md --replace`, moving `planned` to `opened` and
+keeping the next entry `planned`; unmaterialized entries remain durable.
 
-Never: stamp a pack the cut cannot share; prescribe implementation or tests in
-Goal; restate canonical-owner standards or exemplar rationale.
+After the fresh planner outcome crosses `orch-integrate`, the outer coordinator
+dispatches that sealed root by the chosen route and starts `orch-frontier`;
+the planner never starts it.
 
-Return: the accepted root ticket's id and path, the durable `successors.md`
-identity (`[]` for one kind), and, after each predecessor resolves, the
-successor root's id, path, and cited predecessor result identity; the
-kind-count decision, assumptions, evidence consulted, and
-consistency observations against the settled decisions and repository facts.
+Never: stamp incompatible packs; prescribe implementation or tests in Goal;
+restate owners or exemplar rationale.
+
+Return: root id/path; durable `successors.md` identity (`[]` for one kind);
+successor id/path and cited predecessor result identity; kind count,
+assumptions, evidence, and consistency observations.

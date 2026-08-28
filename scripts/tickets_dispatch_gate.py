@@ -3,22 +3,28 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
     from .tickets_generations import assignment_digest, seal_findings
+    from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
+    from .tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from .tickets_review import ReviewError, review_records, state_from_text
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
     from tickets_generations import assignment_digest, seal_findings
+    from tickets_dispatch_schema import state as _dispatch_state
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
+    from tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
     from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from tickets_review import ReviewError, review_records, state_from_text
     from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
 
-GATE_USAGE = "gate <run> <root-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
+GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
 
 
@@ -124,6 +130,8 @@ def _checker_stage_under_run_lock(rest):
         return {"error": f"ticket {run}/{target_id} defers independence to its downstream gate"}
     if str(target.get("checked_by") or "").strip():
         return {"error": f"ticket {run}/{target_id} is already checked"}
+    if not str(target.get("pack") or "").strip().strip("`"):
+        return {"error": "checker-stage requires target pack authority"}
     root_generation = str(target.get("root_generation") or "")
     if not root_generation:
         return {"error": "checker-stage requires one stamped target assignment"}
@@ -168,6 +176,98 @@ def _checker_stage_under_run_lock(rest):
     return {"checker_stage": {"run": run, "target": target_id, "ticket": stage_id, "outcome": "created"}}
 
 
+def _checker_gate_under_run_lock(
+    run: str, target_id: str, target: dict, directory, *, has_lens_options: bool,
+):
+    if has_lens_options:
+        return {"error": "ordinary checker continuation uses its fixed checker lens; gate lens options require a decomposed root"}
+    if str(target.get("independence") or "checker") != "checker":
+        return {"error": f"gate requires decomposed root executor {ROOT_EXECUTOR}: {run}/{target_id}"}
+    stage_id = f"{target_id}.check"
+    if (
+        str(target.get("status") or "") != "complete"
+        or not str(target.get("checked_by") or "").strip()
+        or str(target.get("review_stage") or "") != stage_id
+    ):
+        return {"error": f"gate requires decomposed root executor {ROOT_EXECUTOR} or one completed ordinary checker anchor: {run}/{target_id}"}
+    stage_path = directory / f"{stage_id}.md"
+    try:
+        stage_text = stage_path.read_text(encoding="utf-8")
+        records = review_records(state_from_text(stage_text, required=True))
+    except (OSError, UnicodeDecodeError, ReviewError) as error:
+        return {"error": f"ordinary checker continuation has no valid adjudication: {error}"}
+    if (
+        [record["kind"] for record in records]
+        != ["GatePlan", "CritiqueAdjudication"]
+        or records[0]["mode"] != "checker"
+        or records[0]["root"] != target_id
+        or [item["ticket"] for item in records[0]["criteria"]] != [stage_id]
+        or records[1]["lens"] != "checker"
+    ):
+        return {"error": "ordinary checker continuation ledger names a different target or stage"}
+    dispatch_state, dispatch_failure = _dispatch_state(_parse_frontmatter(stage_text))
+    if dispatch_failure is not None:
+        return dispatch_failure
+    joined = next((
+        attempt for attempt in dispatch_state["attempts"]
+        if any(record.get("kind") == "join" for record in attempt["records"])
+    ), None)
+    if (
+        joined is None
+        or joined["owner"] != records[1]["adjudicated_by"]
+        or joined["owner"] != str(target.get("checked_by") or "")
+    ):
+        return {"error": "ordinary checker continuation is not owned by its accepted receiver"}
+    if not records[1]["accepted"]:
+        return {"error": "ordinary checker accepted no blockers; repair and fresh verification are not materialized"}
+    root_generation = str(target.get("root_generation") or "")
+    cut_generation = str(target.get("cut_generation") or "")
+    if not root_generation or not cut_generation:
+        return {"error": "ordinary checker continuation requires one sealed target assignment"}
+    rendered = ordinary_stages(run, target_id, target)
+    existing = [directory / f"{ticket_id}.md" for ticket_id, _ in rendered]
+    if any(path.exists() for path in existing):
+        if not all(path.exists() for path in existing):
+            return {"error": "ordinary checker continuation is partial; refusing to guess the missing stage"}
+        for (ticket_id, expected), path in zip(rendered, existing):
+            loaded = _load_ticket(path)
+            try:
+                actual_text = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                actual_text = ""
+            if (
+                "error" in loaded
+                or not ordinary_stage_matches(
+                    ticket_id, actual_text, expected,
+                )
+            ):
+                return {"error": f"ordinary checker continuation stage already exists with different content: {ticket_id}"}
+        return {"gate": {
+            "run": run, "root": target_id,
+            "tickets": [ticket_id for ticket_id, _ in rendered],
+            "mode": "checker", "outcome": "replayed",
+        }}
+    for ticket_id, text in rendered:
+        defects = ticket_defects(text)
+        if defects:
+            return {"error": f"gate stub {ticket_id} is off contract: " + "; ".join(defects)}
+    written = []
+    try:
+        for ticket_id, text in rendered:
+            path = directory / f"{ticket_id}.md"
+            _create_text_exclusively(path, text)
+            written.append(path)
+    except OSError as error:
+        for path in written:
+            path.unlink(missing_ok=True)
+        return {"error": f"unable to create ordinary checker continuation: {error}"}
+    return {"gate": {
+        "run": run, "root": target_id,
+        "tickets": [ticket_id for ticket_id, _ in rendered],
+        "mode": "checker", "outcome": "created",
+    }}
+
+
 def _gate_under_run_lock(rest, _head_probe=None):
     args = list(rest)
     lens_arg = _extract_flag(args, "--lens")
@@ -189,6 +289,11 @@ def _gate_under_run_lock(rest, _head_probe=None):
     root_ticket = _load_ticket(root_path)
     if "error" in root_ticket:
         return {"error": root_ticket["error"]}
+    if str(root_ticket.get("independence") or "checker") == "checker":
+        return _checker_gate_under_run_lock(
+            run, root_id, root_ticket, directory,
+            has_lens_options=lens_arg is not None or ordered_arg is not None,
+        )
     if str(root_ticket.get("executor") or "").strip() != ROOT_EXECUTOR:
         return {"error": f"gate requires decomposed root executor {ROOT_EXECUTOR}: {run}/{root_id}"}
     root_generation = str(root_ticket.get("root_generation") or "")
@@ -255,6 +360,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
 
 __all__ = (
     "CHECKER_STAGE_USAGE", "GATE_USAGE", "_cmd_checker_stage", "_cmd_gate",
+    "_checker_gate_under_run_lock",
     "_gate_body", "_gate_input", "_gate_sections",
     "_gate_stub", "_gate_under_run_lock", "_input_name", "_listed_items",
     "_pack_domain",

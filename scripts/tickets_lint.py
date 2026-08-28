@@ -9,13 +9,14 @@ if __package__:
     from .tickets_commands import LINT_USAGE
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
-        GATE_ID_MARKER, INSTRUCTION_BUDGET, ROOT_EXECUTOR, _executor_of,
-        _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field,
+        GATE_ID_MARKER, INSTRUCTION_BUDGET, _extract_flag, _parse_frontmatter,
+        _read_utf8, _set_frontmatter_field,
         instruction_words,
     )
     from .tickets_issue import (
         NEW_DEFAULT_BOUND, _issue_defects, _project_file_ticket,
     )
+    from .tickets_issue_render import _root_generation_names
     from .tickets_store import (
         NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -24,13 +25,14 @@ else:
     from tickets_commands import LINT_USAGE
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
-        GATE_ID_MARKER, INSTRUCTION_BUDGET, ROOT_EXECUTOR, _executor_of,
-        _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field,
+        GATE_ID_MARKER, INSTRUCTION_BUDGET, _extract_flag, _parse_frontmatter,
+        _read_utf8, _set_frontmatter_field,
         instruction_words,
     )
     from tickets_issue import (
         NEW_DEFAULT_BOUND, _issue_defects, _project_file_ticket,
     )
+    from tickets_issue_render import _root_generation_names
     from tickets_store import (
         NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -45,8 +47,8 @@ def _finding(code, message, kind=SEMANTIC, severity="error", fix=None) -> dict:
     return {"code": code, "severity": severity, "kind": kind, "message": message, "fix": fix}
 
 
-def _ceiling_finding(ticket_id: str, text: str, data: dict):
-    if GATE_ID_MARKER in str(ticket_id or "") or _executor_of(data) == ROOT_EXECUTOR:
+def _ceiling_finding(ticket_id: str, text: str):
+    if GATE_ID_MARKER in str(ticket_id or "") or _root_generation_names(ticket_id, text):
         return None
     count = instruction_words(text)
     if count <= INSTRUCTION_BUDGET:
@@ -64,7 +66,7 @@ def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued
     if not data:
         return [_finding("no-frontmatter", "a ticket opens with a '---' block (contracts/work-item.md)")]
     findings = [_finding("ticket-defect", defect) for defect in _issue_defects(text, issued=issued)]
-    ceiling = _ceiling_finding(ticket_id, text, data)
+    ceiling = _ceiling_finding(ticket_id, text)
     if ceiling is not None:
         findings.append(ceiling)
     if issued:
