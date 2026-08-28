@@ -505,6 +505,11 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn('"kind":"RepairOutcome"', verify_packet["prompt"])
+        self.assertIn(
+            "Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or "
+            "`UNVERIFIED:` so the join can bind the verdict to the verified artifact.",
+            verify_packet["prompt"],
+        )
         self.dispatch(
             "dispatch-receive", "--content",
             json.dumps(verify_packet, sort_keys=True, separators=(",", ":")),

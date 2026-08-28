@@ -275,6 +275,8 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         prompt.append("File Verification, Feedback, and Risks as evidence is produced; the join alone sets terminal status.")
     else:
         prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
+    if executor == REVERIFIER_EXECUTOR:
+        prompt.append("Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or `UNVERIFIED:` so the join can bind the verdict to the verified artifact.")
     prompt.append(f"Filing channel, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH in the candidate workspace:")
     result_identity = []
     if result_attempt is not None:
