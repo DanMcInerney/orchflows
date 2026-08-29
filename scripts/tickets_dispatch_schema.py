@@ -6,11 +6,21 @@ from pathlib import Path
 import re
 
 if __package__:
+    from .tickets_shapes import (
+        DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+    )
     from .tickets_format import (
         EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
         parse_canonical_json,
     )
 else:
+    from tickets_shapes import (
+        DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+    )
     from tickets_format import (
         EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
         parse_canonical_json,
@@ -26,17 +36,11 @@ RESERVED_RECORD_IDS = frozenset({
 RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 ATTEMPT_STATES = frozenset({"live", "retired", "replaced"})
-ATTEMPT_KEYS = frozenset({
-    "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-    "outcome_record_id", "owner", "records", "state",
-    "retired_at", "retirement", "replaced_at", "replaced_by",
-    "replacement", "replaces",
-})
-RECORD_KEYS = frozenset({"committed_at", "content", "kind", "record_id", "success"})
-RECORD_KINDS = frozenset({
-    "generic", "join", "lifecycle", "outcome", "packet", "receipt", "result",
-})
-OUTCOME_SECTIONS = frozenset({"Result", "Verification", "Feedback", "Risks", "Handoff"})
+ATTEMPT_KEYS = frozenset(DISPATCH_ATTEMPT_FIELDS)
+ATTEMPT_REQUIRED_KEYS = frozenset(DISPATCH_ATTEMPT_REQUIRED)
+RECORD_KEYS = frozenset(DISPATCH_RECORD_FIELDS)
+RECORD_KINDS = frozenset(DISPATCH_RECORD_VALUES["kind"])
+OUTCOME_SECTIONS = frozenset(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 JOIN_STATUSES = frozenset(TERMINAL_STATES) | {"suspended"}
 
 
@@ -83,10 +87,7 @@ def _committed_success_failure(
 
 
 def _outcome_failure(content, *, run, ticket_id, attempt):
-    required = {
-        "assignment_seal", "by", "dispatch_id", "evidence", "id",
-        "outcome_record_id", "protocol", "run", "status",
-    }
+    required = set(DISPATCH_OUTCOME_FIELDS)
     if not _closed(content, required):
         return "outcome envelope has unknown or missing fields"
     expected = {

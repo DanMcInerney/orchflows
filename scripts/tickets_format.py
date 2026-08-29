@@ -16,6 +16,10 @@ else:
     )
 if __package__:
     from .tickets_adapters import adapter_id
+    from .tickets_shapes import (
+        TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
+        TICKET_FRONTMATTER_VALUES,
+    )
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
@@ -31,6 +35,10 @@ if __package__:
     )
 else:
     from tickets_adapters import adapter_id
+    from tickets_shapes import (
+        TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
+        TICKET_FRONTMATTER_VALUES,
+    )
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
@@ -54,21 +62,15 @@ else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
     from tickets_sequence import sequence_defects
-VALID_STATUSES = {'pending', 'ready', 'claimed', 'suspended', 'complete', 'blocked', 'stalled', 'failed', 'limited'}
+VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
 LOOP_EXECUTOR = 'orch-loop'
 DISPATCHING_EXECUTORS = ('orch-frontier', LOOP_EXECUTOR)
 SCRIPT_EXECUTOR_PREFIX = 'script:'
-REQUIRED_TICKET_KEYS = ('id', 'executor', 'depends_on', 'bound')
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
-ALLOWED_TICKET_KEYS = frozenset({
-    'id', 'run', 'status', 'admission', 'executor', 'sequence', 'pack',
-    'profile', 'independence', 'depends_on', 'isolation', 'bound',
-    'claimed_by', 'claimed_at', 'checked_by', 'root_generation',
-    'cut_generation', 'assignment_seal', 'workspace_branch',
-    'workspace_baseline', 'workspace_path', 'dispatch_v1',
-    'review_order', 'review_v1', 'review_stage',
-    'review_kind',
-})
+REQUIRED_TICKET_KEYS = tuple(
+    key for key in TICKET_FRONTMATTER_REQUIRED if key not in REQUIRED_LIFECYCLE_KEYS
+)
+ALLOWED_TICKET_KEYS = frozenset(TICKET_FRONTMATTER_FIELDS)
 DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'

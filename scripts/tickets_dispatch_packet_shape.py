@@ -7,13 +7,21 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
     from .tickets_registry import REVIEW_KINDS
+    from .tickets_shapes import (
+        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_REQUIRED,
+        DISPATCH_PACKET_VALUES,
+    )
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
     from tickets_registry import REVIEW_KINDS
+    from tickets_shapes import (
+        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_REQUIRED,
+        DISPATCH_PACKET_VALUES,
+    )
 
-PACKET_FORMS = frozenset({"reference", "inline"})
+PACKET_FORMS = frozenset(DISPATCH_PACKET_VALUES["form"])
 
 
 def packet_shape(value):
@@ -27,6 +35,10 @@ def packet_shape(value):
     form = value.get("form")
     if form not in PACKET_FORMS:
         return _classification("packet-invalid", "packet form is unknown")
+    # The generated shape closes the complete key set below.  This smaller
+    # identity subset is the fields whose values must be non-empty strings;
+    # ``workspace``, ``pack``, and ``review_kind`` are allowed nullable prose
+    # or path values even though they are present in every packet object.
     required = (
         "assigned_name", "assignment_seal", "dispatch_id", "executor",
         "lease_expires_at", "outcome_record_id", "profile", "reply_to", "role",
@@ -35,13 +47,7 @@ def packet_shape(value):
         return _classification("packet-invalid", "packet identity or routing field is missing")
     if value.get("durability") not in ("ticket", "ephemeral"):
         return _classification("packet-invalid", "packet durability is unknown")
-    base = {
-        "admission", "assigned_name", "assignment_seal", "dispatch_id",
-        "durability", "executor", "form", "independence", "isolation",
-        "lease_expires_at", "outcome_record_id", "pack", "profile", "prompt",
-        "review_kind",
-        "protocol", "reply_to", "role", "source", "workspace",
-    }
+    base = set(DISPATCH_PACKET_FIELDS) - {"reference", "inline"}
     expected = base | ({"reference"} if form == "reference" else {"inline"})
     if set(value) != expected:
         return _classification("packet-invalid", "packet has unknown or missing fields")

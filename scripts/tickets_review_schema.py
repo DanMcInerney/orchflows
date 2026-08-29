@@ -5,11 +5,23 @@ import hashlib
 
 if __package__:
     from .tickets_format import canonical_json, parse_canonical_json
+    from .tickets_shapes import (
+        REVIEW_CRITIQUE_FIELDS, REVIEW_FINDING_FIELDS, REVIEW_GATE_PLAN_FIELDS,
+        REVIEW_RECORD_COMMON_FIELDS, REVIEW_REPAIR_FIELDS, REVIEW_STATE_REQUIRED,
+        REVIEW_VERIFICATION_FIELDS, REVIEW_VERIFICATION_REQUIRED,
+        REVIEW_RECORD_COMMON_VALUES,
+    )
 else:
     from tickets_format import canonical_json, parse_canonical_json
+    from tickets_shapes import (
+        REVIEW_CRITIQUE_FIELDS, REVIEW_FINDING_FIELDS, REVIEW_GATE_PLAN_FIELDS,
+        REVIEW_RECORD_COMMON_FIELDS, REVIEW_REPAIR_FIELDS, REVIEW_STATE_REQUIRED,
+        REVIEW_VERIFICATION_FIELDS, REVIEW_VERIFICATION_REQUIRED,
+        REVIEW_RECORD_COMMON_VALUES,
+    )
 
 PROTOCOL = "orchflows.review.v1"
-KINDS = ("GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification")
+KINDS = tuple(REVIEW_RECORD_COMMON_VALUES["kind"])
 
 
 class SchemaError(ValueError):
@@ -28,9 +40,7 @@ def finding_values(values, subject: str) -> list:
     if not isinstance(values, list):
         raise SchemaError(f"{subject} is not an array")
     identities = set()
-    required = {
-        "blocking", "class", "evidence", "goal_impact", "id", "repair", "summary",
-    }
+    required = set(REVIEW_FINDING_FIELDS)
     for index, finding in enumerate(values):
         if not isinstance(finding, dict) or set(finding) != required:
             raise SchemaError(f"{subject} finding {index} has unknown or missing fields")
@@ -76,9 +86,9 @@ def _criteria(values, *, legacy: bool) -> None:
 
 def _shape(record: dict, index: int, plan: dict | None, *, legacy: bool) -> None:
     kind = record["kind"]
-    common = {"identity", "kind", "predecessor", "protocol"}
+    common = set(REVIEW_RECORD_COMMON_FIELDS)
     if kind == "GatePlan":
-        fields = {"artifact", "criteria", "isolation", "mode", "pack", "root", "workspace"}
+        fields = set(REVIEW_GATE_PLAN_FIELDS)
         if legacy and "workspace" not in record:
             fields.remove("workspace")
         if set(record) != common | fields:
@@ -95,7 +105,7 @@ def _shape(record: dict, index: int, plan: dict | None, *, legacy: bool) -> None
         raise SchemaError(f"review record {index} has no GatePlan")
     if kind == "CritiqueAdjudication":
         aggregate = record.get("lens") == "*"
-        fields = {"accepted", "adjudicated_by", "artifact", "findings", "lens"}
+        fields = set(REVIEW_CRITIQUE_FIELDS)
         if aggregate:
             fields.add("adjudications")
             if legacy and "adjudicated_by" not in record:
@@ -129,8 +139,8 @@ def _shape(record: dict, index: int, plan: dict | None, *, legacy: bool) -> None
                 raise SchemaError("aggregate CritiqueAdjudication rewrites the accepted set")
         return
     fields = (
-        {"accepted", "artifact", "by", "input_artifact", "no_op", "result"}
-        if kind == "RepairOutcome" else {"artifact", "by", "evidence", "verdict"}
+        set(REVIEW_REPAIR_FIELDS)
+        if kind == "RepairOutcome" else set(REVIEW_VERIFICATION_REQUIRED)
     )
     # ``covers`` is optional for legacy review ledgers.  New fixed-result
     # ledgers may carry the closed identities from contracts/verdict.md;
@@ -172,7 +182,7 @@ def validate_records(value, *, allow_legacy: bool = False) -> list:
         if canonical_json(parsed) != value:
             raise SchemaError("review_v1 is not canonical JSON")
         value = parsed
-    if not isinstance(value, dict) or set(value) != {"protocol", "records"}:
+    if not isinstance(value, dict) or set(value) != set(REVIEW_STATE_REQUIRED):
         raise SchemaError("review_v1 has unknown or missing fields")
     if value.get("protocol") != PROTOCOL or not isinstance(value.get("records"), list):
         raise SchemaError("review_v1 has an invalid protocol or record list")
