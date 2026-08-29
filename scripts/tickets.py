@@ -137,6 +137,7 @@ AdapterError = _tickets_adapters_module.AdapterError
 adapter_id = _tickets_adapters_module.adapter_id
 adapter_spec = _tickets_adapters_module.adapter_spec
 binding_findings = _tickets_admission_module.binding_findings
+graph_findings = _tickets_admission_module.graph_findings
 grade_admission = _tickets_admission_module.grade_admission
 is_receipt = _tickets_admission_module.is_receipt
 _GENERATION_EXPORTS = frozenset({

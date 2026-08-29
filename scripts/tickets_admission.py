@@ -10,14 +10,14 @@ if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
+        GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
+        GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
 
@@ -93,6 +93,49 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     return findings
 
 
+def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False) -> list:
+    """Grade the graph shape owned by one ticket without consulting prose.
+
+    ``orch-decompose`` is the only root executor that may own executor-result
+    members.  A root marked as an ordinary checker would leave the graph's
+    authority with a caller, so it is refused at every admission door.  The
+    member-count checks are deferred until a generation is being validated:
+    the first root ticket is necessarily issued before its members exist.
+    """
+    siblings = dict(siblings or {})
+    executor = _executor_of(data)
+    descendants = [
+        identifier for identifier in siblings
+        if identifier.startswith(ticket_id + ".")
+        and GATE_ID_MARKER not in identifier
+        and not identifier.endswith(".check")
+    ]
+    findings = []
+    if executor == ROOT_EXECUTOR:
+        if str(data.get("independence") or "").strip().strip("`").strip() == "checker":
+            findings.append(finding(
+                "decomposed-root-checker", "independence",
+                "a decomposed root must declare independence=gate",
+            ))
+        if complete:
+            if not descendants:
+                findings.append(finding(
+                    "graph-no-members", "members",
+                    "a decomposed root requires at least two executor-result members",
+                ))
+            elif len(descendants) == 1:
+                findings.append(finding(
+                    "graph-one-member", "members",
+                    "a decomposed root requires at least two executor-result members",
+                ))
+    elif descendants:
+        findings.append(finding(
+            "graph-direct-members", "executor",
+            "a non-decomposed root cannot own executor-result members",
+        ))
+    return findings
+
+
 def _canonical_json(value) -> bytes:
     return canonical_json(value).encode("utf-8")
 
@@ -138,6 +181,7 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
     """Grade one exact sealed snapshot and return its portable receipt."""
     context = dict(context or {})
+    siblings = dict(siblings or {})
     data = _parse_frontmatter(text)
     if __package__:
         from .tickets_generations import GENERATION_RE, assignment_digest, seal_findings
@@ -150,6 +194,13 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     adapter, adapter_failure = adapter_resolution(data.get("pack"))
     if adapter_failure is not None:
         findings.append(adapter_failure)
+    # A ticket only reaches admission after a cut has been sealed.  During
+    # issue/stamp emission the root is deliberately incomplete; once it
+    # carries a cut identity, its graph is a closed shape and must satisfy
+    # the same member-count grade as the generation and routing doors.
+    findings.extend(graph_findings(
+        ticket_id, data, siblings, complete=bool(str(data.get("cut_generation") or "").strip())
+    ))
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     for dependency in dependencies:
         if dependency not in siblings:
@@ -232,6 +283,6 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
 
 __all__ = (
     "ADMISSION_PENDING", "adapter_id",
-    "binding_findings", "finding",
+    "binding_findings", "finding", "graph_findings",
     "grade_admission", "is_receipt",
 )
