@@ -55,7 +55,8 @@ scope, or at a broader custom scope than requested.
    bindings. For example, a role-bearing Claude skill may use the host-legal
    `context: fork` plus its matching `agent`, but never copies the item's
    orchflows-only `role`. At every call site, resolve the declared role from
-   the selected rendered adapter. Cross-host dispatch invariants remain in
+   the selected rendered adapter. At that call site, use the native binding that owner returns.
+   Cross-host dispatch invariants remain in
    [role profiles](../skills/engines/orch-frontier/references/profiles.md).
 6. Run the target repository's required checks. In this library that means
    tools/validate.py, affected tests, template instantiation when applicable,
