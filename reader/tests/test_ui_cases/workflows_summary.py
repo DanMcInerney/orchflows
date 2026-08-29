@@ -10,7 +10,7 @@ from reader.scripts import ui_workflows_summary as summaries
 
 
 ROOT = Path(__file__).resolve().parents[3]
-MANIFEST = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
+MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 
 EXPECTED_WORKFLOWS = {
     "benchmaker",

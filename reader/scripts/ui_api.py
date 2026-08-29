@@ -222,7 +222,7 @@ async def view_endpoint(request: Request):
 
 
 def _workflow_root():
-    return ui_workflows_projection.ROOT
+    return ui_workflows_projection.LIBRARY_ROOT
 
 
 async def workflows_endpoint(request: Request):

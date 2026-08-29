@@ -134,7 +134,7 @@ invent a second phase taxonomy.
 
 ## Rendered-experience admission
 
-`docs/ui/view-manifest.json` is the canonical `orchflows.view-manifest.v1`
+`view-manifest.json` is the canonical `orchflows.view-manifest.v1`
 inventory. It declares 62 deterministic identities across Now execution run
 maps and ticket details, the Workflows definition catalog, definition detail
 and contained source states, Sessions, session graphs, and Friction at

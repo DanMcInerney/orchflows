@@ -15,7 +15,7 @@ has coordinated owners with one-way dependencies:
   policy, projection, model, fixture, style, view, and focused tests.
 - `reader/web/src/shared/transport/` owns feature-blind ETag, retry, abort, and timer
   mechanics. Only the catalog-selected mounted feature polls.
-- `docs/ui/view-manifest.json` names every deterministic visual identity and
+- `view-manifest.json` names every deterministic visual identity and
   its wide or compact viewport.
 - reader/tools/ui_frontend.py captures, audits, and classifies diffs for that
   manifest without admitting captures or goldens to source control.

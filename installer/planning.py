@@ -150,8 +150,9 @@ def _build_user_plan(
     notices = REPO_ROOT / "THIRD_PARTY_NOTICES.md"
     if notices.is_file():
         lib_copies.append((notices, lib_home / notices.name))
-    reader_runtime_files = (READER_ROOT / "__init__.py", *sorted((READER_ROOT / "scripts").glob("*.py")), *(REPO_ROOT / "scripts" / name for name in "state_root.py tickets_bound.py tickets_format.py tickets_lifecycle.py tickets_registry.py tickets_sequence.py".split()))
-    for path in reader_runtime_files:
+    reader_runtime_files = (READER_ROOT / "__init__.py", *sorted((READER_ROOT / "scripts").glob("*.py")), *(REPO_ROOT / "scripts" / name for name in "state_root.py tickets_adapters.py tickets_bound.py tickets_ceiling.py tickets_format.py tickets_lifecycle.py tickets_markdown.py tickets_registry.py tickets_sequence.py tickets_shapes.py".split()))
+    reader_manifest_files = sorted((READER_ROOT / "docs").glob("*.json"))
+    for path in (*reader_runtime_files, *reader_manifest_files):
         if path.is_file():
             lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
     frontend_source = READER_ROOT / "web" / "dist"

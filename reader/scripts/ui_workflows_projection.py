@@ -29,24 +29,32 @@ PUBLIC_ROUTE_SPECS = (
 )
 CATALOG_SCHEMA = "orchflows.workflow-catalog.v1"
 PACKAGE_ROOT = catalog.ROOT
-ROOT = PACKAGE_ROOT if (PACKAGE_ROOT / "compositions").is_dir() else PACKAGE_ROOT / "lib"
-DEFAULT_SUMMARY = next(
-    (path for path in (ROOT / "docs/ui/workflow-summary-manifest.json", catalog.DEFAULT_SUMMARY) if path.is_file()),
-    ROOT / "docs/ui/workflow-summary-manifest.json",
+LIBRARY_ROOT = (
+    PACKAGE_ROOT if (PACKAGE_ROOT / "compositions").is_dir() else PACKAGE_ROOT / "lib"
 )
+# Kept as a compatibility alias for the facade's route context; the branch
+# above names the checkout/install distinction explicitly.
+ROOT = LIBRARY_ROOT
+SUMMARY_RELATIVE_PATH = Path("reader") / "docs" / "workflow-summary-manifest.json"
 
 
 class WorkflowProjectionError(ValueError):
     """Canonical owners disagree about a closed public projection."""
 
 
-def project_workflow_catalog(root=ROOT, summary_path=None) -> dict:
+def project_workflow_catalog(root=LIBRARY_ROOT, summary_path=None) -> dict:
     """Return the exact canonical catalog and UI-owned compact summaries."""
 
     root = Path(root)
-    local_summary = root / "docs/ui/workflow-summary-manifest.json"
-    summary_path = local_summary if summary_path is None and local_summary.is_file() else summary_path
-    projected = catalog.project_catalog(root, DEFAULT_SUMMARY if summary_path is None else summary_path)
+    summary_path = (
+        root / SUMMARY_RELATIVE_PATH if summary_path is None else Path(summary_path)
+    )
+    resolved_summary_path = summary_path.resolve()
+    if not resolved_summary_path.is_file():
+        raise WorkflowProjectionError(
+            f"workflow summary manifest is missing: {resolved_summary_path}"
+        )
+    projected = catalog.project_catalog(root, resolved_summary_path)
     return {"schema": CATALOG_SCHEMA, "workflows": projected}
 
 

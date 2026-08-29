@@ -168,13 +168,13 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # are exact source lines so another occurrence is still graded.
 DOC_PATH_EXEMPT_SITES = frozenset({
     ("contracts/pack-signature.md", 77, "tests/pins.json"),
-    ("docs/ui/modularization.md", 7, "reader/web/src/api/client.ts"),
-    ("docs/ui/modularization.md", 7, "reader/web/src/api/schema.ts"),
-    ("docs/ui/modularization.md", 7, "reader/web/src/app/registry.ts"),
-    ("docs/ui/modularization.md", 7, "reader/web/src/feed.ts"),
-    ("docs/ui/modularization.md", 7, "reader/web/src/state/location.ts"),
-    ("docs/ui/modularization.md", 17, "app/catalog.ts"),
-    ("docs/ui/modularization.md", 55, "reader/web/src/state/location.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/api/client.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/api/schema.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/app/registry.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/feed.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/state/location.ts"),
+    ("reader/docs/modularization.md", 17, "app/catalog.ts"),
+    ("reader/docs/modularization.md", 55, "reader/web/src/state/location.ts"),
 })
 
 

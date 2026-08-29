@@ -34,7 +34,7 @@ The catalog is one semantic list whose sole UI-authored metadata is `workflow-su
 
 Each `<li>` begins with `T3 composition` or `T1 workflow skill`, then the linked canonical name and its when-use copy. Link text names its destination; generic “open” or “details” text is forbidden. The copy remains in the same list item, giving context consistent with [WCAG 2.2 link purpose](https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html). The adjacent flow uses labeled nodes and directed connectors to communicate semantic sequence, branching, and repetition. It has no controls and makes no claim to be exact topology. Its nonvisual equivalent is an ordered list: node items in manifest order say `Step: {label}`, followed by edge items in manifest order saying `{source label} continues to | branches to | loops to {target label}`. Connectors are hidden from assistive technology and the visible flow references that list.
 
-`docs/ui/workflow-summary-manifest.json` is the only UI-authored owner of compact flows, within the platform's [read-only projection boundary](platform.md#projection-and-privacy-boundary). Its root is `{schema, workflows}`. `workflows` is keyed by stable catalog ID; each value contains only `nodes: [{id, label}]` and `edges: [{source, target, kind}]`, where `kind` is `sequence`, `branch`, or `loop`. Identity, type, entry, description, membership, and detail topology remain canonical projections.
+`workflow-summary-manifest.json` is the only UI-authored owner of compact flows, within the platform's [read-only projection boundary](platform.md#projection-and-privacy-boundary). Its root is `{schema, workflows}`. `workflows` is keyed by stable catalog ID; each value contains only `nodes: [{id, label}]` and `edges: [{source, target, kind}]`, where `kind` is `sequence`, `branch`, or `loop`. Identity, type, entry, description, membership, and detail topology remain canonical projections.
 
 Validation requires manifest keys to equal the catalog IDs. It rejects duplicate or malformed node IDs; blank, untrimmed, multiline, or longer-than-40-character labels; unknown edge endpoints or kinds; a directed cycle without a `loop` edge; or a `loop` edge that is not part of a cycle.
 
@@ -82,7 +82,7 @@ Admission requires zero run instances in `/workflows`, valid workflow and graph 
 uv run --no-project python reader/tools/ui_frontend.py verify-build
 uv run --no-project python reader/tools/ui_frontend.py audit-licenses
 uv run --no-project python reader/tools/ui_frontend.py smoke --experience
-uv run --no-project python reader/tools/ui_frontend.py audit --port 8765 --manifest docs/ui/view-manifest.json
+uv run --no-project python reader/tools/ui_frontend.py audit --port 8765 --manifest reader/docs/view-manifest.json
 ```
 
 Also run every repository [required check](../../AGENTS.md#required-checks).

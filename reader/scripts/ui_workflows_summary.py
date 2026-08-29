@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MANIFEST = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
+DEFAULT_MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 SUMMARY_SCHEMA = "orchflows.workflow-summary.v1"
 CANONICAL_WORKFLOW_IDS = frozenset({
     "benchmaker",

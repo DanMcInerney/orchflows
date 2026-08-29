@@ -12,7 +12,6 @@ from reader.scripts.ui_workflows_summary import SummaryManifestError, validate_m
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_SUMMARY = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
 COMPOSITION_ENTRIES = frozenset({"routed", "named"})
 
 
@@ -92,10 +91,12 @@ def _load_summary(root: Path, path: Path, workflow_ids: set[str]) -> dict:
 
 def project_catalog(
     root: Path = ROOT,
-    summary_path: Path = DEFAULT_SUMMARY,
+    summary_path: Path | None = None,
 ) -> list[dict]:
     """Return the exact catalog, joining UI summaries by canonical owner ID."""
 
+    if summary_path is None:
+        raise TypeError("summary_path is required")
     owners = _canonical_owners(Path(root))
     manifest = _load_summary(
         Path(root),

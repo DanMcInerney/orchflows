@@ -10,7 +10,7 @@ import {
   executionRunRoute,
   executionTicketRoute,
 } from "../shared/routes/executionRoutes";
-import viewManifestSource from "../../../../docs/ui/view-manifest.json?raw";
+import viewManifestSource from "../../../docs/view-manifest.json?raw";
 
 const viewManifest = JSON.parse(viewManifestSource) as {
   navigationParents?: Record<string, string>;

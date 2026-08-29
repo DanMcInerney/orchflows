@@ -7,7 +7,7 @@ the evidence.
 
 ## View identities
 
-The rendered contract owns four identities from `docs/ui/view-manifest.json`:
+The rendered contract owns four identities from `view-manifest.json`:
 
 - `friction--populated--wide`
 - `friction--populated--compact`

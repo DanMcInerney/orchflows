@@ -24,6 +24,9 @@ class ReaderExtractionTest(unittest.TestCase):
     self.assertTrue((READER / "web").is_dir())
     self.assertTrue((READER / "scripts" / "ui_api.py").is_file())
     self.assertTrue((READER / "tools" / "ui_frontend.py").is_file())
+    for name in ("view-manifest.json", "workflow-summary-manifest.json"):
+        self.assertTrue((READER / "docs" / name).is_file(), name)
+    self.assertFalse((ROOT / "docs" / "ui").exists())
 
     for path in (
         "package.json",

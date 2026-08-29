@@ -130,7 +130,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertNotIn("toolu_alpha_01", encoded)
         self.assertNotIn("file-history", encoded)
 
-        manifest = json.loads((ROOT / "docs" / "ui" / "view-manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / "reader" / "docs" / "view-manifest.json").read_text(encoding="utf-8"))
         states = {
             "now": ["mixed-live", "needs-attention", "no-active-runs", "unreadable-data", "live-paused", "empty"],
             "run-map": ["summary-active", "full-collapsed", "full-expanded", "blocked-causal", "completed", "malformed-topology"],

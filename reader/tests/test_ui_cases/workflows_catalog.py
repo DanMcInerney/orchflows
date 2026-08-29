@@ -13,7 +13,7 @@ from reader.scripts import ui_workflows_compositions as compositions
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SUMMARY = ROOT / "docs" / "ui" / "workflow-summary-manifest.json"
+SUMMARY = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 
 
 class WorkflowCatalogTests(unittest.TestCase):

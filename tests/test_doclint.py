@@ -338,7 +338,7 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
         "ARCHITECTURE.md",
         "DESIGN.md",
         "docs/documentation.md",
-        "docs/ui/platform.md",
+        "reader/docs/platform.md",
         "docs/custom-workflow-authoring.md",
     )
 

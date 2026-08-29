@@ -102,7 +102,7 @@ to the sibling modules under `reader/scripts/`; the typed catalog owns browser
 counterparts under `/workflows`. `reader/scripts/ui_assets.py` owns contained
 immutable-asset reads and `reader/scripts/ui_readiness.py` owns canonical
 readiness facts and causal explanations.
-[The platform contract](docs/ui/platform.md) owns the complete boundary.
+[The platform contract](reader/docs/platform.md) owns the complete boundary.
 
 ## State boundary
 

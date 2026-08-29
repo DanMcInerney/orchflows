@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+import re
 from pathlib import Path
 
 from reader.scripts import ui_workflows_projection as workflows
@@ -58,6 +59,11 @@ class WorkflowProjectionTests(unittest.TestCase):
             (404, {"error": {"code": "not_found", "message": "resource not found"}}),
             workflows.project_workflow_source(ROOT, "no-such-workflow", "src_bad"),
         )
+        missing = ROOT / "reader" / "docs" / "missing-summary.json"
+        with self.assertRaisesRegex(
+            workflows.WorkflowProjectionError, re.escape(str(missing.resolve()))
+        ):
+            workflows.project_workflow_catalog(ROOT, missing)
 
     def test_evolve_source_contract_delivers_the_selected_canonical_text(self):
         detail = workflows.project_workflow(ROOT, "evolve")
