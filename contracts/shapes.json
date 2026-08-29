@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "shapes": [
+    {
+      "name": "dispatch_state",
+      "contract": "dispatch.md",
+      "fields": ["protocol", "attempts"],
+      "required": ["protocol", "attempts"],
+      "values": {"protocol": ["orchflows.dispatch.v1"]}
+    },
+    {
+      "name": "dispatch_attempt",
+      "contract": "dispatch.md",
+      "fields": [
+        "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
+        "outcome_record_id", "owner", "records", "state", "retired_at",
+        "retirement", "replaced_at", "replaced_by", "replacement", "replaces"
+      ],
+      "required": [
+        "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
+        "outcome_record_id", "owner", "records", "state"
+      ],
+      "values": {"state": ["live", "retired", "replaced"]}
+    },
+    {
+      "name": "dispatch_record",
+      "contract": "dispatch.md",
+      "fields": ["committed_at", "content", "kind", "record_id", "success"],
+      "required": ["committed_at", "content", "kind", "record_id", "success"],
+      "values": {"kind": ["generic", "packet", "receipt", "result", "outcome", "join", "lifecycle"]}
+    },
+    {
+      "name": "dispatch_packet",
+      "contract": "dispatch.md",
+      "fields": [
+        "protocol", "source", "dispatch_id", "assignment_seal",
+        "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
+        "assigned_name", "reply_to", "workspace", "pack", "independence",
+        "isolation", "admission", "prompt", "review_kind", "form", "durability",
+        "reference", "inline"
+      ],
+      "required": [
+        "protocol", "source", "dispatch_id", "assignment_seal",
+        "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
+        "assigned_name", "reply_to", "workspace", "pack", "independence",
+        "isolation", "admission", "prompt", "review_kind", "form", "durability"
+      ],
+      "values": {
+        "form": ["reference", "inline"],
+        "durability": ["ticket", "ephemeral"],
+        "review_kind": ["critique", "repair", "verify", "null"]
+      }
+    },
+    {
+      "name": "dispatch_receipt",
+      "contract": "dispatch.md",
+      "fields": [
+        "protocol", "outcome", "dispatch_id", "assignment_seal",
+        "form", "durability", "state_sink_checked"
+      ],
+      "required": [
+        "protocol", "outcome", "dispatch_id", "assignment_seal",
+        "form", "durability", "state_sink_checked"
+      ],
+      "values": {
+        "protocol": ["orchflows.dispatch.v1"],
+        "outcome": ["accepted"],
+        "durability": ["ticket"]
+      }
+    },
+    {
+      "name": "dispatch_outcome",
+      "contract": "dispatch.md",
+      "fields": [
+        "protocol", "run", "id", "assignment_seal", "dispatch_id",
+        "outcome_record_id", "by", "status", "evidence"
+      ],
+      "required": [
+        "protocol", "run", "id", "assignment_seal", "dispatch_id",
+        "outcome_record_id", "by", "status", "evidence"
+      ],
+      "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
+    },
+    {
+      "name": "dispatch_outcome_evidence",
+      "contract": "dispatch.md",
+      "fields": ["Result", "Verification", "Feedback", "Risks", "Handoff"],
+      "required": ["Result", "Verification", "Feedback", "Risks", "Handoff"]
+    },
+    {
+      "name": "review_state",
+      "contract": "work-item.md",
+      "fields": ["protocol", "records"],
+      "required": ["protocol", "records"],
+      "values": {"protocol": ["orchflows.review.v1"]}
+    },
+    {
+      "name": "review_record_common",
+      "contract": "work-item.md",
+      "fields": ["identity", "kind", "predecessor", "protocol"],
+      "required": ["identity", "kind", "predecessor", "protocol"],
+      "values": {"kind": ["GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification"]}
+    },
+    {
+      "name": "review_gate_plan",
+      "contract": "work-item.md",
+      "fields": ["artifact", "criteria", "isolation", "mode", "pack", "root", "workspace"],
+      "required": ["artifact", "criteria", "isolation", "mode", "pack", "root", "workspace"],
+      "values": {"mode": ["gate", "checker"]}
+    },
+    {
+      "name": "review_criterion",
+      "contract": "work-item.md",
+      "fields": ["identity", "lens", "order", "ticket"],
+      "required": ["identity", "lens", "order", "ticket"]
+    },
+    {
+      "name": "review_finding",
+      "contract": "work-item.md",
+      "fields": ["blocking", "class", "evidence", "goal_impact", "id", "repair", "summary"],
+      "required": ["blocking", "class", "evidence", "goal_impact", "id", "repair", "summary"]
+    },
+    {
+      "name": "review_critique",
+      "contract": "work-item.md",
+      "fields": ["accepted", "adjudicated_by", "artifact", "findings", "lens"],
+      "required": ["accepted", "adjudicated_by", "artifact", "findings", "lens"]
+    },
+    {
+      "name": "review_repair",
+      "contract": "work-item.md",
+      "fields": ["accepted", "artifact", "by", "input_artifact", "no_op", "result"],
+      "required": ["accepted", "artifact", "by", "input_artifact", "no_op", "result"]
+    },
+    {
+      "name": "review_verification",
+      "contract": "work-item.md",
+      "fields": ["artifact", "by", "evidence", "verdict", "covers"],
+      "required": ["artifact", "by", "evidence", "verdict"],
+      "values": {"verdict": ["PASS", "FAIL", "UNVERIFIED"]}
+    },
+    {
+      "name": "ticket_assignment_sections",
+      "contract": "work-item.md",
+      "fields": ["Goal", "Context", "Suggested files"],
+      "required": ["Goal", "Context"]
+    },
+    {
+      "name": "ticket_frontmatter",
+      "contract": "work-item.md",
+      "fields": [
+        "id", "run", "status", "admission", "executor", "sequence", "pack",
+        "profile", "independence", "depends_on", "isolation", "bound", "claimed_by",
+        "claimed_at", "checked_by", "root_generation", "cut_generation", "assignment_seal",
+        "workspace_branch", "workspace_baseline", "workspace_path", "dispatch_v1",
+        "review_order", "review_v1", "review_stage", "review_kind"
+      ],
+      "required": ["id", "run", "status", "executor", "depends_on", "bound"],
+      "values": {
+        "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
+        "review_kind": ["critique", "repair", "verify", "null"]
+      }
+    },
+    {
+      "name": "executor_result",
+      "contract": "result.md",
+      "fields": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
+      "required": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
+      "values": {"operation": ["result"], "mode": ["write", "append", "replace"]}
+    },
+    {
+      "name": "verdict_criterion",
+      "contract": "verdict.md",
+      "fields": ["verdict", "oracle", "oracle_class", "evidence", "covers"],
+      "required": ["verdict", "oracle", "oracle_class", "evidence", "covers"],
+      "values": {
+        "verdict": ["PASS", "FAIL", "UNVERIFIED"],
+        "oracle_class": ["deterministic", "judged", "evidence"]
+      }
+    },
+    {
+      "name": "worklog_view",
+      "contract": "worklog.md",
+      "fields": ["goal", "iterations", "failed_approaches", "queued_scope", "terminal"],
+      "required": ["goal", "iterations", "failed_approaches", "queued_scope", "terminal"]
+    },
+    {
+      "name": "pack_cells",
+      "contract": "pack-signature.md",
+      "fields": [
+        "slicing", "workspace", "required_spec_fields", "craft", "adapter",
+        "stages", "assembly", "lens", "evidence"
+      ],
+      "required": [
+        "slicing", "workspace", "required_spec_fields", "craft", "adapter",
+        "stages", "assembly", "lens", "evidence"
+      ],
+      "values": {"assembly": ["none", "stage name"]}
+    }
+  ]
+}
