@@ -426,6 +426,48 @@ class TestInstallDoctor(unittest.TestCase):
         self.assertEqual(1, exit_code)
         self.assertEqual("drift", json.loads(output.getvalue())["status"])
 
+    def test_owned_runtime_mismatch_is_a_read_only_failure(self):
+        """A runtime mismatch is diagnosed; doctor never repairs or reruns install."""
+
+        runtime_home = self.fixture.root / "runtime"
+        runtime_python = runtime_home / "Scripts" / "python.exe"
+        self.fixture.plan.runtime_action = "reuse"
+        receipt = json.loads(self.fixture.plan.receipt_path.read_text(encoding="utf-8"))
+        receipt["runtime"] = {
+            "home": str(runtime_home),
+            "python": str(runtime_python),
+            "uninstall": "retained",
+        }
+        self.fixture.plan.receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        with patch("installer.doctor.private_runtime_is_healthy", return_value=False), patch(
+            "installer.doctor.private_runtime_is_owned", return_value=True
+        ), patch("installer.doctor.private_runtime_home", return_value=runtime_home), patch(
+            "installer.doctor.private_runtime_python", return_value=runtime_python
+        ):
+            report = inspect_installation(self.fixture.plan, current_source_commit="abc123")
+
+        self.assertEqual("drift", report["status"])
+        self.assertIn("runtime.unhealthy", {item["id"] for item in report["findings"]})
+
+    def test_runtime_receipt_paths_must_match_the_runtime_under_inspection(self):
+        runtime_home = self.fixture.root / "runtime"
+        runtime_python = runtime_home / "Scripts" / "python.exe"
+        self.fixture.plan.runtime_action = "reuse"
+        receipt = json.loads(self.fixture.plan.receipt_path.read_text(encoding="utf-8"))
+        receipt["runtime"] = {
+            "home": str(self.fixture.root / "other-runtime"),
+            "python": str(runtime_python),
+            "uninstall": "retained",
+        }
+        self.fixture.plan.receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        with patch("installer.doctor.private_runtime_is_healthy", return_value=True), patch(
+            "installer.doctor.private_runtime_home", return_value=runtime_home), patch(
+            "installer.doctor.private_runtime_python", return_value=runtime_python
+        ):
+            report = inspect_installation(self.fixture.plan, current_source_commit="abc123")
+
+        self.assertIn("receipt.runtime-home", {item["id"] for item in report["findings"]})
+
 
 if __name__ == "__main__":
     unittest.main()

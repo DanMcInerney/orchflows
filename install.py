@@ -194,6 +194,7 @@ from installer.models import (
     _is_build_artifact,
 )
 from installer.packages import (
+    accepted_source_commit,
     FORK_ARRIVAL_CLAUSE,
     ROLE_INSTRUCTIONS,
     TEMPLATE_MANIFEST,
@@ -321,11 +322,13 @@ def print_plan(plan: Plan) -> None:
     _presentation.print_plan(plan, resolve_source_commit())
 
 
-def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
+def apply_plan(plan: Plan, keep_role_agents: bool | None = None, *, accepted_source: str | None = None, source_commit: str | None = None) -> dict:
     if plan.scope != "user":
         raise ValueError("installation supports user scope only")
     _sync_installer_seams()
-    return _apply_plan(plan, resolve_source_commit(), keep_role_agents)
+    observed = resolve_source_commit() if source_commit is None else source_commit
+    accepted_source_commit(observed, accepted_source)
+    return _apply_plan(plan, observed, keep_role_agents)
 
 
 # --- CLI -----------------------------------------------------------------
@@ -354,6 +357,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip the prompts: user scope, and keep any role agent this machine has changed.",
     )
+    parser.add_argument("--accepted-source", metavar="COMMIT", help="Require this exact composite-gate source commit.")
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
     parser.add_argument(
         "--doctor",
@@ -429,6 +433,15 @@ def main(argv=None) -> int:
             print(result["note"])
         return 0
 
+    source_commit = None
+    if doctor_requested or not args.dry_run or args.accepted_source is not None:
+        source_commit = resolve_source_commit()
+        try:
+            accepted_source_commit(source_commit, args.accepted_source)
+        except ValueError as error:
+            print(f"error: refusing source identity: {error}", file=sys.stderr)
+            return 1
+
     try:
         plan = build_plan(scope, project_root, args.claude_adapters)
     except Exception as error:
@@ -436,9 +449,7 @@ def main(argv=None) -> int:
         return 1
 
     if doctor_requested:
-        report = inspect_installation(
-            plan, current_source_commit=resolve_source_commit()
-        )
+        report = inspect_installation(plan, current_source_commit=source_commit)
         print(json.dumps(report, sort_keys=True, separators=(",", ":")))
         return 0 if report["status"] == "coherent" else 1
 
@@ -475,7 +486,8 @@ def main(argv=None) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 1
     try:
-        receipt = apply_plan(plan, keep_role_agents=True if args.yes else None)
+        receipt = apply_plan(plan, keep_role_agents=True if args.yes else None,
+                             accepted_source=args.accepted_source, source_commit=source_commit)
     except Exception as error:
         print(f"error: install failed: {error}", file=sys.stderr)
         return 1

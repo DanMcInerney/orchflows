@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1610,
+  "count": 1612,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -180,6 +180,8 @@
    "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
    "test_install_doctor.TestInstallDoctor.test_each_grok_artifact_reports_presence_and_staleness_by_receipt",
+   "test_install_doctor.TestInstallDoctor.test_owned_runtime_mismatch_is_a_read_only_failure",
+   "test_install_doctor.TestInstallDoctor.test_runtime_receipt_paths_must_match_the_runtime_under_inspection",
    "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_kind_the_receipt_carries_is_a_kind_the_doctor_knows",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_receipt_entry_the_installer_writes_is_one_the_doctor_inspects",
@@ -408,8 +410,10 @@
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
    "test_installer.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped",
    "test_installer.TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
+   "test_installer.TestSourceCommit.test_accepted_source_commit_is_one_fail_closed_gate_identity",
    "test_installer.TestSourceCommit.test_an_empty_gitdir_pointer_does_not_read_the_working_tree",
    "test_installer.TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
+   "test_installer.TestSourceCommit.test_main_refuses_a_nonmatching_accepted_source_before_application",
    "test_installer.TestSourceCommit.test_main_warns_when_the_installed_receipt_names_no_source_commit",
    "test_installer.TestSourceCommit.test_receipt_carries_resolved_source_commit",
    "test_installer.TestSourceCommit.test_resolve_source_commit_falls_back_to_packed_refs",
@@ -1613,7 +1617,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "af6617d6527068a864908bd4f8e629f3c4a681666d17b54d53fe1997d46cda9b"
+  "sha256": "bebd70af626865022e2e247102a8985f12262349171846be9b87c67f47ddf8ab"
  },
  "mutation_owners": [
   {
@@ -2600,6 +2604,14 @@
   {
    "module": "tests.test_installer_cases.receipt.source_commit",
    "owner": "TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_main_refuses_a_nonmatching_accepted_source_before_application",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

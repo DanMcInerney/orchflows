@@ -150,6 +150,34 @@ class TestSourceCommit(unittest.TestCase):
     def test_source_commit_warning_is_silent_when_a_commit_was_resolved(self):
         self.assertIsNone(install.source_commit_warning("cafe"))
 
+    def test_accepted_source_commit_is_one_fail_closed_gate_identity(self):
+        accepted = "A" * 40
+        self.assertEqual(accepted.lower(), install.accepted_source_commit(accepted.lower(), accepted))
+        with self.assertRaisesRegex(ValueError, "non-empty"):
+            install.accepted_source_commit("abc123", " ")
+        with self.assertRaisesRegex(ValueError, "unresolved"):
+            install.accepted_source_commit(None, accepted)
+        with self.assertRaisesRegex(ValueError, "not the accepted"):
+            install.accepted_source_commit("b" * 40, accepted)
+
+    def test_main_refuses_a_nonmatching_accepted_source_before_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            accepted = "a" * 40
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(install, "resolve_source_commit", return_value="b" * 40), patch.object(
+                install, "apply_plan", side_effect=AssertionError("application reached")
+            ) as application:
+                err = io.StringIO()
+                with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                    code = install.main(["--user", "--yes", "--accepted-source", accepted])
+
+            self.assertEqual(1, code)
+            self.assertIn("accepted composite-gate commit", err.getvalue())
+            application.assert_not_called()
+
     def test_main_warns_when_the_installed_receipt_names_no_source_commit(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
