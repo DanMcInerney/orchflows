@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2020,
+  "count": 2025,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -484,6 +484,11 @@
    "test_migrate_state_cases.plan.TestUsage.test_no_source_is_a_usage_error",
    "test_minimal_acceptance.MinimalAcceptanceTests.test_acceptance_contract_discriminates_extra_or_self_acceptance",
    "test_minimal_acceptance.MinimalAcceptanceTests.test_single_and_decomposed_runs_take_only_their_minimum_path",
+   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_carries_three_closed_adapters_and_distinct_workspaces",
+   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_dependency_edges_carry_identities_not_candidate_bytes",
+   "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
+   "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
+   "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
    "test_project_binding.TestAttribution.test_a_root_ticket_naming_no_workspace_leaves_the_writer_owning_it",
    "test_project_binding.TestAttribution.test_run_creation_stamps_the_issuing_project",
@@ -2023,7 +2028,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a06742f1b55bb2d6415491d131db04e439169e84a7762695fbce33a7f27a3156"
+  "sha256": "983f805b3162621ef0dbc0eee8e4182df74d4fd84b8f198ac9ffed1e9535f8a9"
  },
  "mutation_owners": [
   {

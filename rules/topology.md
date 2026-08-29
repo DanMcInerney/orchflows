@@ -23,7 +23,9 @@ connects this law to the admission-owned state transition.
    runs keep their ordinary path. Additional review is a named lens feeding
    that same gate.
 6. A pack belongs to a ticket, not a run. Incompatible workspace semantics use
-   successor roots rather than pretending to share a candidate.
+   successor roots rather than pretending to share a candidate. Adapters meet
+   only at the join: identities may cross dependency edges, but candidate bytes
+   may not.
 7. Multi-run work links successor roots by durable accepted results. A semantic
    successor opens only after the accepted predecessor result identity resolves
    and cites it in the successor root's Context. The predecessor state is not
