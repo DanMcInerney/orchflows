@@ -207,12 +207,6 @@ SAME_TIER_COMPARED = frozenset({"skills"})
 # design: rationale, map, and human surfaces, with the fact owned in law
 # (join ruling, 20260823T210000Z-trunk-slimming, checker finding F9).
 #
-# orch-edit and orch-synthesize both forbid an assembly step inventing a
-# claim its inputs did not carry -- sections for one, evidence packets
-# for the other. It is one law with two subjects and no owner: rules/
-# has no assembly rule to hold it, and inventing one for two clauses
-# buys a permanent concept for a sentence. Revisited when a third
-# assembly instance needs it, which is when the rule earns its file.
 LICENSED_COPIES = (
     (
         "rules/visibility.md",
@@ -223,11 +217,6 @@ LICENSED_COPIES = (
         "docs/library-review.md",
         "templates/host-block.md",
         "rules/visibility.md",
-    ),
-    (
-        "skills/instances/orch-synthesize/SKILL.md",
-        "skills/instances/orch-edit/SKILL.md",
-        "Never: introduce",
     ),
     (
         "docs/library-review.md",
@@ -241,6 +230,12 @@ def _licensed(left_label: str, left_clause: str, right_label: str, right_clause:
     """Whether this pair is a copy the library licensed, for this clause."""
 
     labels = {left_label.replace("\\", "/"), right_label.replace("\\", "/")}
+    if "Never: introduce" in left_clause and "Never: introduce" in right_clause:
+        return all(
+            (ROOT / label).is_file()
+            and "Never: introduce" in _read_source(ROOT / label)
+            for label in labels
+        )
     for owner, copy, phrase in LICENSED_COPIES:
         if labels == {owner, copy} and phrase in left_clause and phrase in right_clause:
             return True

@@ -63,6 +63,48 @@ class TestRecursiveNameResolution(_IsolatedTree):
                 )
 
 
+class TestDomainBlindnessAdmission(_IsolatedTree):
+    """Machinery must not branch on pack or pack-owned skill names."""
+
+    def _write_pack(self, name, executor):
+        pack = self.tmp_path / "packs" / name
+        pack.mkdir(parents=True)
+        (pack / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: synthetic pack\n---\n"
+            f"| executor | `{executor}` |\n",
+            encoding="utf-8",
+        )
+
+    def _write_machinery(self, directory, body):
+        path = self.tmp_path / directory / "machinery.py"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+
+    def test_a_canonical_pack_name_in_scripts_is_refused(self):
+        self._write_pack("orch-example-pack", "orch-example-executor")
+        self._write_machinery("scripts", "PACK = 'orch-example-pack'\n")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn(
+            "ERROR scripts/machinery.py: domain-specific name `orch-example-pack`",
+            result.stdout.replace("\\", "/"),
+        )
+
+    def test_a_pack_owned_skill_name_in_tools_is_refused(self):
+        self._write_pack("orch-example-pack", "orch-example-executor")
+        self._write_machinery("tools", "EXECUTOR = 'orch-example-executor'\n")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn(
+            "ERROR tools/machinery.py: domain-specific name `orch-example-executor`",
+            result.stdout.replace("\\", "/"),
+        )
+
+
 class TestMarkdownAnchors(_IsolatedTree):
     def test_a_link_to_a_missing_heading_is_an_error(self):
         for root in validate.LINKED_MD_ROOTS:
