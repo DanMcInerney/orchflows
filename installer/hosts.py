@@ -66,6 +66,31 @@ def marker(host: str, block: str, adapters: dict[str, dict] | None = None) -> di
         raise ValueError(f"{host}: no managed-marker binding for {block}") from error
 
 
+def preflight_instruction_target(
+    host: str,
+    path: Path,
+    block_content: str,
+    import_target: Path | None = None,
+    adapters: dict[str, dict] | None = None,
+) -> None:
+    """Refuse marker collisions while planning, before installation writes."""
+
+    from .managed_text import upsert_import_line, upsert_marked_block
+
+    spec = marker(host, "host_instructions", adapters)
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    if spec["mode"] == "import-legacy":
+        if import_target is None:
+            raise ValueError(f"{host}: host instruction import needs a target")
+        upsert_import_line(
+            text, f"@{import_target}", spec["start"], spec["end"]
+        )
+    elif spec["mode"] == "inline":
+        upsert_marked_block(text, block_content, spec["start"], spec["end"])
+    elif spec["mode"] != "owned-file":
+        raise ValueError(f"{host}: unknown host instruction mode {spec['mode']}")
+
+
 def load_role_profiles(adapter_dir: Path = HOST_ADAPTERS_DIR) -> dict[str, dict]:
     hosts = load_host_adapters(adapter_dir)
     for host, record in hosts.items():

@@ -12,6 +12,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOSTS_DIR = REPO_ROOT / "hosts"
 ADAPTERS_DIR = REPO_ROOT / "installer" / "host_adapters"
+HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 HOST_IDS = ("claude", "codex", "grok")
 REQUIRED_FIELDS = frozenset(
     {
@@ -123,7 +124,35 @@ def _adapter_bytes(source_path: Path, host: dict) -> bytes:
     return (json.dumps(adapter, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
-def render_all(source_dir: Path = HOSTS_DIR, output_dir: Path = ADAPTERS_DIR) -> tuple[str, ...]:
+def _host_instruction_endpoints(hosts: dict[str, dict]) -> tuple[str, str]:
+    endpoints = {
+        (
+            host["managed_markers"]["host_instructions"]["start"],
+            host["managed_markers"]["host_instructions"]["end"],
+        )
+        for host in hosts.values()
+    }
+    if len(endpoints) != 1:
+        raise ValueError("host instruction marker endpoints disagree across hosts")
+    return endpoints.pop()
+
+
+def _template_bytes(path: Path, hosts: dict[str, dict]) -> bytes:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    nonempty = [index for index, line in enumerate(lines) if line.strip()]
+    if len(nonempty) < 2:
+        raise ValueError(f"{path}: host block template has no marker endpoints")
+    start, end = _host_instruction_endpoints(hosts)
+    lines[nonempty[0]] = start
+    lines[nonempty[-1]] = end
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
+def render_all(
+    source_dir: Path = HOSTS_DIR,
+    output_dir: Path = ADAPTERS_DIR,
+    host_template: Path | None = None,
+) -> tuple[str, ...]:
     hosts = load_sources(source_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     expected = set()
@@ -134,10 +163,16 @@ def render_all(source_dir: Path = HOSTS_DIR, output_dir: Path = ADAPTERS_DIR) ->
     for stale in output_dir.glob("*.json"):
         if stale.name not in expected:
             stale.unlink()
+    if host_template is not None:
+        host_template.write_bytes(_template_bytes(host_template, hosts))
     return tuple(sorted(hosts))
 
 
-def check_all(source_dir: Path = HOSTS_DIR, output_dir: Path = ADAPTERS_DIR) -> tuple[str, ...]:
+def check_all(
+    source_dir: Path = HOSTS_DIR,
+    output_dir: Path = ADAPTERS_DIR,
+    host_template: Path | None = None,
+) -> tuple[str, ...]:
     hosts = load_sources(source_dir)
     for name in sorted(hosts):
         output = output_dir / f"{name}.json"
@@ -147,6 +182,12 @@ def check_all(source_dir: Path = HOSTS_DIR, output_dir: Path = ADAPTERS_DIR) -> 
     extras = sorted(path.name for path in output_dir.glob("*.json") if path.stem not in hosts)
     if extras:
         raise ValueError(f"{output_dir}: unexpected rendered host adapter(s): {', '.join(extras)}")
+    if host_template is not None and host_template.read_bytes() != _template_bytes(
+        host_template, hosts
+    ):
+        raise ValueError(
+            f"{host_template}: managed markers are stale; run tools/render_hosts.py --write"
+        )
     return tuple(sorted(hosts))
 
 
@@ -155,7 +196,11 @@ def main(argv=None) -> int:
     parser.add_argument("--write", action="store_true", help="write the rendered adapters")
     args = parser.parse_args(argv)
     try:
-        names = render_all() if args.write else check_all()
+        names = (
+            render_all(host_template=HOST_BLOCK_TEMPLATE)
+            if args.write
+            else check_all(host_template=HOST_BLOCK_TEMPLATE)
+        )
     except ValueError as error:
         parser.exit(1, f"error: {error}\n")
     print(f"host adapters {'rendered' if args.write else 'current'}: {', '.join(names)}")

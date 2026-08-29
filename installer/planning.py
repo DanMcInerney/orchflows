@@ -65,7 +65,7 @@ from .packages import (
     template_adapter_body,
 )
 from .runtime import private_runtime_action
-from .hosts import host_item_path, load_host_adapters
+from .hosts import host_item_path, load_host_adapters, preflight_instruction_target
 
 def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
     """Return Claude, Codex and Grok enablement from runnable CLI presence on
@@ -313,23 +313,16 @@ def _build_user_plan(
             codex_agent_type = profile["codex"]["agent_type"]
             codex_agents.append(
                 (
-                    item_path(
-                        "codex", "role_agent", codex_user_home,
-                        agent_type=codex_agent_type,
-                    ),
+                    item_path("codex", "role_agent", codex_user_home, agent_type=codex_agent_type),
                     render_codex_agent(name, profile),
                 )
             )
         if grok_enabled:
-            # Named by the spawn identifier, as Codex's is: `spawn_subagent`
-            # takes `subagent_type`, so the file a reader finds is the name a
-            # dispatch has to pass.
+            # The rendered item template names files by native subagent_type.
             grok_agents.append(
                 (
-                    item_path(
-                        "grok", "role_agent", _grok_agents_dir().parent,
-                        subagent_type=profile["grok"]["subagent_type"],
-                    ),
+                    item_path("grok", "role_agent", _grok_agents_dir().parent,
+                              subagent_type=profile["grok"]["subagent_type"]),
                     render_grok_agent(name, profile),
                 )
             )
@@ -395,18 +388,24 @@ def _build_user_plan(
     grok_rules_plan = None
     if claude_enabled:
         host_block_path = scope_home / "host-block.md"
+        claude_md_path = _claude_md_path("user", None)
+        preflight_instruction_target("claude", claude_md_path, host_block,
+                                     host_block_path.resolve(), host_adapters)
         host_block_plan = ConfigPlan(host_block_path, host_block, "host-block", "Host instruction block")
         claude_import_plan = ImportPlan(
-            _claude_md_path("user", None),
+            claude_md_path,
             host_block_path.resolve(),
             start_marker,
             end_marker,
             "Claude Code instruction import",
         )
     if codex_enabled:
+        codex_agents_path = _codex_agents_path("user", None)
+        preflight_instruction_target("codex", codex_agents_path, host_block,
+                                     adapters=host_adapters)
         blocks.append(
             BlockPlan(
-                _codex_agents_path("user", None),
+                codex_agents_path,
                 host_block,
                 start_marker,
                 end_marker,

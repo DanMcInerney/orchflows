@@ -30,6 +30,11 @@ class HostAdapterRenderingTest(unittest.TestCase):
                     for path in sorted(install.HOST_ADAPTERS_DIR.glob("*.json"))
                 },
             )
+            render_hosts.check_all(
+                install.HOSTS_DIR,
+                install.HOST_ADAPTERS_DIR,
+                install.HOST_BLOCK_TEMPLATE,
+            )
 
     def test_each_host_record_carries_the_complete_binding_shape(self):
         hosts = render_hosts.load_sources(install.HOSTS_DIR)
@@ -86,6 +91,19 @@ class HostAdapterRenderingTest(unittest.TestCase):
         self.assertEqual(
             tuple(adapters["codex"]["cli_candidates"]), install.CODEX_CLI_CANDIDATES
         )
+
+    def test_host_profile_and_authoring_prose_point_to_the_data_owner(self):
+        profiles = install.PROFILES_MD.read_text(encoding="utf-8")
+        authoring = (install.REPO_ROOT / "docs" / "custom-workflow-authoring.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("../../../../hosts/", profiles)
+        self.assertNotIn("| Profile |", profiles)
+        for binding in ("gpt-5.6-sol", "claude-opus-5", "grok-4.6"):
+            self.assertNotIn(binding, profiles)
+        self.assertIn("../hosts/", authoring)
+        self.assertNotIn("A Claude adapter keeps", authoring)
 
     def test_incomplete_rendered_role_binding_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,6 +234,26 @@ class RoleProfileRefusalTest(unittest.TestCase):
 
 
 class TestScopedHostConfiguration(unittest.TestCase):
+    def test_existing_marker_collision_is_refused_while_building_the_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            agents = home / ".codex" / "AGENTS.md"
+            agents.parent.mkdir(parents=True)
+            marker = install.load_host_adapters()["codex"]["managed_markers"][
+                "host_instructions"
+            ]["start"]
+            agents.write_text(f"{marker}\nforeign\n{marker}\n", encoding="utf-8")
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "codex"
+            ):
+                with self.assertRaisesRegex(
+                    ValueError, "duplicate managed block markers"
+                ):
+                    install.build_plan("user", None)
+
+            self.assertFalse(home.joinpath(".orchflows").exists())
+
     def test_invalid_codex_agent_type_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             adapters = Path(tmp) / "adapters"

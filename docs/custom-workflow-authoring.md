@@ -48,15 +48,12 @@ scope, or at a broader custom scope than requested.
    pin its open decisions, and keep control flow in ticket stubs. Run
    `tickets.py instantiate` against the finished template as deterministic
    admission.
-5. Build host integrations with a custom item. A Claude adapter keeps only
-   host-legal frontmatter (`name`, `description`, and, for a role-bearing
-   skill, `context: fork` plus its matching `agent`) and an `@`-include of the
-   item file: absolute at user scope, relative from a committed project stub.
-   It never copies the item's orchflows-only `role`. The Codex routing line
-   names the item and owner path in the scope's `AGENTS.md`. At either call
-   site, resolve the declared role through
-   [role profiles](../skills/engines/orch-frontier/references/profiles.md) and
-   use the native binding that owner returns.
+5. Build host integrations from the top-level [host records](../hosts/). Use
+   the selected record's installed-item template, legal frontmatter, launch
+   verb and native fields, role profile, and capability classification. The
+   rendered adapter is the install input; custom prose never restates those
+   bindings. Cross-host dispatch invariants remain in
+   [role profiles](../skills/engines/orch-frontier/references/profiles.md).
 6. Run the target repository's required checks. In this library that means
    tools/validate.py, affected tests, template instantiation when applicable,
    adapter/routing/role tests when host surfaces change, and the full required

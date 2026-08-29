@@ -237,7 +237,9 @@ def validate_rendered_hosts(diag: Diagnostics) -> None:
     if not source.is_dir() or not rendered.is_dir():
         return
     try:
-        _render_hosts_module.check_all(source, rendered)
+        _render_hosts_module.check_all(
+            source, rendered, ROOT / "templates" / "host-block.md"
+        )
     except ValueError as error:
         diag.error("hosts", str(error))
 
