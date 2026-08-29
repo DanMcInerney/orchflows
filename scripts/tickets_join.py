@@ -9,6 +9,10 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
+    from .tickets_shapes import (
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
+        DISPATCH_OUTCOME_VALUES,
+    )
     from .tickets_format import (
         TERMINAL_STATES, TicketFormatError, _extract_flag, _section_body,
         _set_frontmatter_field, _write_section, canonical_json,
@@ -28,6 +32,10 @@ else:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
+    from tickets_shapes import (
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
+        DISPATCH_OUTCOME_VALUES,
+    )
     from tickets_format import (
         TERMINAL_STATES, TicketFormatError, _extract_flag, _section_body,
         _set_frontmatter_field, _write_section, canonical_json,
@@ -43,8 +51,8 @@ else:
         state_from_text, verification_outcome,
     )
 
-JOIN_STATUSES = frozenset(TERMINAL_STATES) | {"suspended"}
-OUTCOME_SECTIONS = ("Result", "Verification", "Feedback", "Risks", "Handoff")
+JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
+OUTCOME_SECTIONS = tuple(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 DISPATCH_OUTCOME_USAGE = "dispatch-outcome <run> <id> --content <canonical-json>"
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
@@ -116,10 +124,7 @@ def _attempt_workspace(attempt: dict) -> str | None:
 
 
 def _outcome_failure(run: str, ticket_id: str, content):
-    required = {
-        "assignment_seal", "by", "dispatch_id", "evidence", "id",
-        "outcome_record_id", "protocol", "run", "status",
-    }
+    required = set(DISPATCH_OUTCOME_REQUIRED)
     if not isinstance(content, dict) or set(content) != required:
         return _classification("outcome-invalid", "outcome envelope has unknown or missing fields")
     if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:

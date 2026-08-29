@@ -6,38 +6,72 @@ from pathlib import Path
 import re
 
 if __package__:
+    from .tickets_shapes import (
+        DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
+        DISPATCH_INLINE_SNAPSHOT_FIELDS, DISPATCH_JOIN_CONTENT_FIELDS,
+        DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
+        DISPATCH_PACKET_RECORD_FIELDS,
+        DISPATCH_PACKET_REFERENCE_FIELDS, DISPATCH_RECEIPT_RECORD_FIELDS,
+        DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
+        DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
+        DISPATCH_RESULT_SUCCESS_FIELDS,
+        DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
+        DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
+        DISPATCH_RECEIPT_FIELDS,
+        DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
+        DISPATCH_OUTCOME_VALUES,
+        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
+        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
+        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+    )
     from .tickets_format import (
         EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
         parse_canonical_json,
     )
 else:
+    from tickets_shapes import (
+        DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
+        DISPATCH_INLINE_SNAPSHOT_FIELDS, DISPATCH_JOIN_CONTENT_FIELDS,
+        DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
+        DISPATCH_PACKET_RECORD_FIELDS,
+        DISPATCH_PACKET_REFERENCE_FIELDS, DISPATCH_RECEIPT_RECORD_FIELDS,
+        DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
+        DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
+        DISPATCH_RESULT_SUCCESS_FIELDS,
+        DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
+        DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
+        DISPATCH_RECEIPT_FIELDS,
+        DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
+        DISPATCH_OUTCOME_VALUES,
+        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
+        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
+        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+    )
     from tickets_format import (
         EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
         parse_canonical_json,
     )
 
-PROTOCOL = "orchflows.dispatch.v1"
-OUTCOME_RECORD_ID = "outcome"
-PACKET_RECORD_ID = "dispatch-packet"
-RECEIPT_RECORD_ID = "dispatch-receipt"
+PROTOCOL = DISPATCH_PROTOCOL
+OUTCOME_RECORD_ID = SHAPE_OUTCOME_RECORD_ID
+PACKET_RECORD_ID = SHAPE_PACKET_RECORD_ID
+RECEIPT_RECORD_ID = SHAPE_RECEIPT_RECORD_ID
 RESERVED_RECORD_IDS = frozenset({
     OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID,
 })
 RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-ATTEMPT_STATES = frozenset({"live", "retired", "replaced"})
-ATTEMPT_KEYS = frozenset({
-    "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-    "outcome_record_id", "owner", "records", "state",
-    "retired_at", "retirement", "replaced_at", "replaced_by",
-    "replacement", "replaces",
-})
-RECORD_KEYS = frozenset({"committed_at", "content", "kind", "record_id", "success"})
-RECORD_KINDS = frozenset({
-    "generic", "join", "lifecycle", "outcome", "packet", "receipt", "result",
-})
-OUTCOME_SECTIONS = frozenset({"Result", "Verification", "Feedback", "Risks", "Handoff"})
-JOIN_STATUSES = frozenset(TERMINAL_STATES) | {"suspended"}
+ATTEMPT_STATES = frozenset(DISPATCH_ATTEMPT_VALUES["state"])
+ATTEMPT_KEYS = frozenset(DISPATCH_ATTEMPT_FIELDS)
+ATTEMPT_REQUIRED_KEYS = frozenset(DISPATCH_ATTEMPT_REQUIRED)
+RECORD_KEYS = frozenset(DISPATCH_RECORD_FIELDS)
+RECORD_KINDS = frozenset(DISPATCH_RECORD_VALUES["kind"])
+OUTCOME_SECTIONS = frozenset(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
+JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
 
 
 def classification(code: str, detail: str) -> dict:
@@ -69,7 +103,7 @@ def _closed(value, keys) -> bool:
 def _committed_success_failure(
     success, content, *, run, ticket_id, dispatch_id, record_id,
 ):
-    if not _closed(success, {"committed_record"}):
+    if not _closed(success, set(DISPATCH_STORED_SUCCESS_FIELDS)):
         return _invalid(f"record '{record_id}' has a non-canonical stored success")
     committed = success["committed_record"]
     expected = {
@@ -83,10 +117,7 @@ def _committed_success_failure(
 
 
 def _outcome_failure(content, *, run, ticket_id, attempt):
-    required = {
-        "assignment_seal", "by", "dispatch_id", "evidence", "id",
-        "outcome_record_id", "protocol", "run", "status",
-    }
+    required = set(DISPATCH_OUTCOME_FIELDS)
     if not _closed(content, required):
         return "outcome envelope has unknown or missing fields"
     expected = {
@@ -126,13 +157,10 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
     ):
         return _invalid(f"result record '{record_id}' content differs from its attempt")
     success = record["success"]
-    if not _closed(success, {"result"}):
+    if not _closed(success, set(DISPATCH_RESULT_SUCCESS_FIELDS)):
         return _invalid(f"result record '{record_id}' has a non-canonical stored success")
     result = success["result"]
-    keys = {
-        "protocol", "run", "id", "path", "section", "mode", "by",
-        "assignment_seal", "dispatch_id", "record_id",
-    }
+    keys = set(DISPATCH_RESULT_PROJECTION_FIELDS)
     if not _closed(result, keys):
         return _invalid(f"result record '{record_id}' stored success has an invalid shape")
     expected = {
@@ -163,7 +191,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
     if kind == "packet":
-        if not _closed(content, {"packet"}) or not isinstance(content["packet"], dict):
+        if not _closed(content, set(DISPATCH_PACKET_RECORD_FIELDS)) or not isinstance(content["packet"], dict):
             return _invalid("committed packet content has an invalid shape")
         packet = content["packet"]
         if (
@@ -197,14 +225,11 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
                 "assignment_seal": attempt["assignment_seal"],
                 "dispatch_id": attempt["dispatch_id"], "operation": "retire",
             }
-            if content != expected:
+            if not _closed(content, set(DISPATCH_RETIRE_REQUEST_FIELDS)) or content != expected:
                 return _invalid(f"lifecycle record '{record_id}' has invalid retirement content")
             success = record["success"]
-            dispatch = success.get("dispatch") if _closed(success, {"dispatch"}) else None
-            if not _closed(dispatch, {
-                "protocol", "outcome", "run", "id", "dispatch_id",
-                "record_id", "retired_at", "state",
-            }):
+            dispatch = success.get("dispatch") if _closed(success, set(DISPATCH_TRANSITION_SUCCESS_FIELDS)) else None
+            if not _closed(dispatch, set(DISPATCH_RETIREMENT_DISPATCH_FIELDS)):
                 return _invalid(f"lifecycle record '{record_id}' has invalid retirement success")
             expected_fields = {
                 "protocol": PROTOCOL, "outcome": "retired", "run": run,
@@ -216,22 +241,14 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
                 return _invalid(f"lifecycle record '{record_id}' differs from the retired attempt")
             return None
         if operation == "replace":
-            expected_keys = {
-                "assignment_seal", "dispatch_id", "lease_expires_at",
-                "operation", "owner", "replaces",
-            }
-            if not _closed(content, expected_keys) or (
+            if not _closed(content, set(DISPATCH_REPLACE_REQUEST_FIELDS)) or (
                 content.get("assignment_seal") != attempt["assignment_seal"]
                 or content.get("replaces") != attempt["dispatch_id"]
             ):
                 return _invalid(f"lifecycle record '{record_id}' has invalid replacement content")
             success = record["success"]
-            dispatch = success.get("dispatch") if _closed(success, {"dispatch"}) else None
-            if not _closed(dispatch, {
-                "protocol", "outcome", "run", "id", "dispatch_id",
-                "record_id", "replaces", "assignment_seal", "lease_expires_at",
-                "opened_at", "state",
-            }):
+            dispatch = success.get("dispatch") if _closed(success, set(DISPATCH_TRANSITION_SUCCESS_FIELDS)) else None
+            if not _closed(dispatch, set(DISPATCH_REPLACEMENT_DISPATCH_FIELDS)):
                 return _invalid(f"lifecycle record '{record_id}' has invalid replacement success")
             expected_fields = {
                 "protocol": PROTOCOL, "outcome": "replaced", "run": run,
@@ -271,10 +288,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
         ), None)
         success = record["success"]
         joined = success.get("join") if _closed(success, {"join"}) else None
-        joined_keys = {
-            "protocol", "run", "id", "assignment_seal", "dispatch_id",
-            "outcome_record_id", "by", "status", "joined_at",
-        }
+        joined_keys = set(DISPATCH_JOIN_SUCCESS_REQUIRED)
         if review_stage:
             joined_keys.add("review_identity")
         if outcome is None or not _closed(joined, joined_keys):
@@ -332,14 +346,11 @@ def accepted_receipt_failure(attempt: dict):
         receipt_content.get("receipt")
         if isinstance(receipt_content, dict) else None
     )
-    required = {
-        "assignment_seal", "dispatch_id", "durability", "form", "outcome",
-        "protocol", "state_sink_checked",
-    }
+    required = set(DISPATCH_RECEIPT_FIELDS)
     valid = (
         isinstance(packet, dict)
-        and set(packet_content) == {"packet"}
-        and set(receipt_content) == {"packet", "receipt"}
+        and set(packet_content) == set(DISPATCH_PACKET_RECORD_FIELDS)
+        and set(receipt_content) == set(DISPATCH_RECEIPT_RECORD_FIELDS)
         and receipt_content.get("packet") == packet
         and isinstance(receipt, dict)
         and set(receipt) == required

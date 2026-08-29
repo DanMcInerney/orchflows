@@ -4,24 +4,26 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_dispatch_schema import (
-        ATTEMPT_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID, PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
+        ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
+        PACKET_RECORD_ID, RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
         _record_failure, classification, identity_failure,
         record_id_is_reserved,
     )
+    from .tickets_shapes import DISPATCH_STATE_REQUIRED
     from .tickets_format import _parse_iso, canonical_json, parse_canonical_json
 else:
     from tickets_dispatch_schema import (
-        ATTEMPT_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID, PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
+        ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
+        PACKET_RECORD_ID, RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
         _record_failure, classification, identity_failure,
         record_id_is_reserved,
     )
+    from tickets_shapes import DISPATCH_STATE_REQUIRED
     from tickets_format import _parse_iso, canonical_json, parse_canonical_json
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None):
-    if set(state) != {"attempts", "protocol"}:
+    if set(state) != set(DISPATCH_STATE_REQUIRED):
         return classification("dispatch-record-invalid", "dispatch_v1 has unknown or missing top-level fields")
     attempts = state.get("attempts")
     if not isinstance(attempts, list) or not attempts:
@@ -31,10 +33,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
     for ordinal, attempt in enumerate(attempts):
         if not isinstance(attempt, dict) or not set(attempt).issubset(ATTEMPT_KEYS):
             return classification("dispatch-record-invalid", f"attempt {ordinal} has an invalid shape")
-        required = {
-            "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-            "outcome_record_id", "owner", "records", "state",
-        }
+        required = ATTEMPT_REQUIRED_KEYS
         if not required.issubset(attempt):
             return classification("dispatch-record-invalid", f"attempt {ordinal} is incomplete")
         for kind, value in (

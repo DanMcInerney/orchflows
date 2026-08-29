@@ -7,17 +7,27 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
     from .tickets_registry import REVIEW_KINDS
+    from .tickets_shapes import (
+        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_REQUIRED,
+        DISPATCH_PACKET_VALUES, DISPATCH_PACKET_REFERENCE_FIELDS,
+        DISPATCH_PACKET_RECORD_FIELDS, DISPATCH_INLINE_SNAPSHOT_FIELDS,
+    )
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
     from tickets_registry import REVIEW_KINDS
+    from tickets_shapes import (
+        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_REQUIRED,
+        DISPATCH_PACKET_VALUES, DISPATCH_PACKET_REFERENCE_FIELDS,
+        DISPATCH_PACKET_RECORD_FIELDS, DISPATCH_INLINE_SNAPSHOT_FIELDS,
+    )
 
-PACKET_FORMS = frozenset({"reference", "inline"})
+PACKET_FORMS = frozenset(DISPATCH_PACKET_VALUES["form"])
 
 
 def packet_shape(value):
-    if isinstance(value, dict) and set(value) == {"packet"}:
+    if isinstance(value, dict) and set(value) == set(DISPATCH_PACKET_RECORD_FIELDS):
         return _classification(
             "packet-invalid",
             "dispatch-receive expects the response .packet value, not its wrapper",
@@ -27,6 +37,10 @@ def packet_shape(value):
     form = value.get("form")
     if form not in PACKET_FORMS:
         return _classification("packet-invalid", "packet form is unknown")
+    # The generated shape closes the complete key set below.  This smaller
+    # identity subset is the fields whose values must be non-empty strings;
+    # ``workspace``, ``pack``, and ``review_kind`` are allowed nullable prose
+    # or path values even though they are present in every packet object.
     required = (
         "assigned_name", "assignment_seal", "dispatch_id", "executor",
         "lease_expires_at", "outcome_record_id", "profile", "reply_to", "role",
@@ -35,13 +49,7 @@ def packet_shape(value):
         return _classification("packet-invalid", "packet identity or routing field is missing")
     if value.get("durability") not in ("ticket", "ephemeral"):
         return _classification("packet-invalid", "packet durability is unknown")
-    base = {
-        "admission", "assigned_name", "assignment_seal", "dispatch_id",
-        "durability", "executor", "form", "independence", "isolation",
-        "lease_expires_at", "outcome_record_id", "pack", "profile", "prompt",
-        "review_kind",
-        "protocol", "reply_to", "role", "source", "workspace",
-    }
+    base = set(DISPATCH_PACKET_FIELDS) - {"reference", "inline"}
     expected = base | ({"reference"} if form == "reference" else {"inline"})
     if set(value) != expected:
         return _classification("packet-invalid", "packet has unknown or missing fields")
@@ -55,11 +63,11 @@ def packet_shape(value):
         return _classification("packet-invalid", "packet source is incomplete")
     if form == "reference":
         reference = value.get("reference")
-        if not isinstance(reference, dict) or set(reference) != {"id", "run"} or reference != source:
+        if not isinstance(reference, dict) or set(reference) != set(DISPATCH_PACKET_REFERENCE_FIELDS) or reference != source:
             return _classification("packet-invalid", "packet reference does not equal its origin")
     else:
         inline = value.get("inline")
-        if not isinstance(inline, dict) or set(inline) != {"assignment", "envelope_seal"}:
+        if not isinstance(inline, dict) or set(inline) != set(DISPATCH_INLINE_SNAPSHOT_FIELDS):
             return _classification("packet-invalid", "inline packet shape is incomplete")
     if value.get("workspace") is not None:
         failure = _identity_failure("workspace", value["workspace"], allow_path=True)

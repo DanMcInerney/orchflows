@@ -33,6 +33,6 @@ place this evidence law in the ticket lifecycle.
    equality with that workspace's HEAD. `CritiqueAdjudication` carries all
    observations and only the chosen blockers. `RepairOutcome` repeats those
    blockers and identifies the successor artifact; only an empty set permits
-   `no_op`. `Verification` accepts that successor identity and a `PASS`, `FAIL`,
-   or `UNVERIFIED` verdict. Ordinary checks are derived tickets crossing the
-   dispatch lifecycle; callers cannot inject findings.
+   `no_op`. `Verification` accepts that successor identity and the declared
+   verdict. Ordinary checks are derived tickets crossing the dispatch
+   lifecycle; callers cannot inject findings.
