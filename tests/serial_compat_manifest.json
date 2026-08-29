@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2009,
+  "count": 2015,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -183,13 +183,18 @@
    "test_installer.DryRunOracleTest.test_a_dry_run_with_no_host_enabled_is_distinguishable",
    "test_installer.DryRunOracleTest.test_dry_run_writes_nothing",
    "test_installer.DryRunOracleTest.test_the_printed_plan_is_non_empty_when_a_host_is_enabled",
+   "test_installer.HostAdapterRenderingTest.test_each_host_record_carries_the_complete_binding_shape",
+   "test_installer.HostAdapterRenderingTest.test_host_profile_and_authoring_prose_point_to_the_data_owner",
+   "test_installer.HostAdapterRenderingTest.test_incomplete_rendered_role_binding_is_refused",
+   "test_installer.HostAdapterRenderingTest.test_installer_profiles_and_markers_come_from_rendered_adapters",
+   "test_installer.HostAdapterRenderingTest.test_repository_adapters_are_a_deterministic_render_of_host_data",
+   "test_installer.HostAdapterRenderingTest.test_same_target_marker_collision_is_refused_before_render",
    "test_installer.ProjectInstallBoundaryTest.test_cli_rejects_project_install_and_dry_run_but_keeps_legacy_uninstall",
    "test_installer.ProjectInstallBoundaryTest.test_legacy_project_uninstall_normalizes_in_boundary_receipt_paths",
    "test_installer.ProjectInstallBoundaryTest.test_public_facade_rejects_project_plans_before_planning_or_application",
    "test_installer.RoleProfileRefusalTest.test_a_canonical_profile_name_must_match_its_declared_role",
    "test_installer.RoleProfileRefusalTest.test_a_missing_codex_fork_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_a_missing_role_row_is_refused_and_the_role_is_named",
-   "test_installer.RoleProfileRefusalTest.test_a_row_whose_role_is_outside_the_closed_set_is_skipped",
    "test_installer.RoleProfileRefusalTest.test_an_incomplete_claude_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_an_incomplete_codex_binding_is_refused_and_the_row_is_named",
    "test_installer.RoleProfileRefusalTest.test_none_and_a_positive_decimal_are_valid_codex_fork_bindings",
@@ -382,6 +387,7 @@
    "test_installer.TestScopedHostConfiguration.test_codex_limit_merge_handles_dotted_agent_keys",
    "test_installer.TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
    "test_installer.TestScopedHostConfiguration.test_discover_templates_requires_a_manifest_with_entry",
+   "test_installer.TestScopedHostConfiguration.test_existing_marker_collision_is_refused_while_building_the_plan",
    "test_installer.TestScopedHostConfiguration.test_invalid_codex_agent_type_is_rejected",
    "test_installer.TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
    "test_installer.TestScopedHostConfiguration.test_the_planned_grok_surface_hangs_off_grok_home",
@@ -941,12 +947,12 @@
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_an_unacquirable_lock_still_writes_and_never_raises",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_concurrent_writers_lose_no_line",
    "tests.test_friction_cases.storage_lock.FrictionAppendLockTest.test_the_unacquired_path_returns_inside_a_budget_under_one_second",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_a_row_that_lost_its_grok_cell_is_not_read_as_a_row",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_column_parses_and_grok_is_bound_for_both_roles",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_a_host_that_lost_a_role_profile_is_refused",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_host_adapter_binds_both_roles",
    "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_recorded_model_and_effort_is_admitted",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_way_a_grok_row_can_fail_is_refused_naming_the_host",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_isolation_stays_the_tickets_field_on_every_host",
-   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_two_rows_binding_one_subagent_type_are_refused",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_every_way_a_grok_binding_can_fail_names_the_host",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_native_and_requested_capabilities_stay_out_of_role_bindings",
+   "tests.test_live_harnesses_cases.grok_profile_cases.TestGrokRoleProfiles.test_two_roles_binding_one_subagent_type_are_refused",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_condition_command_wires_stop_rule_bound_and_single_reply",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_exit_lines_are_never_dictated_verbatim_in_the_built_command",
    "tests.test_live_harnesses_cases.loop_cases.TestBuiltCommand.test_iterations_command_wires_model_effort_and_done_check",
@@ -2012,7 +2018,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e9815c9f6f9f55c6f4616a3bdae307c4406ac616784aea6cf4e675007e3b22c2"
+  "sha256": "0dae2a6019c53d48aea374e4fb80f15c3de0176ff6e56ffb2f372f8cc86ececf"
  },
  "mutation_owners": [
   {
@@ -2838,6 +2844,14 @@
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
    "owner": "TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_existing_marker_collision_is_refused_while_building_the_plan",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

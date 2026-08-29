@@ -15,33 +15,17 @@ without writing anything. ``CLAUDE_CONFIG_DIR``, ``CODEX_HOME`` and
   pointer never copies the body, so it carries no relative links — an agent
   follows it to the tiered file, where every ``references/`` and ``../../../``
   link resolves from its authored location.
-- Claude Code — ``~/.claude/skills/<name>/SKILL.md`` adapter stubs
-  (frontmatter plus an ``@``-include of the library body), role agents,
-  concurrency setting. Compositions (the template directories
-  ``compositions/<name>/``, invocable by name whatever their ``entry``) get
-  the same by-name entries and Codex prompts as skills, and an adapter stub
-  carrying the instantiate command rather than an ``@``-include, since a
-  template is a directory and ``@`` includes a file. The always-on layer is
-  rendered once to ``~/.orchflows/host-block.md`` (wholly installer-owned) and
-  referenced from ``~/.claude/CLAUDE.md`` by one appended ``@<path>`` import
-  line — idempotent, migrating any legacy inline marker block from an older
-  install.
-- Codex — prompts and one exact redirect skill stub
-  per discovered canonical skill or composition, at
-  ``~/.codex/skills/<name>/SKILL.md``. Role-bearing redirects bind the
-  matching role profile, and every redirect points at the library instead of
-  duplicating it. Codex also gets role agents and agent-limits config.
-  The always-on layer stays an inline marker block
-  upserted into ``~/.codex/AGENTS.md`` — a read-only probe (``codex debug
-  prompt-input`` against a scratch repo, installed CLI 0.144.0) found
-  ``@file`` imports do not expand there, so Codex keeps the proven
-  marker-block mechanism rather than migrating to an import line. A preflight
-  warns (never edits or deletes) if ``~/.codex/hooks.json`` names a
-  now-missing orchflows path.
-- Grok Build — skills at ``~/.grok/skills/<name>/SKILL.md`` whose bodies name
-  the library file to read, role agents under ``~/.grok/agents/``, and the
-  ``[subagents]`` block of ``~/.grok/config.toml``. The always-on layer is one
-  whole installer-owned file, ``~/.grok/rules/orchflows.md``.
+Host-specific destinations, frontmatter, launch fields, profiles, markers,
+and capability establishment are rendered from ``hosts/*.json`` before the
+plan is built.
+
+- Claude Code — rendered skill and composition adapters, role agents,
+  instructions, and concurrency settings.
+- Codex — rendered prompts and one exact redirect skill per discovered
+  canonical skill or composition, plus role agents, instructions, agent
+  limits, and dangling-hook warnings.
+- Grok Build — rendered skills, role agents, instructions, and subagent
+  limits.
 
 Installation has one scope: user. Legacy project receipts remain accepted by
 ``--project PATH --uninstall`` only, so older versions' installations can
@@ -213,7 +197,6 @@ from installer.packages import (
     ROLE_INSTRUCTIONS,
     TEMPLATE_MANIFEST,
     _git_dirs,
-    _parse_binding,
     _role_description,
     by_name_pointer_text,
     claude_role_adapter_text,
@@ -232,6 +215,7 @@ from installer.packages import (
     template_adapter_body,
     template_markers,
 )
+from installer.hosts import HOSTS_DIR, HOST_ADAPTERS_DIR, load_host_adapters
 from installer.planning import _mints_claude_adapter, detect_hosts, plan_entry_count
 from installer.uninstall import (
     _auto_remove_path_is_safe,

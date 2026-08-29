@@ -1,0 +1,77 @@
+{
+  "adapter_version": 1,
+  "host": {
+    "capabilities": {
+      "effort": "native",
+      "isolation": "native"
+    },
+    "cli_candidates": [
+      "grok",
+      "grok.exe",
+      "grok.cmd"
+    ],
+    "display_name": "Grok Build",
+    "frontmatter": {
+      "legal_keys": [
+        "name",
+        "description"
+      ],
+      "role_fields": {}
+    },
+    "home": {
+      "default": ".grok",
+      "environment": "GROK_HOME"
+    },
+    "id": "grok",
+    "installed_items": {
+      "instructions": "rules/orchflows.md",
+      "role_agent": "agents/{subagent_type}.md",
+      "settings": "config.toml",
+      "skill": "skills/{name}/SKILL.md"
+    },
+    "launch": {
+      "native_fields": [
+        "model",
+        "effort",
+        "subagent_type",
+        "isolation"
+      ],
+      "verb": "spawn_subagent"
+    },
+    "managed_markers": {
+      "host_instructions": {
+        "end": "<!-- END ORCHFLOWS -->",
+        "mode": "owned-file",
+        "start": "<!-- BEGIN ORCHFLOWS (managed block \u2014 do not edit inside; reinstall to update) -->",
+        "target": "rules/orchflows.md"
+      },
+      "subagent_limits": {
+        "end": "# END ORCHFLOWS SUBAGENT LIMITS",
+        "mode": "owned-prefix",
+        "start": "# BEGIN ORCHFLOWS SUBAGENT LIMITS",
+        "target": "config.toml"
+      }
+    },
+    "role_profiles": {
+      "planner": {
+        "binding": {
+          "effort": "xhigh",
+          "model": "grok-4.6",
+          "subagent_type": "orch-planner"
+        },
+        "name": "orch-planner"
+      },
+      "worker": {
+        "binding": {
+          "effort": "high",
+          "model": "grok-4.6",
+          "subagent_type": "orch-worker"
+        },
+        "name": "orch-worker"
+      }
+    },
+    "schema_version": 1
+  },
+  "source": "hosts/grok.json",
+  "source_sha256": "9c3c0ef04fd178a48da21e2ce206d6da9816bf2546e43394e06c803460dacfaf"
+}

@@ -65,6 +65,7 @@ from .packages import (
     template_adapter_body,
 )
 from .runtime import private_runtime_action
+from .hosts import host_item_path, load_host_adapters, preflight_instruction_target
 
 def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
     """Return Claude, Codex and Grok enablement from runnable CLI presence on
@@ -106,6 +107,10 @@ def _build_user_plan(
     script_name_discoverer=None,
     grok_limits_renderer=render_grok_subagent_limits,
 ) -> Plan:
+    host_adapters = load_host_adapters()
+    def item_path(host, item, root, **values):
+        return host_item_path(host, item, root, host_adapters, **values)
+
     lib_home = _lib_home("user", None)
     scope_home = _scope_home("user", None)
     bin_dir = _bin_dir("user", None)
@@ -195,7 +200,10 @@ def _build_user_plan(
         )
         if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
-                (claude_scope_home / "skills" / name / "SKILL.md", claude_role_adapter_text(frontmatter, lib_skill_md))
+                (
+                    item_path("claude", "skill", claude_scope_home, name=name),
+                    claude_role_adapter_text(frontmatter, lib_skill_md),
+                )
             )
         if codex_enabled:
             codex_body = (
@@ -206,11 +214,14 @@ def _build_user_plan(
                 else body.strip() + "\n"
             )
             codex_prompts.append(
-                (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{codex_body}")
+                (
+                    item_path("codex", "prompt", codex_user_home, name=name),
+                    f"# {description}\n\n{codex_body}",
+                )
             )
             codex_skills.append(
                 (
-                    codex_user_home / "skills" / name / "SKILL.md",
+                    item_path("codex", "skill", codex_user_home, name=name),
                     frontmatter
                     + "\n"
                     + (
@@ -228,7 +239,7 @@ def _build_user_plan(
             # here is a name that host cannot invoke at all.
             grok_skills.append(
                 (
-                    _grok_skills_dir() / name / "SKILL.md",
+                    item_path("grok", "skill", _grok_skills_dir().parent, name=name),
                     grok_skill_text(
                         frontmatter,
                         lib_skill_md,
@@ -258,24 +269,30 @@ def _build_user_plan(
         if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
                 (
-                    claude_scope_home / "skills" / name / "SKILL.md",
+                    item_path("claude", "skill", claude_scope_home, name=name),
                     host_legal_frontmatter(frontmatter)
                     + template_adapter_body(name, lib_template_dir, frontmatter),
                 )
             )
         if codex_enabled:
             codex_prompts.append(
-                (codex_user_home / "prompts" / f"{name}.md", f"# {description}\n\n{body.strip()}\n")
+                (
+                    item_path("codex", "prompt", codex_user_home, name=name),
+                    f"# {description}\n\n{body.strip()}\n",
+                )
             )
             codex_skills.append(
-                (codex_user_home / "skills" / name / "SKILL.md", pointer)
+                (
+                    item_path("codex", "skill", codex_user_home, name=name),
+                    pointer,
+                )
             )
         if grok_enabled:
             # The manifest, not the directory: Grok's body is a read
             # instruction, and the manifest is the file that reads.
             grok_skills.append(
                 (
-                    _grok_skills_dir() / name / "SKILL.md",
+                    item_path("grok", "skill", _grok_skills_dir().parent, name=name),
                     grok_skill_text(frontmatter, lib_template_dir / TEMPLATE_MANIFEST),
                 )
             )
@@ -287,23 +304,25 @@ def _build_user_plan(
         profile = profiles[name]
         if claude_enabled:
             claude_agents.append(
-                (_claude_agents_dir("user", None) / f"{name}.md", render_claude_agent(name, profile))
+                (
+                    item_path("claude", "role_agent", claude_scope_home, profile=name),
+                    render_claude_agent(name, profile),
+                )
             )
         if codex_enabled:
             codex_agent_type = profile["codex"]["agent_type"]
             codex_agents.append(
                 (
-                    _codex_agents_dir("user", None) / f"{codex_agent_type}.toml",
+                    item_path("codex", "role_agent", codex_user_home, agent_type=codex_agent_type),
                     render_codex_agent(name, profile),
                 )
             )
         if grok_enabled:
-            # Named by the spawn identifier, as Codex's is: `spawn_subagent`
-            # takes `subagent_type`, so the file a reader finds is the name a
-            # dispatch has to pass.
+            # The rendered item template names files by native subagent_type.
             grok_agents.append(
                 (
-                    _grok_agents_dir() / f"{profile['grok']['subagent_type']}.md",
+                    item_path("grok", "role_agent", _grok_agents_dir().parent,
+                              subagent_type=profile["grok"]["subagent_type"]),
                     render_grok_agent(name, profile),
                 )
             )
@@ -369,18 +388,24 @@ def _build_user_plan(
     grok_rules_plan = None
     if claude_enabled:
         host_block_path = scope_home / "host-block.md"
+        claude_md_path = _claude_md_path("user", None)
+        preflight_instruction_target("claude", claude_md_path, host_block,
+                                     host_block_path.resolve(), host_adapters)
         host_block_plan = ConfigPlan(host_block_path, host_block, "host-block", "Host instruction block")
         claude_import_plan = ImportPlan(
-            _claude_md_path("user", None),
+            claude_md_path,
             host_block_path.resolve(),
             start_marker,
             end_marker,
             "Claude Code instruction import",
         )
     if codex_enabled:
+        codex_agents_path = _codex_agents_path("user", None)
+        preflight_instruction_target("codex", codex_agents_path, host_block,
+                                     adapters=host_adapters)
         blocks.append(
             BlockPlan(
-                _codex_agents_path("user", None),
+                codex_agents_path,
                 host_block,
                 start_marker,
                 end_marker,

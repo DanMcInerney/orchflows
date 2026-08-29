@@ -9,6 +9,15 @@ import shutil
 import sys
 from pathlib import Path
 
+from .hosts import (
+    HOST_ADAPTERS_DIR,
+    HOSTS_DIR,
+    PROFILE_ROLES,
+    host_item_path,
+    load_host_adapters,
+    marker,
+)
+
 # The floor this installer is written to and CI proves. Enforced here
 # because install.py is the only file a user runs directly -- the shell
 # wrappers just resolve an interpreter and hand it this script. Kept at 3.9
@@ -30,6 +39,7 @@ except ModuleNotFoundError:  # tomllib is 3.11+; MIN_PYTHON is lower.
     tomllib = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+_HOST_ADAPTERS = load_host_adapters()
 CANONICAL_DIRS = (
     "contracts",
     "rules",
@@ -38,17 +48,17 @@ CANONICAL_DIRS = (
     "packs",
     "compositions",
     "templates",
+    "hosts",
 )
-CLAUDE_CLI_CANDIDATES = ("claude", "claude.exe", "claude.cmd")
-CODEX_CLI_CANDIDATES = ("codex", "codex.exe", "codex.cmd")
-GROK_CLI_CANDIDATES = ("grok", "grok.exe", "grok.cmd")
+CLAUDE_CLI_CANDIDATES = tuple(_HOST_ADAPTERS["claude"]["cli_candidates"])
+CODEX_CLI_CANDIDATES = tuple(_HOST_ADAPTERS["codex"]["cli_candidates"])
+GROK_CLI_CANDIDATES = tuple(_HOST_ADAPTERS["grok"]["cli_candidates"])
 PROFILES_MD = REPO_ROOT / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md"
 HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
-CODEX_LIMITS_START = "# BEGIN ORCHFLOWS AGENT LIMITS"
-CODEX_LIMITS_END = "# END ORCHFLOWS AGENT LIMITS"
-GROK_LIMITS_START = "# BEGIN ORCHFLOWS SUBAGENT LIMITS"
-GROK_LIMITS_END = "# END ORCHFLOWS SUBAGENT LIMITS"
-PROFILE_ROLES = ("planner", "worker")
+CODEX_LIMITS_START = marker("codex", "agent_limits", _HOST_ADAPTERS)["start"]
+CODEX_LIMITS_END = marker("codex", "agent_limits", _HOST_ADAPTERS)["end"]
+GROK_LIMITS_START = marker("grok", "subagent_limits", _HOST_ADAPTERS)["start"]
+GROK_LIMITS_END = marker("grok", "subagent_limits", _HOST_ADAPTERS)["end"]
 # The routed names exposed by Claude's bounded compatibility adapter set.
 # The selector remains ``four`` for CLI compatibility after the set narrowed.
 SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix")
@@ -93,8 +103,6 @@ GROK_MAX_CONCURRENT = 20
 GROK_MAX_DEPTH = 1
 CLAUDE_MAX_TOOL_USE_CONCURRENCY = 20
 CLAUDE_SETTINGS_SCHEMA = "https://json.schemastore.org/claude-code-settings.json"
-_BINDING_RE = re.compile(r"(?P<key>[a-z_]+)\s*`(?P<value>[^`]+)`")
-_CODEX_AGENT_TYPE_RE = re.compile(r"^[a-z0-9_]+$")
 _TOML_TABLE_RE = re.compile(r"^\s*\[\[?[^\]]+\]\]?\s*(?:#.*)?$")
 _AGENTS_TABLE_RE = re.compile(r"^\s*\[agents\]\s*(?:#.*)?$")
 _AGENTS_DOTTED_LIMIT_RE = re.compile(r"^\s*agents\.(?:max_threads|max_depth)\s*=")
@@ -178,8 +186,9 @@ def _claude_user_home() -> Path:
     config directory has no project-local equivalent, so project scope is
     unaffected."""
 
-    override = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
-    return Path(override).expanduser() if override else Path.home() / ".claude"
+    home = _HOST_ADAPTERS["claude"]["home"]
+    override = os.environ.get(home["environment"], "").strip()
+    return Path(override).expanduser() if override else Path.home() / home["default"]
 
 
 def _claude_scope_home(scope: str, project_root: Path | None) -> Path:
@@ -190,24 +199,28 @@ def _claude_scope_home(scope: str, project_root: Path | None) -> Path:
 
 def _claude_md_path(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
-        return _claude_user_home() / "CLAUDE.md"
-    return _require_project_root(project_root) / "CLAUDE.md"
+        return host_item_path("claude", "instructions", _claude_user_home(), _HOST_ADAPTERS)
+    return host_item_path("claude", "instructions", _require_project_root(project_root), _HOST_ADAPTERS)
 
 
 def _claude_settings_path(scope: str, project_root: Path | None) -> Path:
-    return _claude_scope_home(scope, project_root) / "settings.json"
+    return host_item_path("claude", "settings", _claude_scope_home(scope, project_root), _HOST_ADAPTERS)
 
 
 def _claude_agents_dir(scope: str, project_root: Path | None) -> Path:
-    return _claude_scope_home(scope, project_root) / "agents"
+    return host_item_path(
+        "claude", "role_agent", _claude_scope_home(scope, project_root), _HOST_ADAPTERS,
+        profile="{profile}",
+    ).parent
 
 
 def _codex_user_home() -> Path:
     # Codex prompts have no project-local equivalent. Native role agents and
     # config use ``_codex_scope_home`` and therefore follow the selected scope.
     # ``CODEX_HOME`` overrides the ``~/.codex`` default, as the Codex CLI reads it.
-    override = os.environ.get("CODEX_HOME", "").strip()
-    return Path(override).expanduser() if override else Path.home() / ".codex"
+    home = _HOST_ADAPTERS["codex"]["home"]
+    override = os.environ.get(home["environment"], "").strip()
+    return Path(override).expanduser() if override else Path.home() / home["default"]
 
 
 def _codex_scope_home(scope: str, project_root: Path | None) -> Path:
@@ -217,17 +230,20 @@ def _codex_scope_home(scope: str, project_root: Path | None) -> Path:
 
 
 def _codex_config_path(scope: str, project_root: Path | None) -> Path:
-    return _codex_scope_home(scope, project_root) / "config.toml"
+    return host_item_path("codex", "settings", _codex_scope_home(scope, project_root), _HOST_ADAPTERS)
 
 
 def _codex_agents_dir(scope: str, project_root: Path | None) -> Path:
-    return _codex_scope_home(scope, project_root) / "agents"
+    return host_item_path(
+        "codex", "role_agent", _codex_scope_home(scope, project_root), _HOST_ADAPTERS,
+        agent_type="{agent_type}",
+    ).parent
 
 
 def _codex_agents_path(scope: str, project_root: Path | None) -> Path:
     if scope == "user":
-        return _codex_user_home() / "AGENTS.md"
-    return _require_project_root(project_root) / "AGENTS.md"
+        return host_item_path("codex", "instructions", _codex_user_home(), _HOST_ADAPTERS)
+    return host_item_path("codex", "instructions", _require_project_root(project_root), _HOST_ADAPTERS)
 
 
 def _grok_user_home() -> Path:
@@ -239,16 +255,22 @@ def _grok_user_home() -> Path:
     so nothing this installer writes has a project-local equivalent.
     """
 
-    override = os.environ.get("GROK_HOME", "").strip()
-    return Path(override).expanduser() if override else Path.home() / ".grok"
+    home = _HOST_ADAPTERS["grok"]["home"]
+    override = os.environ.get(home["environment"], "").strip()
+    return Path(override).expanduser() if override else Path.home() / home["default"]
 
 
 def _grok_skills_dir() -> Path:
-    return _grok_user_home() / "skills"
+    return host_item_path(
+        "grok", "skill", _grok_user_home(), _HOST_ADAPTERS, name="{name}"
+    ).parent.parent
 
 
 def _grok_agents_dir() -> Path:
-    return _grok_user_home() / "agents"
+    return host_item_path(
+        "grok", "role_agent", _grok_user_home(), _HOST_ADAPTERS,
+        subagent_type="{subagent_type}",
+    ).parent
 
 
 def _grok_rules_path() -> Path:
@@ -258,11 +280,11 @@ def _grok_rules_path() -> Path:
     file is owned whole rather than fenced inside a file the user also writes.
     """
 
-    return _grok_user_home() / "rules" / "orchflows.md"
+    return host_item_path("grok", "instructions", _grok_user_home(), _HOST_ADAPTERS)
 
 
 def _grok_config_path() -> Path:
-    return _grok_user_home() / "config.toml"
+    return host_item_path("grok", "settings", _grok_user_home(), _HOST_ADAPTERS)
 
 
 def _iter_json_strings(value):

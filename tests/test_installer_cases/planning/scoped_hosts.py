@@ -3,73 +3,184 @@
 from __future__ import annotations
 
 from ..support import *  # noqa: F403
+from tools import render_hosts
+
+
+class HostAdapterRenderingTest(unittest.TestCase):
+    def test_repository_adapters_are_a_deterministic_render_of_host_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rendered = Path(tmp) / "adapters"
+
+            first = render_hosts.render_all(install.HOSTS_DIR, rendered)
+            first_bytes = {
+                path.name: path.read_bytes() for path in sorted(rendered.glob("*.json"))
+            }
+            second = render_hosts.render_all(install.HOSTS_DIR, rendered)
+
+            self.assertEqual(("claude", "codex", "grok"), tuple(first))
+            self.assertEqual(first, second)
+            self.assertEqual(
+                first_bytes,
+                {path.name: path.read_bytes() for path in sorted(rendered.glob("*.json"))},
+            )
+            self.assertEqual(
+                first_bytes,
+                {
+                    path.name: path.read_bytes()
+                    for path in sorted(install.HOST_ADAPTERS_DIR.glob("*.json"))
+                },
+            )
+            render_hosts.check_all(
+                install.HOSTS_DIR,
+                install.HOST_ADAPTERS_DIR,
+                install.HOST_BLOCK_TEMPLATE,
+            )
+
+    def test_each_host_record_carries_the_complete_binding_shape(self):
+        hosts = render_hosts.load_sources(install.HOSTS_DIR)
+
+        self.assertEqual({"claude", "codex", "grok"}, set(hosts))
+        for name, host in hosts.items():
+            with self.subTest(host=name):
+                self.assertEqual(name, host["id"])
+                self.assertTrue(host["managed_markers"])
+                self.assertTrue(host["installed_items"])
+                self.assertTrue(host["frontmatter"]["legal_keys"])
+                self.assertTrue(host["launch"]["verb"])
+                self.assertEqual({"planner", "worker"}, set(host["role_profiles"]))
+                self.assertEqual(
+                    {"isolation", "effort"}, set(host["capabilities"])
+                )
+                self.assertLessEqual(
+                    set(host["capabilities"].values()), {"native", "requested"}
+                )
+
+    def test_same_target_marker_collision_is_refused_before_render(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "hosts"
+            shutil.copytree(install.HOSTS_DIR, source)
+            codex_path = source / "codex.json"
+            codex = json.loads(codex_path.read_text(encoding="utf-8"))
+            blocks = list(codex["managed_markers"].values())
+            self.assertGreaterEqual(len(blocks), 2)
+            blocks[1]["target"] = blocks[0]["target"]
+            blocks[1]["start"] = blocks[0]["start"]
+            codex_path.write_text(json.dumps(codex), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                ValueError, "codex: managed marker collision"
+            ):
+                render_hosts.render_all(source, Path(tmp) / "adapters")
+
+    def test_installer_profiles_and_markers_come_from_rendered_adapters(self):
+        adapters = install.load_host_adapters()
+        profiles = install.load_role_profiles()
+
+        self.assertEqual(
+            adapters["codex"]["role_profiles"]["planner"]["binding"],
+            profiles["orch-planner"]["codex"],
+        )
+        self.assertEqual(
+            adapters["claude"]["role_profiles"]["worker"]["binding"],
+            profiles["orch-worker"]["claude"],
+        )
+        self.assertEqual(
+            adapters["grok"]["managed_markers"]["subagent_limits"]["start"],
+            install.GROK_LIMITS_START,
+        )
+        self.assertEqual(
+            tuple(adapters["codex"]["cli_candidates"]), install.CODEX_CLI_CANDIDATES
+        )
+
+    def test_host_profile_and_authoring_prose_point_to_the_data_owner(self):
+        profiles = install.PROFILES_MD.read_text(encoding="utf-8")
+        authoring = (install.REPO_ROOT / "docs" / "custom-workflow-authoring.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("../../../../hosts/", profiles)
+        self.assertNotIn("| Profile |", profiles)
+        for binding in ("gpt-5.6-sol", "claude-opus-5", "grok-4.6"):
+            self.assertNotIn(binding, profiles)
+        self.assertIn("../hosts/", authoring)
+        self.assertNotIn("A Claude adapter keeps", authoring)
+
+    def test_incomplete_rendered_role_binding_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            adapters = Path(tmp) / "adapters"
+            shutil.copytree(install.HOST_ADAPTERS_DIR, adapters)
+            codex_path = adapters / "codex.json"
+            rendered = json.loads(codex_path.read_text(encoding="utf-8"))
+            del rendered["host"]["role_profiles"]["planner"]["binding"]["model"]
+            codex_path.write_text(json.dumps(rendered), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                ValueError, "incomplete Codex binding for orch-planner"
+            ):
+                install.load_role_profiles(adapters)
 
 
 class RoleProfileRefusalTest(unittest.TestCase):
-    """`load_role_profiles` reads the one table binding each child role to a
-    model on each host, and refuses rather than install half a binding.
+    """Rendered host adapters bind each child role and refuse half-bindings.
 
     Every refusal below would otherwise ship silently and surface only at
     dispatch: a host agent for a role nothing dispatches, a role agent bound
     to no model, or two Codex agents claiming one spawn identifier. Each case
-    mutates the shipped table in exactly one way, so nothing else can be what
+    mutates one rendered adapter in exactly one way, so nothing else can be what
     the refusal is reacting to.
     """
 
-    ROW = (
-        "| `{name}` | {role} | agent_type `{agent}`, model `gpt-5.6-sol`, "
-        "model_reasoning_effort `high`, fork_turns `none` | "
-        "model `claude-opus-5`, effort `high` |\n"
-    )
-
-    def table(self, *replacements, extra: str = "") -> Path:
-        text = install.PROFILES_MD.read_text(encoding="utf-8")
-        for old, new in replacements:
-            self.assertIn(old, text, old)
-            text = text.replace(old, new, 1)
+    def adapters(self, host: str, mutate) -> Path:
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp)
-        path = Path(tmp) / "profiles.md"
-        path.write_text(text.rstrip("\n") + "\n" + extra, encoding="utf-8")
-        return path
-
-    def test_a_row_whose_role_is_outside_the_closed_set_is_skipped(self):
-        path = self.table(
-            extra=self.ROW.format(name="orch-scribe", role="archivist", agent="orch_scribe")
-        )
-        profiles = install.load_role_profiles(path)
-        self.assertEqual({"orch-planner", "orch-worker"}, set(profiles))
+        root = Path(tmp) / "adapters"
+        shutil.copytree(install.HOST_ADAPTERS_DIR, root)
+        path = root / f"{host}.json"
+        rendered = json.loads(path.read_text(encoding="utf-8"))
+        mutate(rendered["host"])
+        path.write_text(json.dumps(rendered), encoding="utf-8")
+        return root
 
     def test_a_missing_role_row_is_refused_and_the_role_is_named(self):
-        rows = {
-            role: next(
-                line for line in install.PROFILES_MD.read_text(encoding="utf-8").splitlines()
-                if line.startswith(f"| `orch-{role}` |")
-            )
-            for role in install.PROFILE_ROLES
-        }
-        for role, line in rows.items():
+        for role in install.PROFILE_ROLES:
             with self.subTest(role=role):
-                path = self.table((line + "\n", ""))
+                path = self.adapters(
+                    "codex", lambda host, role=role: host["role_profiles"].pop(role)
+                )
                 with self.assertRaisesRegex(
-                    ValueError, rf"missing role profile row\(s\) for orch-{role}"
+                    ValueError, rf"missing role profile for orch-{role}"
                 ):
                     install.load_role_profiles(path)
 
     def test_a_canonical_profile_name_must_match_its_declared_role(self):
-        path = self.table(("| `orch-planner` | planner |", "| `orch-planner` | worker |"))
+        path = self.adapters(
+            "codex",
+            lambda host: host["role_profiles"]["planner"].__setitem__(
+                "name", "orch-worker"
+            ),
+        )
         with self.assertRaisesRegex(
-            ValueError, "role profile orch-planner must declare role planner, got worker"
+            ValueError, "role profile orch-planner must declare name orch-planner"
         ):
             install.load_role_profiles(path)
 
     def test_an_incomplete_codex_binding_is_refused_and_the_row_is_named(self):
-        path = self.table((", model_reasoning_effort `ultra`", ""))
+        path = self.adapters(
+            "codex",
+            lambda host: host["role_profiles"]["planner"]["binding"].pop(
+                "model_reasoning_effort"
+            ),
+        )
         with self.assertRaisesRegex(ValueError, "incomplete Codex binding for orch-planner"):
             install.load_role_profiles(path)
 
     def test_a_missing_codex_fork_binding_is_refused_and_the_row_is_named(self):
-        path = self.table((", fork_turns `none`", ""))
+        path = self.adapters(
+            "codex",
+            lambda host: host["role_profiles"]["planner"]["binding"].pop(
+                "fork_turns"
+            ),
+        )
         with self.assertRaisesRegex(ValueError, "incomplete Codex binding for orch-planner"):
             install.load_role_profiles(path)
 
@@ -77,13 +188,23 @@ class RoleProfileRefusalTest(unittest.TestCase):
         self.assertEqual(
             "none", install.load_role_profiles()["orch-planner"]["codex"]["fork_turns"]
         )
-        path = self.table(("fork_turns `none`", "fork_turns `3`"))
+        path = self.adapters(
+            "codex",
+            lambda host: host["role_profiles"]["planner"]["binding"].__setitem__(
+                "fork_turns", "3"
+            ),
+        )
         self.assertEqual("3", install.load_role_profiles(path)["orch-planner"]["codex"]["fork_turns"])
 
     def test_other_codex_fork_bindings_are_refused_and_the_row_is_named(self):
         for value in ("all", "0", "01", "latest"):
             with self.subTest(value=value):
-                path = self.table(("fork_turns `none`", f"fork_turns `{value}`"))
+                path = self.adapters(
+                    "codex",
+                    lambda host, value=value: host["role_profiles"]["planner"][
+                        "binding"
+                    ].__setitem__("fork_turns", value),
+                )
                 with self.assertRaisesRegex(
                     ValueError, f"invalid Codex fork_turns for orch-planner: {value}"
                 ):
@@ -94,25 +215,58 @@ class RoleProfileRefusalTest(unittest.TestCase):
         file's name: two rows sharing one write two agents to one path, the
         second winning without a word."""
 
-        path = self.table(("agent_type `orch_worker`", "agent_type `orch_planner`"))
+        path = self.adapters(
+            "codex",
+            lambda host: host["role_profiles"]["worker"]["binding"].__setitem__(
+                "agent_type", "orch_planner"
+            ),
+        )
         with self.assertRaisesRegex(ValueError, "duplicate Codex agent_type: orch_planner"):
             install.load_role_profiles(path)
 
     def test_an_incomplete_claude_binding_is_refused_and_the_row_is_named(self):
-        path = self.table(("model `claude-opus-5`, effort `max`", "effort `max`"))
+        path = self.adapters(
+            "claude",
+            lambda host: host["role_profiles"]["planner"]["binding"].pop("model"),
+        )
         with self.assertRaisesRegex(ValueError, "incomplete Claude binding for orch-planner"):
             install.load_role_profiles(path)
+
+
 class TestScopedHostConfiguration(unittest.TestCase):
+    def test_existing_marker_collision_is_refused_while_building_the_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            agents = home / ".codex" / "AGENTS.md"
+            agents.parent.mkdir(parents=True)
+            marker = install.load_host_adapters()["codex"]["managed_markers"][
+                "host_instructions"
+            ]["start"]
+            agents.write_text(f"{marker}\nforeign\n{marker}\n", encoding="utf-8")
+
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "codex"
+            ):
+                with self.assertRaisesRegex(
+                    ValueError, "duplicate managed block markers"
+                ):
+                    install.build_plan("user", None)
+
+            self.assertFalse(home.joinpath(".orchflows").exists())
+
     def test_invalid_codex_agent_type_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
-            profiles = Path(tmp) / "profiles.md"
-            content = install.PROFILES_MD.read_text(encoding="utf-8").replace(
-                "agent_type `orch_planner`", "agent_type `orch-planner`", 1
-            )
-            profiles.write_text(content, encoding="utf-8")
+            adapters = Path(tmp) / "adapters"
+            shutil.copytree(install.HOST_ADAPTERS_DIR, adapters)
+            path = adapters / "codex.json"
+            rendered = json.loads(path.read_text(encoding="utf-8"))
+            rendered["host"]["role_profiles"]["planner"]["binding"][
+                "agent_type"
+            ] = "orch-planner"
+            path.write_text(json.dumps(rendered), encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "invalid Codex agent_type"):
-                install.load_role_profiles(profiles)
+                install.load_role_profiles(adapters)
 
     @requires_tomllib
     def test_codex_role_agent_names_follow_spawn_identifier_grammar(self):

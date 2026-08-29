@@ -1,0 +1,74 @@
+{
+  "adapter_version": 1,
+  "host": {
+    "capabilities": {
+      "effort": "native",
+      "isolation": "requested"
+    },
+    "cli_candidates": [
+      "claude",
+      "claude.exe",
+      "claude.cmd"
+    ],
+    "display_name": "Claude Code",
+    "frontmatter": {
+      "legal_keys": [
+        "name",
+        "description",
+        "context",
+        "agent"
+      ],
+      "role_fields": {
+        "agent": "orch-{role}",
+        "context": "fork"
+      }
+    },
+    "home": {
+      "default": ".claude",
+      "environment": "CLAUDE_CONFIG_DIR"
+    },
+    "id": "claude",
+    "installed_items": {
+      "instructions": "CLAUDE.md",
+      "role_agent": "agents/{profile}.md",
+      "settings": "settings.json",
+      "skill": "skills/{name}/SKILL.md"
+    },
+    "launch": {
+      "native_fields": [
+        "model",
+        "effort",
+        "context",
+        "agent"
+      ],
+      "verb": "Agent"
+    },
+    "managed_markers": {
+      "host_instructions": {
+        "end": "<!-- END ORCHFLOWS -->",
+        "mode": "import-legacy",
+        "start": "<!-- BEGIN ORCHFLOWS (managed block \u2014 do not edit inside; reinstall to update) -->",
+        "target": "CLAUDE.md"
+      }
+    },
+    "role_profiles": {
+      "planner": {
+        "binding": {
+          "effort": "max",
+          "model": "claude-opus-5"
+        },
+        "name": "orch-planner"
+      },
+      "worker": {
+        "binding": {
+          "effort": "high",
+          "model": "claude-opus-5"
+        },
+        "name": "orch-worker"
+      }
+    },
+    "schema_version": 1
+  },
+  "source": "hosts/claude.json",
+  "source_sha256": "10bd42659ea6c1f61921c4dbb9550b47365c4ab76e3fa1c165eda51c461137b2"
+}

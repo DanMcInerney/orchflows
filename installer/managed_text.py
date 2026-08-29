@@ -8,7 +8,13 @@ import re
 from pathlib import PurePath
 from typing import NamedTuple
 
-from .packages import FORK_ARRIVAL_CLAUSE, ROLE_INSTRUCTIONS, _role_description, frontmatter_field
+from .packages import (
+    FORK_ARRIVAL_CLAUSE,
+    ROLE_INSTRUCTIONS,
+    _role_description,
+    frontmatter_field,
+    host_legal_frontmatter,
+)
 from .foundation import (
     CLAUDE_MAX_TOOL_USE_CONCURRENCY,
     CLAUDE_SETTINGS_SCHEMA,
@@ -73,19 +79,9 @@ def render_grok_agent(name: str, profile: dict) -> str:
 
 
 def grok_legal_frontmatter(frontmatter: str) -> str:
-    """Grok skill frontmatter: ``name`` and ``description``, nothing else.
+    """Grok skill frontmatter from the rendered host adapter."""
 
-    Deliberately *not* ``host_legal_frontmatter``, which additionally injects
-    Claude's native ``context: fork`` / ``agent: orch-<role>`` pair. Grok reads
-    neither key and ignores both, so leaving them renders a role binding that
-    looks present and does nothing -- ``grok_role_adapter_body`` carries it."""
-
-    return "".join(
-        line
-        for line in frontmatter.splitlines(keepends=True)
-        if line.rstrip("\r\n") == "---"
-        or line.partition(":")[0].strip() in ("name", "description")
-    )
+    return host_legal_frontmatter(frontmatter, host="grok")
 
 
 def grok_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md) -> str:

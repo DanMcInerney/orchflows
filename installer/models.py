@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .foundation import HOST_BLOCK_TEMPLATE, _bin_dir, _lib_home
 from .managed_text import render_host_block
-from .packages import template_markers
+from .hosts import load_host_adapters, marker
 from .runtime import private_runtime_python
 
 # --- plan -----------------------------------------------------------------
@@ -120,7 +120,8 @@ def _host_block_content() -> tuple[str, str, str]:
     lib_home = _lib_home("user", None)
     bin_dir = _bin_dir("user", None)
     template_text = HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
-    start_marker, end_marker = template_markers(template_text)
+    host_markers = marker("codex", "host_instructions", load_host_adapters())
+    start_marker, end_marker = host_markers["start"], host_markers["end"]
     content = render_host_block(
         template_text,
         bin_dir,
