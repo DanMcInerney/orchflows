@@ -60,6 +60,7 @@ class ReaderExtractionTest(unittest.TestCase):
     )
     frontend_job = workflow.split("  frontend:\n", 1)[1].split("\n  checks:", 1)[0]
 
-    self.assertIn("working-directory: reader", frontend_job)
+    self.assertEqual(frontend_job.count("working-directory: reader"), 4)
+    self.assertIn("-r requirements-runtime.txt", frontend_job)
     self.assertIn("hashFiles('reader/pnpm-lock.yaml')", frontend_job)
     self.assertNotIn("hashFiles('pnpm-lock.yaml')", frontend_job)
