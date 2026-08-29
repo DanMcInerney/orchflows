@@ -212,7 +212,7 @@ library-docs-finalize-20260826                          00-root                 
 library-docs-repair-v2-20260826                         00-root                                                  orch-decompose          1806     720    100      yes 
 sync-reinstall-accepted-20260818-817a4ae                00-verify                                                orch-verify             12944    10     100      yes 
 
-friction: 5299 in window, 2070 outside, 4199 matched no cluster
+friction: 5299 in window, 4199 matched no cluster
 
 friction by category (top 40)
 -----------------------------

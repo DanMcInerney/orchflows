@@ -123,8 +123,8 @@ def render(report: dict) -> str:
     lines += table("longest tickets (top {0})".format(report["top"]), LONGEST_COLUMNS, report["tickets"]["longest"])
     lines += table("live claims", LIVE_COLUMNS, report["tickets"]["live_claims"])
     friction = report["friction"]
-    lines += ["", "friction: {0} in window, {1} outside, {2} matched no cluster".format(
-        friction["total"], friction["outside_window"], friction["unclustered"])]
+    lines += ["", "friction: {0} in window, {1} matched no cluster".format(
+        friction["total"], friction["unclustered"])]
     for field in ("category", "skill", "host", "run"):
         lines += table("friction by {0} (top {1})".format(field, report["top"]),
                        _by(field), friction["by_" + field])
