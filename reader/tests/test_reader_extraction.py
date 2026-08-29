@@ -50,3 +50,16 @@ class ReaderExtractionTest(unittest.TestCase):
     self.assertIn("/api/v1/", facade)
     self.assertNotIn("/api/observe", facade)
     self.assertNotIn("FallbackReaderServer", facade)
+
+
+  def test_frontend_ci_runs_from_the_reader_root(self):
+    """The extracted frontend's CI commands resolve only inside reader/."""
+
+    workflow = (ROOT / ".github" / "workflows" / "checks.yml").read_text(
+        encoding="utf-8"
+    )
+    frontend_job = workflow.split("  frontend:\n", 1)[1].split("\n  checks:", 1)[0]
+
+    self.assertIn("working-directory: reader", frontend_job)
+    self.assertIn("hashFiles('reader/pnpm-lock.yaml')", frontend_job)
+    self.assertNotIn("hashFiles('pnpm-lock.yaml')", frontend_job)
