@@ -85,7 +85,10 @@ def payload_of(completed) -> dict:
         )
 
 
-def make_ticket(run_dir: Path, tid: str, *, scope=("scratch",), extra=()) -> Path:
+def make_ticket(
+    run_dir: Path, tid: str, *, scope=("scratch",), extra=(),
+    pack="orch-code-pack",
+) -> Path:
     """A fixture work item. Never this run's own ticket: the base revision of
     this run does not contain ``workspace.py``, so no ticket of it declares
     ``isolation`` and none may be graded by it."""
@@ -96,7 +99,7 @@ def make_ticket(run_dir: Path, tid: str, *, scope=("scratch",), extra=()) -> Pat
         "run: testrun",
         "status: claimed",
         "executor: orch-tdd",
-        "pack: orch-code-pack",
+        f"pack: {pack}",
         "depends_on: []",
         "write_scope:",
     ]

@@ -1,0 +1,55 @@
+{
+  "run": "multi-pack-run",
+  "tickets": [
+    {
+      "id": "01-research",
+      "pack": "orch-research-pack",
+      "adapter": "evidence-store",
+      "identity_form": "evidence-packet",
+      "workspace": "research/multi-pack-run",
+      "artifact_identity": "evidence-packet:multi-pack-run:01-research",
+      "depends_on": [],
+      "context_identities": []
+    },
+    {
+      "id": "02-draft",
+      "pack": "orch-content-pack",
+      "adapter": "document-tree",
+      "identity_form": "document-revision",
+      "workspace": "documents/multi-pack-run/draft.md",
+      "artifact_identity": "document-revision:multi-pack-run:02-draft",
+      "depends_on": ["01-research"],
+      "context_identities": ["evidence-packet:multi-pack-run:01-research"]
+    },
+    {
+      "id": "03-render",
+      "pack": "orch-design-pack",
+      "adapter": "git-plus-render",
+      "identity_form": "view-identity",
+      "workspace": "candidates/multi-pack-run/render",
+      "artifact_identity": "view-identity:multi-pack-run:03-render:dashboard@desktop",
+      "depends_on": ["02-draft"],
+      "context_identities": ["document-revision:multi-pack-run:02-draft"]
+    }
+  ],
+  "joins": [
+    {
+      "id": "01-research",
+      "adapter": "evidence-store",
+      "identity_form": "evidence-packet",
+      "artifact_identity": "evidence-packet:multi-pack-run:01-research"
+    },
+    {
+      "id": "02-draft",
+      "adapter": "document-tree",
+      "identity_form": "document-revision",
+      "artifact_identity": "document-revision:multi-pack-run:02-draft"
+    },
+    {
+      "id": "03-render",
+      "adapter": "git-plus-render",
+      "identity_form": "view-identity",
+      "artifact_identity": "view-identity:multi-pack-run:03-render:dashboard@desktop"
+    }
+  ]
+}
