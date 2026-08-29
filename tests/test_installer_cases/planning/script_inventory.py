@@ -28,7 +28,7 @@ class TestScriptNames(unittest.TestCase):
         self.assertFalse((plan.lib_home / "docs" / "ui").exists())
         completed = subprocess.run(
             [
-                sys.executable,
+                str(install.private_runtime_python(plan.scope_home / "runtime")),
                 "-c",
                 "import json, tempfile\n"
                 "from pathlib import Path\n"
