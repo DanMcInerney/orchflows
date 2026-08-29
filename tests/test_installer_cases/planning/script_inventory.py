@@ -30,8 +30,22 @@ class TestScriptNames(unittest.TestCase):
             [
                 sys.executable,
                 "-c",
-                "import json; from reader.scripts import ui_workflows_projection as projection; "
-                "print(json.dumps(projection.project_workflow_catalog()))",
+                "import json, tempfile\n"
+                "from pathlib import Path\n"
+                "from reader.scripts.ui_api import create_application\n"
+                "from reader.scripts import ui_workflows_projection as projection\n"
+                "create_application(Path(tempfile.mkdtemp()))\n"
+                "root = Path.cwd()\n"
+                "assert (root / 'reader' / 'docs' / 'view-manifest.json').is_file()\n"
+                "summary = root / 'reader' / 'docs' / 'workflow-summary-manifest.json'\n"
+                "assert summary.is_file()\n"
+                "try:\n"
+                "    projection.project_workflow_catalog(root, summary_path=root / 'missing.json')\n"
+                "except projection.WorkflowProjectionError:\n"
+                "    pass\n"
+                "else:\n"
+                "    raise AssertionError('missing summary manifest was accepted')\n"
+                "print(json.dumps(projection.project_workflow_catalog(root)))",
             ],
             capture_output=True,
             text=True,

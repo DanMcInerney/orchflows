@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from scripts.tickets_format import TERMINAL_STATES, VALID_STATUSES
-from scripts.tickets_lifecycle import readiness_facts
+from scripts.tickets_readiness import readiness_facts
+from scripts.tickets_format import TERMINAL_STATES
 
 
 def explain_ticket(ticket: dict, tickets: dict) -> dict:

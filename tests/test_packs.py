@@ -134,6 +134,28 @@ class PackResolutionTests(unittest.TestCase):
 
             self.assertEqual("project", resolved["scope"])
 
+    def test_text_reference_line_endings_do_not_change_pack_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            left = root / "left"
+            right = root / "right"
+            for target in (left, right):
+                _copy_pack_with_contract(PACKS / "orch-code-pack", target / "sample-pack", root)
+                skill = target / "sample-pack" / "SKILL.md"
+                skill.write_bytes(
+                    skill.read_bytes()
+                    .replace(b"\r\n", b"\n")
+                    .replace(b"name: orch-code-pack", b"name: sample-pack")
+                )
+            for path in right.rglob("*"):
+                if path.is_file():
+                    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+
+            self.assertEqual(
+                packs.resolve_pack("sample-pack", canonical_root=left)["digest"],
+                packs.resolve_pack("sample-pack", canonical_root=right)["digest"],
+            )
+
     def test_cells_projects_exact_consumer_leaves(self):
         resolved = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
 
