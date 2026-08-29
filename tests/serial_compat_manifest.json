@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2015,
+  "count": 2016,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1277,6 +1277,7 @@
    "tests.test_static_tree_invariants_cases.skill_packages.TestPackageNamesMatchFolders.test_every_skill_folder_matches_its_frontmatter_name",
    "tests.test_static_tree_invariants_cases.skill_packages.TestSkillAnatomyOrder.test_every_skill_body_orders_require_then_never_then_return",
    "tests.test_static_tree_invariants_cases.skill_packages.TestTierDirectoriesExist.test_every_skill_tier_directory_exists",
+   "tests.test_static_tree_invariants_cases.skill_packages.TestTierDirectoriesExist.test_only_surviving_skill_tiers_are_declared",
    "tests.test_suite_check_cases.audit.TestAuditSkips.test_expected_failure_is_not_a_skip",
    "tests.test_suite_check_cases.audit.TestAuditSkips.test_multiple_skips_all_named",
    "tests.test_suite_check_cases.audit.TestAuditSkips.test_no_skips_returns_empty",
@@ -2018,7 +2019,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "79e91fd5cfe03f7026cc33eeecd0b8d72e4f71d8de073674f9985058b6300c1f"
+  "sha256": "07c65f6eb257588519d381e9d09321aedad1204ca295e6a6568f60875d3df28d"
  },
  "mutation_owners": [
   {
