@@ -45,14 +45,14 @@ browser and Python dependency, including elkjs under its EPL-2.0 option.
 
 ## Immutable asset lifecycle
 
-`web/src` is the authored TypeScript source. The lockfile and Vite build
-produce `web/dist`: one index, one Vite manifest, and content-hashed local
+`reader/web/src` is the authored TypeScript source. The lockfile and Vite build
+produce `reader/web/dist`: one index, one Vite manifest, and content-hashed local
 scripts, styles, and workers. The committed distribution has no source maps,
 remote URLs, or view-time network dependency. Maintainers verify it with:
 
-    uv run --no-project python tools/ui_frontend.py verify-build
-    uv run --no-project python tools/ui_frontend.py audit-licenses
-    uv run --no-project python tools/ui_frontend.py smoke
+    uv run --no-project python reader/tools/ui_frontend.py verify-build
+    uv run --no-project python reader/tools/ui_frontend.py audit-licenses
+    uv run --no-project python reader/tools/ui_frontend.py smoke
 
 A user install stages the distribution, checks its manifest identity, then
 creates, reuses, or repairs `~/.orchflows/ui`. The receipt records each asset
@@ -66,10 +66,8 @@ offline: it serves the installed immutable assets and reads local state only.
 
 ## HTTP and API boundary
 
-`scripts/ui.py` is the public CLI. Its Starlette application is served by
-Uvicorn from a socket pre-bound to `127.0.0.1`; a small standard-library
-compatibility server preserves the same contract when the facade is imported
-outside the installed runtime. Both accept only `GET` and `HEAD`, reject
+`reader/scripts/ui.py` is the public CLI. Its Starlette application is served by
+Uvicorn from a socket pre-bound to `127.0.0.1`. It accepts only `GET` and `HEAD`, rejects
 non-loopback host headers, enable no CORS middleware, and attach restrictive
 CSP, frame, origin, referrer, and content-type headers to every response.
 
@@ -87,13 +85,11 @@ The same-origin routes are:
 | `/api/v1/sessions` | session metadata summaries |
 | `/api/v1/sessions/{session}` | session and subagent structure metadata |
 | `/api/v1/experience` | closed `orchflows.experience.v1` shell, selection, readiness, and safe view projection |
-| `/api/observe` | minimal graph snapshot used by the first browser shell |
 
 Successful JSON and asset responses carry content-derived ETags. The browser
 uses `If-None-Match`; unchanged resources return `304`, while hashed assets
-also carry immutable caching. The earlier `/ticket`, `/graph`, `/friction`,
-`/sessions`, and `/session` links redirect to equivalent application URLs
-when their target still exists.
+also carry immutable caching. The reader exposes no unversioned endpoint
+aliases.
 
 The browser owns semantic, refresh-safe application routes at `/now`,
 `/runs/{run}`, `/runs/{run}/tickets/{ticket}`, `/sessions`,
@@ -144,14 +140,14 @@ maps and ticket details, the Workflows definition catalog, definition detail
 and contained source states, Sessions, session graphs, and Friction at
 1440×1024 and 1024×768. Its `navigationParents` map makes each view kind's
 active rail owner part of the rendered contract without adding an identity.
-`tools/ui_frontend.py capture`, `audit`, and `diff` consume that
+`reader/tools/ui_frontend.py capture`, `audit`, and `diff` consume that
 manifest. Capture writes ephemeral evidence only; audit applies WCAG 2.2 AA
 rules plus 200-percent zoom-equivalent reflow, forced-colors, reduced-motion,
 and keyboard-reach parity to every identity. Diff exits nonzero on a
 missing or changed capture; `no-golden` is explicit and allowed only for
 this greenfield foundation until a separate owner admits goldens.
 
-`web/src/styles/tokens.css` is the single carrier for the closed type-size
+`reader/web/src/styles/tokens.css` is the single carrier for the closed type-size
 scale and shared privacy, status-border, radius, spacing, surface, and focus
 decisions. Feature CSS consumes those names rather than spelling synonyms.
 

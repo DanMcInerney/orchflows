@@ -4,7 +4,7 @@ This specification changes ownership before any visual redesign. It makes a comp
 
 ## Baseline coupling and preserved invariants
 
-PR 74's shell is component-additive, not feature-modular. The registry eagerly discovers views, while navigation, route parsing, the shared `ExperienceSnapshot`, polling, and whole-snapshot handoff remain separate central seams (`web/src/app/registry.ts`, [shell](../../web/src/ObserveApp.tsx), `web/src/state/location.ts`, `web/src/api/schema.ts`, `web/src/api/client.ts`, `web/src/feed.ts`). A feature change therefore crosses browser and reader concerns assigned to different owners ([architecture](../../ARCHITECTURE.md), [rendered UI contract](README.md)). Feature indices are narrow but not uniform: for example, the [session-graph index](../../web/src/features/session-graph/index.ts) also exports `sessionTopology`.
+PR 74's shell is component-additive, not feature-modular. The registry eagerly discovers views, while navigation, route parsing, the shared `ExperienceSnapshot`, polling, and whole-snapshot handoff remain separate central seams (`reader/web/src/app/registry.ts`, [shell](../../reader/web/src/ObserveApp.tsx), `reader/web/src/state/location.ts`, `reader/web/src/api/schema.ts`, `reader/web/src/api/client.ts`, `reader/web/src/feed.ts`). A feature change therefore crosses browser and reader concerns assigned to different owners ([architecture](../../ARCHITECTURE.md), [rendered UI contract](README.md)). Feature indices are narrow but not uniform: for example, the [session-graph index](../../reader/web/src/features/session-graph/index.ts) also exports `sessionTopology`.
 
 Implementation must replace glob discovery with one explicit static typed catalog. The catalog is the sole architectural owner of display order, rail participation, route matching/building, view loading, and the binding of a route to one feature's data contract. Feature packages supply private implementations the catalog registers: route functions, schema, request and polling policy, projection, model, view, fixtures, styles, and focused tests. Those functions cannot self-register or dispatch. One shared feature-blind transport retains ETag and polling mechanics. Python domain projections split behind the existing `ui_api` facade.
 
@@ -52,14 +52,14 @@ For an enabled rail row, the canonical href is `route.build(navigation.home)`. F
 
 The router evaluates every routable row, selects the highest `matchPriority`, and treats zero matches as the shell's not-found state. Tied highest matches are a catalog-construction error and an admission-test failure. Priority is explicit and independent of array order, so rail reordering cannot alter routing. Duplicate identities and enabled-rail canonical hrefs are also rejected.
 
-This catalog replaces fallback navigation, parent-route exceptions, and route switches ([shell](../../web/src/ObserveApp.tsx), `web/src/state/location.ts`). There is no second registration or routing owner.
+This catalog replaces fallback navigation, parent-route exceptions, and route switches ([shell](../../reader/web/src/ObserveApp.tsx), `reader/web/src/state/location.ts`). There is no second registration or routing owner.
 
 ## Feature-local frontend boundary
 
 Use these boundaries:
 
 ```text
-web/src/
+reader/web/src/
   app/{catalog.ts,shell/}
   shared/{tokens/,primitives/,transport/,graph/}
   features/<feature>/
@@ -77,9 +77,9 @@ Fixtures, styles, views, and focused tests stay beside the model. Small feature-
 
 ## Backend projection, API, failure, and privacy boundary
 
-[`scripts/ui_api.py`](../../scripts/ui_api.py) remains the public reader facade: it creates the Starlette app, applies host/security policy, and explicitly assembles routes. Domain projection logic moves to `ui_now_projection.py`, `ui_runs_projection.py` (including ticket detail), `ui_workflows_projection.py`, `ui_sessions_projection.py`, and `ui_friction_projection.py`, with typed contracts and no imports between domains. The facade imports each route table and rejects duplicate method/path pairs at startup ([architecture](../../ARCHITECTURE.md)).
+[`reader/scripts/ui_api.py`](../../reader/scripts/ui_api.py) remains the public reader facade: it creates the Starlette app, applies host/security policy, and explicitly assembles routes. Domain projection logic lives in the sibling `reader/scripts/ui_*_projection.py` modules, with typed contracts and no imports between domains. The facade imports each route table and rejects duplicate method/path pairs at startup ([architecture](../../ARCHITECTURE.md)).
 
-All JSON routes use one content-derived ETag/`If-None-Match` helper. Existing `/api/v1/*` and `/api/observe` shapes remain until endpoint parity passes; `/api/v1/experience` is only a compatibility adapter.
+All JSON routes use one content-derived ETag/`If-None-Match` helper. The public API is versioned under `/api/v1/*`; removed legacy paths are not compatibility adapters.
 
 A projector validates identifiers, reads only its declared root, and returns a closed schema. It follows the [privacy boundary](platform.md#projection-and-privacy-boundary): redact host paths and never return transcript text, prompts, tool or command output, arbitrary files, or another ticket body. Missing resources are domain-local `404`s; malformed source state becomes a typed non-sensitive diagnostic; unexpected failures become a generic route-local `5xx`. Projectors never mutate state, launch work, or widen containment.
 
@@ -103,8 +103,8 @@ Here **tracer** means the repository's thin end-to-end implementation slice, not
 
 Test focused feature behavior; catalog identity/type correlation and conflict rejection; facade and old/new projection parity; canonical parse/build, precedence, refresh, disabled Create, and hidden-parent highlighting; lifecycle first-load/stale/recovery behavior; and deterministic fixture rendering.
 
-When rendered inventory changes, update [`view-manifest.json`](view-manifest.json), the expected identity set/count in [`experience_projection.py`](../../tests/test_ui_cases/experience_projection.py), the current-inventory assertion in [`ui_frontend.py`](../../tools/ui_frontend.py), and the [platform inventory contract](platform.md#rendered-experience-admission) in the same owner-reviewed change; then capture, audit, and diff the new inventory.
+When rendered inventory changes, update [`view-manifest.json`](view-manifest.json), the reader contract tests, the current-inventory assertion in [`ui_frontend.py`](../../reader/tools/ui_frontend.py), and the [platform inventory contract](platform.md#rendered-experience-admission) in the same owner-reviewed change; then capture, audit, and diff the new inventory.
 
-Admission requires the dependency rules above and the [510-line ceiling](../../tools/check_source_sizes.py). Run `uv run --no-project python -m unittest tests.test_ui_cases.experience_projection -v`, `uv run --no-project python tools/ui_frontend.py verify-build`, `uv run --no-project python tools/ui_frontend.py audit-licenses`, `uv run --no-project python tools/ui_frontend.py smoke --experience`, then every command in [`AGENTS.md`](../../AGENTS.md#required-checks).
+Admission requires the dependency rules above and the [510-line ceiling](../../tools/check_source_sizes.py). Run the reader contract tests, `uv run --no-project python reader/tools/ui_frontend.py verify-build`, `uv run --no-project python reader/tools/ui_frontend.py audit-licenses`, `uv run --no-project python reader/tools/ui_frontend.py smoke --experience`, then every command in [`AGENTS.md`](../../AGENTS.md#required-checks).
 
 Modularization is complete only when catalog-only reordering preserves routing; disabled Create and the fixed rail render correctly; a nav-hidden deep link highlights its parent and survives refresh; lifecycle, parity, routing, fixture, and manifest checks pass; `ExperienceSnapshot` and duplicate nav/router ownership are absent; and all admission commands are green.

@@ -39,6 +39,7 @@ except ModuleNotFoundError:  # tomllib is 3.11+; MIN_PYTHON is lower.
     tomllib = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+READER_ROOT = REPO_ROOT / "reader"
 _HOST_ADAPTERS = load_host_adapters()
 CANONICAL_DIRS = (
     "contracts",

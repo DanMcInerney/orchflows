@@ -1,6 +1,6 @@
 """The friction a window recorded, grouped and clustered.
 
-`scripts/ui_discovery.read_friction` owns the reading -- one bad line
+`reader/scripts/ui_discovery.read_friction` owns the reading -- one bad line
 costs that line and nothing else -- so this module only counts.
 """
 

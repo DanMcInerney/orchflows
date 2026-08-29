@@ -1,7 +1,7 @@
 # Ticket inspector
 
 The ticket inspector is the read-only technical drill-down for one canonical
-ticket selection. Its feature module lives under `web/src/features/inspector`
+ticket selection. Its feature module lives under `reader/web/src/features/inspector`
 and exports the `ticket` view identity for the platform registry.
 
 ## Evidence contract

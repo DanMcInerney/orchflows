@@ -16,7 +16,7 @@ count. Now does not render a second detailed execution graph.
 Current and Next lists identify the exact tickets that canonical status marks
 as executing, attention-worthy, or ready. Waiting work is not described as
 next. The run objective and each current or next ticket are descriptive native
-links built by `web/src/shared/routes/executionRoutes.ts`; the run link opens
+links built by `reader/web/src/shared/routes/executionRoutes.ts`; the run link opens
 the full execution graph and ticket links open canonical ticket detail. Now
 does not import another feature's view.
 

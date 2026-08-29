@@ -73,26 +73,13 @@ Ceiling: 850 whitespace-delimited words. Terms are
   and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins
   and the hash-locked runtime closure; [`pyproject.toml`](pyproject.toml)
   mirrors them for tooling.
-- [`package.json`](package.json) and [`pnpm-lock.yaml`](pnpm-lock.yaml) own the
-  exact browser build graph; Node and pnpm stop at the repository boundary.
-  [`tools/ui_frontend.py`](tools/ui_frontend.py) owns deterministic build,
-  license, browser-smoke, capture, accessibility, visual-diff admission.
-  [`web/src/app/catalog.ts`](web/src/app/catalog.ts) owns route
-  matching/building, navigation order, view loading, data binding;
-  [`web/src/app/shell/`](web/src/app/shell/) owns browser location and
-  reader chrome. [`web/src/features/`](web/src/features/) owns each
-  feature's routes, schemas, requests, projections, models, views,
-  fixtures, styles, tests.
-  [`web/src/shared/transport/`](web/src/shared/transport/) owns
-  feature-blind HTTP, ETag, retry, generation, polling mechanics.
-  [`web/src/design/`](web/src/design/) and [`web/src/styles/`](web/src/styles/)
-  own tokens. Dependency direction: `shell -> catalog -> feature -> shared`,
-  with one named reuse edge: the Now view renders the Workflows-owned
-  [`SummaryFlow`](web/src/features/workflows/view/SummaryFlow.tsx) flowchart
-  and its stylesheet rather than paralleling it; Workflows keeps ownership, and a
-  second summary-flow component is a defect.
-  `web/dist` owns the committed content-hashed distribution the installer
-  copies; the installed reader never runs a package manager or build.
+- [`reader/`](reader/) owns the Observe browser, projection family, and
+  committed content-hashed distribution; its closed `/api/v1` API is the sole
+  state-sink seam and the installed reader never runs a package manager or
+  build. Its browser dependency direction is `shell -> catalog -> feature ->
+  shared`, with one named reuse edge: the Now view renders the Workflows-owned
+  [`SummaryFlow`](reader/web/src/features/workflows/view/SummaryFlow.tsx)
+  flowchart and stylesheet rather than paralleling it.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale; [`README.md`](README.md)
   is the human entry surface, not an owner of agent law.
 
@@ -108,23 +95,13 @@ immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 `tickets.py grant` is operator-only: only the dispatcher widens claimed
 authority.
 
-The UI reader family keeps one closed boundary: `scripts/ui_api.py` owns
+The reader family keeps one closed boundary: `reader/scripts/ui_api.py` owns
 route assembly, query validation, shared JSON ETags and closed failures,
-security middleware, loopback Starlette/Uvicorn with fallback parity.
-Domain projections belong to `scripts/ui_artifacts_projection.py`,
-`scripts/ui_now_projection.py`,
-`scripts/ui_runs_projection.py`, `scripts/ui_workflows_projection.py`,
-`scripts/ui_sessions_projection.py`, `scripts/ui_friction_projection.py`.
-The Workflows projector owns `/api/v1/workflows`,
-`/api/v1/workflows/{workflow_id}`,
-`/api/v1/workflows/{workflow_id}/sources/{source_id}`; the typed catalog
-owns their browser counterparts under `/workflows`.
-`scripts/ui_experience.py` owns only the `orchflows.experience.v1`
-compatibility projection: closed feature slices, navigation contract,
-SPA-path recognition. `scripts/ui_assets.py` owns contained immutable-asset
-reads and the standard-library compatibility server; `scripts/ui_readiness.py`
-owns canonical readiness facts and causal explanations. Legacy rendering
-stays in `scripts/ui_server.py`.
+security middleware, and loopback Starlette/Uvicorn. Domain projections belong
+to the sibling modules under `reader/scripts/`; the typed catalog owns browser
+counterparts under `/workflows`. `reader/scripts/ui_assets.py` owns contained
+immutable-asset reads and `reader/scripts/ui_readiness.py` owns canonical
+readiness facts and causal explanations.
 [The platform contract](docs/ui/platform.md) owns the complete boundary.
 
 ## State boundary
