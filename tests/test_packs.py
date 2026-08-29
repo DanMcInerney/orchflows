@@ -232,6 +232,22 @@ class PackResolutionTests(unittest.TestCase):
         self.assertEqual(0, projected.returncode, projected.stderr)
         self.assertEqual({"craft", "evidence", "lens"}, set(json.loads(projected.stdout)["cells"]))
 
+    def test_scope_aliases_are_not_accepted_by_the_resolver_facade(self):
+        command = [sys.executable, str(ROOT / "scripts" / "packs.py")]
+        result = subprocess.run(
+            command + ["resolve", "orch-code-pack", "--canonical", str(PACKS)],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("unrecognized arguments", result.stderr)
+
+    def test_root_keyword_is_not_a_resolver_compatibility_alias(self):
+        with self.assertRaises(TypeError):
+            packs.resolve_pack("orch-code-pack", root=PACKS)
+
 
 class PackShapeRefusalTests(unittest.TestCase):
     def test_old_skill_binding_cell_is_refused(self):

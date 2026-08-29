@@ -13,21 +13,10 @@ import re
 from pathlib import Path
 from typing import Optional
 
-try:
+if __package__:
     from .packs import PackError, resolve_pack
-except ImportError:
-    try:
-        from packs import PackError, resolve_pack
-    except ImportError:
-        class PackError(ValueError):
-            """Fallback used when a flat command omits the pack resolver."""
-
-            def __init__(self, code: str, detail: str):
-                super().__init__(detail)
-                self.code = code
-                self.detail = detail
-
-        resolve_pack = None
+else:  # pragma: no cover - direct/installed script path
+    from packs import PackError, resolve_pack
 
 try:
     from . import state_root
@@ -111,22 +100,18 @@ def _skill_resolution_defect(entry: str) -> Optional[str]:
     return None
 
 
-def _pack_options(pack_root=None, canonical_root=None, project_root=None, user_root=None):
-    options = {
+def _pack_options(canonical_root=None, project_root=None, user_root=None):
+    return {
         "canonical_root": canonical_root,
         "project_root": project_root,
         "user_root": user_root,
     }
-    if pack_root is not None:
-        options["root"] = pack_root
-    return options
 
 
 def _cell_resolution_defects(
     entries: list[str],
     pack,
     *,
-    pack_root=None,
     canonical_root=None,
     project_root=None,
     user_root=None,
@@ -135,13 +120,10 @@ def _cell_resolution_defects(
         return ["cell sequence requires a stamped pack to resolve its stages"]
     if "{{" in str(pack):
         return []
-    if resolve_pack is None:
-        return [f"cell sequence pack '{pack}' cannot resolve stages: pack resolver unavailable"]
     try:
         resolved = resolve_pack(
             pack,
             **_pack_options(
-                pack_root,
                 canonical_root,
                 project_root,
                 user_root,
@@ -164,7 +146,6 @@ def sequence_defects(
     executor: str,
     pack=None,
     *,
-    pack_root=None,
     canonical_root=None,
     project_root=None,
     user_root=None,
@@ -225,7 +206,6 @@ def sequence_defects(
         _cell_resolution_defects(
             entries,
             pack,
-            pack_root=pack_root,
             canonical_root=canonical_root,
             project_root=project_root,
             user_root=user_root,

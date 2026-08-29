@@ -135,14 +135,11 @@ def _roots(
     canonical_root: Optional[Path],
     project_root: Optional[Path],
     user_root: Optional[Path],
-    root: Optional[Path],
 ) -> List[Tuple[str, Path]]:
     """Return roots in shadowing order: project, user, canonical."""
 
-    if project_root is None and root is None:
+    if project_root is None:
         project_root = _project_default()
-    if project_root is None and root is not None:
-        project_root = root
     project = _scope_root(project_root, project=True)
     canonical = (
         Path(canonical_root).expanduser().resolve()
@@ -189,8 +186,20 @@ def _frontmatter_name(text: str, path: Path) -> Optional[str]:
     return match.group(1).strip().strip("`").strip() if match else None
 
 
-def _parse_rows(text: str, path: Path) -> Dict[str, str]:
-    """Parse the one cell table and reject unknown/repeated cell names."""
+def _parse_rows(
+    text: str,
+    path: Path,
+    *,
+    require_all: bool = True,
+) -> Dict[str, str]:
+    """Parse the one cell table and reject unknown/repeated cell names.
+
+    The complete resolver requires every declared cell.  A few boundary
+    validators need to inspect one typed leaf before a complete pack is
+    available (for example, a workspace adapter during admission), so they
+    may request a partial row set while still using this one parser.  Partial
+    parsing never weakens row, name, or duplicate checks.
+    """
 
     rows: Dict[str, str] = {}
     saw_header = False
@@ -232,9 +241,33 @@ def _parse_rows(text: str, path: Path) -> Dict[str, str]:
     if saw_header and not saw_delimiter:
         raise PackError("pack-shape-invalid", f"pack signature table missing delimiter in {path}")
     missing = [cell for cell in PACK_CELLS if cell not in rows]
-    if missing:
+    if require_all and missing:
         raise PackError("pack-shape-invalid", f"pack signature missing cell(s): {', '.join(missing)}")
     return rows
+
+
+def _declared_cell(path: Path, cell: str) -> str:
+    """Read one declared cell through the resolver's sole table parser.
+
+    This is intentionally private: callers that need a content-addressed
+    pack must use :func:`resolve_pack`; the leaf seam exists only for the
+    adapter registry's early admission check, where synthetic or incomplete
+    pack fixtures are still useful.  It shares byte normalization and table
+    validation with the complete resolver, so no second pack parser can drift.
+    """
+
+    if cell not in _CELL_SET:
+        raise PackError("pack-cell-invalid", f"unknown pack cell: {cell}")
+    raw = _read_bytes(path, "pack")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise PackError("pack-unreadable", f"unreadable pack {path}: {error}") from error
+    rows = _parse_rows(text, path, require_all=False)
+    value = rows.get(cell)
+    if value is None:
+        raise PackError("pack-shape-invalid", f"pack signature missing cell: {cell}")
+    return value
 
 
 def _atom(value: str, cell: str, path: Path) -> str:
@@ -370,7 +403,6 @@ def resolve_pack(
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
-    root: Optional[Path] = None,
 ) -> Dict[str, object]:
     """Resolve one pack using the project, user, then canonical scope."""
 
@@ -379,7 +411,6 @@ def resolve_pack(
         canonical_root=canonical_root,
         project_root=project_root,
         user_root=user_root,
-        root=root,
     )
     seen = set()
     for scope, packs_root in roots:
@@ -413,7 +444,6 @@ def cells_for(
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
-    root: Optional[Path] = None,
 ) -> Dict[str, object]:
     """Find a resolved digest and return only its execute/check cells."""
 
@@ -430,7 +460,6 @@ def cells_for(
         canonical_root=canonical_root,
         project_root=project_root,
         user_root=user_root,
-        root=root,
     )
     for name in _available_names(roots):
         try:
@@ -439,7 +468,6 @@ def cells_for(
                 canonical_root=canonical_root,
                 project_root=project_root,
                 user_root=user_root,
-                root=root,
             )
         except PackError:
             continue

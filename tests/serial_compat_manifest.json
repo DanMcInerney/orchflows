@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1605,
+  "count": 1608,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -504,6 +504,8 @@
    "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
    "test_packs.PackResolutionTests.test_public_facade_uses_same_family_resolver_owner",
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
+   "test_packs.PackResolutionTests.test_root_keyword_is_not_a_resolver_compatibility_alias",
+   "test_packs.PackResolutionTests.test_scope_aliases_are_not_accepted_by_the_resolver_facade",
    "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
    "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
@@ -739,6 +741,7 @@
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
    "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
    "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
+   "test_tickets.AdapterRegistryTest.test_unknown_pack_cells_fail_through_the_shared_resolver_parser",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
@@ -1608,7 +1611,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a3651ae811c6717e4e72d87801c6e9193a5332b4f5030614908c09f2f86c4e0e"
+  "sha256": "bf39660d0565e325395c0261f96411c733f324ec1887631f38890350223d0c4c"
  },
  "mutation_owners": [
   {

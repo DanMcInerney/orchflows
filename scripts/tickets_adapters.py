@@ -110,23 +110,22 @@ def declared_adapter(pack, *, root=None) -> str:
 
     path = pack_path(pack, root=root)
     try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as error:
-        raise AdapterError("pack-unreadable", f"unreadable pack {path}: {error}") from error
-    matches = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|"):
-            continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if len(cells) >= 2 and cells[0] == "adapter":
-            matches.append(cells[1].strip().strip("`").strip())
-    if len(matches) != 1 or not matches[0]:
+        if __package__:
+            from . import packs_support
+        else:  # pragma: no cover - direct/installed script path
+            import packs_support
+        value = packs_support._declared_cell(path, "adapter")
+    except ImportError as error:  # pragma: no cover - broken installation
+        raise AdapterError("pack-resolver-unavailable", str(error)) from error
+    except packs_support.PackError as error:
+        raise AdapterError("adapter-declaration-invalid", error.detail) from error
+    normalized = value.strip().strip("`").strip()
+    if not normalized:
         raise AdapterError(
             "adapter-declaration-invalid",
             f"pack must declare exactly one typed adapter leaf: {path}",
         )
-    return matches[0]
+    return normalized
 
 
 def adapter_for_key(key: str) -> Adapter:

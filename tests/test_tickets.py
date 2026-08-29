@@ -53,6 +53,24 @@ class AdapterRegistryTest(unittest.TestCase):
                 tickets_mod.adapter_id("widget-pack", root=root)
             self.assertEqual("adapter-unregistered", caught.exception.code)
 
+    def test_unknown_pack_cells_fail_through_the_shared_resolver_parser(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            pack = root / "packs" / "widget-pack"
+            pack.mkdir(parents=True)
+            (pack / "SKILL.md").write_text(
+                "---\nname: widget-pack\n---\n\n"
+                "| cell | binding |\n| --- | --- |\n"
+                "| workspace | widget records |\n"
+                "| adapter | git |\n"
+                "| executor | orch-tdd |\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(tickets_mod.AdapterError) as caught:
+                tickets_mod.adapter_id("widget-pack", root=root)
+            self.assertEqual("adapter-declaration-invalid", caught.exception.code)
+
     def test_admission_reports_exactly_adapter_unregistered_for_the_pack_key(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)

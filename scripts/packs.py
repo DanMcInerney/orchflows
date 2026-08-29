@@ -44,7 +44,6 @@ def resolve_pack(
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
-    root: Optional[Path] = None,
 ) -> Dict[str, object]:
     """Resolve one pack through the same-family implementation."""
 
@@ -53,7 +52,6 @@ def resolve_pack(
         canonical_root=canonical_root,
         project_root=project_root,
         user_root=user_root,
-        root=root,
     )
 
 
@@ -64,7 +62,6 @@ def cells_for(
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
-    root: Optional[Path] = None,
 ) -> Dict[str, object]:
     """Project one resolved digest through the same-family implementation."""
 
@@ -74,7 +71,6 @@ def cells_for(
         canonical_root=canonical_root,
         project_root=project_root,
         user_root=user_root,
-        root=root,
     )
 
 
@@ -83,18 +79,29 @@ def _path_arg(value: Optional[str]) -> Optional[Path]:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="packs.py", description=__doc__)
+    parser = argparse.ArgumentParser(
+        prog="packs.py",
+        description=__doc__,
+        allow_abbrev=False,
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
-    resolve = subparsers.add_parser("resolve", help="resolve a pack and emit its digest")
+    resolve = subparsers.add_parser(
+        "resolve",
+        help="resolve a pack and emit its digest",
+        allow_abbrev=False,
+    )
     resolve.add_argument("pack")
-    cells = subparsers.add_parser("cells", help="project cells from a resolved digest")
+    cells = subparsers.add_parser(
+        "cells",
+        help="project cells from a resolved digest",
+        allow_abbrev=False,
+    )
     cells.add_argument("digest")
     cells.add_argument("--for", dest="consumer", required=True, choices=("execute", "check"))
     for subparser in (resolve, cells):
-        subparser.add_argument("--canonical-root", "--canonical", dest="canonical_root")
-        subparser.add_argument("--project-root", "--project", dest="project_root")
-        subparser.add_argument("--user-root", "--user", dest="user_root")
-        subparser.add_argument("--root", dest="root")
+        subparser.add_argument("--canonical-root", dest="canonical_root")
+        subparser.add_argument("--project-root", dest="project_root")
+        subparser.add_argument("--user-root", dest="user_root")
     return parser
 
 
@@ -106,7 +113,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "canonical_root": _path_arg(args.canonical_root),
             "project_root": _path_arg(args.project_root),
             "user_root": _path_arg(args.user_root),
-            "root": _path_arg(args.root),
         }
         if args.command == "resolve":
             result = resolve_pack(args.pack, **common)
