@@ -29,8 +29,6 @@ try:
     from scripts.tickets_adapters import ADAPTER_REGISTRY
 except ImportError:
     from tickets_adapters import ADAPTER_REGISTRY
-
-
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
 PACK_CELLS = (
     "slicing",
@@ -71,8 +69,6 @@ class PackError(ValueError):
         super().__init__(detail)
         self.code = code
         self.detail = detail
-
-
 def _canonical_json(value: object) -> bytes:
     return json.dumps(
         value,
@@ -85,8 +81,6 @@ def _canonical_json(value: object) -> bytes:
 
 def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
-
-
 def _canonicalize_bytes(value: bytes) -> bytes:
     """Return stable UTF-8 text bytes independent of checkout line endings."""
 
@@ -95,8 +89,6 @@ def _canonicalize_bytes(value: bytes) -> bytes:
     except UnicodeDecodeError:
         return value
     return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
-
-
 def _read_bytes(path: Path, subject: str) -> bytes:
     """Read and canonicalize one file through the resolver's sole byte seam."""
 
@@ -104,8 +96,6 @@ def _read_bytes(path: Path, subject: str) -> bytes:
         return _canonicalize_bytes(path.read_bytes())
     except (OSError, UnicodeError) as error:
         raise PackError("pack-unreadable", f"unreadable {subject} {path}: {error}") from error
-
-
 def _pack_name(value: object) -> str:
     name = str(value or "").strip().strip("`").strip()
     if not name or not _PACK_NAME_RE.fullmatch(name) or name in (".", ".."):
@@ -115,8 +105,6 @@ def _pack_name(value: object) -> str:
 
 def _root_is_packs(path: Path) -> bool:
     return path.name.lower() == "packs"
-
-
 def _canonical_default() -> Path:
     here = Path(__file__).resolve()
     checkout = here.parent.parent
@@ -134,8 +122,6 @@ def _project_default() -> Optional[Path]:
         if candidate.is_dir():
             return candidate
     return None
-
-
 def _scope_root(value: Optional[Path], *, project: bool) -> Optional[Path]:
     if value is None:
         return None
