@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1608,
+  "count": 1610,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -118,8 +118,10 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_is_a_public_one_call_surface",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_readiness_refusal_without_starting_workspace",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch",
@@ -1611,7 +1613,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "bf39660d0565e325395c0261f96411c733f324ec1887631f38890350223d0c4c"
+  "sha256": "af6617d6527068a864908bd4f8e629f3c4a681666d17b54d53fe1997d46cda9b"
  },
  "mutation_owners": [
   {
@@ -1764,7 +1766,23 @@
   },
   {
    "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
    "owner": "DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"

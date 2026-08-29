@@ -827,6 +827,96 @@ class DispatchV1Test(unittest.TestCase):
         ready.assert_called_once_with(["--run", "run"])
         workspace.assert_not_called()
 
+    def test_dispatch_facade_holds_one_run_lock_across_every_mutating_step(self):
+        events = []
+
+        class Lock:
+            def __enter__(self):
+                events.append("lock-enter")
+                return self
+
+            def __exit__(self, *_):
+                events.append("lock-exit")
+
+        opened = {
+            "dispatch": {
+                "outcome": "opened",
+                "assignment_seal": "seal",
+                "dispatch_id": "D1",
+            }
+        }
+
+        def ready(_args):
+            events.append("ready")
+            return {"ready": []}
+
+        def workspace(_run, _ticket, _workspace):
+            events.append("workspace")
+            return {"start": {"workspace_path": "C:/candidate"}}
+
+        def open_attempt(_args, *, _lock_held=False):
+            events.append(("open", _lock_held))
+            return opened
+
+        def packet(_args, *, _lock_held=False):
+            events.append(("packet", _lock_held))
+            return {"packet": {"dispatch_id": "D1"}}
+
+        with (
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_run_lock", return_value=Lock()),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_ready", side_effect=ready),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_start", side_effect=workspace),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open", side_effect=open_attempt),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_packet", side_effect=packet),
+        ):
+            result = tickets._tickets_dispatch_facade_module._cmd_dispatch([
+                "run", "T", "--by", "worker", "--dispatch-id", "D1",
+                "--lease-expires-at", self.lease, "--reply-to", "root",
+                "--workspace", "C:/candidate",
+            ])
+
+        self.assertEqual({"packet": {"dispatch_id": "D1"}}, result)
+        self.assertEqual(
+            ["lock-enter", "ready", "workspace", ("open", True),
+             ("packet", True), "lock-exit"],
+            events,
+        )
+
+    def test_dispatch_facade_retires_when_projection_returns_no_packet(self):
+        opened = {
+            "dispatch": {
+                "outcome": "opened",
+                "assignment_seal": "seal",
+                "dispatch_id": "D1",
+            }
+        }
+        with (
+            mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
+            mock.patch.object(
+                tickets._tickets_dispatch_facade_module,
+                "_workspace_start",
+                return_value={"start": {"workspace_path": "C:/candidate"}},
+            ),
+            mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
+            mock.patch.object(tickets, "_cmd_dispatch_packet", return_value=None),
+            mock.patch.object(
+                tickets, "_cmd_dispatch_retire", return_value={"dispatch": {}}
+            ) as retire,
+        ):
+            result = tickets._dispatch([
+                "dispatch", "run", "T", "--by", "worker",
+                "--dispatch-id", "D1", "--lease-expires-at", self.lease,
+                "--reply-to", "root", "--workspace", "C:/candidate",
+            ])
+
+        self.assertEqual(
+            {"error": "dispatch-packet returned a non-object response"}, result
+        )
+        retire.assert_called_once_with([
+            "run", "T", "--assignment-seal", "seal", "--dispatch-id", "D1",
+            "--record-id", "lifecycle:dispatch-facade-D1",
+        ], _lock_held=True)
+
 
 if __name__ == "__main__":
     unittest.main()

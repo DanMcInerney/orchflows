@@ -93,16 +93,25 @@ def _cmd_dispatch(rest):
         if invalid is not None:
             return invalid
 
-    ready = _cmd_ready(["--run", run])
-    if "error" in ready:
-        return ready
-
-    established = _workspace_start(run, ticket_id, workspace)
-    if "error" in established:
-        return established
-    workspace_path = established["start"]["workspace_path"]
-
     with _run_lock(run):
+        # Readiness and workspace stamping participate in the same transaction
+        # as opening and projecting.  A separate lock around only the latter
+        # pair would let another caller change the ticket between admission
+        # and the dispatch attempt, defeating the facade's atomic boundary.
+        ready = _cmd_ready(["--run", run])
+        if "error" in ready:
+            return ready
+
+        established = _workspace_start(run, ticket_id, workspace)
+        if "error" in established:
+            return established
+        start = established.get("start")
+        if not isinstance(start, dict):
+            return {"error": "workspace start did not return a start record"}
+        workspace_path = start.get("workspace_path")
+        if not str(workspace_path or "").strip():
+            return {"error": "workspace start did not record workspace_path"}
+
         opening = _cmd_dispatch_open([
             run, ticket_id, "--by", owner, "--dispatch-id", dispatch_id,
             "--lease-expires-at", lease,
@@ -124,6 +133,14 @@ def _cmd_dispatch(rest):
             packet_args.extend(("--artifact", artifact))
         try:
             projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
+            if not isinstance(projected, dict):
+                projected = {
+                    "error": "dispatch-packet returned a non-object response"
+                }
+            elif "error" not in projected and not isinstance(
+                projected.get("packet"), dict
+            ):
+                projected = {"error": "dispatch-packet returned no packet"}
         except Exception as error:
             projected = {"error": str(error)}
         if "error" not in projected:
