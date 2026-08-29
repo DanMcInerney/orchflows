@@ -3,7 +3,7 @@ import unittest
 
 from ._support import ROOT, frontmatter_name, packages, split_document, validate
 
-SKILL_TIERS = ("kernel", "engines", "workflows", "utilities")
+SKILL_TIERS = ("kernel", "engines", "workflows")
 
 # The frozen role census. The census is deliberately explicit: adding,
 # removing, or renaming a skill requires a role decision here.
@@ -41,7 +41,7 @@ class TestTierDirectoriesExist(unittest.TestCase):
     def test_only_surviving_skill_tiers_are_declared(self):
         self.assertEqual(
             SKILL_TIERS,
-            ("kernel", "engines", "workflows", "utilities"),
+            ("kernel", "engines", "workflows"),
         )
 
     def test_every_skill_tier_directory_exists(self):
