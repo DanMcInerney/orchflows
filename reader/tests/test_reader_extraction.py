@@ -64,3 +64,7 @@ class ReaderExtractionTest(unittest.TestCase):
     self.assertIn("-r requirements-runtime.txt", frontend_job)
     self.assertIn("hashFiles('reader/pnpm-lock.yaml')", frontend_job)
     self.assertNotIn("hashFiles('pnpm-lock.yaml')", frontend_job)
+
+    smoke = (READER / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
+    self.assertIn('const fixtureRoot = resolve("..", "tests", "fixtures")', smoke)
+    self.assertNotIn('resolve("tests", "fixtures"', smoke)

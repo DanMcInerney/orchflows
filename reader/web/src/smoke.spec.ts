@@ -22,6 +22,7 @@ let origin = "";
 const action = process.env.ORCHFLOWS_UI_ACTION || "smoke";
 const apiOrigin = process.env.ORCHFLOWS_UI_API_ORIGIN || "";
 const experienceMode = process.env.ORCHFLOWS_UI_EXPERIENCE === "1";
+const fixtureRoot = resolve("..", "tests", "fixtures");
 
 test.beforeAll(async () => {
   if (action !== "smoke") {
@@ -40,9 +41,9 @@ test.beforeAll(async () => {
   stateRoot = await mkdtemp(join(tmpdir(), "orchflows-smoke-"));
   await mkdir(join(stateRoot, "tickets"));
   for (const run of ["run-alpha", "run-beta", "run-delta", "run-epsilon", "run-gamma"]) {
-    await cp(resolve("tests", "fixtures", "ui", run), join(stateRoot, "tickets", run), { recursive: true });
+    await cp(join(fixtureRoot, "ui", run), join(stateRoot, "tickets", run), { recursive: true });
   }
-  await cp(resolve("tests", "fixtures", "ui", "runs"), join(stateRoot, "runs"), { recursive: true });
+  await cp(join(fixtureRoot, "ui", "runs"), join(stateRoot, "runs"), { recursive: true });
   const objectivePath = join(stateRoot, "tickets", "run-gamma", "G1.md");
   const objectiveTicket = await readFile(objectivePath, "utf8");
   await writeFile(
@@ -54,7 +55,7 @@ test.beforeAll(async () => {
     "utf8"
   );
   const transcriptRoot = join(stateRoot, "transcripts");
-  await cp(resolve("tests", "fixtures", "transcripts"), transcriptRoot, { recursive: true });
+  await cp(join(fixtureRoot, "transcripts"), transcriptRoot, { recursive: true });
   const agentRoot = join(transcriptRoot, "-Users-dmcinerney-tools-alpha", "11111111-1111-4111-8111-111111111111", "subagents");
   for (let index = 20; index < 38; index += 1) {
     await writeFile(join(agentRoot, `agent-browser-${index}.meta.json`), JSON.stringify({
