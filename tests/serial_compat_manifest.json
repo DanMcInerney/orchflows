@@ -2515,6 +2515,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.script_inventory",
+   "owner": "TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.script_inventory",
    "owner": "TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
    "restoration": "sharded-module-guard",
    "seams": [
