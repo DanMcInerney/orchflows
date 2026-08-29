@@ -121,7 +121,6 @@ _write_section = _tickets_format_module._write_section
 instruction_words = _tickets_format_module.instruction_words
 ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
-PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
 ADAPTER_REGISTRY = _tickets_adapters_module.ADAPTER_REGISTRY
 Adapter = _tickets_adapters_module.Adapter
 AdapterError = _tickets_adapters_module.AdapterError

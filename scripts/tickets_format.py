@@ -75,13 +75,6 @@ GATE_ID_MARKER = '.gate.'
 GATE_EXECUTORS = {'critique': 'orch-critique', 'repair': 'orch-repair', 'verify': 'orch-verify'}
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
-PACK_EXECUTOR_BINDINGS = {
-    'orch-code-pack': frozenset({'orch-tdd'}),
-    'orch-content-pack': frozenset({'orch-draft', 'orch-edit'}),
-    'orch-design-pack': frozenset({'orch-render'}),
-    'orch-research-pack': frozenset({'orch-investigate', 'orch-synthesize'}),
-}
-def executor_bindings(pack) -> set: return set(PACK_EXECUTOR_BINDINGS.get(str(pack or '').strip(), ()))
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""
 def _json_object(pairs):

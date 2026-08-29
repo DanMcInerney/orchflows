@@ -7,18 +7,18 @@ import re
 from pathlib import Path
 
 if __package__:
-    from .tickets_adapters import AdapterError
+    from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS,
+        GATE_EXECUTORS,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
-        executor_bindings, _executor_of, _parse_frontmatter,
+        _executor_of, _parse_frontmatter,
     )
 else:
-    from tickets_adapters import AdapterError
+    from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS,
+        GATE_EXECUTORS,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
-        executor_bindings, _executor_of, _parse_frontmatter,
+        _executor_of, _parse_frontmatter,
     )
 
 ADMISSION_PENDING = "pending"
@@ -53,7 +53,7 @@ def adapter_resolution(pack):
 
 
 def binding_findings(ticket_id: str, data: dict) -> list:
-    """Grade exact executor/pack binding and operational isolation."""
+    """Grade script resolution and adapter-owned operational isolation."""
     findings = []
     executor = _executor_of(data)
     pack = str(data.get("pack") or "").strip()
@@ -63,12 +63,6 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         or ".gate." in ticket_id
         or ticket_id.endswith(".check")
     )
-    bindings = executor_bindings(pack) if pack and not unbound else set()
-    if pack and not unbound and executor not in bindings:
-        findings.append(finding(
-            "executor-pack-mismatch", "executor",
-            f"{executor or '<missing>'} is not bound by {pack}'s executor registry",
-        ))
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
         target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
         if not (Path(__file__).resolve().parents[1] / target).is_file():
@@ -76,16 +70,14 @@ def binding_findings(ticket_id: str, data: dict) -> list:
                 "script-executor-unresolved", "executor",
                 f"executor names script '{target or '<missing>'}', which does not resolve in the tree",
             ))
-    if executor == "orch-tdd":
+    if not unbound and pack:
         adapter, adapter_failure = adapter_resolution(pack)
         if adapter_failure is not None:
             findings.append(adapter_failure)
-        elif adapter != "git":
-            findings.append(finding("vcs-adapter-required", "pack", "orch-tdd requires the git adapter"))
-        if str(data.get("isolation") or "none").strip() != "required":
+        elif adapter and adapter_spec(pack).establishes_isolation and str(data.get("isolation") or "none").strip() != "required":
             findings.append(finding(
                 "vcs-isolation-required", "isolation",
-                "orch-tdd requires an isolated candidate workspace",
+                "the selected adapter requires an isolated candidate workspace",
             ))
     return findings
 
@@ -228,7 +220,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
 
 
 __all__ = (
-    "ADMISSION_PENDING", "PACK_EXECUTOR_BINDINGS", "adapter_id",
+    "ADMISSION_PENDING", "adapter_id",
     "binding_findings", "finding",
     "grade_admission", "is_receipt",
 )
