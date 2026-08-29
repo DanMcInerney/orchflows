@@ -7,14 +7,16 @@ import re
 from pathlib import Path
 
 if __package__:
+    from .tickets_adapters import AdapterError
     from .tickets_format import (
-        ADAPTER_BY_PACK, GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS, PLAIN_ADAPTER,
+        GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         executor_bindings, _executor_of, _parse_frontmatter,
     )
 else:
+    from tickets_adapters import AdapterError
     from tickets_format import (
-        ADAPTER_BY_PACK, GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS, PLAIN_ADAPTER,
+        GATE_EXECUTORS, PACK_EXECUTOR_BINDINGS,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         executor_bindings, _executor_of, _parse_frontmatter,
     )
@@ -37,6 +39,17 @@ def _ordered(findings) -> list:
         for item in findings
     }
     return [finding(*row) for row in sorted(rows)]
+
+
+def adapter_resolution(pack):
+    """Resolve one declared pack adapter as data, never as a traceback."""
+
+    if not str(pack or "").strip():
+        return None, None
+    try:
+        return adapter_id(pack), None
+    except AdapterError as error:
+        return None, finding(error.code, "pack", error.detail)
 
 
 def binding_findings(ticket_id: str, data: dict) -> list:
@@ -64,7 +77,10 @@ def binding_findings(ticket_id: str, data: dict) -> list:
                 f"executor names script '{target or '<missing>'}', which does not resolve in the tree",
             ))
     if executor == "orch-tdd":
-        if adapter_id(pack) != "git":
+        adapter, adapter_failure = adapter_resolution(pack)
+        if adapter_failure is not None:
+            findings.append(adapter_failure)
+        elif adapter != "git":
             findings.append(finding("vcs-adapter-required", "pack", "orch-tdd requires the git adapter"))
         if str(data.get("isolation") or "none").strip() != "required":
             findings.append(finding(
@@ -128,6 +144,9 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
         assignment_digest = module.assignment_digest
         seal_findings = module.seal_findings
     findings = list(seal_findings(ticket_id, text))
+    adapter, adapter_failure = adapter_resolution(data.get("pack"))
+    if adapter_failure is not None:
+        findings.append(adapter_failure)
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     for dependency in dependencies:
         if dependency not in siblings:
@@ -199,10 +218,9 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed state does not bind this assignment"))
     ordered = _ordered(findings)
     receipt = ADMISSION_PENDING
-    adapter = adapter_id(data.get("pack"))
     if not ordered:
         payload = {"assignment": assignment_digest(ticket_id, text), "sealed_state": sealed_record}
-        receipt = f"{adapter}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
+        receipt = f"{adapter or 'ticket'}:sha256:{hashlib.sha256(_canonical_json(payload)).hexdigest()}"
     return {
         "adapter": adapter, "findings": ordered, "receipt": receipt,
         "snapshot_ids": sorted({ticket_id, *dependencies}),
@@ -210,7 +228,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
 
 
 __all__ = (
-    "ADMISSION_PENDING", "ADAPTER_BY_PACK", "PACK_EXECUTOR_BINDINGS",
-    "PLAIN_ADAPTER", "adapter_id", "binding_findings", "finding",
+    "ADMISSION_PENDING", "PACK_EXECUTOR_BINDINGS", "adapter_id",
+    "binding_findings", "finding",
     "grade_admission", "is_receipt",
 )

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 if __package__:
+    from .tickets_adapters import AdapterError
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, adapter_id,
@@ -21,6 +22,7 @@ if __package__:
         _segment_error, _tickets_root, normalized_isolation,
     )
 else:
+    from tickets_adapters import AdapterError
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, adapter_id,
@@ -60,7 +62,13 @@ def _command_text(*arguments) -> str:
 def workspace_establishment_finding(data: dict, workspace):
     """Return the refusal code/detail for a non-established packet workspace."""
 
-    adapter = adapter_id(data.get("pack"))
+    pack = data.get("pack")
+    if not str(pack or "").strip():
+        return None
+    try:
+        adapter = adapter_id(pack)
+    except AdapterError as error:
+        return error.code, error.detail
     required = adapter == "evidence-store" or (
         adapter == "git" and normalized_isolation(data.get("isolation")) == "required"
     )

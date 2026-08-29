@@ -10,7 +10,44 @@ from tests.test_tickets_cases.common import run_cmd, use_sink
 
 import scripts.tickets as tickets_mod
 
-__all__ = ("SemanticTicketContractTest", "ResultAttributionTest")
+__all__ = (
+    "AdapterRegistryTest", "SemanticTicketContractTest", "ResultAttributionTest",
+)
+
+
+class AdapterRegistryTest(unittest.TestCase):
+    """A pack selects one registered mechanism through its workspace cell."""
+
+    def _pack(self, root: Path, adapter: str):
+        pack = root / "packs" / "widget-pack"
+        pack.mkdir(parents=True)
+        (pack / "SKILL.md").write_text(
+            "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
+            "| cell | binding |\n| --- | --- |\n"
+            f"| workspace | widget records; ticket adapter: `{adapter}`; conflicts are ordinary overlaps |\n",
+            encoding="utf-8",
+        )
+
+    def test_a_project_pack_selects_git_without_a_pack_name_registration(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._pack(root, "git")
+
+            self.assertEqual("git", tickets_mod.adapter_id("widget-pack", root=root))
+            adapter = tickets_mod.adapter_spec("widget-pack", root=root)
+            self.assertEqual("git-commit", adapter.identity_form)
+            self.assertTrue(adapter.establishes_isolation)
+            self.assertTrue(adapter.deterministic_gate)
+            self.assertEqual("git-overlap", adapter.conflict_semantics)
+
+    def test_an_unregistered_declared_key_fails_closed(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._pack(root, "no-such-adapter")
+
+            with self.assertRaises(tickets_mod.AdapterError) as caught:
+                tickets_mod.adapter_id("widget-pack", root=root)
+            self.assertEqual("adapter-unregistered", caught.exception.code)
 
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):

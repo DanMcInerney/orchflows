@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
+    from .tickets_adapters import adapter_id
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
@@ -19,6 +20,7 @@ if __package__:
         instruction_breakdown, instruction_words,
     )
 else:
+    from tickets_adapters import adapter_id
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
@@ -78,20 +80,12 @@ GATE_ID_MARKER = '.gate.'
 GATE_EXECUTORS = {'critique': 'orch-critique', 'repair': 'orch-repair', 'verify': 'orch-verify'}
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
-ADAPTER_BY_PACK = {
-    'orch-code-pack': 'git',
-    'orch-content-pack': 'document-tree',
-    'orch-design-pack': 'git-plus-render',
-    'orch-research-pack': 'evidence-store',
-}
-PLAIN_ADAPTER = 'plain-artifact'
 PACK_EXECUTOR_BINDINGS = {
     'orch-code-pack': frozenset({'orch-tdd'}),
     'orch-content-pack': frozenset({'orch-draft', 'orch-edit'}),
     'orch-design-pack': frozenset({'orch-render'}),
     'orch-research-pack': frozenset({'orch-investigate', 'orch-synthesize'}),
 }
-def adapter_id(pack) -> str: return ADAPTER_BY_PACK.get(str(pack or '').strip(), PLAIN_ADAPTER)
 def executor_bindings(pack) -> set: return set(PACK_EXECUTOR_BINDINGS.get(str(pack or '').strip(), ()))
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""

@@ -23,6 +23,7 @@ if _SIBLING_DIR not in _bootstrap_sys.path:
     _bootstrap_sys.path.append(_SIBLING_DIR)
 
 if __package__:
+    from . import tickets_adapters as _tickets_adapters_module
     from . import tickets_bound as _tickets_bound_module
     from . import tickets_format as _tickets_format_module
     from . import tickets_store as _tickets_store_module
@@ -41,6 +42,7 @@ if __package__:
 else:
     # By name, as `tickets_generations` is reached: the family's
     # module-level import census is pinned, and this module joined after it.
+    import tickets_adapters as _tickets_adapters_module
     _tickets_bound_module = __import__('tickets_bound')
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
@@ -128,9 +130,11 @@ _write_section = _tickets_format_module._write_section
 instruction_words = _tickets_format_module.instruction_words
 ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
-ADAPTER_BY_PACK = _tickets_admission_module.ADAPTER_BY_PACK
 PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
-adapter_id = _tickets_admission_module.adapter_id
+ADAPTER_REGISTRY = _tickets_adapters_module.ADAPTER_REGISTRY
+AdapterError = _tickets_adapters_module.AdapterError
+adapter_id = _tickets_adapters_module.adapter_id
+adapter_spec = _tickets_adapters_module.adapter_spec
 binding_findings = _tickets_admission_module.binding_findings
 grade_admission = _tickets_admission_module.grade_admission
 is_receipt = _tickets_admission_module.is_receipt
