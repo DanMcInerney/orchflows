@@ -23,6 +23,11 @@ def _gaps(frontier: str, profiles: str) -> list[str]:
         "terminal profile": "Running the terminal required checks",
         "engine context": "engine's own context",
         "recorded revision": "accepted terminal identity's revision",
+        "rolling frontier": "dispatched as it forms",
+        "joined recomputation": "every joined outcome",
+        "actual candidate diffs": "actual candidate diffs",
+        "shared-artifact finalization": "shared-artifact finalization",
+        "fixed joined identity": "fixed joined identity",
     }
     owners = {
         **{name: frontier for name in required if name not in {
@@ -45,6 +50,18 @@ class MinimalAcceptanceTests(unittest.TestCase):
     def test_single_and_decomposed_runs_take_only_their_minimum_path(self):
         frontier, profiles = self.owners()
         self.assertEqual([], _gaps(frontier, profiles))
+        integrate = " ".join(
+            (ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        for anchor in (
+            "actual candidate diffs",
+            "shared-artifact finalization",
+            "after all candidate joins",
+            "fixed joined identity",
+        ):
+            self.assertIn(anchor, integrate)
         self.assertNotIn("after each merge batch", frontier.lower())
         self.assertNotIn("tickets.py errand", frontier.lower())
         self.assertNotIn("running an errand", profiles.lower())

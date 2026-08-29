@@ -8,27 +8,29 @@ Require: one child return: its completed
 [ticket](../../../contracts/work-item.md), or a bare packet's contracted fields
 and originating dispatch.
 
-Grade tickets against Goal and factual Context at the fixed artifact identity
-through one outside-independence path per
-[verification.md](../../../rules/verification.md) §7. `independence: gate`
+Grade Goal and Context at the fixed artifact identity through one
+outside-independence path ([verification.md](../../../rules/verification.md) §7).
+`independence: gate`
 defers review; `checker` requires
 [work-item.md](../../../contracts/work-item.md)'s `checked_by`; uncovered
-Goal claims yield needs-verify. Grade bare returns by their contract. Suspension resumes
-from `## Handoff`.
+Goal claims yield needs-verify. Grade bare returns by their contract. Suspension
+resumes from `## Handoff`.
 
 The returning name and artifact identity must match the committed dispatch-v1
 packet and its accepted receipt; reject mismatches and expired attempts.
-Inspect candidate Git state. Resolve every overlap/conflict and regenerate
-shared outputs once. For required isolation, run `workspace.py check` from the
-integrating checkout (exit 6 is caller-vantage failure).
+Inspect candidate Git state: integration owns actual candidate diffs and conflict
+adjudication, resolves overlap and ordinary Git conflicts, and performs one
+shared-artifact finalization after all candidate joins. It records the fixed
+joined identity for the terminal gate. For required isolation, run
+`workspace.py check` from the integrating checkout (exit 6 is caller-vantage
+failure).
 
-Record blame on the run-state channel. For dispatch v1, only this join calls
-`tickets.py dispatch-join` with the packet's assignment seal and dispatch id,
-the fixed `outcome` record id, and this join's name. Disposition comes from the
-validated outcome envelope, never a transport message or arbitrary section
-record. If an inline child returned that envelope offline, relay it unchanged
-through `tickets.py dispatch-outcome` first.
-Pre-v1 cutover alone uses `tickets.py set-status`.
+Record blame on run-state. For dispatch v1, only this join calls
+`tickets.py dispatch-join` with packet assignment seal/dispatch id, fixed
+`outcome` id, and this name. Disposition comes from the validated
+outcome envelope, never transport or arbitrary section record. Relay an inline
+envelope unchanged through `tickets.py dispatch-outcome` first. Pre-v1 alone
+uses `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here without dispatch through
 `tickets.py join-noop-repair <run> <root>.gate.repair --by <join-name>`, the
