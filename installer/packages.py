@@ -6,13 +6,8 @@ import json
 import sys
 from pathlib import Path
 
-from .foundation import (
-    PROFILES_MD,
-    PROFILE_ROLES,
-    REPO_ROOT,
-    _BINDING_RE,
-    _CODEX_AGENT_TYPE_RE,
-)
+from .foundation import HOST_ADAPTERS_DIR, PROFILE_ROLES, REPO_ROOT
+from .hosts import GROK_EFFORTS, GROK_MODEL_CENSUS, load_host_adapters, load_role_profiles
 
 # --- frontmatter parsing (adapters / prompts only need this much) ------
 
@@ -31,17 +26,27 @@ def split_frontmatter(text: str):
     return "".join(lines[: end + 1]), "".join(lines[end + 1 :])
 
 
-def host_legal_frontmatter(frontmatter: str) -> str:
-    """Claude adapter frontmatter, including native role-child binding."""
+def host_legal_frontmatter(
+    frontmatter: str,
+    host: str = "claude",
+    adapter_dir: Path = HOST_ADAPTERS_DIR,
+) -> str:
+    """Host-legal adapter frontmatter and any declared native role binding."""
+    spec = load_host_adapters(adapter_dir)[host]["frontmatter"]
+    legal_keys = set(spec["legal_keys"])
     kept = [
         line
         for line in frontmatter.splitlines(keepends=True)
         if line.rstrip("\r\n") == "---"
-        or line.partition(":")[0].strip() in ("name", "description")
+        or line.partition(":")[0].strip() in legal_keys
     ]
     role = frontmatter_field(frontmatter, "role")
     if role in ("planner", "worker"):
-        kept[-1:-1] = ["context: fork\n", f"agent: orch-{role}\n"]
+        native = [
+            f"{key}: {value.format(role=role)}\n"
+            for key, value in spec.get("role_fields", {}).items()
+        ]
+        kept[-1:-1] = native
     return "".join(kept)
 
 
@@ -206,104 +211,6 @@ def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: P
 # its Claude and Codex siblings. Not a taxonomy choice: this file measured 483
 # of its 510 tracked-source lines before the Grok column arrived, and the group
 # does not fit in 27.
-
-
-# --- host role agents, parsed from the canonical table -----------------
-
-
-def _parse_binding(cell: str) -> dict:
-    return {match.group("key"): match.group("value") for match in _BINDING_RE.finditer(cell)}
-
-
-# The ids `grok models` returned on the host this column was recorded
-# against, and nothing else. An id outside the census cannot be checked
-# before the dispatch that would use it, so it stops the install instead
-# of surfacing as a model error inside a child that already has a packet.
-GROK_MODEL_CENSUS = ("grok-4.6", "grok-4.5")
-# Grok's own effort enumeration. `ultra` is Codex's word and `max` is the
-# top of both, so a value copied across columns is exactly the mistake
-# this rejects.
-GROK_EFFORTS = ("low", "medium", "high", "xhigh", "max")
-
-
-def _check_grok_binding(profiles_md_path: Path, name: str, binding: dict, claimed: set) -> None:
-    """Refuse a Grok row that could not be dispatched as written.
-
-    Named per host: the caller reading the refusal has three columns to
-    look at and the message has to say which one is short. `claimed`
-    carries the subagent_types earlier rows took, because the rendered
-    agent file is named by that field: two rows sharing one resolve to a
-    single `$GROK_HOME/agents/<type>.md` and the later write wins
-    silently, dispatching a whole role onto the other's binding."""
-
-    if not {"model", "effort", "subagent_type"} <= set(binding):
-        raise ValueError(f"{profiles_md_path}: incomplete Grok binding for {name}")
-    model = binding["model"]
-    if model not in GROK_MODEL_CENSUS:
-        raise ValueError(
-            f"{profiles_md_path}: Grok model outside the recorded census for {name}: {model}"
-        )
-    effort = binding["effort"]
-    if effort not in GROK_EFFORTS:
-        raise ValueError(f"{profiles_md_path}: invalid Grok effort for {name}: {effort}")
-    subagent_type = binding["subagent_type"]
-    if subagent_type in claimed:
-        raise ValueError(f"{profiles_md_path}: duplicate Grok subagent_type: {subagent_type}")
-    claimed.add(subagent_type)
-
-
-def load_role_profiles(profiles_md_path: Path = PROFILES_MD):
-    text = profiles_md_path.read_text(encoding="utf-8")
-    profiles = {}
-    for line in text.splitlines():
-        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        # One cell per host column, no fewer: a row that lost a column is a
-        # row this parser cannot read, not a row with an empty binding. Read
-        # loosely it would hand back a host with no model at all.
-        if len(cells) != 5 or not cells[0].startswith("`orch-"):
-            continue
-        name = cells[0].strip("`")
-        role = cells[1]
-        if role not in PROFILE_ROLES:
-            continue
-        profiles[name] = {
-            "role": role,
-            "codex": _parse_binding(cells[2]),
-            "claude": _parse_binding(cells[3]),
-            "grok": _parse_binding(cells[4]),
-        }
-    missing = [f"orch-{role}" for role in PROFILE_ROLES if f"orch-{role}" not in profiles]
-    if missing:
-        raise ValueError(f"{profiles_md_path}: missing role profile row(s) for {', '.join(missing)}")
-    for role in PROFILE_ROLES:
-        name = f"orch-{role}"
-        declared = profiles[name]["role"]
-        if declared != role:
-            raise ValueError(
-                f"{profiles_md_path}: role profile {name} must declare role {role}, got {declared}"
-            )
-    codex_agent_types = set()
-    grok_subagent_types = set()
-    for name, profile in profiles.items():
-        if not {"agent_type", "fork_turns", "model", "model_reasoning_effort"} <= set(
-            profile["codex"]
-        ):
-            raise ValueError(f"{profiles_md_path}: incomplete Codex binding for {name}")
-        agent_type = profile["codex"]["agent_type"]
-        if _CODEX_AGENT_TYPE_RE.fullmatch(agent_type) is None:
-            raise ValueError(f"{profiles_md_path}: invalid Codex agent_type for {name}: {agent_type}")
-        if agent_type in codex_agent_types:
-            raise ValueError(f"{profiles_md_path}: duplicate Codex agent_type: {agent_type}")
-        codex_agent_types.add(agent_type)
-        fork_turns = profile["codex"]["fork_turns"]
-        if fork_turns != "none" and not (
-            fork_turns.isascii() and fork_turns.isdecimal() and not fork_turns.startswith("0")
-        ):
-            raise ValueError(f"{profiles_md_path}: invalid Codex fork_turns for {name}: {fork_turns}")
-        if "model" not in profile["claude"]:
-            raise ValueError(f"{profiles_md_path}: incomplete Claude binding for {name}")
-        _check_grok_binding(profiles_md_path, name, profile["grok"], grok_subagent_types)
-    return profiles
 
 
 def _role_description(name: str) -> str:

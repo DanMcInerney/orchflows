@@ -159,8 +159,6 @@ from installer.foundation import (
     GROK_CLI_CANDIDATES, GROK_LIMITS_END, GROK_LIMITS_START,
     GROK_MAX_CONCURRENT, GROK_MAX_DEPTH,
     HOST_BLOCK_TEMPLATE,
-    HOSTS_DIR,
-    HOST_ADAPTERS_DIR,
     MIN_PYTHON,
     PROFILES_MD,
     PROFILE_ROLES,
@@ -215,7 +213,6 @@ from installer.packages import (
     ROLE_INSTRUCTIONS,
     TEMPLATE_MANIFEST,
     _git_dirs,
-    _parse_binding,
     _role_description,
     by_name_pointer_text,
     claude_role_adapter_text,
@@ -234,6 +231,7 @@ from installer.packages import (
     template_adapter_body,
     template_markers,
 )
+from installer.hosts import HOSTS_DIR, HOST_ADAPTERS_DIR, load_host_adapters
 from installer.planning import _mints_claude_adapter, detect_hosts, plan_entry_count
 from installer.uninstall import (
     _auto_remove_path_is_safe,

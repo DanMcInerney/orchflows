@@ -32,6 +32,7 @@ for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
 
 import doclint
 from tools import render_lifecycle as _render_lifecycle
+from tools import render_hosts as _render_hosts_module
 
 from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
@@ -230,6 +231,17 @@ def validate_documented_paths(diag: Diagnostics) -> None:
         _restore_support(state)
 
 
+def validate_rendered_hosts(diag: Diagnostics) -> None:
+    source = ROOT / "hosts"
+    rendered = ROOT / "installer" / "host_adapters"
+    if not source.is_dir() or not rendered.is_dir():
+        return
+    try:
+        _render_hosts_module.check_all(source, rendered)
+    except ValueError as error:
+        diag.error("hosts", str(error))
+
+
 def _validate_documented_paths_impl(diag: Diagnostics) -> None:
     """Resolve backticked paths across shipped prose; skip non-library fixtures."""
 
@@ -295,6 +307,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_lens_anchor(packages, diag)
     validate_markdown_links(diag)
     validate_lifecycle_render(diag)
+    validate_rendered_hosts(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)
     validate_pins(diag)
