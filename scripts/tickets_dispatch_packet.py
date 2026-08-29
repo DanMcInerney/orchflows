@@ -48,7 +48,7 @@ DISPATCH_PACKET_USAGE = (
 DISPATCH_RECEIVE_USAGE = (
     "dispatch-receive (--content <canonical-json> | --file <path|->) "
     "--role <worker|planner> "
-    "--profile <name> --by <name> --reply-to <name> [--workspace <path>]"
+    "--profile <name> --by <name> --reply-to <name>"
 )
 ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
 
@@ -413,7 +413,6 @@ def _cmd_dispatch_receive(rest):
     profile = _extract_flag(args, "--profile")
     owner = _extract_flag(args, "--by")
     reply_to = _extract_flag(args, "--reply-to")
-    workspace = _extract_flag(args, "--workspace")
     if (
         args or (content is None) == (source_file is None)
         or not all((role, profile, owner, reply_to))
@@ -429,7 +428,7 @@ def _cmd_dispatch_receive(rest):
     failure = _packet_shape(packet)
     if failure is not None:
         return failure
-    failure = actual_mismatch(packet, role, profile, owner, reply_to, workspace)
+    failure = actual_mismatch(packet, role, profile, owner, reply_to)
     if failure is not None:
         return failure
     lease = _parse_iso(packet["lease_expires_at"])

@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 if __package__:
+    from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_dispatch_schema import (
         RECEIPT_RECORD_ID, accepted_receipt_failure, classification,
         identity_failure, state as _state,
@@ -15,6 +16,7 @@ if __package__:
     )
     from .tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
 else:
+    from tickets_adapters import AdapterError, adapter_spec
     from tickets_dispatch_schema import (
         RECEIPT_RECORD_ID, accepted_receipt_failure, classification,
         identity_failure, state as _state,
@@ -26,17 +28,108 @@ else:
 DISPATCH_RECEIPT_USAGE = "dispatch-receipt <run> <id> --dispatch-id <id>"
 
 
-def actual_mismatch(packet: dict, role, profile, owner, reply_to, workspace):
+def _workspace_git_module():
+    """Load Git mechanics after the flat ticket importer has initialized."""
+
+    if __package__:
+        from . import workspace_git
+    else:
+        import workspace_git
+    return workspace_git
+
+
+def _same_path(left, right) -> bool:
+    """Compare two authority paths after each side's platform normalization."""
+
+    try:
+        return Path(left).expanduser().resolve() == Path(right).expanduser().resolve()
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return False
+
+
+def _workspace_failure(packet: dict):
+    """Derive and authenticate the receiver's workspace authority.
+
+    ``workspace`` in a packet is an established fact committed by the
+    dispatcher.  The receiver must prove that fact from its own mechanism;
+    accepting a second path argument here would let the receiver choose the
+    authority it is supposed to authenticate.
+    """
+
+    try:
+        adapter = adapter_spec(packet.get("pack"))
+    except AdapterError as error:
+        return classification(
+            "authority-mismatch",
+            f"cannot derive workspace authority from packet adapter: {error.detail}",
+        )
+
+    expected = packet.get("workspace")
+    strategy = adapter.workspace_strategy
+    if strategy == "git":
+        if not isinstance(expected, str) or not expected.strip():
+            return classification(
+                "authority-mismatch",
+                "Git packet has no established workspace authority",
+            )
+        workspace_git = _workspace_git_module()
+        try:
+            actual = workspace_git.actual_top_level()
+        except (OSError, RuntimeError, ValueError) as error:
+            return classification(
+                "authority-mismatch",
+                f"receiver is not standing in a Git workspace: {error}",
+            )
+        except workspace_git.Refused as error:
+            return classification(
+                "authority-mismatch",
+                f"receiver is not standing in a Git workspace: {error}",
+            )
+        if not _same_path(actual, expected):
+            return classification(
+                "authority-mismatch",
+                "receiver Git top-level does not match the established packet workspace",
+            )
+        return None
+
+    if strategy == "evidence-store":
+        if not isinstance(expected, str) or not expected.strip():
+            return classification(
+                "authority-mismatch",
+                "evidence-store packet has no established workspace authority",
+            )
+        try:
+            available = Path(expected).expanduser().is_dir()
+        except (OSError, RuntimeError, ValueError):
+            available = False
+        if not available:
+            return classification(
+                "state-inaccessible",
+                "authoritative evidence-store workspace is unavailable",
+            )
+        return None
+
+    # A document-tree adapter deliberately does not establish an isolated
+    # receiver workspace.  Its packet authority remains the committed state
+    # sink and is not guessed from the receiver's current directory.
+    if strategy == "document-tree":
+        return None
+    return classification(
+        "authority-mismatch",
+        f"adapter workspace strategy is not supported: {strategy}",
+    )
+
+
+def actual_mismatch(packet: dict, role, profile, owner, reply_to):
     for key, expected, actual, code in (
         ("assigned_name", packet["assigned_name"], owner, "identity-mismatch"),
         ("role", packet["role"], role, "role-mismatch"),
         ("profile", packet["profile"], profile, "profile-mismatch"),
         ("reply_to", packet["reply_to"], reply_to, "authority-mismatch"),
-        ("workspace", packet.get("workspace"), workspace, "authority-mismatch"),
     ):
         if expected != actual:
             return classification(code, f"received {key} does not match packet")
-    return None
+    return _workspace_failure(packet)
 
 
 def read_packet_payload(content, source_file):
