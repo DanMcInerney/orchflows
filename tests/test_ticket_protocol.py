@@ -151,7 +151,7 @@ class TicketProtocolTest(unittest.TestCase):
             self.assertIn("response `.packet`", projection)
             self.assertIn("--file", projection)
             self.assertIn("workspace", projection.lower())
-            self.assertIn("evidence store", projection.lower())
+            self.assertIn("evidence-store", projection.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)
         self.assertNotIn("Parked claims stay live", frontier)
         self.assertNotIn("holds the lease", ui_model)

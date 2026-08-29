@@ -7,7 +7,7 @@ role: none
 Require: acyclic `tickets.py` run graph and caller bound.
 
 Choose assigned-name/dispatch-id/lease; invoke `tickets.py dispatch` per
-ticket. The facade atomically readies, establishes the pack workspace/evidence store,
+ticket. The facade atomically readies, establishes the pack workspace/evidence-store,
 opens the attempt, and projects its packet; it retains `workspace_path` and
 returns one packet or refusal. Establish the same recorded child under
 [delegation](../../../rules/delegation.md) §1–§2 and its

@@ -36,18 +36,17 @@ CACHE_PATH = ROOT / ".orch" / "run_tests_times.json"
 TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
 # Cold-checkout order: the modules whose *worst* matrix leg is expensive,
 # that leg's duration descending. Worst and not typical -- the long pole
-# moves by leg (visualize_scripts on macOS, serial_compat on 3.9) and
-# starting a module early costs nothing on a leg where it is cheap. Read
+# moves by leg (serial_compat on 3.9) and starting a module early costs
+# nothing on a leg where it is cheap. Read
 # off the timing artifacts CI uploads; a leg with a cache never reads it.
 DEFAULT_COLD_ORDER = tuple("tests.test_" + _name for _name in (
-    "visualize_scripts", "installer_planning", "workspace", "serial_compat",
+    "installer_planning", "workspace", "serial_compat",
     "installer_shared", "cutcheck", "tickets", "validate", "ui",
     "run_required", "affected_tests", "cell_linter",
 ))
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
     os.path.normcase(os.path.abspath(str(ROOT / relative)))
-    for relative in (".", "scripts", "benchmarks/benchmaker/tools",
-                     "skills/utilities/orch-visualize/scripts")
+    for relative in (".", "scripts", "benchmarks/benchmaker/tools")
 )
 
 # --- child: run one module in this interpreter ------------------------

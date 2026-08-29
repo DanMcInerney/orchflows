@@ -55,4 +55,4 @@ The shape principles every domain shares are
 - Assembly is terminal and deterministic: name every included section,
   resolve ordering and duplicate jobs, and emit one document identity.
 - Re-read the skim layer and verify the landing against the opening hook.
-- Return the revision identity, budget count, evidence trace and cut log.
+- Hand off the revision number, length tally, citations, and recorded cuts.

@@ -35,6 +35,20 @@ class WorkflowSkillError(ValueError):
     """A workflow-skill source cannot form the exact detail projection."""
 
 
+def workflow_skill_path(root: Path, workflow_id: str) -> Path | None:
+    """Locate one callable skill across the installed tier layout."""
+
+    root = Path(root)
+    candidates = sorted(
+        (root / "skills").glob(f"*/{workflow_id}/SKILL.md"),
+        key=lambda path: path.relative_to(root).as_posix(),
+    )
+    for path in candidates:
+        if _contained_file(root, path):
+            return path
+    return None
+
+
 def _contained_file(root: Path, path: Path) -> bool:
     return identity.contained_file(root, path)
 
@@ -133,15 +147,15 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
         identity.workflow_node_id(workflow_id)
     except identity.WorkflowIdentityError as error:
         raise WorkflowSkillError("workflow skill identity is malformed") from error
-    path = root / "skills" / "workflows" / workflow_id / "SKILL.md"
-    if not _contained_file(root, path):
+    path = workflow_skill_path(root, workflow_id)
+    if path is None:
         raise WorkflowSkillError("workflow skill source is unreadable")
     fields, body = _read_skill(root, path)
     if fields.get("name") != workflow_id:
         raise WorkflowSkillError("workflow skill identity is malformed")
 
     workflow_node = identity.workflow_node_id(workflow_id)
-    workflow_source = f"lib/skills/workflows/{workflow_id}/SKILL.md"
+    workflow_source = "lib/" + path.relative_to(root).as_posix()
     nodes = {
         workflow_node: {
             "id": workflow_node,
@@ -203,3 +217,11 @@ def project_workflow_skill(root: Path = ROOT, workflow_id: str = "") -> dict:
         "relations": [dict(edge) for edge in ordered_edges],
         "diagnostics": [diagnostics[key] for key in sorted(diagnostics)],
     }
+
+
+__all__ = (
+    "WorkflowSkillError",
+    "workflow_skill_path",
+    "skill_index",
+    "project_workflow_skill",
+)

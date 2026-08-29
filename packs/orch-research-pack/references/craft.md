@@ -49,4 +49,4 @@ The shape principles every domain shares are
   preserve disagreement and declare uncovered sub-questions as gaps.
 - Reject laundering, unsupported extrapolation and stale evidence; a thin
   answer is preferable to false convergence.
-- Return a traceable evidence identity, source list, confidence and gaps.
+- Close with the evidence ledger, source dates, confidence, and unresolved gaps.

@@ -188,6 +188,6 @@
         {"source": "count", "target": "ticket", "kind": "sequence"},
         {"source": "successors", "target": "ticket", "kind": "sequence"}
       ]
-    },
+    }
   }
 }

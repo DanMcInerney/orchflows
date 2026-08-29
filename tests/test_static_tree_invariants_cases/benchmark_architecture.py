@@ -11,7 +11,6 @@ from ._support import (
     template_files,
 )
 
-EVAL_DESIGN = ROOT / "skills" / "workflows" / "orch-eval-design" / "SKILL.md"
 EVOLVE = COMPOSITIONS / "evolve"
 EVOLVE_GENERATION = COMPOSITIONS / "references" / "evolve-generation.md"
 TOURNAMENT = COMPOSITIONS / "skill-tournament"
@@ -28,10 +27,6 @@ class TestBenchmarkArchitecture(unittest.TestCase):
 
     # (label, sources, exactly, at_least, never)
     CALL_EDGES = (
-        (
-            "orch-eval-design", (EVAL_DESIGN,),
-            frozenset(), frozenset(), frozenset(),
-        ),
         (
             "skill-tournament", template_files(TOURNAMENT),
             frozenset(), frozenset(), frozenset(),

@@ -71,7 +71,11 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         pack.mkdir(parents=True)
         (pack / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: synthetic pack\n---\n"
-            f"| executor | `{executor}` |\n",
+            "| cell | binding |\n| --- | --- |\n"
+            "| slicing | inline |\n| workspace | inline |\n"
+            "| required_spec_fields | inline |\n| craft | [references/craft.md](references/craft.md) |\n"
+            "| adapter | git |\n| stages | [stage] |\n"
+            "| assembly | none |\n| lens | inline |\n| evidence | inline |\n",
             encoding="utf-8",
         )
 
@@ -94,13 +98,13 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
 
     def test_a_pack_owned_skill_name_in_tools_is_refused(self):
         self._write_pack("orch-example-pack", "orch-example-executor")
-        self._write_machinery("tools", "EXECUTOR = 'orch-example-executor'\n")
+        self._write_machinery("tools", "PACK = 'orch-example-pack'\n")
 
         result = self._run()
 
         self.assertEqual(1, result.returncode, result.stdout)
         self.assertIn(
-            "ERROR tools/machinery.py: domain-specific name `orch-example-executor`",
+            "ERROR tools/machinery.py: domain-specific name `orch-example-pack`",
             result.stdout.replace("\\", "/"),
         )
 

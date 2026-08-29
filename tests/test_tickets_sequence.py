@@ -15,33 +15,33 @@ class SequenceAdmissionTests(unittest.TestCase):
         self.assertEqual(
             [],
             sequence_defects(
-                ["draft", "edit"], "orch-draft", "orch-content-pack",
+                ["draft", "edit"], "orch-execute", "orch-content-pack",
             ),
         )
 
     def test_undeclared_pack_stage_is_refused(self):
         defects = sequence_defects(
-            ["draft", "publish"], "orch-draft", "orch-content-pack",
+            ["draft", "publish"], "orch-execute", "orch-content-pack",
         )
         self.assertTrue(any("publish" in defect for defect in defects), defects)
         self.assertTrue(any("declared" in defect for defect in defects), defects)
 
     def test_skill_and_cell_forms_cannot_be_mixed(self):
         defects = sequence_defects(
-            ["draft", "orch-edit"], "orch-draft", "orch-content-pack",
+            ["draft", "orch-check"], "orch-execute", "orch-content-pack",
         )
         self.assertTrue(any("mix" in defect.lower() for defect in defects), defects)
 
     def test_later_skill_role_does_not_change_the_head_binding(self):
-        self.assertEqual([], sequence_defects(["orch-draft", "orch-synthesize"], "orch-draft"))
+        self.assertEqual([], sequence_defects(["orch-execute", "orch-check"], "orch-execute"))
         prompt = "\n".join(
-            sequence_block({"sequence": ["orch-draft", "orch-synthesize"]})
+            sequence_block({"sequence": ["orch-execute", "orch-check"]})
         )
         self.assertIn("head's binding", prompt)
 
     def test_skill_sequence_requires_resolvable_names(self):
         defects = sequence_defects(
-            ["orch-draft", "orch-does-not-exist"], "orch-draft",
+            ["orch-execute", "orch-does-not-exist"], "orch-execute",
         )
         self.assertTrue(any("resolve" in defect for defect in defects), defects)
 

@@ -81,7 +81,7 @@ class TestHostBlockRendering(unittest.TestCase):
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
         for lane in (
-            "graph shape",
+            "by shape",
             "evidence in context",
             "semantic payload",
             "Goal",

@@ -24,7 +24,6 @@ from tests.test_validate_cases.sink_law import (
     TestOnlyCanaryAndBinMentionsSurvive,
     TestOneProseOwnerForThePath,
     TestRepositoryKeepsTwoSubdirectories,
-    TestSelfImproveSelectsByScopeAndProject,
     TestTheLawNamesTheSinkRoot,
     TestVocabularyResolvesToTheSink,
 )

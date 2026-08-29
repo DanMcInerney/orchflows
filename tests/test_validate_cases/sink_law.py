@@ -54,7 +54,6 @@ SINK_TERMS = ("tracker", "friction log", "run state")
 # state, and a skill body no longer restates it.
 CANARY_AND_BIN_MENTIONS = {
     "compositions/drift-canary/00-run.md": 1,
-    "skills/workflows/orch-fixture/SKILL.md": 1,
 }
 CANARY_PATH = "`.orch/canary/`"
 
@@ -65,17 +64,6 @@ CANARY_PATH = "`.orch/canary/`"
 # `test_agents_md_carries_no_second_fallback_copy` keeps it deleted.
 FALLBACK_FILES = ("templates/host-block.md",)
 FALLBACK_NEEDLE = "friction/<yyyy-mm>.jsonl"
-
-SELF_IMPROVE = "skills/workflows/orch-self-improve/SKILL.md"
-
-# The writer item 10 returned, quoted from its `subcommand` field. Both
-# improvement records reach the sink through it and through nothing else:
-# the miner writes proposals, the template's deliver stub writes the
-# covered line — each named where it is written and nowhere else.
-IMPROVEMENT_WRITER = {
-    SELF_IMPROVE: "tickets.py improvement --proposal",
-    "compositions/self-improve/01-deliver.md": "tickets.py improvement --covered",
-}
 
 # Directories holding no owner: recorded data and a dated review record.
 SKIPPED_DIRECTORIES = frozenset({"benchmarks"})
@@ -239,49 +227,6 @@ class TestOneProseOwnerForThePath(unittest.TestCase):
             if any(token in text for token in LITERAL_ROOT_TOKENS)
         ]
         self.assertEqual([PATH_OWNER], stating)
-
-
-class TestSelfImproveSelectsByScopeAndProject(unittest.TestCase):
-    """Spec A9: the sink holds every project, so selection is by field."""
-
-    def setUp(self):
-        self.text = doc(SELF_IMPROVE)
-
-    def test_the_evidence_streams_resolve_to_the_sink(self):
-        self.assertIn("improvement/covered.jsonl", self.text)
-        self.assertIn("state sink", self.text)
-        self.assertIsNone(ORCH_MENTION.search(self.text))
-
-    def test_the_sink_it_mines_points_at_the_law_that_owns_it(self):
-        """Every stream this cycle reads is agent-written. Naming the sink
-        without §6 leaves the untrusted-data law to a reader who already
-        knows it — the shape `TestFrictionFallbackNamesTheSink` holds the
-        other agent-facing sink reference to."""
-
-        block = block_carrying(SELF_IMPROVE, "state sink")
-        self.assertTrue(block, "{0} names no state sink".format(SELF_IMPROVE))
-        self.assertIn("visibility.md", block)
-        self.assertIn("untrusted", block)
-
-    def test_selection_is_by_project_field_and_cluster_scope(self):
-        """`project` is a record field, so the skill names it as one. That
-        it is a field rather than a location is the whole fact, and the
-        backticked name carries it: the sentence saying so as well -- that
-        selection is never by the repository the session stands in -- is
-        rules/visibility.md §6's clause restated, and pinning it here made
-        one fact answer to two files."""
-
-        collapsed = flat(self.text)
-        self.assertIn("`project` field", collapsed)
-        self.assertIn("scope", collapsed)
-
-    def test_both_records_are_written_through_the_installed_writer(self):
-        for relpath, invocation in IMPROVEMENT_WRITER.items():
-            with self.subTest(invocation=invocation):
-                self.assertIn(invocation, doc(relpath))
-
-    def test_the_coverage_record_is_named_once(self):
-        self.assertEqual(1, self.text.count("covered.jsonl"))
 
 
 class TestFrictionFallbackNamesTheSink(unittest.TestCase):

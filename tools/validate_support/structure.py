@@ -1,7 +1,6 @@
 """Validate call graphs, envelopes, and templates."""
 
 from __future__ import annotations
-
 from tools.validate_support import common as __dep_common
 CALL_TOKEN_RE = __dep_common.CALL_TOKEN_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
@@ -21,7 +20,6 @@ TEMPLATE_ENTRY_VALUES = __dep_common.TEMPLATE_ENTRY_VALUES
 TICKET_FILING_RE = __dep_common.TICKET_FILING_RE
 sys = __dep_common.sys
 re = __dep_common.re
-
 ENVELOPE_CARRIER_RE = re.compile(
     r"^\s*(?:the\s+)?(?:completed|finished)\s+(?:ticket|work[- ]item)\b", re.IGNORECASE
 )
@@ -36,17 +34,10 @@ COMPOSITION_SCRIPT_SUFFIXES = frozenset({
 })
 COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
 COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
-# Existing shipped compositions intentionally retain their pre-cohesion
-# executor labels.  They are admitted as templates so the tree remains
-# inspectable, but tickets.py rejects them at instantiate time with the named
-# callable-registry refusal.  This list is deliberately closed: a new
-# composition cannot use it as a validator escape hatch.
 SUPERSEDED_COMPOSITION_EXECUTORS = frozenset({
     "orch-critique", "orch-draft", "orch-eval-design", "orch-investigate",
-    "orch-repair", "orch-self-improve", "orch-tdd", "orch-triage",
-    "orch-verify",
+    "orch-repair", "orch-self-improve", "orch-tdd", "orch-triage", "orch-verify",
 })
-
 from tools.validate_support import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
@@ -54,7 +45,6 @@ _split_frontmatter = __dep_packages._split_frontmatter
 body_words = __dep_packages.body_words
 parse_frontmatter = __dep_packages.parse_frontmatter
 rel = __dep_packages.rel
-
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     craft = pkg["path"] / "references" / "craft.md"
     if not craft.is_file():
@@ -63,8 +53,6 @@ def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     n = sum(1 for ln in _read_source(craft).split("\n") if ln.strip())
     if n > CRAFT_BUDGET:
         diag.error(rel(craft), f"craft reference has {n} non-empty lines, exceeds the craft budget of {CRAFT_BUDGET}")
-
-
 def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     for match in MD_LINK_RE.finditer(body):
@@ -76,8 +64,6 @@ def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
             continue
         if not resolved.is_file():
             diag.error(file_label, f"cited reference does not exist: {target}")
-
-
 def build_call_graph(packages, diag: Diagnostics):
     names = {pkg["path"].name for pkg in packages}
     graph = {pkg["path"].name: set() for pkg in packages}
@@ -428,8 +414,6 @@ def _validate_stub_executor(
             f"executor '{executor}' names no skill under skills/ and is not a "
             "'script:<path>'",
         )
-
-
 def _tree_skill_names() -> set:
     """Every skill package name across the five tiers -- the set a stub's
     executor resolves against."""
@@ -469,11 +453,8 @@ def validate_templates(diag: Diagnostics) -> None:
         declared = _validate_template_manifest(directory / manifest_name, diag)
         for path, message in tickets.template_defects(directory):
             label = rel(Path(path))
-            if (
-                "executor-unregistered:" in message
-                and tickets._parse_frontmatter(_read_source(Path(path))).get("executor")
-                in SUPERSEDED_COMPOSITION_EXECUTORS
-            ):
+            executor = tickets._parse_frontmatter(_read_source(Path(path))).get("executor")
+            if "executor-unregistered:" in message and executor in SUPERSEDED_COMPOSITION_EXECUTORS:
                 diag.warn(label, message + "; instantiate refuses this shipped stub")
             else:
                 diag.error(label, message)
@@ -494,6 +475,8 @@ def validate_templates(diag: Diagnostics) -> None:
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
             if isinstance(executor, str) and executor.strip():
+                if executor.strip() in SUPERSEDED_COMPOSITION_EXECUTORS:
+                    continue
                 _validate_stub_executor(
                     executor.strip(), rel(path), skill_names, diag, tickets
                 )

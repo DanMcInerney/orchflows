@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2060,
+  "count": 2015,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -649,6 +649,12 @@
    "test_serial_manifest.TestUnruledOwners.test_the_flag_exits_zero_once_every_scanned_owner_carries_a_ruling",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
+   "test_seven_skills.CallableRegistryTests.test_callable_registry_is_exactly_the_seven_enforced_verbs",
+   "test_seven_skills.CallableRegistryTests.test_execute_and_check_require_pack_authority",
+   "test_seven_skills.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
+   "test_seven_skills.CallableRegistryTests.test_packet_shape_requires_typed_review_kind_field",
+   "test_seven_skills.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
+   "test_seven_skills.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_skill_fork_governance.SpecStatesItsDirectTicketLane.test_the_direct_lane_names_its_condition_and_its_mechanics",
    "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_leaves_the_reserved_wordings_to_their_owners",
    "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_states_every_property_the_firings_paid_for",
@@ -700,7 +706,8 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_instantiates_current_sealed_format",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_rejects_superseded_composition_executors",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
@@ -715,7 +722,6 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_refuses_unsafe_or_missing_coordinates_without_creating_state",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_tdd_executor_owns_test_choice",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_the_over_ceiling_exemption_reserves_the_only_stampable_root",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
    "test_tickets.AdapterRegistryTest.test_a_project_pack_selects_git_without_a_pack_name_registration",
@@ -821,12 +827,12 @@
    "test_validator.TestStructuralAdmissionMutants.test_one_unrelated_shared_stem_does_not_carry_an_input",
    "test_validator.TestStructuralAdmissionMutants.test_pack_control_flow_is_rejected",
    "test_validator.TestStructuralAdmissionMutants.test_pin_rewrite_requires_a_discriminating_supersession_record",
+   "test_verification_model.CritiqueContractTest.test_check_owns_blockers_and_verification",
    "test_verification_model.CritiqueContractTest.test_critique_is_read_only_and_keeps_costly_fix_sentence",
-   "test_verification_model.CritiqueContractTest.test_critique_is_two_pass_blocker_only_synthesis",
    "test_verification_model.CritiqueContractTest.test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model",
+   "test_verification_model.GoalEvidenceContractTest.test_execute_consumes_pack_cells_and_records_post_work_evidence",
    "test_verification_model.GoalEvidenceContractTest.test_non_code_packs_define_artifact_evidence_without_code_tests",
    "test_verification_model.GoalEvidenceContractTest.test_spec_distills_evidence_into_one_executable_semantic_root",
-   "test_verification_model.GoalEvidenceContractTest.test_tdd_chooses_tests_and_records_post_work_evidence",
    "test_verification_model.GoalEvidenceContractTest.test_ticket_has_no_extra_success_schema",
    "test_verification_model.SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
    "test_verification_model.SeparateRepairGateTest.test_a_single_executor_result_does_not_trigger_a_composite_gate",
@@ -1319,7 +1325,8 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_instantiates_current_sealed_format",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_rejects_superseded_composition_executors",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
@@ -1334,7 +1341,6 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_refuses_unsafe_or_missing_coordinates_without_creating_state",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_tdd_executor_owns_test_choice",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_the_over_ceiling_exemption_reserves_the_only_stampable_root",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
    "tests.test_ui_cases.active_polling.ActivePollingTest.test_active_polling_preserves_current_next_and_pause_state",
@@ -1773,11 +1779,6 @@
    "tests.test_validate_cases.sink_law.TestOnlyCanaryAndBinMentionsSurvive.test_the_out_of_scope_files_name_the_canary_path_and_nothing_else",
    "tests.test_validate_cases.sink_law.TestRepositoryKeepsTwoSubdirectories.test_the_bullet_names_canary_and_bin_and_no_third_subdirectory",
    "tests.test_validate_cases.sink_law.TestRepositoryKeepsTwoSubdirectories.test_the_sink_has_its_own_bullet",
-   "tests.test_validate_cases.sink_law.TestSelfImproveSelectsByScopeAndProject.test_both_records_are_written_through_the_installed_writer",
-   "tests.test_validate_cases.sink_law.TestSelfImproveSelectsByScopeAndProject.test_selection_is_by_project_field_and_cluster_scope",
-   "tests.test_validate_cases.sink_law.TestSelfImproveSelectsByScopeAndProject.test_the_coverage_record_is_named_once",
-   "tests.test_validate_cases.sink_law.TestSelfImproveSelectsByScopeAndProject.test_the_evidence_streams_resolve_to_the_sink",
-   "tests.test_validate_cases.sink_law.TestSelfImproveSelectsByScopeAndProject.test_the_sink_it_mines_points_at_the_law_that_owns_it",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_law_names_the_resolver_rather_than_restating_its_rule",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_law_no_longer_points_into_a_repository",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_root_the_law_names_is_the_sink",
@@ -1994,52 +1995,6 @@
    "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_is_idempotent",
    "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_matches_committed_pins_json",
    "tests.test_validator_cases.repo_and_frontmatter.TestValidatorAgainstRepo.test_repo_passes_clean",
-   "tests.test_visualize_scripts_cases.command_line.TestCommandLineEntry.test_non_codepage_unicode_never_crashes_the_verifier",
-   "tests.test_visualize_scripts_cases.command_line.TestCommandLineEntry.test_renderer_without_the_cli_writes_no_page_and_exits_two",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewBindsWithoutResolving.test_building_the_server_performs_no_reverse_lookup",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_accept_socket_error_is_immediate_and_closes_server",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_connected_client_that_sends_no_request_is_bounded_by_deadline",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_read_and_bind_failures_emit_no_readiness",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_response_error_is_nonzero_and_closes_server",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_serving_error_is_nonzero_and_closes_server",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewFailureCleanup.test_timeout_is_nonzero_and_leaves_no_live_socket",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewReadinessAndExactFile.test_head_and_refusals_do_not_consume_encoded_filename_preview",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewReadinessAndExactFile.test_missing_input_is_refused_before_readiness",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewReadinessAndExactFile.test_ready_server_exposes_only_the_frozen_target_then_exits",
-   "tests.test_visualize_scripts_cases.preview.TestPreviewSkillContract.test_visual_look_pass_uses_the_one_shot_http_preview",
-   "tests.test_visualize_scripts_cases.renderer.TestKitAndChartFences.test_viz_html_fence_passes_markup_through",
-   "tests.test_visualize_scripts_cases.renderer.TestRenderHtml.test_an_unwritable_output_path_exits_two_and_says_so",
-   "tests.test_visualize_scripts_cases.renderer.TestRenderHtml.test_non_utf8_bytes_report_unreadable_and_exit_two",
-   "tests.test_visualize_scripts_cases.renderer.TestRenderHtml.test_unreadable_input_exits_two",
-   "tests.test_visualize_scripts_cases.renderer.TestRenderHtmlBoundaryInputs.test_bom_only_file_renders_empty_page_successfully",
-   "tests.test_visualize_scripts_cases.renderer.TestRenderHtmlBoundaryInputs.test_empty_file_renders_empty_page_successfully",
-   "tests.test_visualize_scripts_cases.renderer.TestRenderHtmlBoundaryInputs.test_file_without_mermaid_fence_renders_prose_only",
-   "tests.test_visualize_scripts_cases.renderer.TestRendererHasNoCdnMode.test_a_rendered_page_is_inline_svg_and_loads_nothing",
-   "tests.test_visualize_scripts_cases.renderer.TestRendererHasNoCdnMode.test_each_unrendered_fence_is_an_error_and_no_page_is_written",
-   "tests.test_visualize_scripts_cases.renderer.TestRendererHasNoCdnMode.test_oversized_fence_body_still_renders_without_crashing",
-   "tests.test_visualize_scripts_cases.renderer.TestSvgIdSalting.test_ids_and_references_are_prefixed_per_visual",
-   "tests.test_visualize_scripts_cases.verifier.TestBoundaryInputs.test_bom_only_file_reports_no_fence_and_exits_two",
-   "tests.test_visualize_scripts_cases.verifier.TestBoundaryInputs.test_bom_prefixed_fence_on_first_line_is_detected",
-   "tests.test_visualize_scripts_cases.verifier.TestBoundaryInputs.test_empty_file_reports_no_fence_and_exits_two",
-   "tests.test_visualize_scripts_cases.verifier.TestBoundaryInputs.test_file_without_any_fence_passes_as_prose_only",
-   "tests.test_visualize_scripts_cases.verifier.TestBoundaryInputs.test_non_utf8_bytes_report_unreadable_and_exit_two",
-   "tests.test_visualize_scripts_cases.verifier.TestBoundaryInputs.test_oversized_fence_body_still_processes_without_crashing",
-   "tests.test_visualize_scripts_cases.verifier.TestElkFrontmatter.test_elk_frontmatter_diagram_passes_the_lint",
-   "tests.test_visualize_scripts_cases.verifier.TestLegibilityLint.test_clean_diagram_passes_lint_with_warning_channel",
-   "tests.test_visualize_scripts_cases.verifier.TestLegibilityLint.test_each_legibility_rule_fails_under_lint",
-   "tests.test_visualize_scripts_cases.verifier.TestLegibilityLint.test_forbidden_type_mindmap_fails_only_under_lint",
-   "tests.test_visualize_scripts_cases.verifier.TestLegibilityLint.test_node_budget_exceeded_fails_only_under_lint",
-   "tests.test_visualize_scripts_cases.verifier.TestLegibilityLint.test_oversized_overview_on_staged_page_warns_but_passes",
-   "tests.test_visualize_scripts_cases.verifier.TestStaticFences.test_balanced_viz_html_passes",
-   "tests.test_visualize_scripts_cases.verifier.TestStaticFences.test_each_static_fence_rule_is_detected",
-   "tests.test_visualize_scripts_cases.verifier.TestStaticFences.test_vega_only_page_passes_with_chart_count",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_a_cli_that_cannot_judge_exits_two_carrying_its_own_text",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_a_diagram_the_cli_read_passes_and_records_the_version",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_a_located_parse_error_is_a_failure_at_its_source_line",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_geometry_that_cannot_run_is_warned_not_counted_as_checked",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_geometry_that_positions_no_declared_node_is_warned_not_counted",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_missing_cli_exits_two_and_names_the_tool",
-   "tests.test_visualize_scripts_cases.verifier.TestVerifierRequiresTheMermaidCli.test_overlapping_nodes_in_the_rendered_layout_fail_the_lint",
    "tests.test_workspace_cases.start_cases.TestCheckDisambiguatesItsRevisionRanges.test_every_range_is_terminated_before_the_pathspec",
    "tests.test_workspace_cases.start_cases.TestCheckUsesTheEstablishedCandidate.test_relocated_branch_does_not_replace_the_recorded_workspace",
    "tests.test_workspace_cases.start_cases.TestStartEstablishesEvidenceStore.test_research_pack_creates_and_records_the_canonical_run_store",
@@ -2063,7 +2018,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "fb84fdfc8c0b711f24beccde78f90c8785a43e7a5c003aaaf7ff5e93ff193097"
+  "sha256": "79e91fd5cfe03f7026cc33eeecd0b8d72e4f71d8de073674f9985058b6300c1f"
  },
  "mutation_owners": [
   {
@@ -4832,63 +4787,6 @@
   {
    "module": "tests.test_verify_at",
    "owner": "clean_env",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.preview",
-   "owner": "TestPreviewBindsWithoutResolving.test_building_the_server_performs_no_reverse_lookup",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.preview",
-   "owner": "TestPreviewFailureCleanup.test_connected_client_that_sends_no_request_is_bounded_by_deadline",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.preview",
-   "owner": "TestPreviewFailureCleanup.test_read_and_bind_failures_emit_no_readiness",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.renderer",
-   "owner": "TestRendererHasNoCdnMode.test_each_unrendered_fence_is_an_error_and_no_page_is_written",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "module-cache"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.support",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.support",
-   "owner": "_ScriptCase.call",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment",
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_visualize_scripts_cases.support",
-   "owner": "_no_npx_env",
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"

@@ -25,7 +25,7 @@ class DispatchV1Test(unittest.TestCase):
         )
         self.environment.start()
         self.dispatch(
-            "new", "run", "T", "--executor", "orch-tdd",
+            "new", "run", "T", "--executor", "orch-execute",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",

@@ -1,4 +1,4 @@
-"""Maintained compositions instantiate current ticket stubs."""
+"""Shipped compositions expose explicit superseded-executor refusals."""
 import unittest
 from pathlib import Path
 from scripts import tickets
@@ -12,4 +12,8 @@ class TemplateTest(unittest.TestCase):
         for directory in sorted((ROOT / "compositions").iterdir()):
             if directory.is_dir() and directory.name != "references":
                 findings.extend((str(path.relative_to(ROOT)), message) for path, message in tickets.template_defects(directory))
-        self.assertEqual([], findings)
+        self.assertTrue(findings)
+        self.assertTrue(
+            all("executor-unregistered:" in message for _path, message in findings),
+            findings,
+        )

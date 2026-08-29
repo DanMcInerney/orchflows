@@ -58,7 +58,7 @@ class AdapterRegistryTest(unittest.TestCase):
             self._pack(root, "no-such-adapter")
             ticket = (
                 "---\nid: T1\nrun: testrun\nstatus: pending\n"
-                "executor: orch-tdd\ndepends_on: []\nbound: 30m\n"
+                "executor: orch-execute\ndepends_on: []\nbound: 30m\n"
                 "pack: widget-pack\nisolation: required\n---\n\n"
                 "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
             )
@@ -107,7 +107,7 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
         "run: testrun\n"
         f"status: {status}\n"
         f"{claim}"
-        "executor: orch-tdd\n"
+        "executor: orch-decompose\n"
         "depends_on: []\n"
         "assignment_seal: sha256:current\n"
         "---\n\n"
@@ -123,7 +123,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     (tmp / ".git").mkdir()
     sink = use_sink(tmp)
     tickets_mod._dispatch([
-        "new", "testrun", "T1", "--executor", "orch-tdd",
+        "new", "testrun", "T1", "--executor", "orch-execute",
         "--goal", "Test result attribution.", "--context", "[]",
         "--pack", "orch-code-pack", "--isolation", "required",
     ])

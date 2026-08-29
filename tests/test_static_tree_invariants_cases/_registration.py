@@ -50,7 +50,6 @@ BASE_ONLY = frozenset({
     "test_friction_cases.storage._ProvenanceTestCase",
     "test_migrate_state_cases.common.MigrationCase",
     "test_state_root_cases.support.SinkFixture",
-    "test_visualize_scripts_cases.support._ScriptCase",
 })
 
 

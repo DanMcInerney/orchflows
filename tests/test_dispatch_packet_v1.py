@@ -25,7 +25,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         )
         self.environment.start()
         self.dispatch(
-            "new", "run", "T", "--executor", "orch-tdd",
+            "new", "run", "T", "--executor", "orch-execute",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--profile", "orch-worker",
@@ -229,7 +229,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         legacy_id = "T.gate.repair"
         stored_packet = dict(committed["packet"])
         stored_packet.update({
-            "executor": "orch-repair",
+            "executor": "orch-execute", "review_kind": "repair",
             "reference": {"id": legacy_id, "run": "run"},
             "source": {"id": legacy_id, "run": "run"},
         })
@@ -253,7 +253,8 @@ class DispatchPacketV1Test(unittest.TestCase):
             isolation="none", mode="gate", pack="orch-code-pack", root="T",
         )
         text = tickets._set_frontmatter_field(text, "id", legacy_id)
-        text = tickets._set_frontmatter_field(text, "executor", "orch-repair")
+        text = tickets._set_frontmatter_field(text, "executor", "orch-execute")
+        text = tickets._set_frontmatter_field(text, "review_kind", "repair")
         text = tickets._set_frontmatter_field(
             text, "dispatch_v1", canonical_json(state),
         )
@@ -270,6 +271,7 @@ class DispatchPacketV1Test(unittest.TestCase):
             "dispatch-packet", "run", legacy_id, "--dispatch-id", "D1",
             "--reply-to", "root", "--workspace", "C:/candidate",
             "--artifact", f"git:{old_head}", "--form", "reference",
+            "--review-kind", "repair",
         ])
 
         self.assertEqual(stored, replayed)
@@ -513,7 +515,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.tearDown()
         self.setUp()
         routing = self.project(form="inline")["packet"]
-        routing["executor"] = "orch-repair"
+        routing["executor"] = "orch-decompose"
         missing = str(Path(self.temporary.name) / "not-mounted")
         with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
             refusal = self.receive(routing)

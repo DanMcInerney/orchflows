@@ -38,14 +38,17 @@ def _frontmatter(path: str) -> dict[str, str]:
     }
 
 
+def _skill_path(name: str) -> str:
+    tier = "workflows" if name == "orch-spec" else "kernel"
+    return f"skills/{tier}/{name}/SKILL.md"
+
+
 class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
         "orch-spec": "planner",
-        "orch-eval-design": "planner",
-        "orch-self-improve": "planner",
-        "orch-triage": "planner",
-        "orch-fixture": "worker",
-        "orch-repair": "worker",
+        "orch-check": "planner",
+        "orch-decompose": "planner",
+        "orch-execute": "worker",
     }
 
     def test_canonical_role_map_and_glue_only_contract(self):
@@ -53,14 +56,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             with self.subTest(skill=name):
                 self.assertEqual(
                     role,
-                    _frontmatter(f"skills/workflows/{name}/SKILL.md")["role"],
+                    _frontmatter(_skill_path(name))["role"],
                 )
 
         glue = {
             "skills/engines/orch-frontier/SKILL.md",
             "skills/engines/orch-loop/SKILL.md",
             "skills/kernel/orch-integrate/SKILL.md",
-            "skills/utilities/orch-off/SKILL.md",
         }
         for path in glue:
             with self.subTest(glue=path):
@@ -91,7 +93,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**single**",
             "**graph**",
             "**spec**",
-            "one same planner child",
+            "Establish `orch-planner` child",
             "`tickets.py dispatch`",
             "outer coordinator",
         ):
@@ -124,8 +126,8 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "tickets.py dispatch-receive",
             "accepted receipt",
             "exact `orch-decompose`",
-            "matching `orch-planner` child",
-            "complete emitted packet",
+            "Establish `orch-planner` child",
+            "Send the emitted packet",
             "ticket path is not a packet",
             "outer coordinator integrates",
             "starts `orch-frontier`",
@@ -209,7 +211,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         for anchor in (
             "direct root",
-            "one lawful executor",
+            "lawful executor",
             "`orch-decompose` root",
             "distinct outcomes or dependencies",
             "same planner",
@@ -251,7 +253,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-spec", "orch-repair"}:
+        for name in {"orch-spec", "orch-check", "orch-execute"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]

@@ -56,4 +56,4 @@ Framework specifics live with the workspace's standards owner.
   record layout, type, contrast and interaction-state deltas.
 - Regenerate only derived captures after a coherent change and keep their
   command, revision and dimensions with the evidence.
-- Return changed view identities, capture paths, checks and open risks.
+- Close with the capture inventory, measured checks, and remaining visual questions.

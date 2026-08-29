@@ -61,4 +61,4 @@ are `blocking: false` — reported, never repaired in the same run.
   blocker ledger; resolve only evidence-backed overlap and record the
   resulting identity.
 - A clean repair is an explicit empty-set proof, not an unrecorded no-op.
-- Return code identity, check command and outcome, plus unresolved risks.
+- Conclude by recording the commit hash, commands run, and outstanding caveats.

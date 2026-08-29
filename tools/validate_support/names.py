@@ -18,6 +18,10 @@ NAME_CHECKED_TREES = (
     "rules", "docs", "contracts", "templates", "compositions", "packs", "skills"
 )
 NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md", "TICKETS.md")
+# Host routing owns this control directive; it is not a package in the
+# repository's skill/pack namespace, but remains a valid backticked command
+# in the managed host block.
+HOST_ROUTING_DIRECTIVES = {"orch-off"}
 # `orch-` alone is the prefix, not a name; a name carries at least one
 # segment after it. Plain text is how the library says "mentioned, not
 # called" (rule 2 again), so DESIGN.md's supersession history needs no
@@ -60,7 +64,7 @@ def validate_names(packages, diag: Diagnostics) -> None:
     if not packages:
         diag.warn("skills", SKIPPED)
         return
-    known = {pkg["path"].name for pkg in packages} | set(ROLE_PROFILES)
+    known = {pkg["path"].name for pkg in packages} | set(ROLE_PROFILES) | HOST_ROUTING_DIRECTIVES
     paths = []
     for directory in NAME_CHECKED_TREES:
         node = ROOT / directory
@@ -132,6 +136,7 @@ def validate_unique_names(packages, diag: Diagnostics) -> None:
 
 __all__ = (
     'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
+    'HOST_ROUTING_DIRECTIVES',
     'NAME_CHECK_MARKER', 'LENS_ROW_RE', 'LENS_ANCHOR_RE', 'HEADING_RE',
     '_heading_slugs', 'validate_names', 'validate_lens_anchor', 'validate_unique_names',
 )
