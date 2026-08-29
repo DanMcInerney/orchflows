@@ -10,14 +10,14 @@ if __package__:
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
         GATE_EXECUTORS,
-        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
+        ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
 else:
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
         GATE_EXECUTORS,
-        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
+        ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
 
@@ -57,6 +57,12 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     findings = []
     executor = _executor_of(data)
     pack = str(data.get("pack") or "").strip()
+    unbound = (
+        executor.startswith(SCRIPT_EXECUTOR_PREFIX)
+        or executor == ROOT_EXECUTOR
+        or ".gate." in ticket_id
+        or ticket_id.endswith(".check")
+    )
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
         target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
         if not (Path(__file__).resolve().parents[1] / target).is_file():
@@ -64,7 +70,7 @@ def binding_findings(ticket_id: str, data: dict) -> list:
                 "script-executor-unresolved", "executor",
                 f"executor names script '{target or '<missing>'}', which does not resolve in the tree",
             ))
-    if pack:
+    if pack and not unbound:
         adapter, adapter_failure = adapter_resolution(pack)
         if adapter_failure is not None:
             findings.append(adapter_failure)
