@@ -1,4 +1,9 @@
-"""Lifecycle transition table for sealed tickets."""
+"""Executable lifecycle transition declarations for sealed tickets.
+
+The mutation code consumes the compact rows below.  The documentation
+renderer consumes their expanded form, so the public lifecycle view cannot
+acquire a second, hand-maintained state machine.
+"""
 from __future__ import annotations
 
 from collections import namedtuple
@@ -17,6 +22,23 @@ CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})
 ADMISSION_OWNED_TARGETS = (READY, CLAIMED)
 Row = namedtuple("Row", ("command", "sources", "target", "sets", "blanks", "remedy"))
 Stamp = namedtuple("Stamp", ("status", "admission", "blanks", "draft_statuses"))
+LifecycleSpec = namedtuple(
+    "LifecycleSpec",
+    ("event", "sources", "target", "actor", "required_record", "contract", "rule"),
+)
+LifecycleRow = namedtuple(
+    "LifecycleRow",
+    (
+        "predecessor",
+        "event",
+        "actor",
+        "required_record",
+        "result",
+        "contract",
+        "rule",
+        "anchor",
+    ),
+)
 
 
 def set_status_command(target: str) -> str:
@@ -38,6 +60,68 @@ STAMPS = {
     "stamp": Stamp(PENDING, ADMISSION_PENDING, LEASE_FIELDS, (PENDING, READY)),
     "draft-validate": Stamp(PENDING, ADMISSION_PENDING, LEASE_FIELDS, (PENDING, READY, SUSPENDED)),
 }
+
+# This is executable metadata beside the guards that own the transitions.
+# Sources are expanded one-per-row for the rendered view. A same-state event
+# still appears because it changes a required lifecycle record.
+_LIFECYCLE_SPECS = (
+    LifecycleSpec("issue", ("unissued",), PENDING, "caller", "sealed ticket source", "contracts/work-item.md", "rules/topology.md"),
+    LifecycleSpec("stamp", ("unsealed draft",), PENDING, "caller", "sealed root generation", "contracts/work-item.md", "rules/topology.md"),
+    LifecycleSpec("ready", (PENDING,), READY, "caller", "admission receipt", "contracts/work-item.md", "rules/topology.md"),
+    LifecycleSpec("claim", (PENDING, READY, CLAIMED), CLAIMED, "caller", "admission receipt; stale-claim proof when already claimed", "contracts/work-item.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-open", ("ready / no dispatch state", "ready / ended attempts", "claimed / ended attempts", "suspended / ended attempts"), "claimed / live attempt", "caller", "assignment seal and admission receipt", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-commit", ("claimed / live attempt",), "claimed / live attempt + generic record", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-packet", ("claimed / live attempt",), "claimed / packet committed", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-receive", ("claimed / packet committed",), "claimed / receipt accepted", "established worker or planner", "committed dispatch-packet record", "contracts/dispatch.md", "rules/roles.md"),
+    LifecycleSpec("result", ("claimed / receipt accepted",), "claimed / receipt accepted + result record", "accepted receiver", "accepted dispatch-receipt record", "contracts/result.md", "rules/verification.md"),
+    LifecycleSpec("dispatch-outcome", ("claimed / receipt accepted", "claimed / receipt accepted + result records"), "claimed / outcome committed", "accepted receiver or relaying caller", "accepted dispatch-receipt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-retire", ("claimed / live attempt",), "claimed / retired attempt", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "live predecessor attempt and assignment seal", "contracts/dispatch.md", "rules/delegation.md"),
+) + tuple(
+    LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
+    for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
+) + (
+    LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
+    LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Result", "contracts/verdict.md", "rules/verification.md"),
+) + tuple(
+    LifecycleSpec(
+        set_status_command(state),
+        STATUSES,
+        state,
+        "caller",
+        "no dispatch-v1 record (legacy path)",
+        "contracts/worklog.md" if state in TERMINAL_STATES else "contracts/work-item.md",
+        "rules/loops.md" if state in TERMINAL_STATES else "rules/topology.md",
+    )
+    for state in (PENDING, SUSPENDED) + tuple(sorted(TERMINAL_STATES))
+)
+
+
+def _anchor(value: str) -> str:
+    return "lifecycle-" + "-".join(
+        part for part in "".join(
+            character.lower() if character.isalnum() else " " for character in value
+        ).split() if part
+    )
+
+
+def lifecycle_rows() -> tuple:
+    """Return the complete, deterministic one-row-per-predecessor view."""
+    rows = []
+    for spec in _LIFECYCLE_SPECS:
+        for source in spec.sources:
+            identity = f"{spec.event}-{source}-to-{spec.target}"
+            rows.append(LifecycleRow(
+                predecessor=source,
+                event=spec.event,
+                actor=spec.actor,
+                required_record=spec.required_record,
+                result=spec.target,
+                contract=spec.contract,
+                rule=spec.rule,
+                anchor=_anchor(identity),
+            ))
+    return tuple(rows)
 
 
 def pending_admission() -> str:

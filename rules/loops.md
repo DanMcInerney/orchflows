@@ -1,5 +1,8 @@
 # Loops
 
+The generated [terminal lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
+connect bounded loop outcomes to their run-visible states.
+
 1. A loop carries a frozen goal, an external done-check, and a bound.
    The done-check alone decides success; the bound alone caps cost and
    is never a success condition. A declared iteration count is a

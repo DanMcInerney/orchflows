@@ -1,6 +1,8 @@
 # Work-item contract (ticket)
 
 A ticket is one sealed semantic assignment plus system-owned lifecycle state.
+The generated [lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
+relate this shape to its authorized events without restating them here.
 
 Location: `<state-root>/tickets/<run>/<id>.md`, where
 `scripts/state_root.py` resolves the user-scope state sink.

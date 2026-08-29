@@ -1,5 +1,8 @@
 # Worklog contract (run view)
 
+The generated [terminal lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
+name the state events this rendered run view observes.
+
 The run's state, rendered: `tickets.py worklog <run>` reads the run's
 ticket directory and prints the view below; `--write` lands it at
 `<state-root>/runs/<run>/worklog.md`, replacing only a file it rendered. There is never a second,

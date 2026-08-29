@@ -1,5 +1,8 @@
 # Delegation
 
+The generated [dispatch lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
+connect this law to each authorized dispatch event and predecessor record.
+
 1. Every dispatch carries a complete
    [semantic assignment](../contracts/work-item.md#semantic-assignment) and
    its [system-owned metadata](../contracts/work-item.md#system-owned-metadata), which own

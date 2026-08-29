@@ -84,6 +84,7 @@ project maintains its own instance beside its router file.
 | role | loads, in order | bounded by |
 |---|---|---|
 | orchestrator, cold | router block, then the ownership map; vocabulary entries on demand | ~2 pages |
+| orchestrator, lifecycle | [the generated lifecycle table](lifecycle.md) | one rendered table |
 | decomposer | the root ticket, the stamped pack, the owners the spec names | the ticket |
 | executor | its Goal and relevant Context | the ticket |
 | evaluator | the lens, then the artifact — blind to the producer's prose | the lens |
