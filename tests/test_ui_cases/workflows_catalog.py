@@ -87,6 +87,32 @@ class WorkflowCatalogTests(unittest.TestCase):
             with self.assertRaises(compositions.WorkflowCompositionError):
                 compositions.project_composition(root, "demo")
 
+    def test_pack_cell_sequence_projects_only_its_bound_executor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write(
+                root / "compositions" / "demo" / "template.md",
+                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
+            )
+            self._write(
+                root / "compositions" / "demo" / "00-deliver.md",
+                "---\nid: 00-deliver\nexecutor: orch-draft\n"
+                "pack: orch-content-pack\nsequence: [draft, edit]\n"
+                "depends_on: []\nbound: 30m\n---\n",
+            )
+            self._write(
+                root / "skills" / "instances" / "orch-draft" / "SKILL.md",
+                "---\nname: orch-draft\ndescription: Execute draft.\nrole: worker\n---\n",
+            )
+
+            detail = compositions.project_composition(root, "demo")
+
+        self.assertEqual(["skill:orch-draft"], [
+            edge["to"] for edge in detail["edges"] if edge["kind"] == "executor"
+        ])
+        self.assertNotIn("skill:draft", [node["id"] for node in detail["nodes"]])
+        self.assertNotIn("skill:edit", [node["id"] for node in detail["nodes"]])
+
     def test_list_valued_executor_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

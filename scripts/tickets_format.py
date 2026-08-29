@@ -148,7 +148,9 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if not sections.get('context', '').strip():
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
-    defects.extend(sequence_defects(data.get('sequence'), _executor_of(data)))
+    defects.extend(sequence_defects(
+        data.get('sequence'), _executor_of(data), data.get('pack')
+    ))
     return defects
 def _parse_iso(value):
     if not isinstance(value, str) or not value.strip():

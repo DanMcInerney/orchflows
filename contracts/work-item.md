@@ -134,9 +134,15 @@ substitutes placeholders, validates one acyclic graph with one terminal, seals
 the exact snapshot, and writes all tickets or none.
 
 `executor` names an exact skill or `script:<repo-relative path>`. Optional
-`sequence` lists exact ordered skills with its head equal to `executor`; every
-skill must be callable by the bound role. Domains may add facts to Context but
-do not replace the semantic sections.
+`sequence` is either an ordered skill chain whose head equals `executor`, or
+an ordered chain of stages declared by the stamped pack's execute-side
+`stages` cell; the two forms cannot be mixed. A sequence is one child,
+established once at the role resolved from its head executor. Every
+continuation runs at that head binding: a continuation's own `role:` has no
+dispatch effect, and the caller choosing that order accepts the tradeoff.
+Anything needing a fresh role or independent verdict is a new ticket and
+child. Domains may add facts to Context but do not replace the semantic
+sections.
 
 ## T0 supersession
 

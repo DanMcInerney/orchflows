@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2053,
+  "count": 2060,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -755,6 +755,12 @@
    "test_tickets_grade.GradeSnapshotTest.test_prose_verification_covers_are_read_as_fixed_result_evidence",
    "test_tickets_grade.GradeSnapshotTest.test_review_verification_accepts_optional_closed_covers",
    "test_tickets_grade.GradeSnapshotTest.test_review_verification_rejects_empty_closed_covers",
+   "test_tickets_sequence.SequenceAdmissionTests.test_declared_pack_stages_are_accepted",
+   "test_tickets_sequence.SequenceAdmissionTests.test_later_skill_role_does_not_change_the_head_binding",
+   "test_tickets_sequence.SequenceAdmissionTests.test_project_skill_sequence_resolves_from_project_scope",
+   "test_tickets_sequence.SequenceAdmissionTests.test_skill_and_cell_forms_cannot_be_mixed",
+   "test_tickets_sequence.SequenceAdmissionTests.test_skill_sequence_requires_resolvable_names",
+   "test_tickets_sequence.SequenceAdmissionTests.test_undeclared_pack_stage_is_refused",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
    "test_trace.TestClaudeAdapter.test_malformed_fixture_yields_partial_trace",
@@ -1709,6 +1715,7 @@
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_escaping_file_and_directory_symlink_owners_are_rejected",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_list_valued_executor_is_rejected",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_owner_name_must_match_its_canonical_package",
+   "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_pack_cell_sequence_projects_only_its_bound_executor",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_repository_catalog_is_derived_from_compositions_and_workflow_skills",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_uninstantiated_executor_slot_invents_no_skill_projection",
    "tests.test_ui_cases.workflows_catalog.WorkflowCatalogTests.test_validated_summary_is_joined_by_canonical_id",
@@ -2056,7 +2063,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0bd13258babfae2faec2cb4ec48b1163ff69b8b4637c643d95dcdce579f11f8c"
+  "sha256": "fb84fdfc8c0b711f24beccde78f90c8785a43e7a5c003aaaf7ff5e93ff193097"
  },
  "mutation_owners": [
   {

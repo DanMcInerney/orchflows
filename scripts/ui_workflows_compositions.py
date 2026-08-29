@@ -6,9 +6,11 @@ from pathlib import Path
 
 try:
     from scripts.tickets_format import _parse_frontmatter
+    from scripts.tickets_sequence import _is_stage_name, _is_skill_name
     from scripts import ui_workflows_identity as identity
 except ImportError:
     from tickets_format import _parse_frontmatter
+    from tickets_sequence import _is_stage_name, _is_skill_name
     import ui_workflows_identity as identity
 
 
@@ -56,7 +58,18 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
         executors = []
     elif sequence is None:
         executors = [executor]
-    elif not isinstance(sequence, list) or not sequence or sequence[0] != executor:
+    elif not isinstance(sequence, list) or not sequence:
+        raise WorkflowCompositionError("composition sequence must start with executor")
+    elif (
+        all(_is_stage_name(member) for member in sequence)
+        and isinstance(fields.get("pack"), str)
+        and fields["pack"].strip()
+    ):
+        # Pack-cell stages are data validated against the stamped pack.  The
+        # composition projection exposes their one bound executor, rather
+        # than inventing skill nodes for stage labels.
+        executors = [executor]
+    elif not all(_is_skill_name(member) for member in sequence) or sequence[0] != executor:
         raise WorkflowCompositionError("composition sequence must start with executor")
     else:
         executors = sequence
