@@ -61,8 +61,8 @@
       },
       "worker": {
         "binding": {
-          "effort": "high",
-          "model": "claude-opus-5"
+          "effort": "xhigh",
+          "model": "claude-sonnet-5"
         },
         "name": "orch-worker"
       }
@@ -70,5 +70,5 @@
     "schema_version": 1
   },
   "source": "hosts/claude.json",
-  "source_sha256": "10bd42659ea6c1f61921c4dbb9550b47365c4ab76e3fa1c165eda51c461137b2"
+  "source_sha256": "d48a0e8a572116e7ae389d8b17c3fc3a40bea7be97724e78e16df015ea5062f0"
 }

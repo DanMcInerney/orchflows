@@ -33,7 +33,7 @@
     },
     "worker": {
       "name": "orch-worker",
-      "binding": {"model": "claude-opus-5", "effort": "high"}
+      "binding": {"model": "claude-sonnet-5", "effort": "xhigh"}
     }
   },
   "capabilities": {"isolation": "requested", "effort": "native"}

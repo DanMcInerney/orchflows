@@ -69,8 +69,8 @@
         "binding": {
           "agent_type": "orch_worker",
           "fork_turns": "none",
-          "model": "gpt-5.6-sol",
-          "model_reasoning_effort": "high",
+          "model": "gpt-5.6-luna",
+          "model_reasoning_effort": "xhigh",
           "service_tier": "fast"
         },
         "name": "orch-worker"
@@ -79,5 +79,5 @@
     "schema_version": 1
   },
   "source": "hosts/codex.json",
-  "source_sha256": "7a1d1f00dce1dd8dd6650c5f5c238e0a3e02d1f9c316ae5e08a6c53f9b517883"
+  "source_sha256": "a358a949d3dff680dfd158db2fe4aa2000fe9fe3f0fefd56732b0a5c756c0dd4"
 }

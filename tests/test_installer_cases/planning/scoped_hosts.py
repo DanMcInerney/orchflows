@@ -91,6 +91,20 @@ class HostAdapterRenderingTest(unittest.TestCase):
         self.assertEqual(
             tuple(adapters["codex"]["cli_candidates"]), install.CODEX_CLI_CANDIDATES
         )
+        with tempfile.TemporaryDirectory() as tmp:
+            adapters = Path(tmp) / "adapters"
+            render_hosts.render_all(install.HOSTS_DIR, adapters)
+            rendered_profiles = install.load_role_profiles(adapters)
+        expected_worker_bindings = {
+            "codex": {"model": "gpt-5.6-luna", "model_reasoning_effort": "xhigh"},
+            "claude": {"model": "claude-sonnet-5", "effort": "xhigh"},
+            "grok": {"model": "grok-4.6", "effort": "high"},
+        }
+        for host, binding in expected_worker_bindings.items():
+            with self.subTest(host=host):
+                actual = rendered_profiles["orch-worker"][host]
+                for field, value in binding.items():
+                    self.assertEqual(value, actual[field])
 
     def test_host_profile_and_authoring_prose_point_to_the_data_owner(self):
         profiles = install.PROFILES_MD.read_text(encoding="utf-8")
@@ -324,11 +338,17 @@ class TestScopedHostConfiguration(unittest.TestCase):
             for dest, content in plan.claude_agents:
                 self.assertEqual(home / ".claude" / "agents", dest.parent)
                 self.assertIn("name: orch-", content)
+                if "name: orch-worker" in content:
+                    self.assertIn("model: claude-sonnet-5", content)
+                    self.assertIn("effort: xhigh", content)
             for dest, content in plan.codex_agents:
                 self.assertEqual(home / ".codex" / "agents", dest.parent)
                 parsed = install.tomllib.loads(content)
                 self.assertIn(parsed["name"], {"orch_planner", "orch_worker"})
                 self.assertIn("developer_instructions", parsed)
+                if parsed["name"] == "orch_worker":
+                    self.assertEqual("gpt-5.6-luna", parsed["model"])
+                    self.assertEqual("xhigh", parsed["model_reasoning_effort"])
 
     def test_user_plan_writes_claude_adapters_and_codex_skill_stubs(self):
         with tempfile.TemporaryDirectory() as tmp:
