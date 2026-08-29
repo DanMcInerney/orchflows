@@ -496,23 +496,15 @@ def validate_templates(diag: Diagnostics) -> None:
                 )
 
 
-# LOOP_TRIGGER_RE fires only on the imperative/procedural verb forms that
-# actually instruct the reader to iterate -- "iterate"/"iterating" or "repeat
-# until" -- never on the bare noun "loop" or "iteration", which this corpus
-# uses only referentially ("the loop's done-check", "iteration entries", "a
-# later iteration", "never a loop"). A noun mention names something -- often
-# another skill's bound loop -- without itself being a bound-less instruction
-# to iterate, so it carries no obligation to also state a bound/terminal term
-# (REVIEW-2026-08-06.md thread T7: false positives on orch-worklog and
-# orch-triage, neither of which instructs iteration).
+# LOOP_TRIGGER_RE matches iteration verbs, not the referential nouns "loop" or
+# "iteration", so noun mentions carry no bound obligation (review thread T7).
 
 __all__ = (
     'validate_craft_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
-    'validate_call_graph', 'validate_domain_blindness', '_envelope_first_clause',
-    '_envelope_missing', 'validate_envelope',
-    'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
-    'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',
-    'discover_templates', '_composition_artifact_kind', '_reference_owner', '_script_owner',
-    'validate_composition_admission', '_doclint', '_ticket_law', '_validate_template_manifest',
-    '_validate_stub_executor', '_tree_skill_names', 'validate_templates',
+    'validate_call_graph', 'validate_domain_blindness', '_envelope_first_clause', '_envelope_missing',
+    'validate_envelope', 'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
+    'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE', 'discover_templates',
+    '_composition_artifact_kind', '_reference_owner', '_script_owner', 'validate_composition_admission',
+    '_doclint', '_ticket_law', '_validate_template_manifest', '_validate_stub_executor',
+    '_tree_skill_names', 'validate_templates',
 )
