@@ -1,28 +1,24 @@
-"""Shared transcript fixtures and case base."""
+"""Shared transcript fixtures and canonical reader test case base."""
 
-from reader.tests.test_ui_cases._web import *  # noqa: F401,F403
+import contextlib
+import tempfile
+import unittest
+from pathlib import Path
+
+from reader.scripts import ui_sessions
+from reader.tests.test_ui_cases._base import make_sink, make_transcripts
+from reader.tests.test_ui_cases._web import snapshot
+
+
 def build_fixture(stack) -> tuple:
-    """``(temporary directory, main checkout, transcript root)``, all three
-    torn down when ``stack`` closes."""
+    """Return a temporary sink and transcript tree for one test class."""
 
     tmp = Path(stack.enter_context(tempfile.TemporaryDirectory()))
     return tmp, make_sink(tmp), make_transcripts(tmp)
 
 
 class TranscriptCase(unittest.TestCase):
-    """A fixture transcript root and a fixture checkout, plus a clean parse
-    cache -- the cache is module state that outlives a test, so a case that
-    counts parses must not inherit another case's hits.
-
-    One materialization for the whole class: `setUpClass`, not `setUp`,
-    because copying the corpus costs ~40ms and most of these cases only read
-    it. A case that writes into the tree calls `own_fixture` first and works
-    on a private copy -- a class-scoped tree shared with a mutating case is a
-    leak, and a leak surfaces as an order-dependent failure in some later
-    case that did nothing wrong. `shared_tree_is_intact` closes that gap from
-    the other side: an unannounced write fails the case that made it rather
-    than the next case along.
-    """
+    """A fixture transcript root with cache and write-isolation guards."""
 
     @classmethod
     def setUpClass(cls):
@@ -32,17 +28,12 @@ class TranscriptCase(unittest.TestCase):
         cls.pristine = snapshot(cls.tmp)
 
     def setUp(self):
-        ui.TRANSCRIPT_CACHE.clear()
-        self.addCleanup(ui.TRANSCRIPT_CACHE.clear)
+        ui_sessions.TRANSCRIPT_CACHE.clear()
+        self.addCleanup(ui_sessions.TRANSCRIPT_CACHE.clear)
         self.addCleanup(self.shared_tree_is_intact)
 
     def own_fixture(self):
-        """A private copy of the fixture, for a case that writes into it.
-
-        The instance attributes shadow the class's, so the body below reads
-        exactly as it did when every case built its own tree. Idempotent, so
-        a helper the case calls in a loop rebuilds once.
-        """
+        """Give a mutating case an isolated copy of the class fixture."""
 
         if "tmp" in vars(self):
             return
@@ -51,16 +42,9 @@ class TranscriptCase(unittest.TestCase):
         self.tmp, self.main, self.transcripts = build_fixture(stack)
 
     def shared_tree_is_intact(self):
-        if "tmp" in vars(self):
-            return
-        self.assertEqual(
-            type(self).pristine,
-            snapshot(type(self).tmp),
-            "wrote into the class-scoped fixture: call own_fixture() first",
-        )
-
-    def sessions(self, transcripts=True) -> str:
-        root = self.transcripts if transcripts is True else transcripts
-        status, page = ui.render_route(self.main, ui.SESSIONS_ROUTE, root)
-        self.assertEqual(200, status)
-        return page
+        if "tmp" not in vars(self):
+            self.assertEqual(
+                type(self).pristine,
+                snapshot(type(self).tmp),
+                "wrote into the class fixture; call own_fixture() first",
+            )

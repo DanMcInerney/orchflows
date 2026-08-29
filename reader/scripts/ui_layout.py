@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from reader.scripts.ui_model import *
-from reader.scripts.ui_model import _facade_value
 from reader.scripts.ui_discovery import discover_sessions
 from reader.scripts.ui_sessions import *
 from reader.scripts.ui_sessions import _make_room
+
 
 LAYER_WIDTH = 4
 NODE_WIDTH = 132
@@ -238,7 +238,7 @@ def cached_layout(node_ids, edges) -> dict:
     key = layout_key(node_ids, edges)
     layout = LAYOUT_CACHE.get(key)
     if layout is None:
-        layout = _facade_value("graph_layout", graph_layout)(node_ids, edges)
+        layout = graph_layout(node_ids, edges)
         _make_room(LAYOUT_CACHE, LAYOUT_CACHE_LIMIT)
         LAYOUT_CACHE[key] = layout
     return layout
@@ -353,7 +353,7 @@ def transcript_state(transcripts=None) -> tuple:
     lesson from the friction feed.
     """
 
-    found = _facade_value("discover_sessions", discover_sessions)(transcripts)
+    found = discover_sessions(transcripts)
     # Configured or not, and present or not, before any file: three pages
     # differ here -- no root configured, a root that is not there yet, and a
     # root holding nothing -- and none of the three has a file to stat, so a
@@ -370,56 +370,3 @@ def transcript_state(transcripts=None) -> tuple:
     # hole in the page appears and disappears under an unchanged tag.
     state.extend(found["unaddressable"])
     return tuple(state)
-
-
-# --- rendering ---------------------------------------------------------------
-
-
-def render_graph_svg(run: str, tickets, layout: dict) -> str:
-    """The dependency graph as inline SVG at natural size inside a
-    scrollable box. No canvas and no pan/zoom: at 3-12 nodes both are
-    machinery with no keyboard path (`lane-ui-patterns.md` §3.2)."""
-
-    at = dict((node.id, node) for node in layout["nodes"])
-    state = dict((ticket["id"], ticket["status"]) for ticket in tickets)
-    parts = [
-        '<div class="canvas">\n<svg class="graph" viewBox="0 0 {width} {height}" '
-        'width="{width}" height="{height}" role="img" '
-        'aria-label="dependency graph for {run}">\n'.format(
-            width=layout["width"], height=layout["height"], run=html.escape(run)
-        ),
-        '<defs><marker id="dep-arrow" viewBox="0 0 8 8" refX="8" refY="4" '
-        'markerWidth="6" markerHeight="6" orient="auto">'
-        '<path class="arrow" d="M0 0 L8 4 L0 8 z" /></marker></defs>\n',
-    ]
-    for source, target in layout["edges"]:
-        tail, head = at[source], at[target]
-        parts.append(
-            '<line class="edge" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
-            'marker-end="url(#dep-arrow)" />\n'.format(
-                x1=tail.x + NODE_WIDTH // 2,
-                y1=tail.y + NODE_HEIGHT,
-                x2=head.x + NODE_WIDTH // 2,
-                y2=head.y,
-            )
-        )
-    for node in layout["nodes"]:
-        seen = status_presentation(state.get(node.id, ""))
-        parts.append(
-            '<a href="{href}"><g class="nd nd-{word}" transform="translate({x},{y})">'
-            '<rect width="{w}" height="{h}" rx="5" />'
-            '<text class="nd-id" x="10" y="19">{id}</text>'
-            '<text class="nd-state" x="10" y="35">{glyph} {word}</text>'
-            "</g></a>\n".format(
-                href=_facade_value("ticket_href", None)(run, node.id),
-                word=seen.word,
-                glyph=seen.glyph,
-                x=node.x,
-                y=node.y,
-                w=NODE_WIDTH,
-                h=NODE_HEIGHT,
-                id=html.escape(node.id),
-            )
-        )
-    parts.append("</svg>\n</div>\n")
-    return "".join(parts)

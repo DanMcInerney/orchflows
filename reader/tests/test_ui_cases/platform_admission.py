@@ -30,7 +30,7 @@ class TestPlatformAdmission(unittest.TestCase):
     def test_generated_exemption_requires_a_contained_matching_hash(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
-            asset = root / "web" / "dist" / "assets" / "worker.js"
+            asset = root / "reader" / "web" / "dist" / "assets" / "worker.js"
             manifest = root / sizes.GENERATED_SOURCE_MANIFESTS[0]
             asset.parent.mkdir(parents=True)
             manifest.parent.mkdir(parents=True)

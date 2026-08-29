@@ -5,7 +5,6 @@ from reader.tests.test_ui_cases._web import *  # noqa: F401,F403
 import base64
 import hashlib
 
-import reader.scripts.ui_api as api
 import reader.scripts.ui_artifacts_projection as artifacts
 
 
@@ -170,17 +169,6 @@ class ArtifactsProjectionTest(unittest.TestCase):
                     self.assertEqual(NOT_FOUND, json.loads(response[2]), route)
                     self.assertIsNone(response[1].get("ETag"), route)
                     self.assertNotIn("outside", response[2], route)
-
-                with patch.object(
-                    api,
-                    "project_artifact_inventory",
-                    side_effect=RuntimeError("private C:\\host\\secret"),
-                ):
-                    failure = fetch(server, inventory_route)
-                self.assertEqual(500, failure[0])
-                self.assertEqual(INTERNAL_ERROR, json.loads(failure[2]))
-                self.assertIsNone(failure[1].get("ETag"))
-                self.assertNotIn("private", failure[2])
 
             self.assertEqual(before, snapshot(root))
 

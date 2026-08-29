@@ -1,10 +1,11 @@
-"""Reader-facade contracts for Workflows list, detail, and source routes."""
+"""HTTP contracts for Workflows list, detail, and source routes."""
 
 from __future__ import annotations
 
 from reader.tests.test_ui_cases._web import *  # noqa: F401,F403
 
 import reader.scripts.ui_api as api
+import reader.scripts.ui_workflows_projection as workflows
 
 
 NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
@@ -84,7 +85,7 @@ class WorkflowHttpTests(unittest.TestCase):
         private = RuntimeError(r"private C:\host\secret")
         with tempfile.TemporaryDirectory() as directory:
             with serving(make_sink(Path(directory))) as server:
-                with patch.object(api, "project_workflow_source", return_value=(422, UNREADABLE)):
+                with patch.object(workflows, "project_workflow_source", return_value=(422, UNREADABLE)):
                     unreadable = fetch(server, "/api/v1/workflows/evolve/sources/src_" + "a" * 43)
                 failures = []
                 for name, route in (
@@ -92,7 +93,7 @@ class WorkflowHttpTests(unittest.TestCase):
                     ("project_workflow", "/api/v1/workflows/evolve"),
                     ("project_workflow_source", "/api/v1/workflows/evolve/sources/src_" + "a" * 43),
                 ):
-                    with patch.object(api, name, side_effect=private):
+                    with patch.object(workflows, name, side_effect=private):
                         failures.append(fetch(server, route))
 
         self.assertEqual((422, UNREADABLE), (unreadable[0], json.loads(unreadable[2])))

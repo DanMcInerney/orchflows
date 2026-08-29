@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from pathlib import Path
+
+from scripts import state_root
 from reader.scripts.ui_model import *
-from reader.scripts.ui_model import _facade_value, _in_tree, _json_object, _parse_iso, _safe_name, _scalar
+from reader.scripts.ui_model import _in_tree, _json_object, _parse_iso, _safe_name, _scalar
+from reader.scripts.ui_ticket_model import read_ticket
 from reader.scripts.ui_sessions import *
 from reader.scripts.ui_sessions import _agent_count, _label_session, _stat_identity, _subagent_files, _subagent_identities
 
@@ -328,7 +333,7 @@ def discover_sessions(transcripts=None) -> dict:
             diagnostics.append("{0}: {1}".format(DIAGNOSTIC_UNDECODABLE_SLUG, project.name))
         transcript_paths = (_in_tree(project, path.name) for path in sorted(project.glob("*" + JSONL_SUFFIX)))
         for path in (path for path in transcript_paths if path is not None and path.is_file()):
-            identity = _facade_value("_stat_identity", _stat_identity)(path)
+            identity = _stat_identity(path)
             if identity is None:
                 # A session the walk found and the path layer will not
                 # describe. Dropping the row silently leaves a shorter
@@ -386,7 +391,7 @@ def read_sessions(transcripts=None) -> dict:
     an unchanged root costs one directory listing and no parse at all.
     """
 
-    found = _facade_value("discover_sessions", discover_sessions)(transcripts)
+    found = discover_sessions(transcripts)
     for session in found["sessions"]:
         _label_session(session)
     return found
@@ -403,102 +408,9 @@ def find_session(transcripts, session_id: str):
 
     if not _safe_name(session_id):
         return None
-    for session in _facade_value("discover_sessions", discover_sessions)(transcripts)[
+    for session in discover_sessions(transcripts)[
         "sessions"
     ]:
         if session["id"] == session_id:
             return session
     return None
-
-
-def _plural(count: int, singular: str, plural: str) -> str:
-    return "{0} {1}".format(count, singular if count == 1 else plural)
-
-
-def render_active_band(claims) -> str:
-    """Who is at work right now, across every run.
-
-    Absent when nobody is: an empty band is furniture that says nothing,
-    and the reader would still have to scan the tables to be sure.
-    """
-
-    if not claims:
-        return ""
-    parts = ['<ul class="band">\n']
-    for claim in claims:
-        ticket = claim["ticket"]
-        parts.append(
-            '<li class="claim"><a href="{href}">{id}</a> · {run} · {executor}'
-            " · {claimed_by}{meter}</li>\n".format(
-                href=_facade_value("ticket_href", None)(claim["run"], ticket["id"]),
-                id=html.escape(ticket["id"]),
-                run=html.escape(claim["run"]),
-                executor=_facade_value("_cell", None)(ticket["executor"], EMPTY_UNSET),
-                claimed_by=_facade_value("_cell", None)(ticket["claimed_by"], EMPTY_UNSET),
-                meter=_facade_value("_meter", None)(ticket),
-            )
-        )
-    parts.append("</ul>\n")
-    return "".join(parts)
-
-
-def render_index(discovery: dict) -> str:
-    parts = [
-        "<h1>orchflows runs</h1>\n",
-        '<p class="root">{0}</p>\n'.format(html.escape(str(discovery["root"]))),
-        '<p class="back"><a href="{0}">friction log</a></p>\n'.format(FRICTION_ROUTE),
-        '<p class="back"><a href="{0}">claude sessions</a></p>\n'.format(SESSIONS_ROUTE),
-        render_active_band(active_claims(discovery)),
-    ]
-    if discovery["empty"]:
-        parts.append('<p class="empty">{0}</p>\n'.format(html.escape(discovery["empty"])))
-    for run in discovery["runs"]:
-        parts.append(
-            '<section class="run">\n<h2>{name}</h2>\n'
-            '<p class="back"><a href="{href}">dependency graph</a></p>\n'.format(
-                name=html.escape(run["run"]),
-                href=_facade_value("graph_href", None)(run["run"]),
-            )
-        )
-        # Named here as well as on the graph, because every row below is a
-        # link built from an id the lookup may not resolve.
-        parts.append(render_diagnostics(identity_diagnostics(run["tickets"])))
-        if not run["tickets"]:
-            parts.append('<p class="empty">{0}</p>\n'.format(html.escape(EMPTY_NO_TICKETS)))
-        else:
-            parts.append(
-                "<table>\n<thead>\n<tr><th>id</th><th>status</th>"
-                "<th>executor</th><th>goal</th></tr>\n</thead>\n<tbody>\n"
-            )
-            for ticket in run["tickets"]:
-                parts.append(
-                    '<tr><td><a href="{href}">{id}</a></td><td>{status}</td>'
-                    "<td>{executor}</td><td>{goal}</td></tr>\n".format(
-                        href=_facade_value("ticket_href", None)(
-                            run["run"], ticket["id"]
-                        ),
-                        id=html.escape(ticket["id"]),
-                        status=_facade_value("render_status", None)(ticket["status"]),
-                        executor=_facade_value("_cell", None)(ticket["executor"], EMPTY_UNSET),
-                        goal=_facade_value("_cell", None)(ticket["goal"], EMPTY_NO_GOAL),
-                    )
-                )
-            parts.append("</tbody>\n</table>\n")
-        parts.append("</section>\n")
-    return _facade_value("_page", None)(
-        "orchflows runs",
-        "".join(parts),
-        [ticket for run in discovery["runs"] for ticket in run["tickets"]],
-    )
-
-
-def render_diagnostics(diagnostics) -> str:
-    """What the layout could not honour, named on the page. Silent when
-    there is nothing to say -- an empty list rendered as an empty box would
-    read as a warning nobody can act on."""
-
-    if not diagnostics:
-        return ""
-    return '<ul class="diagnostics">\n{0}</ul>\n'.format(
-        "".join("<li>{0}</li>\n".format(html.escape(line)) for line in diagnostics)
-    )

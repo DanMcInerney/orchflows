@@ -31,14 +31,14 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import scripts.state_root as state_root  # noqa: E402
-import scripts.tickets as tickets_mod  # noqa: E402
-import reader.scripts.ui as ui  # noqa: E402
+from scripts import state_root  # noqa: E402
+from scripts import tickets as tickets_mod  # noqa: E402
+from reader.scripts import ui_sessions  # noqa: E402
 
 SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"
-UI_PY = ROOT / "scripts" / "ui.py"
+UI_PY = ROOT / "reader" / "scripts" / "ui.py"
 WORK_ITEM_CONTRACT = ROOT / "contracts" / "work-item.md"
-FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "ui"
+FIXTURES = ROOT / "tests" / "fixtures" / "ui"
 FIXTURE_RUNS = ("run-alpha", "run-beta", "run-gamma", "run-delta", "run-epsilon")
 EMPTY_RUN = "run-empty"
 # Every ticket in `run-delta` is terminal and none is claimed, so it is the
@@ -49,7 +49,7 @@ CYCLIC_RUN = "run-epsilon"
 
 # The synthetic `~/.claude/projects` tree. `tests/fixtures/transcripts/README.md`
 # records what each fixture carries and why.
-FIXTURE_TRANSCRIPTS = Path(__file__).resolve().parent.parent / "fixtures" / "transcripts"
+FIXTURE_TRANSCRIPTS = ROOT / "tests" / "fixtures" / "transcripts"
 ALPHA_PROJECT = "-Users-dmcinerney-tools-alpha"
 BETA_PROJECT = "-Users-dmcinerney-tools-beta-repo"
 WORKTREE_PROJECT = "-Users-dmcinerney-tools-beta-repo--claude-worktrees-wt-one"
@@ -215,13 +215,13 @@ FAR_FUTURE_MTIME_NS = 910692730085000000000
 def far_future_mtimes():
     """Every file the session views stat, dated past the calendar."""
 
-    real = ui._stat_identity
+    real = ui_sessions._stat_identity
 
     def stamped(path):
         identity = real(path)
         return None if identity is None else identity[:2] + (FAR_FUTURE_MTIME_NS,)
 
-    with patch.object(ui, "_stat_identity", stamped):
+    with patch.object(ui_sessions, "_stat_identity", stamped):
         yield
 
 

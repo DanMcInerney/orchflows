@@ -43,13 +43,11 @@ class TestProjectionContentWall(unittest.TestCase):
 
             with serving(main) as server:
                 for route in (
-                    "/observe",
                     "/api/v1/runs",
                     "/api/v1/runs/run-gamma",
                     "/api/v1/runs/run-gamma/tickets/G1",
                     "/api/v1/runs/run-gamma/tickets/G1/artifacts",
                     "/api/v1/friction",
-                    "/api/observe?run=run-gamma",
                 ):
                     status, _headers, body = fetch(server, route)
                     self.assertEqual(200, status, route)
@@ -136,23 +134,23 @@ class TestProjectionFailureBoundary(unittest.TestCase):
             )
         self.assertNotIn(str(root), body)
 
-    def test_unexpected_new_and_legacy_projection_faults_are_generic_500s(self):
+    def test_projection_faults_are_generic_500s(self):
         with tempfile.TemporaryDirectory() as tmp:
             with serving(make_sink(Path(tmp))) as server:
                 with patch.object(
-                    api,
+                    api.ui_experience,
                     "project_view",
                     side_effect=RuntimeError("private C:\\host\\secret"),
                 ):
                     view_failure = fetch(server, "/api/v1/views/now")
                 with patch.object(
-                    api,
+                    api.ui_runs_projection,
                     "project_runs",
                     side_effect=RuntimeError("private C:\\host\\secret"),
                 ):
-                    legacy_failure = fetch(server, "/api/v1/runs")
+                    runs_failure = fetch(server, "/api/v1/runs")
 
-        for status, headers, body in (view_failure, legacy_failure):
+        for status, headers, body in (view_failure, runs_failure):
             self.assertEqual(500, status)
             self.assertEqual(INTERNAL_ERROR, json.loads(body))
             self.assertIsNone(headers.get("ETag"))

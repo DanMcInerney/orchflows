@@ -7,7 +7,7 @@ from reader.scripts.ui_experience import project_experience
 
 class TestExperienceFoundationGap(unittest.TestCase):
     def test_observe_smoke_tracks_the_mounted_run_map_feed(self):
-        smoke = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
+        smoke = (ROOT / "reader" / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertIn('process.env.ORCHFLOWS_UI_EXPERIENCE === "1"', smoke)
         self.assertNotIn("const experienceMode = true", smoke)
         start = smoke.index('test("Observe ')
@@ -66,7 +66,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
 
     def test_feature_entries_and_safe_live_fields_share_one_contract(self):
         composition = (
-            ROOT / "web" / "src" / "app" / "catalog.ts"
+            ROOT / "reader" / "web" / "src" / "app" / "catalog.ts"
         ).read_text(encoding="utf-8")
         expected_packages = {
             "friction": "friction",
@@ -83,14 +83,14 @@ class TestExperienceFoundationGap(unittest.TestCase):
                 composition,
             )
             index = (
-                ROOT / "web" / "src" / "features" / package / "index.ts"
+                ROOT / "reader" / "web" / "src" / "features" / package / "index.ts"
             ).read_text(encoding="utf-8")
             self.assertNotIn("defineFeature", index)
             self.assertNotIn("featureCatalog", index)
         self.assertEqual(1, composition.count("defineCatalog(["))
         self.assertNotIn("import.meta.glob", composition)
         shell_reexport = (
-            ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts"
+            ROOT / "reader" / "web" / "src" / "app" / "shell" / "featureCatalog.ts"
         ).read_text(encoding="utf-8")
         self.assertEqual(
             'export { featureCatalog } from "../catalog";',

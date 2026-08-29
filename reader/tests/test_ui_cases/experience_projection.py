@@ -19,7 +19,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"../../web/src/features/session-graph/index.tsx)", implemented
         )
         self.assertEqual(
-            "A0FB8B7CEEAB5555E85F50DBC3F8E08942CF6A23A6AB24B2C10BA82BD7DDCD76",
+            "A2B5BDABC873C3B376DC9A339AE0AAA441C7EDB94FFBDEA435A500AA6D5CF13E",
             hashlib.sha256(implemented).hexdigest().upper(),
         )
 
@@ -40,7 +40,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"[schema](../../web/src/api/schema.ts)",
         )
         self.assertEqual(
-            "5BCDC6B78F34D84119AA0A789824700778AE4476D0376F87E1905184D6D454CE",
+            "700B76400D43D796249C343902D0AE153B99E9967FDCCC56499DE9FD0C7D167C",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
@@ -56,12 +56,9 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         ):
             self.assertNotIn(deleted, architecture)
         for owner in (
-            "web/src/app/catalog.ts",
-            "web/src/features/",
-            "web/src/shared/transport/",
-            "/api/v1/workflows",
-            "/api/v1/workflows/{workflow_id}",
-            "/api/v1/workflows/{workflow_id}/sources/{source_id}",
+            "[`reader/`](reader/) owns the Observe browser",
+            "reader/web/src/features/workflows/view/SummaryFlow.tsx",
+            "reader/scripts/ui_api.py",
         ):
             self.assertIn(owner, architecture)
 
@@ -160,7 +157,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             self.assertTrue(item["path"].startswith("/"))
             self.assertIn("fixture=" + item["state"], item["path"])
 
-        tokens = (ROOT / "web" / "src" / "styles" / "tokens.css").read_text(encoding="utf-8")
+        tokens = (ROOT / "reader" / "web" / "src" / "styles" / "tokens.css").read_text(encoding="utf-8")
         for token in (
             "--canvas: #090b10", "--surface-1: #11151d", "--space-1: 4px",
             "--space-4: 16px", "--radius-card: 12px", "--row-compact: 44px",
@@ -172,30 +169,30 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         self.assertNotIn("linear-gradient", tokens)
         self.assertNotIn("backdrop-filter", tokens)
 
-        sessions_css = (ROOT / "web" / "src" / "features" / "sessions" / "sessions.css").read_text(encoding="utf-8")
-        now_css = (ROOT / "web" / "src" / "features" / "now" / "now.css").read_text(encoding="utf-8")
+        sessions_css = (ROOT / "reader" / "web" / "src" / "features" / "sessions" / "sessions.css").read_text(encoding="utf-8")
+        now_css = (ROOT / "reader" / "web" / "src" / "features" / "now" / "now.css").read_text(encoding="utf-8")
         self.assertIn("background: var(--attention-surface)", sessions_css)
         self.assertNotIn("color-mix", sessions_css)
         self.assertNotIn("border-radius: 8px", now_css)
         self.assertGreaterEqual(now_css.count("border-radius: var(--radius-control)"), 3)
 
-        app = (ROOT / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
-        shell = (ROOT / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
-        composition = (ROOT / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
-        application_catalog = (ROOT / "web" / "src" / "app" / "catalog.ts").read_text(encoding="utf-8")
+        app = (ROOT / "reader" / "web" / "src" / "ObserveApp.tsx").read_text(encoding="utf-8")
+        shell = (ROOT / "reader" / "web" / "src" / "app" / "shell" / "Shell.tsx").read_text(encoding="utf-8")
+        composition = (ROOT / "reader" / "web" / "src" / "app" / "shell" / "featureCatalog.ts").read_text(encoding="utf-8")
+        application_catalog = (ROOT / "reader" / "web" / "src" / "app" / "catalog.ts").read_text(encoding="utf-8")
         harness = (ROOT / "reader" / "tools" / "ui_frontend.py").read_text(encoding="utf-8")
-        experience_harness = (ROOT / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
+        experience_harness = (ROOT / "reader" / "web" / "src" / "smoke.spec.ts").read_text(encoding="utf-8")
         self.assertEqual('import { Shell } from "./app/shell/Shell";\n\nexport function ObserveApp() {\n  return <Shell />;\n}\n', app)
         self.assertIn('data-mode="observe"', shell)
         self.assertIn("read only", shell.lower())
         self.assertIn('import { featureCatalog } from "./featureCatalog"', shell)
         self.assertNotIn("FALLBACK", shell)
         for removed in (
-            ROOT / "web" / "src" / "app" / "registry.ts",
-            ROOT / "web" / "src" / "state" / "location.ts",
-            ROOT / "web" / "src" / "api" / "schema.ts",
-            ROOT / "web" / "src" / "api" / "client.ts",
-            ROOT / "web" / "src" / "feed.ts",
+            ROOT / "reader" / "web" / "src" / "app" / "registry.ts",
+            ROOT / "reader" / "web" / "src" / "state" / "location.ts",
+            ROOT / "reader" / "web" / "src" / "api" / "schema.ts",
+            ROOT / "reader" / "web" / "src" / "api" / "client.ts",
+            ROOT / "reader" / "web" / "src" / "feed.ts",
         ):
             self.assertFalse(removed.exists(), str(removed))
         self.assertNotIn("import.meta.glob", composition)

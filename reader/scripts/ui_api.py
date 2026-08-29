@@ -31,13 +31,7 @@ from reader.scripts import (
     ui_workflows_projection,
 )
 from reader.scripts.ui_assets import read_asset, resolve_asset_root
-from reader.scripts.ui_experience import (
-    SPA_ROUTE_PATTERNS,
-    VIEW_SLICES,
-    browser_navigation,
-    project_experience,
-    project_view,
-)
+from reader.scripts import ui_experience
 
 PUBLIC_API_VERSION = "v1"
 PUBLIC_API_SCHEMA = "orchflows.reader.v1"
@@ -102,7 +96,7 @@ def _projector_route_specs(modules=None) -> tuple:
 
 
 def _validated_view_query(view: str, values):
-    if view not in VIEW_SLICES or view not in VIEW_QUERY_FIELDS:
+    if view not in ui_experience.VIEW_SLICES or view not in VIEW_QUERY_FIELDS:
         return None
     if not set(values).issubset(VIEW_QUERY_FIELDS[view]):
         return None
@@ -115,29 +109,15 @@ def _validated_view_query(view: str, values):
 
 def _view_projection(root, transcripts, view: str, query) -> tuple:
     if view == "run-map" and query.get("run"):
-        if project_run(root, query["run"]) is None:
+        if ui_runs_projection.project_run(root, query["run"]) is None:
             return 404, NOT_FOUND
     elif view == "inspector":
-        if project_ticket(root, query["run"], query["ticket"]) is None:
+        if ui_runs_projection.project_ticket(root, query["run"], query["ticket"]) is None:
             return 404, NOT_FOUND
     elif view == "session-graph":
-        if project_session(transcripts, query["session"]) is None:
+        if ui_sessions_projection.project_session(transcripts, query["session"]) is None:
             return 404, NOT_FOUND
-    return 200, project_view(root, transcripts, view, query)
-
-
-project_observe = ui_now_projection.project_observe
-project_runs = ui_runs_projection.project_runs
-project_run = ui_runs_projection.project_run
-project_ticket = ui_runs_projection.project_ticket
-project_sessions = ui_sessions_projection.project_sessions
-project_session = ui_sessions_projection.project_session
-project_friction = ui_friction_projection.project_friction
-project_workflow_catalog = ui_workflows_projection.project_workflow_catalog
-project_workflow = ui_workflows_projection.project_workflow
-project_workflow_source = ui_workflows_projection.project_workflow_source
-project_artifact_inventory = ui_artifacts_projection.project_artifact_inventory
-project_artifact = ui_artifacts_projection.project_artifact
+    return 200, ui_experience.project_view(root, transcripts, view, query)
 
 
 def _json_bytes(value) -> bytes:
@@ -171,7 +151,14 @@ def _json_response(request: Request, value, status=200):
     return _bytes_response(request, _json_bytes(value), JSON_TYPE, "no-cache")
 
 
-artifact_endpoint = ui_artifacts_projection.http_endpoint(globals(), _json_response, INTERNAL_ERROR)
+artifact_endpoint = ui_artifacts_projection.http_endpoint(
+    {
+        "project_artifact_inventory": ui_artifacts_projection.project_artifact_inventory,
+        "project_artifact": ui_artifacts_projection.project_artifact,
+    },
+    _json_response,
+    INTERNAL_ERROR,
+)
 
 
 def _context(request: Request):
@@ -189,33 +176,35 @@ def _projected_response(request: Request, projector, *args):
 
 
 async def runs_endpoint(request: Request):
-    return _projected_response(request, project_runs, _context(request)[0])
+    return _projected_response(request, ui_runs_projection.project_runs, _context(request)[0])
 
 
 async def run_endpoint(request: Request):
-    return _projected_response(request, project_run, _context(request)[0], request.path_params["run"])
+    return _projected_response(request, ui_runs_projection.project_run, _context(request)[0], request.path_params["run"])
 
 
 async def ticket_endpoint(request: Request):
     root, _ = _context(request)
-    return _projected_response(request, project_ticket, root, request.path_params["run"], request.path_params["ticket"])
+    return _projected_response(request, ui_runs_projection.project_ticket, root, request.path_params["run"], request.path_params["ticket"])
 
 
 async def friction_endpoint(request: Request):
-    return _projected_response(request, project_friction, _context(request)[0])
+    return _projected_response(request, ui_friction_projection.project_friction, _context(request)[0])
 
 
 async def sessions_endpoint(request: Request):
-    return _projected_response(request, project_sessions, _context(request)[1])
+    return _projected_response(request, ui_sessions_projection.project_sessions, _context(request)[1])
 
 
 async def session_endpoint(request: Request):
-    return _projected_response(request, project_session, _context(request)[1], request.path_params["session"])
+    return _projected_response(request, ui_sessions_projection.project_session, _context(request)[1], request.path_params["session"])
 
 
 async def experience_endpoint(request: Request):
     root, transcripts = _context(request)
-    return _projected_response(request, project_experience, root, transcripts, dict(request.query_params))
+    return _projected_response(
+        request, ui_experience.project_experience, root, transcripts, dict(request.query_params)
+    )
 
 
 async def view_endpoint(request: Request):
@@ -237,12 +226,12 @@ def _workflow_root():
 
 
 async def workflows_endpoint(request: Request):
-    return _projected_response(request, project_workflow_catalog, _workflow_root())
+    return _projected_response(request, ui_workflows_projection.project_workflow_catalog, _workflow_root())
 
 
 async def workflow_endpoint(request: Request):
     try:
-        value = project_workflow(_workflow_root(), request.path_params["workflow_id"])
+        value = ui_workflows_projection.project_workflow(_workflow_root(), request.path_params["workflow_id"])
     except Exception:
         return _json_response(request, INTERNAL_ERROR, 500)
     return _json_response(request, NOT_FOUND, 404) if value is None else _json_response(request, value)
@@ -250,7 +239,7 @@ async def workflow_endpoint(request: Request):
 
 async def workflow_source_endpoint(request: Request):
     try:
-        status, value = project_workflow_source(
+        status, value = ui_workflows_projection.project_workflow_source(
             _workflow_root(), request.path_params["workflow_id"], request.path_params["source_id"]
         )
     except Exception:
@@ -287,7 +276,7 @@ async def index_endpoint(request: Request):
 
 
 async def spa_endpoint(request: Request):
-    if browser_navigation(request.url.path, request.headers):
+    if ui_experience.browser_navigation(request.url.path, request.headers):
         return await index_endpoint(request)
     return Response("not found", status_code=404)
 
@@ -313,7 +302,7 @@ def create_application(root, transcripts=None, assets=None):
         Route("/api/v1/views/{view}", view_endpoint, methods=["GET"]),
         Route("/api/v1/experience", experience_endpoint, methods=["GET"]),
         Route("/assets/{asset:path}", asset_endpoint, methods=["GET"]),
-        *[Route(pattern, spa_endpoint, methods=["GET"]) for pattern in SPA_ROUTE_PATTERNS],
+        *[Route(pattern, spa_endpoint, methods=["GET"]) for pattern in ui_experience.SPA_ROUTE_PATTERNS],
     ]
     app = Starlette(
         routes=routes,

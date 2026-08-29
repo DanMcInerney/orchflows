@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from reader.scripts.ui_model import *
-from reader.scripts.ui_model import _facade_value, _in_tree, _json_object
+from reader.scripts.ui_model import _in_tree, _json_object
 
 def _make_room(cache: dict, limit: int):
     """Evict oldest-first until one insertion fits under ``limit``.
@@ -311,7 +311,7 @@ def cached_transcript(path: Path, identity) -> dict:
 
     summary = TRANSCRIPT_CACHE.get(identity)
     if summary is None:
-        summary = _facade_value("_transcript_summary", _transcript_summary)(path)
+        summary = _transcript_summary(path)
         _make_room(TRANSCRIPT_CACHE, TRANSCRIPT_CACHE_LIMIT)
         TRANSCRIPT_CACHE[identity] = summary
     return summary
@@ -359,7 +359,7 @@ def _subagent_identities(files) -> tuple:
 
     return tuple(
         identity
-        for identity in (_facade_value("_stat_identity", _stat_identity)(file) for file in files)
+        for identity in (_stat_identity(file) for file in files)
         if identity is not None
     )
 
@@ -429,7 +429,7 @@ def read_agents(path: Path) -> list:
     activity = {}
     metas = []
     for file in _subagent_files(path):
-        identity = _facade_value("_stat_identity", _stat_identity)(file)
+        identity = _stat_identity(file)
         if identity is not None:
             agent = _agent_id(file)
             activity[agent] = max(activity.get(agent, 0), identity[2])

@@ -4,49 +4,24 @@
 import argparse
 import graphlib
 import hashlib
-import html
 import json
 import re
-import sys
 from collections import namedtuple
 from datetime import datetime, timezone
 from fractions import Fraction
 from pathlib import Path
-from urllib.parse import parse_qs, quote, urlsplit
 
-from scripts import state_root  # noqa: E402
-from reader.scripts.ui_ticket_model import _scalar, read_ticket, split_sections  # noqa: E402
+from reader.scripts.ui_ticket_model import _scalar  # noqa: E402
 from scripts.tickets_bound import OTHER_BOUND_KIND, parse_bound  # noqa: E402
-from scripts.tickets_format import _parse_frontmatter, _parse_iso  # noqa: E402
-
-LOOPBACK_HOST = "127.0.0.1"
-DEFAULT_PORT = 8787
-INDEX_ROUTE = "/"
-TICKET_ROUTE = "/ticket"
-GRAPH_ROUTE = "/graph"
-FRICTION_ROUTE = "/friction"
-SESSIONS_ROUTE = "/sessions"
-SESSION_ROUTE = "/session"
-# Every served path lives here. The read-only and no-network tests iterate
-# this tuple, so a route added by branching inside ``render_route`` instead
-# would be silently unguarded.
-ROUTES = (
-    INDEX_ROUTE,
-    TICKET_ROUTE,
-    GRAPH_ROUTE,
-    FRICTION_ROUTE,
-    SESSIONS_ROUTE,
-    SESSION_ROUTE,
-)
+from scripts.tickets_format import _parse_iso  # noqa: E402
 
 # Every directory the reader reads, named once, sink-relative -- the layout
 # ``scripts/state_root.py`` owns, in the same relative shape it had inside a
 # repository's own state directory. The conditional request's digest and the
 # readers that render these have to agree about what is observed: where they
 # disagree the page moves and the validator does not, and a poll is answered
-# 304 against state that already changed. ``SINK_DIR`` is the root itself,
-# observed for its presence alone.
-SINK_DIR = ()
+# 304 against state that already changed. The root itself is observed for its
+# presence alone.
 TICKETS_DIR = ("tickets",)
 FRICTION_DIR = ("friction",)
 EVENTS_DIR = ("events",)
@@ -308,7 +283,7 @@ def claim_meter(front: dict, now=None):
     started = _parse_iso(_scalar(front.get("claimed_at")))
     if started is None:
         return None
-    now = _facade_value("_now", _now)() if now is None else now
+    now = _now() if now is None else now
     # A clock skewed behind the claim would otherwise render a negative bar.
     elapsed = max(int((now - started).total_seconds() // 60), 0)
     return {
@@ -386,6 +361,3 @@ def _json_object(line: str):
     except ValueError:
         return None
     return entry if isinstance(entry, dict) else None
-def _facade_value(name, fallback):
-    facade = sys.modules.get("reader.scripts.ui") or sys.modules.get("__main__")
-    return getattr(facade, name, fallback)

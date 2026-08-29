@@ -23,7 +23,7 @@ FLOOR_NODES = tuple(
     if getattr(ast, attribute, None) is not None
 )
 PROJECTION_MODULES = tuple(
-    ROOT / "scripts" / name
+    ROOT / "reader" / "scripts" / name
     for name in (
         "ui_api.py",
         "ui_artifacts_projection.py",
