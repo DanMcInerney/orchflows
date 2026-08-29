@@ -22,3 +22,9 @@ class WorkspaceTest(unittest.TestCase):
         source = Path(workspace.__file__).read_text(encoding="utf-8")
         self.assertNotIn("workspace_scope", source)
         self.assertNotIn("tickets_scope", source)
+
+    def test_start_dispatches_on_the_registered_workspace_strategy(self):
+        source = Path(workspace.__file__).read_text(encoding="utf-8")
+        self.assertIn("workspace_strategy", source)
+        self.assertNotIn('mechanism == "evidence-store"', source)
+        self.assertIn("adapter-not-establishable", source)

@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
+    from .tickets_adapters import adapter_id
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
@@ -19,6 +20,7 @@ if __package__:
         instruction_breakdown, instruction_words,
     )
 else:
+    from tickets_adapters import adapter_id
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
         EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
@@ -64,11 +66,6 @@ SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
 # twin and the issue refusal cannot drift apart. Re-exported here because
 # this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
-# Each pack's `workspace` cell names its mechanism. This literal mirrors
-# packs/ because an installed copy has no library tree to read; the matching
-# table assertion in tests/test_validate.py keeps the workspace map in sync.
-PACK_WORKSPACE_MECHANISMS = None  # bound by the public tickets facade
-GIT_WORKSPACE_MECHANISMS = frozenset({'git', 'git plus render'})
 TERMINAL_STATES = ('complete', 'blocked', 'stalled', 'limited', 'failed')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
@@ -78,20 +75,12 @@ GATE_ID_MARKER = '.gate.'
 GATE_EXECUTORS = {'critique': 'orch-critique', 'repair': 'orch-repair', 'verify': 'orch-verify'}
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
-ADAPTER_BY_PACK = {
-    'orch-code-pack': 'git',
-    'orch-content-pack': 'document-tree',
-    'orch-design-pack': 'git-plus-render',
-    'orch-research-pack': 'evidence-store',
-}
-PLAIN_ADAPTER = 'plain-artifact'
 PACK_EXECUTOR_BINDINGS = {
     'orch-code-pack': frozenset({'orch-tdd'}),
     'orch-content-pack': frozenset({'orch-draft', 'orch-edit'}),
     'orch-design-pack': frozenset({'orch-render'}),
     'orch-research-pack': frozenset({'orch-investigate', 'orch-synthesize'}),
 }
-def adapter_id(pack) -> str: return ADAPTER_BY_PACK.get(str(pack or '').strip(), PLAIN_ADAPTER)
 def executor_bindings(pack) -> set: return set(PACK_EXECUTOR_BINDINGS.get(str(pack or '').strip(), ()))
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""

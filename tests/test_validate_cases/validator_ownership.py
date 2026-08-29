@@ -69,9 +69,8 @@ class TestSyncCheckIsGone(unittest.TestCase):
         self.assertFalse((ROOT / "tests" / "test_sync.py").exists())
 
 
-def workspace_mechanism(skill_md: Path) -> str:
-    """The mechanism a pack's `workspace` cell names: the text before that
-    cell's first colon, which is where every pack states it."""
+def workspace_adapter(skill_md: Path) -> str:
+    """The registered adapter key declared by one pack workspace cell."""
 
     for line in skill_md.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
@@ -81,57 +80,36 @@ def workspace_mechanism(skill_md: Path) -> str:
         if len(parts) < 4 or parts[1].strip() != "workspace":
             continue
         cell = parts[2].strip()
-        head, sep, _ = cell.partition(":")
-        if not sep:
-            raise AssertionError(f"{skill_md}: workspace cell names no mechanism: {cell}")
-        return head.strip()
+        matches = re.findall(r"ticket adapter:\s*`([^`]+)`", cell)
+        if len(matches) != 1:
+            raise AssertionError(f"{skill_md}: workspace cell names no one adapter: {cell}")
+        return matches[0]
     raise AssertionError(f"{skill_md}: no `workspace` row")
 
 
 class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
-    """scripts/tickets.py's PACK_WORKSPACE_MECHANISMS against its owners, the
-    packs' own `workspace` cells. Packet projection and workspace start use
-    the mechanism to gate the host-established identity, so a cell that
-    changes without the table silently changes which record is required. The one
-    literal copy that was never validate.py's, and so outlives the check that
-    was."""
+    """Pack data selects only mechanisms the adapter registry implements."""
 
-    def test_the_table_covers_exactly_the_packs_that_exist(self):
-        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
-        self.assertEqual(packs, set(tickets_mod.PACK_WORKSPACE_MECHANISMS))
+    def test_every_pack_declares_a_registered_adapter(self):
+        declared = {
+            workspace_adapter(path / "SKILL.md")
+            for path in PACKS.iterdir() if (path / "SKILL.md").is_file()
+        }
+        self.assertLessEqual(declared, set(tickets_mod.ADAPTER_REGISTRY))
 
-    def test_every_entry_matches_its_cell(self):
-        for pack, mechanism in sorted(tickets_mod.PACK_WORKSPACE_MECHANISMS.items()):
-            self.assertEqual(
-                mechanism,
-                workspace_mechanism(PACKS / pack / "SKILL.md"),
-                f"{pack}: table and workspace cell disagree",
-            )
+    def test_every_adapter_owns_the_properties_machinery_reads(self):
+        for key, adapter in sorted(tickets_mod.ADAPTER_REGISTRY.items()):
+            self.assertEqual(key, adapter.key)
+            self.assertTrue(adapter.identity_form)
+            self.assertIsInstance(adapter.establishes_isolation, bool)
+            self.assertIsInstance(adapter.deterministic_gate, bool)
+            self.assertTrue(adapter.conflict_semantics)
+            self.assertIn(adapter.workspace_strategy, {"git", "evidence-store", "document-tree"})
 
-    def test_the_git_set_names_only_mechanisms_the_cells_name(self):
-        named = set(tickets_mod.PACK_WORKSPACE_MECHANISMS.values())
-        self.assertLessEqual(set(tickets_mod.GIT_WORKSPACE_MECHANISMS), named)
-
-    def test_the_table_is_a_literal_not_a_read_of_the_tree(self):
-        """Without this the two checks above are vacuous: a table computed
-        from `packs/` matches `packs/` by construction, and the installed
-        script that has no `packs/` is the one that breaks."""
-
-        tree = ast.parse(TICKETS_PY.read_text(encoding="utf-8"))
-        found = [
-            node.value
-            for node in tree.body
-            if isinstance(node, ast.Assign)
-            and any(
-                isinstance(target, ast.Name)
-                and target.id == "PACK_WORKSPACE_MECHANISMS"
-                for target in node.targets
-            )
-        ]
-        self.assertEqual(1, len(found), "expected one module-level assignment")
-        self.assertIsInstance(found[0], ast.Dict)
-        for node in [*found[0].keys, *found[0].values]:
-            self.assertIsInstance(node, ast.Constant, ast.dump(node))
+    def test_no_pack_keyed_workspace_registry_survives(self):
+        source = TICKETS_PY.read_text(encoding="utf-8")
+        self.assertNotIn("ADAPTER_BY_PACK", source)
+        self.assertNotIn("PACK_WORKSPACE_MECHANISMS", source)
 
 
 class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):

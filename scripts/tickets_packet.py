@@ -8,9 +8,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 if __package__:
+    from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
-        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, adapter_id,
+        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
         LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json,
@@ -21,9 +22,10 @@ if __package__:
         _segment_error, _tickets_root, normalized_isolation,
     )
 else:
+    from tickets_adapters import AdapterError, adapter_spec
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
-        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS, adapter_id,
+        CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
         LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json,
@@ -60,9 +62,16 @@ def _command_text(*arguments) -> str:
 def workspace_establishment_finding(data: dict, workspace):
     """Return the refusal code/detail for a non-established packet workspace."""
 
-    adapter = adapter_id(data.get("pack"))
-    required = adapter == "evidence-store" or (
-        adapter == "git" and normalized_isolation(data.get("isolation")) == "required"
+    pack = data.get("pack")
+    if not str(pack or "").strip():
+        return None
+    try:
+        adapter = adapter_spec(pack)
+    except AdapterError as error:
+        return error.code, error.detail
+    required = (
+        adapter.establishes_isolation
+        and normalized_isolation(data.get("isolation")) == "required"
     )
     if not required:
         return None
@@ -77,7 +86,7 @@ def workspace_establishment_finding(data: dict, workspace):
             "workspace-mismatch",
             "dispatch workspace does not equal the recorded candidate workspace",
         )
-    if adapter == "git" and any(
+    if adapter.workspace_strategy == "git" and any(
         not str(data.get(key) or "").strip()
         for key in ("workspace_branch", "workspace_baseline")
     ):
@@ -85,7 +94,7 @@ def workspace_establishment_finding(data: dict, workspace):
             "workspace-unestablished",
             "Git candidate lacks its pre-dispatch branch or baseline record",
         )
-    if adapter == "evidence-store" and not Path(recorded).is_dir():
+    if adapter.workspace_strategy == "evidence-store" and not Path(recorded).is_dir():
         return (
             "workspace-unestablished",
             "recorded evidence-store workspace is unavailable",

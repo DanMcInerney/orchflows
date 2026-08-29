@@ -216,8 +216,13 @@ def _cmd_start(rest):
     # `set-status` lands in, and a snapshot taken past them absorbs the write
     # this guard exists to report
     prior_text = path.read_text(encoding="utf-8")
-    mechanism = tickets.adapter_id(data.get("pack"))
-    if mechanism == "evidence-store":
+    try:
+        adapter = tickets.adapter_spec(data.get("pack"))
+    except tickets.AdapterError as error:
+        raise Refused(f"{error.code}: {error.detail}") from error
+    mechanism = adapter.key
+    workspace_strategy = adapter.workspace_strategy
+    if workspace_strategy == "evidence-store":
         store = (state_root.state_root() / "research" / run).resolve()
         store.mkdir(parents=True, exist_ok=True)
         outcome = _record(path, prior_text, None, None, str(store))
@@ -233,6 +238,10 @@ def _cmd_start(rest):
                 "workspace_root": str(store),
             }
         }, EXIT_OK
+    if workspace_strategy != "git":
+        raise Refused(
+            f"adapter-not-establishable: {mechanism} does not establish a candidate workspace"
+        )
     root, located = _locate(run, ticket_id)
     if located != path:
         raise Refused(f"ticket identity changed while locating {run}/{ticket_id}")

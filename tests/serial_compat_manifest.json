@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1999,
+  "count": 2003,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -687,6 +687,10 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_tdd_executor_owns_test_choice",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_the_over_ceiling_exemption_reserves_the_only_stampable_root",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
+   "test_tickets.AdapterRegistryTest.test_a_project_pack_selects_git_without_a_pack_name_registration",
+   "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
+   "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
+   "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
@@ -808,6 +812,7 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
    "test_workspace.WorkspaceTest.test_actual_mutations_include_every_changed_and_new_path",
+   "test_workspace.WorkspaceTest.test_start_dispatches_on_the_registered_workspace_strategy",
    "test_workspace.WorkspaceTest.test_workspace_does_not_import_scope_authority",
    "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_a_no_match_scope_prints_a_no_tests_line_and_exits_zero",
    "tests.test_affected_tests_cases.fixture_tree.TestCommandLineFormats.test_an_unreadable_test_file_is_named_on_the_error_stream",
@@ -1734,10 +1739,9 @@
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_location_is_read_from_its_owner",
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_term_entry_names_the_location_the_logger_resolves",
    "tests.test_validate_cases.validator_ownership.TestPackAdmissionRegistryAgainstPacks.test_stable_registry_covers_and_matches_every_pack",
-   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_entry_matches_its_cell",
-   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_the_git_set_names_only_mechanisms_the_cells_name",
-   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_the_table_covers_exactly_the_packs_that_exist",
-   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_the_table_is_a_literal_not_a_read_of_the_tree",
+   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_adapter_owns_the_properties_machinery_reads",
+   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_pack_declares_a_registered_adapter",
+   "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_no_pack_keyed_workspace_registry_survives",
    "tests.test_validate_cases.validator_ownership.TestSyncCheckIsGone.test_no_sync_helper_survives_in_the_source",
    "tests.test_validate_cases.validator_ownership.TestSyncCheckIsGone.test_the_module_exposes_no_sync_check",
    "tests.test_validate_cases.validator_ownership.TestSyncCheckIsGone.test_the_module_that_tested_it_is_gone_too",
@@ -2002,7 +2006,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cb76a7bec7baefc8a05e8d92e2adae297dc5b616eae2e853cf54178248babbf9"
+  "sha256": "4d83253200df5cf1a1c1ae2f2b863db7ca3f38dd918b7af26c653b76ce7566d6"
  },
  "mutation_owners": [
   {
@@ -3959,6 +3963,14 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets",
+   "owner": "AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
