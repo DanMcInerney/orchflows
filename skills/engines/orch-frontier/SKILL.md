@@ -4,15 +4,13 @@ description: Execute ticket runs by rolling frontier dispatch — every ready ti
 role: none
 ---
 
-Require: acyclic `tickets.py` run graph and root/caller bound.
+Require: acyclic `tickets.py` run graph and caller bound.
 
-Enter the pack workspace/evidence store, run `workspace.py start`, and retain
-`workspace_path`, per
-[workspace establishment](references/workspaces.md), before `dispatch-open`.
-Choose assigned-name/dispatch-id/lease. `tickets.py dispatch-open`
-claims it; `tickets.py dispatch-packet` commits its
-projection. Establish the
-same recorded child under [delegation](../../../rules/delegation.md) §1–§2 and its
+Choose assigned-name/dispatch-id/lease; invoke `tickets.py dispatch` per
+ticket. The facade atomically readies, establishes the pack workspace/evidence store,
+opens the attempt, and projects its packet; it retains `workspace_path` and
+returns one packet or refusal. Establish the same recorded child under
+[delegation](../../../rules/delegation.md) §1–§2 and its
 [role](../../../rules/roles.md) §4/[profile](references/profiles.md), and send
 response `.packet` via file/stdin; the child uses
 `dispatch-receive --file <path>` or `--file -`. Only
@@ -48,10 +46,10 @@ Accept each return once through `orch-integrate`; `suspended` parks; others
 grade isolation and integrate per pack; conflicts use its binding.
 Commit unstreamed closing evidence as `outcome`; join consumes it only after
 accepted receipt.
-Lanes choose proof methods. After every return is
+Lanes choose methods. After every return is
 integrated and required checker/gate is closed, run the standards
 owner's required checks exactly once at the accepted terminal identity and
-record its revision, not per merge batch. A red terminal suite blocks
+record its revision, not per merge batch. Red suite blocks
 completion.
 
 Watch per [profiles](references/profiles.md); recompute on outcomes, tickets,

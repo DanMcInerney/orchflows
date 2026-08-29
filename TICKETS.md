@@ -48,9 +48,10 @@ and sections without mutation.
 ## Dispatch protocol
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
-delivery. The caller promotes readiness, opens one attempt with
-`dispatch-open`, and commits its immutable reference or inline projection with
-`dispatch-packet`. Pass the response `.packet` value—not the response wrapper
+delivery. The caller invokes `tickets.py dispatch`, which promotes readiness,
+establishes the workspace, opens one attempt, and commits its immutable
+reference or inline projection atomically. The granular `dispatch-open` and
+`dispatch-packet` operations remain public for recovery. Pass the response `.packet` value—not the response wrapper
 or a reconstructed shell literal—to `dispatch-receive` through `--file <path>`
 or UTF-8 standard input with `--file -`. The established child supplies its
 actual assigned name, role, profile, reply target, and workspace authority;

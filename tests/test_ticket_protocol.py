@@ -82,7 +82,10 @@ class TicketProtocolTest(unittest.TestCase):
         frontier = (root / "skills" / "engines" / "orch-frontier" / "SKILL.md").read_text(encoding="utf-8")
         profiles = (root / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
-        for surface in (host, frontier, profiles, tickets):
+        for surface in (host, frontier):
+            self.assertIn("tickets.py dispatch", surface)
+            self.assertIn("dispatch-receive", surface)
+        for surface in (profiles, tickets):
             for command in ("dispatch-open", "dispatch-packet", "dispatch-receive"):
                 self.assertIn(command, surface)
         loop = (root / "skills" / "engines" / "orch-loop" / "SKILL.md").read_text(encoding="utf-8")

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import datetime, timezone
-
 if __package__:
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -102,7 +102,7 @@ def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dic
         "state": attempt["state"],
     }}
 
-def _cmd_dispatch_open(rest):
+def _cmd_dispatch_open(rest, *, _lock_held=False):
     args = list(rest)
     owner = _extract_flag(args, "--by")
     dispatch_id = _extract_flag(args, "--dispatch-id")
@@ -132,7 +132,8 @@ def _cmd_dispatch_open(rest):
         return {"error": NO_SINK_ERROR}
     path = tickets_root / run / f"{ticket_id}.md"
     try:
-        with _run_lock(run):
+        lock = nullcontext() if _lock_held else _run_lock(run)
+        with lock:
             text, failure = _read_utf8(path)
             if failure is not None:
                 return failure
@@ -224,7 +225,7 @@ def _record_response(
 def _commit_record(
     run, ticket_id, dispatch_id, record_id, content, *, mutate=None,
     expected_seal=None, expected_owner=None, require_live_lease=True,
-    record_kind="generic",
+    record_kind="generic", _lock_held=False,
 ):
     """Commit or replay one record and its optional ticket mutation atomically."""
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
@@ -254,7 +255,8 @@ def _commit_record(
         return {"error": NO_SINK_ERROR}
     path = tickets_root / run / f"{ticket_id}.md"
     try:
-        with _run_lock(run):
+        lock = nullcontext() if _lock_held else _run_lock(run)
+        with lock:
             text, failure = _read_utf8(path)
             if failure is not None:
                 return failure
@@ -377,7 +379,7 @@ def _cmd_dispatch_commit(rest):
         run, ticket_id, dispatch_id, record_id, content, record_kind="generic"
     )
 
-def _cmd_dispatch_retire(rest):
+def _cmd_dispatch_retire(rest, *, _lock_held=False):
     args = list(rest)
     assignment_seal = _extract_flag(args, "--assignment-seal")
     dispatch_id = _extract_flag(args, "--dispatch-id")
@@ -418,7 +420,7 @@ def _cmd_dispatch_retire(rest):
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content,
         mutate=retire, expected_seal=assignment_seal, require_live_lease=False,
-        record_kind="lifecycle",
+        record_kind="lifecycle", _lock_held=_lock_held,
     )
 
 def _cmd_dispatch_replace(rest):

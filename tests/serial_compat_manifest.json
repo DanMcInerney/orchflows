@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2028,
+  "count": 2032,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -115,6 +115,10 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_is_a_public_one_call_surface",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_readiness_refusal_without_starting_workspace",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_can_cross_the_explicit_atomic_replacement",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_rejects_unseen_records_without_mutation",
@@ -2031,7 +2035,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b04794c2f3ab2d5c386cca7eee9491d966a6919438dcddcd74727aab8862f5d1"
+  "sha256": "b70d0ecb1e5d1d6298fee754a9023cd7ea5b535a0c72b804ec58a271a1d9d00a"
  },
  "mutation_owners": [
   {
@@ -2172,6 +2176,30 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_returns_readiness_refusal_without_starting_workspace",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

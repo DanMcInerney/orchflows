@@ -229,7 +229,7 @@ def _replay_projection(attempt: dict, run, ticket_id, form, reply_to, workspace)
     return content
 
 
-def _cmd_dispatch_packet(rest):
+def _cmd_dispatch_packet(rest, *, _lock_held=False):
     args = list(rest)
     dispatch_id = _extract_flag(args, "--dispatch-id")
     reply_to = _extract_flag(args, "--reply-to")
@@ -289,7 +289,7 @@ def _cmd_dispatch_packet(rest):
     committed = _commit_record(
         run, ticket_id, dispatch_id, PACKET_RECORD_ID, content,
         mutate=packet_mutation(review_state, run, ticket_id, dispatch_id, PACKET_RECORD_ID, content),
-        record_kind="packet",
+        record_kind="packet", _lock_held=_lock_held,
     )
     if "error" in committed:
         return committed

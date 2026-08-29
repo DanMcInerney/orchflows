@@ -13,11 +13,14 @@ invariants apply on every host:
 - A native capability is established only through the adapter's native launch
   field. A requested capability rides the prompt and is noted unverified; the
   request alone never becomes evidence that the host established it.
-- The caller commits one attempt with `dispatch-open` and its immutable packet
-  with `dispatch-packet` before launch. The established child runs
-  `dispatch-receive` against its actual name, role, profile, reply target, and
-  workspace authority before the exact skill runs. A disagreement is the
-  return; neither side edits packet fields to make them agree.
+- The caller invokes `tickets.py dispatch` once; its facade readies the ticket,
+  establishes workspace, opens one attempt, and commits the immutable packet
+  projection. It establishes the packet's resolved native profile once and
+  sends that stored projection. Granular `dispatch-open` and `dispatch-packet`
+  remain public for recovery. The established child runs `dispatch-receive`
+  against its actual name, role, profile, reply target, and workspace authority
+  before the exact skill runs. A refusal is the return; neither side edits
+  packet fields to make them agree.
 - Child names are unique within a run, and a resumed child keeps its name.
 - Notifications do not decide lane progress. The caller rechecks durable run
   state against the lane bound and holds any launched external process until its

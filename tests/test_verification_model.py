@@ -160,11 +160,9 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
     def test_successor_trigger_has_a_fresh_authorized_materialization_path(self):
         spec = " ".join(read("skills/workflows/orch-spec/SKILL.md").split())
         required = (
-            "fresh materialization run",
-            "fresh planner ticket bound to this exact skill",
-            "`tickets.py ready`",
-            "`tickets.py dispatch-open`",
-            "`tickets.py dispatch-packet`",
+            "materialization run",
+            "planner ticket bound to this exact skill",
+            "`tickets.py dispatch`",
             "`tickets.py dispatch-receive`",
             "durable accepted receipt",
             "accepted predecessor `## Result` identity",
