@@ -110,7 +110,7 @@ class TestManifestHardening(unittest.TestCase):
         self.assertEqual({
             "test_project_binding": ["environment"],
             "tests.test_state_root_cases.repository": ["environment"],
-            "tests.test_ui_cases.http_server": ["module-cache"],
+            "test_tickets": ["module-cache"],
         }, allowed)
 
 

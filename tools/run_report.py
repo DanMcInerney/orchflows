@@ -42,7 +42,7 @@ for _import_root in (_REPORT_ROOT, _REPORT_ROOT / "scripts"):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
 
-import scripts.ui_discovery as ui_discovery  # noqa: E402
+import reader.scripts.ui_discovery as ui_discovery  # noqa: E402
 
 from tools.run_report_support import model, render  # noqa: E402
 

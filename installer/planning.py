@@ -12,6 +12,7 @@ from .foundation import (
     CODEX_CLI_CANDIDATES,
     GROK_CLI_CANDIDATES,
     PROFILE_ROLES,
+    READER_ROOT,
     REPO_ROOT,
     SHARED_ADAPTER_NAMES,
     _bin_dir,
@@ -149,12 +150,15 @@ def _build_user_plan(
     notices = REPO_ROOT / "THIRD_PARTY_NOTICES.md"
     if notices.is_file():
         lib_copies.append((notices, lib_home / notices.name))
-
-    frontend_source = REPO_ROOT / "web" / "dist"
+    reader_runtime_files = (READER_ROOT / "__init__.py", *sorted((READER_ROOT / "scripts").glob("*.py")), *(REPO_ROOT / "scripts" / name for name in "state_root.py tickets_adapters.py tickets_bound.py tickets_ceiling.py tickets_format.py tickets_lifecycle.py tickets_markdown.py tickets_readiness.py tickets_registry.py tickets_sequence.py tickets_shapes.py".split())); reader_manifest_files = sorted((READER_ROOT / "docs").glob("*.json"))
+    for path in (*reader_runtime_files, *reader_manifest_files):
+        if path.is_file():
+            lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
+    frontend_source = READER_ROOT / "web" / "dist"
     frontend_home = _frontend_home()
     frontend_identity = _frontend_manifest_identity(frontend_source)
     if frontend_identity is None:
-        raise RuntimeError("web/dist is missing its immutable index.html distribution")
+        raise RuntimeError("reader/web/dist is missing its immutable index.html distribution")
     frontend_assets = [
         (path, frontend_home / path.relative_to(frontend_source))
         for path in sorted(frontend_source.rglob("*"))
@@ -166,11 +170,8 @@ def _build_user_plan(
         if installed_frontend_identity == frontend_identity
         else ("repair" if frontend_home.exists() else "create")
     )
-
-    scripts = [
-        (REPO_ROOT / "scripts" / name, bin_dir / name)
-        for name in script_name_discoverer(REPO_ROOT / "scripts")
-    ]
+    names = script_name_discoverer(REPO_ROOT / "scripts")
+    scripts = [(READER_ROOT / "scripts" / name if name == "ui.py" else REPO_ROOT / "scripts" / name, bin_dir / name) for name in names if (READER_ROOT / "scripts" / name if name == "ui.py" else REPO_ROOT / "scripts" / name).is_file()]
 
     claude_scope_home = _claude_scope_home("user", None)
     codex_user_home = _codex_user_home()

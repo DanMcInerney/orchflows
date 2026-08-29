@@ -4,8 +4,8 @@ Read-only throughout: every function here opens files and stats them and
 writes nothing, which is the one property `tools/run_report.py` promises
 that a reader has to be able to check by inspection.
 
-The sink's own readers own the parsing -- `scripts/ui_discovery`'s
-`read_run_identity` and `read_friction`, `scripts/ui_model`'s
+The sink's own readers own the parsing -- `reader/scripts/ui_discovery`'s
+`read_run_identity` and `read_friction`, `reader/scripts/ui_model`'s
 `read_ticket` and `claim_meter` -- so a frontmatter or identity-document
 change lands in one place and this module inherits it.
 """
@@ -23,8 +23,8 @@ for _import_root in (_REPORT_ROOT, _REPORT_ROOT / "scripts"):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
 
-import scripts.ui_discovery as ui_discovery  # noqa: E402
-import scripts.ui_model as ui_model  # noqa: E402
+import reader.scripts.ui_discovery as ui_discovery  # noqa: E402
+import reader.scripts.ui_model as ui_model  # noqa: E402
 
 from tools.run_report_support import friction as friction_support  # noqa: E402
 

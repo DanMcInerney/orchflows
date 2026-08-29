@@ -70,21 +70,24 @@ class TestSyncCheckIsGone(unittest.TestCase):
 
 
 def workspace_adapter(skill_md: Path) -> str:
-    """The registered adapter key declared by one pack workspace cell."""
+    """The registered adapter key declared by one pack's typed `adapter` leaf.
+
+    Read independently of `tickets_adapters.declared_adapter` so the pack
+    data and the parser cannot agree by sharing one implementation.
+    """
 
     for line in skill_md.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped.startswith("|"):
             continue
         parts = stripped.split("|", 3)
-        if len(parts) < 4 or parts[1].strip() != "workspace":
+        if len(parts) < 4 or parts[1].strip() != "adapter":
             continue
-        cell = parts[2].strip()
-        matches = re.findall(r"ticket adapter:\s*`([^`]+)`", cell)
-        if len(matches) != 1:
-            raise AssertionError(f"{skill_md}: workspace cell names no one adapter: {cell}")
-        return matches[0]
-    raise AssertionError(f"{skill_md}: no `workspace` row")
+        key = parts[2].strip().strip("`").strip()
+        if not key:
+            raise AssertionError(f"{skill_md}: `adapter` leaf is empty")
+        return key
+    raise AssertionError(f"{skill_md}: no `adapter` row")
 
 
 class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):

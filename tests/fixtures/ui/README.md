@@ -31,8 +31,8 @@ to the shapes it exhibits rather than redacted from it.
 | `runs/run-epsilon/run.json` | finished `limited`, and the newest `terminal_at` in the corpus, so its folder leads any recency order |
 | `runs/run-alpha/run.json` | a live run whose `project.name` is a bare leaf, not a path |
 
-`runs/` carries the run identities `scripts/ui_experience.py` reads for folder
-and completion facts; `web/src/smoke.spec.ts` copies the tree beside `tickets/`.
+`runs/` carries the run identities `reader/scripts/ui_experience.py` reads for folder
+and completion facts; `reader/web/src/smoke.spec.ts` copies the tree beside `tickets/`.
 Every `project.root`, `origin` and `workspaces[].path` here is synthetic and
 projection-forbidden: a body that carried one would be a privacy-wall defect,
 which is why the smoke contract asserts none of them reaches the browser.

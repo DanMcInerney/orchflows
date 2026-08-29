@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import scripts.ui_discovery as ui_discovery  # noqa: E402
+import reader.scripts.ui_discovery as ui_discovery  # noqa: E402
 
 RUN_REPORT_PY = ROOT / "tools" / "run_report.py"
 

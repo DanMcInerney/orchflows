@@ -43,6 +43,10 @@ if __package__:
 else:
     from tickets_attempts import _classification
 if __package__:
+    from .tickets_readiness import readiness_facts
+else:
+    from tickets_readiness import readiness_facts
+if __package__:
     from .tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome, review_records, state_from_text
     from .tickets_dispatch_schema import state as _dispatch_state
 else:
@@ -56,29 +60,6 @@ JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
 def lifecycle_rows() -> tuple:
     """Public lifecycle declaration consumed by the documentation renderer."""
     return _declared_lifecycle_rows()
-def readiness_facts(ticket: dict, tickets: dict) -> dict:
-    dependencies = [str(value) for value in (ticket.get('depends_on') or [])]
-    dangling = [value for value in dependencies if value not in tickets]
-    ticket_id = str(ticket.get('id') or '')
-    checker_target = ticket_id[:-len('.check')] if ticket_id.endswith('.check') else None
-    incomplete = [
-        value for value in dependencies
-        if value in tickets and (
-            tickets[value].get('status') != 'complete'
-            or (
-                str(tickets[value].get('independence') or 'checker') == 'checker'
-                and not str(tickets[value].get(CHECKED_BY_KEY) or '').strip()
-                and checker_target != value
-            )
-        )
-    ]
-    status = str(ticket.get('status') or '')
-    return {
-        'status_valid': status in VALID_STATUSES,
-        'dangling': dangling,
-        'incomplete': incomplete,
-        'dependencies_complete': not dangling and not incomplete,
-    }
 def _run_snapshot(run_dir: Path):
     """The shared run snapshot, with each unreadable member phrased as a skip."""
     texts, failures = run_snapshot(run_dir)

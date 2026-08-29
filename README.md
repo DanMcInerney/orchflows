@@ -41,7 +41,7 @@ checkout, start it with `uv run --no-project python scripts/ui.py`; an installed
 copy runs through the private Python environment. It binds only to
 `127.0.0.1`, serves its prebuilt assets offline, and exposes metadata rather
 than prompts, tool output, or transcript contents. See the
-[UI platform](docs/ui/platform.md) for installed commands, routes, security
+[UI platform](reader/docs/platform.md) for installed commands, routes, security
 boundaries, and the split between this platform and the dark-mode visual
 experience that follows it.
 

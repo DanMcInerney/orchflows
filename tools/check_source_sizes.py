@@ -15,7 +15,7 @@ MAX_PHYSICAL_LINES = 510
 TEST_WARNING_LINES = 500
 SOURCE_SUFFIXES = frozenset({".py", ".sh", ".cmd", ".ps1", ".js", ".ts"})
 TYPESCRIPT_COMPONENT_SUFFIXES = frozenset({".tsx"})
-GENERATED_SOURCE_MANIFESTS = (Path("web/dist/.vite/orchflows-generated.json"),)
+GENERATED_SOURCE_MANIFESTS = (Path("reader/web/dist/.vite/orchflows-generated.json"),)
 
 
 def _is_source(path: Path) -> bool:

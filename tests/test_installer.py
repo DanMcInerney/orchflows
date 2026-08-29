@@ -201,7 +201,7 @@ class TestFrontendDistribution(unittest.TestCase):
         )
 
     def test_user_plan_carries_the_exact_distribution(self):
-        source_root = install.REPO_ROOT / "web" / "dist"
+        source_root = install.REPO_ROOT / "reader" / "web" / "dist"
         expected_files = {
             path.relative_to(source_root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in sorted(source_root.rglob("*"))

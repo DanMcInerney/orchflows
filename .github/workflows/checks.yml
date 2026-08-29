@@ -56,9 +56,11 @@ jobs:
 
       - name: verify distributed dependency notices
         run: uv run --no-project python tools/ui_frontend.py audit-licenses
+        working-directory: reader
 
       - name: verify reproducible frontend build
         run: uv run --no-project python tools/ui_frontend.py verify-build
+        working-directory: reader
 
       # The download, not the `--with-deps` apt half, which needs root and
       # reinstalls either way. Keyed on the lockfile because that is what
@@ -67,13 +69,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ms-playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('reader/pnpm-lock.yaml') }}
 
       - name: install browser
         run: pnpm exec playwright install --with-deps chromium
+        working-directory: reader
 
       - name: verify Observe browser contract
         run: uv run --no-project python tools/ui_frontend.py smoke --browser chromium
+        working-directory: reader
 
   checks:
     name: py${{ matrix.python-version }} / ${{ matrix.os }} / ${{ matrix.shard }}

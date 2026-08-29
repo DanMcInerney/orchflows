@@ -1,4 +1,4 @@
-"""``scripts/ui_discovery.read_run_identity``: the run's own document."""
+"""``reader/scripts/ui_discovery.read_run_identity``: the run's own document."""
 
 from __future__ import annotations
 

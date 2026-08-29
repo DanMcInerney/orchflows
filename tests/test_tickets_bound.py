@@ -23,7 +23,7 @@ from tests.test_tickets_cases.common import backdate, run_main, use_sink
 
 import scripts.tickets as tickets_mod  # noqa: E402
 from scripts import tickets_bound  # noqa: E402
-from scripts import ui_model  # noqa: E402
+from reader.scripts import ui_model  # noqa: E402
 from scripts.tickets_format import (  # noqa: E402
     _set_frontmatter_field, canonical_json,
 )

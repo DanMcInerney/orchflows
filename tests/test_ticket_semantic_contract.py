@@ -17,6 +17,7 @@ from scripts import tickets_generations
 from scripts import tickets_join
 from scripts import tickets_review
 from scripts import tickets_lifecycle
+from scripts import tickets_readiness
 from scripts.tickets_format import (
     _parse_frontmatter, _remove_frontmatter_field, _sections,
 )
@@ -1156,6 +1157,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             )
 
     def test_downstream_waits_for_checker_but_checker_stage_can_start(self):
+        self.assertIs(tickets_lifecycle.readiness_facts, tickets_readiness.readiness_facts)
         target = {
             "id": "R", "status": "complete", "independence": "checker",
             "checked_by": "",
@@ -1165,18 +1167,18 @@ class SemanticTicketContractTest(unittest.TestCase):
         tickets_by_id = {"R": target, "R.check": stage, "R.next": downstream}
 
         self.assertTrue(
-            tickets_lifecycle.readiness_facts(stage, tickets_by_id)[
+            tickets_readiness.readiness_facts(stage, tickets_by_id)[
                 "dependencies_complete"
             ]
         )
         self.assertFalse(
-            tickets_lifecycle.readiness_facts(downstream, tickets_by_id)[
+            tickets_readiness.readiness_facts(downstream, tickets_by_id)[
                 "dependencies_complete"
             ]
         )
         target["checked_by"] = "checker-a"
         self.assertTrue(
-            tickets_lifecycle.readiness_facts(downstream, tickets_by_id)[
+            tickets_readiness.readiness_facts(downstream, tickets_by_id)[
                 "dependencies_complete"
             ]
         )

@@ -157,7 +157,7 @@ DOC_PATH_CHECKED_TREES = tuple(_INSTALLED_LIB_DIRS or ())
 # Checkout mechanics never land under lib/. UI, benchmark, and research
 # documents may instead point into their checked-out source trees.
 SOURCE_ONLY_DIRS = ("tools", "tests", "installer")
-CHECKOUT_PATH_DIRS = ("web", "benchmarks", "research")
+CHECKOUT_PATH_DIRS = ("reader", "web", "benchmarks", "research")
 # Run-state and schema/scenario identifiers share slash syntax with paths but
 # resolve through their own contracts, not the library filesystem.
 STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
@@ -168,13 +168,13 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # are exact source lines so another occurrence is still graded.
 DOC_PATH_EXEMPT_SITES = frozenset({
     ("contracts/pack-signature.md", 77, "tests/pins.json"),
-    ("docs/ui/modularization.md", 7, "web/src/api/client.ts"),
-    ("docs/ui/modularization.md", 7, "web/src/api/schema.ts"),
-    ("docs/ui/modularization.md", 7, "web/src/app/registry.ts"),
-    ("docs/ui/modularization.md", 7, "web/src/feed.ts"),
-    ("docs/ui/modularization.md", 7, "web/src/state/location.ts"),
-    ("docs/ui/modularization.md", 17, "app/catalog.ts"),
-    ("docs/ui/modularization.md", 55, "web/src/state/location.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/api/client.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/api/schema.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/app/registry.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/feed.ts"),
+    ("reader/docs/modularization.md", 7, "reader/web/src/state/location.ts"),
+    ("reader/docs/modularization.md", 17, "app/catalog.ts"),
+    ("reader/docs/modularization.md", 55, "reader/web/src/state/location.ts"),
 })
 
 

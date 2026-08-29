@@ -18,8 +18,47 @@ class TestScriptNames(unittest.TestCase):
         for name in expected:
             installed = plan.bin_dir / name
             self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
-            source = install.REPO_ROOT / "scripts" / name
+            source = install.REPO_ROOT / "reader" / "scripts" / name if name == "ui.py" else install.REPO_ROOT / "scripts" / name
             self.assertEqual(source.read_bytes(), installed.read_bytes())
+        for name in ("view-manifest.json", "workflow-summary-manifest.json"):
+            source = install.REPO_ROOT / "reader" / "docs" / name
+            destination = plan.lib_home / "reader" / "docs" / name
+            self.assertIn((source, destination), plan.lib_copies)
+            self.assertEqual(source.read_bytes(), destination.read_bytes())
+        self.assertFalse((plan.lib_home / "docs" / "ui").exists())
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import json, tempfile\n"
+                "from pathlib import Path\n"
+                "from reader.scripts.ui_api import create_application\n"
+                "from reader.scripts import ui_workflows_projection as projection\n"
+                "create_application(Path(tempfile.mkdtemp()))\n"
+                "root = Path.cwd()\n"
+                "assert (root / 'reader' / 'docs' / 'view-manifest.json').is_file()\n"
+                "summary = root / 'reader' / 'docs' / 'workflow-summary-manifest.json'\n"
+                "assert summary.is_file()\n"
+                "try:\n"
+                "    projection.project_workflow_catalog(root, summary_path=root / 'missing.json')\n"
+                "except projection.WorkflowProjectionError:\n"
+                "    pass\n"
+                "else:\n"
+                "    raise AssertionError('missing summary manifest was accepted')\n"
+                "print(json.dumps(projection.project_workflow_catalog(root)))",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=str(plan.lib_home),
+            env=dict(os.environ, PYTHONPATH=str(plan.lib_home)),
+        )
+        self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
+        self.assertEqual(
+            "orchflows.workflow-catalog.v1",
+            json.loads(completed.stdout)["schema"],
+        )
 
     def test_build_plan_ships_doclint_the_documentation_oracle(self):
         """The test above grades ``SCRIPT_NAMES`` against itself: drop a name

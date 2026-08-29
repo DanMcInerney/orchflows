@@ -12,10 +12,10 @@ Artifact abbreviations used below are:
 - **P** — the package's module and distribution metadata beneath the private
   runtime's `~/.orchflows/runtime/{Lib,lib}/site-packages/` directory.
 - **B** — the immutable browser application bundle
-  `web/dist/assets/index-*.js` installed by orchflows.
+  `reader/web/dist/assets/index-*.js` installed by orchflows.
 - **E** — the immutable ELK worker bundles
-  `web/dist/assets/elk.worker-*.js` and
-  `web/dist/assets/elk-worker.min-*.js` installed by orchflows.
+  `reader/web/dist/assets/elk.worker-*.js` and
+  `reader/web/dist/assets/elk-worker.min-*.js` installed by orchflows.
 
 ### Python runtime
 

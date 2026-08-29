@@ -27,7 +27,8 @@ class AdapterRegistryTest(unittest.TestCase):
         (pack / "SKILL.md").write_text(
             "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
-            f"| workspace | widget records; ticket adapter: `{adapter}`; conflicts are ordinary overlaps |\n",
+            "| workspace | widget records; conflicts are ordinary overlaps |\n"
+            f"| adapter | {adapter} |\n",
             encoding="utf-8",
         )
 

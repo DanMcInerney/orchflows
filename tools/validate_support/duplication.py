@@ -38,9 +38,9 @@ CELL_DUPLICATION_ALLOWLIST = (
             "appears -- that arrival is the trigger, not a judgment call."
         ),
         # Normalized clauses, matched exactly. The seam's other two halves
-        # -- 'standards owner by pointer' and 'conflict binding
-        # `orch-resolve-conflicts`' -- sit under CELL_CLAUSE_MIN_WORDS and so
-        # never reach this list; lowering the floor would surface them here.
+        # -- 'standards owner by pointer' and the conflict-owner binding --
+        # sit under CELL_CLAUSE_MIN_WORDS and so never reach this list;
+        # lowering the floor would surface them here.
         "clauses": (
             "each frontier item gets its own worktree branched from the run's "
             "current revision at dispatch, merged at the join",
