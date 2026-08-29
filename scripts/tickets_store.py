@@ -20,9 +20,9 @@ try:
 except ImportError:
     fcntl = None
 if __package__:
-    from .tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
+    from .tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
 else:
-    from tickets_format import GIT_WORKSPACE_MECHANISMS, PACK_WORKSPACE_MECHANISMS, SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
+    from tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
 
 UTC_STAMP = '%Y-%m-%dT%H:%M:%SZ'
 RUN_IDENTITY_NAME = 'run.json'
@@ -73,29 +73,6 @@ def _executor_script(executor: str):
     if not text.startswith(SCRIPT_EXECUTOR_PREFIX):
         return None
     return text[len(SCRIPT_EXECUTOR_PREFIX):].strip() or None
-def establishes_a_git_workspace(pack) -> bool:
-    """Whether `pack`'s workspace cell names a mechanism this script can
-    establish a workspace in.
-
-    A pack absent from the table answers yes. The table is only as current as
-    its last sync, and the two mistakes are not equal: a child handed a step
-    its mechanism has no meaning for fails at its first act, in the open,
-    while a child not handed one it needed works in the shared tree and loses
-    that work at the join with nothing to see.
-    """
-    name = str(pack or '').strip().strip('`').strip()
-    if PACK_WORKSPACE_MECHANISMS is None:
-        # The table is `None` in `tickets_format` until `scripts/tickets.py`
-        # binds it, and this module took its copy by `from`-import at load, so
-        # an importer that never touches the facade reaches here unbound. Not
-        # degraded into the absent-pack fallback below: that answers yes for
-        # every pack, which is the safe answer to a question the table could
-        # not answer and the wrong answer to one nobody asked it.
-        raise RuntimeError(
-            'PACK_WORKSPACE_MECHANISMS is unbound: import scripts/tickets.py, '
-            'which owns the table, before reaching establishes_a_git_workspace')
-    mechanism = PACK_WORKSPACE_MECHANISMS.get(name)
-    return mechanism is None or mechanism in GIT_WORKSPACE_MECHANISMS
 _main_checkout_root = state_root.main_checkout_root
 _find_repo_root = state_root.find_repo_root
 def _cwd() -> Path:

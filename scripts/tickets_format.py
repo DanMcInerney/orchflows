@@ -66,11 +66,6 @@ SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
 # twin and the issue refusal cannot drift apart. Re-exported here because
 # this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
-# Each pack's `workspace` cell names its mechanism. This literal mirrors
-# packs/ because an installed copy has no library tree to read; the matching
-# table assertion in tests/test_validate.py keeps the workspace map in sync.
-PACK_WORKSPACE_MECHANISMS = None  # bound by the public tickets facade
-GIT_WORKSPACE_MECHANISMS = frozenset({'git', 'git plus render'})
 TERMINAL_STATES = ('complete', 'blocked', 'stalled', 'limited', 'failed')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'

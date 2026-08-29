@@ -4,11 +4,14 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 
 import scripts.tickets as tickets_mod
+import scripts.tickets_packet as tickets_packet
+import scripts.tickets_review as tickets_review
 
 __all__ = (
     "AdapterRegistryTest", "SemanticTicketContractTest", "ResultAttributionTest",
@@ -48,6 +51,48 @@ class AdapterRegistryTest(unittest.TestCase):
             with self.assertRaises(tickets_mod.AdapterError) as caught:
                 tickets_mod.adapter_id("widget-pack", root=root)
             self.assertEqual("adapter-unregistered", caught.exception.code)
+
+    def test_admission_reports_exactly_adapter_unregistered_for_the_pack_key(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._pack(root, "no-such-adapter")
+            ticket = (
+                "---\nid: T1\nrun: testrun\nstatus: pending\n"
+                "executor: orch-tdd\ndepends_on: []\nbound: 30m\n"
+                "pack: widget-pack\nisolation: required\n---\n\n"
+                "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
+            )
+            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=root):
+                grade = tickets_mod.grade_admission("T1", ticket, {}, context={})
+            adapter_codes = [
+                item["code"] for item in grade["findings"]
+                if item["code"].startswith("adapter-")
+            ]
+            self.assertEqual(["adapter-unregistered"], adapter_codes)
+
+    def test_consumers_branch_on_properties_not_the_adapter_key(self):
+        adapter = tickets_mod.Adapter(
+            key="synthetic",
+            identity_form="git-commit",
+            establishes_isolation=True,
+            deterministic_gate=True,
+            conflict_semantics="synthetic-overlap",
+            workspace_strategy="git",
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            with mock.patch.object(tickets_packet, "adapter_spec", return_value=adapter):
+                finding = tickets_packet.workspace_establishment_finding(
+                    {"pack": "widget-pack", "isolation": "required"}, None,
+                )
+            self.assertEqual("workspace-unestablished", finding[0])
+
+            with mock.patch.object(tickets_review, "adapter_spec", return_value=adapter):
+                with self.assertRaises(tickets_review.ReviewError) as caught:
+                    tickets_review.validate_fixed_artifact(
+                        "widget-pack", "not-a-git-identity", str(root),
+                    )
+            self.assertIn("git:<full-commit-id>", str(caught.exception))
 
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):

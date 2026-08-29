@@ -73,7 +73,6 @@ DISPATCHING_EXECUTORS = _tickets_format_module.DISPATCHING_EXECUTORS
 DURATION_RE = _tickets_format_module.DURATION_RE
 EXECUTOR_SECTIONS = _tickets_format_module.EXECUTOR_SECTIONS
 EXECUTOR_SECTIONS_BY_KEY = _tickets_format_module.EXECUTOR_SECTIONS_BY_KEY
-GIT_WORKSPACE_MECHANISMS = _tickets_format_module.GIT_WORKSPACE_MECHANISMS
 INSTRUCTION_BUDGET = _tickets_format_module.INSTRUCTION_BUDGET
 INSTRUCTION_SECTIONS = _tickets_format_module.INSTRUCTION_SECTIONS
 LINK_TARGET_RE = _tickets_format_module.LINK_TARGET_RE
@@ -82,14 +81,6 @@ OPTIONAL_SECTIONS = _tickets_format_module.OPTIONAL_SECTIONS
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX
 PACK_NAME_SUFFIX = _tickets_format_module.PACK_NAME_SUFFIX
-PACK_WORKSPACE_MECHANISMS = {
-    "orch-code-pack": "git",
-    "orch-content-pack": "document tree",
-    "orch-design-pack": "git plus render",
-    "orch-research-pack": "evidence store",
-}
-_tickets_format_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
-_tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
 PLACEHOLDER_RE = _tickets_format_module.PLACEHOLDER_RE
 REQUIRED_ISOLATION = _tickets_format_module.REQUIRED_ISOLATION
 REQUIRED_LIFECYCLE_KEYS = _tickets_format_module.REQUIRED_LIFECYCLE_KEYS
@@ -132,6 +123,7 @@ ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
 PACK_EXECUTOR_BINDINGS = _tickets_admission_module.PACK_EXECUTOR_BINDINGS
 ADAPTER_REGISTRY = _tickets_adapters_module.ADAPTER_REGISTRY
+Adapter = _tickets_adapters_module.Adapter
 AdapterError = _tickets_adapters_module.AdapterError
 adapter_id = _tickets_adapters_module.adapter_id
 adapter_spec = _tickets_adapters_module.adapter_spec
@@ -196,9 +188,6 @@ _workspace_root = _tickets_store_module._workspace_root
 _write_identity = _tickets_store_module._write_identity
 _write_text_atomically = _tickets_store_module._write_text_atomically
 _writer_identity = _tickets_store_module._writer_identity
-def establishes_a_git_workspace(name: str) -> bool:
-    _tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
-    return _tickets_store_module.establishes_a_git_workspace(name)
 normalized_isolation = _tickets_store_module.normalized_isolation
 INDEPENDENCE_VALUES = _tickets_issue_module.INDEPENDENCE_VALUES
 ISOLATION_VALUES = _tickets_issue_module.ISOLATION_VALUES
@@ -324,8 +313,6 @@ contextmanager = _tickets_store_module.contextmanager
 Path = _tickets_store_module.Path
 
 def _sync_seams():
-    _tickets_format_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
-    _tickets_store_module.PACK_WORKSPACE_MECHANISMS = PACK_WORKSPACE_MECHANISMS
     _tickets_store_module.REPLACE_BUDGET_SECONDS = REPLACE_BUDGET_SECONDS
     _tickets_store_module.REPLACE_RETRY_SECONDS = REPLACE_RETRY_SECONDS
     _tickets_store_module._cwd = _cwd

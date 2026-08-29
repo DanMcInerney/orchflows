@@ -299,6 +299,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         with tempfile.TemporaryDirectory() as store:
             data = {
                 "pack": "orch-research-pack",
+                "isolation": "required",
                 "workspace_path": store,
             }
             self.assertIsNone(workspace_establishment_finding(data, store))

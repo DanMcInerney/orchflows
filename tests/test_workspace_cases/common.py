@@ -96,6 +96,7 @@ def make_ticket(run_dir: Path, tid: str, *, scope=("scratch",), extra=()) -> Pat
         "run: testrun",
         "status: claimed",
         "executor: orch-tdd",
+        "pack: orch-code-pack",
         "depends_on: []",
         "write_scope:",
     ]

@@ -7,8 +7,9 @@ import re
 import subprocess
 
 if __package__:
+    from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, adapter_id, canonical_json,
+        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         parse_canonical_json,
     )
     from .tickets_store import _load_ticket
@@ -17,8 +18,9 @@ if __package__:
         nonempty as _nonempty, validate_records,
     )
 else:
+    from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, adapter_id, canonical_json,
+        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         parse_canonical_json,
     )
     from tickets_store import _load_ticket
@@ -86,13 +88,17 @@ def _workspace_identity(workspace) -> str:
 
 def validate_fixed_artifact(pack, artifact: str, workspace) -> tuple[str, str]:
     normalized_workspace = _workspace_identity(workspace)
-    if adapter_id(pack) != "git":
+    try:
+        adapter = adapter_spec(pack)
+    except AdapterError as error:
+        raise ReviewError(error.detail) from error
+    if adapter.identity_form != "git-commit":
         if not _nonempty(artifact):
             raise ReviewError("review requires --artifact <fixed-identity>")
         return artifact.strip(), normalized_workspace
     match = GIT_ARTIFACT_RE.fullmatch(str(artifact or "").strip())
     if match is None:
-        raise ReviewError("code review artifact must be git:<full-commit-id>")
+        raise ReviewError("git review artifact must be git:<full-commit-id>")
     expected = match.group(1)
     commands = (
         ("rev-parse", "--verify", f"{expected}^{{commit}}"),
@@ -106,11 +112,11 @@ def validate_fixed_artifact(pack, artifact: str, workspace) -> tuple[str, str]:
         )
         if completed.returncode != 0:
             detail = completed.stderr.strip() or completed.stdout.strip()
-            raise ReviewError(f"code review artifact does not resolve: {detail}")
+            raise ReviewError(f"git review artifact does not resolve: {detail}")
         observed.append(completed.stdout.strip().lower())
     if observed[0] != expected or observed[1] != expected:
         raise ReviewError(
-            "code review artifact does not equal the established workspace HEAD"
+            "git review artifact does not equal the established workspace HEAD"
         )
     return f"git:{expected}", normalized_workspace
 
