@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1599,
+  "count": 1600,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -500,6 +500,7 @@
    "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
    "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
+   "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
    "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
    "test_packs.PackShapeRefusalTests.test_unknown_digest_and_consumer_are_closed_refusals",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
@@ -1602,7 +1603,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "706389458e284c9d2e9289753c4d78dcdc8d2944910d24b443c755286ce03928"
+  "sha256": "103df541555dd7f090cf414df53712abbbbee295ea893315363d551f0b564fed"
  },
  "mutation_owners": [
   {
