@@ -11,28 +11,13 @@ import sys
 from collections import namedtuple
 from datetime import datetime, timezone
 from fractions import Fraction
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlsplit
 
-# ``scripts/ui.py`` and ``scripts/tickets.py`` are siblings in the
-# repository and again in ``~/.orchflows/bin`` after ``install.py`` copies
-# them, so neither is ever a package member and a plain sibling import is
-# the only shape that works in both. Appended, never prepended: this
-# directory also holds ``trace.py``, which at sys.path[0] would shadow the
-# stdlib ``trace`` module for the whole process.
-_SIBLING_DIR = str(Path(__file__).resolve().parent)
-if _SIBLING_DIR not in sys.path:
-    sys.path.append(_SIBLING_DIR)
-
-import state_root  # noqa: E402
-from ui_ticket_model import _scalar, read_ticket, split_sections  # noqa: E402
-from tickets import (  # noqa: E402
-    OTHER_BOUND_KIND,
-    _parse_frontmatter,
-    _parse_iso,
-    parse_bound,
-)
+from scripts import state_root  # noqa: E402
+from reader.scripts.ui_ticket_model import _scalar, read_ticket, split_sections  # noqa: E402
+from scripts.tickets_bound import OTHER_BOUND_KIND, parse_bound  # noqa: E402
+from scripts.tickets_format import _parse_frontmatter, _parse_iso  # noqa: E402
 
 LOOPBACK_HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
@@ -402,8 +387,5 @@ def _json_object(line: str):
         return None
     return entry if isinstance(entry, dict) else None
 def _facade_value(name, fallback):
-    facade = next((module for module_name, module in tuple(sys.modules.items()) if
-        module_name != __name__ and getattr(module, "_facade_value", None) is
-        _facade_value and hasattr(module, "render_route")), None)
-    facade = facade or sys.modules.get("scripts.ui") or sys.modules.get("ui") or sys.modules.get("__main__")
+    facade = sys.modules.get("reader.scripts.ui") or sys.modules.get("__main__")
     return getattr(facade, name, fallback)

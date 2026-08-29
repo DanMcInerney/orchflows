@@ -145,7 +145,7 @@ class TicketProtocolTest(unittest.TestCase):
         frontier = (
             root / "skills" / "engines" / "orch-frontier" / "SKILL.md"
         ).read_text(encoding="utf-8")
-        ui_model = (root / "scripts" / "ui_model.py").read_text(encoding="utf-8")
+        ui_model = (root / "reader" / "scripts" / "ui_model.py").read_text(encoding="utf-8")
 
         for projection in (host, frontier):
             self.assertIn("response `.packet`", projection)

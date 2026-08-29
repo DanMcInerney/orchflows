@@ -1,4 +1,4 @@
-"""Closed public Workflows projections plus the Phase-A compatibility seam."""
+"""Closed public Workflows projections."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from reader.scripts import (
 from reader.scripts.ui_discovery import discover
 from reader.scripts.ui_model import ACTIVE_STATUS
 
-# The Phase-A compatibility projector still owns no route. Public definition
-# routes are separate so legacy route-assembly consumers keep their contract.
+# Public definition routes are assembled by ui_api; this module owns projection
+# data only and has no second route assembly mechanism.
 ROUTE_SPECS = ()
 PUBLIC_ROUTE_SPECS = (
     ("GET", "/api/v1/workflows", "project_workflow_catalog"),

@@ -18,7 +18,7 @@ class TestScriptNames(unittest.TestCase):
         for name in expected:
             installed = plan.bin_dir / name
             self.assertTrue(installed.is_file(), f"{name} was not installed to {plan.bin_dir}")
-            source = install.REPO_ROOT / "scripts" / name
+            source = install.REPO_ROOT / "reader" / "scripts" / name if name == "ui.py" else install.REPO_ROOT / "scripts" / name
             self.assertEqual(source.read_bytes(), installed.read_bytes())
 
     def test_build_plan_ships_doclint_the_documentation_oracle(self):

@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Edge, Node } from "@xyflow/react";
 import { SessionGraphView } from "./SessionGraphView";
 import type { SessionGraphModel } from "./topology";
 
@@ -11,16 +13,27 @@ vi.mock("@xyflow/react", async () => {
     Background: () => null,
     Handle: ({ "aria-label": ariaLabel }: { "aria-label": string }) => <span aria-label={ariaLabel} />,
     Controls: () => <div aria-label="Session graph zoom controls" />,
-    ReactFlow: ({ nodes, edges, nodeTypes, onNodeClick, children, ...props }: any) => {
+    ReactFlow: ({ nodes, edges, nodeTypes, onNodeClick, children, ...props }: {
+      nodes?: Array<Node<Record<string, unknown>> & { ariaLabel?: string }>;
+      edges?: Array<Edge & { ariaLabel?: string }>;
+      nodeTypes: Record<string, (props: {
+        id: string;
+        data: Record<string, unknown>;
+        selected?: boolean;
+      }) => ReactNode>;
+      onNodeClick: (event: unknown, node: Node<Record<string, unknown>>) => void;
+      children?: ReactNode;
+      "aria-label"?: string;
+    }) => {
       const NodeComponent = nodeTypes.sessionAgent;
       return (
         <div aria-label={props["aria-label"]}>
-          {nodes.map((node: any) => (
+          {(nodes ?? []).map((node) => (
             <button key={node.id} aria-label={node.ariaLabel} onClick={() => onNodeClick({}, node)}>
-              <NodeComponent data={node.data} selected={node.selected} />
+              <NodeComponent id={node.id} data={node.data} selected={node.selected ?? false} />
             </button>
           ))}
-          {edges.map((edge: any) => <span key={edge.id} aria-label={edge.ariaLabel} />)}
+          {(edges ?? []).map((edge) => <span key={edge.id} aria-label={edge.ariaLabel} />)}
           {children}
         </div>
       );

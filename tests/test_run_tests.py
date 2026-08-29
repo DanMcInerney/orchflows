@@ -60,7 +60,7 @@ class TestGuardedSeams(unittest.TestCase):
 
     LEAKS = {
         "install.Path.home": "import install\ninstall.Path.home = lambda: None",
-        "ui.html.escape": "from scripts import ui\nui.html.escape = lambda value: value",
+        "ui.html.escape": "from reader.scripts import ui\nui.html.escape = lambda value: value",
         "pathlib.Path.open": "from pathlib import Path\nPath.open = lambda *args, **kwargs: None",
         "os.chdir": "import os\nfrom pathlib import Path\nos.chdir(str(Path(__file__).parent))",
         "sys.path": (

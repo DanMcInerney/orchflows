@@ -7,9 +7,12 @@ export default defineConfig({
   root: "web",
   plugins: [react()],
   worker: { format: "es" },
-  server: process.env.ORCHFLOWS_UI_API_ORIGIN ? {
-    proxy: { "/api": process.env.ORCHFLOWS_UI_API_ORIGIN }
-  } : undefined,
+  server: {
+    fs: { allow: ["..", "../.."] },
+    ...(process.env.ORCHFLOWS_UI_API_ORIGIN ? {
+      proxy: { "/api": process.env.ORCHFLOWS_UI_API_ORIGIN }
+    } : {})
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,

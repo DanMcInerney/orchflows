@@ -286,7 +286,7 @@ export function artifactRows(ticket: TicketDetail, location: InspectorRoute): In
   });
 }
 
-export function proofRows(model: InspectorModel, fixture: string): InspectorProofRow[] {
+export function proofRows(model: InspectorModel, _fixture: string): InspectorProofRow[] {
   const rows = model.ticket?.verification.rows ?? [];
   return rows.map((value, index) => {
     const row = record(value);

@@ -323,7 +323,7 @@ def discover_sessions(transcripts=None) -> dict:
     for project in projects:
         cwd = decode_slug(project.name)
         if not cwd:
-            # The legacy page needs the local entry identity to explain what could not be decoded.
+            # Preserve the local entry identity so the reader can explain what could not be decoded.
             # Browser projections sanitize this diagnostic at their own boundary.
             diagnostics.append("{0}: {1}".format(DIAGNOSTIC_UNDECODABLE_SLUG, project.name))
         transcript_paths = (_in_tree(project, path.name) for path in sorted(project.glob("*" + JSONL_SUFFIX)))

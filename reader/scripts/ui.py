@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import sys
 from pathlib import Path
 
@@ -14,12 +15,6 @@ for _import_root in (REPOSITORY_ROOT, INSTALL_LIBRARY_ROOT):
     if (_import_root / "reader").is_dir() and str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))
 
-from reader.scripts.ui_api import (  # noqa: E402
-    PUBLIC_API_SCHEMA,
-    PUBLIC_API_VERSION,
-    create_application,
-    create_server as _create_server,
-)
 from reader.scripts.ui_sessions import transcript_root  # noqa: E402
 from scripts.state_root import state_root  # noqa: E402
 
@@ -36,7 +31,17 @@ def default_root() -> Path:
 def create_server(root, port: int, transcripts=None, assets=None):
     """Create the uvicorn-backed v1 reader server."""
 
+    from reader.scripts.ui_api import create_server as _create_server
+
     return _create_server(root, port, transcripts, assets)
+
+
+def create_application(root, transcripts=None, assets=None):
+    """Create the Starlette application for embedding or contract tests."""
+
+    from reader.scripts.ui_api import create_application as _create_application
+
+    return _create_application(root, transcripts, assets)
 
 
 def main(argv=None):
@@ -62,6 +67,8 @@ def main(argv=None):
         print("cannot bind port {0}: {1}".format(args.port, error), file=sys.stderr)
         return 2
     host, port = server.server_address[0], server.server_address[1]
+    from reader.scripts.ui_api import PUBLIC_API_VERSION
+
     print(
         "orchflows reader {0} on http://{1}:{2}/ -- ctrl-c to stop".format(
             PUBLIC_API_VERSION, host, port

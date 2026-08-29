@@ -228,14 +228,3 @@ def http_endpoint(namespace: dict, response, internal_error):
         return response(request, value, status)
 
     return endpoint
-
-
-def project_http_path(root: Path, path: str, inventory, content):
-    """Project one exact fallback artifact path, or decline unrelated paths."""
-
-    parts = path.strip("/").split("/")
-    if len(parts) == 7 and parts[4] == "tickets" and parts[6] == "artifacts":
-        return inventory(root, parts[3], parts[5])
-    if len(parts) == 8 and parts[4] == "tickets" and parts[6] == "artifacts":
-        return content(root, parts[3], parts[5], parts[7])
-    return None

@@ -4,7 +4,7 @@ import {
   type RouteLocation,
 } from "../../shared/routes/executionRoutes";
 
-export interface RunMapRoute extends ExecutionRunRoute {}
+export type RunMapRoute = ExecutionRunRoute;
 
 export const route = {
   match(location: RouteLocation): RunMapRoute | null {

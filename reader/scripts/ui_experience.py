@@ -68,7 +68,7 @@ def is_spa_path(path: str) -> bool:
 
 
 def browser_navigation(path: str, headers) -> bool:
-    """Distinguish document navigation from the legacy no-Accept reader API."""
+    """Distinguish document navigation from API requests."""
 
     accept = next((value for name, value in headers.items() if name.lower() == "accept"), "")
     return path == "/observe" or "text/html" in accept.lower()
@@ -415,7 +415,7 @@ def _sessions_index(transcripts) -> dict:
     }
 
 
-def _friction_compatibility(root: Path) -> dict:
+def _friction_projection(root: Path) -> dict:
     friction = read_friction(root)
     health = ui_friction_projection.project_friction(root)
     return {
@@ -462,12 +462,12 @@ def project_experience(root, transcripts=None, query=None) -> dict:
         "ticket": ticket,
         "sessions": _sessions_index(transcripts),
         "session": session,
-        "friction": _friction_compatibility(root),
+        "friction": _friction_projection(root),
     }
 
 
 def project_view(root, transcripts, view: str, query=None) -> dict:
-    """Return one compatibility slice without opening another domain root."""
+    """Return one closed view slice without opening another domain root."""
 
     root = Path(root).resolve()
     query = query or {}
@@ -491,4 +491,4 @@ def project_view(root, transcripts, view: str, query=None) -> dict:
             "schema": schema,
             "session": _selected_session(transcripts, _text(query.get("session"))),
         }
-    return {"schema": schema, "friction": _friction_compatibility(root)}
+    return {"schema": schema, "friction": _friction_projection(root)}

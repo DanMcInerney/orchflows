@@ -1,41 +1,40 @@
-// @ts-nocheck -- Playwright owns this Node-side harness; application code remains strict.
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
-import { spawn } from "node:child_process";
+import { expect, test, type Page } from "@playwright/test";
+import { type ChildProcess } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import {
+  requiredEnv,
+  startOriginProcess,
+  type NowProjection,
+  type ViewIdentity,
+  type ViewManifest,
+} from "./smoke_support";
 
 const executablePath = process.env.ORCHFLOWS_BROWSER_EXECUTABLE || undefined;
 test.use({ launchOptions: executablePath ? { executablePath } : undefined });
 
-let serverProcess;
-let devProcess;
+let serverProcess: ChildProcess | undefined;
+let devProcess: ChildProcess | undefined;
 let stateRoot = "";
 let origin = "";
 const action = process.env.ORCHFLOWS_UI_ACTION || "smoke";
 const apiOrigin = process.env.ORCHFLOWS_UI_API_ORIGIN || "";
 const experienceMode = process.env.ORCHFLOWS_UI_EXPERIENCE === "1";
 
-async function startVite() {
-  const viteScript = resolve("node_modules", "vite", "bin", "vite.js");
-  devProcess = spawn(process.execPath, [viteScript, "--host", "127.0.0.1", "--port", "0"], {
-    cwd: process.cwd(), env: { ...process.env, ORCHFLOWS_UI_API_ORIGIN: apiOrigin }, stdio: ["ignore", "pipe", "pipe"]
-  });
-  origin = await new Promise((resolveOrigin, reject) => {
-    let stderr = "";
-    devProcess.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-    devProcess.stdout.on("data", (chunk) => {
-      const match = chunk.toString().match(/http:\/\/127\.0\.0\.1:\d+/);
-      if (match) resolveOrigin(match[0]);
-    });
-    devProcess.once("exit", (code) => reject(new Error(`vite exited ${code}: ${stderr}`)));
-  });
-}
-
 test.beforeAll(async () => {
   if (action !== "smoke") {
-    await startVite();
+    const viteScript = resolve("node_modules", "vite", "bin", "vite.js");
+    const started = await startOriginProcess(
+      process.execPath,
+      [viteScript, "--host", "127.0.0.1", "--port", "0"],
+      "vite",
+      process.cwd(),
+      { ...process.env, ORCHFLOWS_UI_API_ORIGIN: apiOrigin },
+    );
+    devProcess = started.child;
+    origin = started.origin;
     return;
   }
   stateRoot = await mkdtemp(join(tmpdir(), "orchflows-smoke-"));
@@ -43,7 +42,6 @@ test.beforeAll(async () => {
   for (const run of ["run-alpha", "run-beta", "run-delta", "run-epsilon", "run-gamma"]) {
     await cp(resolve("tests", "fixtures", "ui", run), join(stateRoot, "tickets", run), { recursive: true });
   }
-  // Folder identity and completion timing live beside the tickets, not in them.
   await cp(resolve("tests", "fixtures", "ui", "runs"), join(stateRoot, "runs"), { recursive: true });
   const objectivePath = join(stateRoot, "tickets", "run-gamma", "G1.md");
   const objectiveTicket = await readFile(objectivePath, "utf8");
@@ -71,18 +69,15 @@ test.beforeAll(async () => {
     ...(index % 2 ? { category: "historical-browser-guard" } : {}),
     host: "fixture", observed: `Synthetic friction ${index + 1}`, expected: "A bounded initial feed"
   })).join("\n"), "utf8");
-  serverProcess = spawn(process.env.ORCHFLOWS_PYTHON || "python", [
-    "-u", "scripts/ui.py", "--root", stateRoot, "--transcripts", transcriptRoot, "--port", "0"
-  ], { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] });
-  origin = await new Promise((resolveOrigin, reject) => {
-    let stderr = "";
-    serverProcess.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-    serverProcess.stdout.on("data", (chunk) => {
-      const match = chunk.toString().match(/http:\/\/127\.0\.0\.1:\d+/);
-      if (match) resolveOrigin(match[0]);
-    });
-    serverProcess.once("exit", (code) => reject(new Error(`reader exited ${code}: ${stderr}`)));
-  });
+  const started = await startOriginProcess(
+    process.env.ORCHFLOWS_PYTHON || "python",
+    ["-u", "scripts/ui.py", "--root", stateRoot, "--transcripts", transcriptRoot, "--port", "0"],
+    "reader",
+    process.cwd(),
+    process.env,
+  );
+  serverProcess = started.child;
+  origin = started.origin;
 });
 
 test.afterAll(async () => {
@@ -91,13 +86,17 @@ test.afterAll(async () => {
   await rm(stateRoot, { recursive: true, force: true });
 });
 
-async function openManifestIdentity(page, identity, width, height) {
+async function openManifestIdentity(page: Page, identity: ViewIdentity, width: number, height: number) {
   await page.setViewportSize({ width, height });
   await page.goto(`${origin}${identity.path}`);
   await expect(page.locator(".foundation-view"), identity.identity).toBeVisible({ timeout: 45_000 });
 }
 
-async function expectManifestIdentityTruth(page, identity, navigationParents) {
+async function expectManifestIdentityTruth(
+  page: Page,
+  identity: ViewIdentity,
+  navigationParents: Record<string, string>,
+) {
   const navigationParent = navigationParents[identity.view];
   expect(navigationParent, `${identity.identity}: declared navigation parent`).toBeTruthy();
   await expect(
@@ -130,12 +129,13 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
     if (identity.breakpoint === "compact") {
       const inspector = await page.locator(".workflow-inspector").boundingBox();
       const graph = await page.locator(".workflow-detail__graph-panel").boundingBox();
-      expect(inspector, `${identity.identity}: inspector is rendered`).not.toBeNull();
-      expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
+      if (!inspector || !graph) throw new Error(`${identity.identity}: graph and inspector must render`);
       expect(graph.y, `${identity.identity}: primary graph precedes inspector`).toBeLessThan(inspector.y);
-      const sourceOrder = await page.locator(".workflow-detail__graph-panel").evaluate((graphElement) => Boolean(
-        graphElement.compareDocumentPosition(document.querySelector(".workflow-inspector")) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ));
+      const sourceOrder = await page.locator(".workflow-detail__graph-panel").evaluate((graphElement) => {
+        const inspectorElement = document.querySelector(".workflow-inspector");
+        return Boolean(inspectorElement
+          && graphElement.compareDocumentPosition(inspectorElement) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
       expect(sourceOrder, `${identity.identity}: graph precedes inspector in source order`).toBe(true);
     }
   }
@@ -154,13 +154,13 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
   if (identity.identity === "run-map--blocked-causal--compact") {
     const inspector = await page.locator(".run-inspector").boundingBox();
     const graph = await page.locator(".run-map__graph-card").boundingBox();
-    expect(inspector, `${identity.identity}: inspector is rendered`).not.toBeNull();
-    expect(graph, `${identity.identity}: graph is rendered`).not.toBeNull();
+    if (!inspector || !graph) throw new Error(`${identity.identity}: graph and inspector must render`);
     expect(inspector.y, `${identity.identity}: inspector precedes graph`).toBeLessThan(graph.y);
     const sourceOrder = await page.evaluate(() => {
       const inspectorElement = document.querySelector(".run-inspector");
       const graphElement = document.querySelector(".run-map__graph-card");
-      return Boolean(inspectorElement?.compareDocumentPosition(graphElement) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return Boolean(inspectorElement && graphElement
+        && inspectorElement.compareDocumentPosition(graphElement) & Node.DOCUMENT_POSITION_FOLLOWING);
     });
     expect(sourceOrder, `${identity.identity}: focus source order follows visual order`).toBe(true);
   }
@@ -174,17 +174,17 @@ async function expectManifestIdentityTruth(page, identity, navigationParents) {
   }
 }
 
-async function expectKeyboardParity(page, identity) {
+async function expectKeyboardParity(page: Page, identity: ViewIdentity) {
   const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const result = await page.locator(selector).evaluateAll((elements) => {
-    const interactive = elements.filter((element) => {
+  const result = await page.locator(selector).evaluateAll((elements: Element[]) => {
+    const interactive = elements.filter((element: Element) => {
       const style = getComputedStyle(element);
       const bounds = element.getBoundingClientRect();
       return style.visibility !== "hidden" && style.display !== "none" && bounds.width > 0 && bounds.height > 0
         && !(element as HTMLButtonElement).disabled && element.getAttribute("aria-disabled") !== "true"
         && element.getAttribute("role") !== "tablist";
     });
-    const failures = [];
+    const failures: string[] = [];
     for (const element of interactive) {
       const target = element as HTMLElement;
       target.focus();
@@ -199,11 +199,11 @@ async function expectKeyboardParity(page, identity) {
   expect(result.failures, `${identity.identity}: keyboard reach must match pointer reach`).toEqual([]);
 }
 
-async function expectReducedMotion(page, identity) {
+async function expectReducedMotion(page: Page, identity: ViewIdentity) {
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches), identity.identity).toBe(true);
-  const moving = await page.locator("*").evaluateAll((elements) => elements.filter((element) => {
+  const moving = await page.locator("*").evaluateAll((elements: Element[]) => elements.filter((element: Element) => {
     const style = getComputedStyle(element);
-    const seconds = (value) => value.split(",").some((part) => {
+    const seconds = (value: string) => value.split(",").some((part: string) => {
       const duration = Number.parseFloat(part);
       return part.trim().endsWith("ms") ? duration > .001 : duration > .000001;
     });
@@ -284,8 +284,7 @@ test("Observe run map stays interactive and stable across an ETag refresh", asyn
   await page.setViewportSize({ width: 640, height: 780 });
   const rail = await page.locator(".rail").boundingBox();
   const canvas = await page.locator(".run-map__canvas").boundingBox();
-  expect(rail).not.toBeNull();
-  expect(canvas).not.toBeNull();
+  if (!rail || !canvas) throw new Error("mobile run map must render rail and canvas");
   expect(canvas.y).toBeGreaterThanOrEqual(rail.y + rail.height - 1);
   await expect(buildNode).toHaveClass(/selected/);
 
@@ -373,8 +372,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   const agentLabel = await agent.locator("strong").textContent();
   const agentBox = await agent.boundingBox();
   const canvasBox = await page.locator(".session-graph-canvas").boundingBox();
-  expect(agentBox).not.toBeNull();
-  expect(canvasBox).not.toBeNull();
+  if (!agentBox || !canvasBox) throw new Error("session graph must render agent and canvas");
   expect(agentBox.y).toBeGreaterThanOrEqual(canvasBox.y);
   expect(agentBox.y + agentBox.height).toBeLessThanOrEqual(canvasBox.y + canvasBox.height);
   await agent.click();
@@ -383,13 +381,13 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   await page.goto(`${origin}/now`);
   const nowRun = page.locator(".now-run-card").first();
   await expect(nowRun).toBeVisible();
-  const objectiveHeights = await page.locator(".now-objective-summary").evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+  const objectiveHeights = await page.locator(".now-objective-summary").evaluateAll((elements: Element[]) => elements.map((element: Element) => element.getBoundingClientRect().height));
   expect(Math.max(...objectiveHeights)).toBeLessThanOrEqual(72);
   await expect(nowRun.getByText("Full objective")).toBeVisible();
 
   // The served projection carries folder identity and completion timing, and
   // carries no host path, origin or workspace out of the fixture run records.
-  const nowPayload = await (await page.request.get(`${origin}/api/v1/views/now`)).json();
+  const nowPayload = await (await page.request.get(`${origin}/api/v1/views/now`)).json() as NowProjection;
   const projected = Object.fromEntries(nowPayload.runs.map((run) => [run.id, run]));
   expect(projected["run-gamma"].repository, "live run folder leaf").toBe("atlas-web");
   expect(projected["run-delta"].repository, "backslash name reduces to the same leaf").toBe("atlas-web");
@@ -410,6 +408,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   await expect(pastFolders, "past folders by newest completion").toHaveText(["beacon-cli", "atlas-web"]);
   const runningBand = await page.locator("section[aria-labelledby='now-running-heading']").boundingBox();
   const pastBand = await page.locator("section[aria-labelledby='now-past-heading']").boundingBox();
+  if (!runningBand || !pastBand) throw new Error("Now must render running and past bands");
   expect(runningBand.y, "running work precedes finished work").toBeLessThan(pastBand.y);
 
   // A running card whose canonical data reads pairs the summarized flowchart
@@ -438,6 +437,7 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
   const skillNode = page.locator(".run-skills__node").first();
   await expect(skillNode).toBeVisible();
   const skillTicket = (await skillNode.locator(".run-skills__ticket").textContent())?.trim();
+  if (!skillTicket) throw new Error("skill sequence must identify its active ticket");
   expect(skillTicket).toMatch(/^G\d$/);
   await expect(skillNode).toHaveAttribute("href", `/runs/run-gamma/tickets/${skillTicket}`);
   await skillNode.click();
@@ -465,8 +465,8 @@ test("experience drill-down stays actionable and bounded in a real browser", asy
 test("capture every manifest identity", async ({ page }) => {
   test.skip(action !== "capture");
   test.setTimeout(180_000);
-  const manifest = JSON.parse(await readFile(process.env.ORCHFLOWS_UI_MANIFEST, "utf8"));
-  const output = process.env.ORCHFLOWS_UI_OUTPUT;
+  const manifest = JSON.parse(await readFile(requiredEnv("ORCHFLOWS_UI_MANIFEST"), "utf8")) as ViewManifest;
+  const output = requiredEnv("ORCHFLOWS_UI_OUTPUT");
   await mkdir(output, { recursive: true });
   for (const identity of manifest.views) {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
@@ -479,7 +479,7 @@ test("capture every manifest identity", async ({ page }) => {
 test("audit every manifest identity", async ({ page }) => {
   test.skip(action !== "audit");
   test.setTimeout(600_000);
-  const manifest = JSON.parse(await readFile(process.env.ORCHFLOWS_UI_MANIFEST, "utf8"));
+  const manifest = JSON.parse(await readFile(requiredEnv("ORCHFLOWS_UI_MANIFEST"), "utf8")) as ViewManifest;
   for (const identity of manifest.views) {
     const [width, height] = manifest.breakpoints[identity.breakpoint];
     await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });

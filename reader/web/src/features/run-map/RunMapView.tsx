@@ -12,7 +12,6 @@ import {
 import {
   AlertTriangle,
   Box,
-  ChevronLeft,
   ChevronRight,
   CircleDot,
   Focus,

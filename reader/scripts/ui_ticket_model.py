@@ -5,10 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-if __package__:
-    from .tickets import _parse_frontmatter
-else:
-    from tickets import _parse_frontmatter
+from scripts.tickets_format import _parse_frontmatter
 
 SECTION_RE = re.compile(r"^## +(.+?)[ \t]*$", re.MULTILINE)
 FENCE_RE = re.compile(r"^[ \t]{0,3}(?P<marker>`{3,}|~{3,})(?P<info>.*)$")
