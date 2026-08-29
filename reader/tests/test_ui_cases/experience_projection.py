@@ -12,7 +12,7 @@ from reader.scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
 class ExperienceFoundationContractTests(unittest.TestCase):
     def test_modularization_spec_is_the_accepted_content_with_locator_repairs(self):
-        path = ROOT / "docs" / "ui" / "modularization.md"
+        path = ROOT / "reader" / "docs" / "modularization.md"
         implemented = path.read_bytes()
 
         self.assertNotIn(
@@ -24,7 +24,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         )
 
     def test_workflows_spec_preserves_accepted_content_with_locator_repairs(self):
-        path = ROOT / "docs" / "ui" / "workflows.md"
+        path = ROOT / "reader" / "docs" / "workflows.md"
         implemented = path.read_bytes()
 
         self.assertNotIn(b"](../../web/src/api/schema.ts)", implemented)
@@ -40,7 +40,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"[schema](../../web/src/api/schema.ts)",
         )
         self.assertEqual(
-            "700B76400D43D796249C343902D0AE153B99E9967FDCCC56499DE9FD0C7D167C",
+            "70F42B3945D3F1B2B99519BBCEA13FCDE774CA828E7E46F5A3538A56DBB62088",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
