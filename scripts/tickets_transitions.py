@@ -84,12 +84,18 @@ _LIFECYCLE_SPECS = (
     LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
     LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Result", "contracts/verdict.md", "rules/verification.md"),
 ) + tuple(
+    # Not a legacy path, though an earlier rendering called it one: these are
+    # the only transitions a ticket that was never dispatched can take, and
+    # `_set_status_under_run_lock` refuses outright once `dispatch_v1` exists
+    # (`dispatch-join-required`). Marking an issued-but-undispatched ticket
+    # blocked has no other route, so naming the majority of the table
+    # "legacy" told every cold reader the opposite of the truth.
     LifecycleSpec(
         set_status_command(state),
         STATUSES,
         state,
         "caller",
-        "no dispatch-v1 record (legacy path)",
+        "no dispatch-v1 record (pre-dispatch path)",
         "contracts/worklog.md" if state in TERMINAL_STATES else "contracts/work-item.md",
         "rules/loops.md" if state in TERMINAL_STATES else "rules/topology.md",
     )

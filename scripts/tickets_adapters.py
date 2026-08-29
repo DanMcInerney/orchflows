@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -59,8 +58,6 @@ ADAPTER_REGISTRY = {
     ),
 }
 
-_ADAPTER_DECLARATION = re.compile(r"ticket adapter:\s*`([^`]+)`")
-
 
 class AdapterError(ValueError):
     """A pack cannot select one closed registered adapter."""
@@ -102,7 +99,14 @@ def pack_path(pack, *, root=None) -> Path:
 
 
 def declared_adapter(pack, *, root=None) -> str:
-    """Read the stable adapter key from the pack's workspace cell."""
+    """Read the stable adapter key from the pack's typed `adapter` leaf.
+
+    The key is a closed field because machinery branches on it, which is
+    the whole reason `contracts/pack-signature.md` types it. It was read
+    out of the `workspace` cell's prose by regex until that left two
+    declarations of one fact with the prose winning -- a pack could type
+    one adapter and describe another, and the description decided.
+    """
 
     path = pack_path(pack, root=root)
     try:
@@ -115,14 +119,14 @@ def declared_adapter(pack, *, root=None) -> str:
         if not stripped.startswith("|"):
             continue
         cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if len(cells) >= 2 and cells[0] == "workspace":
-            matches.extend(_ADAPTER_DECLARATION.findall(cells[1]))
-    if len(matches) != 1 or not matches[0].strip():
+        if len(cells) >= 2 and cells[0] == "adapter":
+            matches.append(cells[1].strip().strip("`").strip())
+    if len(matches) != 1 or not matches[0]:
         raise AdapterError(
             "adapter-declaration-invalid",
-            f"pack workspace cell must declare exactly one ticket adapter: {path}",
+            f"pack must declare exactly one typed adapter leaf: {path}",
         )
-    return matches[0].strip()
+    return matches[0]
 
 
 def adapter_for_key(key: str) -> Adapter:
