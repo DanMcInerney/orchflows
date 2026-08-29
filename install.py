@@ -70,6 +70,7 @@ SCRIPT_NAMES = (
     "doclint.py",
     "friction.py",
     "migrate_state.py",
+    "packs.py",
     "search_plan.py",
     "state_root.py",
     "tickets.py",
@@ -86,7 +87,6 @@ SCRIPT_SUPPORT_PREFIXES = (
     "workspace",
     "migrate_state",
 )
-
 _LOCAL_ROOT = Path(__file__).resolve().parent
 if str(_LOCAL_ROOT) not in sys.path:
     sys.path.insert(0, str(_LOCAL_ROOT))

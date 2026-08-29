@@ -1,4 +1,4 @@
-"""The `assembly` cell's permitted forms and the cross-pack cell linter.
+"""The typed pack cells and the cross-pack cell linter.
 
 Every wrong result is built in an isolated tree beside the real one
 (rules/verification.md §8): the real packs/ are never mutated to prove a
@@ -81,13 +81,14 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | cell | binding |
 | --- | --- |
 | slicing | [references/slicing.md](references/slicing.md) |
-| executor | `{name}executor` |
-| assembly | {assembly} |
-| lens | inline: none |
-| evidence | [references/evidence.md](references/evidence.md) |
 | workspace | {workspace} |
 | required_spec_fields | inline: none |
 | craft | [references/craft.md](references/craft.md) |
+| adapter | git |
+| stages | [stage] |
+| assembly | {assembly} |
+| lens | inline: none |
+| evidence | [references/evidence.md](references/evidence.md) |
 """
 
 
@@ -156,7 +157,7 @@ class _IsolatedTree(unittest.TestCase):
         (pack_dir / "SKILL.md").write_text(
             PACK_TEMPLATE.format(
                 name=name,
-                assembly="`orch-%s-assembly`" % name if assembly is None else assembly,
+                assembly="none" if assembly is None else assembly,
                 workspace=workspace,
             ),
             encoding="utf-8",
@@ -172,15 +173,13 @@ class _IsolatedTree(unittest.TestCase):
 
 
 class TestAssemblyForm(_IsolatedTree):
-    def test_bare_none_without_a_gloss_is_rejected(self):
+    def test_bare_none_is_accepted(self):
         self._write_pack("noglosspack", assembly="none")
         result = self._run()
-        self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("assembly cell", result.stdout)
-        self.assertIn("packs/noglosspack/SKILL.md", result.stdout)
+        self.assertNotIn("assembly cell", result.stdout)
 
     def test_backticked_none_is_rejected(self):
-        self._write_pack("tickednonepack", assembly="`none` — the tree is the assembly")
+        self._write_pack("tickednonepack", assembly="`none`")
         self.assertIn("assembly cell", self._run().stdout)
 
     def test_free_prose_is_rejected(self):
@@ -196,8 +195,8 @@ class TestAssemblyForm(_IsolatedTree):
         self.assertIn("assembly cell", self._run().stdout)
 
     def test_the_two_legal_forms_are_accepted(self):
-        self._write_pack("glosspack", assembly="none — the tree is the assembly")
-        self._write_pack("skillpack", assembly="`orch-edit`")
+        self._write_pack("glosspack", assembly="none")
+        self._write_pack("skillpack", assembly="stage")
         self.assertNotIn("assembly cell", self._run().stdout)
 
     def test_every_real_pack_row_is_accepted(self):
@@ -219,25 +218,25 @@ class TestAssemblyForm(_IsolatedTree):
 class CurrentWorkspaceBindingTest(unittest.TestCase):
     EXPECTED = {
         "orch-code-pack": (
-            "`orch-tdd`", "`git`",
+            "git",
             ("git:", "repository write authority", "actual diffs", "ordinary Git conflicts"),
         ),
         "orch-content-pack": (
-            "`orch-draft`", "`document-tree`",
+            "document-tree",
             (
                 "document tree:", "identities are document revisions",
                 "one direct owner for a whole artifact", "actual candidate changes",
             ),
         ),
         "orch-design-pack": (
-            "`orch-render`", "`git-plus-render`",
+            "git-plus-render",
             (
                 "git plus render:", "identities are [view identities]", "actual diff",
                 "render conflicts",
             ),
         ),
         "orch-research-pack": (
-            "`orch-investigate`", "`evidence-store`",
+            "evidence-store",
             (
                 "evidence store:", "identities are [evidence packets]",
                 "isolation is a run-scoped directory", "actual lane artifacts",
@@ -257,12 +256,11 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
             for path in sorted((ROOT / "packs").glob("*/SKILL.md"))
         }
         self.assertEqual(set(self.EXPECTED), set(packs))
-        for pack, (executor, adapter, substrate) in self.EXPECTED.items():
+        for pack, (adapter, substrate) in self.EXPECTED.items():
             with self.subTest(pack=pack):
                 cells = packs[pack]
                 workspace = cells["workspace"]
-                self.assertEqual(executor, cells["executor"])
-                self.assertIn("ticket adapter: %s" % adapter, workspace)
+                self.assertEqual(adapter, cells["adapter"])
                 for fragment in substrate:
                     self.assertIn(fragment, workspace)
                 for field in ("root_generation", "cut_generation", "assignment_seal"):
@@ -411,17 +409,13 @@ class TestMandatedEchoExemption(_IsolatedTree):
     tree's own pair with the domain nouns swapped for synthetic ones, so
     the synthetic clauses have the real ones' shape and length."""
 
-    # The assembly form contracts/pack-signature.md mandates: the bare word,
-    # the em-dash, and a gloss naming what stands in. Only the noun phrase
-    # between them is a pack's own, so a synthetic noun phrase of the same
-    # two shapes -- a short one and a long possessive one -- exercises the
-    # exemption exactly as the shipped pair does, and claims nothing about
-    # what any pack currently says. That the shipped cells are admitted is
+    # The assembly form contracts/pack-signature.md mandates a typed stage
+    # name or the bare word ``none``. That the shipped cells are admitted is
     # `TestAssemblyForm.test_every_real_pack_row_is_accepted`, which reads
     # them rather than restating them.
     ASSEMBLY = (
-        "none — the bench is the assembly",
-        "none — the merged batch's finished panels are the assembly",
+        "none",
+        "stage",
     )
     # packs/*/references/craft.md:3 -- the opener naming the cell the file
     # satisfies, which every pointer cell's reference carries.
@@ -431,7 +425,8 @@ class TestMandatedEchoExemption(_IsolatedTree):
     # that resolves without skills/ and is nobody else's verbatim twin: a
     # per-pack gloss, since no backticked skill resolves in this tree.
     def _inert(self, name):
-        return "none — %s stands in" % name
+        del name
+        return "none"
 
     def test_the_craft_opener_and_assembly_form_are_exempt(self):
         for name, domain in (("openerapack", "alpha"), ("openerbpack", "beta")):

@@ -205,15 +205,18 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         self.assertIn("pack body carries control flow", result.stdout)
 
     def test_duplicate_pack_cell_rows_are_rejected(self):
-        rows = "\n".join(
-            f"| {cell} | binding |" for cell in validate.PACK_SIGNATURE_CELLS
+        rows = (
+            "| slicing | inline |\n| workspace | inline |\n"
+            "| required_spec_fields | inline |\n| craft | inline |\n"
+            "| adapter | git |\n| adapter | git |\n| stages | [stage] |\n"
+            "| assembly | none |\n| lens | inline |\n| evidence | inline |"
         )
         self._write_pack(
             "orch-duplicate-pack",
-            "| cell | binding |\n| --- | --- |\n" + rows + "\n| executor | other |\n",
+            "| cell | binding |\n| --- | --- |\n" + rows + "\n",
         )
         result = self._run()
-        self.assertIn("pack signature table repeats cell(s): executor", result.stdout)
+        self.assertIn("pack signature table repeats cell(s): adapter", result.stdout)
 
     def test_a_new_executor_is_not_outside_envelope_admission(self):
         self._write_skill(
@@ -221,7 +224,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         )
         self._write_pack("orch-binding-pack", "| executor | `orch-new-executor` |\n")
         result = self._run()
-        self.assertIn("does not lead with the result envelope", result.stdout)
+        self.assertIn("unknown cell", result.stdout)
 
     def test_envelope_words_in_a_sentence_are_not_an_envelope(self):
         self._write_skill(
@@ -231,7 +234,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         )
         self._write_pack("orch-binding-pack", "| executor | `orch-prose-envelope` |\n")
         result = self._run()
-        self.assertIn("does not lead with structured result-envelope fields", result.stdout)
+        self.assertIn("unknown cell", result.stdout)
 
     def test_one_unrelated_shared_stem_does_not_carry_an_input(self):
         self._write_skill(

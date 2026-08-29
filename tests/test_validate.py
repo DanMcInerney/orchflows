@@ -32,6 +32,7 @@ from tests.test_validate_cases.validator_ownership import (
     CrossTierDuplicationTest,
     FrictionLocationSyncTest,
     TestPackAdmissionIsDomainBlind,
+    TestPackAdmissionRegistryAgainstPacks,
     TestPackWorkspaceTableAgainstPacks,
     TestSyncCheckIsGone,
 )

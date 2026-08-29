@@ -46,14 +46,16 @@ ROLE_VALUES = {"planner", "worker", "none"}
 ROLE_NONE_TIERS = ("engines",)
 PACK_SIGNATURE_CELLS = (
     "slicing",
-    "executor",
-    "assembly",
-    "lens",
-    "evidence",
     "workspace",
     "required_spec_fields",
     "craft",
+    "adapter",
+    "stages",
+    "assembly",
+    "lens",
+    "evidence",
 )
+PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
 # The cells whose content is a whole reference file, so the duplication
 # linter compares what they point at rather than the pointer row. `lens`
 # is not among them: it binds a section of `craft`, not a file of its
@@ -77,8 +79,10 @@ RETURN_RE = re.compile(r"^Return[ :]", re.MULTILINE)
 PACK_TABLE_CELL_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|", re.MULTILINE)
 PACK_CELL_ROW_RE = re.compile(r"^\|\s*([a-zA-Z_]+)\s*\|\s*(.*?)\s*\|\s*$", re.MULTILINE)
 CRAFT_ROW_RE = re.compile(r"^\|\s*craft\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+PACK_ADAPTER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+PACK_STAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 ASSEMBLY_SKILL_FORM_RE = re.compile(r"^`[a-z][a-z0-9-]*`$")
-ASSEMBLY_NONE_FORM_RE = re.compile(r"^none\s+—\s+\S.*$")
+ASSEMBLY_NONE_FORM_RE = re.compile(r"^none$")
 CELL_REFERENCE_LINK_RE = re.compile(r"\]\((references/[^)]+)\)")
 TABLE_DELIM_ROW_RE = re.compile(r"^\|(?:\s*:?-{2,}:?\s*\|)+\s*$")
 LIST_MARKER_RE = re.compile(r"^(?:[-*+]|\d+[.)])\s+")
@@ -237,7 +241,8 @@ __all__ = (
     'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
     'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES', 'ROLE_NONE_TIERS',
-    'PACK_SIGNATURE_CELLS', 'CRAFT_CELLS_BY_POINTER', 'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
+    'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
+    'CRAFT_CELLS_BY_POINTER', 'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
     'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',
