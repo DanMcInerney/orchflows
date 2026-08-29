@@ -16,6 +16,9 @@ NEVER_RE = __dep_common.NEVER_RE
 OUTSIDE_PACK_CITATION = __dep_common.OUTSIDE_PACK_CITATION
 PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
+PACK_TYPED_CELLS = __dep_common.PACK_TYPED_CELLS
+PACK_ADAPTER_RE = __dep_common.PACK_ADAPTER_RE
+PACK_STAGE_RE = __dep_common.PACK_STAGE_RE
 PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
@@ -254,6 +257,9 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     rows = PACK_TABLE_CELL_RE.findall(body)
     found = set(rows)
+    unknown = sorted(found - set(PACK_SIGNATURE_CELLS) - {"cell"})
+    if unknown:
+        diag.error(file_label, f"pack signature table has unknown cell(s): {', '.join(unknown)}")
     missing = [cell for cell in PACK_SIGNATURE_CELLS if cell not in found]
     if missing:
         diag.error(file_label, f"pack signature table missing cell(s): {', '.join(missing)}")
@@ -264,20 +270,41 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
     if row and "(references/craft.md)" not in row.group(1):
         diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")
     cells = dict(PACK_CELL_ROW_RE.findall(body))
-    if "assembly" in cells and not assembly_form_ok(cells["assembly"]):
+    if "adapter" in cells and not PACK_ADAPTER_RE.match(cells["adapter"].strip().strip("`")):
         diag.error(
             file_label,
-            "assembly cell must be a backticked skill name or the bare word "
-            f"'none' plus an em-dash gloss, got: {cells['assembly']!r}",
+            f"adapter cell must be one registered mechanism key, got: {cells['adapter']!r}",
         )
+    stages = []
+    if "stages" in cells:
+        raw_stages = cells["stages"].strip()
+        if not (raw_stages.startswith("[") and raw_stages.endswith("]")):
+            diag.error(file_label, f"stages cell must be a bracketed list, got: {raw_stages!r}")
+        else:
+            stages = [part.strip().strip("`") for part in raw_stages[1:-1].split(",") if part.strip()]
+            if any(not PACK_STAGE_RE.fullmatch(stage) for stage in stages):
+                diag.error(file_label, f"stages cell has an invalid stage, got: {raw_stages!r}")
+            if len(stages) != len(set(stages)):
+                diag.error(file_label, "stages cell repeats a stage")
+    if "assembly" in cells:
+        raw_assembly = cells["assembly"].strip()
+        assembly = raw_assembly.strip("`")
+        if raw_assembly != assembly or (
+            assembly != "none" and (
+                not PACK_STAGE_RE.fullmatch(assembly)
+                or (stages and assembly not in stages)
+            )
+        ):
+            diag.error(file_label, f"assembly cell must be none or a declared stage, got: {cells['assembly']!r}")
 
 
-def assembly_form_ok(binding: str) -> bool:
-    """contracts/pack-signature.md admits exactly two `assembly` forms.
-    `none` is bare: backticking it would read as a skill name, and no
-    skill is called none."""
-    binding = binding.strip()
-    return bool(ASSEMBLY_SKILL_FORM_RE.match(binding) or ASSEMBLY_NONE_FORM_RE.match(binding))
+def assembly_form_ok(binding: str, stages=None) -> bool:
+    """Return whether one typed assembly value is closed and stage-backed."""
+    raw = binding.strip()
+    value = raw.strip("`")
+    if value == "none":
+        return raw == "none"
+    return raw == value and bool(PACK_STAGE_RE.fullmatch(value)) and (not stages or value in stages)
 
 
 def cell_clauses(text: str) -> list:

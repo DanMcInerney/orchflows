@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2032,
+  "count": 2041,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -493,6 +493,15 @@
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
+   "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
+   "test_packs.PackResolutionTests.test_cells_projects_exact_consumer_leaves",
+   "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
+   "test_packs.PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
+   "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
+   "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
+   "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
+   "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
+   "test_packs.PackShapeRefusalTests.test_unknown_digest_and_consumer_are_closed_refusals",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
    "test_project_binding.TestAttribution.test_a_root_ticket_naming_no_workspace_leaves_the_writer_owning_it",
    "test_project_binding.TestAttribution.test_run_creation_stamps_the_issuing_project",
@@ -882,7 +891,7 @@
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_every_allowlisted_clause_is_in_the_form_the_matcher_compares",
    "tests.test_cell_linter_cases.pack_cells.TestAllowlist.test_the_real_tree_carries_no_unallowed_verbatim_duplication",
    "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_backticked_none_is_rejected",
-   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_bare_none_without_a_gloss_is_rejected",
+   "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_bare_none_is_accepted",
    "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_empty_cell_is_rejected",
    "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_every_real_pack_row_is_accepted",
    "tests.test_cell_linter_cases.pack_cells.TestAssemblyForm.test_free_prose_is_rejected",
@@ -2035,7 +2044,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b70d0ecb1e5d1d6298fee754a9023cd7ea5b535a0c72b804ec58a271a1d9d00a"
+  "sha256": "0ec45e2b2175391f9b34087355f82293c6c5259d8d4a6c7c9b820468d4cb2860"
  },
  "mutation_owners": [
   {
@@ -3493,6 +3502,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_packs",
+   "owner": "PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

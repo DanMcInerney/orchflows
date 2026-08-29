@@ -123,6 +123,24 @@ class TestPackAdmissionIsDomainBlind(unittest.TestCase):
             self.assertNotIn("PACK_EXECUTOR_BINDINGS", source.read_text(encoding="utf-8"))
 
 
+class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):
+    def cells(self, skill_md: Path):
+        found = {}
+        for line in skill_md.read_text(encoding="utf-8").splitlines():
+            match = re.match(r"^\|\s*([a-z_]+)\s*\|\s*(.*?)\s*\|$", line)
+            if match:
+                found[match.group(1)] = match.group(2)
+        return found
+
+    def test_flat_signature_declares_only_registered_adapter_keys(self):
+        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
+        for pack in sorted(packs):
+            cells = self.cells(PACKS / pack / "SKILL.md")
+            self.assertNotIn("executor", cells, pack)
+            self.assertNotIn("skill", cells, pack)
+            self.assertIn(cells.get("adapter"), tickets_mod.ADAPTER_REGISTRY, pack)
+
+
 CROSS_TIER = "cross-tier near-duplicate"
 
 # One sentence long enough to be content by CELL_CLAUSE_MIN_WORDS, written
