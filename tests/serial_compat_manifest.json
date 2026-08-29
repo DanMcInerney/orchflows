@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2042,
+  "count": 2053,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -744,6 +744,17 @@
    "test_tickets_bound.ParkPredicateTest.test_a_claim_with_no_readable_start_has_no_deadline_to_have_passed",
    "test_tickets_bound.ParkPredicateTest.test_motion_after_the_bound_elapsed_is_over_bound_and_not_parked",
    "test_tickets_bound.ParkPredicateTest.test_the_facade_exports_the_predicate_the_engine_rule_names",
+   "test_tickets_grade.FixedGateCommandTest.test_grade_command_reads_one_exact_run_snapshot",
+   "test_tickets_grade.FixedGateCommandTest.test_unchanged_fixed_result_does_not_emit_checker_and_changed_one_does",
+   "test_tickets_grade.GradeSnapshotTest.test_direct_and_loop_shapes_have_one_result_width",
+   "test_tickets_grade.GradeSnapshotTest.test_fixed_gate_invalidates_when_a_dependency_assignment_changes",
+   "test_tickets_grade.GradeSnapshotTest.test_fixed_gate_reuses_only_when_all_covers_match",
+   "test_tickets_grade.GradeSnapshotTest.test_graph_grade_counts_executor_members_and_reports_pack_fields",
+   "test_tickets_grade.GradeSnapshotTest.test_one_member_decomposition_is_refused",
+   "test_tickets_grade.GradeSnapshotTest.test_prose_covers_can_use_workspace_baseline_and_result_tip",
+   "test_tickets_grade.GradeSnapshotTest.test_prose_verification_covers_are_read_as_fixed_result_evidence",
+   "test_tickets_grade.GradeSnapshotTest.test_review_verification_accepts_optional_closed_covers",
+   "test_tickets_grade.GradeSnapshotTest.test_review_verification_rejects_empty_closed_covers",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
    "test_trace.TestClaudeAdapter.test_malformed_fixture_yields_partial_trace",
@@ -2045,7 +2056,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "662e4d6a3039e16ac588e94d39c302784aedfcc74809ad0a4e5cab95f3c78984"
+  "sha256": "0bd13258babfae2faec2cb4ec48b1163ff69b8b4637c643d95dcdce579f11f8c"
  },
  "mutation_owners": [
   {
@@ -4316,6 +4327,15 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_grade",
+   "owner": "FixedGateCommandTest.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {

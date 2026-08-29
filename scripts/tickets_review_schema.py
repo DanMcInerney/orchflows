@@ -132,6 +132,11 @@ def _shape(record: dict, index: int, plan: dict | None, *, legacy: bool) -> None
         {"accepted", "artifact", "by", "input_artifact", "no_op", "result"}
         if kind == "RepairOutcome" else {"artifact", "by", "evidence", "verdict"}
     )
+    # ``covers`` is optional for legacy review ledgers.  New fixed-result
+    # ledgers may carry the closed identities from contracts/verdict.md;
+    # retaining the old shape keeps already-issued gate records replayable.
+    if kind == "Verification" and "covers" in record:
+        fields = fields | {"covers"}
     if set(record) != common | fields:
         raise SchemaError(f"review record {index} {kind} has unknown or missing fields")
     if kind == "RepairOutcome":
@@ -144,6 +149,18 @@ def _shape(record: dict, index: int, plan: dict | None, *, legacy: bool) -> None
         not nonempty(record[key]) for key in ("artifact", "by", "evidence")
     ):
         raise SchemaError("Verification has an invalid field type")
+    elif "covers" in record:
+        covers = record["covers"]
+        def valid_cover(value):
+            if isinstance(value, str):
+                return nonempty(value)
+            if isinstance(value, list):
+                return all(valid_cover(item) for item in value)
+            if isinstance(value, dict):
+                return all(nonempty(key) and valid_cover(item) for key, item in value.items())
+            return False
+        if not isinstance(covers, (dict, list)) or not covers or not valid_cover(covers):
+            raise SchemaError("Verification covers contains an empty identity")
 
 
 def validate_records(value, *, allow_legacy: bool = False) -> list:

@@ -40,6 +40,7 @@ if __package__:
     from . import tickets_attempts as _tickets_attempts_module
     from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
     from . import tickets_join as _tickets_join_module
+    from . import tickets_grade as _tickets_grade_module
 else:
     # By name, as `tickets_generations` is reached: the family's
     # module-level import census is pinned, and this module joined after it.
@@ -60,6 +61,7 @@ else:
     import tickets_attempts as _tickets_attempts_module
     import tickets_dispatch_packet as _tickets_dispatch_packet_module
     import tickets_join as _tickets_join_module
+    _tickets_grade_module = __import__('tickets_grade')
 
 BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
 OTHER_BOUND_KIND = _tickets_bound_module.OTHER_BOUND_KIND
@@ -274,6 +276,7 @@ _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
 template_defects = _tickets_worklog_module.template_defects
 GATE_USAGE = _tickets_commands_module.GATE_USAGE
+GRADE_USAGE = _tickets_commands_module.GRADE_USAGE
 DISPATCH_USAGE = _tickets_commands_module.DISPATCH_USAGE
 HELP_COMMANDS = _tickets_commands_module.HELP_COMMANDS
 HELP_FLAGS = _tickets_commands_module.HELP_FLAGS
@@ -288,6 +291,8 @@ apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
 _cmd_gate = _tickets_dispatch_module._cmd_gate
+_cmd_fixed_gate = _tickets_grade_module._cmd_fixed_gate
+_cmd_grade = _tickets_dispatch_module._cmd_grade
 _cmd_dispatch = _tickets_dispatch_module._cmd_dispatch
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement

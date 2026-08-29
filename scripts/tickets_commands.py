@@ -46,6 +46,7 @@ DISPATCH_USAGE = (
     "[--form reference | inline]"
 )
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
+GRADE_USAGE = "grade <run> <root>"
 CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
 STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
@@ -53,6 +54,7 @@ SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
     "instantiate": INSTANTIATE_USAGE,
     "gate": GATE_USAGE,
+    "grade": GRADE_USAGE,
     "checker-stage": CHECKER_STAGE_USAGE,
     "stamp-generation": STAMP_GENERATION_USAGE,
     "list": "list [--run R]",
@@ -82,6 +84,7 @@ SUBCOMMAND_SUMMARY = {
     "new": "Create one Goal/Context ticket; Suggested files are optional and non-binding.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
     "gate": "Create a composite gate, or materialize repair and fresh verification after an ordinary checker accepts blockers.",
+    "grade": "Report deterministic width, shape, pack coverage, adapter capability, and decomposition state.",
     "checker-stage": "Create or replay one explicit ordinary read-only checker stage.",
     "stamp-generation": "Stamp one unclaimed direct or decomposed root and its members.",
     "list": "List tickets.",
