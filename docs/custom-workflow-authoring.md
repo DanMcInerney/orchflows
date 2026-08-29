@@ -52,7 +52,10 @@ scope, or at a broader custom scope than requested.
    the selected record's installed-item template, legal frontmatter, launch
    verb and native fields, role profile, and capability classification. The
    rendered adapter is the install input; custom prose never restates those
-   bindings. Cross-host dispatch invariants remain in
+   bindings. For example, a role-bearing Claude skill may use the host-legal
+   `context: fork` plus its matching `agent`, but never copies the item's
+   orchflows-only `role`. At every call site, resolve the declared role from
+   the selected rendered adapter. Cross-host dispatch invariants remain in
    [role profiles](../skills/engines/orch-frontier/references/profiles.md).
 6. Run the target repository's required checks. In this library that means
    tools/validate.py, affected tests, template instantiation when applicable,
