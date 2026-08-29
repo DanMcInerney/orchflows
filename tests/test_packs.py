@@ -41,6 +41,39 @@ class PackResolutionTests(unittest.TestCase):
         self.assertEqual("scripts.packs", packs.resolve_pack.__module__)
         self.assertEqual("packs_support", packs._support.resolve_pack.__module__.split(".")[-1])
 
+    def test_public_facade_does_not_reexport_private_support_names(self):
+        private_support_names = {
+            "_canonical_json",
+            "_sha256",
+            "_canonicalize_bytes",
+            "_read_bytes",
+            "_pack_name",
+            "_PACK_NAME_RE",
+            "_ADAPTER_RE",
+            "_STAGE_RE",
+            "_CELL_ROW_RE",
+            "_LINK_RE",
+            "_FRONTMATTER_NAME_RE",
+            "_SHA_RE",
+            "_CELL_SET",
+            "_root_is_packs",
+            "_canonical_default",
+            "_project_default",
+            "_scope_root",
+            "_roots",
+            "_candidate_path",
+            "_frontmatter_name",
+            "_parse_rows",
+            "_atom",
+            "_typed_cells",
+            "_reference_paths",
+            "_read_references",
+            "_signature_digest",
+            "_resolved",
+            "_available_names",
+        }
+        self.assertTrue(private_support_names.isdisjoint(vars(packs)))
+
     def test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings(self):
         result = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
 

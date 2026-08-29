@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1600,
+  "count": 1605,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -93,6 +93,9 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_accepted_receipt_is_a_durable_replayable_attempt_record",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_historical_reply_to_replays_before_current_validation",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_dispatch_receipt_inspection_distinguishes_missing_attempt_and_receipt",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_dispatch_receipt_inspection_projects_only_the_persisted_receipt",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_dispatch_receipt_inspection_refuses_inaccessible_and_malformed_state",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_file_and_standard_input_carry_the_packet_without_shell_reconstruction",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
@@ -498,6 +501,8 @@
    "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
    "test_packs.PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
    "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
+   "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
+   "test_packs.PackResolutionTests.test_public_facade_uses_same_family_resolver_owner",
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
    "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
@@ -1603,7 +1608,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "103df541555dd7f090cf414df53712abbbbee295ea893315363d551f0b564fed"
+  "sha256": "a3651ae811c6717e4e72d87801c6e9193a5332b4f5030614908c09f2f86c4e0e"
  },
  "mutation_owners": [
   {
@@ -1695,6 +1700,14 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_dispatch_receipt_inspection_refuses_inaccessible_and_malformed_state",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
