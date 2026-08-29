@@ -43,11 +43,24 @@ def _load(path: Path = SOURCE) -> dict:
             not isinstance(field, str) or not field for field in fields
         ) or len(fields) != len(set(fields)):
             raise ValueError(f"{path}: shape {name} has invalid or repeated fields")
-        if not isinstance(required, list) or not set(required) <= set(fields):
+        if (
+            not isinstance(required, list)
+            or len(required) != len(set(required))
+            or not set(required) <= set(fields)
+        ):
             raise ValueError(f"{path}: shape {name} has invalid required fields")
         values = item.get("values", {})
         if not isinstance(values, dict) or not set(values) <= set(fields):
             raise ValueError(f"{path}: shape {name} has invalid value declarations")
+        for field, allowed in values.items():
+            if (
+                not isinstance(allowed, list)
+                or len(allowed) != len(set(allowed))
+                or any(not isinstance(value, str) or not value for value in allowed)
+            ):
+                raise ValueError(
+                    f"{path}: shape {name} has invalid values for {field}"
+                )
     constants = value.get("constants", {})
     if not isinstance(constants, dict) or any(
         not isinstance(key, str) or not key or not isinstance(item, str) or not item
@@ -131,7 +144,7 @@ def render_validator(source: Path = SOURCE) -> str:
         "    return frozenset(SHAPES[name]['required'])",
         "",
     ])
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 
 
 def render_contract(contract: str, source: Path = SOURCE) -> str:

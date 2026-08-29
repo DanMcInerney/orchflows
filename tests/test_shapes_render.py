@@ -53,6 +53,15 @@ class ShapeRenderTest(unittest.TestCase):
             self.assertFalse(render_shapes.validator_is_current(validator, source))
             self.assertFalse(render_shapes.contract_is_current(contract, source))
 
+    def test_invalid_value_declaration_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "shapes.json"
+            data = json.loads(render_shapes.SOURCE.read_text(encoding="utf-8"))
+            data["shapes"][0]["values"]["protocol"] = "orchflows.dispatch.v1"
+            source.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                render_shapes.declarations(source)
+
     def test_contract_render_is_closed_over_declaration(self):
         for name in render_shapes.declarations():
             declaration = render_shapes.declaration(name)

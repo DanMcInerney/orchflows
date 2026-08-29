@@ -412,3 +412,4 @@ def fields(name: str) -> tuple:
 def required(name: str) -> frozenset:
     """Return the required fields for one shape."""
     return frozenset(SHAPES[name]['required'])
+
