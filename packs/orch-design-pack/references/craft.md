@@ -45,3 +45,15 @@ Framework specifics live with the workspace's standards owner.
   without color, and keyboard reach matches pointer reach.
 - Consistency: one decision resolves one way on every view;
   cross-view drift is the finding class only this lens sees.
+
+## Execute stages
+
+- Enumerate view identities before editing: view, breakpoint and state
+  are a closed capture set, including empty, loading, error and focus.
+- Implement one renderable identity at a time and capture it at the exact
+  viewport; a visual claim without a capture is unverified.
+- Compare captures against tokens, scales and approved golden identities;
+  record layout, type, contrast and interaction-state deltas.
+- Regenerate only derived captures after a coherent change and keep their
+  command, revision and dimensions with the evidence.
+- Close with the capture inventory, measured checks, and remaining visual questions.

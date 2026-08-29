@@ -10,7 +10,7 @@ profile: orch-planner
 
 ## Goal
 
-An `orch-critique` report over the fixed package and qualification evidence
+An independent blocker report over the fixed package and qualification evidence
 under the audit lens.
 
 ## Context
@@ -24,7 +24,7 @@ under the audit lens.
 
 Exceptional constraints:
 
-- Apply the evaluator contract in `skills/kernel/orch-critique/SKILL.md`.
+- Apply the pack's check craft and report every evidence-backed blocker.
 
 ## Result
 

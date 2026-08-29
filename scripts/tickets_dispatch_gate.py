@@ -3,7 +3,7 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
     from .tickets_generations import assignment_digest, seal_findings
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
@@ -14,7 +14,7 @@ if __package__:
     from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
     from tickets_generations import assignment_digest, seal_findings
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
@@ -79,6 +79,7 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
         "depends_on": list(depends_on),
         "isolation": metadata.get("isolation"), "bound": NEW_DEFAULT_BOUND,
         "review_order": metadata.get("review_order"),
+        "review_kind": metadata.get("review_kind"),
         "claimed_by": "", "claimed_at": "",
         "root_generation": metadata.get("root_generation"),
     }
@@ -146,7 +147,8 @@ def _checker_stage_under_run_lock(rest):
         if (
             "error" not in loaded
             and list(loaded.get("depends_on") or []) == [target_id]
-            and _executor_of(loaded) == GATE_EXECUTORS["critique"]
+            and _executor_of(loaded) == "orch-check"
+            and str(loaded.get("review_kind") or "") == "critique"
             and str(loaded.get("root_generation") or "") == root_generation
             and not seal_findings(stage_id, stage_text)
         ):
@@ -154,10 +156,10 @@ def _checker_stage_under_run_lock(rest):
         return {"error": f"checker stage already exists with different content: {stage_id}"}
     sections = _gate_sections("critique", target_id, "checker", units=[target_id])
     text = _gate_stub(
-        run, stage_id, GATE_EXECUTORS["critique"], [target_id],
+        run, stage_id, "orch-check", [target_id],
         sections=sections, root_generation=root_generation,
         pack=target.get("pack"), isolation="none", review_order=0,
-        independence="gate",
+        independence="gate", review_kind="critique",
     )
     cut_generation = str(target.get("cut_generation") or "")
     if not cut_generation:
@@ -320,23 +322,23 @@ def _gate_under_run_lock(rest, _head_probe=None):
         critique_ids.append(critique_id)
         sections = _gate_sections("critique", root_id, lens, units=units)
         rendered.append((critique_id, _gate_stub(
-            run, critique_id, GATE_EXECUTORS["critique"], units,
+            run, critique_id, "orch-check", units,
             sections=sections, root_generation=root_generation, pack=gate_pack,
-            isolation="none", review_order=review_order,
+            isolation="none", review_order=review_order, review_kind="critique",
         )))
     repaired_by = GATE_REPAIR_ID.format(root=root_id)
     sections = _gate_sections("repair", root_id, units=critique_ids)
     rendered.append((repaired_by, _gate_stub(
-        run, repaired_by, GATE_EXECUTORS["repair"], critique_ids,
+        run, repaired_by, "orch-execute", critique_ids,
         sections=sections, root_generation=root_generation, pack=gate_pack,
-        isolation="none",
+        isolation="none", review_kind="repair",
     )))
     verify_id = GATE_VERIFY_ID.format(root=root_id)
     sections = _gate_sections("verify", root_id, units=units, repaired_by=repaired_by)
     rendered.append((verify_id, _gate_stub(
-        run, verify_id, GATE_EXECUTORS["verify"], [repaired_by],
+        run, verify_id, "orch-check", [repaired_by],
         sections=sections, root_generation=root_generation, pack=gate_pack,
-        isolation="none",
+        isolation="none", review_kind="verify",
     )))
     for ticket_id, text in rendered:
         defects = ticket_defects(text)

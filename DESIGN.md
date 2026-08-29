@@ -228,11 +228,11 @@ workspace's standards owner, as genre stays out of content craft.
 Choices on the record: the renderable unit is a **view**, not a
 "surface", because the latter overloaded generic scope language.
 "Standards owner" moved from code craft to the library vocabulary when
-this pack became its second consumer — one owner per fact. A new unit
-executor, `orch-render`, was admitted with the pack because the unit
+this pack became its second consumer — one owner per fact. A design render
+stage was admitted with the pack because the unit
 loop differs, not merely the artifact: red-green requires a check that
 can fail before code exists, while a visual check cannot exist before
-the view renders — `orch-tdd`'s discipline inverted, and one owner per
+the view renders — the code red-green discipline is inverted, and one owner per
 judgment forbids stretching it. The authoring order this admission
 followed is [docs/pack-authoring.md](docs/pack-authoring.md).
 
@@ -293,7 +293,7 @@ forever while a parser can decay gracefully — `schema_confidence` and
   pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
   splitting a named executor into a generic shell plus a method file —
-  a cut proposed once and ruled fatal. Red-green stays inside `orch-tdd`
+  a cut proposed once and ruled fatal. Red-green stays inside the code pack
   because proving a check can fail is cheap exactly where oracles are
   executable; its universal core — an oracle must be able to fail —
   moved to [rules/verification.md](rules/verification.md) §8, where
@@ -304,9 +304,9 @@ forever while a parser can decay gracefully — `schema_confidence` and
   code, which is `deterministic` — a class is a property of how a
   verdict is produced, not of what it is about. No new workspace
   semantics either, and the reason is stronger than "one consumer":
-  the library already defines visibility constraints in four places — `orch-verify`'s
-  blind scoring, `orch-eval-design`'s candidate-blindness, research lanes,
-  and `orch-fixture`'s withheld anchors — in their skill or composition
+  the library already defines visibility constraints in four places — typed check
+  verdicts, candidate-blind evaluation, research lanes, and canary withheld
+  anchors — in their pack or composition
   contracts, never in a `workspace` cell. Protected evidence policy names
   the held-back files. The
   paired executor was refused with it: its claimed ground — that an

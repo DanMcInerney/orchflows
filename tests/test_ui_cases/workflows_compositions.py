@@ -60,7 +60,13 @@ class WorkflowCompositionTests(unittest.TestCase):
         self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])
         self.assertEqual("evolve", detail["id"])
         self.assertEqual("composition", detail["type"])
-        self.assertEqual([], detail["diagnostics"])
+        self.assertEqual(
+            {
+                ("unresolved-reference", "skill:orch-eval-design"),
+                ("unresolved-reference", "skill:orch-verify"),
+            },
+            {(item["code"], item["subject_id"]) for item in detail["diagnostics"]},
+        )
 
         node_ids = {node["id"] for node in detail["nodes"]}
         self.assertEqual(

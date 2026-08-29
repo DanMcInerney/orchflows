@@ -35,9 +35,12 @@ connect this law to each authorized dispatch event and predecessor record.
 6. Every join applies the [result contract](../contracts/result.md).
 7. Fan out only independent breadth-first work; dependent work runs
    through `orch-frontier` or sequentially.
-8. Dispatch names carry behavioral weight: bind executors by their exact
-   skill names; never split a named executor into a generic shell plus a
-   method file.
+8. Dispatch names carry behavioral weight through the closed callable
+   registry: `orch-execute` resolves the stamped pack's execute cells and
+   `orch-check` resolves its check cells, while the remaining five verbs own
+   their routing mechanics. A pack stage is data, not another callable name;
+   no dispatch may revive a superseded skill binding, split a verb into a
+   generic shell plus method file, or maintain a second parser.
 9. The caller retires a child the moment its result crosses `dispatch-join`
    (rule 5) — accepted, rejected, needs-verify, or suspended — or the
    dispatch is abandoned; retirement is the dispatching caller's own

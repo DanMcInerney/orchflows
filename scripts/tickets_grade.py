@@ -14,13 +14,13 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import GATE_EXECUTORS, GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR
+    from .tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR
     from .tickets_markdown import _parse_frontmatter, _sections
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import GATE_EXECUTORS, GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR
+    from tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR
     from tickets_markdown import _parse_frontmatter, _sections
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -64,8 +64,6 @@ def _member_ids(root_id: str, snapshot: dict) -> list[str]:
         if GATE_ID_MARKER in ticket_id or ticket_id.endswith(".check"):
             continue
         executor = _executor(snapshot[ticket_id])
-        if executor in set(GATE_EXECUTORS.values()):
-            continue
         members.append(ticket_id)
     return members
 

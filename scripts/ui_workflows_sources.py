@@ -50,9 +50,7 @@ def _workflow_type(root: Path, workflow_id: object) -> str | None:
         root, root / "compositions" / workflow_id / "template.md"
     ):
         return "composition"
-    if identity.contained_file(
-        root, root / "skills" / "workflows" / workflow_id / "SKILL.md"
-    ):
+    if skills.workflow_skill_path(root, workflow_id) is not None:
         return "workflow-skill"
     return None
 
@@ -77,7 +75,10 @@ def _composition_paths(root: Path, workflow_id: str) -> set[str]:
 def _workflow_skill_paths(root: Path, workflow_id: str) -> set[str]:
     detail = skills.project_workflow_skill(root, workflow_id)
     installed_skills, _ = skills.skill_index(root)
-    installed = {f"lib/skills/workflows/{workflow_id}/SKILL.md"}
+    skill_path = skills.workflow_skill_path(root, workflow_id)
+    if skill_path is None:
+        raise WorkflowSourceError("workflow skill source inventory is unreadable")
+    installed = {"lib/" + skill_path.relative_to(root).as_posix()}
     for node in detail["nodes"]:
         if "source_id" not in node or node["kind"] == "workflow":
             continue

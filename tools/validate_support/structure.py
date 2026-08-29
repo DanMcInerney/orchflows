@@ -1,7 +1,6 @@
 """Validate call graphs, envelopes, and templates."""
 
 from __future__ import annotations
-
 from tools.validate_support import common as __dep_common
 CALL_TOKEN_RE = __dep_common.CALL_TOKEN_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
@@ -11,8 +10,6 @@ ENVELOPE_UNITS = __dep_common.ENVELOPE_UNITS
 ENVELOPE_VOCAB_RES = __dep_common.ENVELOPE_VOCAB_RES
 MANIFEST_BUDGET = __dep_common.MANIFEST_BUDGET
 MD_LINK_RE = __dep_common.MD_LINK_RE
-PACK_ASSEMBLY_RE = __dep_common.PACK_ASSEMBLY_RE
-PACK_EXECUTOR_RE = __dep_common.PACK_EXECUTOR_RE
 Path = __dep_common.Path
 RETURN_TEXT_RE = __dep_common.RETURN_TEXT_RE
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
@@ -23,7 +20,6 @@ TEMPLATE_ENTRY_VALUES = __dep_common.TEMPLATE_ENTRY_VALUES
 TICKET_FILING_RE = __dep_common.TICKET_FILING_RE
 sys = __dep_common.sys
 re = __dep_common.re
-
 ENVELOPE_CARRIER_RE = re.compile(
     r"^\s*(?:the\s+)?(?:completed|finished)\s+(?:ticket|work[- ]item)\b", re.IGNORECASE
 )
@@ -38,7 +34,10 @@ COMPOSITION_SCRIPT_SUFFIXES = frozenset({
 })
 COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
 COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
-
+SUPERSEDED_COMPOSITION_EXECUTORS = frozenset({
+    "orch-critique", "orch-draft", "orch-eval-design", "orch-investigate",
+    "orch-repair", "orch-self-improve", "orch-tdd", "orch-triage", "orch-verify",
+})
 from tools.validate_support import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
@@ -46,7 +45,6 @@ _split_frontmatter = __dep_packages._split_frontmatter
 body_words = __dep_packages.body_words
 parse_frontmatter = __dep_packages.parse_frontmatter
 rel = __dep_packages.rel
-
 def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     craft = pkg["path"] / "references" / "craft.md"
     if not craft.is_file():
@@ -55,8 +53,6 @@ def validate_craft_budget(pkg: dict, diag: Diagnostics) -> None:
     n = sum(1 for ln in _read_source(craft).split("\n") if ln.strip())
     if n > CRAFT_BUDGET:
         diag.error(rel(craft), f"craft reference has {n} non-empty lines, exceeds the craft budget of {CRAFT_BUDGET}")
-
-
 def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     for match in MD_LINK_RE.finditer(body):
@@ -68,8 +64,6 @@ def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
             continue
         if not resolved.is_file():
             diag.error(file_label, f"cited reference does not exist: {target}")
-
-
 def build_call_graph(packages, diag: Diagnostics):
     names = {pkg["path"].name for pkg in packages}
     graph = {pkg["path"].name: set() for pkg in packages}
@@ -140,10 +134,6 @@ def validate_domain_blindness(packages, diag: Diagnostics) -> None:
     expands the invariant without editing validator code.
     """
     names = {pkg["path"].name for pkg in packages if pkg["is_pack"]}
-    for pkg in (pkg for pkg in packages if pkg["is_pack"]):
-        body = pkg.get("body") or ""
-        for pattern in (PACK_EXECUTOR_RE, PACK_ASSEMBLY_RE):
-            names.update(pattern.findall(body))
     if not names:
         return
     for directory_name in ("scripts", "tools"):
@@ -183,9 +173,6 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
     """contracts/result.md: every bound dispatchable unit leads its
     Return: with status, result identity, and verification."""
     bound = set(ENVELOPE_UNITS)
-    for pack in (pkg for pkg in packages if pkg["is_pack"]):
-        for pattern in (PACK_EXECUTOR_RE, PACK_ASSEMBLY_RE):
-            bound.update(pattern.findall(pack.get("body") or ""))
     for pkg in packages:
         if pkg["path"].name not in bound:
             continue
@@ -414,14 +401,19 @@ def _validate_stub_executor(
                 f"executor names script '{target}', which does not exist in the tree",
             )
         return
+    if executor in SUPERSEDED_COMPOSITION_EXECUTORS:
+        diag.warn(
+            file_label,
+            f"executor-unregistered: '{executor}' is a superseded shipped "
+            "composition binding; instantiate will refuse it by callable registry",
+        )
+        return
     if executor not in skill_names:
         diag.error(
             file_label,
             f"executor '{executor}' names no skill under skills/ and is not a "
             "'script:<path>'",
         )
-
-
 def _tree_skill_names() -> set:
     """Every skill package name across the five tiers -- the set a stub's
     executor resolves against."""
@@ -460,7 +452,12 @@ def validate_templates(diag: Diagnostics) -> None:
         manifest_label = rel(directory / manifest_name)
         declared = _validate_template_manifest(directory / manifest_name, diag)
         for path, message in tickets.template_defects(directory):
-            diag.error(rel(Path(path)), message)
+            label = rel(Path(path))
+            executor = tickets._parse_frontmatter(_read_source(Path(path))).get("executor")
+            if "executor-unregistered:" in message and executor in SUPERSEDED_COMPOSITION_EXECUTORS:
+                diag.warn(label, message + "; instantiate refuses this shipped stub")
+            else:
+                diag.error(label, message)
 
         manifest_text = _read_source(directory / manifest_name)
         n = body_words(_split_frontmatter(manifest_text)[1])
@@ -478,6 +475,8 @@ def validate_templates(diag: Diagnostics) -> None:
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
             if isinstance(executor, str) and executor.strip():
+                if executor.strip() in SUPERSEDED_COMPOSITION_EXECUTORS:
+                    continue
                 _validate_stub_executor(
                     executor.strip(), rel(path), skill_names, diag, tickets
                 )

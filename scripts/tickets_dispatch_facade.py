@@ -82,6 +82,7 @@ def _cmd_dispatch(rest):
     workspace = _extract_flag(args, "--workspace")
     artifact = _extract_flag(args, "--artifact")
     form = (_extract_flag(args, "--form") or "reference").strip()
+    review_kind = _extract_flag(args, "--review-kind")
     if len(args) != 2 or not all((owner, dispatch_id, lease, reply_to)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
     if form not in ("reference", "inline"):
@@ -117,6 +118,8 @@ def _cmd_dispatch(rest):
             run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
             "--workspace", workspace_path, "--form", form,
         ]
+        if review_kind is not None:
+            packet_args.extend(("--review-kind", review_kind))
         if artifact is not None:
             packet_args.extend(("--artifact", artifact))
         try:

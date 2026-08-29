@@ -103,7 +103,9 @@ class BrowserGameCompositionTests(unittest.TestCase):
                     os.environ.pop(tickets.state_root.ENV_VAR, None)
                 else:
                     os.environ[tickets.state_root.ENV_VAR] = previous
-        self.assertNotIn("error", result, result)
+        self.assertIn("error", result, result)
+        self.assertIn("executor-unregistered", result["error"])
+        self.assertIn("orch-draft", result["error"])
 
     def test_installer_adapter_exposes_exact_required_settings_without_legacy(self):
         path, text, _ = self._template()

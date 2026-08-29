@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
+    from .tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
 else:
-    from tickets_format import CHECKED_BY_KEY, GATE_EXECUTORS, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
+    from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
 else:
@@ -243,7 +243,8 @@ def _check_under_run_lock(rest):
         return failure
     stage = _parse_frontmatter(stage_text)
     if (str(stage.get('status') or '') != 'complete'
-            or _executor_of(stage) != GATE_EXECUTORS['critique']
+            or _executor_of(stage) != 'orch-check'
+            or str(stage.get('review_kind') or '') != 'critique'
             or list(stage.get('depends_on') or []) != [ticket_id]):
         return {'error': f'checker stage is not a completed review of {ticket_id}: {stage_id}'}
     dispatch_state, dispatch_failure = _dispatch_state(stage)
@@ -325,8 +326,8 @@ def _join_noop_repair_under_run_lock(rest):
     data = _parse_frontmatter(text)
     if str(data.get('status') or '') != 'ready':
         return {'error': f'join-noop-repair requires a ready ticket: {run}/{ticket_id}'}
-    if _executor_of(data) != GATE_EXECUTORS['repair']:
-        return {'error': f'join-noop-repair requires executor {GATE_EXECUTORS["repair"]}'}
+    if _executor_of(data) != 'orch-execute' or str(data.get('review_kind') or '') != 'repair':
+        return {'error': 'join-noop-repair requires review_kind repair on an orch-execute ticket'}
     dependencies = [str(value) for value in (data.get('depends_on') or [])]
     if not dependencies:
         return {'error': 'join-noop-repair requires completed critique dependencies'}
@@ -334,7 +335,8 @@ def _join_noop_repair_under_run_lock(rest):
     for dependency in dependencies:
         loaded = _load_ticket(ticket_path.with_name(f'{dependency}.md'))
         if ('error' in loaded or not dependency.startswith(critique_prefix)
-                or _executor_of(loaded) != GATE_EXECUTORS['critique']
+                or _executor_of(loaded) != 'orch-check'
+                or str(loaded.get('review_kind') or '') != 'critique'
                 or str(loaded.get('status') or '') != 'complete'):
             return {'error': f'join-noop-repair dependency is not a completed gate critique: {dependency}'}
     if _section_body(text, 'Result'):

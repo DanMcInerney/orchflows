@@ -206,8 +206,6 @@ TICKET_FILING_RE = re.compile(r"\bticket\b|\bwork[- ]item\b", re.IGNORECASE)
 RETURN_TEXT_RE = re.compile(r"^Return[ :](.*?)(?:\n[ \t]*\n|\Z)", re.MULTILINE | re.DOTALL)
 PACK_WORKSPACE_RE = re.compile(r"^\|\s*workspace\s*\|\s*(.+?)\s*\|\s*$", re.MULTILINE)
 PACK_STORE_RE = re.compile(r"\bstore\b", re.IGNORECASE)
-PACK_EXECUTOR_RE = re.compile(r"^\|\s*executor\s*\|\s*`([a-z0-9-]+)`", re.MULTILINE)
-PACK_ASSEMBLY_RE = re.compile(r"^\|\s*assembly\s*\|\s*`([a-z0-9-]+)`", re.MULTILINE)
 PACK_SLICING_RE = re.compile(r"^\|\s*slicing\s*\|\s*\[.*?\]\(([^)]+)\)", re.MULTILINE)
 
 # Closed-class words stripped from the head of a Require item and
@@ -251,6 +249,6 @@ __all__ = (
     'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES', 'TEMPLATE_ENTRY_VALUES',
     'CARRIAGE_REQUIRE_BLOCK_RE', 'CARRIAGE_SENTENCE_SPLIT_RE', 'CARRIAGE_MD_LINK_RE', 'CARRIAGE_PAREN_RE',
     'CARRIAGE_CODE_RE', 'CARRIAGE_WORD_RE', 'CARRIAGE_DASH_SPLIT_RE', 'TICKET_FILING_RE',
-    'RETURN_TEXT_RE', 'PACK_WORKSPACE_RE', 'PACK_STORE_RE', 'PACK_EXECUTOR_RE',
-    'PACK_ASSEMBLY_RE', 'PACK_SLICING_RE', 'CARRIAGE_QUALIFIERS', 'CARRIAGE_DEFERRED',
+    'RETURN_TEXT_RE', 'PACK_WORKSPACE_RE', 'PACK_STORE_RE', 'PACK_SLICING_RE',
+    'CARRIAGE_QUALIFIERS', 'CARRIAGE_DEFERRED',
 )

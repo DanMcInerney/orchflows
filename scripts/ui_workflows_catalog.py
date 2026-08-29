@@ -7,10 +7,12 @@ from pathlib import Path
 
 try:
     from scripts.tickets_format import _parse_frontmatter
+    from scripts.tickets_registry import CALLABLE_EXECUTORS
     from scripts import ui_workflows_identity as identity
     from scripts.ui_workflows_summary import SummaryManifestError, validate_manifest
 except ImportError:
     from tickets_format import _parse_frontmatter
+    from tickets_registry import CALLABLE_EXECUTORS
     import ui_workflows_identity as identity
     from ui_workflows_summary import SummaryManifestError, validate_manifest
 
@@ -65,10 +67,14 @@ def _canonical_owners(root: Path) -> list[dict]:
         (root / "compositions").glob("*/template.md"),
         key=lambda path: path.parent.name,
     )
-    workflow_skills = sorted(
-        (root / "skills" / "workflows").glob("*/SKILL.md"),
-        key=lambda path: path.parent.name,
+    skill_paths = set((root / "skills" / "workflows").glob("*/SKILL.md"))
+    skill_paths.update(
+        root / "skills" / tier / name / "SKILL.md"
+        for name in CALLABLE_EXECUTORS
+        for tier in ("kernel", "engines")
+        if (root / "skills" / tier / name / "SKILL.md").is_file()
     )
+    workflow_skills = sorted(skill_paths, key=lambda path: path.parent.name)
     owners = [_owner(root, path, "composition") for path in compositions]
     owners.extend(_owner(root, path, "workflow-skill") for path in workflow_skills)
     ids = [owner["id"] for owner in owners]

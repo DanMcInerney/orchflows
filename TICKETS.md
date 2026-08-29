@@ -19,7 +19,7 @@ context in any checkout resumes a run mid-flight.
     ┌─ 00-root.02.md ─────────────────────────────────────────────┐
     │ ---                                                         │
     │ id, run, status, admission, dispatch_v1                    │
-    │ executor: orch-tdd        pack: orch-code-pack              │
+    │ executor: orch-execute    pack: orch-code-pack              │
     │ depends_on: [00-root.01]  <- graph edge                     │
     │ bound: 45m                <- time budget                    │
     │ claimed_by / claimed_at / checked_by                        │
@@ -151,7 +151,7 @@ Three moments use readers who did not produce the fixed artifact
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — each result takes one outside-independence path:
    either the ordinary durable evaluator/adjudication carrier or the downstream
-   composite gate. Both use fresh read-only `orch-critique`; neither repairs
+   composite gate. Both use fresh read-only `orch-check`; neither repairs
    its own target. `tickets.py checker-stage <run> <id>` derives one explicit
    `<id>.check` review ticket from the sealed target. That stage uses the same
    `dispatch-packet` → accepted `dispatch-receive` → `dispatch-outcome` →
@@ -188,7 +188,7 @@ Three moments use readers who did not produce the fixed artifact
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a
   retired attempt, never a live predecessor.
-- **Findings fork by severity.** Blocking defects go to `orch-repair`;
+- **Findings fork by severity.** Blocking defects go to an execute repair lane;
   non-blocking ones are recorded as candidate scope for a later pass —
   logged, never dropped.
 

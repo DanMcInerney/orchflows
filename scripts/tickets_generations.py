@@ -7,16 +7,16 @@ import json
 import re
 from pathlib import Path
 if __package__:
-    from .tickets_format import (GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from .tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from .tickets_transitions import CLAIMED, stamp
 else:
-    from tickets_format import (GATE_EXECUTORS, ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from tickets_transitions import CLAIMED, stamp
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
 ASSIGNMENT_SYSTEM_FIELDS = (
     "bound", "independence", "isolation", "pack", "profile", "review_order",
-    "sequence",
+    "sequence", "review_kind",
 )
 
 
@@ -156,15 +156,17 @@ def composite_gate_findings(root_id: str, snapshot: dict, member_ids=None) -> li
     for ticket_id in sorted(actual_gate_ids - expected_gate_ids):
         findings.append({"code": "composite-gate-extra", "field": "members", "ticket": ticket_id})
     expected = {
-        **{ticket_id: (GATE_EXECUTORS["critique"], units) for ticket_id in critiques},
-        repair_id: (GATE_EXECUTORS["repair"], critiques),
-        verify_id: (GATE_EXECUTORS["verify"], [repair_id]),
+        **{ticket_id: ("orch-check", "critique", units) for ticket_id in critiques},
+        repair_id: ("orch-execute", "repair", critiques),
+        verify_id: ("orch-check", "verify", [repair_id]),
     }
     for ticket_id in sorted(expected_gate_ids & actual_gate_ids):
         data = _parse_frontmatter(snapshot[ticket_id])
-        executor, dependencies = expected[ticket_id]
+        executor, review_kind, dependencies = expected[ticket_id]
         if _executor_of(data) != executor:
             findings.append({"code": "composite-gate-executor", "field": "executor", "ticket": ticket_id, "detail": f"expected {executor}"})
+        if str(data.get("review_kind") or "") != review_kind:
+            findings.append({"code": "composite-gate-review-kind", "field": "review_kind", "ticket": ticket_id, "detail": f"expected {review_kind}"})
         actual_dependencies = sorted(str(value) for value in (data.get("depends_on") or []))
         if actual_dependencies != sorted(dependencies):
             findings.append({"code": "composite-gate-dependencies", "field": "depends_on", "ticket": ticket_id, "detail": f"expected {sorted(dependencies)}"})

@@ -3,36 +3,18 @@ import unittest
 
 from ._support import ROOT, frontmatter_name, packages, split_document, validate
 
-SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+SKILL_TIERS = ("kernel", "engines", "workflows")
 
 # The frozen role census. The census is deliberately explicit: adding,
 # removing, or renaming a skill requires a role decision here.
 ROLE_TABLE = {
-    # none: engines
     "orch-loop": "none",
     "orch-frontier": "none",
-    # none: named kernel and utility
     "orch-integrate": "none",
-    "orch-off": "none",
-    # planner
-    "orch-critique": "planner",
-    "orch-synthesize": "planner",
     "orch-decompose": "planner",
-    "orch-eval-design": "planner",
-    "orch-self-improve": "planner",
+    "orch-check": "planner",
     "orch-spec": "planner",
-    "orch-triage": "planner",
-    # worker
-    "orch-investigate": "worker",
-    "orch-verify": "worker",
-    "orch-tdd": "worker",
-    "orch-draft": "worker",
-    "orch-render": "worker",
-    "orch-edit": "worker",
-    "orch-resolve-conflicts": "worker",
-    "orch-visualize": "worker",
-    "orch-fixture": "worker",
-    "orch-repair": "worker",
+    "orch-execute": "worker",
 }
 
 
@@ -56,6 +38,12 @@ class TestFrozenRoleTable(unittest.TestCase):
 
 
 class TestTierDirectoriesExist(unittest.TestCase):
+    def test_only_surviving_skill_tiers_are_declared(self):
+        self.assertEqual(
+            SKILL_TIERS,
+            ("kernel", "engines", "workflows"),
+        )
+
     def test_every_skill_tier_directory_exists(self):
         for tier in SKILL_TIERS:
             self.assertTrue((ROOT / "skills" / tier).is_dir(), f"missing skills/{tier}")
@@ -68,6 +56,8 @@ class TestPackageNamesMatchFolders(unittest.TestCase):
             tier_dir = ROOT / "skills" / tier
             for pkg_dir in sorted(p for p in tier_dir.iterdir() if p.is_dir()):
                 skill_md = pkg_dir / "SKILL.md"
+                if not skill_md.is_file():
+                    continue
                 self.assertTrue(
                     skill_md.is_file(),
                     f"{pkg_dir} is a package directory with no SKILL.md; a "

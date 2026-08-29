@@ -50,7 +50,7 @@ class WorkflowSkillTests(unittest.TestCase):
             for edge in detail["edges"]
         }
         self.assertIn(
-            ("skill-call", "workflow:orch-spec", "skill:orch-investigate"),
+            ("skill-call", "workflow:orch-spec", "skill:orch-integrate"),
             edge_tuples,
         )
         self.assertIn(

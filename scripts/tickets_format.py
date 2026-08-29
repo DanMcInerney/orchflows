@@ -5,6 +5,16 @@ import re
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
+    from .tickets_registry import (
+        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY, REVIEW_KINDS,
+        executor_refusal, executor_registered,
+    )
+else:
+    from tickets_registry import (
+        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY, REVIEW_KINDS,
+        executor_refusal, executor_registered,
+    )
+if __package__:
     from .tickets_adapters import adapter_id
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
@@ -57,6 +67,7 @@ ALLOWED_TICKET_KEYS = frozenset({
     'cut_generation', 'assignment_seal', 'workspace_branch',
     'workspace_baseline', 'workspace_path', 'dispatch_v1',
     'review_order', 'review_v1', 'review_stage',
+    'review_kind',
 })
 DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
@@ -72,7 +83,6 @@ PACK_NAME_SUFFIX = '-pack'
 ROOT_EXECUTOR = 'orch-decompose'
 CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
-GATE_EXECUTORS = {'critique': 'orch-critique', 'repair': 'orch-repair', 'verify': 'orch-verify'}
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
 class DuplicateJsonKey(ValueError):
@@ -134,6 +144,20 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         normalized = status.strip().strip('`').strip()
         if normalized not in VALID_STATUSES:
             defects.append(f"status '{normalized}' is not one of {sorted(VALID_STATUSES)}")
+    executor = _executor_of(data)
+    if executor and not PLACEHOLDER_RE.search(executor):
+        if not executor.startswith(SCRIPT_EXECUTOR_PREFIX) and not executor_registered(executor):
+            defects.append(executor_refusal(executor))
+        elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not str(data.get("pack") or "").strip():
+            defects.append(
+                f"executor-pack-required: {executor} consumes resolved pack cells and "
+                "requires a stamped pack"
+            )
+    review_kind = str(data.get('review_kind') or '').strip().strip('`')
+    if review_kind and review_kind not in REVIEW_KINDS:
+        defects.append(
+            f"review_kind '{review_kind}' is not one of {list(REVIEW_KINDS)}"
+        )
     parsed_sections = _sections(text)
     sections = {name.strip().lower(): body for name, body in parsed_sections.items()}
     for name in REQUIRED_SECTIONS:

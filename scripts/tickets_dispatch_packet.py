@@ -43,6 +43,7 @@ else:
 DISPATCH_PACKET_USAGE = (
     "dispatch-packet <run> <id> --dispatch-id <id> --reply-to <name> "
     "[--workspace <path>] [--artifact <fixed-identity>] [--form reference | inline]"
+    " [--review-kind critique|repair|verify]"
 )
 DISPATCH_RECEIVE_USAGE = (
     "dispatch-receive (--content <canonical-json> | --file <path|->) "
@@ -142,6 +143,7 @@ def _projection_packet(
         "profile": profile,
         "prompt": legacy.get("prompt"),
         "protocol": PROTOCOL,
+        "review_kind": legacy.get("review_kind"),
         "reply_to": legacy.get("reply_to"),
         "role": role,
         "source": {
@@ -174,6 +176,7 @@ def _projection_packet(
             "reply_to": packet["reply_to"],
             "role": packet["role"],
             "profile": packet["profile"],
+            "review_kind": packet.get("review_kind"),
             "source": packet["source"],
             "workspace": packet["workspace"],
         }
@@ -193,7 +196,7 @@ def _projection_packet(
     return packet
 
 
-def _replay_projection(attempt: dict, run, ticket_id, form, reply_to, workspace):
+def _replay_projection(attempt: dict, run, ticket_id, form, reply_to, workspace, review_kind):
     record = next(
         (
             item for item in attempt.get("records") or []
@@ -219,6 +222,7 @@ def _replay_projection(attempt: dict, run, ticket_id, form, reply_to, workspace)
         "reply_to": reply_to,
         "source": {"id": ticket_id, "run": run},
         "workspace": workspace,
+        "review_kind": review_kind,
     }
     prior = {key: packet.get(key) for key in request}
     if prior != request:
@@ -236,6 +240,7 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     workspace = _extract_flag(args, "--workspace")
     artifact = _extract_flag(args, "--artifact")
     form = (_extract_flag(args, "--form") or "reference").strip()
+    review_kind = _extract_flag(args, "--review-kind")
     if len(args) != 2 or not dispatch_id or not reply_to or form not in PACKET_FORMS:
         return {"error": f"usage: {DISPATCH_PACKET_USAGE}"}
     run, ticket_id = args
@@ -251,7 +256,7 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     if failure is not None:
         return failure
     replay = _replay_projection(
-        attempt, run, ticket_id, form, reply_to, workspace
+        attempt, run, ticket_id, form, reply_to, workspace, review_kind
     )
     if replay is not None:
         return replay
@@ -281,6 +286,8 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     legacy_args = [run, ticket_id, "--reply-to", reply_to, "--by", attempt["owner"]]
     if workspace is not None:
         legacy_args.extend(("--workspace", workspace))
+    if review_kind is not None:
+        legacy_args.extend(("--review-kind", review_kind))
     projected = _packet_under_run_lock(legacy_args, result_attempt=attempt, review_state=review_state)
     if "error" in projected:
         return projected
@@ -317,6 +324,7 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
         "isolation": system.get("isolation"),
         "pack": system.get("pack"),
         "profile": assignment_profile,
+        "review_kind": system.get("review_kind"),
         "role": profile_role or declared_role,
     }
     if any(packet.get(key) != value for key, value in expected.items()):
@@ -349,6 +357,7 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
         "reply_to": packet["reply_to"],
         "role": packet["role"],
         "profile": packet["profile"],
+        "review_kind": packet.get("review_kind"),
         "source": source,
         "workspace": packet.get("workspace"),
     }

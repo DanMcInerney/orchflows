@@ -78,13 +78,12 @@ class GoalEvidenceContractTest(unittest.TestCase):
         self.assertNotIn("## Completion test", contract)
         self.assertNotIn("named oracle", contract)
 
-    def test_tdd_chooses_tests_and_records_post_work_evidence(self):
-        tdd = read("skills/instances/orch-tdd/SKILL.md")
-        self.assertIn("Derive tests from Goal", tdd)
-        self.assertIn("watch\nit fail", tdd)
-        self.assertIn("make it pass", tdd)
-        self.assertIn("evidence record", tdd)
-        self.assertIn("result.md", tdd)
+    def test_execute_consumes_pack_cells_and_records_post_work_evidence(self):
+        execute = read("skills/kernel/orch-execute/SKILL.md")
+        self.assertIn("pack's execute projection", execute)
+        self.assertRegex(execute, r"choose implementation,\s*tests, and verification")
+        self.assertRegex(execute, r"Stream the\s+executor record")
+        self.assertIn("reserved outcome", execute)
         result_contract = " ".join(read("contracts/result.md").split())
         self.assertIn("do not change the semantic assignment digest", result_contract)
 
@@ -186,26 +185,22 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
 
 
 class CritiqueContractTest(unittest.TestCase):
-    def test_critique_is_two_pass_blocker_only_synthesis(self):
-        critique = read("skills/kernel/orch-critique/SKILL.md")
-        enumerate_at = critique.index("First enumerate every material issue")
-        synthesize_at = critique.index("Then make a separate synthesis pass")
-        self.assertLess(enumerate_at, synthesize_at)
-        self.assertIn("smallest architectural repair set", critique)
-        self.assertIn("Goal harm, evidence strength, and\nrepair coverage", critique)
-        self.assertIn("preferences, cosmetic nits, speculative improvements", critique)
+    def test_check_owns_blockers_and_verification(self):
+        check = read("skills/kernel/orch-check/SKILL.md")
+        self.assertIn("A critique enumerates evidence-backed blockers", check)
+        self.assertIn("smallest repair set", check)
+        self.assertIn("a verification records methods", check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
-        critique = read("skills/kernel/orch-critique/SKILL.md")
-        self.assertIn("Never soften a finding because fixing it is costly", critique)
-        self.assertIn("Never: edit the artifact", critique)
-        self.assertIn("Any repair voids this critique context's verdicts", critique)
-        self.assertIn("no second critique or correction pass", critique)
+        check = read("skills/kernel/orch-check/SKILL.md")
+        self.assertIn("Never: edit the artifact", check)
+        self.assertIn("mix a review stage with another kind", check)
+        self.assertIn("pack's check projection", check)
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):
         surfaces = (
             "rules/verification.md",
-            "skills/kernel/orch-critique/SKILL.md",
+            "skills/kernel/orch-check/SKILL.md",
             "skills/engines/orch-frontier/SKILL.md",
             "scripts/tickets_dispatch_gate.py",
             "scripts/tickets_packet.py",
@@ -216,7 +211,7 @@ class CritiqueContractTest(unittest.TestCase):
             "authored-here",
             "pre-existing-only",
             "reviewer-corrector",
-            "critique then orch-repair",
+            "orch-repair",
             "oracle_policy",
         )
         joined = "\n".join(read(path) for path in surfaces)
@@ -237,7 +232,7 @@ class SeparateRepairGateTest(unittest.TestCase):
             "pack": "orch-code-pack",
             "independence": "gate",
             "depends_on": list(depends_on),
-            "isolation": "required" if executor == "orch-tdd" else "none",
+            "isolation": "required" if executor == "orch-execute" else "none",
             "bound": "20m",
             "claimed_by": "",
             "claimed_at": "",
@@ -261,10 +256,10 @@ class SeparateRepairGateTest(unittest.TestCase):
                 self._ticket_text("root", "orch-decompose"), encoding="utf-8"
             )
             (run_dir / "root.01.md").write_text(
-                self._ticket_text("root.01", "orch-tdd"), encoding="utf-8"
+                self._ticket_text("root.01", "orch-execute"), encoding="utf-8"
             )
             (run_dir / "root.02.md").write_text(
-                self._ticket_text("root.02", "orch-tdd", ("root.01",)),
+                self._ticket_text("root.02", "orch-execute", ("root.01",)),
                 encoding="utf-8",
             )
             with mock.patch.object(tickets_dispatch_gate, "_tickets_root", return_value=root):
@@ -278,7 +273,8 @@ class SeparateRepairGateTest(unittest.TestCase):
             critique = (run_dir / "root.gate.critique.code.md").read_text(encoding="utf-8")
             repair = (run_dir / "root.gate.repair.md").read_text(encoding="utf-8")
             self.assertNotIn("sequence:", critique)
-            self.assertIn("executor: orch-repair", repair)
+            self.assertIn("executor: orch-execute", repair)
+            self.assertIn("review_kind: repair", repair)
             self.assertIn("depends_on: [root.01, root.02]", critique)
 
     def test_a_single_executor_result_does_not_trigger_a_composite_gate(self):
@@ -290,7 +286,7 @@ class SeparateRepairGateTest(unittest.TestCase):
                 self._ticket_text("root", "orch-decompose"), encoding="utf-8"
             )
             (run_dir / "root.01.md").write_text(
-                self._ticket_text("root.01", "orch-tdd"), encoding="utf-8"
+                self._ticket_text("root.01", "orch-execute"), encoding="utf-8"
             )
             with mock.patch.object(tickets_dispatch_gate, "_tickets_root", return_value=root):
                 result = tickets_dispatch_gate._gate_under_run_lock(["run", "root"])
@@ -303,11 +299,11 @@ class SeparateRepairGateTest(unittest.TestCase):
             run_dir = root / "run"
             run_dir.mkdir()
             (run_dir / "root.md").write_text(
-                self._ticket_text("root", "orch-tdd"), encoding="utf-8"
+                self._ticket_text("root", "orch-execute"), encoding="utf-8"
             )
             for suffix in ("01", "02"):
                 (run_dir / f"root.{suffix}.md").write_text(
-                    self._ticket_text(f"root.{suffix}", "orch-tdd"),
+                    self._ticket_text(f"root.{suffix}", "orch-execute"),
                     encoding="utf-8",
                 )
             with mock.patch.object(tickets_dispatch_gate, "_tickets_root", return_value=root):

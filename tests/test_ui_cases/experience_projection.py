@@ -40,7 +40,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"[schema](../../web/src/api/schema.ts)",
         )
         self.assertEqual(
-            "A1BEC645753B870B8F685E8FC76EF48E0233DE4A8AD4E7946C70F6BEACD524D8",
+            "5BCDC6B78F34D84119AA0A789824700778AE4476D0376F87E1905184D6D454CE",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 

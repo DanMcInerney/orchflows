@@ -78,10 +78,12 @@ class WarningCeilingTest(unittest.TestCase):
         cross = set(warning_lines(stdout, CROSS_TIER))
         composition = {
             line for line in warning_lines(stdout)
-            if line.startswith("WARN compositions/browser-game: dated 2026-08-28 ")
+            if line.startswith("WARN compositions/")
         }
         self.assertEqual(set(), near & cross)
-        self.assertEqual(1, len(composition), composition)
+        # The dated browser-game protocol exception and each intentionally
+        # un-migrated shipped stub are composition-owned warnings.
+        self.assertEqual(16, len(composition), composition)
         self.assertEqual(set(warning_lines(stdout)), near | cross | composition)
 
     def test_a_count_above_the_ceiling_fails(self):

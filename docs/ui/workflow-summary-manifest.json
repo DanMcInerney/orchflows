@@ -106,54 +106,71 @@
         {"source": "campaign", "target": "promote", "kind": "sequence"}
       ]
     },
-    "orch-eval-design": {
+    "orch-check": {
       "nodes": [
-        {"id": "boundary", "label": "Fix target and outcome"},
-        {"id": "design", "label": "Choose the smallest evaluation"},
-        {"id": "freeze", "label": "Freeze the design identity"}
+        {"id": "ledger", "label": "Read the fixed review ledger"},
+        {"id": "challenge", "label": "Challenge artifact evidence"},
+        {"id": "verdict", "label": "Record blockers or verdict"}
       ],
       "edges": [
-        {"source": "boundary", "target": "design", "kind": "sequence"},
-        {"source": "design", "target": "freeze", "kind": "sequence"}
+        {"source": "ledger", "target": "challenge", "kind": "sequence"},
+        {"source": "challenge", "target": "verdict", "kind": "sequence"}
       ]
     },
-    "orch-fixture": {
+    "orch-decompose": {
       "nodes": [
-        {"id": "choose", "label": "Choose a proven boundary"},
-        {"id": "freeze", "label": "Freeze replay evidence"},
-        {"id": "replay", "label": "Replay the canary item"},
-        {"id": "match", "label": "Match the golden result"}
+        {"id": "root", "label": "Read the stamped root"},
+        {"id": "slice", "label": "Cut independent outcomes"},
+        {"id": "seal", "label": "Seal the exact draft"}
       ],
       "edges": [
-        {"source": "choose", "target": "freeze", "kind": "sequence"},
-        {"source": "freeze", "target": "replay", "kind": "sequence"},
-        {"source": "replay", "target": "match", "kind": "sequence"}
+        {"source": "root", "target": "slice", "kind": "sequence"},
+        {"source": "slice", "target": "seal", "kind": "sequence"}
       ]
     },
-    "orch-repair": {
+    "orch-execute": {
       "nodes": [
-        {"id": "accept", "label": "Accept verified defects"},
-        {"id": "repair", "label": "Apply the smallest repair"},
-        {"id": "verify", "label": "Rerun affected oracles"}
+        {"id": "resolve", "label": "Resolve the stamped pack"},
+        {"id": "apply", "label": "Apply execute cells"},
+        {"id": "evidence", "label": "Record artifact evidence"}
       ],
       "edges": [
-        {"source": "accept", "target": "repair", "kind": "sequence"},
-        {"source": "repair", "target": "verify", "kind": "sequence"}
+        {"source": "resolve", "target": "apply", "kind": "sequence"},
+        {"source": "apply", "target": "evidence", "kind": "sequence"}
       ]
     },
-    "orch-self-improve": {
+    "orch-frontier": {
       "nodes": [
-        {"id": "coverage", "label": "Read prior coverage"},
-        {"id": "mine", "label": "Mine bounded evidence"},
-        {"id": "cluster", "label": "Cluster by causal owner"},
-        {"id": "qualify", "label": "Qualify one proposal"},
-        {"id": "write", "label": "Write the ranked proposal"}
+        {"id": "ready", "label": "Read ready tickets"},
+        {"id": "dispatch", "label": "Dispatch one frontier wave"},
+        {"id": "join", "label": "Join returned outcomes"}
       ],
       "edges": [
-        {"source": "coverage", "target": "mine", "kind": "sequence"},
-        {"source": "mine", "target": "cluster", "kind": "sequence"},
-        {"source": "cluster", "target": "qualify", "kind": "sequence"},
-        {"source": "qualify", "target": "write", "kind": "sequence"}
+        {"source": "ready", "target": "dispatch", "kind": "sequence"},
+        {"source": "dispatch", "target": "join", "kind": "sequence"}
+      ]
+    },
+    "orch-integrate": {
+      "nodes": [
+        {"id": "inspect", "label": "Inspect returned evidence"},
+        {"id": "adjudicate", "label": "Adjudicate one child result"},
+        {"id": "record", "label": "Record the join"}
+      ],
+      "edges": [
+        {"source": "inspect", "target": "adjudicate", "kind": "sequence"},
+        {"source": "adjudicate", "target": "record", "kind": "sequence"}
+      ]
+    },
+    "orch-loop": {
+      "nodes": [
+        {"id": "observe", "label": "Observe the done-check"},
+        {"id": "decide", "label": "Decide whether Goal holds"},
+        {"id": "repeat", "label": "Repeat within the bound"}
+      ],
+      "edges": [
+        {"source": "observe", "target": "decide", "kind": "sequence"},
+        {"source": "decide", "target": "repeat", "kind": "branch"},
+        {"source": "repeat", "target": "observe", "kind": "loop"}
       ]
     },
     "orch-spec": {
@@ -170,20 +187,6 @@
         {"source": "count", "target": "successors", "kind": "branch"},
         {"source": "count", "target": "ticket", "kind": "sequence"},
         {"source": "successors", "target": "ticket", "kind": "sequence"}
-      ]
-    },
-    "orch-triage": {
-      "nodes": [
-        {"id": "snapshot", "label": "Read the current queue"},
-        {"id": "check", "label": "Check each item cheaply"},
-        {"id": "dispose", "label": "Assign a disposition"},
-        {"id": "brief", "label": "Compact agent-ready briefs"}
-      ],
-      "edges": [
-        {"source": "snapshot", "target": "check", "kind": "sequence"},
-        {"source": "check", "target": "dispose", "kind": "sequence"},
-        {"source": "dispose", "target": "brief", "kind": "branch"},
-        {"source": "brief", "target": "check", "kind": "loop"}
       ]
     }
   }

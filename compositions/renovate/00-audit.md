@@ -10,7 +10,7 @@ profile: orch-planner
 
 ## Goal
 
-An `orch-critique` report over {{workspace}} under {{priorities}}.
+An independent blocker report over {{workspace}} under {{priorities}}.
 
 ## Context
 
@@ -18,7 +18,7 @@ An `orch-critique` report over {{workspace}} under {{priorities}}.
 - input: {"name":"priorities","type":"literal","value":"{{priorities}}"}
 - input: {"name":"audit-bound","type":"literal","value":"{{audit_bound}}"}
 
-- Apply the evaluator contract in `skills/kernel/orch-critique/SKILL.md`.
+- Apply the pack's check craft and report every evidence-backed blocker.
 
 ## Result
 

@@ -29,11 +29,16 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
 - `executor`, optional `sequence`, `profile`, and `pack` — exact dispatch and
-  role binding. Skill substitution is not allowed.
+  role binding. Callable executors are the seven registered verbs
+  `orch-execute`, `orch-check`, `orch-decompose`, `orch-integrate`,
+  `orch-frontier`, `orch-loop`, and `orch-spec`; `script:<repo-relative path>`
+  is the only other executable form. Skill substitution is not allowed.
 - `depends_on` — ticket ids that must complete first.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate and workspace mechanics.
 - `review_order` — the sealed zero-based order of a composite-gate lens.
+- `review_kind` — optional typed review lane: `critique`, `repair`, or
+  `verify`; its value selects the mechanical checker or repair projection.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
 - `claimed_by`, `claimed_at`, `checked_by`, `review_stage`, `workspace_path`,
@@ -133,16 +138,15 @@ A composition is `template.md` plus ticket stubs. `tickets.py instantiate`
 substitutes placeholders, validates one acyclic graph with one terminal, seals
 the exact snapshot, and writes all tickets or none.
 
-`executor` names an exact skill or `script:<repo-relative path>`. Optional
-`sequence` is either an ordered skill chain whose head equals `executor`, or
-an ordered chain of stages declared by the stamped pack's execute-side
-`stages` cell; the two forms cannot be mixed. A sequence is one child,
-established once at the role resolved from its head executor. Every
-continuation runs at that head binding: a continuation's own `role:` has no
-dispatch effect, and the caller choosing that order accepts the tradeoff.
-Anything needing a fresh role or independent verdict is a new ticket and
-child. Domains may add facts to Context but do not replace the semantic
-sections.
+`executor` names one registered callable verb or `script:<repo-relative path>`.
+Optional `sequence` is an ordered chain of stage names declared by the stamped
+pack's execute-side `stages` cell; stage names are pack data, not skill
+bindings. A sequence is one child, established once at the role resolved from
+its callable executor. `orch-execute` resolves the pack's execute cells and
+`orch-check` resolves its check cells; neither may import a superseded skill
+body or invent a second pack parser. Anything needing a fresh role or
+independent verdict is a new ticket and child. Domains may add facts to
+Context but do not replace the semantic sections.
 
 ## T0 supersession
 
@@ -185,3 +189,8 @@ T0 supersession record sha256:c6fbeafb3f9daf27e689ae00d80c1bf2a6f9332aca1183e18e
 each run has one semantic root at ordinal 1; a post-seal semantic change opens
 a successor run linked to the accepted predecessor result identity instead of
 minting an in-run root amendment.
+
+T0 supersession record sha256:3c119a98c0298cd90fa6e7fc3f35c1c77e41750b48a106f631af0a68f589482e:
+the callable tier is the seven-verb registry; execute and check consume
+resolved pack cells, review lanes use typed `review_kind`, and superseded
+skill bindings are rejected rather than aliased.

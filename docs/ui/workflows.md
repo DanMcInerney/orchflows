@@ -20,12 +20,13 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 ### T1 workflow skills
 
 Custom-item authoring follows ordinary code routing and is not a callable workflow.
-- [orch-eval-design](../../skills/workflows/orch-eval-design/SKILL.md) — use before benchmark construction or direct judged scoring.
-- [orch-fixture](../../skills/workflows/orch-fixture/SKILL.md) — use when a proven ticket should guard against drift.
-- [orch-repair](../../skills/workflows/orch-repair/SKILL.md) — use inside a gate or for any accepted defect set.
-- [orch-self-improve](../../skills/workflows/orch-self-improve/SKILL.md) — use as the mining stub, or alone when proposals suffice.
-- [orch-spec](../../skills/workflows/orch-spec/SKILL.md) — use before any delivery run.
-- [orch-triage](../../skills/workflows/orch-triage/SKILL.md) — use before queued items are dispatched.
+- [orch-execute](../../skills/kernel/orch-execute/SKILL.md) — execute one stamped pack assignment.
+- [orch-check](../../skills/kernel/orch-check/SKILL.md) — challenge a fixed artifact or verify a repair.
+- [orch-decompose](../../skills/kernel/orch-decompose/SKILL.md) — cut a stamped root into independent items.
+- [orch-integrate](../../skills/kernel/orch-integrate/SKILL.md) — adjudicate one returned child result.
+- [orch-frontier](../../skills/engines/orch-frontier/SKILL.md) — dispatch ready work through the frontier.
+- [orch-loop](../../skills/engines/orch-loop/SKILL.md) — iterate a bounded external done-check.
+- [orch-spec](../../skills/workflows/orch-spec/SKILL.md) — seal one semantic root before delivery.
 
 ## Catalog projection and semantic summaries
 
@@ -63,15 +64,15 @@ The semantic companion first states the same step grouping or call sequence in p
 
 One typed `featureCatalog` binding owns route/payload/model correlation; `web/src/features/workflows/` owns the feature-local frontend, `ui_workflows_projection.py` owns its closed backend projections, and dependencies remain `shell -> catalog -> workflows -> shared` and `ui_api -> projector -> canonical owners/shared readers`. The [typed catalog](modularization.md#typed-catalog-routing-and-data-binding) solely owns display order, navigation, match priority, canonical URL construction, and view/data binding. Definition detail and source select Workflows as their active parent; run and ticket execution descendants select Now.
 
-`web/src/features/workflows/` owns route, model, data schema/request/polling, fixtures, styles, view, and tests under the [feature-local boundary](modularization.md#feature-local-frontend-boundary). Its model discriminates T3 composition from T1 workflow skill. The summary manifest owns only compact semantic nodes and edges; canonical owners supply exact identity, copy, topology, and source inventory. The shared `ExperienceSnapshot` schema (`web/src/api/schema.ts`) is a compatibility seam, not another Workflows contract.
+`web/src/features/workflows/` owns route, model, data schema/request/polling, fixtures, styles, view, and tests under the [feature-local boundary](modularization.md#feature-local-frontend-boundary). Its model discriminates T3 composition from T1 workflow skill. The summary manifest owns only compact semantic nodes and edges; canonical owners supply exact identity, copy, topology, and source inventory. The shared `ExperienceSnapshot` schema (the frontend schema module) is a compatibility seam, not another Workflows contract.
 
 `scripts/ui_workflows_projection.py` owns the closed catalog, detail, and source projections described above. [`ui_api`](modularization.md#backend-projection-api-failure-and-privacy-boundary) assembles their routes and retains security, ETag, and failure policy. Frontend dependency direction is `shell -> catalog -> workflows -> shared`; shared transport owns HTTP, ETag, retry, timers, and generation invalidation without feature knowledge. Backend direction is `ui_api -> ui_workflows_projection -> canonical owners/shared readers`; domain projectors do not import one another.
 
 ## Migration, validation, and admission
 
-Introduce the catalog additively and remove run rows only after focused contract, containment, routing, rendered, and accessibility tests prove the fixed rail and sibling/deep-link parity; executable admission then closes every schema, manifest, reference, and preservation obligation. Specifically, Now still assigns each eligible run once to ordered **Needs attention / Active now / Recently completed** bands and preserves pause/selection/filter context across polling; Sessions keeps its native-link metadata index, labelled filter, and populated/empty/diagnostic states; Friction keeps unreadable/skipped counts, its closed read-only record feed, exact run/ticket links, and empty state. The rail remains **Now / Workflows / Create / Sessions / Friction** with disabled Create. Nav-hidden `/runs/{run}` and `/runs/{run}/tickets/{ticket}` still refresh and highlight Now. Then remove run-instance rows only from Workflows; keep their routes and projections ([migration contract](modularization.md#tracer-first-compatibility-migration); current routes (`web/src/state/location.ts`)).
+Introduce the catalog additively and remove run rows only after focused contract, containment, routing, rendered, and accessibility tests prove the fixed rail and sibling/deep-link parity; executable admission then closes every schema, manifest, reference, and preservation obligation. Specifically, Now still assigns each eligible run once to ordered **Needs attention / Active now / Recently completed** bands and preserves pause/selection/filter context across polling; Sessions keeps its native-link metadata index, labelled filter, and populated/empty/diagnostic states; Friction keeps unreadable/skipped counts, its closed read-only record feed, exact run/ticket links, and empty state. The rail remains **Now / Workflows / Create / Sessions / Friction** with disabled Create. Nav-hidden `/runs/{run}` and `/runs/{run}/tickets/{ticket}` still refresh and highlight Now. Then remove run-instance rows only from Workflows; keep their routes and projections ([migration contract](modularization.md#tracer-first-compatibility-migration); current frontend routes).
 
-Make three validators admission prerequisites. Summary validation enforces stable-ID coverage and endpoints. Detail validation reconstructs composition and workflow-skill edges, preserves kinds, and requires explicit loops. Source validation enforces cataloged opaque IDs, contained installed-library-relative paths, closed text/hash/language metadata, and rejection of state-sink, arbitrary, or host paths. Keep them behind the reader facade and closed schemas ([facade](../../scripts/ui_api.py); schema (`web/src/api/schema.ts`)).
+Make three validators admission prerequisites. Summary validation enforces stable-ID coverage and endpoints. Detail validation reconstructs composition and workflow-skill edges, preserves kinds, and requires explicit loops. Source validation enforces cataloged opaque IDs, contained installed-library-relative paths, closed text/hash/language metadata, and rejection of state-sink, arbitrary, or host paths. Keep them behind the reader facade and closed schemas ([facade](../../scripts/ui_api.py)).
 
 Focused tests cover all four schema contracts; summary, topology, relation ordering, diagnostic codes, and source-inventory equality; source-ID containment; canonical routing; refresh and parent highlighting for preserved deep links; Now band/context parity; Sessions link/filter/state parity; Friction count/link/empty parity; and rendered wide/compact, keyboard, focus, and accessible-name behavior. Update the [rendered inventory](view-manifest.json) in the same change.
 

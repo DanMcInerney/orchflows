@@ -104,7 +104,7 @@ RESERVED_WORDINGS = {
 
 #: The tiers the contract sweep must span; a glob that stopped matching
 #: one would leave its contracts unswept while this module stayed green.
-TIERS = {"kernel", "instances", "utilities", "engines", "workflows"}
+TIERS = {"kernel", "engines", "workflows"}
 
 
 def contracts():
@@ -182,7 +182,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     """The clause renders on role-bearing surfaces and lives nowhere else."""
 
     PLANNER = "skills/workflows/orch-spec/SKILL.md"
-    WORKER = "skills/instances/orch-tdd/SKILL.md"
+    WORKER = "skills/kernel/orch-execute/SKILL.md"
     GLUE = "skills/engines/orch-frontier/SKILL.md"
 
     def test_no_skill_contract_body_carries_a_copy(self):
@@ -233,7 +233,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
         self.assertIn(
             FORK_ARRIVAL_CLAUSE,
             codex_role_adapter_body(
-                "orch-tdd", "worker", install.load_role_profiles()["orch-worker"], Path("X")
+                "orch-execute", "worker", install.load_role_profiles()["orch-worker"], Path("X")
             ),
         )
 

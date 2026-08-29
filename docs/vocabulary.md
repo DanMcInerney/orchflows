@@ -34,11 +34,11 @@ that needs a different meaning needs a different word.
 - **instance** — a concrete domain executor or lens: the one binding a
   pack cell names for a capability. A composition instantiated into a
   run is a **composition instance**.
-- **utility** — a leaf generic skill; with the evaluators, exempt from
+- **utility** — a leaf generic skill; with the check lane, exempt from
   the envelope per `rules/composition.md`.
-- **evaluator** — `orch-critique` or `orch-verify`: a skill rendering
-  findings or verdicts over a fixed artifact and never a deliverable;
-  exempt from the envelope per `rules/composition.md`.
+- **checker** — `orch-check`: the planner-role callable rendering findings
+  or verdicts over a fixed artifact and never a deliverable; it is exempt
+  from the envelope per `rules/composition.md`.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature (slicing, executor, assembly,
@@ -168,9 +168,9 @@ that needs a different meaning needs a different word.
 - **independence** — acceptance evidence originating outside the executing
   context through exactly one ordinary path; law in `rules/verification.md`
   §9. Research craft narrows the term for sources: no shared upstream.
-- **checker** — the durable evaluator/adjudication carrier for the ordinary
+- **checker** — the durable adjudication carrier for the ordinary
   outside-independence path: an explicit derived review-stage ticket whose
-  fresh read-only `orch-critique` accepts the exact packet, challenges one
+  fresh read-only `orch-check` accepts the exact packet, challenges one
   fixed artifact and its evidence, and joins its accepted set before the
   target can record `checked_by`.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
@@ -192,14 +192,14 @@ that needs a different meaning needs a different word.
   established workspace, and normalized isolation `none`; authoring admission
   and benchmark qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
-  other candidates: `orch-verify` where the criteria carry a score scale,
+  other candidates: the `verify` review kind where criteria carry a score scale,
   blindness being a property of the packet's `inputs`, not of a skill.
 
 The benchmark pipeline's artifacts are named here and defined by their
-producers, never restated: **evaluation design** (`orch-eval-design`'s
+producers, never restated: **evaluation design** (the execute lane's
 Return), **benchmark** and its manifest field set
 (`compositions/references/benchmaker-manifest.md`), **score card**
-(`orch-verify`'s Return where the criteria carry a scale), **evolution
+ (the verify review kind's Return where the criteria carry a scale), **evolution
 result**, **evaluation mode** and **incumbent** (the `evolve`
 composition).
 
@@ -233,7 +233,7 @@ composition).
 - **join** — the single point where a caller integrates one child
   result, always `orch-integrate`. `rules/delegation.md` owns what
   happens there and names its own terms: the closed **disposition** set
-  (§9, and `orch-triage` for its own), and the two **blame** classes —
+  (§9), and the two **blame** classes —
   caller under-supplied, child under-delivered.
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
   tested script (the `script:` executor, `contracts/work-item.md`), worker,
