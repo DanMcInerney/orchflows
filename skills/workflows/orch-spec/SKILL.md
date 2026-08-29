@@ -4,10 +4,10 @@ description: Freeze and seal a semantic root when evidence, user decisions, kind
 role: planner
 ---
 
-Require: the request as Goal and relevant workspace facts as Context.
+Require: the request as Goal and workspace facts as Context.
 
-Use `orch-investigate` for one bounded question against Context's source
-policy. Ask unresolved user decisions singly; record verbatim.
+Use research craft for one bounded question in Context's source policy. Ask
+unresolved user decisions singly; record verbatim.
 
 Semantic root policy:
 

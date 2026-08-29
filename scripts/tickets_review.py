@@ -32,9 +32,6 @@ else:
 
 REVIEW_PROTOCOL = "orchflows.review.v1"
 REVIEW_FIELD = "review_v1"
-REVIEW_KINDS = (
-    "GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification",
-)
 GIT_ARTIFACT_RE = re.compile(r"^git:([0-9a-f]{40}|[0-9a-f]{64})$")
 
 

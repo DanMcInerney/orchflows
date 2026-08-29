@@ -11,7 +11,7 @@ isolation: none
 
 One verdict per canary item against its golden result, and one friction
 entry per divergence, so the delta between the new binding and the
-frozen one is recorded where `orch-self-improve` reads it.
+frozen one is recorded in the improvement evidence sink.
 
 ## Context
 

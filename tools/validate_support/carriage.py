@@ -32,8 +32,6 @@ CARRIAGE_QUALIFIERS = __dep_common.CARRIAGE_QUALIFIERS
 CARRIAGE_REQUIRE_BLOCK_RE = __dep_common.CARRIAGE_REQUIRE_BLOCK_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
 CARRIAGE_WORD_RE = __dep_common.CARRIAGE_WORD_RE
-PACK_ASSEMBLY_RE = __dep_common.PACK_ASSEMBLY_RE
-PACK_EXECUTOR_RE = __dep_common.PACK_EXECUTOR_RE
 PACK_SLICING_RE = __dep_common.PACK_SLICING_RE
 PACK_STORE_RE = __dep_common.PACK_STORE_RE
 PACK_WORKSPACE_RE = __dep_common.PACK_WORKSPACE_RE
@@ -198,45 +196,13 @@ def validate_carriage(packages, diag: Diagnostics) -> None:
 
 
 def _validate_pack_carriage(pkg: dict, by_name: dict, diag: Diagnostics) -> None:
-    file_label = rel(pkg["skill_md"])
-    body = pkg["body"]
-    slicing_m = PACK_SLICING_RE.search(body)
-    slicing_stems = set()
-    if slicing_m:
-        slicing_path = (pkg["path"] / slicing_m.group(1)).resolve()
-        if slicing_path.is_file():
-            slicing_stems = _carriage_body_stems(_read_source(slicing_path))
-    workspace_m = PACK_WORKSPACE_RE.search(body)
-    workspace_names_store = bool(workspace_m and PACK_STORE_RE.search(workspace_m.group(1)))
+    """Packs own their craft and check cells; no executor body is carried.
 
-    for role, pattern in (("executor", PACK_EXECUTOR_RE), ("assembly", PACK_ASSEMBLY_RE)):
-        m = pattern.search(body)
-        if not m:
-            continue
-        skill_name = m.group(1)
-        skill_pkg = by_name.get(skill_name)
-        if skill_pkg is None:
-            continue  # unresolved binding already reported by build_call_graph
-
-        for item in _carriage_require_items(skill_pkg["body"]):
-            carried, head_noun = _carriage_item_carried(item, slicing_stems)
-            if carried:
-                continue
-            message = (
-                f"pack {pkg['path'].name} {role} `{skill_name}`: Require item "
-                f"{item!r} (head noun {head_noun!r}) not carried in the slicing cell"
-            )
-            _carriage_flag(diag, file_label, ("pack", pkg["path"].name, role, head_noun), message)
-
-        return_m = RETURN_TEXT_RE.search(skill_pkg["body"])
-        return_names_filing = bool(return_m and TICKET_FILING_RE.search(return_m.group(1)))
-        if not return_names_filing and not workspace_names_store:
-            diag.error(
-                file_label,
-                f"pack {pkg['path'].name} {role} `{skill_name}` Return does not name the "
-                f"ticket/work-item filing per work-item.md's filing law, and the pack's "
-                f"workspace does not name a store (the law's other filing destination)",
-            )
+    The previous pack-to-skill carriage check was tied to superseded executor
+    cells.  Pack references are now the authoritative craft carrier, while
+    shared ticket filing is enforced by the callable contract.
+    """
+    del pkg, by_name, diag
 
 
 # --- Friction log location ---------------------------------------------

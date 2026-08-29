@@ -3,11 +3,11 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, establishes profile, sends packet, joins returns;
+- Root routes, establishes profile, sends packet, joins;
   relay a `kind: user-only` question verbatim; never author role-bearing
   payloads. Packet-less/wrong-profile role-bearing
   refuses. `role: none` orchestrates, never authors artifacts.
-  `orch-off` suspends routing. Route smallest-first by graph shape:
+  orch-off is a router flag that suspends routing. Route smallest-first by shape:
   **answer** — evidence in context decides it; **single** — one
   [ticket]({{ORCH_LIB}}/contracts/work-item.md) with semantic payload Goal, Context,
   optional Suggested files goes to `orch-frontier`;
@@ -18,13 +18,13 @@
   evidence store establishment, attempt opening, and packet
   projection, retaining its
   `workspace_path` and returning one packet or one unchanged refusal. Establish
-  matching `orch-planner` child. Send the
-  complete emitted packet. Its response `.packet` goes by file/stdin; child runs
+  `orch-planner` child. Send the
+  emitted packet. Its response `.packet` goes by file/stdin; child runs
   `tickets.py dispatch-receive` with `--file <path>` or `--file -`. A durable
   accepted receipt is required; then start exact `orch-decompose`.
   ticket path is not a packet; outer coordinator integrates, starts
-  `orch-frontier`. **spec** — one same planner child runs
-  `orch-spec`: seal direct root for one lawful executor; for distinct
+  `orch-frontier`. **spec** — same planner child runs
+  `orch-spec`: seal direct root for a lawful executor; for distinct
   outcomes or dependencies, take a sealed `orch-decompose` root through
   `tickets.py dispatch`, then run `orch-decompose`.
   outer coordinator integrates, starts `orch-frontier`. Planner never persists

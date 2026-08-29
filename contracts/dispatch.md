@@ -63,13 +63,16 @@ wrapper is a structured `packet-invalid` refusal.
 A packet has exactly the common fields `protocol`, `source`, `dispatch_id`,
 `assignment_seal`, `outcome_record_id`, `lease_expires_at`, `executor`, `role`,
 `profile`, `assigned_name`, `reply_to`, `workspace`, `pack`, `independence`,
-`isolation`, `admission`, `prompt`, `form`, and `durability`, plus exactly one
-of `reference` or `inline`. Source and reference are exact `{run,id}` objects.
+`isolation`, `admission`, `prompt`, `review_kind`, `form`, and `durability`,
+plus exactly one of `reference` or `inline`. `review_kind` is null for an
+ordinary execution packet or one of `critique`, `repair`, and `verify` for a
+typed review lane. Source and reference are exact `{run,id}` objects.
 
 Reference is the default and is checked against the committed packet record.
 Inline is a ticket-durable snapshot: `inline` has exactly `assignment` and
 `envelope_seal`; that seal binds assignment, source, dispatch, assignment,
-lease, outcome, owner, role, profile, reply target, workspace, and durability.
+lease, outcome, owner, role, profile, review kind, reply target, workspace,
+and durability.
 A ticket packet cannot be downgraded to ephemeral. The authoritative ticket
 sink must be available for both reference and inline receipt; self-carried
 inline material cannot authenticate offline role-bearing execution. Packet-only
@@ -140,3 +143,7 @@ inline receipt is refused.
 T0 supersession record sha256:008949dad0a49ab76c5bf65645081a895add5e2d2116032c653061c0b0aeafde:
 review-stage joins bind the accepted blocker subset and exact repair or
 verification artifact through the ticket's predecessor-linked review ledger.
+
+T0 supersession record sha256:fc3cbeefa9b42ca373758739a79cb092ea5512cd850e09bb6d3d6b32e380691b:
+packet projections carry one typed `review_kind`; execute and check routing
+consumes the resolved pack cells for that lane, with no legacy checker aliases.

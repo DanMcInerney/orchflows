@@ -82,12 +82,12 @@ Everything else runs only when you name it, so the routing table never
 grows as the library does. The table is installed at
 `~/.orchflows/host-block.md`, the one surface every turn already pays
 for; `rules/topology.md` §2 owns what may enter it. If routing gets in
-the way, `orch-off` stands it down for the session.
+the way, the router's off flag stands it down for the session.
 
 Name the bricks yourself when you want a specific shape:
 
     > orch-loop the build until `pytest -q` exits 0
-    > orch-critique this cache design — rank what it gets wrong
+    > orch-check this cache design — rank what it gets wrong
     > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
 
@@ -129,7 +129,7 @@ and keep it by default.
 Every run auto-logs its friction — retries, missing inputs,
 workarounds — under an always-on law, and `trace.py` extracts each
 session's requests, narration and tool calls into one event record.
-`orch-self-improve` mines those logs into proposals you accept or
+the improvement composition mines those logs into proposals you accept or
 reject, each scoped to where the change lands: your **environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
 that keep causing friction), or the **workflows** themselves. Real
@@ -138,17 +138,17 @@ proposals from my own usage:
 - Offload a repeated piece of agent reasoning to a deterministic script
 - A tiny AGENTS.md addition pointing agents at the packaged Python
   instead of whatever `python` is on `$PATH`
-- Remove overlapping `orch-verify` steps from a workflow to speed it up
+- Remove overlapping verification steps from a workflow to speed it up
 - Add a documentation-update step a user kept requesting manually
 
-Chain any bricks and put `orch-self-improve` last and you have a
+Chain any bricks and put the improvement composition last and you have a
 workflow that upgrades itself:
 
-    > my release workflow: orch-investigate what merged since the last
+    > my release workflow: investigate what merged since the last
       tag → a root ticket for the release notes under the content pack
-      → orch-self-improve
+      → improvement proposal
 
-The coolest part: it runs on itself. I run `orch-self-improve` across
+The coolest part: it runs on itself. I run the improvement composition across
 all sessions in a project, then point a second run at the first one.
 
 ### Tournaments: evolve and benchmaker
@@ -166,9 +166,9 @@ the same loop to the library's own skills.
 
 ### Visualize anything
 
-[`orch-visualize`](skills/utilities/orch-visualize/SKILL.md) renders a
-supplied subject as a verified visual page, choosing diagrams, panels,
-or charts from its relationships. This delivery view points to
+`orch-execute` renders a supplied subject as a verified visual page when
+the design pack is stamped, choosing diagrams, panels, or charts from its
+relationships. This delivery view points to
 [`orch-spec`](skills/workflows/orch-spec/SKILL.md),
 [`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
 [`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
@@ -215,7 +215,7 @@ self-improvement wired into every run.
 ### Legos
 
 - **One brick, one job.** `orch-frontier` runs the graph,
-  `orch-critique` challenges Goal and evidence, `orch-verify` independently
+  `orch-check` challenges Goal and evidence, its typed verify lane independently
   decides Goal, `orch-loop` iterates, and the `fix` workflow proves the cause
   before repairing it.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
@@ -252,13 +252,13 @@ this README does not keep a second copy of it.
 ### Packs
 
     packs/
-    ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-tdd
+    ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-execute
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-draft, assembly orch-edit
+    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-execute, assembly stage
     │                        workspace: document tree with outline slots
-    ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-render
+    ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-execute
     │                        workspace: git plus render (view × breakpoint × state)
-    └── orch-research-pack — delivers answers     · source evidence       · executor orch-investigate, assembly orch-synthesize
+    └── orch-research-pack — delivers answers     · source evidence       · executor orch-execute, assembly stage
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's
@@ -280,7 +280,7 @@ saved workflows are no longer the difference, so this is what is:
   review is house advice there; here Goal, executor evidence, and the
   applicable independent path stand between an executor's claim and "done".
 - **Self-improving.** Nothing there mines runs into fixes; here friction
-  and traces feed `orch-self-improve`, including on itself.
+  and traces feed the improvement composition, including on itself.
 - **Survives session death.** Exit mid-run and a workflow starts fresh
   there; here every ticket is a file in a per-user state sink, so any
   fresh context in any checkout resumes mid-flight.

@@ -41,7 +41,7 @@ holding ``main.jsonl`` and ``subagents/``.
 of rollout files (one thread per file; parent/child linked by
 ``source.subagent.thread_spawn.parent_thread_id``).
 
-Extraction only. Findings are `orch-self-improve`'s to synthesize from
+Extraction only. Findings belong to the improvement composition to synthesize from
 the sink's own streams; this script mines nothing.
 """
 from __future__ import annotations

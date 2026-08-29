@@ -38,3 +38,15 @@ The shape principles every domain shares are
   spec's source policy.
 - Rigor: does each load-bearing claim reach the confidence the spec's
   rigor bar demands?
+
+## Execute stages
+
+- Investigate one bounded question with primary sources inside the fixed
+  source policy; log search paths, dead ends and contradictions.
+- Record each atomic claim with source, date, location and confidence;
+  separate direct showing from interpretation.
+- Synthesize only after at least two independent evidence packets exist;
+  preserve disagreement and declare uncovered sub-questions as gaps.
+- Reject laundering, unsupported extrapolation and stale evidence; a thin
+  answer is preferable to false convergence.
+- Return a traceable evidence identity, source list, confidence and gaps.

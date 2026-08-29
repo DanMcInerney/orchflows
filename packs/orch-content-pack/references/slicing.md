@@ -1,6 +1,6 @@
 # Content slicing
 
-When one executor owns a complete document, issue one direct `orch-draft` root
+When one executor owns a complete document, issue one direct `orch-execute` root
 for the whole artifact. Goal names the finished document, Context carries the
 voice contract, citation policy, length bound, fixed evidence, and exceptional constraints; Suggested files may point at source or
 destination documents without limiting the executor.

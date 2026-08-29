@@ -22,8 +22,8 @@ CALLABLE_EXECUTORS = (
 )
 
 EXECUTOR_REGISTRY = {
-    "orch-execute": {"role": "worker", "consumer": "execute"},
-    "orch-check": {"role": "planner", "consumer": "check"},
+    "orch-execute": {"role": "worker", "consumer": "execute", "requires_pack": True},
+    "orch-check": {"role": "planner", "consumer": "check", "requires_pack": True},
     "orch-decompose": {"role": "planner", "consumer": None},
     "orch-integrate": {"role": "none", "consumer": None},
     "orch-frontier": {"role": "none", "consumer": None},

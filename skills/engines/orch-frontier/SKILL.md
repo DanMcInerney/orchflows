@@ -18,7 +18,7 @@ its durable accepted receipt, bound to its identity and authority,
 applies the exact executor.
 
 Each ticket takes one independence path. Ordinary review creates `<id>.check`
-with `checker-stage`, dispatches one distinct read-only `orch-critique` dispatch through
+with `checker-stage`, dispatches one distinct read-only `orch-check` dispatch through
 packet, receipt, outcome, and join, then runs `check <run> <id> --stage
 <id>.check`. `GatePlan` carries fixed artifact, Goal, Context, executor evidence,
 Result, and Verification. Then:

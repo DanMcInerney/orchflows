@@ -48,3 +48,17 @@ finding. A finding is `blocking: true` when it shows a frozen
 completion criterion false, or is a correctness finding at the fixed
 identity; contract fidelity with no criterion failing, scope and shape
 are `blocking: false` — reported, never repaired in the same run.
+
+## Execute stages
+
+- Start with one claimed code ticket and turn its Goal into a failing,
+  observable check before implementation.
+- Keep the red-green slice at one seam: make the smallest change that
+  turns that check green, then retain the regression guard.
+- Reconcile with surrounding idiom and run the narrow affected checks
+  before repository-global gates.
+- For conflict or repair work, read both candidate diffs and the accepted
+  blocker ledger; resolve only evidence-backed overlap and record the
+  resulting identity.
+- A clean repair is an explicit empty-set proof, not an unrecorded no-op.
+- Return code identity, check command and outcome, plus unresolved risks.

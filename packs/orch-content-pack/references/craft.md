@@ -45,3 +45,14 @@ The shape principles every domain shares are
   evidence cannot support is marked, not smoothed over.
 - Audience: the stated reader can act on this without knowledge the
   spec does not grant them.
+
+## Execute stages
+
+- Draft from the fixed evidence and voice contract; every section has one
+  section job and earns its place in the throughline.
+- Edit only after the complete draft exists: preserve supported claims,
+  add signposts, and cut weakest-first while recording the cut log.
+- Assembly is terminal and deterministic: name every included section,
+  resolve ordering and duplicate jobs, and emit one document identity.
+- Re-read the skim layer and verify the landing against the opening hook.
+- Return the revision identity, budget count, evidence trace and cut log.

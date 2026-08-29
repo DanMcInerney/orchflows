@@ -362,7 +362,7 @@ def _cmd_improvement(rest):
     line, which is the whole reason the record is JSONL.
     Neither body is read, parsed or validated. This is a channel; what a
     proposal says and what a coverage line carries belong to
-    ``orch-self-improve``.
+    the improvement composition.
     There is no fallback. A write that cannot reach the resolved root is
     reported as an error and lands nowhere else.
     """

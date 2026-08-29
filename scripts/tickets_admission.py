@@ -7,14 +7,14 @@ import re
 from pathlib import Path
 
 if __package__:
-    from .tickets_registry import executor_refusal, executor_registered
+    from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
 else:
-    from tickets_registry import executor_refusal, executor_registered
+    from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
@@ -63,6 +63,11 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         and not executor_registered(executor)
     ):
         findings.append(finding("executor-unregistered", "executor", executor_refusal(executor)))
+    elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not pack:
+        findings.append(finding(
+            "executor-pack-required", "pack",
+            f"{executor} consumes resolved pack cells and requires a stamped pack",
+        ))
     unbound = (
         executor.startswith(SCRIPT_EXECUTOR_PREFIX)
         or executor == ROOT_EXECUTOR

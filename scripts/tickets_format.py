@@ -148,6 +148,11 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if executor and not PLACEHOLDER_RE.search(executor):
         if not executor.startswith(SCRIPT_EXECUTOR_PREFIX) and not executor_registered(executor):
             defects.append(executor_refusal(executor))
+        elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not str(data.get("pack") or "").strip():
+            defects.append(
+                f"executor-pack-required: {executor} consumes resolved pack cells and "
+                "requires a stamped pack"
+            )
     review_kind = str(data.get('review_kind') or '').strip().strip('`')
     if review_kind and review_kind not in REVIEW_KINDS:
         defects.append(

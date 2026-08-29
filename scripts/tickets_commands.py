@@ -43,7 +43,7 @@ DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> --reply-to <name> "
     "[--workspace <path>] [--artifact <fixed-identity>] "
-    "[--form reference | inline]"
+    "[--form reference | inline] [--review-kind critique|repair|verify]"
 )
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 GRADE_USAGE = "grade <run> <root>"

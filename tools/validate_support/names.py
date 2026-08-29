@@ -89,7 +89,7 @@ def validate_names(packages, diag: Diagnostics) -> None:
 def validate_lens_anchor(packages, diag: Diagnostics) -> None:
     """Each pack's lens cell anchor lands on a heading that exists.
 
-    contracts/pack-signature.md binds the lens to `orch-critique` plus the
+    contracts/pack-signature.md binds the lens to the check lane plus the
     pack's craft `## Lens`, and every gate lane the pack stamps reads its
     criteria there. Deleting the heading left the validator at exit 0.
     """
