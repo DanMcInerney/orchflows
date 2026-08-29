@@ -130,6 +130,28 @@ class ReportCommandTest(unittest.TestCase):
         self.window()
         self.assertEqual(sink_state(self.sink), before)
 
+    def test_records_after_the_window_cannot_change_report_bytes(self):
+        before_text = self.window()
+        before_json = self.window("--format", "json")
+        self.assertEqual((before_text.returncode, before_json.returncode), (0, 0))
+
+        path = self.sink / "friction" / "2026-08.jsonl"
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({
+                "ts": "2026-08-24T12:00:00Z",
+                "category": "tool-failure",
+                "skill": "orch-tdd",
+                "host": "codex",
+                "run": "after-window",
+                "observed": "added after the report window",
+                "expected": "excluded from fixed-window bytes",
+            }) + "\n")
+
+        after_text = self.window()
+        after_json = self.window("--format", "json")
+        self.assertEqual(after_text.stdout, before_text.stdout)
+        self.assertEqual(after_json.stdout, before_json.stdout)
+
     def test_a_root_that_holds_no_sink_is_an_answer_not_an_error(self):
         with tempfile.TemporaryDirectory() as raw:
             completed = report_cli(Path(raw) / "nowhere", "--format", "json")

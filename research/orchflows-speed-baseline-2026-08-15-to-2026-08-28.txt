@@ -1,0 +1,352 @@
+orchflows speed report
+root: C:\Users\danhm\.orchflows\state
+window: 2026-08-15T00:00:00Z .. 2026-08-28T00:00:00Z
+runs: 413 (218 terminal, 151 complete, 118 never claimed a non-decompose ticket); families: 376; tickets measured: 1329
+
+runs (longest first, top 40)
+----------------------------
+run                                                  minutes  from        terminal  tickets  complete  failed  claimed no work  opened                last write          
+20260818T011106Z-verification-guardrails             2272.1   observed    -         10       0         0       yes              2026-08-18T01:13:40Z  2026-08-19T15:05:48Z
+20260825T234057Z-browser-game-composition            1729.8   observed    -         8        0         0       yes              2026-08-25T23:42:16Z  2026-08-27T04:32:01Z
+20260815T044412Z-sink-cutover                        1181.0   observed    -         3        1         0       yes              2026-08-15T04:45:29Z  2026-08-16T00:26:31Z
+20260815T013901Z-handoff-next                        722.6    observed    -         15       9         0       no               2026-08-15T12:23:57Z  2026-08-16T00:26:31Z
+20260815T214417Z-top10-mma-experiments               653.1    observed    -         13       13        0       no               2026-08-15T21:56:57Z  2026-08-16T08:50:04Z
+20260822T023847Z-now-page-improvements-v2            650.9    observed    -         9        7         0       no               2026-08-22T02:41:36Z  2026-08-22T13:32:28Z
+20260823T210000Z-trunk-slimming                      643.3    elapsed_ms  limited   17       13        0       no               2026-08-24T00:10:26Z  2026-08-24T10:53:43Z
+test-suite-speed-20260815                            581.8    observed    -         0        0         0       yes              2026-08-15T14:44:41Z  2026-08-16T00:26:30Z
+20260824T124138Z-self-improve-batch                  488.8    elapsed_ms  limited   12       11        0       no               2026-08-24T12:43:04Z  2026-08-24T20:52:37Z
+20260819T222633Z-final-spec-implementation           483.8    elapsed_ms  complete  14       14        0       no               2026-08-19T22:27:09Z  2026-08-20T06:31:07Z
+20260819T044203Z-orchflows-ui-experience-v3          411.9    elapsed_ms  complete  11       11        0       no               2026-08-19T09:38:57Z  2026-08-19T16:49:32Z
+20260824T222500Z-emission-law                        395.9    elapsed_ms  limited   17       15        0       no               2026-08-24T21:43:53Z  2026-08-25T04:20:20Z
+20260821T200748Z-now-page-improvements               384.6    observed    -         9        0         0       yes              2026-08-21T20:09:38Z  2026-08-22T02:34:13Z
+20260823T130218Z-orchflows-speed                     355.5    elapsed_ms  complete  17       17        0       no               2026-08-23T13:02:18Z  2026-08-23T18:57:58Z
+20260825T143105Z-now-page-redesign                   346.4    elapsed_ms  limited   10       9         0       no               2026-08-25T14:32:36Z  2026-08-25T20:24:34Z
+20260820T110412Z-ui-modularization-workflows         344.7    observed    -         22       17        1       no               2026-08-20T11:04:38Z  2026-08-20T16:49:20Z
+20260822T083222Z-adhoc-typescript-eslint-compat      301.8    elapsed_ms  complete  1        1         0       no               2026-08-22T08:32:41Z  2026-08-22T13:34:28Z
+20260816T080000Z-ticket-set-p4                       289.2    observed    -         11       11        0       no               2026-08-16T05:46:44Z  2026-08-16T10:35:57Z
+20260818-script-size-refactor                        281.8    elapsed_ms  complete  71       71        0       no               2026-08-18T18:06:26Z  2026-08-18T22:48:15Z
+20260819T044203Z-orchflows-ui-platform-v2            275.7    elapsed_ms  complete  11       11        0       no               2026-08-19T04:43:33Z  2026-08-19T09:39:51Z
+20260821T113014Z-now-page-simplification-edge-ready  269.1    elapsed_ms  complete  13       13        0       no               2026-08-21T11:30:44Z  2026-08-21T15:59:48Z
+grok-build-host-20260826                             266.2    elapsed_ms  complete  13       13        0       no               2026-08-26T18:27:59Z  2026-08-26T22:54:57Z
+20260816T191118Z-adhoc-skills-review                 266.0    observed    -         24       24        0       no               2026-08-16T19:17:16Z  2026-08-16T23:43:14Z
+20260825T190740Z-browser-game-pack-f1                253.4    observed    -         11       0         0       yes              2026-08-25T19:09:58Z  2026-08-25T23:23:22Z
+20260822T092411Z-adhoc-now-product-gate-repair       237.8    elapsed_ms  complete  1        1         0       no               2026-08-22T09:24:36Z  2026-08-22T13:22:25Z
+20260820T-test-speed-oneshot                         222.8    elapsed_ms  complete  1        1         0       no               2026-08-20T20:11:35Z  2026-08-20T23:54:27Z
+20260816T123000Z-adhoc-review-followups              222.7    observed    -         11       10        0       no               2026-08-16T14:02:21Z  2026-08-16T17:45:00Z
+20260818T022921Z-verification-guardrails-sole-owner  211.9    observed    -         7        7         0       no               2026-08-18T02:30:36Z  2026-08-18T06:02:30Z
+20260826T053019Z-context-contract                    199.9    elapsed_ms  complete  8        8         0       no               2026-08-26T05:35:23Z  2026-08-26T08:56:17Z
+20260817T215731Z-research-depth                      197.8    observed    -         12       12        0       no               2026-08-17T22:00:29Z  2026-08-18T01:18:18Z
+20260816T130317Z-nested-chrono-refit-campaign        190.8    observed    -         10       9         1       no               2026-08-16T13:13:45Z  2026-08-16T16:24:30Z
+20260817T135914Z-decomposer-cut-goals                172.6    observed    -         13       13        0       no               2026-08-17T14:00:59Z  2026-08-17T16:53:35Z
+20260816T141500Z-bench-host-block-length             165.2    observed    -         14       9         0       no               2026-08-16T14:09:55Z  2026-08-16T16:55:09Z
+20260821T-fast-serial-implementation-v2              164.8    elapsed_ms  failed    1        0         1       no               2026-08-21T01:14:29Z  2026-08-21T03:59:19Z
+20260827T145811Z-dispatch-v1-corrected               164.7    elapsed_ms  complete  10       10        0       no               2026-08-27T14:58:42Z  2026-08-27T17:43:22Z
+20260818T003148Z-browser-3d-agentic-worlds           162.1    observed    -         41       39        0       no               2026-08-18T00:43:26Z  2026-08-18T03:25:34Z
+20260822T153153Z-draft-validate-seal-lifecycle       159.8    elapsed_ms  failed    9        7         2       no               2026-08-22T15:36:36Z  2026-08-22T18:16:33Z
+20260815T214836Z-adhoc-design-review                 157.0    observed    -         16       16        0       no               2026-08-15T21:53:01Z  2026-08-16T00:30:03Z
+20260820T132659Z-thin-orchestrator-enforcement       143.1    elapsed_ms  complete  8        6         1       no               2026-08-20T13:38:35Z  2026-08-20T16:01:50Z
+20260818T031229Z-code-pack-parallel-module-policy    140.1    observed    -         9        9         0       no               2026-08-18T10:55:51Z  2026-08-18T13:15:59Z
+
+families (top 40 of 376)
+------------------------
+family                                     physical runs  wall-clock minutes  oracle minutes  oracle calls  timed  span from             span to               statuses             
+now-page-simplification                    5              500.4               0.0             71            0      2026-08-21T07:39:27Z  2026-08-21T15:59:48Z  blocked=4, complete=1
+final-spec-implementation                  1              483.8               45.165          32            5      2026-08-19T22:27:09Z  2026-08-20T06:31:07Z  complete=1           
+orchflows-ui-experience                    2              431.2               19.732          23            4      2026-08-19T09:19:40Z  2026-08-19T16:49:32Z  complete=1, failed=1 
+orchflows-speed                            1              355.5               664.292         149           9      2026-08-23T13:02:18Z  2026-08-23T18:57:58Z  complete=1           
+adhoc-typescript-eslint-compat             1              301.8               0.0             15            0      2026-08-22T08:32:41Z  2026-08-22T13:34:28Z  complete=1           
+script-size-refactor                       1              281.8               6.8             92            3      2026-08-18T18:06:26Z  2026-08-18T22:48:15Z  complete=1           
+orchflows-ui-platform                      1              275.7               47.127          17            5      2026-08-19T04:43:33Z  2026-08-19T09:39:51Z  complete=1           
+grok-build-host-20260826                   1              266.2               0.0             48            0      2026-08-26T18:27:59Z  2026-08-26T22:54:57Z  complete=1           
+adhoc-now-product-gate-repair              1              237.8               0.0             3             0      2026-08-22T09:24:36Z  2026-08-22T13:22:25Z  complete=1           
+20260820T-test-speed-oneshot               1              222.8               170.41          18            5      2026-08-20T20:11:35Z  2026-08-20T23:54:27Z  complete=1           
+dispatch-v1                                2              200.2               0.0             2             0      2026-08-27T14:23:09Z  2026-08-27T17:43:22Z  complete=1, failed=1 
+context-contract                           1              199.9               0.0             4             0      2026-08-26T05:35:23Z  2026-08-26T08:56:17Z  complete=1           
+thin-orchestrator-enforcement              1              143.1               9.518           8             1      2026-08-20T13:38:35Z  2026-08-20T16:01:50Z  complete=1           
+documentation-review                       2              130.0               0.0             13            0      2026-08-19T02:59:56Z  2026-08-19T05:09:54Z  blocked=1, complete=1
+grok-followups-20260827                    1              129.8               0.0             67            0      2026-08-27T04:45:50Z  2026-08-27T06:55:53Z  complete=1           
+workspace-isolation                        1              126.3               0.0             23            0      2026-08-24T12:24:36Z  2026-08-24T14:30:54Z  complete=1           
+orchflows-runtime-venv                     1              106.0               5.909           11            1      2026-08-19T00:32:51Z  2026-08-19T02:18:52Z  complete=1           
+mmaai-results-prod-github                  2              85.6                0.0             0             0      2026-08-23T12:42:20Z  2026-08-23T15:24:23Z  blocked=1, complete=1
+eight-improvement-specs                    2              83.5                8.301           15            2      2026-08-19T19:04:19Z  2026-08-19T20:27:57Z  complete=1, failed=1 
+remove-project-install                     4              82.6                0.0             19            0      2026-08-21T17:35:17Z  2026-08-21T19:08:46Z  blocked=3, complete=1
+gate-pack-phase-policy                     1              79.2                0.0             1             0      2026-08-27T13:37:45Z  2026-08-27T14:57:24Z  complete=1           
+20260821T-fast-serial-simplification       1              72.2                0.0             2             0      2026-08-21T05:39:18Z  2026-08-21T06:51:35Z  complete=1           
+ui-modularization-spec                     2              69.7                0.0             1             0      2026-08-20T01:41:27Z  2026-08-20T02:51:18Z  blocked=1, complete=1
+mmaai-results-prod-github-release-proof    1              68.2                0.0             0             0      2026-08-23T14:15:20Z  2026-08-23T15:24:16Z  complete=1           
+verification-guardrails-main-adoption      1              63.4                8.587           15            2      2026-08-19T15:05:37Z  2026-08-19T16:09:21Z  complete=1           
+adhoc-mine-two-weeks                       1              62.0                0.0             0             0      2026-08-19T16:49:07Z  2026-08-19T17:51:08Z  complete=1           
+edit-phased-simplification-spec            1              61.0                0.0             2             0      2026-08-22T21:47:01Z  2026-08-22T22:48:56Z  complete=1           
+20260819T-final-specs-architecture-review  1              59.7                0.0             0             0      2026-08-19T21:12:38Z  2026-08-19T22:12:22Z  complete=1           
+workflows-simplification-spec              1              57.5                0.0             0             0      2026-08-20T02:51:54Z  2026-08-20T03:49:24Z  complete=1           
+dispatch-contract-fixes-20260825           1              55.8                0.0             11            0      2026-08-25T21:09:49Z  2026-08-25T22:36:47Z  complete=1           
+review-bundles-admission-fix-20260826      1              50.1                0.682           2             1      2026-08-26T06:19:42Z  2026-08-26T07:10:21Z  complete=1           
+ui-experience-foundation-gap-fix           3              48.9                0.0             4             0      2026-08-19T10:54:35Z  2026-08-19T12:00:41Z  complete=2, failed=1 
+small-medium-large-routing-20260826        1              43.7                0.0             0             0      2026-08-26T13:52:01Z  2026-08-26T14:35:42Z  complete=1           
+adhoc-cutcheck-owner-prose-fix             1              40.1                0.0             6             0      2026-08-23T13:36:37Z  2026-08-23T14:16:43Z  complete=1           
+fix-g4-keyboard-race                       1              38.6                5.883           18            2      2026-08-22T07:19:35Z  2026-08-22T08:04:00Z  complete=1           
+20260820T-serial-speed-audit               1              36.9                0.07            3             1      2026-08-21T00:26:17Z  2026-08-21T01:03:19Z  complete=1           
+adhoc-ticket-family-fixture                1              36.3                0.0             4             0      2026-08-23T14:47:16Z  2026-08-23T15:23:36Z  complete=1           
+adhoc-source-lint-repair                   1              35.1                5.8             13            1      2026-08-22T08:46:20Z  2026-08-22T09:21:28Z  complete=1           
+lifecycle-readability-closure              1              33.9                58.454          15            2      2026-08-22T19:25:30Z  2026-08-22T19:59:33Z  complete=1           
+ticket-packet-gate-hardening               2              33.2                0.0             3             0      2026-08-27T20:50:57Z  2026-08-27T22:54:44Z  blocked=1, complete=1
+
+ticket durations by executor
+----------------------------
+executor                  tickets  median    p90       max     
+ad-hoc                    2        3.28      3.94      3.94    
+github:github             1        13.79     13.79     13.79   
+orch-build                6        24.85     48.03     48.03   
+orch-check                1        116.81    116.81    116.81  
+orch-critique             113      13.13     23.96     156.31  
+orch-decompose            103      29.11     268.04    635.82  
+orch-draft                59       6.77      18.08     18.5    
+orch-edit                 8        10.55     28.9      28.9    
+orch-eval-design          2        9.44      15.74     15.74   
+orch-fixture              1        30.54     30.54     30.54   
+orch-frontier             1        175.66    175.66    175.66  
+orch-investigate          203      7.96      21.98     22742.7 
+orch-loop                 34       10.32     28.84     38.69   
+orch-planner              1        10106.52  10106.52  10106.52
+orch-render               12       67.7      114.39    124.86  
+orch-repair               101      12.76     57.86     117.38  
+orch-resolve-conflicts    8        8.09      10.29     10.29   
+orch-self-improve         3        11.73     45.13     45.13   
+orch-spec                 7        19.78     47.13     47.13   
+orch-synthesize           13       14.57     132.94    4636.52 
+orch-task                 6        23258.4   27806.52  27806.52
+orch-tdd                  546      31.84     7451.02   31706.52
+orch-verify               94       8.72      20.2      75.73   
+orch-worker               2        1060.93   2115.88   2115.88 
+script:bin/state_root.py  1        1.27      1.27      1.27    
+unset                     1        10106.52  10106.52  10106.52
+
+longest tickets (top 40)
+------------------------
+run                                 ticket                             executor          status    minutes   claimed                  
+live-e2e-2026-07-25                 A6                                 orch-tdd          claimed   31706.52  2026-07-25               
+orchflows-maint-2026-07-27          M1                                 orch-task         complete  27806.52  2026-07-27T17:00:00Z     
+orchflows-maint-2026-07-27          M2                                 orch-task         complete  27746.52  2026-07-27T18:00:00Z     
+orchflows-maint-2026-07-27          M3                                 orch-task         complete  27741.52  2026-07-27T18:05:00Z     
+claude-plugins-2026-07-31           p1-tracer                          orch-tdd          complete  23066.52  2026-07-31               
+claude-plugins-2026-07-31           p2-refusals-and-identity           orch-tdd          complete  23066.52  2026-07-31               
+claude-plugins-2026-07-31           p3-attempt-evidence                orch-tdd          complete  23066.52  2026-07-31               
+claude-plugins-2026-07-31           p4-web-and-docs                    orch-tdd          complete  23066.52  2026-07-31               
+biv-bench-20260731                  L1                                 orch-investigate  complete  22742.7   2026-07-31T05:23:49Z     
+biv-bench-20260731                  L3                                 orch-investigate  complete  22742.7   2026-07-31T05:23:49Z     
+biv-bench-20260731                  L4                                 orch-investigate  complete  22742.7   2026-07-31T05:23:49Z     
+orchflows-maint-2026-08-03          T1                                 orch-task         complete  18775.27  2026-08-02T23:31:15Z     
+orchflows-maint-2026-08-03          T2                                 orch-task         complete  18736.52  2026-08-03T00:10:00Z     
+orchflows-maint-2026-08-03          T3                                 orch-task         complete  18716.52  2026-08-03T00:30:00Z     
+solver-tool-permissions-2026-08-07  t1-tracer-capability-seam          orch-tdd          complete  12899.43  2026-08-07T09:27:05+08:00
+solver-tool-permissions-2026-08-07  t2-nine-benchmark-sets             orch-tdd          complete  12819.53  2026-08-07T10:46:59+08:00
+solver-tool-permissions-2026-08-07  t3-capability-aware-refusal        orch-tdd          complete  12819.53  2026-08-07T10:46:59+08:00
+solver-tool-permissions-2026-08-07  t4-model-api-empty-surface         orch-tdd          complete  12819.53  2026-08-07T10:46:59+08:00
+solver-tool-permissions-2026-08-07  t5-manifest-freeze-and-verify-run  orch-tdd          complete  12819.53  2026-08-07T10:46:59+08:00
+solver-tool-permissions-2026-08-07  t6-live-deny-name-validation       orch-tdd          complete  12819.53  2026-08-07T10:46:59+08:00
+20260808-open-findings              t02-doctor-tracer-apex             orch-tdd          accepted  11546.52  2026-08-08               
+20260808-open-findings              t03-doctor-livecodebench-deep-swe  orch-tdd          complete  11546.52  2026-08-08               
+20260808-open-findings              t04-doctor-fanout-a                orch-tdd          complete  11546.52  2026-08-08               
+20260808-open-findings              t06-procs-final-progress           orch-tdd          accepted  11546.52  2026-08-08               
+20260808-open-findings              t08-web-install-docstring          orch-tdd          complete  11546.52  2026-08-08               
+20260808-open-findings              t09-swe-bench-pro-diagnosis        orch-tdd          accepted  11546.52  2026-08-08               
+20260808-open-findings              t01-phase0-instrument              orch-tdd          complete  10995.8   2026-08-08T09:10:43Z     
+20260808-open-findings              t13-oracle-sharpen                 orch-tdd          complete  10108.52  2026-08-08T23:58:00Z     
+20260808-open-findings              t05-doctor-fanout-b                orch-tdd          complete  10106.52  2026-08-09               
+20260808-open-findings              t10-invariants-and-ledger-reasons  orch-tdd          done      10106.52  2026-08-09               
+20260808-open-findings              t12-open-findings-rewrite          orch-planner      complete  10106.52  2026-08-09               
+20260808-open-findings              t15-true-statements                orch-tdd          complete  10106.52  2026-08-09               
+20260808-open-findings              t16-ac5-item-one                   orch-tdd          complete  10106.52  2026-08-09               
+20260808-open-findings              t17-gate-repair                    -                 complete  10106.52  2026-08-09               
+20260808-open-findings              t07-durable-record-conversions     orch-tdd          complete  10021.52  2026-08-09T01:25:00Z     
+20260808-open-findings              t14-cleanup-and-raw-reply          orch-tdd          complete  9928.52   2026-08-09T02:58:00Z     
+20260808-open-findings              t11-actor-literal                  orch-tdd          complete  9896.52   2026-08-09T03:30:00Z     
+state-bench-fidelity-20260810       SB1                                orch-tdd          done      8666.52   2026-08-10               
+state-bench-fidelity-20260810       SB2                                orch-tdd          done      8666.52   2026-08-10               
+state-bench-fidelity-20260810       SB3                                orch-tdd          done      8666.52   2026-08-10               
+
+live claims
+-----------
+run                                                     ticket                                                   executor                elapsed  bound  percent  over
+20260814T123433Z-handoff-program-mech                   item-01-exit-convention                                  orch-tdd                19057    90     100      yes 
+20260814T123433Z-handoff-program-mech                   item-03-decompose-isolation                              orch-tdd                19056    60     100      yes 
+20260814T123433Z-handoff-program-mech                   item-04-join-grades-first                                orch-tdd                19056    60     100      yes 
+20260814T123433Z-handoff-program-mech                   item-02-tickets-guards                                   orch-tdd                19042    180    100      yes 
+20260814T123433Z-handoff-program-mech                   item-05-fstring-pass                                     orch-tdd                18985    60     100      yes 
+20260820T110412Z-ui-modularization-workflows            00-ui-implementation                                     orch-decompose          10855    720    100      yes 
+library-docs-admission-repair-20260826                  00-root.07                                               orch-tdd                1608     35     100      yes 
+library-docs-admission-repair-20260826                  00-root.02                                               orch-tdd                1608     45     100      yes 
+library-docs-admission-repair-20260826                  00-root.03                                               orch-tdd                1608     30     100      yes 
+library-docs-admission-repair-20260826                  00-root.13                                               orch-tdd                1608     35     100      yes 
+library-docs-admission-repair-20260826                  00-root.11                                               orch-tdd                1608     35     100      yes 
+mma-next-event-20260825-2-v1                            00-generate-next-event-predictions                       orch-decompose          3206     120    100      yes 
+20260826T085500Z-context-only                           00-root                                                  orch-decompose          1998     120    100      yes 
+errand-terminal-admission-repair-20260826               errand-terminal-admission-repair                         orch-tdd                2284     45     100      yes 
+mma-next-event-20260825-1-v1b                           00-numeric-ev-pipeline                                   orch-decompose          3297     90     100      yes 
+mma-next-event-20260825-transformer-fix-2               00-reproduce                                             orch-investigate        3098     80     100      yes 
+20260822T023847Z-now-page-improvements-v2               00-root                                                  orch-decompose          8476     480    100      yes 
+20260822T065904Z-adhoc-smoke-source-shape               00-repair                                                orch-tdd                8216     50     100      yes 
+20260822T063950Z-adhoc-lazy-route-shell                 00-repair                                                orch-tdd                8238     50     100      yes 
+20260822T061919Z-adhoc-now-integration-repair           00-repair                                                orch-tdd                8253     120    100      yes 
+20260826T182814Z-integrate-main-eof-whitespace          00-root                                                  orch-resolve-conflicts  1769     30     100      yes 
+20260826T181335Z-integrate-main-work-item-diet          00-root                                                  orch-resolve-conflicts  1783     60     100      yes 
+20260826T175953Z-integrate-main-successor-context       00-root                                                  orch-resolve-conflicts  1796     30     100      yes 
+20260826T184221Z-integrate-main-canary-manifest-hashes  00-root                                                  orch-resolve-conflicts  1755     30     100      yes 
+20260822T023847Z-now-page-improvements-v2               00-root.gate.verify                                      orch-verify             7835     60     100      yes 
+20260826T174208Z-integrate-main-work-item-compaction    00-root                                                  orch-resolve-conflicts  1815     60     100      yes 
+errand-lane-final-tail-20260826-retry                   errand-lane-final-tail-root-retry.gate.critique.library  orch-critique           2342     60     100      yes 
+20260822T065500Z-fix-shell-stale-poll                   02-repair                                                orch-repair             8206     120    100      yes 
+20260826T204133Z-bootstrap-protocol-default             00-reproduce                                             orch-investigate        1637     80     100      yes 
+20260826T171532Z-integrate-main-context-only            00-root                                                  orch-resolve-conflicts  1835     120    100      yes 
+library-docs-admission-repair-20260826                  00-root.04                                               orch-tdd                1609     30     100      yes 
+errand-template-input-name-20260826                     errand-template-input-name                               orch-tdd                2255     15     100      yes 
+20260826T173456Z-integrate-main-context-tests           00-root                                                  orch-resolve-conflicts  1823     60     100      yes 
+library-docs-admission-repair-20260826                  00-root.05                                               orch-tdd                1608     40     100      yes 
+library-docs-admission-repair-20260826                  00-root.01                                               orch-tdd                1608     30     100      yes 
+20260826T175331Z-integrate-main-v2-context              00-root                                                  orch-resolve-conflicts  1803     60     100      yes 
+20260827T210600Z-ticket-packet-gate-hardening-v2        00-root.gate.critique.code                               orch-critique           66       60     100      yes 
+20260826T154020Z-context-only-manifest                  00-root                                                  orch-decompose          1910     60     100      yes 
+library-docs-admission-repair-20260826                  00-root.06                                               orch-tdd                1608     50     100      yes 
+20260826T201324Z-candidate-tree-workflow-spec           00-root                                                  orch-decompose          1648     90     100      yes 
+library-docs-finalize-20260826                          00-root                                                  orch-decompose          1693     180    100      yes 
+library-docs-repair-v2-20260826                         00-root                                                  orch-decompose          1806     720    100      yes 
+sync-reinstall-accepted-20260818-817a4ae                00-verify                                                orch-verify             12944    10     100      yes 
+
+friction: 5299 in window, 4199 matched no cluster
+
+friction by category (top 40)
+-----------------------------
+count  category         
+2194   unset            
+1081   surprising-output
+643    tool-failure     
+447    contract-gap     
+226    missing-input    
+201    repeated-attempts
+137    missing-tool     
+137    workaround       
+132    uncategorized    
+66     missing-doc      
+33     misrouting       
+1      bogus            
+1      tooling          
+
+friction by skill (top 40)
+--------------------------
+count  skill                 
+1108   orch-tdd              
+982    unset                 
+502    orch-investigate      
+439    orch-critique         
+419    orch-decompose        
+340    orch-verify           
+323    orch-frontier         
+296    orch-repair           
+246    orch-spec             
+95     orch-build            
+86     orch-integrate        
+84     orch-render           
+76     orch-draft            
+56     orch-loop             
+49     super-research        
+36     orch-resolve-conflicts
+31     orch-self-improve     
+16     fix                   
+16     orch-synthesize       
+14     orch-edit             
+13     orch-workspace        
+12     orch-task             
+11     orch-visualize        
+9      orch-research-pack    
+8      orch-code-pack        
+5      orch-deliver          
+5      orch-design-pack      
+3      github:github         
+3      openai-docs           
+3      orch-delegate         
+2      orch-check            
+2      orch-evolve           
+2      orch-worklog          
+1      gh-fix-ci             
+1      github:yeet           
+1      orch-ad-hoc           
+1      orch-fixture          
+1      orch-worker           
+1      self-improve          
+1      skill-creator         
+
+friction by host (top 40)
+-------------------------
+count  host             
+4845   codex            
+443    claude-code      
+5      LAPTOP           
+4      codex-windows    
+1      Codex            
+1      manual-powershell
+
+friction by run (top 40)
+------------------------
+count  run                                                     
+1129   unset                                                   
+341    20260818-script-size-refactor                           
+151    20260815T214417Z-top10-mma-experiments                  
+147    20260819T044203Z-orchflows-ui-experience-v3             
+118    20260818T003148Z-browser-3d-agentic-worlds              
+116    20260817T194022Z-game-builder-stage1-research           
+93     20260820T110412Z-ui-modularization-workflows            
+88     20260819T222633Z-final-spec-implementation              
+81     20260819T044203Z-orchflows-ui-platform-v2               
+72     20260819T171700Z-ui-live-qa-fixes                       
+67     20260817T213135Z-browser-game-builder-focus             
+65     20260816T130317Z-nested-chrono-refit-campaign           
+53     library-docs-admission-repair-20260826                  
+50     20260822T023847Z-now-page-improvements-v2               
+45     20260821T113014Z-now-page-simplification-edge-ready     
+44     20260820T015236Z-workflows-simplification-spec          
+43     20260818T022921Z-verification-guardrails-sole-owner     
+41     20260826T053019Z-context-contract                       
+41     review-bundles-v2-20260826                              
+40     20260815T013901Z-handoff-next                           
+40     20260819T002519Z-orchflows-runtime-venv                 
+40     20260827T210600Z-ticket-packet-gate-hardening-v2        
+39     20260819T150319Z-verification-guardrails-main-adoption  
+39     library-docs-review-v2-20260826                         
+37     20260818T031229Z-code-pack-parallel-module-policy       
+37     20260820T015236Z-ui-modularization-spec                 
+36     20260827T145811Z-dispatch-v1-corrected                  
+36     simple-lanes-20260825                                   
+35     20260815T214836Z-adhoc-design-review                    
+34     decompose-reviewfix-frictions-20260827                  
+33     20260820T132659Z-thin-orchestrator-enforcement          
+33     20260827T191258Z-ticket-packet-gate-audit               
+33     library-docs-repair-v2-20260826                         
+31     20260819T192133Z-eight-improvement-specs-v2             
+31     20260823T131114Z-mmaai-results-prod-github-release-proof
+30     20260819T032214Z-documentation-review                   
+30     20260822T153153Z-draft-validate-seal-lifecycle          
+30     small-medium-large-routing-v2-20260826-r3               
+27     20260819T164807Z-adhoc-mine-two-weeks                   
+25     20260824T182613Z-publish-next-event-predictions-v3      
+
+friction clusters
+-----------------
+cluster                   records
+powershell-quoting        272    
+rg-wildcard               314    
+guessed-path              23     
+truncated-escaped-result  166    
+workspace-vantage         87     
+missing-node-modules      65     
+word-ceiling              53     
+sealed-assignment         4      
+isolation                 153    
+missing-flag              0      
+full-suite-flake          12     
+
+unreadable
+----------
+runs: -
+tickets: -
+friction files: -
+friction lines: 0

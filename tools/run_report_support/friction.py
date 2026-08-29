@@ -89,15 +89,9 @@ def friction_section(log: dict, keeps, top: int) -> dict:
     bounded, so two windows' tables stay subtractable.
     """
 
-    inside, outside = [], 0
-    for entry in log["entries"]:
-        if keeps(entry.get("ts")):
-            inside.append(entry)
-        else:
-            outside += 1
+    inside = [entry for entry in log["entries"] if keeps(entry.get("ts"))]
     rows, unclustered = clusters_of(inside)
-    section = {"total": len(inside), "outside_window": outside,
-               "clusters": rows, "unclustered": unclustered}
+    section = {"total": len(inside), "clusters": rows, "unclustered": unclustered}
     for field in GROUPINGS:
         rows = _grouped(inside, field)
         section["by_" + field] = rows[: max(top, 0)]

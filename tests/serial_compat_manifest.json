@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1998,
+  "count": 1999,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1070,6 +1070,7 @@
    "tests.test_run_report_cases.cli.ReportCommandTest.test_a_window_after_every_record_gives_empty_tables_and_exit_zero",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_an_unparsable_window_bound_is_refused_rather_than_ignored",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_json_names_every_metric_with_the_value_the_fixture_states",
+   "tests.test_run_report_cases.cli.ReportCommandTest.test_records_after_the_window_cannot_change_report_bytes",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_text_is_the_default_format_and_heads_every_section",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_the_report_writes_nothing_into_the_sink_it_reads",
    "tests.test_run_report_cases.cli.ReportCommandTest.test_the_same_empty_window_renders_as_text_and_still_exits_zero",
@@ -2001,7 +2002,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0c88cfd17a7b18d3a30e4205678193a4a3c765589bb526ff04d3b3379e7f68e9"
+  "sha256": "cb76a7bec7baefc8a05e8d92e2adae297dc5b616eae2e853cf54178248babbf9"
  },
  "mutation_owners": [
   {

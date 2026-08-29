@@ -29,7 +29,7 @@ class FrictionSectionTest(unittest.TestCase):
 
     def test_only_the_records_inside_the_window_are_counted(self):
         self.assertEqual(self.section["total"], 2)
-        self.assertEqual(self.section["outside_window"], 2)
+        self.assertNotIn("outside_window", self.section)
 
     def test_records_are_grouped_by_category_skill_host_and_run(self):
         self.assertEqual(counted(self.section["by_category"], "category"),
