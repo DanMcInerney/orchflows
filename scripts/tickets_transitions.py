@@ -69,17 +69,17 @@ _LIFECYCLE_SPECS = (
     LifecycleSpec("stamp", ("unsealed draft",), PENDING, "caller", "sealed root generation", "contracts/work-item.md", "rules/topology.md"),
     LifecycleSpec("ready", (PENDING,), READY, "caller", "admission receipt", "contracts/work-item.md", "rules/topology.md"),
     LifecycleSpec("claim", (PENDING, READY, CLAIMED), CLAIMED, "caller", "admission receipt; stale-claim proof when already claimed", "contracts/work-item.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-open", (READY, CLAIMED, SUSPENDED), CLAIMED, "caller", "assignment seal and admission receipt", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-commit", (CLAIMED,), CLAIMED, "caller or accepted receiver", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-packet", (CLAIMED,), CLAIMED, "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-receive", (CLAIMED,), CLAIMED, "established worker or planner", "committed dispatch-packet record", "contracts/dispatch.md", "rules/roles.md"),
-    LifecycleSpec("result", (CLAIMED,), CLAIMED, "accepted receiver", "accepted dispatch-receipt record", "contracts/result.md", "rules/verification.md"),
-    LifecycleSpec("dispatch-outcome", (CLAIMED,), CLAIMED, "accepted receiver", "accepted dispatch-receipt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-retire", (CLAIMED,), CLAIMED, "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-replace", (CLAIMED,), CLAIMED, "caller", "live predecessor attempt and assignment seal", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-open", ("ready / no dispatch state", "ready / ended attempts", "claimed / ended attempts", "suspended / ended attempts"), "claimed / live attempt", "caller", "assignment seal and admission receipt", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-commit", ("claimed / live attempt",), "claimed / live attempt + generic record", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-packet", ("claimed / live attempt",), "claimed / packet committed", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-receive", ("claimed / packet committed",), "claimed / receipt accepted", "established worker or planner", "committed dispatch-packet record", "contracts/dispatch.md", "rules/roles.md"),
+    LifecycleSpec("result", ("claimed / receipt accepted",), "claimed / receipt accepted + result record", "accepted receiver", "accepted dispatch-receipt record", "contracts/result.md", "rules/verification.md"),
+    LifecycleSpec("dispatch-outcome", ("claimed / receipt accepted", "claimed / receipt accepted + result records"), "claimed / outcome committed", "accepted receiver or relaying caller", "accepted dispatch-receipt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-retire", ("claimed / live attempt",), "claimed / retired attempt", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "live predecessor attempt and assignment seal", "contracts/dispatch.md", "rules/delegation.md"),
 ) + tuple(
-    LifecycleSpec("dispatch-join", (CLAIMED,), state, "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
-    for state in TERMINAL_STATES
+    LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
+    for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
 ) + (
     LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
     LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Result", "contracts/verdict.md", "rules/verification.md"),

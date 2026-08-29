@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2008,
+  "count": 2009,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -440,6 +440,7 @@
    "test_isolate.TestIsolateCopiesFromSink.test_the_snapshot_keeps_the_sinks_own_layout",
    "test_isolate.TestIsolateCopiesFromSink.test_the_source_names_no_state_path_of_its_own",
    "test_lifecycle_render.LifecycleTableTest.test_a_hand_edit_fails_closed",
+   "test_lifecycle_render.LifecycleTableTest.test_dispatch_rows_expose_attempt_and_record_state",
    "test_lifecycle_render.LifecycleTableTest.test_each_generated_row_names_its_code_identity",
    "test_lifecycle_render.LifecycleTableTest.test_every_public_lifecycle_event_has_the_owned_seven_cells",
    "test_lifecycle_render.LifecycleTableTest.test_the_committed_table_is_exactly_the_rendered_code",
@@ -2011,7 +2012,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "06383e9fc8b4f898cc2af3ed6974c2b24dea9b76ceeaf4eeb2135da30a1c8b50"
+  "sha256": "e9815c9f6f9f55c6f4616a3bdae307c4406ac616784aea6cf4e675007e3b22c2"
  },
  "mutation_owners": [
   {

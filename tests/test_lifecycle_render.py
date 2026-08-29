@@ -69,6 +69,17 @@ class LifecycleTableTest(unittest.TestCase):
         for row in tickets_lifecycle.lifecycle_rows():
             self.assertIn(f'<a id="{row.anchor}"></a>', rendered)
 
+    def test_dispatch_rows_expose_attempt_and_record_state(self):
+        rows = tickets_lifecycle.lifecycle_rows()
+        receive = next(row for row in rows if row.event == "dispatch-receive")
+        self.assertEqual("claimed / packet committed", receive.predecessor)
+        self.assertEqual("claimed / receipt accepted", receive.result)
+        retire = next(row for row in rows if row.event == "dispatch-retire")
+        self.assertEqual("claimed / live attempt", retire.predecessor)
+        self.assertEqual("claimed / retired attempt", retire.result)
+        joins = [row for row in rows if row.event == "dispatch-join"]
+        self.assertIn("suspended / retired attempt", {row.result for row in joins})
+
     def test_the_repository_validator_refuses_a_hand_edit(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
