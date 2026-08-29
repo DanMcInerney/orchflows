@@ -343,6 +343,71 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(accepted, self.receive(packet))
         self.assertEqual(2, len(self.ticket_state()["attempts"][0]["records"]))
 
+    def test_dispatch_receipt_inspection_projects_only_the_persisted_receipt(self):
+        packet = self.project()["packet"]
+        accepted = self.receive(packet)
+        before = self.ticket_bytes()
+
+        inspected = self.dispatch(
+            "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
+        )
+
+        self.assertEqual({"receipt": accepted["receipt"]}, inspected)
+        self.assertEqual(
+            {
+                "protocol": "orchflows.dispatch.v1",
+                "outcome": "accepted",
+                "dispatch_id": "D1",
+                "assignment_seal": self.assignment_seal,
+                "form": "reference",
+                "durability": "ticket",
+                "state_sink_checked": True,
+            },
+            inspected["receipt"],
+        )
+        self.assertEqual(before, self.ticket_bytes())
+
+    def test_dispatch_receipt_inspection_distinguishes_missing_attempt_and_receipt(self):
+        packet = self.project()["packet"]
+        before = self.ticket_bytes()
+        missing_receipt = tickets._dispatch([
+            "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
+        ])
+        self.assertEqual("receipt-required", missing_receipt["code"])
+        self.assertEqual(before, self.ticket_bytes())
+
+        self.receive(packet)
+        before = self.ticket_bytes()
+        missing_attempt = tickets._dispatch([
+            "dispatch-receipt", "run", "T", "--dispatch-id", "other",
+        ])
+        self.assertEqual("dispatch-mismatch", missing_attempt["code"])
+        self.assertEqual(before, self.ticket_bytes())
+
+    def test_dispatch_receipt_inspection_refuses_inaccessible_and_malformed_state(self):
+        packet = self.project()["packet"]
+        self.receive(packet)
+        before = self.ticket_bytes()
+        missing = str(Path(self.temporary.name) / "not-mounted")
+        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
+            inaccessible = tickets._dispatch([
+                "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
+            ])
+        self.assertEqual("state-inaccessible", inaccessible["code"])
+        self.assertEqual(before, self.ticket_bytes())
+
+        malformed = tickets._set_frontmatter_field(
+            self.ticket_path.read_text(encoding="utf-8"),
+            "dispatch_v1", '{"attempts":[],"protocol":"orchflows.dispatch.v1"}',
+        )
+        self.ticket_path.write_text(malformed, encoding="utf-8")
+        before = self.ticket_bytes()
+        refused = tickets._dispatch([
+            "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
+        ])
+        self.assertEqual("dispatch-record-invalid", refused["code"])
+        self.assertEqual(before, self.ticket_bytes())
+
     def test_result_outcome_and_join_require_the_accepted_receipt(self):
         packet = self.project()["packet"]
         outcome = {

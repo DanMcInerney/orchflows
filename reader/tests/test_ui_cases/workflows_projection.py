@@ -13,6 +13,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class WorkflowProjectionTests(unittest.TestCase):
+    def test_public_projection_defaults_bind_directly_to_library_root(self):
+        self.assertNotIn("ROOT", vars(workflows))
+        self.assertIs(workflows.LIBRARY_ROOT, workflows.project_workflow.__defaults__[0])
+        self.assertIs(workflows.LIBRARY_ROOT, workflows.project_workflow_source.__defaults__[0])
+
     def test_catalog_detail_and_source_are_closed_and_inventory_exact(self):
         catalog = workflows.project_workflow_catalog(ROOT)
 

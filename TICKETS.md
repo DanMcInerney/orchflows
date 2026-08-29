@@ -45,6 +45,12 @@ candidate that `tickets.py new <run> [<id>] --file <path>` would project.
 After issue, `tickets.py show <run> <id>` inspects one ticket's parsed identity
 and sections without mutation.
 
+Once a packet has been accepted, `tickets.py dispatch-receipt <run> <id>
+--dispatch-id <id>` inspects that attempt's durable receipt without exposing
+raw dispatch frontmatter or changing ticket state. A missing attempt, missing
+receipt, inaccessible sink, or malformed closed state remains a named
+structured refusal.
+
 ## Dispatch protocol
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent

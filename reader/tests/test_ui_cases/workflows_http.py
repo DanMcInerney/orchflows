@@ -47,7 +47,7 @@ class WorkflowHttpTests(unittest.TestCase):
                     repeated = fetch(server, route, {"If-None-Match": etag})
                     self.assertEqual((304, ""), (repeated[0], repeated[2]))
                     self.assertEqual(etag, repeated[1].get("ETag"))
-                    self.assertNotIn(str(api.ui_workflows_projection.ROOT), body)
+                    self.assertNotIn(str(api.ui_workflows_projection.LIBRARY_ROOT), body)
 
         self.assertEqual("orchflows.workflow-catalog.v1", catalog["schema"])
         self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])

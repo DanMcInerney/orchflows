@@ -36,6 +36,11 @@ def _copy_pack_with_contract(source: Path, target: Path, root: Path) -> None:
 
 
 class PackResolutionTests(unittest.TestCase):
+    def test_public_facade_uses_same_family_resolver_owner(self):
+        self.assertEqual("scripts.packs_support", packs._support.__name__)
+        self.assertEqual("scripts.packs", packs.resolve_pack.__module__)
+        self.assertEqual("packs_support", packs._support.resolve_pack.__module__.split(".")[-1])
+
     def test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings(self):
         result = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
 

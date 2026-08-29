@@ -39,6 +39,7 @@ if __package__:
     from . import tickets_admission as _tickets_admission_module
     from . import tickets_attempts as _tickets_attempts_module
     from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
+    from . import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     from . import tickets_join as _tickets_join_module
     from . import tickets_registry as _tickets_registry_module
     from . import tickets_grade as _tickets_grade_module
@@ -61,6 +62,7 @@ else:
     import tickets_admission as _tickets_admission_module
     import tickets_attempts as _tickets_attempts_module
     import tickets_dispatch_packet as _tickets_dispatch_packet_module
+    import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     import tickets_join as _tickets_join_module
     _tickets_registry_module = __import__('tickets_registry')
     _tickets_grade_module = __import__('tickets_grade')
@@ -223,6 +225,7 @@ _cmd_dispatch_retire = _tickets_attempts_module._cmd_dispatch_retire
 _cmd_dispatch_replace = _tickets_attempts_module._cmd_dispatch_replace
 _cmd_dispatch_packet = _tickets_dispatch_packet_module._cmd_dispatch_packet
 _cmd_dispatch_receive = _tickets_dispatch_packet_module._cmd_dispatch_receive
+_cmd_dispatch_receipt = _tickets_dispatch_receipt_module._cmd_dispatch_receipt
 _cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
 _cmd_dispatch_outcome = _tickets_join_module._cmd_dispatch_outcome
 _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
@@ -350,6 +353,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_replace = _cmd_dispatch_replace
     _tickets_dispatch_module._cmd_dispatch_packet = _cmd_dispatch_packet
     _tickets_dispatch_module._cmd_dispatch_receive = _cmd_dispatch_receive
+    _tickets_dispatch_module._cmd_dispatch_receipt = _cmd_dispatch_receipt
     _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
     _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
     _tickets_dispatch_facade_module._cmd_ready = _cmd_ready

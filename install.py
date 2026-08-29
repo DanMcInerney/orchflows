@@ -82,6 +82,7 @@ SCRIPT_SUPPORT_PREFIXES = (
     "tickets",
     "ui",
     "cutcheck",
+    "packs",
     "search_plan",
     "trace",
     "workspace",

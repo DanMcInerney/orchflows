@@ -32,9 +32,6 @@ PACKAGE_ROOT = catalog.ROOT
 LIBRARY_ROOT = (
     PACKAGE_ROOT if (PACKAGE_ROOT / "compositions").is_dir() else PACKAGE_ROOT / "lib"
 )
-# Kept as a compatibility alias for the facade's route context; the branch
-# above names the checkout/install distinction explicitly.
-ROOT = LIBRARY_ROOT
 SUMMARY_RELATIVE_PATH = Path("reader") / "docs" / "workflow-summary-manifest.json"
 
 
@@ -58,7 +55,7 @@ def project_workflow_catalog(root=LIBRARY_ROOT, summary_path=None) -> dict:
     return {"schema": CATALOG_SCHEMA, "workflows": projected}
 
 
-def project_workflow(root=ROOT, workflow_id: str = ""):
+def project_workflow(root=LIBRARY_ROOT, workflow_id: str = ""):
     """Return one exact T3 or T1 detail, or ``None`` for an unknown ID."""
 
     owner = next(
@@ -83,7 +80,7 @@ def project_workflow(root=ROOT, workflow_id: str = ""):
 source_inventory = sources.source_inventory
 
 
-def project_workflow_source(root=ROOT, workflow_id: str = "", source_id: str = ""):
+def project_workflow_source(root=LIBRARY_ROOT, workflow_id: str = "", source_id: str = ""):
     """Return one contained source projection and its closed status."""
 
     return sources.project_source(root, workflow_id, source_id)
