@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2041,
+  "count": 2042,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1777,6 +1777,7 @@
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_location_is_read_from_its_owner",
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_term_entry_names_the_location_the_logger_resolves",
    "tests.test_validate_cases.validator_ownership.TestPackAdmissionIsDomainBlind.test_no_pack_to_executor_registry_survives",
+   "tests.test_validate_cases.validator_ownership.TestPackAdmissionRegistryAgainstPacks.test_flat_signature_declares_only_registered_adapter_keys",
    "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_adapter_owns_the_properties_machinery_reads",
    "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_pack_declares_a_registered_adapter",
    "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_no_pack_keyed_workspace_registry_survives",
@@ -2044,7 +2045,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0ec45e2b2175391f9b34087355f82293c6c5259d8d4a6c7c9b820468d4cb2860"
+  "sha256": "662e4d6a3039e16ac588e94d39c302784aedfcc74809ad0a4e5cab95f3c78984"
  },
  "mutation_owners": [
   {
