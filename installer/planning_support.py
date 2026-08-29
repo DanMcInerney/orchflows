@@ -8,6 +8,8 @@ from .foundation import READER_ROOT, REPO_ROOT
 
 
 SHARED_READER_MODULES = (
+    "packs.py",
+    "packs_support.py",
     "state_root.py",
     "tickets_adapters.py",
     "tickets_bound.py",
