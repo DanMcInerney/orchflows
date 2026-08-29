@@ -250,7 +250,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         prompt = [
             "Apply orch-check to the immutable review ledger and fixed artifact.",
             "Read the fixed artifact identity, Goal, Context, executor Result and Verification evidence, and pack lens.",
-            "Remain read-only. Enumerate every evidence-backed material blocker, then synthesize and rank the smallest architectural repair set. File findings in Feedback, never rewrite Result or Verification.",
+            "Remain read-only. Enumerate every evidence-backed material blocker, then synthesize and rank the smallest architectural repair set. File one complete seven-field JSON findings array in Result or Feedback; never rewrite Result or Verification.",
         ]
     elif review_kind == "verify":
         prompt = [
@@ -286,7 +286,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         ))
     isolation = normalized_isolation(loaded.get("isolation"))
     if review_kind == "critique":
-        prompt.append("File Feedback and Risks as findings are produced; the join alone sets terminal status.")
+        prompt.append("File the complete findings array in Result or Feedback as evidence is produced; the join accepts only an --accepted-file subset and sets terminal status.")
     elif review_kind == "verify":
         prompt.append("File Verification, Feedback, and Risks as evidence is produced; the join alone sets terminal status.")
     else:

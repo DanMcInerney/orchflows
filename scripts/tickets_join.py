@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import sys
 
 if __package__:
     from .tickets_attempts import (
@@ -15,7 +16,7 @@ if __package__:
     )
     from .tickets_format import (
         TERMINAL_STATES, TicketFormatError, _extract_flag, _section_body,
-        _set_frontmatter_field, _write_section, canonical_json,
+        _read_utf8, _set_frontmatter_field, _write_section, canonical_json,
         parse_canonical_json,
     )
     from .tickets_markdown import SECTION_SENTINEL
@@ -38,7 +39,7 @@ else:
     )
     from tickets_format import (
         TERMINAL_STATES, TicketFormatError, _extract_flag, _section_body,
-        _set_frontmatter_field, _write_section, canonical_json,
+        _read_utf8, _set_frontmatter_field, _write_section, canonical_json,
         parse_canonical_json,
     )
     from tickets_markdown import SECTION_SENTINEL
@@ -57,20 +58,26 @@ DISPATCH_OUTCOME_USAGE = "dispatch-outcome <run> <id> --content <canonical-json>
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> "
-    "[--accepted <json-array>] [--artifact <fixed-identity>]"
+    "[--accepted-file <path|->] [--artifact <fixed-identity>]"
 )
 
 
 def _finding_array(body, subject: str):
-    if not isinstance(body, str):
+    if not isinstance(body, str) or not body.strip():
+        return None
+    # Result/Feedback may carry surrounding prose in historical records.  A
+    # JSON-looking body, however, is claiming to be the typed findings
+    # carrier and must be a JSON array; do not silently ignore malformed or
+    # object-shaped carriers when another record happens to contain `[]`.
+    if body.lstrip()[0] not in "[{\"-0123456789tfn":
         return None
     try:
         value = parse_canonical_json(body)
     except (TypeError, ValueError) as error:
-        if body.lstrip().startswith("["):
-            raise ReviewError(f"{subject} is not a valid JSON array: {error}") from error
-        return None
-    return value if isinstance(value, list) else None
+        raise ReviewError(f"{subject} is not a valid JSON array: {error}") from error
+    if not isinstance(value, list):
+        raise ReviewError(f"{subject} is not a valid JSON array")
+    return value
 
 
 def _critique_findings(attempt: dict, outcome_evidence: dict) -> str:
@@ -105,7 +112,30 @@ def _critique_findings(attempt: dict, outcome_evidence: dict) -> str:
         raise ReviewError(
             "critique findings must be a JSON array in Result or Feedback"
         )
-    return canonical_json(findings)
+    # Validate the flattened carrier before caller-supplied acceptance is
+    # considered.  This keeps malformed or duplicate executor findings out of
+    # the immutable adjudication boundary even when they arrived in several
+    # streamed Result/Feedback records.
+    return canonical_finding_array(canonical_json(findings), "critique findings")
+
+
+def _accepted_file(source: str):
+    """Read the protocol-owned accepted blocker subset from a file/stdin.
+
+    Review findings are executor evidence.  The only caller-facing review
+    input is the accepted subset, and it crosses this boundary as UTF-8 file
+    data so a shell argument cannot masquerade as a durable carrier.
+    """
+    if source == "-":
+        try:
+            stream = getattr(sys.stdin, "buffer", sys.stdin)
+            value = stream.read()
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+            return value, None
+        except (OSError, UnicodeDecodeError, AttributeError) as error:
+            return None, {"error": f"unreadable accepted blocker file: {error}"}
+    return _read_utf8(source, "accepted blocker file")
 
 
 def _attempt_workspace(attempt: dict) -> str | None:
@@ -212,7 +242,7 @@ def _cmd_dispatch_join(rest):
     dispatch_id = _extract_flag(args, "--dispatch-id")
     outcome_record_id = _extract_flag(args, "--outcome-record-id")
     joined_by = _extract_flag(args, "--by")
-    accepted = _extract_flag(args, "--accepted")
+    accepted_file = _extract_flag(args, "--accepted-file")
     artifact = _extract_flag(args, "--artifact")
     if len(args) != 2 or not all((
         assignment_seal, dispatch_id, outcome_record_id, joined_by,
@@ -229,9 +259,21 @@ def _cmd_dispatch_join(rest):
         failure = _identity_failure(kind, value)
         if failure is not None:
             return failure
-    if accepted is not None and (
-        ".gate.critique." in ticket_id or ticket_id.endswith(".check")
-    ):
+    review_stage = ".gate.critique." in ticket_id or ticket_id.endswith(".check")
+    if accepted_file is not None and not review_stage:
+        return _classification(
+            "review-invalid", "--accepted-file applies only to critique joins"
+        )
+    accepted = None
+    if accepted_file is not None:
+        accepted, failure = _accepted_file(accepted_file)
+        if failure is not None:
+            return failure
+    if review_stage:
+        if accepted is None:
+            return _classification(
+                "review-invalid", "critique join requires --accepted-file <path|->"
+            )
         try:
             accepted = canonical_finding_array(accepted, "critique accepted")
         except ReviewError as error:
@@ -288,14 +330,14 @@ def _cmd_dispatch_join(rest):
                 )
             elif ticket_id.endswith(".gate.repair"):
                 if accepted is not None:
-                    raise ReviewError("repair join does not accept --accepted")
+                    raise ReviewError("repair join does not accept --accepted-file")
                 review = repair_outcome(
                     review, artifact or "", outcome["evidence"]["Result"],
                     joined_by, workspace=_attempt_workspace(attempt),
                 )
             elif ticket_id.endswith(".gate.verify"):
                 if accepted is not None:
-                    raise ReviewError("verification join does not accept --accepted")
+                    raise ReviewError("verification join does not accept --accepted-file")
                 review = verification_outcome(
                     review, artifact, outcome["evidence"]["Verification"],
                     joined_by,

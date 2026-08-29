@@ -36,7 +36,15 @@ established receiver accepted the exact committed packet before execution.
 A read-only critique never rewrites the reviewed executor's Result or
 Verification. A verifier records its independent verdict and evidence in
 `## Verification`.
-Gate and ordinary-checker critique findings are streamed in either `Result` or `Feedback` as one JSON array. Each finding object has exactly `blocking` (boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty strings), and `evidence` (a non-empty array of non-empty strings). Finding ids are unique in the array. The join accepts any valid JSON encoding of the findings and accepted arrays, normalizes both, and binds the complete findings and exact accepted subset in the review ledger.
+Gate and ordinary-checker critique findings are streamed in either `Result` or
+`Feedback` as one JSON array. Each finding object has exactly `blocking`
+(boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty
+strings), and `evidence` (a non-empty array of non-empty strings). Finding ids
+are unique in the array. The join accepts any valid JSON encoding of the
+findings and accepted arrays, normalizes both, and binds the complete findings
+and exact accepted subset in the review ledger. The accepted blocker array
+crosses the protocol boundary only through `--accepted-file <path|->`; inline
+accepted or caller-authored finding flags are not a form.
 
 The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, and adjudicates only material blockers

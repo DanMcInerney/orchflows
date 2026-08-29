@@ -112,9 +112,10 @@ joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
 For review-stage tickets the same atomic join also advances the ticket's
 validated `orchflows.review.v1` chain: critique requires the canonical accepted
-subset, repair requires the exact output artifact, and verification must match
-that artifact and carry a `PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review
-kind has one closed field schema, and the ledger tip equals the
+subset from the file-based `--accepted-file <path|->` seam, repair requires the
+exact output artifact, and verification must match that artifact and carry a
+`PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review kind has one closed field
+schema, and the ledger tip equals the
 protocol-owned join's `review_identity`. `GatePlan` seals the normalized
 workspace; a code artifact is a full Git commit that resolves to that
 workspace's exact HEAD before packet commit and after repair.

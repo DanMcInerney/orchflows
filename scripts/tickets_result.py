@@ -18,9 +18,11 @@ else:
 if __package__:
     from .tickets_markdown import SECTION_SENTINEL
     from .tickets_attempts import PROTOCOL, _commit_record
+    from .tickets_review import ReviewError, canonical_finding_array
 else:
     from tickets_markdown import SECTION_SENTINEL
     from tickets_attempts import PROTOCOL, _commit_record
+    from tickets_review import ReviewError, canonical_finding_array
 
 TERMINAL_HEADING = '## terminal'
 RESULT_ATTRIBUTION_PREFIX = '### Written by '
@@ -105,6 +107,20 @@ def _result_under_run_lock(rest):
             return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
         if str(data.get('claimed_by') or '').strip() != written_by:
             return text, None, {'code': 'identity-mismatch', 'error': 'result writer does not match the current ticket claimant', 'protocol': PROTOCOL}
+        review_kind = str(data.get('review_kind') or '').strip().strip('`')
+        if (
+            review_kind == 'critique'
+            and (ticket_id.endswith('.check') or '.gate.critique.' in ticket_id)
+            and canonical in {'Result', 'Feedback'}
+        ):
+            # A critique may keep ordinary prose in the other executor
+            # section; whenever a body claims the JSON carrier shape, validate
+            # it here so malformed or duplicate findings cannot be streamed.
+            if body.lstrip().startswith(('[', '{')):
+                try:
+                    canonical_finding_array(body, f'critique {canonical} result')
+                except ReviewError as error:
+                    return text, None, {'code': 'review-invalid', 'error': str(error), 'protocol': PROTOCOL}
         prior = _section_body(text, canonical)
         sentinel = prior == SECTION_SENTINEL
         effective_append = append and not sentinel

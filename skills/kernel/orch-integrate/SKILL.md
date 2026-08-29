@@ -34,10 +34,12 @@ An accepted defect set of `[]` from every critique feeding
 `tickets.py join-noop-repair <run> <root>.gate.repair --by <join-name>`, the
 atomic attributed join-owned transition. Accepted non-blocking findings go to the run's
 improvement or successor candidates, never that repair.
-For each critique join, pass the canonical accepted subset through
-`dispatch-join --accepted <json-array>`; for repair and verification packet and
-join operations, pass the fixed artifact with `--artifact`. For ordinary
-`<id>.check`, join with `--accepted`. Apply it using
+For each critique join, pass the accepted subset through a UTF-8 file (or
+standard input) with `dispatch-join --accepted-file <path|->`; the protocol
+normalizes and binds it against the executor's complete findings. For repair
+and verification packet and join operations, pass the fixed artifact with
+`--artifact`. For ordinary `<id>.check`, use the same accepted-file seam.
+Apply it using
 `check <run> <id> --stage <id>.check`; it accepts no findings, and must succeed
 before `checked_by` is trusted.
 
