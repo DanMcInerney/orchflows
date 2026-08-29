@@ -13,14 +13,18 @@ invariants apply on every host:
 - A native capability is established only through the adapter's native launch
   field. A requested capability rides the prompt and is noted unverified; the
   request alone never becomes evidence that the host established it.
-- The caller commits one attempt and its immutable packet before launch. The
-  established child runs `dispatch-receive` against its actual name, role,
-  profile, reply target, and workspace authority before the exact skill runs.
-  A disagreement is the return; neither side edits packet fields to make them
-  agree.
+- The caller commits one attempt with `dispatch-open` and its immutable packet
+  with `dispatch-packet` before launch. The established child runs
+  `dispatch-receive` against its actual name, role, profile, reply target, and
+  workspace authority before the exact skill runs. A disagreement is the
+  return; neither side edits packet fields to make them agree.
 - Child names are unique within a run, and a resumed child keeps its name.
 - Notifications do not decide lane progress. The caller rechecks durable run
   state against the lane bound and holds any launched external process until its
   outcome lands in durable state or is recorded at launch.
-- Terminal required checks run once in the engine's context against the accepted
-  terminal identity, and their verdict records that revision.
+
+## Running the terminal required checks
+
+Terminal required checks run once in the engine's own context against the
+accepted terminal identity, and their verdict records the accepted terminal
+identity's revision.
