@@ -734,6 +734,99 @@ class DispatchV1Test(unittest.TestCase):
             refusal = tickets._dispatch([command, "run", "T"])
             self.assertIn("unknown subcommand", refusal["error"])
 
+    def test_dispatch_facade_is_a_public_one_call_surface(self):
+        payload = tickets._dispatch(["dispatch", "--help"])
+
+        self.assertIn("dispatch <run> <id>", payload["help"]["usage"])
+
+    def test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt(self):
+        refusal = {
+            "code": "review-invalid",
+            "error": "review projection is not current",
+            "findings": ["stale artifact"],
+        }
+        opened = {
+            "dispatch": {
+                "outcome": "opened",
+                "assignment_seal": "seal",
+                "dispatch_id": "D1",
+            }
+        }
+        with (
+            mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}) as ready,
+            mock.patch.object(
+                tickets._tickets_dispatch_facade_module,
+                "_workspace_start",
+                return_value={"start": {"workspace_path": "C:/candidate"}},
+            ),
+            mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened) as open_call,
+            mock.patch.object(
+                tickets, "_cmd_dispatch_packet", return_value=refusal,
+            ) as packet,
+            mock.patch.object(
+                tickets, "_cmd_dispatch_retire", return_value={"dispatch": {}}
+            ) as retire,
+        ):
+            result = tickets._dispatch([
+                "dispatch", "run", "T", "--by", "worker",
+                "--dispatch-id", "D1", "--lease-expires-at", self.lease,
+                "--reply-to", "root", "--workspace", "C:/candidate",
+            ])
+
+        self.assertEqual(refusal, result)
+        ready.assert_called_once_with(["--run", "run"])
+        open_call.assert_called_once_with([
+            "run", "T", "--by", "worker", "--dispatch-id", "D1",
+            "--lease-expires-at", self.lease,
+        ], _lock_held=True)
+        packet.assert_called_once_with([
+            "run", "T", "--dispatch-id", "D1", "--reply-to", "root",
+            "--workspace", "C:/candidate", "--form", "reference",
+        ], _lock_held=True)
+        retire.assert_called_once_with([
+            "run", "T", "--assignment-seal", "seal", "--dispatch-id", "D1",
+            "--record-id", "lifecycle:dispatch-facade-D1",
+        ], _lock_held=True)
+
+    def test_dispatch_facade_returns_the_committed_packet(self):
+        with mock.patch.object(
+            tickets._tickets_dispatch_facade_module,
+            "_workspace_start",
+            return_value={"start": {"workspace_path": "C:/candidate"}},
+        ):
+            result = tickets._dispatch([
+                "dispatch", "run", "T", "--by", "worker",
+                "--dispatch-id", "D1", "--lease-expires-at", self.lease,
+                "--reply-to", "root", "--workspace", "C:/candidate",
+            ])
+
+        self.assertIn("packet", result, result)
+        state = parse_canonical_json(
+            _parse_frontmatter(self.ticket_text())["dispatch_v1"]
+        )
+        self.assertEqual("live", state["attempts"][0]["state"])
+        self.assertEqual(
+            ["dispatch-packet"],
+            [record["record_id"] for record in state["attempts"][0]["records"]],
+        )
+
+    def test_dispatch_facade_returns_readiness_refusal_without_starting_workspace(self):
+        refusal = {"error": "readiness failed", "code": "readiness-invalid"}
+        with mock.patch.object(
+            tickets, "_cmd_ready", return_value=refusal,
+        ) as ready, mock.patch.object(
+            tickets._tickets_dispatch_facade_module, "_workspace_start",
+        ) as workspace:
+            result = tickets._dispatch([
+                "dispatch", "run", "T", "--by", "worker",
+                "--dispatch-id", "D1", "--lease-expires-at", self.lease,
+                "--reply-to", "root",
+            ])
+
+        self.assertEqual(refusal, result)
+        ready.assert_called_once_with(["--run", "run"])
+        workspace.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

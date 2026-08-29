@@ -43,11 +43,13 @@ else:
     from tickets_worklog import WORKLOG_USAGE, _cmd_worklog, _run_tickets, _template_order
 if __package__:
     from .tickets_emission import grade_run_emission; from .tickets_context import run_snapshot; from .tickets_generations import GENERATION_RE, _root_payload, canonical_json, draft_snapshot, generation_identity, seal_assignments, validate_draft; from .tickets_transitions import pending_admission, stamp; from .tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from .tickets_lint import _cmd_lint; from .tickets_bound import _cmd_bound_check
+    from .tickets_dispatch_facade import _cmd_dispatch
     from .tickets_generations import GENERATION_SUBCOMMANDS
     from .tickets_root_reservation import mismatch as _root_reservation_mismatch
     from .tickets_dispatch_gate import _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain; from .tickets_dispatch_gate import _cmd_checker_stage, _cmd_gate as _gate_command
 else:
     from tickets_emission import grade_run_emission; from tickets_context import run_snapshot; from tickets_transitions import pending_admission, stamp; _generations = __import__('tickets_generations'); GENERATION_RE = _generations.GENERATION_RE; _root_payload = _generations._root_payload; canonical_json = _generations.canonical_json; draft_snapshot = _generations.draft_snapshot; generation_identity = _generations.generation_identity; seal_assignments = _generations.seal_assignments; validate_draft = _generations.validate_draft; from tickets_commands import STAMP_GENERATION_USAGE, GATE_USAGE, HELP_COMMANDS, HELP_FLAGS, INSTANTIATE_USAGE, LINT_USAGE, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags; from tickets_lint import _cmd_lint
+    from tickets_dispatch_facade import _cmd_dispatch
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check
     _gate_module = __import__('tickets_dispatch_gate'); _cmd_checker_stage = _gate_module._cmd_checker_stage; _gate_command = _gate_module._cmd_gate; _gate_body = _gate_module._gate_body; _gate_input = _gate_module._gate_input; _gate_sections = _gate_module._gate_sections
     _gate_stub = _gate_module._gate_stub; _gate_under_run_lock = _gate_module._gate_under_run_lock; _input_name = _gate_module._input_name; _listed_items = _gate_module._listed_items; _pack_domain = _gate_module._pack_domain
@@ -426,7 +428,7 @@ def _dispatch(argv):
         from tickets import _sync_seams
     _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
+        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -460,6 +462,8 @@ def _dispatch(argv):
         return _cmd_dispatch_retire(rest)
     if command == 'dispatch-replace':
         return _cmd_dispatch_replace(rest)
+    if command == 'dispatch':
+        return _cmd_dispatch(rest)
     if command == 'dispatch-outcome':
         return _cmd_dispatch_outcome(rest)
     if command == 'dispatch-join':

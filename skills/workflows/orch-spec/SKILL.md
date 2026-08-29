@@ -30,17 +30,16 @@ Semantic root policy:
 
 Lifecycle:
 
-One kind gets a pack-stamped root. For multiple, open; persist remainder
+One kind gets stamped root. For multiple, open; persist remainder
 through `tickets.py run-state <first-run> --artifact
 successors.md`; entries name kind, pack, run/root ids, and `planned` state.
-This skill is the `successors.md` sole writer and materialization
-owner.
+This skill solely writes and materializes `successors.md`.
 
-A drained `orch-frontier` successor trigger grants no role authority. Caller
-opens a fresh materialization run: ordinal-1 root, fresh planner ticket bound
-to this exact skill. Seal it; run `tickets.py ready`, `tickets.py
-dispatch-open`, and `tickets.py dispatch-packet`; send packet to matching
-child. It runs `tickets.py dispatch-receive`.
+A drained `orch-frontier` trigger grants no authority. Caller opens a
+materialization run: ordinal-1 root, planner ticket bound
+to this exact skill. Seal it; invoke `tickets.py dispatch` for the root; the
+facade handles readiness, workspace, opening, and projection. Send its packet
+to the matching child. It runs `tickets.py dispatch-receive`.
 Receiver identity, authority, and committed bytes must agree before its durable
 accepted receipt permits successor materialization. Never send a follow-up
 after the prior planner outcome closed.

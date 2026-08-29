@@ -3,7 +3,7 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, establishes profile, sends complete packet, joins returns;
+- Root routes, establishes profile, sends packet, joins returns;
   relay a `kind: user-only` question verbatim; never author role-bearing
   payloads. Packet-less/wrong-profile role-bearing
   refuses. `role: none` orchestrates, never authors artifacts.
@@ -11,23 +11,22 @@
   **answer** — evidence in context decides it; **single** — one
   [ticket]({{ORCH_LIB}}/contracts/work-item.md) with semantic payload Goal, Context,
   optional Suggested files goes to `orch-frontier`;
-  executor chooses implementation/verification. **graph** — stamped root: run
-  `tickets.py ready --run <run>`; run
-  `workspace.py start <run> <root>`, establish evidence store, retain
-  `workspace_path`; run
-  `tickets.py dispatch-open <run> <root> --by <assigned-name> --dispatch-id
-  <dispatch-id> --lease-expires-at <absolute-iso>`,
-  `tickets.py dispatch-packet <run> <root> --dispatch-id <dispatch-id>
-  --reply-to <parent-name> --workspace <tree>`; establish matching
-  `orch-planner` child. Send complete emitted packet. Its response `.packet`
-  goes by file/stdin; child runs `tickets.py dispatch-receive` with `--file
-  <path>` or `--file -`. A durable accepted receipt is required; then start
-  exact `orch-decompose`.
+  executor chooses implementation/verification. **graph** — stamped root: invoke
+  `tickets.py dispatch <run> <root> --by <assigned-name> --dispatch-id
+  <dispatch-id> --lease-expires-at <absolute-iso> --reply-to <parent-name>
+  [--workspace <tree>]`; it atomically performs readiness, workspace and
+  evidence store establishment, attempt opening, and packet
+  projection, retaining its
+  `workspace_path` and returning one packet or one unchanged refusal. Establish
+  matching `orch-planner` child. Send the
+  complete emitted packet. Its response `.packet` goes by file/stdin; child runs
+  `tickets.py dispatch-receive` with `--file <path>` or `--file -`. A durable
+  accepted receipt is required; then start exact `orch-decompose`.
   ticket path is not a packet; outer coordinator integrates, starts
   `orch-frontier`. **spec** — one same planner child runs
   `orch-spec`: seal direct root for one lawful executor; for distinct
   outcomes or dependencies, take a sealed `orch-decompose` root through
-  `ready` → `dispatch-open` → `dispatch-packet`, then run `orch-decompose`.
+  `tickets.py dispatch`, then run `orch-decompose`.
   outer coordinator integrates, starts `orch-frontier`. Planner never persists
   ticket sequences/starts frontier. Skill/composition/pack/contract/router
   work uses those routes; seal `{{ORCH_LIB}}/docs/custom-workflow-authoring.md`
@@ -44,7 +43,7 @@
   globs with `--glob`, ticket text with `--file`.
 - Installed items resolve at {{ORCH_LIB}}/by-name/<orch-name>/SKILL.md; scripts
   run from {{ORCH_BIN}}/ through the friction interpreter. Read installer
-  output; reinstall source changes.
+  output; reinstall changes.
 
 ## Friction law (always on)
 

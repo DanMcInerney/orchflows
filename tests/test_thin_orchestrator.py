@@ -92,7 +92,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**graph**",
             "**spec**",
             "one same planner child",
-            "`ready` → `dispatch-open` → `dispatch-packet`",
+            "`tickets.py dispatch`",
             "outer coordinator",
         ):
             self.assertIn(anchor, collapsed_host)
@@ -118,11 +118,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         for anchor in (
             "stamped root",
-            "tickets.py ready --run <run>",
-            "tickets.py dispatch-open <run> <root> --by <assigned-name> "
-            "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>",
-            "tickets.py dispatch-packet <run> <root> --dispatch-id "
-            "<dispatch-id> --reply-to <parent-name> --workspace <tree>",
+            "tickets.py dispatch <run> <root> --by <assigned-name> "
+            "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
+            "--reply-to <parent-name> [--workspace <tree>]",
             "tickets.py dispatch-receive",
             "accepted receipt",
             "exact `orch-decompose`",
@@ -154,12 +152,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         for text in (graph, frontier):
             with self.subTest(owner="graph" if text is graph else "frontier"):
-                self.assertIn("workspace.py start", text)
+                self.assertIn("tickets.py dispatch", text)
                 self.assertIn("workspace_path", text)
-                self.assertLess(
-                    text.index("workspace.py start"),
-                    text.index("dispatch-open"),
-                )
+                self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -218,7 +213,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "`orch-decompose` root",
             "distinct outcomes or dependencies",
             "same planner",
-            "`ready` → `dispatch-open` → `dispatch-packet`",
+            "`tickets.py dispatch`",
             "outer coordinator",
             "`orch-frontier`",
         ):

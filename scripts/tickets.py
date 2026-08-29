@@ -35,6 +35,7 @@ if __package__:
     from . import tickets_commands as _tickets_commands_module
     from . import tickets_lint as _tickets_lint_module
     from . import tickets_dispatch as _tickets_dispatch_module
+    from . import tickets_dispatch_facade as _tickets_dispatch_facade_module
     from . import tickets_admission as _tickets_admission_module
     from . import tickets_attempts as _tickets_attempts_module
     from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
@@ -54,6 +55,7 @@ else:
     import tickets_commands as _tickets_commands_module
     import tickets_lint as _tickets_lint_module
     import tickets_dispatch as _tickets_dispatch_module
+    import tickets_dispatch_facade as _tickets_dispatch_facade_module
     import tickets_admission as _tickets_admission_module
     import tickets_attempts as _tickets_attempts_module
     import tickets_dispatch_packet as _tickets_dispatch_packet_module
@@ -272,6 +274,7 @@ _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
 template_defects = _tickets_worklog_module.template_defects
 GATE_USAGE = _tickets_commands_module.GATE_USAGE
+DISPATCH_USAGE = _tickets_commands_module.DISPATCH_USAGE
 HELP_COMMANDS = _tickets_commands_module.HELP_COMMANDS
 HELP_FLAGS = _tickets_commands_module.HELP_FLAGS
 INSTANTIATE_USAGE = _tickets_commands_module.INSTANTIATE_USAGE
@@ -285,6 +288,7 @@ apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
 _cmd_gate = _tickets_dispatch_module._cmd_gate
+_cmd_dispatch = _tickets_dispatch_module._cmd_dispatch
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
 _cmd_instantiate = _tickets_dispatch_module._cmd_instantiate
@@ -334,6 +338,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_new = _cmd_new
     _tickets_dispatch_module._cmd_claim = _cmd_claim
     _tickets_dispatch_module._cmd_dispatch_open = _cmd_dispatch_open
+    _tickets_dispatch_module._cmd_dispatch = _cmd_dispatch
     _tickets_dispatch_module._cmd_dispatch_commit = _cmd_dispatch_commit
     _tickets_dispatch_module._cmd_dispatch_retire = _cmd_dispatch_retire
     _tickets_dispatch_module._cmd_dispatch_replace = _cmd_dispatch_replace
@@ -341,6 +346,10 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_receive = _cmd_dispatch_receive
     _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
     _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
+    _tickets_dispatch_facade_module._cmd_ready = _cmd_ready
+    _tickets_dispatch_facade_module._cmd_dispatch_open = _cmd_dispatch_open
+    _tickets_dispatch_facade_module._cmd_dispatch_packet = _cmd_dispatch_packet
+    _tickets_dispatch_facade_module._cmd_dispatch_retire = _cmd_dispatch_retire
     _tickets_attempts_module._write_text_atomically = _write_text_atomically
     _tickets_dispatch_module._cmd_ready = _cmd_ready
     _tickets_dispatch_module._cmd_show = _cmd_show

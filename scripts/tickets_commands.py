@@ -39,6 +39,12 @@ else:
 
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
+DISPATCH_USAGE = (
+    "dispatch <run> <id> --by <name> --dispatch-id <id> "
+    "--lease-expires-at <absolute-iso> --reply-to <name> "
+    "[--workspace <path>] [--artifact <fixed-identity>] "
+    "[--form reference | inline]"
+)
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
@@ -52,6 +58,7 @@ SUBCOMMAND_USAGE = {
     "list": "list [--run R]",
     "show": "show <run> <id>",
     "ready": "ready [--run R]",
+    "dispatch": DISPATCH_USAGE,
     "dispatch-open": DISPATCH_OPEN_USAGE,
     "dispatch-commit": DISPATCH_COMMIT_USAGE,
     "dispatch-retire": DISPATCH_RETIRE_USAGE,
@@ -80,6 +87,7 @@ SUBCOMMAND_SUMMARY = {
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
     "ready": "Promote sealed tickets whose dependencies are complete.",
+    "dispatch": "Atomically ready, establish, open, and project one dispatch packet.",
     "dispatch-open": "Atomically open or replay one fenced dispatch-v1 execution attempt.",
     "dispatch-commit": "Commit or replay one idempotent record on a live dispatch-v1 attempt.",
     "dispatch-retire": "Retire or replay retirement of one dispatch-v1 attempt.",
