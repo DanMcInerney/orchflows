@@ -16,7 +16,7 @@ until the frozen promotion rule and margin are met over the final
 incumbent's score card or {{bound}} is spent.
 
 Each generation consumes 01-eligibility's `## Result` and scores blind through
-orch-verify; `search_plan.py advance` selects search-policy/v1 cases under the
+orch-check; `search_plan.py advance` selects search-policy/v1 cases under the
 generation protocol.
 
 ## Context

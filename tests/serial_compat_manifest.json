@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1612,
+  "count": 1616,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -696,6 +696,7 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "test_templates.TemplateTest.test_all_routed_compositions_have_current_ticket_shape",
+   "test_templates.TemplateTest.test_every_routed_composition_instantiates",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
@@ -726,7 +727,6 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_rejects_superseded_composition_executors",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
@@ -736,6 +736,7 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
@@ -1079,7 +1080,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_slash_command_is_read_by_its_first_token",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_text_answer_after_a_skill_never_overrides_the_skill",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_transcript_with_nothing_route_bearing_is_unrouted",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_windows_rendered_fix_path_still_grades_as_fix",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_windows_rendered_removed_fix_path_stays_named",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_empty_transcript_is_unrouted",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_unauthenticated_session_grades_error_not_answer",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_any_other_skill_grades_as_that_name",
@@ -1098,7 +1099,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_cost_is_taken_from_the_stream_when_it_reports_one",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_deciding_event_is_reported",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_first_route_bearing_event_decides_it",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_removed_fix_name_is_only_a_named_invocation",
    "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
    "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
    "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
@@ -1279,6 +1280,7 @@
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionLinks.test_every_composition_link_resolves",
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_each_template_binds_the_executors_its_composition_named",
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_each_template_ends_at_the_stub_carrying_its_done_check",
+   "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_no_composition_stub_uses_a_removed_executor",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_decomposer_states_the_goal_by_anchor",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_join_skips_the_repair_on_an_empty_accepted_set",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_cells_put_proven_seams_on_the_first_frontier",
@@ -1346,7 +1348,6 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_rejects_superseded_composition_executors",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
@@ -1356,6 +1357,7 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
@@ -1617,7 +1619,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "bebd70af626865022e2e247102a8985f12262349171846be9b87c67f47ddf8ab"
+  "sha256": "14c415afd5c8b0c025390c77b8d9f8256cfc7c11ed2abe350f416b6f871cafbd"
  },
  "mutation_owners": [
   {
@@ -3627,6 +3629,14 @@
    "module": "tests.test_super_research_runner",
    "owner": "SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_templates",
+   "owner": "TemplateTest.test_every_routed_composition_instantiates",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]

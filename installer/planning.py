@@ -94,9 +94,9 @@ def detect_hosts(home: Path | None = None) -> tuple[bool, bool, bool]:
 def _mints_claude_adapter(name: str, claude_adapter_set: str) -> bool:
     """Whether ``name`` gets a Claude skill adapter under this adapter set.
 
-    ``all`` mints one per canonical name; the compatibility selector ``four`` mints only
-    ``SHARED_ADAPTER_NAMES``, leaving every other name to resolve at
-    ``by-name/`` exactly as it already does on Codex. Nothing else in the
+    ``all`` mints one per canonical name; the bounded selector ``four`` mints only
+    ``SHARED_ADAPTER_NAMES``, leaving every other name as an explicit
+    ``by-name/`` invocation exactly as it already does on Codex. Nothing else in the
     plan moves — the routing benchmark needs the two installs to differ in
     this one surface alone.
     """

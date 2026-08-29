@@ -1,6 +1,6 @@
 ---
 id: 00-mine
-executor: orch-self-improve
+executor: orch-loop
 depends_on: []
 bound: <= 60 tool calls
 independence: checker

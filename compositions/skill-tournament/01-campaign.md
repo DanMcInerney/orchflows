@@ -13,7 +13,7 @@ profile: orch-worker
 The terminal nested run formed by this ticket's `run` plus `.01-campaign`
 is an instantiation of `compositions/evolve` with `target={{skill}}`, the
 skill's current fixed result/evidence as `incumbent`, 00-benchmark's qualified
-revision plus {{policy}} as `evaluation`, `writer=orch-tdd`,
+revision plus {{policy}} as `evaluation`, `writer=orch-execute`,
 `mutation_scope={{surface}}`, and `bound={{bound}}`. Its final score card
 names the final incumbent and the one benchmark revision every candidate
 was scored against.

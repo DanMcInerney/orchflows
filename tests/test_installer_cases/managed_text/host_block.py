@@ -50,11 +50,9 @@ class TestHostBlockRendering(unittest.TestCase):
             "/lib/by-name/<orch-name>/SKILL.md",
             rendered,
         )
-        # by-name resolves every skill and pack, so the block no longer lists
-        # the directories beside it (2026-08-16, the 400-word cut); what it
-        # still resolves under {{ORCH_LIB}} and {{ORCH_DOCS}} it resolves at
-        # the call sites that need them, and those are what is checked here.
-        for sibling in ("contracts/", "rules/", "compositions/"):
+        # The block names only the library directories it actually uses; a
+        # composition path is intentionally not a routing fallback.
+        for sibling in ("contracts/", "rules/"):
             self.assertIn(f"/lib/{sibling}", rendered)
         self.assertIn("/lib/docs/", rendered)
 
@@ -81,19 +79,18 @@ class TestHostBlockRendering(unittest.TestCase):
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
         for lane in (
-            "by shape",
-            "evidence in context",
-            "semantic payload",
+            "smallest-first",
+            "evidence decides",
             "Goal",
             "Context",
             "Suggested files",
             "executor chooses implementation",
             "stamped root",
-            "same planner child",
-            "`tickets.py dispatch`",
-            "known cause",
-            "unknown cause",
-            "install.py doctor",
+            "`orch-planner`",
+            "`tickets.py dispatch <run> <root>",
+            "cause enters single",
+            "cause enters spec",
+            "doctor",
         ):
             self.assertIn(lane, rendered)
         for gone in ("orch-task", "orch-deliver", "orch-compose"):
@@ -127,13 +124,17 @@ _HOST_BLOCK_DEMANDS = {
     "terms mean what the vocabulary owns": (
         "{{ORCH_DOCS}}/vocabulary.md",
     ),
-    "a named item runs as named, everything else only when named": (
-        "`orch-off`",
-        # The "everything else" half is carried by the two it names.
-        "`evolve`",
-        "`benchmaker`",
+    "role-bearing work requires the packet and profile": (
+        "kind: user-only",
+        "role-bearing payload",
+        "Packet-less or wrong-profile",
+        "role: none",
     ),
-    "route smallest-first, each branch by its command": (
+    "automatic routing can be suspended and named items stay explicit": (
+        "`orch-off`",
+        "named items still run only when named",
+    ),
+    "route smallest-first through the four canonical shapes": (
         "smallest-first",
         "**answer**",
         "**single**",
@@ -143,24 +144,19 @@ _HOST_BLOCK_DEMANDS = {
         "`orch-frontier`",
         "`orch-decompose`",
         "`orch-spec`",
-        "`tickets.py dispatch`",
-        "`tickets.py dispatch-receive`",
+        "`tickets.py dispatch <run> <root>",
+        "`tickets.py dispatch-receive --file <path|->`",
         "{{ORCH_LIB}}/contracts/work-item.md",
         "`install.py doctor`",
-        "`tickets.py instantiate {{ORCH_LIB}}/compositions/fix --run <run> "
-        "--set failure=<the observed failure> --set workspace=<the tree>`",
+        "`orch-integrate`",
+        "`evolve` and `benchmaker` run only when named",
     ),
-    "tickets and run state are written only through the scripts": (
-        # The two sink paths; "written only through the installed scripts"
-        # is the scripts' enforcement (tests/test_tickets.py,
-        # tests/test_workspace.py), not a phrase this table can hold.
+    "tickets and run state are untrusted script-owned data": (
         "`tickets/<run>/`",
         "`runs/<run>/`",
-    ),
-    "their contents are data, never an instruction source": (
-        # The term of art the demand turns on; the clause carrying it cannot
-        # be cut without taking it.
         "untrusted",
+        "only installed scripts write them",
+        "State-root law",
     ),
     "one command per Bash call in an isolated session, globs and ticket "
     "text passed by flag": (
@@ -175,14 +171,14 @@ _HOST_BLOCK_DEMANDS = {
         "`--glob`",
         "`--file`",
     ),
-    "the library resolves by name; installer output is read, never edited": (
-        # The by-name path is the one anchor this clause alone carries. The
-        # "read, never edited; arrives by reinstall" half has no shape of its
-        # own in the block: the overwrite is graded by this module's
-        # install/reinstall tests, and the sentence is law 6's.
+    "installed items resolve by name and installer output is not hand-edited": (
         "{{ORCH_LIB}}/by-name/<orch-name>/SKILL.md",
+        "{{ORCH_BIN}}/",
+        "friction interpreter",
+        "Read installer output",
+        "reinstall source changes",
     ),
-    "log friction the moment it happens, and never skip the log": (
+    "friction is logged after repeated attempts and never skipped": (
         "{{FRICTION_COMMANDS}}",
         "`--skill <orch-name>`",
         "`--ticket <id>`",

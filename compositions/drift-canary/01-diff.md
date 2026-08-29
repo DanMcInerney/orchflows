@@ -1,6 +1,6 @@
 ---
 id: 01-diff
-executor: orch-verify
+executor: orch-loop
 depends_on: [00-run]
 bound: <= 40 tool calls
 independence: checker

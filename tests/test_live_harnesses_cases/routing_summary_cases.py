@@ -17,7 +17,7 @@ class TestRoutingSummary(unittest.TestCase):
     def test_the_summary_counts_matches_misroutes_and_unrouted_per_set(self):
         records = [
             self._record("all", "ticket", "ticket"),
-            self._record("all", "ticket", "fix"),
+            self._record("all", "ticket", "spec"),
             self._record("all", "answer", "answer"),
             self._record("all", "named:evolve", "unrouted"),
             self._record("four", "ticket", "ticket"),
@@ -41,7 +41,7 @@ class TestRoutingSummary(unittest.TestCase):
         records = [
             self._record("all", "ticket", "ticket"),
             self._record("all", "answer", "answer"),
-            self._record("all", "fix", "ticket"),
+            self._record("all", "spec", "ticket"),
             self._record("all", "named:evolve", "error"),
         ]
         summary = routing_live.summarize(records)["all"]
@@ -60,7 +60,7 @@ class TestRoutingSummary(unittest.TestCase):
     def test_the_summary_records_the_spend_and_the_budget(self):
         records = [
             dict(self._record("all", "ticket", "ticket"), cost_usd=0.02),
-            dict(self._record("all", "fix", "fix"), cost_usd=0.03),
+            dict(self._record("all", "spec", "spec"), cost_usd=0.03),
         ]
         summary = routing_live.summarize(records, max_budget_usd=0.04)["all"]
         self.assertEqual(0.05, summary["cost_usd"])
@@ -71,21 +71,21 @@ class TestRoutingSummary(unittest.TestCase):
         records = [
             self._record("all", "named:evolve", "named:evolve"),
             self._record("all", "named:renovate", "ticket"),
-            self._record("all", "fix", "fix"),
+            self._record("all", "spec", "spec"),
         ]
         by_class = routing_live.summarize(records)["all"]["by_class"]
-        self.assertEqual({"named", "fix"}, set(by_class))
+        self.assertEqual({"named", "spec"}, set(by_class))
         self.assertEqual(2, by_class["named"]["n"])
         self.assertEqual(1, by_class["named"]["matched"])
         self.assertEqual(0.5, by_class["named"]["misroute_rate"])
-        self.assertEqual(0.0, by_class["fix"]["misroute_rate"])
+        self.assertEqual(0.0, by_class["spec"]["misroute_rate"])
 
     def test_an_empty_record_set_summarizes_to_nothing_rather_than_dividing_by_zero(self):
         self.assertEqual({}, routing_live.summarize([]))
 
     def test_the_table_names_every_set_and_its_rate(self):
         summary = routing_live.summarize(
-            [self._record("all", "ticket", "fix"), self._record("four", "ticket", "ticket")]
+            [self._record("all", "ticket", "spec"), self._record("four", "ticket", "ticket")]
         )
         table = routing_live.format_table(summary)
         self.assertIn("all", table)

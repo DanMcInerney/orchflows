@@ -130,7 +130,7 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
                 self.assertNotIn(".orch/friction", line.replace(os.sep, "/"), line)
 class TestClaudeAdapterSet(unittest.TestCase):
     """``--claude-adapters {all,four}``: the switch SPEC §7.2's routing
-    benchmark measures. The compatibility selector ``four`` mints Claude
+    benchmark measures. The bounded selector ``four`` mints Claude
     skill adapters only for the shared bounded set; every other surface -- the flat by-name index,
     the Codex prompts and redirect skills, the role agents, the host block --
     is the same plan either way. ``all`` is the default and is what HEAD
@@ -158,7 +158,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
 
     def test_the_shared_names_remain_the_reduced_claude_set(self):
         self.assertEqual(
-            ("orch-spec", "orch-frontier", "fix"),
+            ("orch-spec", "orch-frontier"),
             install.SHARED_ADAPTER_NAMES,
         )
 
@@ -197,7 +197,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
     def test_four_mints_exactly_the_shared_adapters(self):
         plan = self._plan("four")
         self.assertEqual(set(install.SHARED_ADAPTER_NAMES), self._names(plan.claude_adapters))
-        self.assertEqual(3, len(plan.claude_adapters))
+        self.assertEqual(2, len(plan.claude_adapters))
 
     def test_all_is_the_default_and_mints_every_package_and_template(self):
         default = self._plan()
@@ -238,7 +238,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
         printed = io.StringIO()
         with redirect_stdout(printed):
             install.print_plan(four)
-        self.assertIn("Claude Code skill adapters (3)", printed.getvalue())
+        self.assertIn("Claude Code skill adapters (2)", printed.getvalue())
 
     def test_the_receipt_records_only_the_minted_adapters(self):
         plan = self._plan("four")
@@ -250,7 +250,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
         adapters = [
             entry for entry in receipt["files"] if entry["kind"] == "adapter"
         ]
-        self.assertEqual(3, len(adapters))
+        self.assertEqual(2, len(adapters))
         self.assertEqual(
             set(install.SHARED_ADAPTER_NAMES),
             {Path(entry["path"]).parent.name for entry in adapters},
@@ -276,7 +276,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
             _dry_run(["--user", "--dry-run", "--claude-adapters", "all"]),
         )
         self.assertIn(
-            "Claude Code skill adapters (3)",
+            "Claude Code skill adapters (2)",
             _dry_run(["--user", "--dry-run", "--claude-adapters", "four"]),
         )
 

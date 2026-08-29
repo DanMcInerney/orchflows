@@ -9,7 +9,7 @@ from ._support import *
 ROUTING_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "routing"
 ROUTING_CASES = ROUTING_DIR / "cases.json"
 ROUTE_CLASSES = (
-    "answer", "single", "graph", "spec", "doctor", "fix", "named",
+    "answer", "single", "graph", "spec", "doctor", "named",
 )
 CASE_KEYS = {"id", "prompt", "expected", "note", "distractor"}
 # A deleted or never-routed name whose surface words a prompt can borrow
@@ -89,7 +89,7 @@ class TestRoutingCases(unittest.TestCase):
                 # The whole point: the surface word is a lure, and the
                 # correct route is still one of the ordinary routed classes.
                 self.assertIn(
-                    self._class_of(case), ("answer", "single", "graph", "spec", "fix")
+                    self._class_of(case), ("answer", "single", "graph", "spec")
                 )
 
     def test_no_routed_case_reads_as_an_instruction_to_the_grader(self):
@@ -261,16 +261,16 @@ class TestRoutingGrading(unittest.TestCase):
         command = "python ~/.orchflows/lib/install.py doctor"
         self.assertEqual("doctor", self._observed([_bash_use(command)]))
 
-    def test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix(self):
-        self.assertEqual("fix", self._observed([_skill_use("fix")]))
+    def test_the_removed_fix_name_is_only_a_named_invocation(self):
+        self.assertEqual("named:fix", self._observed([_skill_use("fix")]))
         posix = "tickets.py instantiate ~/.orchflows/lib/compositions/fix --run r"
-        self.assertEqual("fix", self._observed([_bash_use(posix)]))
+        self.assertEqual("named:fix", self._observed([_bash_use(posix)]))
 
-    def test_a_windows_rendered_fix_path_still_grades_as_fix(self):
+    def test_a_windows_rendered_removed_fix_path_stays_named(self):
         # The installed library path is what the host block hands the session,
         # and on Windows it arrives with backslashes.
         windows = r"tickets.py instantiate C:\Users\x\.orchflows\lib\compositions\fix --run r"
-        self.assertEqual("fix", self._observed([_bash_use(windows)]))
+        self.assertEqual("named:fix", self._observed([_bash_use(windows)]))
 
     def test_any_other_skill_grades_as_that_name(self):
         for skill in ("evolve", "benchmaker", "drift-canary", "orch-critique"):
@@ -318,7 +318,7 @@ class TestRoutingGrading(unittest.TestCase):
                 self.assertEqual("named:evolve", self._observed([reader]))
 
     def test_instantiating_a_template_grades_as_that_template(self):
-        for name, expected in (("renovate", "named:renovate"), ("fix", "fix")):
+        for name, expected in (("renovate", "named:renovate"), ("fix", "named:fix")):
             with self.subTest(name):
                 command = f"tickets.py instantiate ~/.orchflows/lib/compositions/{name} --run r"
                 self.assertEqual(expected, self._observed([_bash_use(command)]))
@@ -371,7 +371,7 @@ class TestRoutingGrading(unittest.TestCase):
 
     def test_a_text_answer_after_a_skill_never_overrides_the_skill(self):
         events = [_skill_use("fix"), _parent_text("ROUTE: answer")]
-        self.assertEqual("fix", self._observed(events))
+        self.assertEqual("named:fix", self._observed(events))
 
     def test_the_deciding_event_is_reported(self):
         graded = routing_live.grade_transcript(_stream([_skill_use("orch-repair")]))
@@ -404,7 +404,7 @@ class TestRoutingGrading(unittest.TestCase):
         events = [_skill_use("fix")]
         events[0]["message"]["content"].insert(0, "bare string block")
         stream = _stream(events) + '\n"a bare json string"\n[1, 2]'
-        self.assertEqual("fix", routing_live.grade_transcript(stream)["observed"])
+        self.assertEqual("named:fix", routing_live.grade_transcript(stream)["observed"])
 
 
 class TestRoutingCaseLoader(unittest.TestCase):
@@ -448,7 +448,7 @@ class TestRoutingCaseLoader(unittest.TestCase):
             with self.subTest(expectation=expectation):
                 self.assertIn(expectation, implementation["note"].lower())
         self.assertIn(
-            "with no spec, decompose, or fix workflow", implementation["note"].lower()
+            "with no spec or decompose workflow", implementation["note"].lower()
         )
 
     def test_the_shipped_case_file_loads(self):

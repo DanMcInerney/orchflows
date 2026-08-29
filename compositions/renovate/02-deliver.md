@@ -1,6 +1,6 @@
 ---
 id: 02-deliver
-executor: orch-decompose
+executor: orch-frontier
 pack: {{pack}}
 depends_on: [01-triage]
 bound: {{brief_bound}} per ready-for-agent brief

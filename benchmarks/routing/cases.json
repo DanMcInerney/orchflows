@@ -94,7 +94,7 @@
     "id": "ticket-codex-catalog-gap",
     "prompt": "orch-investigate is missing from the Codex catalog because CODEX_SKILL_REDIRECT_NAMES omits it; add it and update the coupled help, tests, and derived manifests",
     "expected": "single",
-    "note": "The known cause makes this one ordinary ticket; coupled help, tests, and derived consequences stay inside it, with no spec, decompose, or fix workflow.",
+    "note": "The known cause makes this one ordinary ticket; coupled help, tests, and derived consequences stay inside it, with no spec or decompose workflow.",
     "distractor": false
   },
   {
@@ -149,43 +149,43 @@
   {
     "id": "fix-flaky-ui-test",
     "prompt": "test_ui is flaky on CI, sometimes red",
-    "expected": "fix",
-    "note": "A failure whose cause is unknown -- the canonical fix route.",
+    "expected": "spec",
+    "note": "A failure whose cause is unknown; the unresolved semantic root enters spec.",
     "distractor": false
   },
   {
     "id": "fix-dry-run-unicode",
     "prompt": "install.py --dry-run blows up with a UnicodeDecodeError on my Windows box",
-    "expected": "fix",
-    "note": "Reproducible failure, cause unproven; diagnosis precedes the change.",
+    "expected": "spec",
+    "note": "Reproducible failure with an unproven cause; diagnosis precedes any change in spec.",
     "distractor": false
   },
   {
     "id": "fix-ready-empty",
     "prompt": "tickets.py ready prints nothing even though two tickets are open",
-    "expected": "fix",
-    "note": "Wrong observable behavior with no known cause.",
+    "expected": "spec",
+    "note": "Wrong observable behavior with no known cause enters the unresolved spec route.",
     "distractor": false
   },
   {
     "id": "fix-suite-hangs",
     "prompt": "the suite has been hanging on tests/test_live_harnesses.py since yesterday and I don't know why",
-    "expected": "fix",
-    "note": "Explicitly unknown cause; the prompt says so.",
+    "expected": "spec",
+    "note": "Explicitly unknown cause; the prompt says so and spec owns the unresolved root.",
     "distractor": false
   },
   {
     "id": "fix-lure-diagnose",
     "prompt": "diagnose why validate.py reports a duplicate that isn't there",
-    "expected": "fix",
-    "note": "Distractor: 'diagnose' was a skill name; the route is the fix template, not a named skill.",
+    "expected": "spec",
+    "note": "Distractor: 'diagnose' is a lure; an unexplained failure enters spec, not a named skill.",
     "distractor": true
   },
   {
     "id": "fix-lure-triage",
     "prompt": "triage this for me: the by-name index is missing orch-verify after a reinstall",
-    "expected": "fix",
-    "note": "Distractor: 'triage' as a verb over a single unexplained failure.",
+    "expected": "spec",
+    "note": "Distractor: 'triage' is a lure over a single unexplained failure; spec owns the uncertainty.",
     "distractor": true
   },
   {

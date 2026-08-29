@@ -60,9 +60,9 @@ CODEX_LIMITS_START = marker("codex", "agent_limits", _HOST_ADAPTERS)["start"]
 CODEX_LIMITS_END = marker("codex", "agent_limits", _HOST_ADAPTERS)["end"]
 GROK_LIMITS_START = marker("grok", "subagent_limits", _HOST_ADAPTERS)["start"]
 GROK_LIMITS_END = marker("grok", "subagent_limits", _HOST_ADAPTERS)["end"]
-# The routed names exposed by Claude's bounded compatibility adapter set.
-# The selector remains ``four`` for CLI compatibility after the set narrowed.
-SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier", "fix")
+# The routed names exposed by Claude's bounded adapter-set benchmark. Named
+# skills outside this set remain explicit by-name invocations.
+SHARED_ADAPTER_NAMES = ("orch-spec", "orch-frontier")
 CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is

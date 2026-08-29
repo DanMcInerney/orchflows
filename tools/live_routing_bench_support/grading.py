@@ -7,7 +7,7 @@ import re
 from tools.live_claude_profiles import _json_events
 
 ROUTE_CLASSES = (
-    "answer", "single", "graph", "spec", "doctor", "fix", "named",
+    "answer", "single", "graph", "spec", "doctor", "named",
 )
 UNROUTED = "unrouted"
 # A session that failed before it could route -- an API error, an
@@ -22,16 +22,13 @@ ROUTING_SKILLS = {
     "orch-decompose": "graph",
     "orch-spec": "spec",
 }
-# Compatibility export for the live harness facade; values now span the three
-# executable graph shapes instead of naming one route class.
+# Export the exact routed callable set for the live harness facade. All other
+# skill names are named invocations, never an implicit repair route.
 TICKET_SKILLS = frozenset(ROUTING_SKILLS)
-FIX_SKILL = "fix"
 SKILL_TOOLS = frozenset({"Skill", "SlashCommand"})
 ANSWER_LINE_RE = re.compile(r"^ROUTE:\s*answer", re.IGNORECASE | re.MULTILINE)
-# Under `--claude-adapters four` an unadapted name has no adapter to invoke,
-# and the block's fallback is to read the library's own entry for it. That
-# read *is* the route; grading it as no route gave `four` a structural
-# misroute floor on every `named:` case however well the session behaved.
+# A named invocation is explicit; reading an installed item is only evidence
+# for the named invocation and does not create another route.
 BY_NAME_RE = re.compile(r"/by-name/([a-z0-9][a-z0-9-]*)/SKILL\.md", re.IGNORECASE)
 # The same name reached the other way: a template is instantiated from its
 # own directory under the installed library.
@@ -64,8 +61,6 @@ def _skill_name(block_input: dict) -> str | None:
 def _classify_skill(skill: str) -> str:
     if skill in ROUTING_SKILLS:
         return ROUTING_SKILLS[skill]
-    if skill == FIX_SKILL:
-        return "fix"
     return f"named:{skill}"
 
 

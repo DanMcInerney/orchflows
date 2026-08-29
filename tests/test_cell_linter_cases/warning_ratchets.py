@@ -81,9 +81,9 @@ class WarningCeilingTest(unittest.TestCase):
             if line.startswith("WARN compositions/")
         }
         self.assertEqual(set(), near & cross)
-        # The dated browser-game protocol exception and each intentionally
-        # un-migrated shipped stub are composition-owned warnings.
-        self.assertEqual(16, len(composition), composition)
+        # Only the dated browser-game protocol exception remains; all shipped
+        # compositions now instantiate through registered callables.
+        self.assertEqual(1, len(composition), composition)
         self.assertEqual(set(warning_lines(stdout)), near | cross | composition)
 
     def test_a_count_above_the_ceiling_fails(self):

@@ -12,7 +12,7 @@ generation may touch afterwards.
 `00-benchmark` and `01-campaign` each instantiate their nested template
 into a run of its own and drain it — the benchmaker template builds and
 qualifies the benchmark, the evolve template spends the campaign against
-it with `writer=orch-tdd` — so this template binds those two and names
+it with `writer=orch-execute` — so this template binds those two and names
 only their placeholders.
 
 Instantiate with all seven placeholders: `skill`, the fixed skill

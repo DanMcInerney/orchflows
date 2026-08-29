@@ -1191,13 +1191,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         for field in ("`root_generation`", "`executor`", "`assembly`", "`independence: gate`"):
             self.assertIn(field, skill)
 
-    def test_fix_template_rejects_superseded_composition_executors(self):
+    def test_removed_fix_composition_has_no_instantiation_alias(self):
         result = tickets._dispatch([
             "instantiate", str(ROOT / "compositions" / "fix"), "--run", "fix",
             "--set", "failure=boom", "--set", "workspace=.",
         ])
-        self.assertIn("executor-unregistered", result["error"])
-        self.assertIn("orch-investigate", result["error"])
+        self.assertIn("has no template.md", result["error"])
+        self.assertNotIn("executor-unregistered", result["error"])
 
     def test_gate_routes_actual_overlap_to_integration(self):
         self.dispatch("new", "gate", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")

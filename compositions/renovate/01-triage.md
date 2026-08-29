@@ -1,10 +1,11 @@
 ---
 id: 01-triage
-executor: orch-triage
+executor: orch-check
+pack: {{pack}}
 depends_on: [00-audit]
 bound: <= 30 tool calls
 independence: checker
-isolation: none
+isolation: required
 profile: orch-worker
 ---
 

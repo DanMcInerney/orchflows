@@ -1,6 +1,6 @@
 ---
 id: 00-record
-executor: orch-draft
+executor: orch-execute
 sequence: [draft, edit]
 pack: orch-content-pack
 depends_on: []

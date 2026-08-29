@@ -276,7 +276,7 @@ VOCABULARY = ROOT / "docs" / "vocabulary.md"
 AGENTS_MD = ROOT / "AGENTS.md"
 HOST_BLOCK = TEMPLATES / "host-block.md"
 TERM_ENTRY_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
-BLOCKED_CASE_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
+BLOCKED_CASE_RE = re.compile(r"If the logger cannot run.*?never skip (?:the log|it)\.")
 
 
 def _collapse(text: str) -> str:
