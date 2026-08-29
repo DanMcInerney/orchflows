@@ -126,8 +126,8 @@ VALUE_FLAGS = frozenset({
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
     "--form", "--role", "--outcome-record-id", "--status", "--stage",
-    "--accepted-file",
-    "--review-kind",
+    "--accepted-file", "--review-kind", "--result-file", "--verification-file",
+    "--feedback-file", "--risks-file", "--handoff-file",
 })
 
 

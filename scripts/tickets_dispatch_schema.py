@@ -139,12 +139,23 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
         return "outcome evidence is incomplete"
     if (content["status"] == "suspended") != bool(evidence["Handoff"].strip()):
         return "outcome Handoff does not match its disposition"
+    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+        try:
+            if __package__:
+                from .tickets_review_schema import SchemaError, finding_values
+            else:
+                from tickets_review_schema import SchemaError, finding_values
+            for section in ("Result", "Feedback"):
+                values = parse_canonical_json(evidence[section])
+                finding_values(values, f"critique outcome {section}")
+        except (TypeError, ValueError, SchemaError) as error:
+            return f"critique outcome findings are invalid: {error}"
     return None
 
 
 def _result_failure(record, content, *, run, ticket_id, attempt):
     record_id = record["record_id"]
-    required = {"assignment_seal", "body", "mode", "operation", "section", "writer"}
+    required = set(DISPATCH_RESULT_RECORD_FIELDS)
     if not _closed(content, required):
         return _invalid(f"result record '{record_id}' content has an invalid shape")
     if (
@@ -156,6 +167,15 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
         or not isinstance(content.get("body"), str)
     ):
         return _invalid(f"result record '{record_id}' content differs from its attempt")
+    if (".gate.critique." in ticket_id or ticket_id.endswith(".check")) and content["section"] in {"Result", "Feedback"}:
+        try:
+            if __package__:
+                from .tickets_review_schema import SchemaError, finding_values
+            else:
+                from tickets_review_schema import SchemaError, finding_values
+            finding_values(parse_canonical_json(content["body"]), f"critique {content['section']} result")
+        except (TypeError, ValueError, SchemaError) as error:
+            return _invalid(f"result record '{record_id}' critique findings are invalid: {error}")
     success = record["success"]
     if not _closed(success, set(DISPATCH_RESULT_SUCCESS_FIELDS)):
         return _invalid(f"result record '{record_id}' has a non-canonical stored success")

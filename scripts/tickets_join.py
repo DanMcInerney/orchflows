@@ -24,6 +24,10 @@ if __package__:
     from .tickets_store import UTC_STAMP, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
+    from .tickets_outcome import (
+        DISPATCH_OUTCOME_USAGE, _outcome_attempt,
+        _outcome_attempt_match, _outcome_content, _prior_result_body,
+    )
     from .tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
         state_from_text, verification_outcome,
@@ -47,6 +51,10 @@ else:
     from tickets_store import UTC_STAMP, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
     from tickets_project import TERMINAL_REMEDY, binding_refusal
+    from tickets_outcome import (
+        DISPATCH_OUTCOME_USAGE, _outcome_attempt,
+        _outcome_attempt_match, _outcome_content, _prior_result_body,
+    )
     from tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
         state_from_text, verification_outcome,
@@ -54,7 +62,6 @@ else:
 
 JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
 OUTCOME_SECTIONS = tuple(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
-DISPATCH_OUTCOME_USAGE = "dispatch-outcome <run> <id> --content <canonical-json>"
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> "
@@ -179,6 +186,19 @@ def _outcome_failure(run: str, ticket_id: str, content):
         return _classification("handoff-required", "suspension requires Handoff evidence")
     if content["status"] != "suspended" and evidence["Handoff"].strip():
         return _classification("outcome-invalid", "terminal outcome cannot carry a Handoff")
+    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+        # Critique Result and Feedback are generated finding carriers, not
+        # arbitrary prose.  Keep the import lazy because tickets_review
+        # consumes this module while joining a review stage.
+        if __package__:
+            from .tickets_review import ReviewError, canonical_finding_array
+        else:
+            from tickets_review import ReviewError, canonical_finding_array
+        for section in ("Result", "Feedback"):
+            try:
+                canonical_finding_array(evidence[section], f"critique outcome {section}")
+            except ReviewError as error:
+                return _classification("outcome-invalid", str(error))
     for body in evidence.values():
         if any(line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines()):
             return _classification("outcome-invalid", "outcome evidence contains a reserved heading or attribution")
@@ -187,20 +207,64 @@ def _outcome_failure(run: str, ticket_id: str, content):
 
 def _cmd_dispatch_outcome(rest):
     args = list(rest)
-    content_text = _extract_flag(args, "--content")
-    if len(args) != 2 or content_text is None:
+    if len(args) < 2:
         return {"error": f"usage: {DISPATCH_OUTCOME_USAGE}"}
-    run, ticket_id = args
+    run, ticket_id = args[:2]
+    remaining = args[2:]
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
         invalid = _segment_error(kind, value)
         if invalid is not None:
             return invalid
-    try:
-        content = parse_canonical_json(content_text)
-    except (TypeError, ValueError) as error:
-        return _classification("outcome-invalid", f"outcome is not canonical JSON: {error}")
-    if content_text != canonical_json(content):
-        return _classification("outcome-invalid", "outcome is not canonical JSON")
+    carrier, failure = _outcome_content(remaining)
+    if failure is not None:
+        return failure
+
+    inferred, failure = _outcome_attempt(run, ticket_id)
+    if failure is not None:
+        return failure
+    _path, _text, _data, _state, attempt = inferred
+    if isinstance(carrier, dict) and "_files" in carrier:
+        evidence = {}
+        for section in OUTCOME_SECTIONS:
+            source = carrier["_files"].get(section)
+            if source is not None:
+                body, read_failure = _read_utf8(source, f"{section} evidence file")
+                if read_failure is not None:
+                    return read_failure
+            elif section in {"Result", "Verification"}:
+                body = _prior_result_body(attempt, section)
+                if body is None:
+                    return _classification(
+                        "outcome-invalid",
+                        f"outcome requires {section} evidence through --{section.lower()}-file or a prior result record",
+                    )
+            elif section in {"Feedback", "Risks"}:
+                body = "[]"
+            else:
+                body = ""
+            if body is None:
+                body = ""
+            evidence[section] = body
+        content = {
+            "protocol": PROTOCOL,
+            "run": run,
+            "id": ticket_id,
+            "assignment_seal": attempt["assignment_seal"],
+            "dispatch_id": attempt["dispatch_id"],
+            "outcome_record_id": OUTCOME_RECORD_ID,
+            "by": attempt["owner"],
+            "status": carrier["status"],
+            "evidence": evidence,
+        }
+    else:
+        content = carrier
+    failure = _outcome_attempt_match(content, run, ticket_id, attempt)
+    if failure is not None:
+        return failure
+    if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
+        return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
+    if not isinstance(content, dict):
+        return _classification("outcome-invalid", "outcome envelope must be an object")
     failure = _outcome_failure(run, ticket_id, content)
     if failure is not None:
         return failure

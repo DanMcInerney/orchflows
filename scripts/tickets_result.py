@@ -18,11 +18,17 @@ else:
 if __package__:
     from .tickets_markdown import SECTION_SENTINEL
     from .tickets_attempts import PROTOCOL, _commit_record
-    from .tickets_review import ReviewError, canonical_finding_array
+    from .tickets_shapes import (
+        DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
+        DISPATCH_RESULT_SUCCESS_FIELDS,
+    )
 else:
     from tickets_markdown import SECTION_SENTINEL
     from tickets_attempts import PROTOCOL, _commit_record
-    from tickets_review import ReviewError, canonical_finding_array
+    from tickets_shapes import (
+        DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
+        DISPATCH_RESULT_SUCCESS_FIELDS,
+    )
 
 TERMINAL_HEADING = '## terminal'
 RESULT_ATTRIBUTION_PREFIX = '### Written by '
@@ -31,6 +37,31 @@ RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact 
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
 COVERAGE_RECORD_NAME = 'covered.jsonl'
+
+
+def _critique_ticket(ticket_id: str) -> bool:
+    """Return whether a ticket carries the generated critique result seam."""
+
+    return ".gate.critique." in ticket_id or ticket_id.endswith(".check")
+
+
+def _validate_critique_body(ticket_id: str, section: str, body: str):
+    """Validate one critique Result/Feedback body through the shared schema."""
+
+    if not _critique_ticket(ticket_id) or section not in {"Result", "Feedback"}:
+        return None
+    # Import lazily: tickets_review consumes result records while joining a
+    # review, so importing its schema at module import time would make the
+    # tickets facade's flat and package seams cycle.
+    if __package__:
+        from .tickets_review import canonical_finding_array, ReviewError
+    else:
+        from tickets_review import canonical_finding_array, ReviewError
+    try:
+        canonical_finding_array(body, f"critique {section} result")
+    except ReviewError as error:
+        return {"code": "result-invalid", "error": str(error), "protocol": PROTOCOL}
+    return None
 
 def _cmd_result(rest):
     return _result_under_run_lock(rest)
@@ -84,6 +115,8 @@ def _result_under_run_lock(rest):
             return failure
     else:
         body = text_arg
+    if body is None:
+        return {"error": f"result requires a readable body from --file <path> or --text <string>. usage: {RESULT_USAGE}"}
     if any((line.startswith('## ') for line in body.splitlines())):
         return {'error': f"a '## {canonical}' body may not contain a level-2 heading ('## ...'): it would be read as a sibling ticket section. Use '###' or deeper for sub-headings inside a section"}
     if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
@@ -97,6 +130,8 @@ def _result_under_run_lock(rest):
         'assignment_seal': assignment_seal, 'body': body, 'mode': request_mode,
         'operation': 'result', 'section': canonical, 'writer': written_by,
     }
+    if set(content) != set(DISPATCH_RESULT_RECORD_FIELDS):
+        return {"error": "result record shape is not the generated dispatch result shape"}
 
     def mutate(text, data, attempt, _state):
         recorded = (str(data.get('run') or '').strip(), str(data.get('id') or '').strip())
@@ -107,20 +142,9 @@ def _result_under_run_lock(rest):
             return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
         if str(data.get('claimed_by') or '').strip() != written_by:
             return text, None, {'code': 'identity-mismatch', 'error': 'result writer does not match the current ticket claimant', 'protocol': PROTOCOL}
-        review_kind = str(data.get('review_kind') or '').strip().strip('`')
-        if (
-            review_kind == 'critique'
-            and (ticket_id.endswith('.check') or '.gate.critique.' in ticket_id)
-            and canonical in {'Result', 'Feedback'}
-        ):
-            # A critique may keep ordinary prose in the other executor
-            # section; whenever a body claims the JSON carrier shape, validate
-            # it here so malformed or duplicate findings cannot be streamed.
-            if body.lstrip().startswith(('[', '{')):
-                try:
-                    canonical_finding_array(body, f'critique {canonical} result')
-                except ReviewError as error:
-                    return text, None, {'code': 'review-invalid', 'error': str(error), 'protocol': PROTOCOL}
+        critique_failure = _validate_critique_body(ticket_id, canonical, body)
+        if critique_failure is not None:
+            return text, None, critique_failure
         prior = _section_body(text, canonical)
         sentinel = prior == SECTION_SENTINEL
         effective_append = append and not sentinel
@@ -143,6 +167,8 @@ def _result_under_run_lock(rest):
             'by': written_by, 'assignment_seal': assignment_seal,
             'dispatch_id': dispatch_id, 'record_id': record_id,
         }}
+        if set(success) != set(DISPATCH_RESULT_SUCCESS_FIELDS) or set(success['result']) != set(DISPATCH_RESULT_PROJECTION_FIELDS):
+            return text, None, {'error': 'result success shape is not the generated dispatch result shape'}
         return rendered, success, None
 
     return _commit_record(
