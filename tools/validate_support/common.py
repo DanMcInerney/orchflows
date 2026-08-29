@@ -126,7 +126,6 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
 # named-T0-carrier form.
 ENVELOPE_UNITS = (
-    "orch-investigate",
     "orch-loop",
     "orch-frontier",
 )
@@ -193,9 +192,9 @@ CARRIAGE_DASH_SPLIT_RE = re.compile(r"[–—]")  # en dash, em dash
 # That law's two filing destinations -- "the ticket -- or the store the
 # packet names" -- are this check's two pass conditions: the bound skill's
 # own body names the ticket/work-item filing, or the pack's workspace cell
-# names a store (kernel-tier primitives like orch-investigate/orch-synthesize
-# stay domain-blind per the redteam critique's Move 7 and rely on the
-# second, rather than hardcoding pack-specific filing language).
+# names a store; kernel-tier primitives stay domain-blind per the redteam
+# critique's Move 7 and rely on the second, rather than hardcoding
+# pack-specific filing language).
 TICKET_FILING_RE = re.compile(r"\bticket\b|\bwork[- ]item\b", re.IGNORECASE)
 # The Return paragraph only -- "ticket" is common enough as an ordinary
 # noun elsewhere in a body (e.g. a Require clause) that searching the

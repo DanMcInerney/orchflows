@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2025,
+  "count": 2028,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -593,14 +593,15 @@
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_working_tree_answer_inside_a_git_checkout_is_refused",
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_the_selection_line_does_not_claim_to_be_running_anything",
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_the_selection_names_the_revision_it_decided_over",
+   "test_script_executors.AdapterIsolationAdmissionTest.test_a_non_isolating_adapter_does_not_require_isolation",
+   "test_script_executors.AdapterIsolationAdmissionTest.test_a_skill_is_not_rejected_for_its_pack_executor_pair",
+   "test_script_executors.AdapterIsolationAdmissionTest.test_an_isolating_adapter_requires_isolation_for_any_executor",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_bare_script_prefix_names_no_path_and_is_refused",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_directory_is_not_a_tested_script",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_naming_no_file_in_the_tree_is_refused",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_resolving_in_the_tree_is_admitted",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_does_not_depend_on_the_ticket_carrying_a_pack",
    "test_script_executors.ScriptExecutorAdmissionTest.test_the_refusal_names_the_path_that_did_not_resolve",
-   "test_script_executors.SkillExecutorStaysBoundTest.test_a_skill_outside_the_packs_registry_is_still_refused",
-   "test_script_executors.SkillExecutorStaysBoundTest.test_a_skill_the_pack_does_bind_is_still_admitted",
    "test_serial_compat.TestBoundaryRestoration.test_a_live_thread_is_detected_and_cannot_be_classified_as_restorable",
    "test_serial_compat.TestBoundaryRestoration.test_an_unclassified_boundary_change_fails_the_lane",
    "test_serial_compat.TestBoundaryRestoration.test_selected_module_boundaries_restore_classified_process_state",
@@ -776,6 +777,8 @@
    "test_validator.TestCompositionProtocolAdmission.test_browser_game_is_the_one_dated_visible_exception",
    "test_validator.TestCompositionProtocolAdmission.test_removing_the_browser_game_entry_exposes_its_protocol_artifacts",
    "test_validator.TestCompositionProtocolAdmission.test_schema_fixture_format_and_script_are_refused",
+   "test_validator.TestDomainBlindnessAdmission.test_a_canonical_pack_name_in_scripts_is_refused",
+   "test_validator.TestDomainBlindnessAdmission.test_a_pack_owned_skill_name_in_tools_is_refused",
    "test_validator.TestMarkdownAnchors.test_a_link_to_a_missing_heading_is_an_error",
    "test_validator.TestPrivateReferenceAdmission.test_cross_package_private_reference_is_an_error",
    "test_validator.TestRecursiveNameResolution.test_nested_shipped_prose_resolves_skill_names",
@@ -1760,7 +1763,7 @@
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_copy_grades_what_the_tree_grades",
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_location_is_read_from_its_owner",
    "tests.test_validate_cases.validator_ownership.FrictionLocationSyncTest.test_the_term_entry_names_the_location_the_logger_resolves",
-   "tests.test_validate_cases.validator_ownership.TestPackAdmissionRegistryAgainstPacks.test_stable_registry_covers_and_matches_every_pack",
+   "tests.test_validate_cases.validator_ownership.TestPackAdmissionIsDomainBlind.test_no_pack_to_executor_registry_survives",
    "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_adapter_owns_the_properties_machinery_reads",
    "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_every_pack_declares_a_registered_adapter",
    "tests.test_validate_cases.validator_ownership.TestPackWorkspaceTableAgainstPacks.test_no_pack_keyed_workspace_registry_survives",
@@ -2028,7 +2031,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "983f805b3162621ef0dbc0eee8e4182df74d4fd84b8f198ac9ffed1e9535f8a9"
+  "sha256": "b04794c2f3ab2d5c386cca7eee9491d966a6919438dcddcd74727aab8862f5d1"
  },
  "mutation_owners": [
   {

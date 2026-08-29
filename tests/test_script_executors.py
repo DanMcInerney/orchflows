@@ -24,7 +24,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import tickets_admission as admission  # noqa: E402
-from scripts import tickets as ticket_facade  # noqa: E402,F401  binds pack registries
 
 RESOLVING_SCRIPT = "tools/validate.py"
 ABSENT_SCRIPT = "scripts/no-such-script.py"
@@ -134,18 +133,36 @@ class ScriptExecutorAdmissionTest(unittest.TestCase):
                       {item["code"] for item in graded["findings"]})
 
 
-class SkillExecutorStaysBoundTest(unittest.TestCase):
-    """Admitting the script form must not open the registry to skills.
+class AdapterIsolationAdmissionTest(unittest.TestCase):
+    """Adapter properties, rather than executor names, own isolation law."""
 
-    Without this the change is indistinguishable from deleting the
-    binding check outright.
-    """
+    def test_a_skill_is_not_rejected_for_its_pack_executor_pair(self):
+        self.assertNotIn(
+            "executor-pack-mismatch",
+            finding_codes("orch-draft", pack="orch-code-pack"),
+        )
 
-    def test_a_skill_outside_the_packs_registry_is_still_refused(self):
-        self.assertIn("executor-pack-mismatch", finding_codes("orch-draft"))
+    def test_a_non_isolating_adapter_does_not_require_isolation(self):
+        text = ticket_text("orch-draft", pack="orch-content-pack").replace(
+            "isolation: required", "isolation: none"
+        )
+        graded = admission.grade_admission("T1", text, {"T1": text})
+        self.assertNotIn(
+            "vcs-isolation-required",
+            {item["code"] for item in graded["findings"]},
+        )
 
-    def test_a_skill_the_pack_does_bind_is_still_admitted(self):
-        self.assertNotIn("executor-pack-mismatch", finding_codes("orch-tdd"))
+    def test_an_isolating_adapter_requires_isolation_for_any_executor(self):
+        text = ticket_text("orch-draft", pack="orch-research-pack").replace(
+            "isolation: required", "isolation: none"
+        )
+        graded = admission.grade_admission("T1", text, {"T1": text})
+        codes = {item["code"] for item in graded["findings"]}
+        self.assertNotIn("executor-pack-mismatch", codes)
+        self.assertIn(
+            "vcs-isolation-required",
+            codes,
+        )
 
 
 if __name__ == "__main__":

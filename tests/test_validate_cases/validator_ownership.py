@@ -112,24 +112,15 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
         self.assertNotIn("PACK_WORKSPACE_MECHANISMS", source)
 
 
-class TestPackAdmissionRegistryAgainstPacks(unittest.TestCase):
-    def bindings(self, skill_md: Path):
-        found = set()
-        for line in skill_md.read_text(encoding="utf-8").splitlines():
-            match = re.match(r"^\|\s*(?:executor|assembly)\s*\|\s*(.*?)\s*\|$", line)
-            if match:
-                found.update(re.findall(r"`(orch-[a-z0-9-]+)`", match.group(1)))
-        return frozenset(found)
-
-    def test_stable_registry_covers_and_matches_every_pack(self):
-        packs = {path.name for path in PACKS.iterdir() if (path / "SKILL.md").is_file()}
-        self.assertEqual(packs, set(tickets_mod.PACK_EXECUTOR_BINDINGS))
-        for pack in sorted(packs):
-            self.assertEqual(
-                self.bindings(PACKS / pack / "SKILL.md"),
-                tickets_mod.PACK_EXECUTOR_BINDINGS[pack],
-                pack,
-            )
+class TestPackAdmissionIsDomainBlind(unittest.TestCase):
+    def test_no_pack_to_executor_registry_survives(self):
+        self.assertFalse(hasattr(tickets_mod, "PACK_EXECUTOR_BINDINGS"))
+        for source in (
+            ROOT / "scripts" / "tickets.py",
+            ROOT / "scripts" / "tickets_format.py",
+            ROOT / "scripts" / "tickets_admission.py",
+        ):
+            self.assertNotIn("PACK_EXECUTOR_BINDINGS", source.read_text(encoding="utf-8"))
 
 
 CROSS_TIER = "cross-tier near-duplicate"

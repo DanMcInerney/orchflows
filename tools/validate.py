@@ -161,7 +161,7 @@ CHECKOUT_PATH_DIRS = ("web", "benchmarks", "research")
 # resolve through their own contracts, not the library filesystem.
 STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
-# and `orch-tdd` are not paths and never reach the resolver.
+# and skill executors are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
 # Non-navigation occurrences and not-yet-materialized UI design paths. Keys
 # are exact source lines so another occurrence is still graded.
@@ -297,6 +297,7 @@ def _run_validation_impl() -> Diagnostics:
             validate_pack_signature(body, pkg, diag)
             validate_craft_budget(pkg, diag)
 
+    validate_domain_blindness(packages, diag)
     validate_call_graph(packages, diag)
     validate_carriage(packages, diag)
     validate_cell_duplication(packages, diag)
