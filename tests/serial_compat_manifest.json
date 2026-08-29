@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2016,
+  "count": 2020,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -655,6 +655,10 @@
    "test_seven_skills.CallableRegistryTests.test_packet_shape_requires_typed_review_kind_field",
    "test_seven_skills.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
    "test_seven_skills.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
+   "test_shapes_render.ShapeRenderTest.test_contract_render_is_closed_over_declaration",
+   "test_shapes_render.ShapeRenderTest.test_declaration_change_invalidates_both_consumers",
+   "test_shapes_render.ShapeRenderTest.test_declarations_have_generated_validator_and_contract_consumers",
+   "test_shapes_render.ShapeRenderTest.test_render_check_detects_a_hand_edit",
    "test_skill_fork_governance.SpecStatesItsDirectTicketLane.test_the_direct_lane_names_its_condition_and_its_mechanics",
    "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_leaves_the_reserved_wordings_to_their_owners",
    "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_states_every_property_the_firings_paid_for",
@@ -2019,7 +2023,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "07c65f6eb257588519d381e9d09321aedad1204ca295e6a6568f60875d3df28d"
+  "sha256": "169e0eab7718982a168255f62aeb7aed234a5beca343c10f472c23c0f103c690"
  },
  "mutation_owners": [
   {

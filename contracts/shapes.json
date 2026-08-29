@@ -1,5 +1,12 @@
 {
   "schema_version": 1,
+  "constants": {
+    "dispatch_protocol": "orchflows.dispatch.v1",
+    "outcome_record_id": "outcome",
+    "packet_record_id": "dispatch-packet",
+    "receipt_record_id": "dispatch-receipt",
+    "review_protocol": "orchflows.review.v1"
+  },
   "shapes": [
     {
       "name": "dispatch_state",
@@ -20,7 +27,10 @@
         "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
         "outcome_record_id", "owner", "records", "state"
       ],
-      "values": {"state": ["live", "retired", "replaced"]}
+      "values": {
+        "state": ["live", "retired", "replaced"],
+        "outcome_record_id": ["outcome"]
+      }
     },
     {
       "name": "dispatch_record",
@@ -28,6 +38,106 @@
       "fields": ["committed_at", "content", "kind", "record_id", "success"],
       "required": ["committed_at", "content", "kind", "record_id", "success"],
       "values": {"kind": ["generic", "packet", "receipt", "result", "outcome", "join", "lifecycle"]}
+    },
+    {
+      "name": "dispatch_stored_success",
+      "contract": "dispatch.md",
+      "fields": ["committed_record"],
+      "required": ["committed_record"]
+    },
+    {
+      "name": "dispatch_committed_record",
+      "contract": "dispatch.md",
+      "fields": ["protocol", "run", "id", "dispatch_id", "record_id", "content"],
+      "required": ["protocol", "run", "id", "dispatch_id", "record_id", "content"]
+    },
+    {
+      "name": "dispatch_packet_record",
+      "contract": "dispatch.md",
+      "fields": ["packet"],
+      "required": ["packet"]
+    },
+    {
+      "name": "dispatch_receipt_record",
+      "contract": "dispatch.md",
+      "fields": ["packet", "receipt"],
+      "required": ["packet", "receipt"]
+    },
+    {
+      "name": "dispatch_result_record",
+      "contract": "dispatch.md",
+      "fields": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
+      "required": ["assignment_seal", "body", "mode", "operation", "section", "writer"]
+    },
+    {
+      "name": "dispatch_result_success",
+      "contract": "dispatch.md",
+      "fields": ["result"],
+      "required": ["result"]
+    },
+    {
+      "name": "dispatch_result_projection",
+      "contract": "dispatch.md",
+      "fields": ["protocol", "run", "id", "path", "section", "mode", "by", "assignment_seal", "dispatch_id", "record_id"],
+      "required": ["protocol", "run", "id", "path", "section", "mode", "by", "assignment_seal", "dispatch_id", "record_id"]
+    },
+    {
+      "name": "dispatch_transition_success",
+      "contract": "dispatch.md",
+      "fields": ["dispatch"],
+      "required": ["dispatch"]
+    },
+    {
+      "name": "dispatch_retirement_dispatch",
+      "contract": "dispatch.md",
+      "fields": ["protocol", "outcome", "run", "id", "dispatch_id", "record_id", "retired_at", "state"],
+      "required": ["protocol", "outcome", "run", "id", "dispatch_id", "record_id", "retired_at", "state"],
+      "values": {"outcome": ["retired"], "state": ["retired"]}
+    },
+    {
+      "name": "dispatch_replacement_dispatch",
+      "contract": "dispatch.md",
+      "fields": ["protocol", "outcome", "run", "id", "dispatch_id", "record_id", "replaces", "assignment_seal", "lease_expires_at", "opened_at", "state"],
+      "required": ["protocol", "outcome", "run", "id", "dispatch_id", "record_id", "replaces", "assignment_seal", "lease_expires_at", "opened_at", "state"],
+      "values": {"outcome": ["replaced"], "state": ["live"]}
+    },
+    {
+      "name": "dispatch_packet_reference",
+      "contract": "dispatch.md",
+      "fields": ["id", "run"],
+      "required": ["id", "run"]
+    },
+    {
+      "name": "dispatch_inline_snapshot",
+      "contract": "dispatch.md",
+      "fields": ["assignment", "envelope_seal"],
+      "required": ["assignment", "envelope_seal"]
+    },
+    {
+      "name": "dispatch_join_content",
+      "contract": "dispatch.md",
+      "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id", "review"],
+      "required": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id"]
+    },
+    {
+      "name": "dispatch_retire_request",
+      "contract": "dispatch.md",
+      "fields": ["assignment_seal", "dispatch_id", "operation"],
+      "required": ["assignment_seal", "dispatch_id", "operation"],
+      "values": {"operation": ["retire"]}
+    },
+    {
+      "name": "dispatch_replace_request",
+      "contract": "dispatch.md",
+      "fields": ["assignment_seal", "dispatch_id", "lease_expires_at", "operation", "owner", "replaces"],
+      "required": ["assignment_seal", "dispatch_id", "lease_expires_at", "operation", "owner", "replaces"],
+      "values": {"operation": ["replace"]}
+    },
+    {
+      "name": "dispatch_join_success",
+      "contract": "dispatch.md",
+      "fields": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at", "review_identity"],
+      "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"]
     },
     {
       "name": "dispatch_packet",
@@ -125,6 +235,12 @@
       "contract": "work-item.md",
       "fields": ["accepted", "adjudicated_by", "artifact", "findings", "lens"],
       "required": ["accepted", "adjudicated_by", "artifact", "findings", "lens"]
+    },
+    {
+      "name": "review_aggregate_critique",
+      "contract": "work-item.md",
+      "fields": ["accepted", "adjudicated_by", "adjudications", "artifact", "findings", "lens"],
+      "required": ["accepted", "adjudicated_by", "adjudications", "artifact", "findings", "lens"]
     },
     {
       "name": "review_repair",

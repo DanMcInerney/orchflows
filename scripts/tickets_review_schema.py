@@ -7,20 +7,24 @@ if __package__:
     from .tickets_format import canonical_json, parse_canonical_json
     from .tickets_shapes import (
         REVIEW_CRITIQUE_FIELDS, REVIEW_FINDING_FIELDS, REVIEW_GATE_PLAN_FIELDS,
+        REVIEW_CRITERION_FIELDS,
         REVIEW_RECORD_COMMON_FIELDS, REVIEW_REPAIR_FIELDS, REVIEW_STATE_REQUIRED,
         REVIEW_VERIFICATION_FIELDS, REVIEW_VERIFICATION_REQUIRED,
-        REVIEW_RECORD_COMMON_VALUES,
+        REVIEW_RECORD_COMMON_VALUES, REVIEW_STATE_VALUES,
+        REVIEW_PROTOCOL as SHAPE_REVIEW_PROTOCOL,
     )
 else:
     from tickets_format import canonical_json, parse_canonical_json
     from tickets_shapes import (
         REVIEW_CRITIQUE_FIELDS, REVIEW_FINDING_FIELDS, REVIEW_GATE_PLAN_FIELDS,
+        REVIEW_CRITERION_FIELDS,
         REVIEW_RECORD_COMMON_FIELDS, REVIEW_REPAIR_FIELDS, REVIEW_STATE_REQUIRED,
         REVIEW_VERIFICATION_FIELDS, REVIEW_VERIFICATION_REQUIRED,
-        REVIEW_RECORD_COMMON_VALUES,
+        REVIEW_RECORD_COMMON_VALUES, REVIEW_STATE_VALUES,
+        REVIEW_PROTOCOL as SHAPE_REVIEW_PROTOCOL,
     )
 
-PROTOCOL = "orchflows.review.v1"
+PROTOCOL = SHAPE_REVIEW_PROTOCOL
 KINDS = tuple(REVIEW_RECORD_COMMON_VALUES["kind"])
 
 
@@ -66,9 +70,7 @@ def _criteria(values, *, legacy: bool) -> None:
         raise SchemaError("GatePlan has no criteria")
     orders, lenses, tickets = set(), set(), set()
     for index, criterion in enumerate(values):
-        if not isinstance(criterion, dict) or set(criterion) != {
-            "identity", "lens", "order", "ticket",
-        }:
+        if not isinstance(criterion, dict) or set(criterion) != set(REVIEW_CRITERION_FIELDS):
             raise SchemaError(f"GatePlan criterion {index} has unknown or missing fields")
         order = criterion["order"]
         if legacy and isinstance(order, str) and order.isdigit():

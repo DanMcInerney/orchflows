@@ -1,6 +1,7 @@
 """The T0 shape declarations render validator and contract consumers."""
 
 from pathlib import Path
+import json
 import tempfile
 import unittest
 
@@ -27,6 +28,30 @@ class ShapeRenderTest(unittest.TestCase):
             target = Path(directory) / "generated.py"
             target.write_text(render_shapes.render_validator() + "hand edit\n", encoding="utf-8")
             self.assertFalse(render_shapes.validator_is_current(target))
+
+    def test_declaration_change_invalidates_both_consumers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "shapes.json"
+            validator = Path(directory) / "tickets_shapes.py"
+            contract = Path(directory) / "dispatch.md"
+            source.write_bytes(render_shapes.SOURCE.read_bytes())
+            validator.write_text(
+                render_shapes.render_validator(source), encoding="utf-8"
+            )
+            contract.write_text(
+                render_shapes.render_contract_document(
+                    render_shapes.ROOT / "contracts" / "dispatch.md", source
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(render_shapes.validator_is_current(validator, source))
+            self.assertTrue(render_shapes.contract_is_current(contract, source))
+
+            data = json.loads(source.read_text(encoding="utf-8"))
+            data["shapes"][0]["fields"].append("declared_once")
+            source.write_text(json.dumps(data), encoding="utf-8")
+            self.assertFalse(render_shapes.validator_is_current(validator, source))
+            self.assertFalse(render_shapes.contract_is_current(contract, source))
 
     def test_contract_render_is_closed_over_declaration(self):
         for name in render_shapes.declarations():
