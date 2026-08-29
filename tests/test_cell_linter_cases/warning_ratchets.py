@@ -70,14 +70,19 @@ class WarningCeilingTest(unittest.TestCase):
     def test_the_two_ratchets_count_disjoint_findings(self):
         """Two ceilings over one report only mean anything if no finding is
         counted by both -- and if together they cover the report, so a WARN
-        of some third kind is visible as a kind with no ceiling rather than
-        as slack in one of these."""
+        of some third kind stays an explicit, separately identified finding
+        rather than becoming slack in one of these."""
 
         stdout = validate_the_real_tree().stdout
         near = set(warning_lines(stdout, NEAR))
         cross = set(warning_lines(stdout, CROSS_TIER))
+        composition = {
+            line for line in warning_lines(stdout)
+            if line.startswith("WARN compositions/browser-game: dated 2026-08-28 ")
+        }
         self.assertEqual(set(), near & cross)
-        self.assertEqual(set(warning_lines(stdout)), near | cross)
+        self.assertEqual(1, len(composition), composition)
+        self.assertEqual(set(warning_lines(stdout)), near | cross | composition)
 
     def test_a_count_above_the_ceiling_fails(self):
         tree_report = validate_the_real_tree().stdout

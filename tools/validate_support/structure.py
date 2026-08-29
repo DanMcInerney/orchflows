@@ -29,6 +29,16 @@ ENVELOPE_CARRIER_RE = re.compile(
 )
 ENVELOPE_FIELD_LEAD_RE = re.compile(r"^\s*status\s*[,;—-]", re.IGNORECASE)
 
+# U8's sole legacy exception is data, not a relaxed classifier.  The date
+# names the review that admitted the already-shipped browser-game machinery;
+# every other composition, including every future one, takes the closed rule.
+COMPOSITION_PROTOCOL_ALLOWLIST = {"browser-game": "2026-08-28"}
+COMPOSITION_SCRIPT_SUFFIXES = frozenset({
+    ".bat", ".cmd", ".js", ".mjs", ".cjs", ".ps1", ".py", ".sh", ".ts",
+})
+COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
+COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
+
 from tools.validate_support import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
@@ -174,6 +184,101 @@ def discover_templates(manifest_name: str):
         d for d in comps_dir.iterdir()
         if d.is_dir() and (d / manifest_name).is_file()
     )
+
+
+def _composition_artifact_kind(path: Path):
+    """The forbidden protocol class carried by ``path``, if any."""
+
+    name = path.name
+    if COMPOSITION_SCHEMA_RE.search(name):
+        return "schema"
+    if COMPOSITION_FIXTURE_RE.search(name):
+        return "fixture format"
+    if path.suffix.lower() in COMPOSITION_SCRIPT_SUFFIXES:
+        return "script"
+    return None
+
+
+def _reference_owner(path: Path, composition_names):
+    """Resolve a shared reference's composition from its bounded filename."""
+
+    name = path.name.lower()
+    for composition in sorted(composition_names, key=lambda item: (-len(item), item)):
+        lowered = composition.lower()
+        if name.startswith(lowered + "-") or name.startswith(lowered + "_"):
+            return composition
+    return None
+
+
+def _script_owner(path: Path, composition_names):
+    """Resolve a script module's composition by a normalized stem boundary."""
+
+    stem = path.stem.lower()
+    for composition in sorted(composition_names, key=lambda item: (-len(item), item)):
+        normalized = composition.lower().replace("-", "_")
+        if stem == normalized or stem.startswith(normalized + "_"):
+            return composition
+    return None
+
+
+def validate_composition_admission(
+    diag: Diagnostics, allowlist=COMPOSITION_PROTOCOL_ALLOWLIST
+) -> None:
+    """Reject protocol artifacts owned by composition templates.
+
+    Ownership is physical inside ``compositions/<name>/`` or explicit in the
+    bounded name of a shared ``compositions/references`` artifact.  The latter
+    is how the pre-existing browser-game schemas and fixture format ship.
+    """
+
+    compositions = ROOT / "compositions"
+    if not compositions.is_dir():
+        return
+    directories = sorted(
+        path for path in compositions.iterdir()
+        if path.is_dir() and path.name != "references"
+    )
+    names = {path.name for path in directories}
+    findings = []
+    for directory in directories:
+        for path in sorted(directory.rglob("*")):
+            kind = _composition_artifact_kind(path) if path.is_file() else None
+            if kind:
+                findings.append((directory.name, path, kind))
+    references = compositions / "references"
+    if references.is_dir():
+        for path in sorted(references.rglob("*")):
+            kind = _composition_artifact_kind(path) if path.is_file() else None
+            owner = _reference_owner(path, names) if kind else None
+            if owner:
+                findings.append((owner, path, kind))
+    scripts = ROOT / "scripts"
+    if scripts.is_dir():
+        for path in sorted(scripts.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in COMPOSITION_SCRIPT_SUFFIXES:
+                continue
+            owner = _script_owner(path, names)
+            if owner:
+                findings.append((owner, path, "composition-named script machinery"))
+
+    excepted = {}
+    for composition, path, kind in findings:
+        if composition in allowlist:
+            excepted.setdefault(composition, []).append((path, kind))
+            continue
+        diag.error(
+            rel(path),
+            f"composition '{composition}' carries forbidden {kind}; "
+            "compositions contain only their manifest, ticket stubs, and placeholders",
+        )
+    for composition in sorted(excepted):
+        date = allowlist[composition]
+        kinds = ", ".join(sorted({kind for _, kind in excepted[composition]}))
+        diag.warn(
+            f"compositions/{composition}",
+            f"dated {date} composition-protocol exception admits existing {kinds}; "
+            "the allowlist grants no exception to another composition",
+        )
 
 
 def _doclint():
@@ -374,6 +479,9 @@ def validate_templates(diag: Diagnostics) -> None:
 __all__ = (
     'validate_craft_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
     'validate_call_graph', '_envelope_first_clause', '_envelope_missing', 'validate_envelope',
-    'discover_templates', '_doclint', '_ticket_law', '_validate_template_manifest',
+    'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
+    'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',
+    'discover_templates', '_composition_artifact_kind', '_reference_owner', '_script_owner',
+    'validate_composition_admission', '_doclint', '_ticket_law', '_validate_template_manifest',
     '_validate_stub_executor', '_tree_skill_names', 'validate_templates',
 )

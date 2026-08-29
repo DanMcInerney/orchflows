@@ -63,6 +63,22 @@ scope, or at a broader custom scope than requested.
    adapter/routing/role tests when host surfaces change, and the full required
    checks before acceptance. Install only the accepted source identity.
 
+## Composition admission
+
+A composition carries only its manifest, ticket stubs, and placeholder values.
+It carries no schema, validator, fixture format, or script. Repository admission
+refuses those artifacts inside a composition, schema or fixture-format artifacts
+named for it under [shared references](../compositions/references/), and any
+composition-named module under scripts. Validation a composition needs instead
+belongs to pack data when it is domain craft or to a T0 contract when machinery
+branches on it; a composition that needs another shape exposes that missing
+owner.
+
+The already-shipped `browser-game` machinery is the sole exception, named in the
+validator's dated 2026-08-28 allowlist. The validator reports that exception as a
+warning; it admits neither another composition nor an unnamed compatibility
+mode.
+
 ## Authoring lens
 
 Review the fixed artifact independently against these owners:

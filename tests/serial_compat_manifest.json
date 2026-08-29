@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2015,
+  "count": 2020,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -766,6 +766,11 @@
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_exemption_is_one_live_site_and_not_a_blanket",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_real_library_tree_carries_no_dead_documented_path",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_test_directory_is_an_error",
+   "test_validator.TestCompositionProtocolAdmission.test_a_script_module_named_for_a_composition_is_refused_by_boundary",
+   "test_validator.TestCompositionProtocolAdmission.test_authoring_standard_states_the_protocol_boundary_and_exception",
+   "test_validator.TestCompositionProtocolAdmission.test_browser_game_is_the_one_dated_visible_exception",
+   "test_validator.TestCompositionProtocolAdmission.test_removing_the_browser_game_entry_exposes_its_protocol_artifacts",
+   "test_validator.TestCompositionProtocolAdmission.test_schema_fixture_format_and_script_are_refused",
    "test_validator.TestMarkdownAnchors.test_a_link_to_a_missing_heading_is_an_error",
    "test_validator.TestPrivateReferenceAdmission.test_cross_package_private_reference_is_an_error",
    "test_validator.TestRecursiveNameResolution.test_nested_shipped_prose_resolves_skill_names",
@@ -2018,7 +2023,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0dae2a6019c53d48aea374e4fb80f15c3de0176ff6e56ffb2f372f8cc86ececf"
+  "sha256": "a06742f1b55bb2d6415491d131db04e439169e84a7762695fbce33a7f27a3156"
  },
  "mutation_owners": [
   {

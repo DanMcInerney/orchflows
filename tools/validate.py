@@ -302,6 +302,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_cell_duplication(packages, diag)
     validate_cross_tier_duplication(packages, diag)
     validate_envelope(packages, diag)
+    validate_composition_admission(diag)
     validate_templates(diag)
     validate_browser_game_traceability(diag, root=ROOT)
     validate_cross_package_links(packages, diag)
