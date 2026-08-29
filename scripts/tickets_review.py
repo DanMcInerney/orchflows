@@ -466,7 +466,10 @@ def repair_outcome(
     return _review_state([*records, record], allow_legacy=True)
 
 
-def verification_outcome(state: dict, artifact: str | None, verification: str, by: str) -> dict:
+def verification_outcome(
+    state: dict, artifact: str | None, verification: str, by: str,
+    *, covers=None,
+) -> dict:
     records = review_records(state, allow_legacy=True)
     if not records or records[-1]["kind"] != "RepairOutcome":
         raise ReviewError("verification requires a RepairOutcome predecessor")
@@ -478,13 +481,15 @@ def verification_outcome(state: dict, artifact: str | None, verification: str, b
         raise ReviewError(
             "verification evidence must begin PASS:, FAIL:, or UNVERIFIED:"
         )
-    record = _record(
-        "Verification", repaired["identity"],
-        artifact=repaired["artifact"],
-        by=by,
-        evidence=verification,
-        verdict=verdict,
-    )
+    fields = {
+        "artifact": repaired["artifact"],
+        "by": by,
+        "evidence": verification,
+        "verdict": verdict,
+    }
+    if covers is not None:
+        fields["covers"] = covers
+    record = _record("Verification", repaired["identity"], **fields)
     return _review_state([*records, record], allow_legacy=True)
 
 
