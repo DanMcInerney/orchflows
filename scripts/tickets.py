@@ -40,6 +40,7 @@ if __package__:
     from . import tickets_attempts as _tickets_attempts_module
     from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
     from . import tickets_join as _tickets_join_module
+    from . import tickets_registry as _tickets_registry_module
     from . import tickets_grade as _tickets_grade_module
 else:
     # By name, as `tickets_generations` is reached: the family's
@@ -61,6 +62,7 @@ else:
     import tickets_attempts as _tickets_attempts_module
     import tickets_dispatch_packet as _tickets_dispatch_packet_module
     import tickets_join as _tickets_join_module
+    _tickets_registry_module = __import__('tickets_registry')
     _tickets_grade_module = __import__('tickets_grade')
 
 BOUND_KINDS = _tickets_bound_module.BOUND_KINDS
@@ -94,7 +96,9 @@ RESULT_TOKEN_SPLIT_RE = _tickets_format_module.RESULT_TOKEN_SPLIT_RE
 RESULT_TOKEN_STRIP = _tickets_format_module.RESULT_TOKEN_STRIP
 ROOT_EXECUTOR = _tickets_format_module.ROOT_EXECUTOR
 CHECKED_BY_KEY = _tickets_format_module.CHECKED_BY_KEY
-GATE_EXECUTORS = _tickets_format_module.GATE_EXECUTORS
+CALLABLE_EXECUTORS = _tickets_registry_module.CALLABLE_EXECUTORS
+EXECUTOR_REGISTRY = _tickets_registry_module.EXECUTOR_REGISTRY
+REVIEW_KINDS = _tickets_registry_module.REVIEW_KINDS
 GATE_ID_MARKER = _tickets_format_module.GATE_ID_MARKER
 SCRIPT_EXECUTOR_PREFIX = _tickets_format_module.SCRIPT_EXECUTOR_PREFIX
 SECTION_ORDER = _tickets_format_module.SECTION_ORDER
@@ -231,8 +235,6 @@ _is_stale = _tickets_packet_module._is_stale
 _last_motion = _tickets_packet_module._last_motion
 _join_noop_repair_under_run_lock = _tickets_lifecycle_module._join_noop_repair_under_run_lock
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
-CHECKER_EXECUTOR = _tickets_packet_module.CHECKER_EXECUTOR
-CHECKER_PATH_EXECUTORS = _tickets_packet_module.CHECKER_PATH_EXECUTORS
 CUT_LENS_PARTS = _tickets_packet_module.CUT_LENS_PARTS
 GATE_CRITIQUE_ID = _tickets_packet_module.GATE_CRITIQUE_ID
 GATE_EXECUTOR_SECTIONS = _tickets_packet_module.GATE_EXECUTOR_SECTIONS
@@ -240,7 +242,6 @@ GATE_REPAIR_ID = _tickets_packet_module.GATE_REPAIR_ID
 GATE_VERIFY_ID = _tickets_packet_module.GATE_VERIFY_ID
 PACKET_SECTIONS = _tickets_packet_module.PACKET_SECTIONS
 PACKET_USAGE = _tickets_packet_module.PACKET_USAGE
-REVERIFIER_EXECUTOR = _tickets_packet_module.REVERIFIER_EXECUTOR
 _cmd_packet = _tickets_packet_module._cmd_packet
 _cut_lens_path = _tickets_packet_module._cut_lens_path
 _cut_subtree = _tickets_packet_module._cut_subtree

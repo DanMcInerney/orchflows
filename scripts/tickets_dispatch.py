@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, GATE_EXECUTORS, GATE_ID_MARKER, _remove_frontmatter_field, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, GATE_ID_MARKER, _remove_frontmatter_field, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
 else:
-    from tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, GATE_EXECUTORS, GATE_ID_MARKER, _remove_frontmatter_field, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_format import CUT_SECTIONS, EXECUTOR_SECTIONS, GATE_ID_MARKER, _remove_frontmatter_field, PACK_NAME_PREFIX, PACK_NAME_SUFFIX, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_all, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field, _split_commas, ticket_defects
 if __package__:
     from .tickets_issue import NEW_USAGE, _cmd_new
 else:
@@ -18,9 +18,9 @@ if __package__:
 else:
     from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, _cmd_check, _cmd_claim, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
 if __package__:
-    from .tickets_packet import CHECKER_PATH_EXECUTORS, GATE_CRITIQUE_ID, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID, _cmd_packet
+    from .tickets_packet import _cmd_packet
 else:
-    from tickets_packet import CHECKER_PATH_EXECUTORS, GATE_CRITIQUE_ID, GATE_EXECUTOR_SECTIONS, GATE_REPAIR_ID, GATE_VERIFY_ID, _cmd_packet
+    from tickets_packet import _cmd_packet
 if __package__:
     from .tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, RESULT_USAGE, RUN_STATE_USAGE, _append_one_line, _cmd_result, _cmd_run_state
 else:

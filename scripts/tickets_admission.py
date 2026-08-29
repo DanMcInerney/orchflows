@@ -7,16 +7,16 @@ import re
 from pathlib import Path
 
 if __package__:
+    from .tickets_registry import executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        GATE_EXECUTORS,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
 else:
+    from tickets_registry import executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        GATE_EXECUTORS,
         ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
         _executor_of, _parse_frontmatter,
     )
@@ -57,6 +57,12 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     findings = []
     executor = _executor_of(data)
     pack = str(data.get("pack") or "").strip()
+    if (
+        executor
+        and not executor.startswith(SCRIPT_EXECUTOR_PREFIX)
+        and not executor_registered(executor)
+    ):
+        findings.append(finding("executor-unregistered", "executor", executor_refusal(executor)))
     unbound = (
         executor.startswith(SCRIPT_EXECUTOR_PREFIX)
         or executor == ROOT_EXECUTOR
@@ -112,7 +118,7 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
         or not str(target.get("checked_by") or "").strip()
         or str(target.get("review_stage") or "") != f"{target_id}.check"
         or str(checker.get("status") or "") != "complete"
-        or _executor_of(checker) != GATE_EXECUTORS["critique"]
+        or str(checker.get("review_kind") or "") != "critique"
         or list(checker.get("depends_on") or []) != [target_id]
     ):
         return None

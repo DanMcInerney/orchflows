@@ -9,7 +9,7 @@ import subprocess
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
+        _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         parse_canonical_json,
     )
     from .tickets_store import _load_ticket
@@ -20,7 +20,7 @@ if __package__:
 else:
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        GATE_EXECUTORS, _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
+        _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         parse_canonical_json,
     )
     from tickets_store import _load_ticket
@@ -198,7 +198,7 @@ def checker_plan(
         raise ReviewError("ordinary check target is not sealed")
     criterion = {
         "identity": _digest({
-            "executor": GATE_EXECUTORS["critique"],
+            "executor": "orch-check",
             "lens": "checker",
             "pack": data.get("pack"),
             "target_assignment": seal,
@@ -295,19 +295,19 @@ def packet_state(
 ) -> dict | None:
     data = _parse_frontmatter(text)
     ticket_id = str(data.get("id") or ticket_path.stem)
-    executor = _executor_of(data)
-    if executor == GATE_EXECUTORS["critique"] and ticket_id.endswith(".check"):
+    review_kind = str(data.get("review_kind") or "").strip().strip("`")
+    if review_kind == "critique" and ticket_id.endswith(".check"):
         target_path = ticket_path.with_name(f"{ticket_id[:-len('.check')]}.md")
         return _review_state([
             checker_plan(
                 target_path, artifact or "", workspace or "", stage_path=ticket_path,
             )
         ])
-    if executor == GATE_EXECUTORS["critique"] and ".gate.critique." in ticket_id:
+    if review_kind == "critique" and ".gate.critique." in ticket_id:
         return _review_state([
             gate_plan(ticket_path, artifact or "", workspace or "")
         ])
-    if executor == GATE_EXECUTORS["repair"] and ticket_id.endswith(".gate.repair"):
+    if review_kind == "repair" and ticket_id.endswith(".gate.repair"):
         state = repair_predecessor_state(
             ticket_path, data.get("depends_on") or [],
         )
@@ -321,7 +321,7 @@ def packet_state(
                 plan["pack"], plan["artifact"], workspace or plan.get("workspace"),
             )
         return state
-    if executor == GATE_EXECUTORS["verify"] and ticket_id.endswith(".gate.verify"):
+    if review_kind == "verify" and ticket_id.endswith(".gate.verify"):
         dependencies = list(data.get("depends_on") or [])
         if len(dependencies) != 1:
             raise ReviewError("verification requires one repair predecessor")

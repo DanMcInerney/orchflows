@@ -4,7 +4,7 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_EXECUTORS, _parse_frontmatter,
+        DEFAULT_BOUND_MINUTES, _parse_frontmatter,
         _set_frontmatter_field,
     )
     from .tickets_generations import assignment_digest
@@ -12,7 +12,7 @@ if __package__:
     from .tickets_packet import GATE_REPAIR_ID, GATE_VERIFY_ID
 else:
     from tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_EXECUTORS, _parse_frontmatter,
+        DEFAULT_BOUND_MINUTES, _parse_frontmatter,
         _set_frontmatter_field,
     )
     from tickets_generations import assignment_digest
@@ -72,11 +72,11 @@ def ordinary_stage_text(run: str, target_id: str, target: dict, kind: str) -> st
     repair_id = GATE_REPAIR_ID.format(root=target_id)
     if kind == "repair":
         ticket_id = repair_id
-        executor = GATE_EXECUTORS["repair"]
+        executor = "orch-execute"
         dependencies = [f"{target_id}.check"]
     elif kind == "verify":
         ticket_id = GATE_VERIFY_ID.format(root=target_id)
-        executor = GATE_EXECUTORS["verify"]
+        executor = "orch-check"
         dependencies = [repair_id]
     else:
         raise ValueError(f"unknown ordinary review stage: {kind}")
@@ -88,6 +88,7 @@ def ordinary_stage_text(run: str, target_id: str, target: dict, kind: str) -> st
         "isolation": "none", "bound": f"{DEFAULT_BOUND_MINUTES}m",
         "review_order": None, "claimed_by": "", "claimed_at": "",
         "root_generation": target.get("root_generation"),
+        "review_kind": kind,
     }
     text = _render_ticket(
         fields, _sections(kind, target_id, dependencies[0]),

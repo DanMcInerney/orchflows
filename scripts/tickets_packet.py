@@ -16,6 +16,7 @@ if __package__:
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json,
     )
+    from .tickets_registry import REVIEW_KINDS
     from .tickets_sequence import sequence_block
     from .tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock,
@@ -30,6 +31,7 @@ else:
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json,
     )
+    from tickets_registry import REVIEW_KINDS
     from tickets_sequence import sequence_block
     from tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock,
@@ -37,10 +39,7 @@ else:
     )
 
 PACKET_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-CHECKER_EXECUTOR = "orch-critique"
-REVERIFIER_EXECUTOR = "orch-verify"
-CHECKER_PATH_EXECUTORS = (CHECKER_EXECUTOR, REVERIFIER_EXECUTOR)
-PACKET_USAGE = f"packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--executor {' | '.join(CHECKER_PATH_EXECUTORS)}]"
+PACKET_USAGE = "packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
 CHECKABLE_STATUSES = frozenset({"claimed", "suspended"})
 CUT_LENS_PARTS = ("skills", "kernel", "orch-decompose", "references", "cut-lens.md")
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
@@ -162,7 +161,7 @@ def _cut_lens_path():
 
 def _cmd_packet(rest):
     probe = list(rest)
-    for flag in ("--reply-to", "--by", "--workspace", "--executor"):
+    for flag in ("--reply-to", "--by", "--workspace", "--review-kind"):
         _extract_flag(probe, flag)
     if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
         return _packet_under_run_lock(rest)
@@ -187,13 +186,13 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     reply_to = _extract_flag(args, "--reply-to")
     dispatched_name = _extract_flag(args, "--by")
     workspace = _extract_flag(args, "--workspace")
-    further = _extract_flag(args, "--executor")
+    requested_review_kind = _extract_flag(args, "--review-kind")
     if len(args) != 2:
         return {"error": f"usage: {PACKET_USAGE}"}
-    if further is not None:
-        further = further.strip().strip("`")
-        if further not in CHECKER_PATH_EXECUTORS:
-            return {"error": f"--executor takes {' or '.join(CHECKER_PATH_EXECUTORS)}, not '{further}'"}
+    if requested_review_kind is not None:
+        requested_review_kind = requested_review_kind.strip().strip("`")
+        if requested_review_kind not in REVIEW_KINDS:
+            return {"error": f"--review-kind takes one of {list(REVIEW_KINDS)}, not '{requested_review_kind}'"}
     run, ticket_id = args
     root = _tickets_root()
     if root is None:
@@ -233,28 +232,36 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             missing.append(f"{part} (## {heading})")
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
-    if further is not None:
-        independence = str(loaded.get("independence") or "checker").strip().strip("`")
-        if independence == "gate" and _executor_of(loaded) != ROOT_EXECUTOR:
-            return {"error": f"ticket {run}/{ticket_id} defers review to its downstream gate"}
-        if further == CHECKER_EXECUTOR and str(loaded.get(CHECKED_BY_KEY) or "").strip():
-            return {"error": f"ticket {run}/{ticket_id} already has its one checker"}
+    declared_review_kind = str(loaded.get("review_kind") or "").strip().strip("`")
+    if declared_review_kind and declared_review_kind not in REVIEW_KINDS:
+        return {"error": f"ticket {run}/{ticket_id} has an invalid review_kind '{declared_review_kind}'"}
+    if requested_review_kind is not None and declared_review_kind and requested_review_kind != declared_review_kind:
+        return {"error": f"ticket {run}/{ticket_id} review_kind differs from the sealed assignment"}
+    review_kind = requested_review_kind or declared_review_kind or None
+    if review_kind == "critique" and str(loaded.get(CHECKED_BY_KEY) or "").strip():
+        return {"error": f"ticket {run}/{ticket_id} already has its one checker"}
     run_id = str(loaded.get("run") or run)
     script = Path(__file__).with_name("tickets.py").resolve()
-    executor_script = None if further else _executor_script(executor)
-    assigned_name = str(dispatched_name or (loaded.get("claimed_by") if further is None else "") or "").strip() or None
+    executor_script = _executor_script(executor)
+    assigned_name = str(dispatched_name or loaded.get("claimed_by") or "").strip() or None
     if assigned_name is None:
         return {"error": "packet requires the dispatched child identity through --by when it differs from claimed_by"}
-    if further is not None:
-        executor = further
-        prompt = [f"Apply skill {executor} to ticket {ticket_path}."]
-        if executor == CHECKER_EXECUTOR:
-            prompt.extend([
-                "Read the fixed artifact identity, Goal, Context, executor Result and Verification evidence, and lens.",
-                "Remain read-only. First enumerate every evidence-backed material blocker to Goal; then synthesize and rank the smallest architectural repair set. File findings in Feedback, never rewrite Result or Verification.",
-            ])
-        else:
-            prompt.append("Independently challenge the fixed artifact and executor evidence against Goal and factual Context; file the verdict and observations in Verification without editing the artifact.")
+    if review_kind == "critique":
+        prompt = [
+            "Apply orch-check to the immutable review ledger and fixed artifact.",
+            "Read the fixed artifact identity, Goal, Context, executor Result and Verification evidence, and pack lens.",
+            "Remain read-only. Enumerate every evidence-backed material blocker, then synthesize and rank the smallest architectural repair set. File findings in Feedback, never rewrite Result or Verification.",
+        ]
+    elif review_kind == "verify":
+        prompt = [
+            "Apply orch-check to the immutable review ledger and repaired artifact.",
+            "Independently challenge the fixed artifact and executor evidence against Goal, Context, and pack evidence. File the verdict and observations in Verification without editing the artifact.",
+        ]
+    elif review_kind == "repair":
+        prompt = [
+            "Apply orch-execute to the immutable review ledger and accepted blocker set.",
+            "Resolve only the accepted blockers, preserving the fixed pack and workspace authority, then file fresh evidence for the repaired artifact.",
+        ]
     elif executor_script is not None:
         prompt = [
             f"Run the script {executor_script} with ticket path {ticket_path} from the assigned workspace.",
@@ -278,13 +285,13 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             canonical_json(review_state),
         ))
     isolation = normalized_isolation(loaded.get("isolation"))
-    if further == CHECKER_EXECUTOR:
+    if review_kind == "critique":
         prompt.append("File Feedback and Risks as findings are produced; the join alone sets terminal status.")
-    elif further == REVERIFIER_EXECUTOR:
+    elif review_kind == "verify":
         prompt.append("File Verification, Feedback, and Risks as evidence is produced; the join alone sets terminal status.")
     else:
         prompt.append("File Result, Verification, Feedback, Risks, or Handoff as work is produced; the join alone sets terminal status.")
-    if executor == REVERIFIER_EXECUTOR:
+    if review_kind == "verify":
         prompt.append("Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or `UNVERIFIED:` so the join can bind the verdict to the verified artifact.")
     prompt.append(f"Filing channel, with SECTION one of {list(EXECUTOR_SECTIONS)} and PATH in the candidate workspace:")
     result_identity = []
@@ -304,17 +311,17 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     return {"packet": {
         "run": run_id, "id": loaded["id"], "path": str(ticket_path),
         "executor": executor, "script": executor_script, "pack": loaded.get("pack"),
-        "profile": None if further else loaded.get("profile"),
+        "profile": loaded.get("profile"),
         "independence": loaded.get("independence") or "checker",
         "isolation": isolation, "admission": stored, "assigned_name": assigned_name,
         "reply_to": reply_to, "workspace": workspace, "prompt": "\n".join(prompt),
+        "review_kind": review_kind,
     }}
 
 
 __all__ = (
-    "CHECKER_EXECUTOR", "CHECKER_PATH_EXECUTORS", "CUT_LENS_PARTS",
-    "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS", "GATE_REPAIR_ID",
-    "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE", "REVERIFIER_EXECUTOR",
+    "CUT_LENS_PARTS", "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS",
+    "GATE_REPAIR_ID", "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE",
     "_claim_is_stale", "_cmd_packet", "_cut_lens_path", "_cut_subtree",
     "_is_stale", "_last_motion", "_packet_under_run_lock",
 )

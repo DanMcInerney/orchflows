@@ -6,10 +6,12 @@ if __package__:
     from .tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
+    from .tickets_registry import REVIEW_KINDS
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
+    from tickets_registry import REVIEW_KINDS
 
 PACKET_FORMS = frozenset({"reference", "inline"})
 
@@ -37,11 +39,15 @@ def packet_shape(value):
         "admission", "assigned_name", "assignment_seal", "dispatch_id",
         "durability", "executor", "form", "independence", "isolation",
         "lease_expires_at", "outcome_record_id", "pack", "profile", "prompt",
+        "review_kind",
         "protocol", "reply_to", "role", "source", "workspace",
     }
     expected = base | ({"reference"} if form == "reference" else {"inline"})
     if set(value) != expected:
         return _classification("packet-invalid", "packet has unknown or missing fields")
+    review_kind = value.get("review_kind")
+    if review_kind is not None and review_kind not in REVIEW_KINDS:
+        return _classification("packet-invalid", "packet review_kind is unknown")
     source = value.get("source")
     if not isinstance(source, dict) or set(source) != {"id", "run"} or any(
         not isinstance(source.get(key), str) or not source[key] for key in ("id", "run")
