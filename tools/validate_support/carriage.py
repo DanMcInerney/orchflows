@@ -164,7 +164,7 @@ def _carriage_flag(diag: Diagnostics, file_label: str, key: tuple, message: str)
 def validate_carriage(packages, diag: Diagnostics) -> None:
     """Rule 10: (a) each call edge A -> B carries every item of B's
     Require in A's body; (b)+(c) each pack's executor/assembly Require
-    carries in the pack's slicing cell, and its Return names the
+    carries in the pack craft's slicing, and its Return names the
     ticket/work-item filing per work-item.md's filing law (or the pack's
     workspace names a store, the law's other filing destination)."""
     by_name = {pkg["path"].name: pkg for pkg in packages}

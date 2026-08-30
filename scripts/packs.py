@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve pack data and project the cells consumed by one pipeline verb.
+"""Resolve pack data and return the four cells every verb reads.
 
 Pack files are Markdown at the authoring boundary, but the resolved value is
 one closed JSON object.  The resolver is deliberately the only reader of a
@@ -33,10 +33,6 @@ else:  # pragma: no cover - direct/installed script path
 # Public exports keep the checkout and installed import seams flat.
 RESOLVER_VERSION = _support.RESOLVER_VERSION
 PACK_CELLS = _support.PACK_CELLS
-EXECUTE_CELLS = _support.EXECUTE_CELLS
-CHECK_CELLS = _support.CHECK_CELLS
-OUTLINE_CELLS = _support.OUTLINE_CELLS
-CONSUMER_CELLS = _support.CONSUMER_CELLS
 TYPED_CELLS = _support.TYPED_CELLS
 PackError = _support.PackError
 ADAPTER_REGISTRY = _support.ADAPTER_REGISTRY
@@ -62,16 +58,14 @@ def resolve_pack(
 def cells_for(
     digest: str,
     *,
-    consumer: str,
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
 ) -> Dict[str, object]:
-    """Project one resolved digest through the same-family implementation."""
+    """Return one resolved digest's cells through the same-family implementation."""
 
     return _support.cells_for(
         digest,
-        consumer=consumer,
         canonical_root=canonical_root,
         project_root=project_root,
         user_root=user_root,
@@ -97,13 +91,10 @@ def _parser() -> argparse.ArgumentParser:
     resolve.add_argument("pack")
     cells = subparsers.add_parser(
         "cells",
-        help="project cells from a resolved digest",
+        help="return the cells of a resolved digest",
         allow_abbrev=False,
     )
     cells.add_argument("digest")
-    cells.add_argument(
-        "--for", dest="consumer", required=True, choices=tuple(sorted(CONSUMER_CELLS))
-    )
     for subparser in (resolve, cells):
         subparser.add_argument("--canonical-root", dest="canonical_root")
         subparser.add_argument("--project-root", dest="project_root")
@@ -124,7 +115,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "resolve":
             result = resolve_pack(args.pack, **common)
         else:
-            result = cells_for(args.digest, consumer=args.consumer, **common)
+            result = cells_for(args.digest, **common)
     except PackError as error:
         print(json.dumps({"error": {"code": error.code, "detail": error.detail}}, ensure_ascii=False))
         return 1

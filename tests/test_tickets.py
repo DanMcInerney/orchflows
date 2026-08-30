@@ -51,7 +51,7 @@ __all__ = (
 
 
 class AdapterRegistryTest(unittest.TestCase):
-    """A pack selects one registered mechanism through its workspace cell."""
+    """A pack selects one registered mechanism through its typed adapter cell."""
 
     def _pack(self, root: Path, adapter: str):
         pack = root / "packs" / "widget-pack"
@@ -59,7 +59,6 @@ class AdapterRegistryTest(unittest.TestCase):
         (pack / "SKILL.md").write_text(
             "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| workspace | widget records; conflicts are ordinary overlaps |\n"
             f"| adapter | {adapter} |\n",
             encoding="utf-8",
         )

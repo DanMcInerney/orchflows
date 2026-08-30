@@ -78,9 +78,9 @@ class GoalEvidenceContractTest(unittest.TestCase):
         self.assertNotIn("## Completion test", contract)
         self.assertNotIn("named oracle", contract)
 
-    def test_execute_consumes_pack_cells_and_records_post_work_evidence(self):
+    def test_execute_consumes_pack_craft_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-execute/SKILL.md")
-        self.assertIn("pack's execute projection", execute)
+        self.assertIn("whole craft document", execute)
         self.assertRegex(execute, r"choose implementation,\s*tests, and verification")
         self.assertRegex(execute, r"Stream the\s+executor record")
         self.assertIn("reserved outcome", execute)
@@ -95,7 +95,10 @@ class GoalEvidenceContractTest(unittest.TestCase):
         }
         for pack, anchors in expected.items():
             with self.subTest(pack=pack):
-                body = read(f"packs/orch-{pack}-pack/references/evidence.md")
+                craft = read(f"packs/orch-{pack}-pack/references/craft.md")
+                match = re.search(r"(?ms)^## Evidence\s*$(.*?)(?=^## |\Z)", craft)
+                self.assertIsNotNone(match, f"{pack} craft has no ## Evidence section")
+                body = match.group(1)
                 self.assertTrue(all(anchor in body for anchor in anchors))
                 self.assertNotIn("code tests are required", body.lower())
         spec = read("skills/workflows/orch-outline/SKILL.md")
@@ -196,7 +199,7 @@ class CritiqueContractTest(unittest.TestCase):
         check = read("skills/kernel/orch-check/SKILL.md")
         self.assertIn("Never: edit the artifact", check)
         self.assertIn("mix a review stage with another kind", check)
-        self.assertIn("pack's check projection", check)
+        self.assertIn("`## Lens` owns\nthe review criteria", check)
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):
         surfaces = (

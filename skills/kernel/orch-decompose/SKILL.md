@@ -5,7 +5,8 @@ role: planner
 ---
 
 Require: root [ticket](../../../contracts/work-item.md#roots-decomposition-and-integration),
-stamped pack slicing and evidence. Reject missing parts by name.
+the stamped pack's craft — the cut works under its `## Slicing` and
+`## Evidence` sections. Reject missing parts by name.
 
 Goal: minimize critical path; every item an atom under
 [topology](../../../rules/topology.md) §3.
@@ -13,8 +14,8 @@ Goal: minimize critical path; every item an atom under
 Emit [work items](../../../contracts/work-item.md) as `<root>.NN` from candidate
 files through `tickets.py new <run> --file <candidate>`. Each candidate carries
 the root's exact inherited `root_generation`, the stamped pack's `executor`,
-and `independence: gate`. When the pack's `assembly` cell names a skill, emit
-one terminal assembly item with that binding; when it says none, emit no
+and `independence: gate`. When the pack's `assembly` cell names a stage, emit
+one terminal assembly item at that stage; when it says none, emit no
 assembly item. The completed cut gets one new validated cut generation and
 assignment seal while retaining its one root generation.
 

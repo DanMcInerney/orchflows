@@ -302,7 +302,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_browser_game_traceability(diag, root=ROOT)
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
-    validate_lens_anchor(packages, diag)
+    validate_craft_sections(packages, diag)
     validate_markdown_links(diag)
     validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)

@@ -5,7 +5,8 @@ role: planner
 ---
 
 Require: the request as Goal, workspace facts as Context, and the stamped
-pack's intake taste from `packs.py cells <digest> --for outline`.
+pack's craft (`packs.py cells <digest>`); intake reads `## Outline` and
+`## Spec fields`.
 
 Use research craft for one bounded question in Context's source policy. Ask
 unresolved user decisions singly; record verbatim.
@@ -51,7 +52,7 @@ ordinal `1`; make `## Context` cite it; preserve predecessor bytes. Never
 create a second root in the same run.
 
 Draft per [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration)
-in the resolved lane's terms. Route per [topology](../../../rules/topology.md)
+in the craft's terms. Route per [topology](../../../rules/topology.md)
 §2: bind one executor plus `orch-integrate` directly rather than
 `orch-decompose`. Use it only for a [topology](../../../rules/topology.md) §5
 graph, through `tickets.py new

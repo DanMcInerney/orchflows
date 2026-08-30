@@ -1283,8 +1283,8 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_content_pack_preserves_whole_artifact_direct_route(self):
         pack = (ROOT / "packs" / "orch-content-pack" / "SKILL.md").read_text(encoding="utf-8")
-        slicing = (ROOT / "packs" / "orch-content-pack" / "references" / "slicing.md").read_text(encoding="utf-8")
-        text = (pack + "\n" + slicing).lower()
+        craft = (ROOT / "packs" / "orch-content-pack" / "references" / "craft.md").read_text(encoding="utf-8")
+        text = (pack + "\n" + craft).lower()
         self.assertIn("whole", text)
         self.assertIn("direct", text)
         self.assertIn("one executor", text)

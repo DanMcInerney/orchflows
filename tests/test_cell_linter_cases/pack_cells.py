@@ -21,8 +21,8 @@ import tools.validate as validate  # noqa: E402
 VALIDATE = ROOT / "tools" / "validate.py"
 CONTRACTS = ROOT / "contracts"
 
-VERBATIM = "cell content duplicated verbatim"
-NEAR = "cell content near-duplicate"
+VERBATIM = "craft section duplicated verbatim"
+NEAR = "craft section near-duplicate"
 # validate.py's other duplication finding: the same clause comparison run
 # across the library's tiers rather than across one signature cell. Named
 # here because this module owns both ratchets.
@@ -81,16 +81,24 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 
 | cell | binding |
 | --- | --- |
-| slicing | [references/slicing.md](references/slicing.md) |
-| workspace | {workspace} |
-| required_spec_fields | inline: none |
-| craft | [references/craft.md](references/craft.md) |
 | adapter | git |
 | stages | [stage] |
 | assembly | {assembly} |
-| evidence | [references/evidence.md](references/evidence.md) |
-| outline | [references/outline.md](references/outline.md) |
+| craft | [references/craft.md](references/craft.md) |
 """
+
+# The mandatory craft sections, in the signature's order. Every default a
+# synthetic craft supplies is under the clause floor, so a test compares
+# only the content it writes itself.
+CRAFT_SECTION_ORDER = (
+    "Vocabulary",
+    "Workspace",
+    "Spec fields",
+    "Outline",
+    "Slicing",
+    "Evidence",
+    "Lens",
+)
 
 
 _TEMPLATE_DIR = None
@@ -152,30 +160,37 @@ class _IsolatedTree(unittest.TestCase):
             text=True,
         )
 
-    def _write_pack(self, name, assembly=None, workspace="inline: none", files=None):
+    def _write_pack(self, name, assembly=None, workspace="inline: none",
+                    sections=None, lead=""):
+        """One synthetic folded pack: a 4-cell SKILL.md plus a craft.md
+        carrying every mandatory section (validate_craft_sections errors on
+        a missing one). `sections` overrides a section's body by heading;
+        `lead` is the paragraph before the first section heading."""
         pack_dir = self.tmp_path / "packs" / name
         (pack_dir / "references").mkdir(parents=True)
         (pack_dir / "SKILL.md").write_text(
             PACK_TEMPLATE.format(
                 name=name,
                 assembly="none" if assembly is None else assembly,
-                workspace=workspace,
             ),
             encoding="utf-8",
         )
-        defaults = {
-            "references/craft.md": "# Craft\n\nOnly %s terms.\n" % name,
-            "references/slicing.md": "# Slicing\n\nCut into %s widgets.\n" % name,
-            "references/evidence.md": "# Evidence\n\nOne %s method.\n" % name,
-            "references/outline.md": "# Outline\n\nFreeze one %s root.\n" % name,
+        bodies = {
+            "Vocabulary": "Only %s terms." % name,
+            "Workspace": workspace,
+            "Spec fields": "one %s field" % name,
+            "Outline": "Freeze one %s root." % name,
+            "Slicing": "Cut into %s widgets." % name,
+            "Evidence": "One %s method." % name,
+            "Lens": "criteria.",
         }
-        defaults.update(files or {})
-        # Every valid craft carries `## Lens` (validate_lens_anchor); append
-        # it so a case about some other cell is not convicted for its craft.
-        if "## Lens" not in defaults["references/craft.md"]:
-            defaults["references/craft.md"] += "\n## Lens\n\ncriteria.\n"
-        for rel_path, content in defaults.items():
-            (pack_dir / rel_path).write_text(content, encoding="utf-8")
+        bodies.update(sections or {})
+        craft = "# Craft\n\n"
+        if lead:
+            craft += lead.rstrip("\n") + "\n\n"
+        for heading in CRAFT_SECTION_ORDER:
+            craft += "## %s\n\n%s\n\n" % (heading, bodies[heading].rstrip("\n"))
+        (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
 
 
 class TestAssemblyForm(_IsolatedTree):
@@ -245,42 +260,42 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
         "orch-design-pack": (
             "git-plus-render",
             (
-                "git plus render:", "identities are [view identities]",
+                "git plus render:", "identities are view identities",
                 "fresh captures", "render conflicts",
             ),
         ),
         "orch-research-pack": (
             "evidence-store",
             (
-                "evidence store:", "identities are [evidence packets]",
+                "evidence store:", "identities are evidence packets",
                 "run-scoped lane directory", "actual lane packets",
             ),
         ),
     }
 
+    WORKSPACE_SECTION = re.compile(r"(?ms)^## Workspace\s*$(.*?)(?=^## |\Z)")
+
     def test_every_shipped_workspace_binds_the_current_ticket_protocol(self):
-        packs = {
-            path.parent.name: dict(
-                re.findall(
-                    r"^\| ([a-z_]+) \| (.+?) \|\s*$",
-                    path.read_text(encoding="utf-8"),
-                    re.M,
-                )
+        packs = {}
+        for path in sorted((ROOT / "packs").glob("*/SKILL.md")):
+            cells = dict(
+                re.findall(r"^\| ([a-z_]+) \| (.+?) \|\s*$", path.read_text(encoding="utf-8"), re.M)
             )
-            for path in sorted((ROOT / "packs").glob("*/SKILL.md"))
-        }
+            craft = (path.parent / "references" / "craft.md").read_text(encoding="utf-8")
+            match = self.WORKSPACE_SECTION.search(craft)
+            self.assertIsNotNone(match, path.parent.name)
+            packs[path.parent.name] = (cells, " ".join(match.group(1).split()))
         self.assertEqual(set(self.EXPECTED), set(packs))
         for pack, (adapter, substrate) in self.EXPECTED.items():
             with self.subTest(pack=pack):
-                cells = packs[pack]
-                workspace = cells["workspace"]
+                cells, workspace = packs[pack]
                 self.assertEqual(adapter, cells["adapter"])
                 for fragment in substrate:
                     self.assertIn(fragment, workspace)
                 # Assignment metadata, candidate authority, and Suggested
                 # files law are contracts/work-item.md's and rules/topology.md
-                # §9's; a workspace cell repeating them was a copy, so the
-                # binding proof is the adapter key plus the cell's own
+                # §9's; a workspace section repeating them was a copy, so the
+                # binding proof is the adapter key plus the section's own
                 # domain semantics above.
 
 
@@ -353,18 +368,18 @@ class TestCellDuplication(_IsolatedTree):
         self._write_pack("betapack", workspace="git: %s" % self.SHARED)
         out = self._run().stdout
         self.assertIn(VERBATIM, out)
-        self.assertIn("packs/alphapack/SKILL.md", out)
-        self.assertIn("packs/betapack/SKILL.md", out)
+        self.assertIn("packs/alphapack/references/craft.md", out)
+        self.assertIn("packs/betapack/references/craft.md", out)
         self.assertIn(self.SHARED, out)
 
     def test_a_verbatim_clause_wrapped_differently_is_still_an_error(self):
-        body = "# Slicing\n\n- Item extensions beyond the core:\n  %s.\n"
+        body = "- Item extensions beyond the core:\n  %s.\n"
         wrapped = (
             "each widget batch gets its own bench cleared\n  from the bay's "
             "current stock at handoff"
         )
-        self._write_pack("wrapapack", files={"references/slicing.md": body % self.SHARED})
-        self._write_pack("wrapbpack", files={"references/slicing.md": body % wrapped})
+        self._write_pack("wrapapack", sections={"Slicing": body % self.SHARED})
+        self._write_pack("wrapbpack", sections={"Slicing": body % wrapped})
         self.assertIn(VERBATIM, self._run().stdout)
 
     def test_near_duplicate_clauses_warn_naming_both_sites(self):
@@ -372,8 +387,8 @@ class TestCellDuplication(_IsolatedTree):
         self._write_pack("nearbpack", workspace="the workspace's linter or formatter decides standards shape")
         out = self._run().stdout
         self.assertIn(NEAR, out)
-        self.assertIn("packs/nearapack/SKILL.md", out)
-        self.assertIn("packs/nearbpack/SKILL.md", out)
+        self.assertIn("packs/nearapack/references/craft.md", out)
+        self.assertIn("packs/nearbpack/references/craft.md", out)
         self.assertNotIn(VERBATIM, out)
 
     def test_unrelated_clauses_are_not_reported(self):
@@ -385,71 +400,69 @@ class TestCellDuplication(_IsolatedTree):
 
     def test_a_shared_table_header_row_is_not_reported(self):
         table = (
-            "# Evidence\n\n"
             "| artifact kind | method | observation |\n"
             "| --- | --- | --- |\n"
             "| %s |\n"
         )
-        self._write_pack("hdrapack", files={"references/evidence.md": table % (
+        self._write_pack("hdrapack", sections={"Evidence": table % (
             "code | derived tests | red and green results")})
-        self._write_pack("hdrbpack", files={"references/evidence.md": table % (
+        self._write_pack("hdrbpack", sections={"Evidence": table % (
             "document | audience reading | fit observations")})
         self.assertNotIn(VERBATIM, self._run().stdout)
 
-    def test_a_pointer_cell_is_compared_on_its_reference_file(self):
+    def test_a_clause_is_compared_inside_its_named_section(self):
         """Both packs' `craft` rows are byte-identical -- a linter over
-        cell text would convict the row validate_pack_signature mandates
-        at :758-760. The finding must name the reference files instead."""
-        shared = "# Craft\n\nThe unit is a module at roughly one-read size, understood in one sitting.\n"
-        self._write_pack("ptrapack", files={"references/craft.md": shared})
-        self._write_pack("ptrbpack", files={"references/craft.md": shared})
+        cell text would convict the row validate_pack_signature mandates.
+        The finding compares same-named sections of the documents behind
+        the rows and names the craft files."""
+        shared = "The unit is a module at roughly one-read size, understood in one sitting."
+        self._write_pack("ptrapack", sections={"Vocabulary": shared})
+        self._write_pack("ptrbpack", sections={"Vocabulary": shared})
         out = self._run().stdout
         self.assertIn(VERBATIM, out)
         self.assertIn("packs/ptrapack/references/craft.md", out)
         self.assertIn("packs/ptrbpack/references/craft.md", out)
         self.assertNotIn("[references/craft.md](references/craft.md)", out)
 
-    def test_identical_pointer_rows_over_different_references_are_clean(self):
-        self._write_pack("difapack", files={
-            "references/craft.md": "# Craft\n\nA module is the unit of code review here.\n"})
-        self._write_pack("difbpack", files={
-            "references/craft.md": "# Craft\n\nEvidence packets carry provenance for every claim.\n"})
+    def test_the_same_clause_under_different_sections_is_not_compared(self):
+        """The section heading scopes the comparison the way the cell name
+        did: one pack's slicing taste showing up in another's vocabulary is
+        not the same fact twice."""
+        shared = "The unit is a module at roughly one-read size, understood in one sitting."
+        self._write_pack("secapack", sections={"Vocabulary": shared})
+        self._write_pack("secbpack", sections={"Slicing": shared})
+        out = self._run().stdout
+        self.assertNotIn(VERBATIM, out)
+        self.assertNotIn(NEAR, out)
+
+    def test_identical_rows_over_different_craft_content_are_clean(self):
+        self._write_pack("difapack", sections={
+            "Vocabulary": "A module is the unit of code review here."})
+        self._write_pack("difbpack", sections={
+            "Vocabulary": "Evidence packets carry provenance for every claim."})
         out = self._run().stdout
         self.assertNotIn(VERBATIM, out)
         self.assertNotIn(NEAR, out)
 
 
 class TestMandatedEchoExemption(_IsolatedTree):
-    """Two echoes an owner outside the pack mandates, so two packs
-    carrying them carry them by obligation. Each pair below is the real
-    tree's own pair with the domain nouns swapped for synthetic ones, so
-    the synthetic clauses have the real ones' shape and length."""
+    """Echoes an owner outside the pack mandates, so two packs carrying
+    them carry them by obligation. The pairs below have the real tree's
+    shape with the domain nouns swapped for synthetic ones."""
 
-    # The assembly form contracts/pack-signature.md mandates a typed stage
-    # name or the bare word ``none``. That the shipped cells are admitted is
-    # `TestAssemblyForm.test_every_real_pack_row_is_accepted`, which reads
-    # them rather than restating them.
-    ASSEMBLY = (
-        "none",
-        "stage",
+    # packs/*/references/craft.md's shared opener: a sentence citing the
+    # owner outside the pack (`](../`), which every craft may carry once
+    # the fact moved to one owner.
+    CITATION = (
+        "The shape principles every %s shares are "
+        "[rules/token-economy.md](../../../rules/token-economy.md) §10's."
     )
-    # packs/*/references/craft.md:3 -- the opener naming the cell the file
-    # satisfies, which every pointer cell's reference carries.
-    CRAFT_OPENER = "# Craft\n\nThe %s domain's terms and shape, per the signature's craft cell.\n"
 
-    # A pack not exercising the assembly echo still needs a legal assembly
-    # that resolves without skills/ and is nobody else's verbatim twin: a
-    # per-pack gloss, since no backticked skill resolves in this tree.
-    def _inert(self, name):
-        del name
-        return "none"
-
-    def test_the_craft_opener_and_assembly_form_are_exempt(self):
-        for name, domain in (("openerapack", "alpha"), ("openerbpack", "beta")):
-            self._write_pack(name, assembly=self._inert(name),
-                             files={"references/craft.md": self.CRAFT_OPENER % domain})
-        self._write_pack("formapack", assembly=self.ASSEMBLY[0])
-        self._write_pack("formbpack", assembly=self.ASSEMBLY[1])
+    def test_the_outside_citation_and_typed_atoms_are_exempt(self):
+        self._write_pack("openerapack", assembly="none",
+                         sections={"Vocabulary": self.CITATION % "alpha"})
+        self._write_pack("openerbpack", assembly="stage",
+                         sections={"Vocabulary": self.CITATION % "beta"})
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn(VERBATIM, result.stdout)

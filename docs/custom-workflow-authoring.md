@@ -42,9 +42,9 @@ scope, or at a broader custom scope than requested.
 3. For a skill, use the anatomy and carriage rules in
    [composition](../rules/composition.md) §§5, 10–11. For a pack, follow
    [pack authoring](pack-authoring.md) and the
-   [pack signature](../contracts/pack-signature.md), which owns every lane's
-   cells — the outline taste included, so a custom pack a planner freezes a root
-   against fills it like any other. A T0 shape change is a
+   [pack signature](../contracts/pack-signature.md), which owns the four
+   cells and every craft section — `## Outline` included, so a custom pack a
+   planner freezes a root against fills it like any other. A T0 shape change is a
    supersession change and follows its contract's pinning procedure.
 4. For a composition, start from the nearest template under `compositions/`,
    pin its open decisions, and keep control flow in ticket stubs. A stub's

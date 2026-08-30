@@ -27,13 +27,13 @@ CALLABLE_EXECUTORS = (
 )
 
 EXECUTOR_REGISTRY = {
-    "orch-execute": {"role": "worker", "consumer": "execute", "requires_pack": True},
-    "orch-check": {"role": "planner", "consumer": "check", "requires_pack": True},
-    "orch-decompose": {"role": "planner", "consumer": None},
-    "orch-integrate": {"role": "none", "consumer": None},
-    "orch-frontier": {"role": "none", "consumer": None},
-    "orch-loop": {"role": "none", "consumer": None},
-    "orch-outline": {"role": "planner", "consumer": "outline"},
+    "orch-execute": {"role": "worker", "requires_pack": True},
+    "orch-check": {"role": "planner", "requires_pack": True},
+    "orch-decompose": {"role": "planner"},
+    "orch-integrate": {"role": "none"},
+    "orch-frontier": {"role": "none"},
+    "orch-loop": {"role": "none"},
+    "orch-outline": {"role": "planner"},
 }
 
 # A superseded verb and the successor that replaced it, per

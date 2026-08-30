@@ -34,6 +34,60 @@ The shape principles every domain shares are
   command — and its wrong result drops the fact, not the anchor,
   which would only prove the grep.
 
+## Workspace
+
+git: identities are commits; isolation is a branch or worktree per
+candidate; changes are ordinary diffs; Git conflicts and shared derived
+artifacts resolve once at the join through the conflict owner.
+
+## Spec fields
+
+target repository; standards owner by pointer; observable result
+
+## Outline
+
+### What a frozen code root carries
+
+- Observable behavior at a seam, never the modules that will carry it.
+- The failure paths the result must survive: an executor's checks answer
+  to Goal alone, so an unstated path is an unchecked one.
+- A pointer to the standards owner, and no test oracle at all.
+
+### Worth asking at intake
+
+- Which seam makes the outcome observable from outside the change?
+- What must keep working that this change could plausibly break?
+- Does a tracer slice exist that proves those seams before anything widens?
+- Is the target repository, and its baseline revision, actually settled?
+
+### Exemplar policy
+
+Cite a module by path and revision, then list each property the imitation has
+to carry: idiom, check style, layering. "Look like that file" lists none of
+them, so it grants nothing.
+
+## Slicing
+
+Acceptance-first tickets: every seam whose observable result is already
+determined by the root Goal is its own item on the first frontier. Cut a
+tracer — one thin end-to-end crossing, taken first and widened after — only
+for the riskiest seam the Goal leaves unproven.
+
+- Dependency edges exist only where one unit's seam is another's input.
+- Test selection and verification method remain executor-owned. A
+  standards-owner pointer is a Context fact when relevant, never a prescribed
+  check.
+- A Goal ordering growth into a named file prices that file against the
+  standards owner's bounds at cut time — a measurement command in Context,
+  never a relayed count — test modules included.
+
+## Evidence
+
+Record the candidate revision, derived test identities with their failing and
+passing readings — a check honestly green on arrival records a can-fail reading
+instead, taken without mutating the tree under test — affected workspace-check
+readings, and uncovered behavior.
+
 ## Lens
 
 - Correctness: does the revision satisfy the spec's acceptance,
@@ -53,7 +107,7 @@ completion criterion false, or is a correctness finding at the fixed
 identity; contract fidelity with no criterion failing, scope and shape
 are `blocking: false` — reported, never repaired in the same run.
 
-## Execute stages
+## Stages
 
 - Implement at seams, reconciling with the surrounding idiom; take the
   tracer first where Goal leaves a seam unproven.

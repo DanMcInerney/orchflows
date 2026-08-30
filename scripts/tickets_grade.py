@@ -78,7 +78,8 @@ def _member_ids(root_id: str, snapshot: dict) -> list[str]:
     return members
 
 
-_TABLE_ROW = re.compile(r"^\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*$")
+_SPEC_FIELDS_HEADING = re.compile(r"(?m)^##\s+Spec fields\s*$")
+_NEXT_CRAFT_SECTION = re.compile(r"(?m)^##\s+")
 _FIELD_SEPARATOR = re.compile(r"\s*;\s*")
 _EM_DASH = re.compile(r"\s+[—–-]\s+")
 _WORDS = re.compile(r"[a-z0-9_]+")
@@ -90,15 +91,20 @@ _COVERS_LINE = re.compile(
 
 def _required_spec_fields(pack: str) -> list[str]:
     try:
-        text = pack_path(pack).read_text(encoding="utf-8")
+        craft = pack_path(pack).parent / "references" / "craft.md"
+        text = craft.read_text(encoding="utf-8")
     except (AdapterError, OSError, UnicodeDecodeError) as error:
         raise GradeError(str(error)) from error
-    declared = None
-    for line in text.splitlines():
-        match = _TABLE_ROW.match(line)
-        if match and match.group(1).strip().lower() == "required_spec_fields":
-            declared = match.group(2).strip()
-            break
+    match = _SPEC_FIELDS_HEADING.search(text)
+    if not match:
+        return []
+    rest = text[match.end():]
+    boundary = _NEXT_CRAFT_SECTION.search(rest)
+    declared = " ".join(
+        line.strip()
+        for line in (rest[: boundary.start()] if boundary else rest).splitlines()
+        if line.strip()
+    )
     if not declared:
         return []
     fields = []

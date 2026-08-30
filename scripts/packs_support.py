@@ -20,32 +20,11 @@ except ImportError:
 
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
 PACK_CELLS = (
-    "slicing",
-    "workspace",
-    "required_spec_fields",
-    "craft",
-    "evidence",
-    "outline",
     "adapter",
     "stages",
     "assembly",
-)
-EXECUTE_CELLS = (
-    "slicing",
-    "workspace",
-    "required_spec_fields",
     "craft",
-    "adapter",
-    "stages",
-    "assembly",
 )
-CHECK_CELLS = ("evidence", "craft")
-OUTLINE_CELLS = ("outline", "required_spec_fields", "craft")
-CONSUMER_CELLS = {
-    "execute": EXECUTE_CELLS,
-    "check": CHECK_CELLS,
-    "outline": OUTLINE_CELLS,
-}
 TYPED_CELLS = frozenset(("adapter", "stages", "assembly"))
 _CELL_SET = frozenset(PACK_CELLS)
 _PACK_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -448,22 +427,15 @@ def _available_names(roots: Sequence[Tuple[str, Path]]) -> Iterable[str]:
 def cells_for(
     digest: str,
     *,
-    consumer: str,
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
 ) -> Dict[str, object]:
-    """Find a resolved digest and return only its execute/check cells."""
+    """Find a resolved digest and return its four cells."""
 
     requested = str(digest or "").strip()
     if not _SHA_RE.fullmatch(requested):
         raise PackError("digest-invalid", f"invalid pack digest: {requested or '<missing>'}")
-    selected = CONSUMER_CELLS.get(consumer)
-    if selected is None:
-        raise PackError(
-            "consumer-invalid",
-            "consumer must be one of: " + ", ".join(sorted(CONSUMER_CELLS)),
-        )
     roots = _roots(
         canonical_root=canonical_root,
         project_root=project_root,
@@ -481,12 +453,10 @@ def cells_for(
             continue
         if resolved["digest"] != requested:
             continue
-        cells = {cell: resolved["cells"][cell] for cell in selected}
         return {
             "pack": resolved["pack"],
             "scope": resolved["scope"],
             "digest": requested,
-            "for": consumer,
-            "cells": cells,
+            "cells": dict(resolved["cells"]),
         }
     raise PackError("digest-unresolved", f"pack digest does not resolve: {requested}")

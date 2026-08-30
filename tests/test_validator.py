@@ -20,7 +20,7 @@ from tests.test_validator_cases.contracts_and_names import (
 )
 from tests.test_validator_cases.corpus_and_surfaces import (
     TestDuplicationCorpus,
-    TestLensAnchor,
+    TestCraftSections,
     TestLicensedCopies,
     TestWordBudgetAndLinks,
 )
@@ -72,10 +72,9 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         (pack / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: synthetic pack\n---\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| slicing | inline |\n| workspace | inline |\n"
-            "| required_spec_fields | inline |\n| craft | [references/craft.md](references/craft.md) |\n"
             "| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| evidence | inline |\n",
+            "| assembly | none |\n"
+            "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
 

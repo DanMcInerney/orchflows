@@ -40,20 +40,20 @@ that needs a different meaning needs a different word.
   or verdicts over a fixed artifact and never a deliverable; it is exempt
   from the envelope per `rules/composition.md`.
 - **outline** — `orch-outline`: the planner-role callable that freezes and
-  seals a semantic root at intake, resolving the stamped pack's outline taste
-  (below) to do it. It supersedes the earlier intake-verb name, which no
+  seals a semantic root at intake, reading the stamped pack craft's
+  `## Outline` and `## Spec fields` sections to do it. It supersedes the
+  earlier intake-verb name, which no
   dispatch revives; the noun **spec** (below) is unrenamed. As a routing shape it is
   the shape (below) that reaches this verb.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
-- **cell** — one field of the pack signature; which cells exist, and which
-  lane each feeds, is the signature's own (below).
-- **lane / taste** — one projection of a pack's cells for one verb, resolved
-  through `packs.py cells <digest> --for <lane>`. A pack has three: **execute**
-  taste for `orch-execute`, **check** taste for `orch-check`, and **outline**
-  taste for `orch-outline`, whose members are the `outline`,
-  `required_spec_fields`, and `craft` cells. The signature owns which cells each
-  carries; a cell appearing in two lanes is not copied to earn the second slot.
+- **cell** — one field of the pack signature: `adapter`, `stages`, and
+  `assembly` typed for machinery, `craft` the one document pointer; the
+  signature (below) owns the roster.
+- **craft section** — one `##` section of a pack's craft document, resolved
+  whole through `packs.py cells <digest>`. The signature's craft-section
+  table names the mandatory seven; every verb reads the whole document and
+  acts under the sections its skill names.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow: a template (below) under
@@ -100,8 +100,8 @@ that needs a different meaning needs a different word.
   `contracts/work-item.md`; input to decomposition; `orch-outline` is its
   only editor, at intake — every other reader, `orch-decompose`
   included while cutting, treats it as frozen. The noun keeps this name
-  after the intake verb was renamed; so does the pack's
-  `required_spec_fields` cell.
+  after the intake verb was renamed; so does the craft's `## Spec fields`
+  section.
 - **semantic root** — the executable delivery contract owned by the caller,
   not the spec's general vision. `rules/delegation.md` owns which facts the
   caller freezes and which deterministic corrections a decomposer may make;
@@ -166,7 +166,8 @@ that needs a different meaning needs a different word.
 - **decision gap** — a decomposition return naming a Goal portion the stamped
   slicing cannot cover.
 - **workspace** — where results live and what identities mean there (git
-  revisions, doc slots, evidence store), per the pack's workspace cell.
+  revisions, doc slots, evidence store), per the pack craft's `## Workspace`
+  section.
 - **candidate worktree** — the derived tree an isolation-`required` item works
   in, at the path and branch `scripts/state_root.py` derives from the run and
   ticket ids. Nothing else computes either.

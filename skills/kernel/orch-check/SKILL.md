@@ -1,15 +1,15 @@
 ---
 name: orch-check
-description: Check one fixed artifact through the stamped pack's check cells and return its durable review envelope.
+description: Check one fixed artifact through the stamped pack's craft and return its durable review envelope.
 role: planner
 ---
 
 Require: one immutable review ledger naming the fixed artifact, Goal,
 assignment evidence, and the pack digest.
 
-Resolve the pack's check projection through `packs.py cells <digest> --for
-check`. Apply its evidence and craft cells to the fixed artifact and the
-executor record. A critique enumerates evidence-backed findings, then
+Project the pack with `packs.py cells <digest>`; the craft's `## Lens` owns
+the review criteria, its `## Evidence` the methods a checker may challenge.
+Apply both to the fixed artifact and the executor record. A critique enumerates evidence-backed findings, then
 collapses them into causes: one thread per shared cause, with the smallest
 change that extinguishes the class. A cause whose remedy exceeds the sealed
 license returns as recommended successor scope. A verification records

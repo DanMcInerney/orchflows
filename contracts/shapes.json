@@ -303,14 +303,8 @@
     {
       "name": "pack_cells",
       "contract": "pack-signature.md",
-      "fields": [
-        "slicing", "workspace", "required_spec_fields", "craft", "adapter",
-        "stages", "assembly", "evidence", "outline"
-      ],
-      "required": [
-        "slicing", "workspace", "required_spec_fields", "craft", "adapter",
-        "stages", "assembly", "evidence", "outline"
-      ],
+      "fields": ["adapter", "stages", "assembly", "craft"],
+      "required": ["adapter", "stages", "assembly", "craft"],
       "values": {"assembly": ["none", "stage name"]}
     }
   ]

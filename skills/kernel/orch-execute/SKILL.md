@@ -1,16 +1,17 @@
 ---
 name: orch-execute
-description: Produce one artifact through the stamped pack's execute cells and return its durable ticket envelope.
+description: Produce one artifact through the stamped pack's craft and return its durable ticket envelope.
 role: worker
 ---
 
 Require: one claimed ticket with a stamped pack digest and its semantic
 assignment.
 
-Resolve the pack's execute projection through `packs.py cells <digest> --for
-execute`. Apply every returned cell to the assignment; choose implementation,
-tests, and verification from those cells and repository law. Stream the
-executor record as work is produced, then commit the reserved outcome.
+Resolve the stamped digest through `packs.py cells <digest>` and read the
+whole craft document. Work in its `## Workspace` semantics through its
+`## Stages`; choose implementation, tests, and verification from that craft
+and repository law. Stream the executor record as work is produced, then
+commit the reserved outcome.
 
 Never: substitute a skill name for a pack cell; invent a domain rule outside
 the resolved pack or shared rules; edit sealed semantics; integrate another
