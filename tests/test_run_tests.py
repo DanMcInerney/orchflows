@@ -386,14 +386,15 @@ class TestSchedule(unittest.TestCase):
         )
 
     def test_a_cold_prior_covers_the_long_pole_of_every_matrix_leg(self):
-        """The prior was read off Linux, where these two are cheap. Each was
-        its own leg's longest module, sorted last, and ran alone to the end:
-        141s of macOS's 284s wall, 120s of py3.9's 207s."""
+        """The prior was read off Linux, where a leg's long pole is cheap:
+        a module sorted last by a cold schedule ran alone to the end of
+        its leg's wall clock, so the named prior starts the known poles
+        first."""
         modules = ["tests.test_alpha", "tests.test_serial_compat",
-                   "tests.test_ui", "tests.test_zeta"]
+                   "tests.test_workspace", "tests.test_zeta"]
         self.assertEqual(
-            ["tests.test_serial_compat", "tests.test_ui"],
-            run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR)[:2],
+            ["tests.test_workspace", "tests.test_serial_compat"],
+            sorted(run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR)[:2], reverse=True),
         )
 
     def test_shards_partition_the_schedule_exactly(self):

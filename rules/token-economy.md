@@ -49,8 +49,8 @@
     times the children forever, whatever the model: every-turn surfaces
     tightest — the host block 400 words and at most eight standing
     demands, a project's routing block 400, this repository's
-    `AGENTS.md` 300, a role agent file 80; every-dispatch units next —
-    kernel, instance and utility bodies 300, pack `SKILL.md` 150, a
+    `AGENTS.md` 230, a role agent file 80; every-dispatch units next —
+    kernel bodies 300, pack `SKILL.md` 150, a
     stub's semantic instruction (Goal, Context, and optional Suggested files) 300, a pack's craft as
     [contracts/pack-signature.md](../contracts/pack-signature.md)
     mandates; every-run units widest — engine and workflow bodies 450,

@@ -992,9 +992,9 @@
    "test_validator.TestMarkdownAnchors.test_a_link_to_a_missing_heading_is_an_error",
    "test_validator.TestPrivateReferenceAdmission.test_cross_package_private_reference_is_an_error",
    "test_validator.TestRecursiveNameResolution.test_nested_shipped_prose_resolves_skill_names",
+   "test_validator.TestStructuralAdmissionMutants.test_a_kernel_call_edge_is_primitive_impurity",
    "test_validator.TestStructuralAdmissionMutants.test_a_new_executor_is_not_outside_envelope_admission",
    "test_validator.TestStructuralAdmissionMutants.test_a_return_must_be_the_terminal_paragraph",
-   "test_validator.TestStructuralAdmissionMutants.test_a_utility_call_edge_is_primitive_impurity",
    "test_validator.TestStructuralAdmissionMutants.test_duplicate_pack_cell_rows_are_rejected",
    "test_validator.TestStructuralAdmissionMutants.test_envelope_words_in_a_sentence_are_not_an_envelope",
    "test_validator.TestStructuralAdmissionMutants.test_labels_in_a_fence_do_not_satisfy_skill_anatomy",
@@ -1971,7 +1971,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "96fc9a50e69368734841e825cc03ef0d82edaaf74192117652a6c0cba74b5785"
+  "sha256": "790f9d5fee86e19cb6bf3c217e0f10833541fa5e505bbcda3ba88f50de689c93"
  },
  "mutation_owners": [
   {

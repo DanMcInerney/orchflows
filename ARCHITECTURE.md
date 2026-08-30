@@ -129,7 +129,7 @@ Arrows point from reader or binder to dependency:
 
 `AGENTS.md` → `rules/` → `contracts/` → `skills/` → package `scripts/`.
 
-Packs depend on contracts and may name instance skills. Generic skills
+Packs depend on contracts and may name callable skills. Generic skills
 never name a pack or domain. Composition stubs bind skills or scripts as
 executors; no skill depends on a composition template. A lower layer
 may link the law or contract binding it; a rule never depends on

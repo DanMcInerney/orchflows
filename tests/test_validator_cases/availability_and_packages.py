@@ -92,7 +92,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
     contract is checked at the actual ROOT-relative seam, not just
     parse_frontmatter."""
 
-    def _write_skill(self, name: str, content: bytes, tier: str = "instances"):
+    def _write_skill(self, name: str, content: bytes, tier: str = "kernel"):
         skill_dir = self.tmp_path / "skills" / tier / name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_bytes(content)

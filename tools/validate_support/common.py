@@ -16,14 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 # reader can grep the report for every check that did not run.
 SKIPPED = "absent; check skipped"
 
-SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+SKILL_TIERS = ("kernel", "engines", "workflows")
 # Words, not lines: a line count is met by widening lines, and was.
 # Markdown link targets are stripped first so a citation costs its label,
 # not its path.
 BODY_BUDGET = {
     "kernel": 300,
-    "instances": 300,
-    "utilities": 300,
     "engines": 450,
     "workflows": 450,
     "pack": 150,

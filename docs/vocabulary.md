@@ -31,11 +31,6 @@ that needs a different meaning needs a different word.
 - **workflow** — an assembled skill calling engines, primitives, or
   other workflows; always domain-blind. A T3 composition is a **named
   workflow**.
-- **instance** — a concrete domain executor or lens: the one binding a
-  pack cell names for a capability. A composition instantiated into a
-  run is a **composition instance**.
-- **utility** — a leaf generic skill; with the check lane, exempt from
-  the envelope per `rules/composition.md`.
 - **checker** — `orch-check`: the planner-role callable rendering findings
   or verdicts over a fixed artifact and never a deliverable; it is exempt
   from the envelope per `rules/composition.md`.
@@ -59,7 +54,8 @@ that needs a different meaning needs a different word.
 - **composition** — a T3 named workflow: a template (below) under
   `compositions/` (canonical) or `<repo>/.orchflows/compositions/`
   (custom); entry `routed | named`; admitted under
-  `docs/custom-workflow-authoring.md`.
+  `docs/custom-workflow-authoring.md`. One instantiated into a run is a
+  **composition instance**.
 - **combinator** — one of the three ways a template composes its stubs:
   a `depends_on` edge, disjoint parallel stubs (no dependency path
   between them, so the frontier may run them together), and a loop stub

@@ -105,8 +105,9 @@ bodies were mostly sequencing, and every recurring shape grew the
 routing table — the one surface every session pays for on every
 request. The replacement:
 
-- **The routing table stays fixed while the named tier grows.** Five
-  branches — answer, single, graph, spec, fix — and one closed rule: everything else
+- **The routing table stays fixed while the named tier grows.** Four
+  branches — answer, single, graph, and the intake verb since renamed
+  outline — and one closed rule: everything else
   runs only when named. Recurring shapes accumulate as templates under
   `compositions/`, never in the dispatch prose (diluted attention: the
   always-paid cost never grows).

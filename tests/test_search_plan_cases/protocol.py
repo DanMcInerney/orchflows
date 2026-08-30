@@ -36,8 +36,8 @@ class TestArchitecture(unittest.TestCase):
             self.assertTrue((path / "template.md").is_file(), f"{path} has no manifest")
         for path in (EVOLVE_GENERATION, SEARCH_PROTOCOL, SEARCH_SCRIPT):
             self.assertTrue(path.is_file(), f"missing search-planning surface: {path}")
-        self.assertFalse(
-            (ROOT / "skills" / "utilities" / "orch-search-plan").exists(),
+        self.assertEqual(
+            [], [str(path) for path in (ROOT / "skills").rglob("orch-search-plan")],
             "the search planner is a script, not a skill wrapping one command",
         )
 
