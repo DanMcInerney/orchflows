@@ -710,6 +710,47 @@ class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
         committed = self.close(result="closing result delta")
         self.assertNotIn("error", committed)
 
+    def stream_second_result(self, body):
+        return self.dispatch(
+            "result", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "result-2", "--by", "worker",
+            "--section", "Result", "--text", body, "--append",
+        )
+
+    def test_a_trailing_newline_in_the_filed_body_still_refuses(self):
+        """Miss case A: a filed body that ends with a newline byte-matches
+        an already-streamed block only after both sides are rstripped, so
+        neither the exact-equality nor the substring reading fires.
+
+        Regression for state sink run 20260831T001500Z-friction-fixes,
+        ticket R1.02: a repeated block that is not the section's first
+        (so the substring reading's blank-line prefix is present) still
+        slipped past the guard once the closing file's content carried a
+        trailing newline the streamed copy had stripped on write.
+        """
+
+        self.accept()
+        self.stream_result(body="first")
+        self.assertNotIn("error", self.stream_second_result("second"))
+        refused = self.close(result="second\n")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("--result-file", refused["error"])
+
+    def test_a_first_block_repeat_still_refuses(self):
+        """Miss case B: a repeated block that is the section's first has
+        nothing before it, so the substring reading's required leading
+        blank line can never match -- independent of any newline mismatch,
+        since this filed body reproduces the stored block byte for byte.
+        """
+
+        self.accept()
+        self.stream_result(body="first")
+        self.assertNotIn("error", self.stream_second_result("second"))
+        refused = self.close(result="first")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("--result-file", refused["error"])
+
 
 class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
     """The seal stores the rare declared override verbatim and the packet
@@ -765,6 +806,43 @@ class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
         packet = self.sealed(self.packet(isolation="none"), assignment)
         failure = _inline_assignment_failure(packet, assignment)
         self.assertEqual("assignment-divergent", failure["code"])
+
+    def test_a_project_scope_pack_resolves_under_the_packet_workspace_not_cwd(self):
+        """The inline form's isolation derivation must not read the
+        receiver's cwd either -- the second of the two pack readers on the
+        dispatch-receive path (`tests.test_tickets.AdapterRegistryTest`
+        covers the reference form's `_workspace_failure`).
+
+        Regression for state sink friction/2026-08.jsonl: a pack
+        project-scoped only inside the packet's own committed workspace
+        must resolve the same way for a receiver standing anywhere else.
+        Measured proof: a pack declaring adapter `document-tree` resolves
+        isolation `none` when rooted at the packet workspace; rooted at an
+        unrelated cwd it cannot resolve at all and fails closed to
+        `required`, so the two legs of this comparison diverge unless both
+        are rooted at the packet's `workspace`.
+        """
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = Path(raw) / "workspace"
+            pack = workspace / "packs" / "widget-pack"
+            pack.mkdir(parents=True)
+            (pack / "SKILL.md").write_text(
+                "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
+                "| cell | binding |\n| --- | --- |\n"
+                "| adapter | document-tree |\n",
+                encoding="utf-8",
+            )
+            elsewhere = Path(raw) / "elsewhere-receiver"
+            elsewhere.mkdir()
+
+            assignment = self.assignment(pack="widget-pack")
+            packet = self.sealed(
+                self.packet(pack="widget-pack", isolation="none", workspace=str(workspace)),
+                assignment,
+            )
+            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
+                failure = _inline_assignment_failure(packet, assignment)
+            self.assertIsNone(failure)
 
 
 class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):

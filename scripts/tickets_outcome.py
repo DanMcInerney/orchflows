@@ -359,7 +359,14 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
                 materialized = (
                     f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}"
                 )
-                if prior == materialized or f"\n\n{materialized}" in prior:
+                # The writer stores each block with trailing whitespace
+                # stripped, and a block with nothing before it in the
+                # section carries no leading blank line, so neither side of
+                # this comparison may depend on either: rstrip both before
+                # comparing, and test membership on its own, with no
+                # required prefix.
+                stripped = materialized.rstrip()
+                if stripped and (prior.rstrip() == stripped or stripped in prior):
                     flag = OUTCOME_FILE_FLAGS[section]
                     return text, None, _classification(
                         "outcome-invalid",

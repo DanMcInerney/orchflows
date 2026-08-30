@@ -72,6 +72,39 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         )
         self.assertNotIn("error", accepted)
 
+    def test_new_accepts_the_escape_inside_an_inline_code_span(self):
+        """The repository's own idiom for naming a newline in prose -- a
+        backticked fragment such as `newline=` or "rstrip of a newline" --
+        is not the collapsed-bullet defect. Only fenced code was exempt
+        before; this is the same exemption for one unfenced line.
+
+        Regression for state sink run 20260831T001500Z-friction-fixes,
+        finding F3: measured on the live state sink, 41 of 67 tickets the
+        prior discriminator newly flagged were flagged only because they
+        named the escape inside an inline backtick span like this one.
+        """
+        accepted = self.dispatch(
+            "new", "testrun", "T4b", "--executor", "orch-execute",
+            "--goal", "Deliver the artifact.",
+            "--context", "Pass `newline=\\n` to open() and rstrip a newline.",
+            "--pack", "orch-code-pack", "--isolation", "required",
+        )
+        self.assertNotIn("error", accepted)
+
+    def test_new_still_refuses_the_collapsed_shape_beside_an_inline_span(self):
+        """The inline-code exemption protects only its own span: a real
+        collapsed bullet elsewhere on the same line still refuses, so the
+        exemption cannot be used to smuggle the defect past the check."""
+        refused = self.dispatch(
+            "new", "testrun", "T4c", "--executor", "orch-execute",
+            "--goal", "Deliver the artifact.",
+            "--context", "See `newline=\\n` for context. - one\\n- two\\n- three",
+            "--pack", "orch-code-pack", "--isolation", "required",
+        )
+        self.assertIn("error", refused)
+        self.assertIn("backslash-n", refused["error"])
+        self.assertIn("Context", refused["error"])
+
     def test_lint_reports_the_same_defect_on_an_issued_ticket(self):
         """The corruption the friction entry describes: a checker reading
         stored bytes, after the shell has already done the collapsing --

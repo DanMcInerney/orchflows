@@ -109,6 +109,7 @@ ESCAPED_NEWLINE_RE = re.compile('\\\\n')
 # for. A real newline never matches this: it is one byte, not two.
 _PATH_RUN_RE = re.compile('(?:\\\\[^\\s\\\\]*)+')
 _DRIVE_LETTER_RE = re.compile('[A-Za-z]:')
+_INLINE_CODE_RE = re.compile('`[^`]*`')
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""
 def _json_object(pairs):
@@ -145,11 +146,22 @@ def _windows_path_spans(line: str) -> list:
         elif not rooted and len(segments) >= 2 and all(len(part) >= 2 for part in segments):
             spans.append(match.span())
     return spans
+def _inline_code_spans(line: str) -> list:
+    """Character spans in ``line`` between paired single backticks.
+
+    A fenced block already reads as code, never prose; this is the same
+    exemption for the inline case -- the repository's own idiom for naming
+    a newline in running text, as in `newline=` or "rstrip of a newline".
+    An unpaired backtick protects nothing: only a closed span counts.
+    """
+    return [match.span() for match in _INLINE_CODE_RE.finditer(line)]
 def _section_has_escaped_newline(body) -> bool:
     """Whether one section body carries a literal backslash-n outside code
     and outside a Windows path -- fenced lines are read as code, never
     prose, via the same ``_fence_run`` tracking `_scan_sections` uses to
-    find the next heading.
+    find the next heading. An inline single-backtick span is the same
+    exemption for one unfenced line, the idiom prose uses to name the
+    escape without writing it.
     """
     lines, fence = str(body or '').split('\n'), None
     for line in lines:
@@ -161,7 +173,7 @@ def _section_has_escaped_newline(body) -> bool:
         if run is not None:
             fence = run
             continue
-        protected = _windows_path_spans(line)
+        protected = _windows_path_spans(line) + _inline_code_spans(line)
         for match in ESCAPED_NEWLINE_RE.finditer(line):
             if not any(start <= match.start() < end for start, end in protected):
                 return True

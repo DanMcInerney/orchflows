@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1983,
+  "count": 1988,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -833,10 +833,13 @@
    "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_reopened_dispatch_id_is_pointed_at_dispatch_and_replace",
    "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_reused_replacement_id_is_pointed_at_a_fresh_replacement_id",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_backticked_isolation_value_still_accepts",
+   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_project_scope_pack_resolves_under_the_packet_workspace_not_cwd",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_real_divergence_is_still_refused",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_an_absent_isolation_field_accepts_the_derived_packet",
    "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_different_cause_is_not_told_that_remedy",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_first_block_repeat_still_refuses",
    "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_repeated_section_names_its_flag",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_trailing_newline_in_the_filed_body_still_refuses",
    "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_the_named_flag_is_the_one_that_works",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_a_stale_receipt_is_not_told_to_promote",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_named_promotion_is_the_one_that_works",
@@ -1538,8 +1541,10 @@
    "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_a_real_multiline_context",
    "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_a_windows_path_segment_beginning_with_n",
    "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_the_escape_inside_a_fenced_code_block",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_the_escape_inside_an_inline_code_span",
    "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_refusal_and_lint_finding_share_one_message",
    "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_refuses_the_exact_collapsed_bullet_shape",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_still_refuses_the_collapsed_shape_beside_an_inline_span",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_a_module_added_beside_the_facade_joins_the_family",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_facade_is_not_one_of_its_own_support_modules",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_support_names_are_the_sorted_siblings_of_the_facade",
@@ -1986,7 +1991,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "ca52bde836a393f3448a0988e98953d83df9673367b7ce0cbbf99fa0ac90a00b"
+  "sha256": "8f4ec02b7db1e572950926e65a4bbb6e2f7024c4775a90277d7727cf4e9052d6"
  },
  "mutation_owners": [
   {

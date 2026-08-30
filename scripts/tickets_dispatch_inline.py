@@ -48,17 +48,26 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
     # that declares none -- while the projection carries the derived value
     # (the stamped pack's adapter decides), so both sides read through the
     # one derivation. What the seal hashes is untouched.
+    #
+    # Both derivations are rooted at the packet's established workspace,
+    # not the receiver's current directory: a project-scope pack the
+    # dispatcher could see from inside the workspace must resolve the same
+    # way for a receiver that has not yet stepped into it, and a receiver
+    # standing somewhere unrelated must not have that location decide
+    # which pack answers (contracts/dispatch.md).
+    workspace = packet.get("workspace")
+    pack_root = workspace if isinstance(workspace, str) and workspace.strip() else None
     expected = {
         "executor": executor,
         "independence": system.get("independence") or "checker",
-        "isolation": derived_isolation(system.get("isolation"), system.get("pack")),
+        "isolation": derived_isolation(system.get("isolation"), system.get("pack"), root=pack_root),
         "pack": system.get("pack"),
         "profile": assignment_profile,
         "review_kind": system.get("review_kind"),
         "role": role,
     }
     observed = {key: packet.get(key) for key in expected}
-    observed["isolation"] = derived_isolation(observed["isolation"], packet.get("pack"))
+    observed["isolation"] = derived_isolation(observed["isolation"], packet.get("pack"), root=pack_root)
     if observed != expected:
         return _classification(
             "assignment-divergent",
