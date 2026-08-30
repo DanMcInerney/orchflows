@@ -103,6 +103,13 @@ GATE_CRITIQUE_MARKER = '.gate.critique.'
 CHECKER_STAGE_SUFFIX = '.check'
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
+ESCAPED_NEWLINE_RE = re.compile('\\\\n')
+# A literal backslash then the letter 'n' -- the two-character escape a
+# shell or a hand can type in place of the one byte it was meant to stand
+# for. A real newline never matches this: it is one byte, not two.
+_PATH_RUN_RE = re.compile('(?:\\\\[^\\s\\\\]*)+')
+_DRIVE_LETTER_RE = re.compile('[A-Za-z]:')
+_INLINE_CODE_RE = re.compile('`[^`]*`')
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""
 def _json_object(pairs):
@@ -119,9 +126,70 @@ def canonical_json(value) -> str:
 def parse_canonical_json(encoded: str):
     """Parse the portable canonical JSON grammar shared by ticket fields."""
     return json.loads(encoded, object_pairs_hook=_json_object, parse_constant=_nonfinite_json)
+def _windows_path_spans(line: str) -> list:
+    """Character spans in ``line`` that read as a Windows path, not prose.
+
+    A drive letter or a UNC's doubled backslash roots a path outright, so
+    even its first segment counts. Unrooted needs two real (2+ character)
+    segments, so a doubled escape (``\\n\\n``) is never misread as the
+    two one-letter segments of a path nothing names -- the exact shape a
+    collapsed multi-bullet ``--context`` value takes.
+    """
+    spans = []
+    for match in _PATH_RUN_RE.finditer(line):
+        run = match.group()
+        prefix = line[max(0, match.start() - 2):match.start()]
+        rooted = run.startswith('\\\\') or bool(_DRIVE_LETTER_RE.fullmatch(prefix))
+        segments = [part for part in run.split('\\') if part]
+        if rooted and segments:
+            spans.append(match.span())
+        elif not rooted and len(segments) >= 2 and all(len(part) >= 2 for part in segments):
+            spans.append(match.span())
+    return spans
+def _inline_code_spans(line: str) -> list:
+    """Character spans in ``line`` between paired single backticks.
+
+    A fenced block already reads as code, never prose; this is the same
+    exemption for the inline case -- the repository's own idiom for naming
+    a newline in running text, as in `newline=` or "rstrip of a newline".
+    An unpaired backtick protects nothing: only a closed span counts.
+    """
+    return [match.span() for match in _INLINE_CODE_RE.finditer(line)]
+def _section_has_escaped_newline(body) -> bool:
+    """Whether one section body carries a literal backslash-n outside code
+    and outside a Windows path -- fenced lines are read as code, never
+    prose, via the same ``_fence_run`` tracking `_scan_sections` uses to
+    find the next heading. An inline single-backtick span is the same
+    exemption for one unfenced line, the idiom prose uses to name the
+    escape without writing it.
+    """
+    lines, fence = str(body or '').split('\n'), None
+    for line in lines:
+        run = _fence_run(line)
+        if fence is not None:
+            if run is not None and run[0] == fence[0] and len(run) >= len(fence) and not line.strip()[len(run):].strip():
+                fence = None
+            continue
+        if run is not None:
+            fence = run
+            continue
+        protected = _windows_path_spans(line) + _inline_code_spans(line)
+        for match in ESCAPED_NEWLINE_RE.finditer(line):
+            if not any(start <= match.start() < end for start, end in protected):
+                return True
+    return False
 def format_policy_defects(text, data, sections):
-    del data, sections
-    return [f"frontmatter repeats '{key}'" for key in _duplicate_frontmatter_keys(text)]
+    del data
+    defects = [f"frontmatter repeats '{key}'" for key in _duplicate_frontmatter_keys(text)]
+    for key, body in sections.items():
+        if _section_has_escaped_newline(body):
+            name = CUT_SECTIONS_BY_KEY.get(key) or EXECUTOR_SECTIONS_BY_KEY.get(key) or key
+            defects.append(
+                f"'## {name}' carries a literal backslash-n: an escaped newline "
+                "that never reached stored bytes as one (write a real line "
+                "break, or fence the code that needs the literal)"
+            )
+    return defects
 def _read_utf8(path, subject: str='ticket', encoding: str='utf-8'):
     """One file's text as ``(text, None)``, or ``(None, {"error": ...})``.
     Both exceptions in one place because they are one failure to a caller --

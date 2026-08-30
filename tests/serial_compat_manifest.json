@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1970,
+  "count": 1990,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -379,6 +379,8 @@
    "test_installer.TestHostBlockDemands.test_host_block_demands_dropped_one_at_a_time_fail_the_check",
    "test_installer.TestHostBlockDemands.test_host_block_demands_fit_the_every_turn_budget",
    "test_installer.TestHostBlockDemands.test_host_block_demands_number_exactly_eight",
+   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_flag_pin_can_fail",
+   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockRendering.test_render_host_block_substitutes_resolved_interpreter",
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
@@ -829,9 +831,18 @@
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_no_dependency_still_writes_the_empty_list",
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_authoring_flag_writes_them_sorted",
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_finding_names_the_order_it_wants",
+   "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_recommitted_record_is_pointed_at_a_fresh_record_id",
+   "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_reopened_dispatch_id_is_pointed_at_dispatch_and_replace",
+   "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_reused_replacement_id_is_pointed_at_a_fresh_replacement_id",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_backticked_isolation_value_still_accepts",
+   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_project_scope_pack_resolves_under_the_packet_workspace_not_cwd",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_real_divergence_is_still_refused",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_an_absent_isolation_field_accepts_the_derived_packet",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_different_cause_is_not_told_that_remedy",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_first_block_repeat_still_refuses",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_repeated_section_names_its_flag",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_trailing_newline_in_the_filed_body_still_refuses",
+   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_the_named_flag_is_the_one_that_works",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_a_stale_receipt_is_not_told_to_promote",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_named_promotion_is_the_one_that_works",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_refusal_names_the_promotion",
@@ -907,6 +918,7 @@
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
    "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
    "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
+   "test_tickets.AdapterRegistryTest.test_dispatch_receive_resolves_the_pack_under_the_packet_workspace",
    "test_tickets.AdapterRegistryTest.test_unknown_pack_cells_fail_through_the_shared_resolver_parser",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
@@ -1527,6 +1539,14 @@
    "tests.test_tickets_cases.cli_help.HelpTest.test_help_never_touches_the_repository",
    "tests.test_tickets_cases.cli_help.HelpTest.test_the_subcommand_list_is_not_empty_and_excludes_help_flags",
    "tests.test_tickets_cases.cli_help.HelpTest.test_the_usage_table_covers_exactly_the_dispatched_subcommands",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_lint_reports_the_same_defect_on_an_issued_ticket",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_a_real_multiline_context",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_a_windows_path_segment_beginning_with_n",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_the_escape_inside_a_fenced_code_block",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_accepts_the_escape_inside_an_inline_code_span",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_refusal_and_lint_finding_share_one_message",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_refuses_the_exact_collapsed_bullet_shape",
+   "tests.test_tickets_cases.escaped_newline.EscapedNewlineShapeTest.test_new_still_refuses_the_collapsed_shape_beside_an_inline_span",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_a_module_added_beside_the_facade_joins_the_family",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_facade_is_not_one_of_its_own_support_modules",
    "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_support_names_are_the_sorted_siblings_of_the_facade",
@@ -1973,7 +1993,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1c9272e425421790ffd71a7e4345db4be86e8bccb8b1039c6d3c011fc2b30ae7"
+  "sha256": "9aaa92a28e3def32634adff782b46b41d0f7e8d15921dafa4370cd34f40f0df9"
  },
  "mutation_owners": [
   {
@@ -2664,6 +2684,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.managed_text.host_block",
+   "owner": "_flags_by_bracket_depth",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
    ]
   },
   {

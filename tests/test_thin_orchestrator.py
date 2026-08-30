@@ -121,7 +121,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "stamped root",
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "--reply-to <parent-name> --host <host> [--workspace <tree>]",
+            "--reply-to <parent-name> [--host <host>] [--workspace <tree>]",
             "tickets.py dispatch-receive",
             "accepted",
             "exact `orch-decompose`",

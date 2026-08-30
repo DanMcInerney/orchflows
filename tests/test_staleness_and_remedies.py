@@ -654,6 +654,104 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
         self.assertEqual("T", identity["terminal_ticket_id"])
 
 
+class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
+    """A closing section that repeats evidence a streamed result record
+    already materialized used to say only that it repeated -- not which flag
+    carries the unstreamed delta instead, so the caller had to guess one."""
+
+    def accept(self):
+        packet = self.project()["packet"]
+        path = self.home / "packet.json"
+        path.write_text(canonical_json(packet), encoding="utf-8")
+        with standing_in(self.candidate):
+            return self.dispatch(*receive_argv(path, packet, "worker"))
+
+    def stream_result(self, body="delivered"):
+        path = self.home / "streamed.md"
+        path.write_text(body, encoding="utf-8")
+        return self.dispatch(
+            "result", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "result-1", "--by", "worker",
+            "--section", "Result", "--file", str(path),
+        )
+
+    def evidence_file(self, name, body):
+        path = self.home / f"outcome-{name}.txt"
+        path.write_text(body, encoding="utf-8")
+        return str(path)
+
+    def close(self, *, result="delivered", verification="verified"):
+        return tickets._dispatch([
+            "dispatch-outcome", "run", "T", "--status", "complete",
+            "--result-file", self.evidence_file("result", result),
+            "--verification-file", self.evidence_file("verification", verification),
+        ])
+
+    def test_a_repeated_section_names_its_flag(self):
+        self.accept()
+        self.stream_result()
+        refused = self.close(result="delivered")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("--result-file", refused["error"])
+
+    def test_a_different_cause_is_not_told_that_remedy(self):
+        """Empty Result evidence refuses `outcome-invalid` for being
+        incomplete, a cause the repeated-section flag has no bearing on."""
+
+        self.accept()
+        refused = self.close(result="")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertNotIn("--result-file", refused["error"])
+
+    def test_the_named_flag_is_the_one_that_works(self):
+        self.accept()
+        self.stream_result()
+        committed = self.close(result="closing result delta")
+        self.assertNotIn("error", committed)
+
+    def stream_second_result(self, body):
+        return self.dispatch(
+            "result", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "result-2", "--by", "worker",
+            "--section", "Result", "--text", body, "--append",
+        )
+
+    def test_a_trailing_newline_in_the_filed_body_still_refuses(self):
+        """Miss case A: a filed body that ends with a newline byte-matches
+        an already-streamed block only after both sides are rstripped, so
+        neither the exact-equality nor the substring reading fires.
+
+        Regression for state sink run 20260831T001500Z-friction-fixes,
+        ticket R1.02: a repeated block that is not the section's first
+        (so the substring reading's blank-line prefix is present) still
+        slipped past the guard once the closing file's content carried a
+        trailing newline the streamed copy had stripped on write.
+        """
+
+        self.accept()
+        self.stream_result(body="first")
+        self.assertNotIn("error", self.stream_second_result("second"))
+        refused = self.close(result="second\n")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("--result-file", refused["error"])
+
+    def test_a_first_block_repeat_still_refuses(self):
+        """Miss case B: a repeated block that is the section's first has
+        nothing before it, so the substring reading's required leading
+        blank line can never match -- independent of any newline mismatch,
+        since this filed body reproduces the stored block byte for byte.
+        """
+
+        self.accept()
+        self.stream_result(body="first")
+        self.assertNotIn("error", self.stream_second_result("second"))
+        refused = self.close(result="first")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("--result-file", refused["error"])
+
+
 class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
     """The seal stores the rare declared override verbatim and the packet
     carries the derived value, so both sides read through the one
@@ -708,6 +806,104 @@ class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
         packet = self.sealed(self.packet(isolation="none"), assignment)
         failure = _inline_assignment_failure(packet, assignment)
         self.assertEqual("assignment-divergent", failure["code"])
+
+    def test_a_project_scope_pack_resolves_under_the_packet_workspace_not_cwd(self):
+        """The inline form's isolation derivation must not read the
+        receiver's cwd either -- the second of the two pack readers on the
+        dispatch-receive path (`tests.test_tickets.AdapterRegistryTest`
+        covers the reference form's `_workspace_failure`).
+
+        Regression for state sink friction/2026-08.jsonl: a pack
+        project-scoped only inside the packet's own committed workspace
+        must resolve the same way for a receiver standing anywhere else.
+        Measured proof: a pack declaring adapter `document-tree` resolves
+        isolation `none` when rooted at the packet workspace; rooted at an
+        unrelated cwd it cannot resolve at all and fails closed to
+        `required`, so the two legs of this comparison diverge unless both
+        are rooted at the packet's `workspace`.
+        """
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = Path(raw) / "workspace"
+            pack = workspace / "packs" / "widget-pack"
+            pack.mkdir(parents=True)
+            (pack / "SKILL.md").write_text(
+                "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
+                "| cell | binding |\n| --- | --- |\n"
+                "| adapter | document-tree |\n",
+                encoding="utf-8",
+            )
+            elsewhere = Path(raw) / "elsewhere-receiver"
+            elsewhere.mkdir()
+
+            assignment = self.assignment(pack="widget-pack")
+            packet = self.sealed(
+                self.packet(pack="widget-pack", isolation="none", workspace=str(workspace)),
+                assignment,
+            )
+            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
+                failure = _inline_assignment_failure(packet, assignment)
+            self.assertIsNone(failure)
+
+
+class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):
+    """Three refusals share one code, `idempotency-conflict`, and until now
+    one message: a reopened dispatch id, a recommitted record, and a reused
+    replacement id were all silent on the fix, or -- worse -- pointed a
+    driver at attempt surgery (`dispatch-retire`) that a different cause's
+    refusal does not accept.
+    """
+
+    def replace(self, dispatch_id, replacement_id, record_id):
+        return tickets._dispatch([
+            "dispatch-replace", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", dispatch_id, "--record-id", record_id,
+            "--replacement-dispatch-id", replacement_id,
+            "--by", "worker", "--lease-expires-at", self.lease,
+            "--supersede-live",
+        ])
+
+    def test_a_reopened_dispatch_id_is_pointed_at_dispatch_and_replace(self):
+        changed = self.refuse(
+            "dispatch-open", "run", "T", "--by", "worker",
+            "--dispatch-id", "D1", "--lease-expires-at", "2099-01-01T00:00:00Z",
+        )
+        self.assertEqual("idempotency-conflict", changed["code"])
+        self.assertIn("`tickets.py dispatch`", changed["error"])
+        self.assertIn("`tickets.py dispatch-replace`", changed["error"])
+        self.assertNotIn("--record-id", changed["error"])
+        self.assertNotIn("--replacement-dispatch-id", changed["error"])
+
+    def test_a_recommitted_record_is_pointed_at_a_fresh_record_id(self):
+        self.assertNotIn("error", self.dispatch(
+            "dispatch-commit", "run", "T", "--dispatch-id", "D1",
+            "--record-id", "R1", "--content", '{"value":1}',
+        ))
+        conflict = self.refuse(
+            "dispatch-commit", "run", "T", "--dispatch-id", "D1",
+            "--record-id", "R1", "--content", '{"value":2}',
+        )
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        self.assertIn("--record-id", conflict["error"])
+        self.assertNotIn("dispatch-replace", conflict["error"])
+        self.assertNotIn("--replacement-dispatch-id", conflict["error"])
+
+    def test_a_reused_replacement_id_is_pointed_at_a_fresh_replacement_id(self):
+        self.assertNotIn(
+            "error", self.replace("D1", "D2", "lifecycle:replace-1")
+        )
+        conflict = self.refuse(
+            "dispatch-replace", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D2", "--record-id", "lifecycle:replace-2",
+            "--replacement-dispatch-id", "D1",
+            "--by", "worker", "--lease-expires-at", self.lease,
+            "--supersede-live",
+        )
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        self.assertIn("--replacement-dispatch-id", conflict["error"])
+        self.assertNotIn("--record-id", conflict["error"])
+        self.assertNotIn("fresh --dispatch-id", conflict["error"])
 
 
 if __name__ == "__main__":
