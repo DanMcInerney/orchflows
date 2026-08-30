@@ -21,6 +21,76 @@ executor's first real write paid for the disagreement.
 """
 
 
+HEADING_QUOTE = ' '
+"""The one character that stands between a filed body and the section grammar.
+
+A worker files `## Findings` inside `## Result` because that is what a
+level-2 heading is for, and the section scanner reads any column-zero
+`## ` as the next *ticket* section -- so the filing was refused outright,
+about eighteen times, with an error telling the writer to use `###` for
+something that was correctly `##`.
+
+The body is indent-quoted instead: one space is added to every line that
+would open a section, and taken off again when the body is read back.
+CommonMark still renders up to three leading spaces as a heading, so the
+document reads as it was written while the scanner sees no sibling. The
+encoding is injective -- a line already carrying *n* leading spaces before
+its `## ` goes to *n+1* -- so read-then-write is byte-stable at any depth.
+"""
+
+
+def _would_open_a_section(line: str) -> bool:
+    return line.lstrip(HEADING_QUOTE).startswith('## ')
+
+
+def quote_filed_body(heading: str, body: str) -> str:
+    """Indent-quote the level-2 headings in one executor-owned body."""
+
+    if heading.strip().lower() not in EXECUTOR_SECTIONS_BY_KEY or not body:
+        return body
+    return '\n'.join(
+        HEADING_QUOTE + line if _would_open_a_section(line) else line
+        for line in body.split('\n')
+    )
+
+
+def unquote_filed_body(heading: str, body: str) -> str:
+    """Reverse ``quote_filed_body`` exactly, for the same section names."""
+
+    if heading.strip().lower() not in EXECUTOR_SECTIONS_BY_KEY or not body:
+        return body
+    return '\n'.join(
+        line[len(HEADING_QUOTE):]
+        if line.startswith(HEADING_QUOTE) and _would_open_a_section(line)
+        else line
+        for line in body.split('\n')
+    )
+
+
+def dequote(value) -> str:
+    """One frontmatter scalar, read the one way every holder reads it.
+
+    A ticket is written by hand as often as by a generator, and a hand
+    writes `` `required` `` where a generator writes ``required``: backticks
+    are ordinary punctuation in this format, never part of a value. Twenty-one
+    sites spelled that removal inline, and the ones that stopped a step early
+    graded a padded value as a different value from its bare twin --
+    a skipped establishment grade behind a green suite.
+
+    The definition sits in this leaf rather than beside the rest of the
+    syntax because the deepest holders (`tickets_registry`,
+    `tickets_adapters`, `tickets_sequence`) are imported *by* the format
+    owner and so cannot import it back; `tickets_format.dequote` is the
+    family's public name for this exact function.
+
+    ``_unquote`` is its sibling and not its twin: that one removes a matched
+    pair of YAML quote characters, this one removes backticks and the
+    whitespace on either side of them.
+    """
+
+    return str(value or '').strip().strip('`').strip()
+
+
 def _unquote(value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
         return value[1:-1]
@@ -164,14 +234,14 @@ def _sections(text: str) -> dict:
     for i, line in enumerate(lines):
         if i in starts:
             if heading is not None:
-                sections[heading] = '\n'.join(body).strip()
+                sections[heading] = unquote_filed_body(heading, '\n'.join(body).strip())
             raw = line[3:].strip()
             heading = CUT_SECTIONS_BY_KEY.get(raw.lower()) or EXECUTOR_SECTIONS_BY_KEY.get(raw.lower()) or raw
             body = []
         elif heading is not None:
             body.append(line)
     if heading is not None:
-        sections[heading] = '\n'.join(body).strip()
+        sections[heading] = unquote_filed_body(heading, '\n'.join(body).strip())
     return sections
 
 
@@ -190,7 +260,7 @@ def _section_body(text: str, heading: str) -> str:
     for position, index in enumerate(starts):
         if lines[index][3:].strip().lower() == heading.strip().lower():
             end = starts[position + 1] if position + 1 < len(starts) else len(lines)
-            return '\n'.join(lines[index + 1:end]).strip()
+            return unquote_filed_body(heading, '\n'.join(lines[index + 1:end]).strip())
     return ''
 
 
@@ -202,6 +272,9 @@ def _body_block(body: str, newline: str) -> str:
 def _write_section(text: str, heading: str, body: str, append: bool = False) -> str:
     lines = text.splitlines(keepends=True)
     newline = '\r\n' if lines and lines[0].endswith('\r\n') else '\n'
+    # Quoted before anything is joined to it: an appended prior body is
+    # already quoted on disk, and quoting the pair would quote it twice.
+    body = quote_filed_body(heading, body)
     starts, unclosed = _scan_sections(lines, _frontmatter_end(lines))
     if unclosed is not None:
         raise TicketFormatError(f"unterminated fence opened at line {unclosed + 1} ({lines[unclosed].strip()}): every heading below it reads as quoted content, so writing '## {heading}' would create a second one. Close the fence in the ticket, then retry")

@@ -1311,7 +1311,7 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "semantic-root change", "successor run",
                 "accepted predecessor result identity",
             ),
-            ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md": (
+            ROOT / "skills" / "workflows" / "orch-outline" / "SKILL.md": (
                 "semantic-root change", "successor run",
                 "accepted predecessor result identity", "unsupported",
             ),
@@ -1328,7 +1328,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertNotIn(
             "post-seal assignment change is a new generation",
             " ".join(
-                (ROOT / "skills" / "workflows" / "orch-spec" / "SKILL.md")
+                (ROOT / "skills" / "workflows" / "orch-outline" / "SKILL.md")
                 .read_text(encoding="utf-8")
                 .split()
             ),

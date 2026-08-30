@@ -310,61 +310,29 @@ class TestLegacyRuns(ProjectBindingFixture):
         self.assertNotIn(HELD, payload.get("error", ""))
 
 
-class TestTheSeamMoved(unittest.TestCase):
-    """The claim-admission seam has one owner, and the facade is unchanged.
+class TestTheSeamIsGone(unittest.TestCase):
+    """The claim seam this module was split out to carry no longer exists.
 
-    The extraction is what made the growth lawful -- `tickets_lifecycle`
-    sat six lines under its ceiling -- so the move is part of the
-    delivery, not an incidental tidy, and is pinned as such.  Every name
-    the facade and its siblings import must survive it: a split that
-    silently drops one is exactly the breakage a facade exists to
-    prevent.
+    `dispatch-open` is the one door that takes a ticket, and the claim
+    command it superseded stopped being routed at the dispatch-v1 cutover.
+    Its plumbing sat here reachable only as an import until it was deleted;
+    what is pinned now is that no door reaches a name that has none, and
+    that the law both remaining doors do read is still this module's.
     """
 
-    SEAM = ("_do_claim", "_cmd_claim", "_claim_under_run_lock")
+    GONE = ("_do_claim", "_cmd_claim", "_claim_under_run_lock", "CLAIM_USAGE")
 
-    def test_the_seam_is_defined_in_the_project_module(self):
-        from scripts import tickets_project
+    def test_no_door_still_reaches_the_deleted_claim_plumbing(self):
+        from scripts import tickets, tickets_lifecycle, tickets_project
 
-        for name in self.SEAM:
-            self.assertEqual(
-                "scripts.tickets_project",
-                getattr(tickets_project, name).__module__,
-                f"{name} is not owned by scripts/tickets_project.py",
-            )
-
-    def test_the_lifecycle_module_and_the_facade_still_export_the_seam(self):
-        from scripts import tickets, tickets_lifecycle
-
-        for name in self.SEAM:
-            self.assertTrue(hasattr(tickets_lifecycle, name), name)
-            self.assertTrue(hasattr(tickets, name), name)
-
-    def test_no_stale_copy_of_the_seam_survives_where_it_left(self):
-        """A re-export, not a second definition.
-
-        The two cases above pin that `tickets_project` owns the seam and
-        that the lifecycle module and the facade still reach *a* name --
-        and a copy left behind in `tickets_lifecycle.py` satisfies both,
-        because ownership is read off the project module and the export
-        check only asks whether an attribute exists.  The facade binds
-        the lifecycle module's name (`scripts/tickets.py`,
-        `_do_claim = _tickets_lifecycle_module._do_claim`), so a stale
-        definition there is precisely what every caller through the
-        facade would get.  What must hold is one definition reached by
-        every door, which is what makes the extraction a move rather
-        than a copy.
-        """
-
-        from scripts import tickets, tickets_lifecycle
-
-        for name in self.SEAM:
-            for module, where in ((tickets_lifecycle, "scripts/tickets_lifecycle.py"),
-                                  (tickets, "scripts/tickets.py")):
-                self.assertEqual(
-                    "scripts.tickets_project",
-                    getattr(module, name).__module__,
-                    f"{name} reached through {where} is not the project module's",
+        for name in self.GONE:
+            for module, where in (
+                (tickets_project, "scripts/tickets_project.py"),
+                (tickets_lifecycle, "scripts/tickets_lifecycle.py"),
+                (tickets, "scripts/tickets.py"),
+            ):
+                self.assertFalse(
+                    hasattr(module, name), f"{where} still exports {name}"
                 )
 
     def test_the_project_module_owns_the_binding_law(self):
@@ -372,6 +340,17 @@ class TestTheSeamMoved(unittest.TestCase):
 
         self.assertTrue(callable(tickets_project.binding_refusal))
         self.assertTrue(callable(tickets_project.root_ticket_project))
+
+    def test_both_remaining_doors_refuse_through_that_one_law(self):
+        """The remedies differ, the sentence does not: one law, three doors,
+        and `CLAIM_REMEDY` survives because `dispatch-open` still names it."""
+
+        from scripts import tickets_attempts, tickets_join, tickets_project
+
+        for module in (tickets_attempts, tickets_join):
+            self.assertIs(module.binding_refusal, tickets_project.binding_refusal)
+        self.assertIn("{theirs}", tickets_project.CLAIM_REMEDY)
+        self.assertIn("{theirs}", tickets_project.TERMINAL_REMEDY)
 
 
 if __name__ == "__main__":

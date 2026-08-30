@@ -90,7 +90,10 @@ def _existing_lines(path: Path):
 
     if not path.exists():
         return []
-    return path.read_text(encoding="utf-8", errors="replace").splitlines()
+    # utf-8-sig: a legacy stream written through a shell that prefixed a
+    # BOM still holds records, and reading the BOM into the first line
+    # would carry it across as an unparsed line rather than migrate it.
+    return path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
 
 
 def _migrated_friction_line(line: str, source_root: Path):

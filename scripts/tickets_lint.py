@@ -17,6 +17,7 @@ if __package__:
         NEW_DEFAULT_BOUND, _issue_defects, _project_file_ticket,
     )
     from .tickets_issue_render import _root_generation_names
+    from .tickets_sequence import sequence_role_findings
     from .tickets_store import (
         NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -33,6 +34,7 @@ else:
         NEW_DEFAULT_BOUND, _issue_defects, _project_file_ticket,
     )
     from tickets_issue_render import _root_generation_names
+    from tickets_sequence import sequence_role_findings
     from tickets_store import (
         NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root,
         _write_text_atomically,
@@ -66,6 +68,18 @@ def lint_findings(text: str, *, ticket_id: str, siblings=None, tree=None, issued
     if not data:
         return [_finding("no-frontmatter", "a ticket opens with a '---' block (contracts/work-item.md)")]
     findings = [_finding("ticket-defect", defect) for defect in _issue_defects(text, issued=issued)]
+    # rules/roles.md 4 makes a continuation's own `role:` inert rather than
+    # illegal, so this is the lint's to say and not the validator's: the
+    # chain is lawful, and what the caller may not have noticed is that a
+    # planner-declared continuation renders no fresh independent verdict.
+    findings.extend(
+        _finding(
+            item["code"], item["message"], severity=item["severity"],
+        )
+        for item in sequence_role_findings(
+            data.get("sequence"), data.get("executor")
+        )
+    )
     ceiling = _ceiling_finding(ticket_id, text)
     if ceiling is not None:
         findings.append(ceiling)

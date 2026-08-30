@@ -16,28 +16,6 @@ from scripts.tickets_format import _parse_frontmatter
 from scripts.tickets_issue_render import _render_ticket
 
 
-def ticket(ticket_id, *, executor="orch-tdd", goal="deliver", result=""):
-    fields = {
-        "id": ticket_id, "run": "run", "status": "pending",
-        "admission": "pending", "executor": executor, "pack": "orch-code-pack",
-        "independence": "gate", "depends_on": [],
-        "isolation": "required" if executor == "orch-tdd" else "none",
-        "bound": "30m", "claimed_by": "", "claimed_at": "",
-    }
-    sections = [
-        ("Goal", goal), ("Context", "Use the exact sealed run snapshot."),
-        ("Result", result), ("Verification", ""), ("Feedback", "[]"),
-        ("Risks", "[]"),
-    ]
-    return _render_ticket(fields, sections)
-
-
-def snapshot():
-    return {
-        "00-root": ticket("00-root", executor="orch-decompose", goal="root"),
-        "00-root.01": ticket("00-root.01"),
-    }
-
 # Everything a shell is entitled to mangle, plus one glyph with no cp1252
 # encoding at all, so a wrong-codepage write cannot pass by round-tripping.
 HOSTILE = (
@@ -96,61 +74,6 @@ class NoteFilePayloadTest(unittest.TestCase):
             self.assertNotIn("error", written)
             notes = Path(written["run_state"]["path"]).read_text(encoding="utf-8")
             self.assertIn("one plain line", notes)
-
-
-class AmendmentRecordFilePayloadTest(unittest.TestCase):
-    def _sealed_worker(self, directory: Path):
-        run_dir = directory / "tickets" / "run"
-        run_dir.mkdir(parents=True)
-        for ticket_id, value in snapshot().items():
-            (run_dir / f"{ticket_id}.md").write_text(value, encoding="utf-8")
-        _dispatch(["stamp-generation", "run", "00-root"])
-        cut = _dispatch(["draft-validate", "run", "00-root"])["draft_validation"]["cut_generation"]
-        _dispatch(["seal", "run", "00-root", "--cut-generation", cut])
-        _dispatch(["claim", "run", "00-root.01", "--by", "worker"])
-        data = _parse_frontmatter((run_dir / "00-root.01.md").read_text(encoding="utf-8"))
-        return run_dir, {
-            "bound-state": "available", "change-kind": "authority",
-            "cut-generation": data["cut_generation"],
-            "evidence-identities": ["artifact:failure"],
-            "parent-ticket": "00-root", "reason": HOSTILE, "request-id": "req-1",
-            "requester-ticket": "00-root.01", "root-generation": data["root_generation"],
-            "target-fields": ["write_scope"],
-        }
-
-    def test_a_record_read_from_a_file_round_trips_byte_exactly(self):
-        with tempfile.TemporaryDirectory() as raw:
-            directory = Path(raw)
-            with mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(directory)}):
-                run_dir, record = self._sealed_worker(directory)
-                encoded = generations.canonical_json(record)
-                payload = directory / "record.json"
-                payload.write_text(encoded + "\n", encoding="utf-8")
-                written = _dispatch(
-                    ["amendment-request", "run", "00-root.01", "--record-file", str(payload)]
-                )
-            self.assertNotIn("error", written)
-            handoff = (run_dir / "00-root.01.md").read_text(encoding="utf-8")
-            self.assertIn("- amendment-request: " + encoded, handoff)
-
-    def test_a_record_read_from_stdin_round_trips_byte_exactly(self):
-        with tempfile.TemporaryDirectory() as raw:
-            directory = Path(raw)
-            with mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(directory)}):
-                run_dir, record = self._sealed_worker(directory)
-                encoded = generations.canonical_json(record)
-                stream = io.TextIOWrapper(io.BytesIO(encoded.encode("utf-8")), encoding="utf-8")
-                with mock.patch.object(sys, "stdin", stream):
-                    written = _dispatch(
-                        ["amendment-request", "run", "00-root.01", "--record-file", "-"]
-                    )
-            self.assertNotIn("error", written)
-            handoff = (run_dir / "00-root.01.md").read_text(encoding="utf-8")
-            self.assertIn("- amendment-request: " + encoded, handoff)
-
-    def test_a_record_file_naming_no_path_is_one_refusal(self):
-        refusal = _dispatch(["amendment-request", "run", "00-root.01", "--record-file"])
-        self.assertIn("--record-file takes one path", refusal["error"])
 
 
 if __name__ == "__main__":

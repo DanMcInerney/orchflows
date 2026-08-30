@@ -158,7 +158,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
 
     def test_the_shared_names_remain_the_reduced_claude_set(self):
         self.assertEqual(
-            ("orch-spec", "orch-frontier"),
+            ("orch-outline", "orch-frontier"),
             install.SHARED_ADAPTER_NAMES,
         )
 

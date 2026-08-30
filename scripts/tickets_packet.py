@@ -14,13 +14,14 @@ if __package__:
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
         LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
-        canonical_json,
+        canonical_json, dequote,
     )
     from .tickets_registry import REVIEW_KINDS
     from .tickets_sequence import sequence_block
+    from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
-        NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock,
-        _segment_error, _tickets_root, normalized_isolation,
+        NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
+        normalized_isolation,
     )
 else:
     from tickets_adapters import AdapterError, adapter_spec
@@ -29,19 +30,23 @@ else:
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
         LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
-        canonical_json,
+        canonical_json, dequote,
     )
     from tickets_registry import REVIEW_KINDS
     from tickets_sequence import sequence_block
+    from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
-        NO_SINK_ERROR, _executor_script, _load_ticket, _run_lock,
-        _segment_error, _tickets_root, normalized_isolation,
+        NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
+        normalized_isolation,
     )
 
 PACKET_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-PACKET_USAGE = "packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
-CHECKABLE_STATUSES = frozenset({"claimed", "suspended"})
-CUT_LENS_PARTS = ("skills", "kernel", "orch-decompose", "references", "cut-lens.md")
+# What projection itself reads, not a command line: `packet` was routed
+# once and is not any more, and a refusal shaped like an invocation is
+# an invitation to run a subcommand that answers `unknown subcommand`.
+# The one door is `dispatch-packet`, whose own usage `tickets_commands`
+# publishes.
+PACKET_USAGE = "packet projection reads <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
 GATE_VERIFY_ID = "{root}.gate.verify"
@@ -101,9 +106,8 @@ def workspace_establishment_finding(data: dict, workspace):
     return None
 
 
-def _last_motion(ticket_path: Path, result_text: str = "", _unused=()):
+def _last_motion(ticket_path: Path):
     """The ticket file is the durable motion record; result writes update it."""
-    del result_text, _unused
     try:
         return datetime.fromtimestamp(Path(ticket_path).stat().st_mtime, timezone.utc), []
     except OSError as error:
@@ -133,43 +137,8 @@ def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
             attempt.get("state") != "live" or now >= window["lease_expires_at"],
             [],
         )
-    motion, unreadable = _last_motion(Path(ticket_path), _sections(text).get("Result", ""))
+    motion, unreadable = _last_motion(Path(ticket_path))
     return _is_stale(data.get("claimed_at"), _parse_bound_minutes(data.get("bound")), now, motion), unreadable
-
-
-def _cut_subtree(run: str, root_id: str) -> list:
-    root = _tickets_root()
-    directory = root / run if root is not None else None
-    if directory is None or not directory.is_dir():
-        return []
-    values = []
-    for path in sorted(directory.glob(f"{root_id}.*.md")):
-        loaded = _load_ticket(path)
-        if "error" not in loaded:
-            values.append((str(loaded.get("id") or path.stem), str(loaded.get("status") or "")))
-    return values
-
-
-def _cut_lens_path():
-    here = Path(__file__).resolve()
-    for root in (here.parent.parent, here.parent.parent / "lib"):
-        candidate = root.joinpath(*CUT_LENS_PARTS)
-        if candidate.is_file():
-            return str(candidate)
-    return "/".join(CUT_LENS_PARTS)
-
-
-def _cmd_packet(rest):
-    probe = list(rest)
-    for flag in ("--reply-to", "--by", "--workspace", "--review-kind"):
-        _extract_flag(probe, flag)
-    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
-        return _packet_under_run_lock(rest)
-    try:
-        with _run_lock(probe[0]):
-            return _packet_under_run_lock(rest)
-    except OSError as error:
-        return {"error": f"unable to emit packet: {error}"}
 
 
 def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
@@ -190,7 +159,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     if len(args) != 2:
         return {"error": f"usage: {PACKET_USAGE}"}
     if requested_review_kind is not None:
-        requested_review_kind = requested_review_kind.strip().strip("`")
+        requested_review_kind = dequote(requested_review_kind)
         if requested_review_kind not in REVIEW_KINDS:
             return {"error": f"--review-kind takes one of {list(REVIEW_KINDS)}, not '{requested_review_kind}'"}
     run, ticket_id = args
@@ -206,7 +175,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     text, failure = _read_utf8(ticket_path)
     if failure is not None:
         return failure
-    status = str(loaded.get("status") or "").strip().strip("`")
+    status = dequote(loaded.get("status"))
     if status not in CHECKABLE_STATUSES:
         return {"error": f"ticket is not claimed (status '{status}'): packet emission requires an admitted claim"}
     snapshot, failures = run_snapshot(ticket_path.parent)
@@ -232,7 +201,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             missing.append(f"{part} (## {heading})")
     if missing:
         return {"error": "packet incomplete: " + "; ".join(missing)}
-    declared_review_kind = str(loaded.get("review_kind") or "").strip().strip("`")
+    declared_review_kind = dequote(loaded.get("review_kind"))
     if declared_review_kind and declared_review_kind not in REVIEW_KINDS:
         return {"error": f"ticket {run}/{ticket_id} has an invalid review_kind '{declared_review_kind}'"}
     if requested_review_kind is not None and declared_review_kind and requested_review_kind != declared_review_kind:
@@ -320,8 +289,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
 
 
 __all__ = (
-    "CUT_LENS_PARTS", "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS",
-    "GATE_REPAIR_ID", "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE",
-    "_claim_is_stale", "_cmd_packet", "_cut_lens_path", "_cut_subtree",
+    "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS", "GATE_REPAIR_ID",
+    "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE", "_claim_is_stale",
     "_is_stale", "_last_motion", "_packet_under_run_lock",
 )

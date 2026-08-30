@@ -205,7 +205,7 @@ class TestRoutingGrading(unittest.TestCase):
 
     def test_planner_helper_edges_preserve_primary_skill_single_execution(self):
         events = [
-            _launch("planner-1", "orch-planner", "Apply orch-spec exactly"),
+            _launch("planner-1", "orch-planner", "Apply orch-outline exactly"),
             {
                 "type": "assistant",
                 "parent_tool_use_id": "planner-1",
@@ -215,7 +215,7 @@ class TestRoutingGrading(unittest.TestCase):
                             "type": "tool_use",
                             "id": "primary-1",
                             "name": "Skill",
-                            "input": {"skill": "orch-spec"},
+                            "input": {"skill": "orch-outline"},
                         },
                         {
                             "type": "tool_use",
@@ -231,15 +231,15 @@ class TestRoutingGrading(unittest.TestCase):
             },
             _child_skill("helper-1", "orch-investigate", tool_id="helper-skill"),
         ]
-        graded = self._conformance(events, role="planner", skill="orch-spec")
+        graded = self._conformance(events, role="planner", skill="orch-outline")
         self.assertEqual("passed", graded["status"])
         self.assertEqual(1, graded["primary_skill_executions"])
         self.assertEqual(1, graded["helper_launches"])
 
         redispatched = events + [
-            _child_skill("helper-1", "orch-spec", tool_id="redispatched-primary")
+            _child_skill("helper-1", "orch-outline", tool_id="redispatched-primary")
         ]
-        graded = self._conformance(redispatched, role="planner", skill="orch-spec")
+        graded = self._conformance(redispatched, role="planner", skill="orch-outline")
         self.assertEqual("failed", graded["status"])
         self.assertIn("primary_skill_redispatched", graded["reasons"])
 
@@ -247,7 +247,7 @@ class TestRoutingGrading(unittest.TestCase):
         expected = {
             "orch-frontier": "single",
             "orch-decompose": "graph",
-            "orch-spec": "spec",
+            "orch-outline": "spec",
         }
         for skill, route in expected.items():
             with self.subTest(skill=skill):

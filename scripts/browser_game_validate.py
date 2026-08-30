@@ -13,6 +13,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+try:  # in-repo; the installed copy sits flat beside tickets.py
+    from scripts import console
+except ImportError:  # pragma: no cover - the installed copy's path
+    import console
+
 
 # BGW-TRACE[implementation:instance-validation|PJ-05,PJ-06,PJ-09,PJ-10,PJ-22,PJ-24,PJ-25,PJ-28]
 
@@ -266,10 +271,14 @@ def validate_instances(
 
 
 def _read(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    # utf-8-sig: a record written by a host whose editor or shell prefixes
+    # a BOM is still that record, and plain utf-8 leaves the BOM glued to
+    # the opening brace, where json reads it as a syntax error.
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def main(argv: list[str] | None = None) -> int:
+    console.harden()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--program-record", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -284,4 +293,4 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(console.run(main))

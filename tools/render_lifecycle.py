@@ -50,7 +50,12 @@ def is_current(path: Path = TARGET) -> bool:
 
 
 def write(path: Path = TARGET) -> None:
-    path.write_text(render(), encoding="utf-8", newline="")
+    # Render before opening so a renderer that reads its target can never be
+    # truncated first. open(..., newline="") rather than write_text(newline=):
+    # the keyword is 3.10+ and the floor is 3.9.
+    document = render()
+    with open(path, "w", encoding="utf-8", newline="") as stream:
+        stream.write(document)
 
 
 def main(argv=None) -> int:

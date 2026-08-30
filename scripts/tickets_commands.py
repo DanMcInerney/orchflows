@@ -8,24 +8,24 @@ if __package__:
     from .tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from .tickets_issue import NEW_USAGE
     from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
-    from .tickets_packet import PACKET_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
-    from .tickets_generations import GENERATION_SUBCOMMANDS
+    from .tickets_seal import GENERATION_SUBCOMMANDS
     from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_REPLACE_USAGE, DISPATCH_RETIRE_USAGE
     from .tickets_dispatch_packet import DISPATCH_PACKET_USAGE, DISPATCH_RECEIVE_USAGE
     from .tickets_dispatch_receipt import DISPATCH_RECEIPT_USAGE
-    from .tickets_join import DISPATCH_JOIN_USAGE, DISPATCH_OUTCOME_USAGE
+    from .tickets_join import DISPATCH_JOIN_USAGE
+    from .tickets_outcome import DISPATCH_OUTCOME_USAGE
+    from .tickets_land import LAND_USAGE
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
     from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
-    from tickets_packet import PACKET_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
-    from tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
+    from tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE
-    GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
+    GENERATION_SUBCOMMANDS = __import__("tickets_seal").GENERATION_SUBCOMMANDS
     _attempts = __import__("tickets_attempts")
     DISPATCH_COMMIT_USAGE = _attempts.DISPATCH_COMMIT_USAGE
     DISPATCH_OPEN_USAGE = _attempts.DISPATCH_OPEN_USAGE
@@ -35,17 +35,18 @@ else:
     DISPATCH_PACKET_USAGE = _dispatch_packet.DISPATCH_PACKET_USAGE
     DISPATCH_RECEIVE_USAGE = _dispatch_packet.DISPATCH_RECEIVE_USAGE
     DISPATCH_RECEIPT_USAGE = __import__("tickets_dispatch_receipt").DISPATCH_RECEIPT_USAGE
-    _join = __import__("tickets_join")
-    DISPATCH_JOIN_USAGE = _join.DISPATCH_JOIN_USAGE
-    DISPATCH_OUTCOME_USAGE = _join.DISPATCH_OUTCOME_USAGE
+    DISPATCH_JOIN_USAGE = __import__("tickets_join").DISPATCH_JOIN_USAGE
+    DISPATCH_OUTCOME_USAGE = __import__("tickets_outcome").DISPATCH_OUTCOME_USAGE
+    LAND_USAGE = __import__('tickets_land').LAND_USAGE
 
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> --reply-to <name> "
-    "[--workspace <path>] [--artifact <fixed-identity>] "
-    "[--form reference | inline] [--review-kind critique|repair|verify]"
+    "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
+    "[--form reference | inline] [--review-kind critique|repair|verify] "
+    "[--host <name>] [--packet-file <path>] [--inline-limit <bytes>]"
 )
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 GRADE_USAGE = "grade <run> <root>"
@@ -63,6 +64,7 @@ SUBCOMMAND_USAGE = {
     "show": "show <run> <id>",
     "ready": "ready [--run R]",
     "dispatch": DISPATCH_USAGE,
+    "land": LAND_USAGE,
     "dispatch-open": DISPATCH_OPEN_USAGE,
     "dispatch-commit": DISPATCH_COMMIT_USAGE,
     "dispatch-retire": DISPATCH_RETIRE_USAGE,
@@ -78,6 +80,7 @@ SUBCOMMAND_USAGE = {
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
+    "repair-run-identity": REPAIR_RUN_IDENTITY_USAGE,
     "improvement": IMPROVEMENT_USAGE,
     "bound-check": BOUND_CHECK_USAGE,
     "lint": LINT_USAGE,
@@ -93,7 +96,8 @@ SUBCOMMAND_SUMMARY = {
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
     "ready": "Promote sealed tickets whose dependencies are complete.",
-    "dispatch": "Atomically ready, establish, open, and project one dispatch packet.",
+    "dispatch": "Atomically ready, establish, open, and project one dispatch packet, and resolve its host launch.",
+    "land": "Atomically import the outcome, join it, retire the derived worktree, and report the frontier.",
     "dispatch-open": "Atomically open or replay one fenced dispatch-v1 execution attempt.",
     "dispatch-commit": "Commit or replay one idempotent record on a live dispatch-v1 attempt.",
     "dispatch-retire": "Retire or replay retirement of one dispatch-v1 attempt.",
@@ -109,6 +113,7 @@ SUBCOMMAND_SUMMARY = {
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
     "worklog": "Render the run worklog.",
     "run-state": f"Write run state under {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}).",
+    "repair-run-identity": "Quarantine an unreadable run identity and rebuild the minimal one from ticket evidence.",
     "improvement": "Write improvement evidence.",
     "bound-check": "Report live claims against their operational bound.",
     "lint": "Grade the exact pre-issue file projection or one current ticket.",
@@ -128,6 +133,7 @@ VALUE_FLAGS = frozenset({
     "--form", "--role", "--outcome-record-id", "--status", "--stage",
     "--accepted-file", "--review-kind", "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
+    "--host", "--packet-file", "--inline-limit", "--outcome-file",
 })
 
 

@@ -5,18 +5,16 @@ from __future__ import annotations
 if __package__:
     from .tickets_dispatch_schema import (
         ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID, RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
-        _record_failure, classification, identity_failure,
-        record_id_is_reserved,
+        RECORD_KEYS, RECORD_KINDS, _invalid, _record_failure, classification,
+        identity_failure, record_id_namespace_ok,
     )
     from .tickets_shapes import DISPATCH_STATE_REQUIRED
     from .tickets_format import _parse_iso, canonical_json, parse_canonical_json
 else:
     from tickets_dispatch_schema import (
         ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID, RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
-        _record_failure, classification, identity_failure,
-        record_id_is_reserved,
+        RECORD_KEYS, RECORD_KINDS, _invalid, _record_failure, classification,
+        identity_failure, record_id_namespace_ok,
     )
     from tickets_shapes import DISPATCH_STATE_REQUIRED
     from tickets_format import _parse_iso, canonical_json, parse_canonical_json
@@ -93,16 +91,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
             kind = record["kind"]
             if kind in {"packet", "receipt", "result", "outcome", "join"}:
                 causal_kinds.append(kind)
-            namespace_ok = {
-                "packet": record_id == PACKET_RECORD_ID,
-                "receipt": record_id == RECEIPT_RECORD_ID,
-                "outcome": record_id == OUTCOME_RECORD_ID,
-                "join": record_id.startswith("join:"),
-                "lifecycle": record_id.startswith("lifecycle:"),
-                "generic": not record_id_is_reserved(record_id),
-                "result": not record_id_is_reserved(record_id),
-            }
-            if not namespace_ok[kind]:
+            if record_id_namespace_ok(kind, record_id) is False:
                 return classification("dispatch-record-invalid", f"record '{record_id}' does not belong to kind '{kind}'")
             if not isinstance(record.get("content"), str) or not isinstance(record.get("success"), dict):
                 return classification("dispatch-record-invalid", f"record '{record_id}' has invalid content or success")

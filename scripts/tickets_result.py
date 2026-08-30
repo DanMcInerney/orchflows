@@ -8,13 +8,13 @@ try:
 except ImportError:
     msvcrt = None
 if __package__:
-    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section
+    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, dequote, is_critique_stage_id
 else:
-    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section
+    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, dequote, is_critique_stage_id
 if __package__:
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
 else:
-    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
+    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
 if __package__:
     from .tickets_markdown import SECTION_SENTINEL
     from .tickets_attempts import PROTOCOL, _commit_record
@@ -39,16 +39,10 @@ PROPOSALS_DIR = 'proposals'
 COVERAGE_RECORD_NAME = 'covered.jsonl'
 
 
-def _critique_ticket(ticket_id: str) -> bool:
-    """Return whether a ticket carries the generated critique result seam."""
-
-    return ".gate.critique." in ticket_id or ticket_id.endswith(".check")
-
-
 def _validate_critique_body(ticket_id: str, section: str, body: str):
     """Validate one critique Result/Feedback body through the shared schema."""
 
-    if not _critique_ticket(ticket_id) or section not in {"Result", "Feedback"}:
+    if not is_critique_stage_id(ticket_id) or section not in {"Result", "Feedback"}:
         return None
     # Import lazily: tickets_review consumes result records while joining a
     # review, so importing its schema at module import time would make the
@@ -117,8 +111,10 @@ def _result_under_run_lock(rest):
         body = text_arg
     if body is None:
         return {"error": f"result requires a readable body from --file <path> or --text <string>. usage: {RESULT_USAGE}"}
-    if any((line.startswith('## ') for line in body.splitlines())):
-        return {'error': f"a '## {canonical}' body may not contain a level-2 heading ('## ...'): it would be read as a sibling ticket section. Use '###' or deeper for sub-headings inside a section"}
+    # A level-2 heading in the body is the writer's, not a sibling section:
+    # `tickets_markdown` indent-quotes it on the way in and takes the quote
+    # off on the way out, so `## Findings` inside `## Result` is filed as
+    # written and read back byte for byte.
     if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
         return {'error': f"a result body may not contain the canonical writer attribution prefix '{RESULT_ATTRIBUTION_PREFIX}': tickets.py adds exactly one for this write"}
     tickets_root = _tickets_root()
@@ -137,7 +133,7 @@ def _result_under_run_lock(rest):
         recorded = (str(data.get('run') or '').strip(), str(data.get('id') or '').strip())
         if recorded != (run, ticket_id):
             return text, None, {'error': f'ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded[0] or "<missing>"}/{recorded[1] or "<missing>"}'}
-        status = str(data.get('status') or '').strip().strip('`')
+        status = dequote(data.get('status'))
         if status != 'claimed':
             return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
         if str(data.get('claimed_by') or '').strip() != written_by:
@@ -254,11 +250,15 @@ def _cmd_run_state(rest):
     if '--tree' in rest:
         index = list(rest).index('--tree')
         tree = rest[index + 1] if index + 1 < len(rest) else None
-    if not rest or _segment_error('run id', rest[0]) is not None or ('--tree' in rest and tree not in RUN_STATE_TREES):
+    # A named tree that is not one of the four is the body's refusal, not a
+    # lock's: nothing is written, and the message names the closed set.
+    if not rest or ('--tree' in rest and tree not in RUN_STATE_TREES):
         return _run_state_under_run_lock(rest)
     try:
-        with _run_lock(rest[0]):
+        with locked_run_write(rest[0]):
             return _run_state_under_run_lock(rest)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {'error': f'unwritable run state: {error}'}
 def _run_state_under_run_lock(rest):

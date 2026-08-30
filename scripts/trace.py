@@ -58,6 +58,7 @@ if _SIBLING_DIR not in sys.path:
     sys.path.append(_SIBLING_DIR)
 
 if __package__:  # in-repo package imports
+    from scripts import console
     from scripts import trace_render as _trace_render_module
     from scripts.trace_render import (
         CODEX_BOILERPLATE_MARKERS,
@@ -100,6 +101,7 @@ if __package__:  # in-repo package imports
         extract_codex,
     )
 else:  # installed flat beside trace.py
+    import console
     import trace_render as _trace_render_module
     from trace_render import (
         CODEX_BOILERPLATE_MARKERS,
@@ -182,12 +184,9 @@ def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     # Windows consoles default stdout to a legacy codepage (e.g. cp1252) that
     # cannot encode arbitrary transcript content (emoji, non-Latin text).
-    # ensure_ascii keeps JSON output byte-safe regardless; this reconfigure
+    # ensure_ascii keeps JSON output byte-safe regardless; `console.harden`
     # additionally protects the Mermaid text path.
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    console.harden()
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
@@ -211,4 +210,4 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(console.run(main, sys.argv[1:]))

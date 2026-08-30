@@ -129,13 +129,12 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertTrue(any("contracts/nested/probe.md" in line for line in diag.lines()))
 
     def test_an_exemption_does_not_cover_a_second_occurrence(self):
-        where, line_number, token = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
+        where, token, marker = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
         root = self._tree("No pointer here.\n")
         source = root / where
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_text(
-            ("\n" * (line_number - 1))
-            + f"The roster names `{token}`.\n"
+            f"The roster names `{token}` and {marker}.\n"
             + f"A new pointer names `{token}`.\n",
             encoding="utf-8",
         )
@@ -163,16 +162,46 @@ class TestDocumentedPathsResolveInTheInstalledTree(unittest.TestCase):
         self.assertTrue(any(line.startswith("WARN") for line in diag.lines()))
 
     def test_the_exemption_is_one_live_site_and_not_a_blanket(self):
-        """Every exemption names one still-live source line and token."""
+        """Every exemption names one still-live sentence and token.
 
-        for where, line_number, token in validate.DOC_PATH_EXEMPT_SITES:
+        Keyed by content rather than by line number: an insertion above an
+        exempt site used to move the key off it silently, and the exemption
+        then covered whichever line had taken the number.
+        """
+
+        for where, token, marker in validate.DOC_PATH_EXEMPT_SITES:
             source = _ROOT / where
             self.assertTrue(source.is_file(), f"exempt site {where} is gone")
-            line = source.read_text(encoding="utf-8").splitlines()[line_number - 1]
-            self.assertIn(
-                f"`{token}`", line,
-                f"{where} no longer carries `{token}`; drop the exemption",
+            carrying = [
+                line for line in source.read_text(encoding="utf-8").splitlines()
+                if marker in line and f"`{token}`" in line
+            ]
+            self.assertEqual(
+                1, len(carrying),
+                f"{where} carries {marker!r} with `{token}` {len(carrying)} "
+                "times; an exemption names exactly one live sentence",
             )
+
+    def test_the_marker_and_not_the_line_number_decides(self):
+        """The regression this keying exists for: a line inserted above an
+        exempt site must not move the exemption onto another line."""
+
+        where, token, marker = sorted(validate.DOC_PATH_EXEMPT_SITES)[0]
+        root = self._tree("No pointer here.\n")
+        source = root / where
+        source.parent.mkdir(parents=True, exist_ok=True)
+        body = f"The roster names `{token}` and {marker}.\n"
+        saved = validate.ROOT
+        try:
+            validate.ROOT = root
+            for prefix in ("", "An inserted line.\n\nAnd another.\n"):
+                source.write_text(prefix + body, encoding="utf-8")
+                diag = validate.Diagnostics()
+                validate.validate_documented_paths(diag)
+                found = [line for line in diag.lines() if token in line]
+                self.assertEqual([], found, f"prefix={prefix!r}: {found}")
+        finally:
+            validate.ROOT = saved
 
     def test_the_real_library_tree_carries_no_dead_documented_path(self):
         diag = validate.Diagnostics()

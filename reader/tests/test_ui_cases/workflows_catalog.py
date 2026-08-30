@@ -160,10 +160,10 @@ class WorkflowCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                "benchmaker", "browser-game", "drift-canary", "evolve", "fix", "renovate",
+                "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament",
                 "orch-check", "orch-decompose", "orch-execute", "orch-frontier",
-                "orch-integrate", "orch-loop", "orch-spec",
+                "orch-integrate", "orch-loop", "orch-outline",
             ],
             [workflow["id"] for workflow in projected],
         )
@@ -172,14 +172,14 @@ class WorkflowCatalogTests(unittest.TestCase):
             for workflow in projected
         ))
         by_id = {workflow["id"]: workflow for workflow in projected}
-        self.assertEqual("composition", by_id["fix"]["type"])
-        self.assertEqual("routed", by_id["fix"]["entry"])
+        self.assertEqual("composition", by_id["browser-game"]["type"])
+        self.assertEqual("named", by_id["browser-game"]["entry"])
         self.assertEqual(
-            "Take a failure to a proven, regression-guarded repair. Use for any bug or defect with an unknown or unverified cause.",
-            by_id["fix"]["description"],
+            "Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.",
+            by_id["browser-game"]["description"],
         )
-        self.assertEqual("workflow-skill", by_id["orch-spec"]["type"])
-        self.assertEqual("callable", by_id["orch-spec"]["entry"])
+        self.assertEqual("workflow-skill", by_id["orch-outline"]["type"])
+        self.assertEqual("callable", by_id["orch-outline"]["entry"])
 
     def test_validated_summary_is_joined_by_canonical_id(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)

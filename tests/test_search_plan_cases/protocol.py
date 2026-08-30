@@ -102,7 +102,7 @@ class TestArchitecture(unittest.TestCase):
             architecture_errors(evolve, generation, judged_here, leaf),
         )
 
-        unresolved = evolve.replace("executor: orch-check", "executor: orch-spec", 1)
+        unresolved = evolve.replace("executor: orch-check", "executor: orch-outline", 1)
         self.assertIn(
             "eligibility-unit",
             architecture_errors(unresolved, generation, tournament, leaf),

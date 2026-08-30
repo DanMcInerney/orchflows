@@ -2,69 +2,13 @@
 
 import time
 
-from .result_sections import *  # noqa: F401,F403
+from .common import *  # noqa: F401,F403
 from scripts import tickets_result as tickets_result_mod
 from scripts import tickets_store as tickets_store_mod
-
-def run_dir_of(run: str = "testrun") -> Path:
-    return sink_root() / "runs" / run
-
-
-def tree_dir_of(tree: str, run: str = "testrun") -> Path:
-    """One run's directory in a named run-state tree of the sink.
-
-    ``runs`` is the default tree, so ``tree_dir_of("runs")`` and
-    ``run_dir_of()`` are the same path by construction.
-    """
-
-    return sink_root() / tree / run
-
+from scripts import tickets_store_writes as tickets_writes_mod
 
 def run_state_lines(prompt: str) -> list:
     return [line for line in prompt.splitlines() if " run-state " in line]
-
-
-def git_available() -> bool:
-    try:
-        return subprocess.run(
-            ["git", "--version"], capture_output=True, text=True
-        ).returncode == 0
-    except OSError:
-        return False
-
-
-def make_real_worktree(tmp: Path):
-    """A main checkout and a linked worktree that `git worktree add` made.
-
-    `make_worktree` hand-writes the pointer file; this one lets git write it,
-    so the resolver is proved against the shape git actually produces.
-    """
-
-    env = dict(
-        os.environ,
-        GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
-        GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid",
-    )
-
-    def git(*args):
-        completed = subprocess.run(
-            ["git", "-c", "commit.gpgsign=false", *args],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", cwd=str(main), env=env,
-        )
-        if completed.returncode != 0:
-            raise unittest.SkipTest(f"git {args[0]} failed: {completed.stderr.strip()}")
-
-    use_sink(tmp)
-    main = tmp / "main"
-    main.mkdir()
-    git("init", "--quiet")
-    (main / "README.md").write_text("baseline\n", encoding="utf-8")
-    git("add", "README.md")
-    git("commit", "--quiet", "-m", "init")
-    worktree = tmp / "wt"
-    git("worktree", "add", "--quiet", "-b", "wt-branch", str(worktree))
-    return main, worktree
 
 
 class TestRunStateWorklog(unittest.TestCase):
@@ -174,24 +118,24 @@ class TestRunStateWorklog(unittest.TestCase):
         `unwritable run state: [Errno 13] Permission denied`.
         """
 
-        if tickets_store_mod.msvcrt is None:
+        if tickets_writes_mod.msvcrt is None:
             self.skipTest("the finite retry window is Windows-only")
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "notes.md"
             path.write_text("first\n", encoding="utf-8")
-            real = tickets_store_mod.msvcrt.locking
+            real = tickets_writes_mod.msvcrt.locking
             refusals = {"count": 0}
 
             def refusing(descriptor, mode, size):
                 # Both lock modes, never the unlock: a mode that gives up at
                 # ten must fail this, and one that waits must clear it.
-                if mode != tickets_store_mod.msvcrt.LK_UNLCK and refusals["count"] < 25:
+                if mode != tickets_writes_mod.msvcrt.LK_UNLCK and refusals["count"] < 25:
                     refusals["count"] += 1
                     raise PermissionError(13, "Permission denied")
                 return real(descriptor, mode, size)
 
             with mock.patch.object(
-                tickets_store_mod.msvcrt, "locking", refusing
+                tickets_writes_mod.msvcrt, "locking", refusing
             ), mock.patch.object(
                 tickets_store_mod, "WINDOWS_LOCK_RETRY_SECONDS", 0.001
             ):

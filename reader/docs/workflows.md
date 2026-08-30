@@ -9,7 +9,6 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 ### T3 compositions
 
 - [browser-game](../../compositions/browser-game/template.md) — `named`; turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.
-- [fix](../../compositions/fix/template.md) — `routed`; any bug or defect with unknown or unverified cause.
 - [benchmaker](../../compositions/benchmaker/template.md) — `named`; build and qualify a runnable benchmark.
 - [evolve](../../compositions/evolve/template.md) — `named`; run bounded candidate generations against a frozen evaluation; manual only.
 - [drift-canary](../../compositions/drift-canary/template.md) — `named`; detect drift after a model, effort, or host change.
@@ -26,7 +25,7 @@ Custom-item authoring follows ordinary code routing and is not a callable workfl
 - [orch-integrate](../../skills/kernel/orch-integrate/SKILL.md) — adjudicate one returned child result.
 - [orch-frontier](../../skills/engines/orch-frontier/SKILL.md) — dispatch ready work through the frontier.
 - [orch-loop](../../skills/engines/orch-loop/SKILL.md) — iterate a bounded external done-check.
-- [orch-spec](../../skills/workflows/orch-spec/SKILL.md) — seal one semantic root before delivery.
+- [orch-outline](../../skills/workflows/orch-outline/SKILL.md) — seal one semantic root before delivery.
 
 ## Catalog projection and semantic summaries
 

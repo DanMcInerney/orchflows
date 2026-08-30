@@ -14,14 +14,14 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR
-    from .tickets_markdown import _parse_frontmatter, _sections
+    from .tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR, is_review_stage_id
+    from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR
-    from tickets_markdown import _parse_frontmatter, _sections
+    from tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR, is_review_stage_id
+    from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
 
@@ -32,6 +32,16 @@ _UNRESOLVED_COVER = "<unresolved-cover>"
 
 class GradeError(ValueError):
     """The durable ticket projection cannot receive a deterministic grade."""
+
+
+def _revision_of(baseline) -> str:
+    """``workspace_git.revision_of``, loaded after the flat ticket importer."""
+
+    if __package__:
+        from .workspace_git import revision_of
+    else:
+        from workspace_git import revision_of
+    return revision_of(baseline)
 
 
 def _ticket_data(value):
@@ -45,7 +55,7 @@ def _ticket_text(value):
 
 
 def _executor(value):
-    return str(_ticket_data(value).get("executor") or "").strip().strip("`").strip()
+    return dequote(_ticket_data(value).get("executor"))
 
 
 def _member_ids(root_id: str, snapshot: dict) -> list[str]:
@@ -61,7 +71,7 @@ def _member_ids(root_id: str, snapshot: dict) -> list[str]:
     for ticket_id in sorted(snapshot):
         if not ticket_id.startswith(root_id + "."):
             continue
-        if GATE_ID_MARKER in ticket_id or ticket_id.endswith(".check"):
+        if is_review_stage_id(ticket_id):
             continue
         executor = _executor(snapshot[ticket_id])
         members.append(ticket_id)
@@ -93,12 +103,12 @@ def _required_spec_fields(pack: str) -> list[str]:
         return []
     fields = []
     for value in _FIELD_SEPARATOR.split(declared):
-        value = value.strip().strip("`").strip()
+        value = dequote(value)
         if not value:
             continue
         # A pack may explain a field after an em dash.  The stable field name
         # is the portion before that explanation.
-        value = _EM_DASH.split(value, maxsplit=1)[0].strip().strip("`").strip()
+        value = dequote(_EM_DASH.split(value, maxsplit=1)[0])
         if value and value not in fields:
             fields.append(value)
     return fields
@@ -126,7 +136,7 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
     root_executor = _executor(root_value)
     members = _member_ids(root_id, snapshot)
     if root_executor == ROOT_EXECUTOR:
-        if str(root_data.get("independence") or "").strip().strip("`").strip() == "checker":
+        if dequote(root_data.get("independence")) == "checker":
             raise GradeError(f"decomposed root {root_id} must declare independence=gate")
         if len(members) == 1:
             raise GradeError(f"root {root_id} is over-decomposition: one executor result member")
@@ -141,7 +151,7 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         if members:
             raise GradeError(f"root {root_id} is a direct root with executor-result members")
         shape, width = "single", 1
-    pack = str(root_data.get("pack") or "").strip().strip("`").strip()
+    pack = dequote(root_data.get("pack"))
     if not pack:
         raise GradeError(f"root {root_id} names no pack")
     try:
@@ -289,7 +299,12 @@ def _cover_current(cover, target_id: str, snapshot: dict):
                     or target_data.get("workspace_baseline")
                     or target_data.get("assignment_seal")
                 )
-                resolved[name] = str(current or _UNRESOLVED_COVER).split()[0]
+                # A `workspace_baseline` stamp is a revision and then what was
+                # uncommitted at the time; reading the revision out of it is
+                # `workspace_git.revision_of`'s, beside the `_baseline` that
+                # writes it. Loaded here, as `tickets_dispatch_receipt` loads
+                # it, so the flat ticket importer is initialized first.
+                resolved[name] = _revision_of(current or _UNRESOLVED_COVER)
             elif name in {"result", "result_identity"}:
                 current = _result_identity(target)
                 resolved[name] = str(current or _UNRESOLVED_COVER)

@@ -39,13 +39,13 @@ def _frontmatter(path: str) -> dict[str, str]:
 
 
 def _skill_path(name: str) -> str:
-    tier = "workflows" if name == "orch-spec" else "kernel"
+    tier = "workflows" if name == "orch-outline" else "kernel"
     return f"skills/{tier}/{name}/SKILL.md"
 
 
 class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
-        "orch-spec": "planner",
+        "orch-outline": "planner",
         "orch-check": "planner",
         "orch-decompose": "planner",
         "orch-execute": "worker",
@@ -92,10 +92,10 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**answer**",
             "**single**",
             "**graph**",
-            "**spec**",
-            "`orch-planner`",
+            "**outline**",
+            "`launch`",
             "`tickets.py dispatch <run>",
-            "outer coordinator joins",
+            "`tickets.py land`",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
@@ -107,7 +107,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("relevant Context", decompose)
         self.assertNotIn("**errand**", collapsed_host)
-        self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
+        self.assertNotIn("sequence: [orch-outline, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
     def test_graph_lane_emits_the_complete_decompose_packet(self):
@@ -116,26 +116,35 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+        graph = host.partition("**graph**")[2].partition("**outline**")[0]
 
         for anchor in (
             "stamped root",
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "--reply-to <parent-name> [--workspace <tree>]",
+            "--reply-to <parent-name> --host <host> [--workspace <tree>]",
             "tickets.py dispatch-receive",
             "accepted",
             "exact `orch-decompose`",
-            "establish the matching `orch-planner`",
-            "send the emitted packet",
-            "ticket path is not a packet",
-            "outer coordinator joins",
-            "starts `orch-frontier`",
+            "invoke its emitted `launch` verbatim",
+            "ticket path is not the complete packet",
+            "tickets.py land",
+            "start `orch-frontier`",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)
-        self.assertNotIn("tickets.py claim", graph)
-        self.assertNotIn("tickets.py packet", graph)
+        # The facade owns each of these; the route may not re-teach a manual
+        # spelling of a step `dispatch` or `land` already performs.
+        for absent in (
+            "tickets.py claim",
+            "tickets.py packet",
+            "tickets.py dispatch-open",
+            "tickets.py dispatch-packet",
+            "tickets.py dispatch-join",
+            "workspace.py establish",
+        ):
+            with self.subTest(absent=absent):
+                self.assertNotIn(absent, graph)
 
     def test_host_and_frontier_establish_the_workspace_before_dispatch(self):
         host = re.sub(
@@ -143,7 +152,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+        graph = host.partition("**graph**")[2].partition("**outline**")[0]
         frontier = re.sub(
             r"\s+",
             " ",
@@ -156,7 +165,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             with self.subTest(owner="graph" if text is graph else "frontier"):
                 self.assertIn("tickets.py dispatch", text)
                 if text is frontier:
-                    self.assertIn("workspace_path", text)
+                    # Establishment is inside the dispatch transaction now, so
+                    # the engine states that rather than a separate step.
+                    self.assertIn("establishes the workspace", text)
                 self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
@@ -202,13 +213,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         ):
             self.assertIn(anchor, role_agent)
 
-    def test_spec_route_consumes_the_root_shape_it_sealed(self):
+    def test_outline_route_consumes_the_root_shape_it_sealed(self):
         host = re.sub(
             r"\s+",
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        spec_route = host.split("**spec**", 1)[1].split("**fix**", 1)[0]
+        spec_route = host.split("**outline**", 1)[1].split("**fix**", 1)[0]
 
         for anchor in (
             "direct root",
@@ -251,7 +262,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-spec", "orch-check", "orch-execute"}:
+        for name in {"orch-outline", "orch-check", "orch-execute"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]

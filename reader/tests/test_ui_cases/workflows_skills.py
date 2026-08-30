@@ -35,14 +35,14 @@ class WorkflowSkillTests(unittest.TestCase):
         self.assertEqual([], detail["diagnostics"])
 
     def test_repository_skill_derives_only_backticked_calls_and_invoked_scripts(self):
-        detail = skills.project_workflow_skill(ROOT, "orch-spec")
+        detail = skills.project_workflow_skill(ROOT, "orch-outline")
 
         self.assertEqual(
             {"schema", "id", "type", "nodes", "edges", "relations", "diagnostics"},
             set(detail),
         )
         self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])
-        self.assertEqual("orch-spec", detail["id"])
+        self.assertEqual("orch-outline", detail["id"])
         self.assertEqual("workflow-skill", detail["type"])
 
         edge_tuples = {
@@ -50,19 +50,19 @@ class WorkflowSkillTests(unittest.TestCase):
             for edge in detail["edges"]
         }
         self.assertIn(
-            ("skill-call", "workflow:orch-spec", "skill:orch-integrate"),
+            ("skill-call", "workflow:orch-outline", "skill:orch-integrate"),
             edge_tuples,
         )
         self.assertIn(
-            ("skill-call", "workflow:orch-spec", "skill:orch-frontier"),
+            ("skill-call", "workflow:orch-outline", "skill:orch-frontier"),
             edge_tuples,
         )
         self.assertIn(
-            ("skill-call", "workflow:orch-spec", "skill:orch-decompose"),
+            ("skill-call", "workflow:orch-outline", "skill:orch-decompose"),
             edge_tuples,
         )
         self.assertIn(
-            ("script-call", "workflow:orch-spec", "script:bin/tickets.py"),
+            ("script-call", "workflow:orch-outline", "script:bin/tickets.py"),
             edge_tuples,
         )
         self.assertNotIn("skill:objective", {node["id"] for node in detail["nodes"]})

@@ -31,8 +31,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `executor`, optional `sequence`, `profile`, and `pack` — exact dispatch and
   role binding. Callable executors are the seven registered verbs
   `orch-execute`, `orch-check`, `orch-decompose`, `orch-integrate`,
-  `orch-frontier`, `orch-loop`, and `orch-spec`; `script:<repo-relative path>`
-  is the only other executable form. Skill substitution is not allowed.
+  `orch-frontier`, `orch-loop`, and `orch-outline`; `script:<repo-relative path>`
+  is the only other executable form. Skill substitution is not allowed, and a
+  superseded name is refused naming its successor rather than aliased.
 - `depends_on` — ticket ids that must complete first.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate and workspace mechanics.
@@ -43,9 +44,11 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   deterministic generation, validation, seal, and admission records.
 - `claimed_by`, `claimed_at`, `checked_by`, `review_stage`, `workspace_path`,
   `workspace_branch`, and `workspace_baseline` — lifecycle observations written
-  by their owning tools. `workspace_path` names the pre-dispatch candidate or
-  canonical run-scoped evidence store; the Git-only fields fix its branch and
-  starting revision.
+  by their owning tools. `workspace.py establish` is the mechanical owner of the
+  candidate an isolated item runs in: it derives, creates, and records that tree,
+  and re-establishing it never restamps the baseline. `workspace_path` names that
+  candidate or the canonical run-scoped evidence store; the Git-only fields fix
+  its branch and starting revision.
 - `review_stage` names the completed derived `<id>.check` ticket whose
   protocol-owned join authenticates `checked_by`; it is never a caller's
   findings payload.
@@ -142,10 +145,10 @@ substitutes placeholders, validates one acyclic graph with one terminal, seals
 the exact snapshot, and writes all tickets or none.
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
-Optional `sequence` is an ordered chain of stage names declared by the stamped
-pack's execute-side `stages` cell; stage names are pack data, not skill
-bindings. A sequence is one child, established once at the role resolved from
-its callable executor. `orch-execute` resolves the pack's execute cells and
+Optional `sequence` is an ordered chain taking exactly one closed form: exact
+skill names, or stage names declared by the stamped pack's execute-side
+`stages` cell. Its one child and one role are [roles.md](../rules/roles.md)
+§4's. `orch-execute` resolves the pack's execute cells and
 `orch-check` resolves its check cells; neither may import a superseded skill
 body or invent a second pack parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to
@@ -345,3 +348,9 @@ remaining a deterministic declaration-to-consumer gate.
 
 T0 supersession record sha256:2d090e77139a186a035e1ca293cc9a9ae53863f4c876ac983812ec77559e6d49:
 the generated T0 section now uses declaration-specific wording.
+
+T0 supersession record sha256:8926075889cc5c2614bb77dd16958956c028162ec8e1a31f8a63f9dbe588d63b:
+the intake verb orch-spec is renamed orch-outline in the seven-verb registry.
+The noun spec — a run's frozen statement — keeps its name, and so does the
+pack's required_spec_fields cell. A dispatch naming the old verb refuses and
+names the successor; nothing aliases it.

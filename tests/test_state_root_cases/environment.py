@@ -55,7 +55,10 @@ class TestOneResolverOwnsBothFacts(unittest.TestCase):
                 imported.update(alias.name.split(".")[0] for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
                 imported.add(node.module.split(".")[0])
-        self.assertEqual({"__future__", "os", "pathlib"}, imported)
+        # `tempfile` joined for `inside_temp_root`: it is a standard
+        # library leaf that resolves the temp root lazily, so it adds a
+        # fact this module owns without adding an import-time act.
+        self.assertEqual({"__future__", "os", "pathlib", "tempfile"}, imported)
         for node in tree.body:
             self.assertIsInstance(
                 node,

@@ -214,7 +214,7 @@ class TestConservativeUninstall(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             home = project / "home"
-            stub = home / ".codex" / "skills" / "orch-spec" / "SKILL.md"
+            stub = home / ".codex" / "skills" / "orch-outline" / "SKILL.md"
             stub.parent.mkdir(parents=True)
             stub.write_text("stub\n", encoding="utf-8")
             self._write_receipt(

@@ -16,11 +16,15 @@ UNROUTED = "unrouted"
 ERROR = "error"
 ROLE_AGENT_TYPES = {"planner": "orch-planner", "worker": "orch-worker"}
 
-# The host block's routing table, read as transcript evidence.
+# The host block's routing table, read as transcript evidence. The route
+# class stays `spec`: it is the frozen expectation vocabulary of
+# `benchmarks/routing/cases.json`, and renaming it would rewrite a
+# benchmark whose results are already recorded against those labels. Only
+# the callable's own name moved.
 ROUTING_SKILLS = {
     "orch-frontier": "single",
     "orch-decompose": "graph",
-    "orch-spec": "spec",
+    "orch-outline": "spec",
 }
 # Export the exact routed callable set for the live harness facade. All other
 # skill names are named invocations, never an implicit repair route.

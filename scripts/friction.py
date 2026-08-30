@@ -116,6 +116,22 @@ def _parse_args(argv):
     return positional[0], positional[1], options
 
 
+def _console():
+    """Import the console discipline, here rather than at module scope.
+
+    The same bar ``_state_root`` records, and for the same reason: nothing
+    outside the standard library may run while this module is imported, so
+    a partial install with no ``console.py`` beside this file costs the
+    UTF-8 console and never the line this logger exists to append.
+    """
+
+    try:  # in-repo; the installed copy sits flat beside console.py
+        from scripts import console
+    except ImportError:  # pragma: no cover - the installed copy's path
+        import console
+    return console
+
+
 def _state_root():
     """Import the one resolver, here rather than at module scope.
 
@@ -387,6 +403,10 @@ def _run(argv):
 
 def main(argv=None):
     try:
+        _console().harden()
+    except Exception:  # pragma: no cover - the console is not the log
+        pass
+    try:
         _run(sys.argv[1:] if argv is None else argv)
         print("friction logged")
     except _UsageError as exc:
@@ -401,5 +421,15 @@ def main(argv=None):
     return 0
 
 
+def _guarded(argv):
+    """``main`` under the console's discipline wherever there is one."""
+
+    try:
+        console = _console()
+    except ImportError:  # pragma: no cover - a partial install
+        return main(argv)
+    return console.run(main, argv)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(_guarded(sys.argv[1:]))

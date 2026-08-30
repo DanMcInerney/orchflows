@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import datetime, timezone
-import hashlib
-from pathlib import Path
-import re
 
 if __package__:
     from .tickets_attempts import (
@@ -18,11 +16,13 @@ if __package__:
     )
     from .tickets_generations import assignment_payload, seal_findings
     from .tickets_packet import _packet_under_run_lock, workspace_establishment_finding
+    from .tickets_dispatch_inline import _inline_assignment_failure, _semantic_digest
+    from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from .tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from .tickets_dispatch_schema import stored_state
     from .tickets_review import packet_mutation, packet_state_result
-    from .tickets_store import _tickets_root
+    from .tickets_store import _run_lock, _tickets_root, normalized_isolation, segment_refusal
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
@@ -34,28 +34,29 @@ else:
     )
     from tickets_generations import assignment_payload, seal_findings
     from tickets_packet import _packet_under_run_lock, workspace_establishment_finding
+    from tickets_dispatch_inline import _inline_assignment_failure, _semantic_digest
+    from tickets_dispatch_launch import resolved_role_profile
     from tickets_dispatch_receipt import actual_mismatch, read_packet_payload
     from tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from tickets_dispatch_schema import stored_state
     from tickets_review import packet_mutation, packet_state_result
-    from tickets_store import _tickets_root
+    from tickets_store import _run_lock, _tickets_root, normalized_isolation, segment_refusal
 
 DISPATCH_PACKET_USAGE = (
     "dispatch-packet <run> <id> --dispatch-id <id> --reply-to <name> "
     "[--workspace <path>] [--artifact <fixed-identity>] [--form reference | inline]"
-    " [--review-kind critique|repair|verify]"
+    " [--review-kind critique|repair|verify] [--inline-limit <bytes>]"
 )
 DISPATCH_RECEIVE_USAGE = (
     "dispatch-receive (--content <canonical-json> | --file <path|->) "
     "--role <worker|planner> "
     "--profile <name> --by <name> --reply-to <name>"
 )
-ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
-
-
-def _semantic_digest(value) -> str:
-    encoded = canonical_json(value).encode("utf-8")
-    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+# An inline packet carries the whole sealed assignment, so nothing about the
+# form itself bounds it -- and an oversized one has been mistaken for a dead
+# child rather than read as a carriage failure. 16 KiB is the ceiling a
+# caller may raise deliberately, never one a projection may exceed silently.
+DEFAULT_INLINE_LIMIT = 16 * 1024
 
 
 def _attempt(data: dict, dispatch_id: str, *, stored_only: bool = False):
@@ -97,36 +98,11 @@ def _live_attempt(attempt: dict):
     return None
 
 
-def _declared_role(executor: str):
-    here = Path(__file__).resolve()
-    roots = (here.parent.parent, here.parent.parent / "lib")
-    groups = ("instances", "kernel", "engines", "workflows", "utilities")
-    for root in roots:
-        for group in groups:
-            path = root / "skills" / group / executor / "SKILL.md"
-            text, failure = _read_utf8(path, "executor role declaration")
-            if failure is not None:
-                continue
-            match = ROLE_RE.search(text)
-            if match is not None:
-                return match.group(1)
-    return None
-
-
 def _projection_packet(
     legacy: dict, data: dict, text: str, attempt: dict, form: str
 ) -> dict:
     executor = str(legacy["executor"])
-    declared_role = _declared_role(executor)
-    explicit_profile = legacy.get("profile")
-    profile_role = (
-        explicit_profile.removeprefix("orch-")
-        if explicit_profile in ("orch-worker", "orch-planner") else None
-    )
-    role = profile_role or declared_role
-    profile = explicit_profile or (
-        f"orch-{role}" if role in ("worker", "planner") else None
-    )
+    role, profile = resolved_role_profile(executor, legacy.get("profile"))
     packet = {
         "admission": legacy.get("admission"),
         "assigned_name": attempt.get("owner"),
@@ -136,7 +112,7 @@ def _projection_packet(
         "executor": executor,
         "form": form,
         "independence": legacy.get("independence"),
-        "isolation": legacy.get("isolation"),
+        "isolation": normalized_isolation(legacy.get("isolation")),
         "lease_expires_at": attempt.get("lease_expires_at"),
         "outcome_record_id": attempt.get("outcome_record_id"),
         "pack": legacy.get("pack"),
@@ -234,6 +210,14 @@ def _replay_projection(attempt: dict, run, ticket_id, form, reply_to, workspace,
 
 
 def _cmd_dispatch_packet(rest, *, _lock_held=False):
+    """Project and commit one packet as a single locked transaction.
+
+    Every read decides what the commit writes -- stored attempt, replay
+    comparison, review state, seal -- so the lock covers the reads too. Held
+    by the caller (the dispatch facade) or taken here; `_commit_record` is
+    then told so rather than opening a second lock on the same run.
+    """
+
     args = list(rest)
     dispatch_id = _extract_flag(args, "--dispatch-id")
     reply_to = _extract_flag(args, "--reply-to")
@@ -241,9 +225,59 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     artifact = _extract_flag(args, "--artifact")
     form = (_extract_flag(args, "--form") or "reference").strip()
     review_kind = _extract_flag(args, "--review-kind")
+    limit_text = _extract_flag(args, "--inline-limit")
     if len(args) != 2 or not dispatch_id or not reply_to or form not in PACKET_FORMS:
         return {"error": f"usage: {DISPATCH_PACKET_USAGE}"}
+    inline_limit = DEFAULT_INLINE_LIMIT
+    if limit_text is not None:
+        text = str(limit_text).strip()
+        if not text.isdigit() or int(text) <= 0:
+            return {
+                "error": f"--inline-limit takes a positive byte count, not '{limit_text}'"
+            }
+        inline_limit = int(text)
     run, ticket_id = args
+    invalid = segment_refusal(run, ticket_id)
+    if invalid is not None:
+        return invalid
+    try:
+        with nullcontext() if _lock_held else _run_lock(run):
+            return _packet_transaction(
+                run, ticket_id, dispatch_id, reply_to, workspace, artifact,
+                form, review_kind, inline_limit,
+            )
+    except OSError as error:
+        return _classification("state-inaccessible", f"unable to lock run '{run}': {error}")
+
+
+def _oversized_inline(packet: dict, form: str, inline_limit: int):
+    """Refuse an inline projection nothing bounds, before it is committed.
+
+    Measured on the whole projected packet rather than the snapshot alone,
+    because the packet is what a carrier has to move: the snapshot dominates
+    it, so this can never under-refuse. A projection already committed
+    replays above this, since a durable record is never re-graded.
+    """
+
+    if form != "inline":
+        return None
+    size = len(canonical_json(packet).encode("utf-8"))
+    if size <= inline_limit:
+        return None
+    return _classification(
+        "packet-too-large",
+        f"inline packet is {size} bytes, over the {inline_limit}-byte inline "
+        "limit; project it with --form reference, or raise --inline-limit "
+        "deliberately",
+    )
+
+
+def _packet_transaction(
+    run, ticket_id, dispatch_id, reply_to, workspace, artifact, form, review_kind,
+    inline_limit=DEFAULT_INLINE_LIMIT,
+):
+    """The whole projection, under the run lock its caller holds."""
+
     root = _tickets_root()
     if root is None:
         return _classification("state-inaccessible", "state sink is not configured")
@@ -292,79 +326,20 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     if "error" in projected:
         return projected
     packet = _projection_packet(projected["packet"], data, text, attempt, form)
+    oversized = _oversized_inline(packet, form, inline_limit)
+    if oversized is not None:
+        return oversized
     content = {"packet": packet}
     committed = _commit_record(
         run, ticket_id, dispatch_id, PACKET_RECORD_ID, content,
         mutate=packet_mutation(review_state, run, ticket_id, dispatch_id, PACKET_RECORD_ID, content),
-        record_kind="packet", _lock_held=_lock_held,
+        record_kind="packet", _lock_held=True,
     )
     if "error" in committed:
         return committed
     return committed["committed_record"]["content"]
 
 
-
-
-def _inline_assignment_failure(packet: dict, assignment: dict):
-    system = assignment.get("system")
-    if not isinstance(system, dict):
-        return _classification("assignment-divergent", "inline system identity is missing")
-    executor = assignment.get("executor")
-    declared_role = _declared_role(str(executor or ""))
-    assignment_profile = system.get("profile") or (
-        f"orch-{declared_role}" if declared_role in ("worker", "planner") else None
-    )
-    profile_role = (
-        assignment_profile.removeprefix("orch-")
-        if assignment_profile in ("orch-worker", "orch-planner") else None
-    )
-    expected = {
-        "executor": executor,
-        "independence": system.get("independence") or "checker",
-        "isolation": system.get("isolation"),
-        "pack": system.get("pack"),
-        "profile": assignment_profile,
-        "review_kind": system.get("review_kind"),
-        "role": profile_role or declared_role,
-    }
-    if any(packet.get(key) != value for key, value in expected.items()):
-        return _classification(
-            "assignment-divergent",
-            "inline routing does not match the sealed assignment",
-        )
-    source = packet.get("source")
-    if packet["durability"] != "ticket":
-        return _classification(
-            "assignment-divergent", "a ticket projection cannot be downgraded to ephemeral"
-        )
-    if (
-        not isinstance(source, dict)
-        or source.get("id") != assignment.get("ticket")
-        or not isinstance(source.get("run"), str)
-        or not source.get("run")
-    ):
-        return _classification(
-            "assignment-divergent", "inline source does not match the sealed assignment"
-        )
-    sealed_envelope = {
-        "assigned_name": packet["assigned_name"],
-        "assignment": assignment,
-        "assignment_seal": packet["assignment_seal"],
-        "dispatch_id": packet["dispatch_id"],
-        "durability": packet["durability"],
-        "lease_expires_at": packet["lease_expires_at"],
-        "outcome_record_id": packet["outcome_record_id"],
-        "reply_to": packet["reply_to"],
-        "role": packet["role"],
-        "profile": packet["profile"],
-        "review_kind": packet.get("review_kind"),
-        "source": source,
-        "workspace": packet.get("workspace"),
-    }
-    inline = packet.get("inline")
-    if not isinstance(inline, dict) or inline.get("envelope_seal") != _semantic_digest(sealed_envelope):
-        return _classification("assignment-divergent", "inline routing envelope seal diverged")
-    return None
 
 
 def _reference_ticket(packet: dict):

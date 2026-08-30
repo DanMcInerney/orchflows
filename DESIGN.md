@@ -156,7 +156,7 @@ Why this shape:
 
 - **A cell, not a loose reference.** Generic skills reference domain
   facts only through the stamped pack's cells
-  ([rules/composition.md](rules/composition.md) §9). `orch-spec` is
+  ([rules/composition.md](rules/composition.md) §9). `orch-outline` is
   generic and needs the nouns; reaching them any other way is a
   signature leak.
 - **One file, not vocabulary and design separately.** A good craft
@@ -276,6 +276,57 @@ forever while a parser can decay gracefully — `schema_confidence` and
 `parse_errors` price host drift instead of failing the run silently
 (cheap generation; diluted attention).
 
+## Why the trunk is mechanical
+
+Reviewed 2026-08-30 across PRs #117–#136, roughly 30 session
+transcripts, and 7,200+ friction records. Six recurring bug classes
+turned out to be one shape: a deterministic fact or a multi-step
+transaction with no mechanical owner, left to the model to reproduce
+from prose. A model reproduces prose well and reproduces it *slightly
+differently each time*, which is exactly the failure mode a contract
+cannot catch — every individual step is defensible, and the sequence is
+wrong. So each thread was answered by naming an owner in code, and the
+corresponding instructions were deleted from the docs rather than kept
+as fallback lore. Fallback lore is how two owners appear.
+
+- **The LLM sequenced dispatch and return by hand.** Now `tickets.py
+  dispatch` is the outbound transaction and `tickets.py land` the
+  inbound one. The role→launch hop in particular was the single
+  transcribed link in the system — read the host file, pick the profile
+  row, type a model into the launch verb — and a mistyped model there
+  killed a dispatch. Emitting a `launch` object the caller invokes
+  verbatim removes the transcription, not just the mistake.
+- **The per-child worktree had no creator.** `work-item.md` called
+  establishment "host-owned", which meant improvised; isolation was
+  recorded rather than enforced. It was the largest single friction
+  cluster (341 entries over ten days). `workspace.py establish` now
+  creates it, `state_root.candidate_paths` alone derives where, and an
+  establishment that cannot succeed refuses the dispatch instead of
+  quietly falling back to the shared tree — the fallback being how a
+  packet came to carry another ticket's workspace.
+- **One fact defined in N places.** Consolidation was chosen over
+  synchronization on the usual grounds, but the sharper reason is that
+  duplicated facts drift *silently*: nothing fails when two spellings
+  disagree until something downstream branches on the difference.
+- **Derived artifacts had no regeneration owner.** Each consumer was
+  repaired individually as it went stale. `tools/regen.py` declares
+  artifact→generator once and validate calls its check, so staleness
+  fails the existing five rather than earning a sixth.
+- **Refusals named no remedy.** A refusal that tells the caller nothing
+  actionable is an invitation to improvise, and improvisation around a
+  refusal is how runs wedged. Every such message now names a command
+  that exists, and a test proves it exists.
+- **Tickets carried stale values instead of derivations.** A recorded
+  value is true once; a derivation is true whenever it is read.
+
+The two-verb split also draws the honest line for this library's
+central claim. `dispatch` and `land` are pure bookkeeping — replayable,
+refusing before side effects. What is left to judgment is what the work
+is and whether it is good. Ask what happens if the model becomes
+perfect: a perfect model still cannot make a non-atomic sequence
+atomic, and still cannot know which of two spellings of a path is the
+one the join will grade. That is the test for what belongs in code.
+
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an
@@ -320,7 +371,7 @@ forever while a parser can decay gracefully — `schema_confidence` and
   composition contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
-  admitted because `orch-spec`'s noun source had no owner — not
+  admitted because `orch-outline`'s noun source had no owner — not
   because more reference material seemed nice. The next cell must
   clear the same bar.
 - **A generated Claude Code plugin.** Audited 2026-07-16 against a

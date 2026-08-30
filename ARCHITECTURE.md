@@ -43,13 +43,20 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
   `tickets_emission.py` emission grading; `tickets_ceiling.py` instruction
   ceiling; `tickets_issue_render.py` issuance markdown; and
-  `tickets_dispatch_gate.py` integrated-result gates. `cutcheck.py` owns
-  structural graph validation.
+  `tickets_dispatch_gate.py` integrated-result gates;
+  `tickets_dispatch_launch.py` resolves the host launch binding. `cutcheck.py`
+  owns structural graph validation.
   Cutcheck imports those owners directly, never the tickets facade;
   admission and cutcheck never import each other.
+- [`scripts/workspace.py`](scripts/workspace.py) owns a candidate worktree's
+  whole life: `establish` creates and records it, `prepare` installs what it
+  declares, `retire` removes it. [`scripts/state_root.py`](scripts/state_root.py)
+  alone derives that path and branch; nothing else computes either.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   executable-source line ceilings.
+  [`tools/regen.py`](tools/regen.py) owns every derived artifact's generator and
+  the drift check validate calls.
   [`tools/run_required.py`](tools/run_required.py) owns the local
   required-check run and its tree-keyed verdict cache.
   [`tools/affected_tests.py`](tools/affected_tests.py) owns
@@ -68,7 +75,10 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `~/.orchflows/runtime`, and the planning/application/uninstall modules the
   immutable frontend at `~/.orchflows/ui`. User installation is the sole scope,
   creating or reusing both; replacement is staged and
-  probed before an owned prior generation moves.
+  probed before an owned prior generation moves. A script module shared with the
+  reader is carried in two layouts and must be listed for both — flat `bin/`
+  through `installer/inventory.py`, the reader package through
+  `installer/planning_support.py` — or the reader fails at first import.
   [`requirements-runtime.in`](requirements-runtime.in)
   and [`requirements-runtime.txt`](requirements-runtime.txt) own direct pins
   and the hash-locked runtime closure; [`pyproject.toml`](pyproject.toml)
@@ -91,9 +101,9 @@ detection over issued ticket sets; `scripts/tickets.py` owns
 the public ticket facade, the one root/gate
 family, immutable run identity (`opened_at`, installed version, source commit),
 immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
+Its `dispatch` owns one launch and its `land` one return, each a single
+transaction over the granular operations, which stay public for recovery.
 `tickets.py help` is operator-only: it answers usage requests.
-`tickets.py grant` is operator-only: only the dispatcher widens claimed
-authority.
 
 The reader family keeps one closed boundary: `reader/scripts/ui_api.py` owns
 route assembly, query validation, shared JSON ETags and closed failures,

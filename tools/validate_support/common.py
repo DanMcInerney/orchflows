@@ -54,6 +54,7 @@ PACK_SIGNATURE_CELLS = (
     "assembly",
     "lens",
     "evidence",
+    "outline",
 )
 PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
 # The cells whose content is a whole reference file, so the duplication
@@ -63,7 +64,7 @@ PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
 # once under each cell name (REVIEW-2026-08-15
 # T7). Its row is compared as the text it is, which is three words and
 # so sits under CELL_CLAUSE_MIN_WORDS.
-CRAFT_CELLS_BY_POINTER = ("slicing", "evidence", "craft")
+CRAFT_CELLS_BY_POINTER = ("slicing", "evidence", "craft", "outline")
 CRAFT_BUDGET = 60
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s
 # ratio under them the reported pair set is a function of these two and of

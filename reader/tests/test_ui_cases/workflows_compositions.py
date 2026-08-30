@@ -60,11 +60,13 @@ class WorkflowCompositionTests(unittest.TestCase):
         self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])
         self.assertEqual("evolve", detail["id"])
         self.assertEqual("composition", detail["type"])
+        # Nothing unresolved any more: the cutover bound both stubs to
+        # skills that exist -- `orch-outline` freezes the evaluation design
+        # and `orch-check` returns the two verdicts -- so an unresolved
+        # reference here would be a real regression rather than the shipped
+        # state this case once had to tolerate.
         self.assertEqual(
-            {
-                ("unresolved-reference", "skill:orch-eval-design"),
-                ("unresolved-reference", "skill:orch-verify"),
-            },
+            set(),
             {(item["code"], item["subject_id"]) for item in detail["diagnostics"]},
         )
 
@@ -76,9 +78,9 @@ class WorkflowCompositionTests(unittest.TestCase):
                 "work:evolve/01-eligibility",
                 "work:evolve/02-campaign",
                 "work:evolve/03-result",
-                "skill:orch-eval-design",
+                "skill:orch-check",
                 "skill:orch-loop",
-                "skill:orch-verify",
+                "skill:orch-outline",
             },
             node_ids,
         )
@@ -91,10 +93,10 @@ class WorkflowCompositionTests(unittest.TestCase):
                 ("dependency", "work:evolve/00-eval", "work:evolve/01-eligibility"),
                 ("dependency", "work:evolve/01-eligibility", "work:evolve/02-campaign"),
                 ("dependency", "work:evolve/02-campaign", "work:evolve/03-result"),
-                ("executor", "work:evolve/00-eval", "skill:orch-eval-design"),
-                ("executor", "work:evolve/01-eligibility", "skill:orch-verify"),
+                ("executor", "work:evolve/00-eval", "skill:orch-outline"),
+                ("executor", "work:evolve/01-eligibility", "skill:orch-check"),
                 ("executor", "work:evolve/02-campaign", "skill:orch-loop"),
-                ("executor", "work:evolve/03-result", "skill:orch-verify"),
+                ("executor", "work:evolve/03-result", "skill:orch-check"),
                 ("loop", "work:evolve/02-campaign", "work:evolve/02-campaign"),
             },
             edge_tuples,

@@ -8,26 +8,18 @@ import sys
 if __package__:
     from .tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
-        _identity_failure, accepted_receipt_failure,
+        _identity_failure,
     )
-    from .tickets_shapes import (
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
-        DISPATCH_OUTCOME_VALUES,
-    )
+    from .tickets_shapes import DISPATCH_OUTCOME_VALUES
     from .tickets_format import (
-        TERMINAL_STATES, TicketFormatError, _extract_flag, _section_body,
-        _read_utf8, _set_frontmatter_field, _write_section, canonical_json,
-        parse_canonical_json,
+        GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
+        _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
+        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
-    from .tickets_markdown import SECTION_SENTINEL
-    from .tickets_result import RESULT_ATTRIBUTION_PREFIX
-    from .tickets_store import UTC_STAMP, _segment_error
+    from .tickets_store import UTC_STAMP, _run_lock, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
+    from .tickets_worklog import _run_goal, _run_tickets
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
-    from .tickets_outcome import (
-        DISPATCH_OUTCOME_USAGE, _outcome_attempt,
-        _outcome_attempt_match, _outcome_content, _prior_result_body,
-    )
     from .tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
         state_from_text, verification_outcome,
@@ -35,33 +27,24 @@ if __package__:
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
-        _identity_failure, accepted_receipt_failure,
+        _identity_failure,
     )
-    from tickets_shapes import (
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
-        DISPATCH_OUTCOME_VALUES,
-    )
+    from tickets_shapes import DISPATCH_OUTCOME_VALUES
     from tickets_format import (
-        TERMINAL_STATES, TicketFormatError, _extract_flag, _section_body,
-        _read_utf8, _set_frontmatter_field, _write_section, canonical_json,
-        parse_canonical_json,
+        GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
+        _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
+        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
-    from tickets_markdown import SECTION_SENTINEL
-    from tickets_result import RESULT_ATTRIBUTION_PREFIX
-    from tickets_store import UTC_STAMP, _segment_error
+    from tickets_store import UTC_STAMP, _run_lock, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
+    from tickets_worklog import _run_goal, _run_tickets
     from tickets_project import TERMINAL_REMEDY, binding_refusal
-    from tickets_outcome import (
-        DISPATCH_OUTCOME_USAGE, _outcome_attempt,
-        _outcome_attempt_match, _outcome_content, _prior_result_body,
-    )
     from tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
         state_from_text, verification_outcome,
     )
 
 JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
-OUTCOME_SECTIONS = tuple(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> "
@@ -158,6 +141,25 @@ def _accepted_file(source: str):
     return _read_utf8(source, "accepted blocker file")
 
 
+def _closes_the_run(run: str, ticket_id: str) -> bool:
+    """Whether this ticket's terminal join is the run's own terminal moment.
+
+    The run's goal ticket, read from `tickets_worklog._run_goal` -- the one
+    owner `worklog` and `set-status` already read it from: the root of a cut
+    run, and the single ticket of an ad-hoc, direct, or loop run. Any other
+    member reaching a terminal status is one item finishing, and the run
+    identity's terminal timing is written once and never rewritten, so
+    stamping it there froze the whole run's elapsed time at whichever
+    sibling happened to join first.
+    """
+
+    items, failure = _run_tickets(run)
+    if failure is not None or not items:
+        return False
+    goal, _kind = _run_goal(items)
+    return str(goal.get("id") or "") == ticket_id
+
+
 def _attempt_workspace(attempt: dict) -> str | None:
     record = next((
         item for item in attempt.get("records", [])
@@ -173,154 +175,19 @@ def _attempt_workspace(attempt: dict) -> str | None:
     return packet.get("workspace") if isinstance(packet, dict) else None
 
 
-def _outcome_failure(run: str, ticket_id: str, content):
-    required = set(DISPATCH_OUTCOME_REQUIRED)
-    if not isinstance(content, dict) or set(content) != required:
-        return _classification("outcome-invalid", "outcome envelope has unknown or missing fields")
-    if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
-        return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
-    if content.get("outcome_record_id") != OUTCOME_RECORD_ID:
-        return _classification("outcome-invalid", "outcome envelope does not use the reserved identity")
-    if content.get("status") not in JOIN_STATUSES:
-        return _classification("outcome-invalid", "outcome status is not a join disposition")
-    for kind, value in (("owner", content.get("by")), ("dispatch-id", content.get("dispatch_id"))):
-        failure = _identity_failure(kind, value)
-        if failure is not None:
-            return _classification("outcome-invalid", failure["error"])
-    evidence = content.get("evidence")
-    if not isinstance(evidence, dict) or set(evidence) != set(OUTCOME_SECTIONS):
-        return _classification("outcome-invalid", "outcome evidence must close the five executor sections")
-    if any(not isinstance(evidence.get(section), str) for section in OUTCOME_SECTIONS):
-        return _classification("outcome-invalid", "outcome evidence bodies must be strings")
-    required_sections = ("Result", "Verification", "Feedback", "Risks")
-    if any(not evidence[section].strip() for section in required_sections):
-        return _classification("outcome-invalid", "terminal outcome evidence is incomplete")
-    if content["status"] == "suspended" and not evidence["Handoff"].strip():
-        return _classification("handoff-required", "suspension requires Handoff evidence")
-    if content["status"] != "suspended" and evidence["Handoff"].strip():
-        return _classification("outcome-invalid", "terminal outcome cannot carry a Handoff")
-    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
-        # Critique Result and Feedback are generated finding carriers, not
-        # arbitrary prose.  Keep the import lazy because tickets_review
-        # consumes this module while joining a review stage.
-        if __package__:
-            from .tickets_review import ReviewError, canonical_finding_array
-        else:
-            from tickets_review import ReviewError, canonical_finding_array
-        for section in ("Result", "Feedback"):
-            try:
-                canonical_finding_array(evidence[section], f"critique outcome {section}")
-            except ReviewError as error:
-                return _classification("outcome-invalid", str(error))
-    for body in evidence.values():
-        if any(line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines()):
-            return _classification("outcome-invalid", "outcome evidence contains a reserved heading or attribution")
-    return None
+def _cmd_dispatch_join(rest, *, _lock_held=False):
+    """Commit or replay one outcome-fenced join and its lifecycle transition.
 
+    Two writes, one critical section. The record commit and the run's
+    terminal timing are one transaction wherever this is called from: the
+    landing composition passes ``_lock_held`` and owns the lock, and the
+    direct route takes the same lock here for the whole pair. It used to
+    take it only inside ``_commit_record`` and stamp the identity after that
+    lock had been released, which left the window every other mutating path
+    was closed against -- and the identity is written once and never
+    rewritten, so a loss in that window is permanent.
+    """
 
-def _cmd_dispatch_outcome(rest):
-    args = list(rest)
-    if len(args) < 2:
-        return {"error": f"usage: {DISPATCH_OUTCOME_USAGE}"}
-    run, ticket_id = args[:2]
-    remaining = args[2:]
-    for kind, value in (("run id", run), ("ticket id", ticket_id)):
-        invalid = _segment_error(kind, value)
-        if invalid is not None:
-            return invalid
-    carrier, failure = _outcome_content(remaining)
-    if failure is not None:
-        return failure
-
-    inferred, failure = _outcome_attempt(run, ticket_id)
-    if failure is not None:
-        return failure
-    _path, _text, _data, _state, attempt = inferred
-    # A caller without an accepted receipt may not write an execution record
-    # at all, so it is told that before its evidence is graded: resolving
-    # closing files first answers a receipt-less caller with a complaint
-    # about content it was never entitled to commit.
-    failure = accepted_receipt_failure(attempt)
-    if failure is not None:
-        return failure
-    if isinstance(carrier, dict) and "_files" in carrier:
-        evidence = {}
-        for section in OUTCOME_SECTIONS:
-            source = carrier["_files"].get(section)
-            if source is not None:
-                body, read_failure = _read_utf8(source, f"{section} evidence file")
-                if read_failure is not None:
-                    return read_failure
-            elif section in {"Result", "Verification"}:
-                body = _prior_result_body(attempt, section)
-                if body is None:
-                    return _classification(
-                        "outcome-invalid",
-                        f"outcome requires {section} evidence through --{section.lower()}-file or a prior result record",
-                    )
-            elif section in {"Feedback", "Risks"}:
-                body = "[]"
-            else:
-                body = ""
-            if body is None:
-                body = ""
-            evidence[section] = body
-        content = {
-            "protocol": PROTOCOL,
-            "run": run,
-            "id": ticket_id,
-            "assignment_seal": attempt["assignment_seal"],
-            "dispatch_id": attempt["dispatch_id"],
-            "outcome_record_id": OUTCOME_RECORD_ID,
-            "by": attempt["owner"],
-            "status": carrier["status"],
-            "evidence": evidence,
-        }
-    else:
-        content = carrier
-    failure = _outcome_attempt_match(content, run, ticket_id, attempt)
-    if failure is not None:
-        return failure
-    if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
-        return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
-    if not isinstance(content, dict):
-        return _classification("outcome-invalid", "outcome envelope must be an object")
-    failure = _outcome_failure(run, ticket_id, content)
-    if failure is not None:
-        return failure
-
-    def commit_outcome(text, _data, _attempt, _state):
-        updated = text
-        try:
-            for section in OUTCOME_SECTIONS:
-                body = content["evidence"][section]
-                if not body:
-                    continue
-                prior = _section_body(updated, section)
-                materialized = (
-                    f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}"
-                )
-                if prior == materialized or f"\n\n{materialized}" in prior:
-                    return text, None, _classification(
-                        "outcome-invalid",
-                        f"outcome {section} repeats evidence already materialized by this dispatch",
-                    )
-                updated = _write_section(
-                    updated, section, materialized,
-                    bool(prior and prior != SECTION_SENTINEL),
-                )
-        except TicketFormatError as error:
-            return text, None, _classification("outcome-invalid", str(error))
-        return updated, {"outcome": content}, None
-
-    return _commit_record(
-        run, ticket_id, content["dispatch_id"], OUTCOME_RECORD_ID, content,
-        mutate=commit_outcome, expected_seal=content["assignment_seal"],
-        expected_owner=content["by"], record_kind="outcome",
-    )
-
-
-def _cmd_dispatch_join(rest):
     args = list(rest)
     assignment_seal = _extract_flag(args, "--assignment-seal")
     dispatch_id = _extract_flag(args, "--dispatch-id")
@@ -343,7 +210,7 @@ def _cmd_dispatch_join(rest):
         failure = _identity_failure(kind, value)
         if failure is not None:
             return failure
-    review_stage = ".gate.critique." in ticket_id or ticket_id.endswith(".check")
+    review_stage = is_critique_stage_id(ticket_id)
     if accepted_file is not None and not review_stage:
         return _classification(
             "review-invalid", "--accepted-file applies only to critique joins"
@@ -371,7 +238,7 @@ def _cmd_dispatch_join(rest):
         "operation": "join",
         "outcome_record_id": outcome_record_id,
     }
-    if ".gate." in ticket_id or ticket_id.endswith(".check"):
+    if is_review_stage_id(ticket_id):
         content["review"] = {"accepted": accepted, "artifact": artifact}
 
     def join(text, _data, attempt, _state):
@@ -401,10 +268,10 @@ def _cmd_dispatch_join(rest):
         status = outcome["status"]
         try:
             review = state_from_text(text, allow_legacy=True)
-            if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+            if is_critique_stage_id(ticket_id):
                 lens = (
-                    "checker" if ticket_id.endswith(".check")
-                    else ticket_id.split(".gate.critique.", 1)[1]
+                    "checker" if ticket_id.endswith(CHECKER_STAGE_SUFFIX)
+                    else ticket_id.split(GATE_CRITIQUE_MARKER, 1)[1]
                 )
                 review = adjudicate(
                     review, _critique_findings(
@@ -458,24 +325,34 @@ def _cmd_dispatch_join(rest):
             )
         return updated, response, None
 
-    result = _commit_record(
-        run, ticket_id, dispatch_id, join_record_id, content,
-        mutate=join, expected_seal=assignment_seal, record_kind="join",
-    )
-    if "error" in result:
+    def transaction():
+        result = _commit_record(
+            run, ticket_id, dispatch_id, join_record_id, content,
+            mutate=join, expected_seal=assignment_seal, record_kind="join",
+            _lock_held=True,
+        )
+        if "error" in result:
+            return result
+        status = result["join"]["status"]
+        if status not in TERMINAL_STATES or not _closes_the_run(run, ticket_id):
+            return result
+        identity_dir, identity, refusal = _terminal_identity_update(
+            run, ticket_id, status, datetime.now(timezone.utc)
+        )
+        if refusal is not None:
+            return refusal
+        if identity is not None:
+            try:
+                identity_dir.mkdir(parents=True, exist_ok=True)
+                _write_identity(identity_dir, identity)
+            except OSError as error:
+                return {"error": f"join committed and terminal timing remains pending: {error}"}
         return result
-    status = result["join"]["status"]
-    if status not in TERMINAL_STATES:
-        return result
-    identity_dir, identity, refusal = _terminal_identity_update(
-        run, ticket_id, status, datetime.now(timezone.utc)
-    )
-    if refusal is not None:
-        return refusal
-    if identity is not None:
-        try:
-            identity_dir.mkdir(parents=True, exist_ok=True)
-            _write_identity(identity_dir, identity)
-        except OSError as error:
-            return {"error": f"join committed and terminal timing remains pending: {error}"}
-    return result
+
+    if _lock_held:
+        return transaction()
+    try:
+        with _run_lock(run):
+            return transaction()
+    except OSError as error:
+        return {"error": f"unable to lock run '{run}' for the join: {error}"}

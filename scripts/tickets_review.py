@@ -10,7 +10,7 @@ if __package__:
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
-        parse_canonical_json,
+        dequote, parse_canonical_json,
     )
     from .tickets_store import _load_ticket
     from .tickets_review_schema import (
@@ -21,7 +21,7 @@ else:
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
-        parse_canonical_json,
+        dequote, parse_canonical_json,
     )
     from tickets_store import _load_ticket
     from tickets_review_schema import (
@@ -292,7 +292,7 @@ def packet_state(
 ) -> dict | None:
     data = _parse_frontmatter(text)
     ticket_id = str(data.get("id") or ticket_path.stem)
-    review_kind = str(data.get("review_kind") or "").strip().strip("`")
+    review_kind = dequote(data.get("review_kind"))
     if review_kind == "critique" and ticket_id.endswith(".check"):
         target_path = ticket_path.with_name(f"{ticket_id[:-len('.check')]}.md")
         return _review_state([

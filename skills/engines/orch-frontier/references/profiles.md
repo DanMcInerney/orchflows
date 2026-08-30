@@ -1,26 +1,28 @@
 # Role profiles
 
-Host-specific bindings are data in the top-level [host records](../../../../hosts/).
-The checkout's host renderer produces the adapters installation consumes; those records
-own managed markers, installed-item locations, legal frontmatter, launch verbs and
-native fields, role-to-profile mappings, and native-versus-requested capabilities.
+What binds a role to a concrete model and effort on one host, and how that
+binding changes.
 
-The starting agent is the orchestrator; only children use profiles. These
-invariants apply on every host:
+The binding itself is data in the top-level [host records](../../../../hosts/) —
+one record per host, owning its launch verb and native fields, its role-to-profile
+mapping, the model and effort per role, its managed markers, installed-item
+locations, legal frontmatter, and its native-versus-requested capabilities. This
+file names no model, effort, or agent: change a binding by editing that host's
+record, then regenerate the derived adapters with
+`uv run --no-project python tools/regen.py`.
 
-- Resolve the declared role through the selected host adapter and use its exact
-  launch binding. Never substitute a blocked model or profile.
+`tickets.py dispatch --host <host>` resolves the role against that record and
+returns the resolved binding as its `launch` object. The starting agent is the
+orchestrator; only children carry profiles.
+
+- Invoke the emitted `launch` verbatim. Never substitute a blocked model or
+  profile, and never retype a field the launch already carries.
+- The granular `dispatch-open`, `dispatch-packet`, and `dispatch-receive`
+  operations stay public for recovery; reach for them when a transaction has to
+  be resumed, never to hand-assemble one that would have succeeded.
 - A native capability is established only through the adapter's native launch
   field. A requested capability rides the prompt and is noted unverified; the
   request alone never becomes evidence that the host established it.
-- The caller invokes `tickets.py dispatch` once; its facade readies the ticket,
-  establishes workspace, opens one attempt, and commits the immutable packet
-  projection. It establishes the packet's resolved native profile once and
-  sends that stored projection. Granular `dispatch-open` and `dispatch-packet`
-  remain public for recovery. The established child runs `dispatch-receive`
-  against its actual name, role, profile, reply target, and workspace authority
-  before the exact skill runs. A refusal is the return; neither side edits
-  packet fields to make them agree.
 - Child names are unique within a run, and a resumed child keeps its name.
 - Notifications do not decide lane progress. The caller rechecks durable run
   state against the lane bound and holds any launched external process until its

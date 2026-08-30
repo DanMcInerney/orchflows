@@ -44,7 +44,7 @@ import json
 import sys
 
 try:  # in-repo; the installed copies sit flat together
-    from scripts import friction, state_root, tickets
+    from scripts import console, friction, state_root, tickets
     from scripts.migrate_state_plan import (
         MIGRATED_STREAMS,
         RETAINED_DIRS,
@@ -76,6 +76,7 @@ try:  # in-repo; the installed copies sit flat together
         _recorded_project,
     )
 except ImportError:  # pragma: no cover - the installed copy's path
+    import console
     import friction
     import state_root
     import tickets
@@ -155,6 +156,7 @@ def run(argv):
 
 
 def main(argv=None):
+    console.harden()
     arguments = sys.argv[1:] if argv is None else argv
     try:
         result = run(arguments)
@@ -165,4 +167,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(console.run(main, sys.argv[1:]))

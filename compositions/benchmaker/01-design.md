@@ -1,6 +1,6 @@
 ---
 id: 01-design
-executor: orch-spec
+executor: orch-outline
 depends_on: [00-acquire]
 bound: <= 60 tool calls
 independence: checker

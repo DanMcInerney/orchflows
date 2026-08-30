@@ -52,6 +52,14 @@ import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# Where a path lies is `scripts/state_root.py`'s fact, not this file's:
+# `scripts/isolate.py` asks the same question about the tree it builds,
+# and two copies of one rule are two rules the moment either is edited.
+# `tools` may import `scripts`; the reverse is what is forbidden.
+from scripts.state_root import inside_temp_root  # noqa: E402
 # git's own "the harness could not run it" status, borrowed for the same
 # meaning: every other status this process returns is the command's.
 REFUSAL_STATUS = 125
@@ -91,22 +99,6 @@ def git(repo, *args: str):
 
 def _text(raw: bytes) -> str:
     return raw.decode("utf-8", "replace").strip()
-
-
-def _normal(path) -> str:
-    """One spelling for one location, on a case-folding filesystem too."""
-
-    return os.path.normcase(os.path.realpath(os.fspath(path)))
-
-
-def inside_temp_root(candidate) -> bool:
-    """Whether `candidate` lies in the host's system temp root."""
-
-    temp_root = _normal(tempfile.gettempdir())
-    try:
-        return os.path.commonpath((temp_root, _normal(candidate))) == temp_root
-    except ValueError:  # different drives have no common path at all
-        return False
 
 
 def default_root() -> Path:

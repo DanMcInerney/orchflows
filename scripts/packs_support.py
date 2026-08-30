@@ -12,8 +12,10 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 try:
     from scripts.tickets_adapters import ADAPTER_REGISTRY
+    from scripts.tickets_markdown import dequote
 except ImportError:
     from tickets_adapters import ADAPTER_REGISTRY
+    from tickets_markdown import dequote
 
 
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
@@ -24,6 +26,7 @@ PACK_CELLS = (
     "craft",
     "lens",
     "evidence",
+    "outline",
     "adapter",
     "stages",
     "assembly",
@@ -38,6 +41,12 @@ EXECUTE_CELLS = (
     "assembly",
 )
 CHECK_CELLS = ("lens", "evidence", "craft")
+OUTLINE_CELLS = ("outline", "required_spec_fields", "craft")
+CONSUMER_CELLS = {
+    "execute": EXECUTE_CELLS,
+    "check": CHECK_CELLS,
+    "outline": OUTLINE_CELLS,
+}
 TYPED_CELLS = frozenset(("adapter", "stages", "assembly"))
 _CELL_SET = frozenset(PACK_CELLS)
 _PACK_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -92,7 +101,7 @@ def _read_bytes(path: Path, subject: str) -> bytes:
 
 
 def _pack_name(value: object) -> str:
-    name = str(value or "").strip().strip("`").strip()
+    name = dequote(value)
     if not name or not _PACK_NAME_RE.fullmatch(name) or name in (".", ".."):
         raise PackError("pack-invalid", f"invalid pack name: {name or '<missing>'}")
     return name
@@ -183,7 +192,7 @@ def _candidate_path(name: str, packs_root: Path) -> Path:
 
 def _frontmatter_name(text: str, path: Path) -> Optional[str]:
     match = _FRONTMATTER_NAME_RE.search(text)
-    return match.group(1).strip().strip("`").strip() if match else None
+    return dequote(match.group(1)) if match else None
 
 
 def _parse_rows(
@@ -450,12 +459,12 @@ def cells_for(
     requested = str(digest or "").strip()
     if not _SHA_RE.fullmatch(requested):
         raise PackError("digest-invalid", f"invalid pack digest: {requested or '<missing>'}")
-    if consumer == "execute":
-        selected = EXECUTE_CELLS
-    elif consumer == "check":
-        selected = CHECK_CELLS
-    else:
-        raise PackError("consumer-invalid", "consumer must be execute or check")
+    selected = CONSUMER_CELLS.get(consumer)
+    if selected is None:
+        raise PackError(
+            "consumer-invalid",
+            "consumer must be one of: " + ", ".join(sorted(CONSUMER_CELLS)),
+        )
     roots = _roots(
         canonical_root=canonical_root,
         project_root=project_root,

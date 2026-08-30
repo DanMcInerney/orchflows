@@ -24,11 +24,12 @@ gate runs on.
 Under required isolation run `workspace.py check` from the integrating checkout
 (exit 6 is caller-vantage failure).
 
-Record blame on run-state. Under dispatch v1 only this join calls
-`tickets.py dispatch-join` with packet assignment seal/dispatch id, fixed
-`outcome` id, and this name. Disposition comes from the validated
-outcome envelope, never transport or section record. Relay an inline
-envelope unchanged through `tickets.py dispatch-outcome` first. Pre-v1 alone
+Record blame on run-state. Under dispatch v1 only this join runs
+`tickets.py land`, committing `tickets.py dispatch-join` with packet
+assignment seal/dispatch id, fixed
+`outcome` id, and this name; an inline envelope rides `--outcome-file`
+unchanged. Disposition comes from the validated
+outcome envelope, never transport or section record. Pre-v1 alone
 uses `tickets.py set-status`.
 An accepted defect set of `[]` from every critique feeding
 `<root>.gate.repair` completes that repair here without dispatch through
@@ -36,7 +37,7 @@ An accepted defect set of `[]` from every critique feeding
 atomic attributed join-owned transition. Accepted non-blocking findings go to run
 improvement or successor candidates, never that repair.
 Every critique join passes its accepted subset through a UTF-8 file (or standard
-input) with `dispatch-join --accepted-file <path|->`, normalized and bound
+input) with `land --accepted-file <path|->`, normalized and bound
 against the executor's complete findings. Repair and verification packets and
 joins pass the fixed artifact with `--artifact`. Ordinary
 `<id>.check` uses that same seam through `check <run> <id> --stage <id>.check`;

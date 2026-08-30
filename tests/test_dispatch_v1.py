@@ -160,6 +160,70 @@ class DispatchV1Test(unittest.TestCase):
             "--record-id <lifecycle:id>", payload["help"]["usage"],
         )
 
+    def test_an_exact_reopen_replays_before_the_assignment_seal_is_graded(self):
+        """contracts/dispatch.md's attempt precedence, which `dispatch-open`
+        was the one operation not to keep: an exact committed identity returns
+        its stored success first, and only an unseen open may then be refused
+        as `assignment-mismatch`. Graded the other way round, the retry of the
+        very call that opened an attempt was refused for a divergence that
+        arrived after it."""
+
+        opened = self.open()
+        self.assertEqual("opened", opened["dispatch"]["outcome"])
+        ticket = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        ticket.write_text(
+            self.ticket_text().replace(
+                "Deliver the behavior.", "Deliver a different behavior."
+            ),
+            encoding="utf-8",
+        )
+        diverged = self.ticket_text()
+        self.assertIn("Deliver a different behavior.", diverged)
+
+        replayed = self.open()
+        self.assertEqual("replayed", replayed["dispatch"]["outcome"])
+        self.assertEqual(
+            dict(opened["dispatch"], outcome="replayed"), replayed["dispatch"]
+        )
+        self.assertEqual(diverged, self.ticket_text())
+
+        unseen = self.open(dispatch_id="D2")
+        self.assertEqual("assignment-mismatch", unseen["code"])
+        self.assertEqual(diverged, self.ticket_text())
+
+    def test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten(self):
+        """The run identity's terminal timing is written once and never
+        rewritten, so the first member to join terminal used to freeze the
+        whole run's elapsed time at its own moment."""
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.assertNotIn("error", self.outcome())
+        # written after the outcome, so admission grades the sealed member
+        # alone: from here the run has a root, and `T` is one of its items
+        (Path(self.temporary.name) / "tickets" / "run" / "R.md").write_text(
+            "---\nid: R\nrun: run\nstatus: pending\nexecutor: orch-decompose\n"
+            "depends_on: []\n---\n\n## Objective\n\nThe run's root.\n",
+            encoding="utf-8",
+        )
+
+        joined = tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+
+        self.assertEqual("complete", joined["join"]["status"])
+        identity = json.loads(
+            (Path(self.temporary.name) / "runs" / "run" / "run.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertNotIn("terminal_at", identity)
+        self.assertNotIn("terminal_ticket_id", identity)
+
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
         self.assertEqual("opened", opened["dispatch"]["outcome"])
@@ -411,8 +475,16 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_text())
 
     def test_pre_v1_live_claim_requires_owner_cutover(self):
-        claimed = tickets._cmd_claim(["run", "T", "--by", "legacy-owner"])
-        self.assertNotIn("error", claimed, claimed)
+        # The pre-v1 shape, written as the deleted `claim` command wrote it:
+        # a live lease carried by frontmatter alone, with no `dispatch_v1`.
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        legacy = path.read_text(encoding="utf-8")
+        for key, value in (
+            ("status", "claimed"), ("claimed_by", "legacy-owner"),
+            ("claimed_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
+        ):
+            legacy = tickets._set_frontmatter_field(legacy, key, value)
+        path.write_text(legacy, encoding="utf-8")
         before = self.ticket_text()
         refusal = self.open()
         self.assertEqual("legacy-live-claim", refusal["code"])
@@ -777,8 +849,8 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}) as ready,
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
-                "_workspace_start",
-                return_value={"start": {"workspace_path": str(self.candidate)}},
+                "_workspace_establish",
+                return_value={"establish": {"workspace_path": str(self.candidate)}},
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened) as open_call,
             mock.patch.object(
@@ -812,8 +884,8 @@ class DispatchV1Test(unittest.TestCase):
     def test_dispatch_facade_returns_the_committed_packet(self):
         with mock.patch.object(
             tickets._tickets_dispatch_facade_module,
-            "_workspace_start",
-            return_value={"start": {"workspace_path": str(self.candidate)}},
+            "_workspace_establish",
+            return_value={"establish": {"workspace_path": str(self.candidate)}},
         ):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
@@ -836,7 +908,7 @@ class DispatchV1Test(unittest.TestCase):
         with mock.patch.object(
             tickets, "_cmd_ready", return_value=refusal,
         ) as ready, mock.patch.object(
-            tickets._tickets_dispatch_facade_module, "_workspace_start",
+            tickets._tickets_dispatch_facade_module, "_workspace_establish",
         ) as workspace:
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
@@ -861,7 +933,7 @@ class DispatchV1Test(unittest.TestCase):
                 tickets, "_cmd_dispatch_open", return_value=refusal,
             ),
             mock.patch.object(
-                tickets._tickets_dispatch_facade_module, "_workspace_start",
+                tickets._tickets_dispatch_facade_module, "_workspace_establish",
             ) as workspace,
         ):
             result = tickets._dispatch([
@@ -893,8 +965,8 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
-                "_workspace_start",
-                return_value={"start": {"workspace_path": str(self.candidate)}},
+                "_workspace_establish",
+                return_value={"establish": {"workspace_path": str(self.candidate)}},
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(
@@ -937,9 +1009,15 @@ class DispatchV1Test(unittest.TestCase):
             events.append("ready")
             return {"ready": []}
 
+        def launch_precheck(_run, _ticket, host):
+            # before the first side effect: an attempt opened for a launch
+            # that cannot resolve is an attempt nobody can start
+            events.append(("launch-precheck", host))
+            return {"id": host, "launch": {"verb": "Agent"}}, None
+
         def workspace(_run, _ticket, _workspace):
             events.append("workspace")
-            return {"start": {"workspace_path": str(self.candidate)}}
+            return {"establish": {"workspace_path": str(self.candidate)}}
 
         def open_attempt(_args, *, _lock_held=False):
             events.append(("open", _lock_held))
@@ -949,12 +1027,23 @@ class DispatchV1Test(unittest.TestCase):
             events.append(("packet", _lock_held))
             return {"packet": {"dispatch_id": "D1"}}
 
+        def launch(_record, _packet, *, packet_file=None):
+            events.append("launch")
+            return {"verb": "Agent"}, None
+
+        def prepare(_run, _ticket, _workspace):
+            events.append("prepare")
+            return {"frontend": "skipped: no-lockfile"}
+
         with (
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_run_lock", return_value=Lock()),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_ready", side_effect=ready),
-            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_start", side_effect=workspace),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "precheck", side_effect=launch_precheck),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_establish", side_effect=workspace),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_prepare", side_effect=prepare),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open", side_effect=open_attempt),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_packet", side_effect=packet),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "launch_spec", side_effect=launch),
         ):
             result = tickets._tickets_dispatch_facade_module._cmd_dispatch([
                 "run", "T", "--by", "worker", "--dispatch-id", "D1",
@@ -962,10 +1051,23 @@ class DispatchV1Test(unittest.TestCase):
                 "--workspace", str(self.candidate),
             ])
 
-        self.assertEqual({"packet": {"dispatch_id": "D1"}}, result)
         self.assertEqual(
-            ["lock-enter", "ready", ("open", True), "workspace",
-             ("packet", True), "lock-exit"],
+            {
+                "packet": {"dispatch_id": "D1"},
+                "launch": {"verb": "Agent"},
+                "prepare": {"frontend": "skipped: no-lockfile"},
+            },
+            result,
+        )
+        # `ready` sits outside the lock because promotion takes that same
+        # lock per admitted ticket and `_run_lock` is not reentrant; every
+        # mutating step of this ticket's own transaction is inside it. The
+        # tree preparation sits outside it at the other end, and for the
+        # opposite reason: it decides nothing and costs a package manager's
+        # minutes, which inside the lock every sibling of the run waited out.
+        self.assertEqual(
+            ["ready", "lock-enter", ("launch-precheck", "claude"), ("open", True),
+             "workspace", ("packet", True), "launch", "lock-exit", "prepare"],
             events,
         )
 
@@ -981,8 +1083,8 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
-                "_workspace_start",
-                return_value={"start": {"workspace_path": str(self.candidate)}},
+                "_workspace_establish",
+                return_value={"establish": {"workspace_path": str(self.candidate)}},
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(tickets, "_cmd_dispatch_packet", return_value=None),

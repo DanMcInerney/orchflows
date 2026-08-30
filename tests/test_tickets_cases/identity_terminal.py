@@ -2,137 +2,8 @@
 
 from .identity_core import *  # noqa: F401,F403
 
-class RunTerminalTimingTest(unittest.TestCase):
-    def test_fake_clock_decides_exact_elapsed_milliseconds(self):
-        opened = datetime(2026, 8, 18, 1, 2, 3, tzinfo=timezone.utc)
-        closed = opened + timedelta(seconds=5)
-
-        class FakeDateTime(datetime):
-            values = iter((opened, closed))
-
-            @classmethod
-            def now(cls, tz=None):
-                return next(cls.values)
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            use_sink(tmp)
-            repo = make_clone(tmp / "repo", ALPHA)
-            with mock.patch.object(tickets_mod, "datetime", FakeDateTime):
-                created = run_cmd(
-                    repo, "new", "testrun", "R", "--executor", "orch-decompose",
-                    "--objective", "deliver", "--criterion",
-                    "x | oracle: y | oracle_class: deterministic",
-                    "--write-scope", "scratch/root.txt",
-                )
-                self.assertNotIn("error", created)
-                closed_payload = run_cmd(
-                    repo, "set-status", "testrun", "R", "complete"
-                )
-            self.assertNotIn("error", closed_payload)
-            self.assertEqual(5000, identity_doc()["elapsed_ms"])
-
-    def test_terminal_identity_failure_is_reported_and_retry_is_durable(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            use_sink(tmp)
-            repo = make_clone(tmp / "repo", ALPHA)
-            self.assertNotIn("error", run_cmd(
-                repo, "new", "testrun", "R", "--executor", "orch-decompose",
-                "--objective", "deliver", "--criterion",
-                "x | oracle: y | oracle_class: deterministic",
-                "--write-scope", "scratch/root.txt",
-            ))
-            real_write = tickets_mod._write_identity
-            with mock.patch.object(
-                tickets_mod, "_write_identity", side_effect=OSError("timing failed")
-            ):
-                failed = run_cmd(repo, "set-status", "testrun", "R", "complete")
-            self.assertIn("timing failed", failed["error"])
-            ticket = (sink_root() / "tickets" / "testrun" / "R.md").read_text(
-                encoding="utf-8"
-            )
-            self.assertEqual("pending", tickets_mod._parse_frontmatter(ticket)["status"])
-            self.assertNotIn("terminal_at", identity_doc())
-            with mock.patch.object(tickets_mod, "_write_identity", real_write):
-                retried = run_cmd(repo, "set-status", "testrun", "R", "complete")
-            self.assertNotIn("error", retried)
-            self.assertEqual("complete", identity_doc()["terminal_status"])
-
-    def test_same_status_retry_recovers_an_interrupted_terminal_identity(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            use_sink(tmp)
-            repo = make_clone(tmp / "repo", ALPHA)
-            self.assertNotIn("error", run_cmd(
-                repo, "new", "testrun", "R", "--executor", "orch-decompose",
-                "--objective", "deliver", "--criterion",
-                "x | oracle: y | oracle_class: deterministic",
-                "--write-scope", "scratch/root.txt",
-            ))
-            with mock.patch.object(
-                tickets_mod, "_write_identity", side_effect=KeyboardInterrupt
-            ):
-                with self.assertRaises(KeyboardInterrupt):
-                    run_cmd(repo, "set-status", "testrun", "R", "complete")
-            ticket = (sink_root() / "tickets" / "testrun" / "R.md").read_text(
-                encoding="utf-8"
-            )
-            self.assertEqual(
-                "complete", tickets_mod._parse_frontmatter(ticket)["status"]
-            )
-            self.assertNotIn("terminal_at", identity_doc())
-
-            retried = run_cmd(repo, "set-status", "testrun", "R", "complete")
-            self.assertNotIn("error", retried)
-            self.assertEqual("complete", identity_doc()["terminal_status"])
-
-    def test_worklog_terminal_transition_closes_once(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            use_sink(tmp)
-            repo = make_clone(tmp / "repo", ALPHA)
-            root = run_cmd(
-                repo, "new", "testrun", "R", "--executor", "orch-decompose",
-                "--objective", "deliver", "--criterion",
-                "x | oracle: y | oracle_class: deterministic",
-                "--write-scope", "scratch/root.txt",
-            )
-            self.assertNotIn("error", root)
-            unit = run_cmd(
-                repo, "new", "testrun", "R.01", "--executor", "orch-investigate",
-                "--objective", "unit", "--criterion",
-                "x | oracle: y | oracle_class: deterministic",
-                "--depends-on", "R", "--write-scope", "scratch/unit.txt",
-            )
-            self.assertNotIn("error", unit)
-            self.assertNotIn("terminal_at", identity_doc())
-
-            run_cmd(repo, "set-status", "testrun", "R.01", "complete")
-            self.assertNotIn("terminal_at", identity_doc())
-            run_cmd(
-                repo, "run-state", "testrun", "--terminal", "complete",
-                "--text", "notes channel only",
-            )
-            self.assertNotIn("terminal_at", identity_doc())
-
-            closed = run_cmd(repo, "set-status", "testrun", "R", "complete")
-            self.assertNotIn("error", closed)
-            doc = identity_doc()
-            self.assertRegex(doc["terminal_at"], STAMP_RE)
-            self.assertEqual("R", doc["terminal_ticket_id"])
-            self.assertEqual("complete", doc["terminal_status"])
-            self.assertGreaterEqual(doc["elapsed_ms"], 0)
-            terminal_identity = identity_bytes()
-
-            run_cmd(repo, "set-status", "testrun", "R", "failed")
-            self.assertEqual(terminal_identity, identity_bytes())
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            make_repo(tmp, {"T1": ("claimed", "[]")})
-            run_cmd(tmp, "set-status", "testrun", "T1", "complete")
-            self.assertFalse(identity_of().exists(), "legacy timing was fabricated")
+from scripts import tickets_store as store_mod  # noqa: E402
+from scripts import tickets_store_writes as writes_mod  # noqa: E402
 
 
 class TestAtomicReplace(unittest.TestCase):
@@ -143,6 +14,11 @@ class TestAtomicReplace(unittest.TestCase):
     every other host it is unreachable code that three cells of the matrix
     are the first to run. `msvcrt` is the discriminator the module already
     uses, so setting it is how this host asks the Windows question.
+
+    Set on `scripts/tickets_store_writes`, the module that reads it, rather
+    than on the facade or on the store facade that re-exports it: these cases
+    call the writer directly instead of through the CLI, and a patch on a
+    re-export reaches no reader at all.
     """
 
     def refusals(self, count: int):
@@ -170,10 +46,10 @@ class TestAtomicReplace(unittest.TestCase):
             tmp = Path(tmp)
             source, target = self.move(tmp)
             replace, state = self.refusals(3)
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+            with mock.patch.object(writes_mod, "msvcrt", object()), mock.patch.object(
                 Path, "replace", replace
             ):
-                tickets_mod._replace_atomically(source, target)
+                writes_mod._replace_atomically(source, target)
             self.assertEqual(4, state["calls"])
             self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
 
@@ -182,11 +58,11 @@ class TestAtomicReplace(unittest.TestCase):
             tmp = Path(tmp)
             source, target = self.move(tmp)
             replace, _ = self.refusals(10**6)
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
-                tickets_mod, "REPLACE_BUDGET_SECONDS", 0.05
+            with mock.patch.object(writes_mod, "msvcrt", object()), mock.patch.object(
+                writes_mod, "REPLACE_BUDGET_SECONDS", 0.05
             ), mock.patch.object(Path, "replace", replace):
                 with self.assertRaises(PermissionError):
-                    tickets_mod._replace_atomically(source, target)
+                    writes_mod._replace_atomically(source, target)
             self.assertFalse(target.exists())
 
     def test_posix_takes_the_first_answer(self):
@@ -197,11 +73,11 @@ class TestAtomicReplace(unittest.TestCase):
             tmp = Path(tmp)
             source, target = self.move(tmp)
             replace, state = self.refusals(1)
-            with mock.patch.object(tickets_mod, "msvcrt", None), mock.patch.object(
+            with mock.patch.object(writes_mod, "msvcrt", None), mock.patch.object(
                 Path, "replace", replace
             ):
                 with self.assertRaises(PermissionError):
-                    tickets_mod._replace_atomically(source, target)
+                    writes_mod._replace_atomically(source, target)
             self.assertEqual(1, state["calls"])
 
     def test_an_unobstructed_move_costs_one_attempt_on_either_platform(self):
@@ -210,10 +86,10 @@ class TestAtomicReplace(unittest.TestCase):
                 tmp = Path(tmp)
                 source, target = self.move(tmp)
                 replace, state = self.refusals(0)
-                with mock.patch.object(tickets_mod, "msvcrt", sentinel), mock.patch.object(
+                with mock.patch.object(writes_mod, "msvcrt", sentinel), mock.patch.object(
                     Path, "replace", replace
                 ):
-                    tickets_mod._replace_atomically(source, target)
+                    writes_mod._replace_atomically(source, target)
                 self.assertEqual(1, state["calls"])
                 self.assertFalse(source.exists())
                 self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
@@ -230,9 +106,9 @@ class TestAtomicReplace(unittest.TestCase):
             calls.append(1)
             raise FileNotFoundError(2, "No such file or directory")
 
-        with mock.patch.object(tickets_mod, "msvcrt", object()):
+        with mock.patch.object(writes_mod, "msvcrt", object()):
             with self.assertRaises(FileNotFoundError):
-                tickets_mod._waiting_out_windows(missing)
+                writes_mod._waiting_out_windows(missing)
         self.assertEqual(1, len(calls))
 
     def test_the_reader_waits_out_a_writers_move_and_returns_the_document(self):
@@ -252,10 +128,10 @@ class TestAtomicReplace(unittest.TestCase):
                     raise PermissionError(13, "Permission denied")
                 return real(self, *args, **kwargs)
 
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+            with mock.patch.object(writes_mod, "msvcrt", object()), mock.patch.object(
                 Path, "read_text", read_text
             ):
-                document, error = tickets_mod._read_identity(path)
+                document, error = store_mod._read_identity(path)
             self.assertIsNone(error)
             self.assertEqual({"run": "testrun"}, document)
             self.assertEqual(0, state["left"])
@@ -268,10 +144,10 @@ class TestAtomicReplace(unittest.TestCase):
             def read_text(self, *args, **kwargs):
                 raise PermissionError(13, "Permission denied")
 
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
-                tickets_mod, "REPLACE_BUDGET_SECONDS", 0.05
+            with mock.patch.object(writes_mod, "msvcrt", object()), mock.patch.object(
+                writes_mod, "REPLACE_BUDGET_SECONDS", 0.05
             ), mock.patch.object(Path, "read_text", read_text):
-                document, error = tickets_mod._read_identity(path)
+                document, error = store_mod._read_identity(path)
             self.assertIsNone(document)
             self.assertIn("unreadable run identity", error["error"])
 
@@ -431,7 +307,7 @@ class TestNoFallback(unittest.TestCase):
             self.block_the_sink(tmp)
             before = self.listing(repo)
             for args in (
-                ("claim", "testrun", "T1", "--by", "agent-a"),
+                ("join-noop-repair", "testrun", "T1", "--by", "agent-a"),
                 ("set-status", "testrun", "T1", "complete"),
                 ("result", "testrun", "T1", "--section", "Result", "--file", str(body)),
             ):

@@ -45,7 +45,7 @@ def _label(path: Path, root: Path) -> str:
 
 def _load_json(path: Path, root: Path, diag):
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         diag.error(_label(path, root), f"cannot read structural JSON: {exc}")
         return None

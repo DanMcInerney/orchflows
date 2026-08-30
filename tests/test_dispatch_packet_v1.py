@@ -15,8 +15,8 @@ from unittest import mock
 from tests._receiver_vantage import git_checkout, standing_in
 from scripts import tickets, tickets_review
 from scripts.tickets_packet import workspace_establishment_finding
-from scripts.tickets_dispatch_packet import DISPATCH_RECEIVE_USAGE
-from scripts.tickets_format import canonical_json, parse_canonical_json
+from scripts.tickets_dispatch_packet import DISPATCH_RECEIVE_USAGE, _projection_packet
+from scripts.tickets_format import _parse_frontmatter, canonical_json, parse_canonical_json
 from scripts.tickets_outcome import DISPATCH_OUTCOME_USAGE
 
 
@@ -637,6 +637,39 @@ class DispatchPacketV1Test(unittest.TestCase):
         text = path.read_text(encoding="utf-8")
         path.write_text(text.replace("Deliver the behavior.", "Changed."), encoding="utf-8")
         self.assertEqual("assignment-divergent", self.receive(reference)["code"])
+
+
+class PacketIsolationIsNormalizedWhereItIsBuiltTest(unittest.TestCase):
+    """`isolation` is the value the establishment gate reads and the value
+    `workspace.py` grades, so the packet normalizes it where the packet is
+    built rather than trusting whichever projector filled the dict. Today
+    the legacy projection already normalizes; a projector that stopped would
+    otherwise hand the grader a backticked scalar it reads as some third
+    value, and the grade would be skipped at exit 0 behind a green suite."""
+
+    TEXT = (
+        "---\nid: T\nrun: run\nisolation: required\n---\n\n"
+        "## Goal\n\nDeliver.\n\n## Context\n\nThe repository is authoritative.\n"
+    )
+    ATTEMPT = {
+        "owner": "worker", "assignment_seal": "sha256:0", "dispatch_id": "D1",
+        "lease_expires_at": "2099-01-01T00:00:00Z",
+        "outcome_record_id": "lifecycle:outcome",
+    }
+
+    def test_every_raw_declaration_reaches_the_packet_normalized(self):
+        data = _parse_frontmatter(self.TEXT)
+        for declared, expected in (
+            ("`required`", "required"), ("  required ", "required"),
+            (None, "none"), ("", "none"), ("none", "none"),
+        ):
+            legacy = {
+                "executor": "orch-execute", "id": "T", "run": "run",
+                "isolation": declared,
+            }
+            with self.subTest(declared=declared):
+                packet = _projection_packet(legacy, data, self.TEXT, self.ATTEMPT, "reference")
+                self.assertEqual(expected, packet["isolation"])
 
 
 if __name__ == "__main__":

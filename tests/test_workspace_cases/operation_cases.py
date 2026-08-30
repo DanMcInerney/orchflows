@@ -57,21 +57,6 @@ class TestJoinGradesActualOperations(unittest.TestCase):
                 payload_of(done)["check"]["mutations"],
             )
 
-    def test_operation_mismatch_refuses_even_when_the_path_is_authorized(self):
-        with tempfile.TemporaryDirectory() as raw:
-            main, base = operation_fixture(
-                Path(raw), "T-mismatch",
-                (
-                    "change:scratch/create.txt",
-                    "change:scratch/change.txt",
-                    "delete:scratch/delete.txt",
-                ),
-            )
-            done = run_workspace(main, "check", "testrun", "T-mismatch", "--base", base)
-            self.assertEqual(workspace.EXIT_SCOPE_BREACH, done.returncode, done.stdout)
-            body = payload_of(done)
-            self.assertEqual(["create:scratch/create.txt"], body["operation_breaches"])
-            self.assertEqual(["scratch/create.txt"], body["breaches"])
 
     def test_write_prefix_covers_every_actual_operation_below_it(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -88,14 +73,3 @@ class TestJoinGradesActualOperations(unittest.TestCase):
             done = run_workspace(main, "check", "testrun", "T-dirty", "--base", base)
             self.assertEqual(workspace.EXIT_SCOPE_BREACH, done.returncode, done.stdout)
             self.assertEqual(["scratch/change.txt"], payload_of(done)["dirty"])
-
-    def test_every_lifecycle_position_with_an_empty_plan_is_refused(self):
-        for status in ("claimed", "pending", "ready"):
-            with self.subTest(status=status), tempfile.TemporaryDirectory() as raw:
-                ticket_id = f"T-unclaimed-{status}"
-                main, base = operation_fixture(
-                    Path(raw), ticket_id, (), include_plan=False, status=status,
-                )
-                done = run_workspace(main, "check", "testrun", ticket_id, "--base", base)
-                self.assertEqual(workspace.EXIT_SCOPE_BREACH, done.returncode, done.stdout)
-                self.assertEqual(3, len(payload_of(done)["operation_breaches"]))

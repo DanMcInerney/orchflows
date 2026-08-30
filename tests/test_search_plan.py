@@ -436,7 +436,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     # loop body's reduce. None of the four may reappear.
     executors = Counter(EXECUTOR_RE.findall(evolve))
     required = Counter(
-        {"orch-spec": 1, "orch-loop": 1, "orch-check": 2}
+        {"orch-outline": 1, "orch-loop": 1, "orch-check": 2}
     )
     if executors != required:
         errors.append("evolve-call-graph")

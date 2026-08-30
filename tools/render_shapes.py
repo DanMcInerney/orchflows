@@ -208,10 +208,18 @@ def contract_is_current(path: Path, source: Path = SOURCE) -> bool:
 
 
 def write() -> None:
-    VALIDATOR.write_text(render_validator(), encoding="utf-8", newline="")
+    # Render before opening: the renderer reads the target file, so opening
+    # "w" first would truncate the prose it is about to re-emit. open(...,
+    # newline="") rather than write_text(newline=): the keyword is 3.10+ and
+    # the floor is 3.9.
+    validator_text = render_validator()
+    with open(VALIDATOR, "w", encoding="utf-8", newline="") as stream:
+        stream.write(validator_text)
     for name in contracts():
         path = CONTRACTS_DIR / name
-        path.write_text(render_contract_document(path), encoding="utf-8", newline="")
+        document = render_contract_document(path)
+        with open(path, "w", encoding="utf-8", newline="") as stream:
+            stream.write(document)
 
 
 def check(root: Path = ROOT) -> None:

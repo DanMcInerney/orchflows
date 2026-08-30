@@ -349,7 +349,129 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
             f"{right_label}: {left_clause!r} ~ {right_clause!r}",
         )
 
+
+
+# --- generated-enum ratchet ---------------------------------------------------
+# The shapes whose value sets a script may not restate. Named, not swept:
+# a one-value enum matches too easily to be worth a blanket rule, and the
+# roster starts at exactly the enums the fact registry consolidated.
+RATCHETED_ENUMS = (
+    ("dispatch_packet", "durability"),
+    ("dispatch_packet", "review_kind"),
+    ("dispatch_record", "kind"),
+    ("executor_result", "mode"),
+    ("executor_result", "operation"),
+)
+# The two modules the ratchet exists to protect: one is generated from the
+# contract, the other is the reserved namespace's declared owner.
+ENUM_OWNER_MODULES = ("tickets_shapes.py", "tickets_dispatch_identity.py")
+RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
+
+
+def _generated_value_sets(root=None) -> dict:
+    """Every ratcheted value set, keyed by the set, named by its owner.
+
+    Read from `contracts/shapes.json` rather than the generated module, so
+    the ratchet grades a script against the contract itself and one read
+    answers for every script below.
+    """
+
+    import json
+
+    root = ROOT if root is None else root
+    try:
+        data = json.loads((root / "contracts" / "shapes.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return {}
+    found = {}
+    for shape in data.get("shapes") or ():
+        for field, values in (shape.get("values") or {}).items():
+            if (shape.get("name"), field) in RATCHETED_ENUMS:
+                found[frozenset(values)] = (
+                    f"contracts/shapes.json's {shape['name']}.{field}"
+                )
+    constants = data.get("constants") or {}
+    reserved = frozenset(
+        value for key, value in constants.items() if key.endswith("_record_id")
+    )
+    if reserved:
+        found[reserved] = "the reserved record-id namespace"
+    found[frozenset(RESERVED_RECORD_PREFIXES)] = "the reserved record-id prefixes"
+    return found
+
+
+def _module_string_sets(text: str):
+    """Every module-level assignment of a literal set of strings.
+
+    A collection built out of names is not a restatement -- it is already
+    reading its values from somewhere -- so only literals are collected,
+    and the one wrapping call a frozenset needs is looked through.
+    """
+
+    import ast
+
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        value = node.value
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Name)
+            and value.func.id in ("frozenset", "set", "tuple", "list")
+            and value.args
+        ):
+            value = value.args[0]
+        if not isinstance(value, (ast.Set, ast.Tuple, ast.List)) or not value.elts:
+            continue
+        if not all(
+            isinstance(item, ast.Constant) and isinstance(item.value, str)
+            for item in value.elts
+        ):
+            continue
+        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+        yield (names[0] if names else "<unnamed>"), frozenset(
+            item.value for item in value.elts
+        ), node.lineno
+
+
+def validate_generated_enum_copies(diag: Diagnostics, root=None) -> None:
+    """Refuse a script that restates a value set a generated shape owns.
+
+    The duplicated-facts class this ratchet closes: an enum lives in
+    `contracts/shapes.json`, the generated module exposes it, and a script
+    then spells the same members inline. The two agree until the contract
+    moves, and the one that did not move is the one a caller was reading.
+    """
+
+    root = ROOT if root is None else root
+    owned = _generated_value_sets(root)
+    if not owned:
+        return
+    for source in sorted((root / "scripts").glob("*.py")):
+        if source.name in ENUM_OWNER_MODULES:
+            continue
+        try:
+            text = source.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for name, values, line in _module_string_sets(text):
+            owner = owned.get(values)
+            if owner is None:
+                continue
+            diag.error(
+                source.relative_to(root).as_posix(),
+                f"line {line}: `{name}` restates {owner}; import the "
+                "generated value set instead of spelling its members",
+            )
+
+
 __all__ = (
+    'ENUM_OWNER_MODULES', 'RATCHETED_ENUMS', '_generated_value_sets',
+    '_module_string_sets', 'validate_generated_enum_copies',
     'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'free_content', 'validate_cell_duplication',
     'CROSS_TIER_DUPLICATE_LEVEL', 'CROSS_TIER_CITATION_RES', 'CROSS_TIER_PROSE_MIN_WORDS', '_cross_tier_prose',
     'SAME_TIER_COMPARED', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',

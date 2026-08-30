@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
-"""Observe and grade one work item's isolated workspace.
+"""Establish, observe and grade one work item's isolated workspace.
 
 Stdlib-only, cross-platform, Python 3.9 and up, no network at run time.
-The ticket is the work item of ``contracts/work-item.md``: ``start`` records
-the durable ``workspace_path`` for every supported adapter. For a Git
-candidate it runs from inside the already-created workspace and also records
-``workspace_branch`` and ``workspace_baseline``; for an evidence-store lane it
-creates the canonical run-scoped store in the state sink. ``check`` grades the item's ``isolation``
-declaration at the join from the integrating checkout's git -- the
-caller's own, or the one ``--repo`` names. The script never creates, enters,
-or removes a Git candidate; ``start`` never claims.
+The ticket is the work item of ``contracts/work-item.md``.
+
+``establish`` is the owner of an isolated candidate: for an item declaring
+``isolation: required`` it creates the worktree its identity derives --
+``state_root.candidate_paths`` names both the path and the branch -- and
+records what it created. Nothing improvises that tree, and nothing falls
+back to the tree the caller happened to be standing in. ``retire`` removes
+it again, leaving every stamp that names it in place for the join.
+
+``prepare`` installs what the recorded workspace's tree declares, against
+the ``workspace_path`` establishment already stamped. It is a verb of its
+own because it is the one act here that costs a package manager's minutes
+and writes no ticket: run inside a caller's critical section it made every
+sibling of the run wait for a tree that was not theirs, so it takes no lock
+and is called once the establishment's lock is let go.
+
+``start`` is the observation that predates it and still answers for
+everything else: it records the durable ``workspace_path`` for every
+supported adapter, adds ``workspace_branch`` and ``workspace_baseline`` for
+a Git tree the caller already stands in, and creates the canonical
+run-scoped store for an evidence-store lane. ``check`` grades the item's
+``isolation`` declaration at the join from the integrating checkout's git --
+the caller's own, or the one ``--repo`` names. ``check`` never creates,
+enters, or removes a Git candidate; no subcommand here claims.
 
 Deviation from ``scripts/tickets.py``, stated because a caller reads
 these exit codes: this script does not inherit that script's exit-0
@@ -35,14 +51,18 @@ Exit codes:
        flags: the join must still read what the item was executed in.
 
 Subcommands:
+    establish <run> <id> [--repo <source-tree>]
+    prepare <run> <id>
+    retire <run> <id> [--force]
     start <run> <id>  # from a Git candidate, or anywhere for evidence-store
     check <run> <id> --base <rev> [--repo <path>]
 
-``--repo <path>`` aims ``check`` at another checkout: every git call and the
-repository root both come from there, so the caller need not stand where the
-answer lives.
+``--repo <path>`` aims ``establish`` and ``check`` at another checkout:
+every git call and the repository root both come from there, so the caller
+need not stand where the answer lives. ``retire`` takes none -- it finds the
+repository from the derived worktree's own pointer.
 
-``--help``, on the script or on either subcommand, prints usage on stdout
+``--help``, on the script or on any subcommand, prints usage on stdout
 and exits 0. It is the one call whose stdout is not a JSON payload: the
 caller asking what the arguments are is a reader, and answering a reader
 with an error payload is how this script used to answer.
@@ -64,17 +84,20 @@ _SIBLING_DIR = str(Path(__file__).resolve().parent)
 if _SIBLING_DIR not in sys.path:
     sys.path.append(_SIBLING_DIR)
 
+import console  # noqa: E402  the console discipline every entrypoint takes first
 import state_root  # noqa: E402  the sink resolver, imported and never copied
 import tickets  # noqa: E402  frontmatter and isolation, imported and never copied
 
 # Literal sibling imports work in the source tree and in the flat installed
 # ``bin`` layout after the directory above has joined ``sys.path``.
 workspace_git = __import__("workspace_git")
-workspace_prepare = __import__("workspace_prepare")
-ISOLATION_KEY = "isolation"
-BRANCH_KEY = "workspace_branch"
-BASELINE_KEY = "workspace_baseline"
-PATH_KEY = "workspace_path"
+workspace_candidate = __import__("workspace_candidate")
+# Re-exported, never respelled: the names are declared beside the writes and
+# the refusals that use them, and this facade is where a reader looks them up.
+ISOLATION_KEY = workspace_git.ISOLATION_KEY
+BRANCH_KEY = workspace_git.BRANCH_KEY
+BASELINE_KEY = workspace_git.BASELINE_KEY
+PATH_KEY = workspace_git.PATH_KEY
 # Every frontmatter key name this script writes or reads, and where. The
 # spellings belong to ``contracts/work-item.md``; ``tests/test_workspace.py``
 # reads this mapping and the contract's own bytes and asserts the two agree
@@ -92,14 +115,14 @@ FRONTMATTER_KEYS = {
 # this same declaration, and a grader reading it differently skips the grade
 # at exit 0 while the join reads success.
 REQUIRED = tickets.REQUIRED_ISOLATION
-EXIT_OK = 0
-EXIT_ERROR = 1
-EXIT_ISOLATION_MISSING = 2
-EXIT_WRONG_BRANCH_POINT = 3
-EXIT_SCOPE_BREACH = 4
-EXIT_NO_RECORD = 5
-EXIT_WRONG_VANTAGE = 6
-EXIT_SHARED_WORKSPACE = 7
+EXIT_OK = workspace_git.EXIT_OK
+EXIT_ERROR = workspace_git.EXIT_ERROR
+EXIT_ISOLATION_MISSING = workspace_git.EXIT_ISOLATION_MISSING
+EXIT_WRONG_BRANCH_POINT = workspace_git.EXIT_WRONG_BRANCH_POINT
+EXIT_SCOPE_BREACH = workspace_git.EXIT_SCOPE_BREACH
+EXIT_NO_RECORD = workspace_git.EXIT_NO_RECORD
+EXIT_WRONG_VANTAGE = workspace_git.EXIT_WRONG_VANTAGE
+EXIT_SHARED_WORKSPACE = workspace_git.EXIT_SHARED_WORKSPACE
 VERDICTS = {
     EXIT_OK: "pass",
     EXIT_ERROR: "error",
@@ -110,16 +133,21 @@ VERDICTS = {
     EXIT_WRONG_VANTAGE: "wrong-vantage",
     EXIT_SHARED_WORKSPACE: "shared-workspace",
 }
-AMBIGUOUS = workspace_git.AMBIGUOUS
 # Candidate diffs are reported in full. Suggested files are not read here.
 # One spelling of each subcommand's arguments, joined into ``USAGE`` for the
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {
+    "establish": "workspace.py establish <run> <id> [--repo <source-tree>]",
+    "prepare": "workspace.py prepare <run> <id>",
+    "retire": "workspace.py retire <run> <id> [--force]",
     "start": "workspace.py start <run> <id>",
     "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
 }
 COMMAND_HELP = {
-    "start": "establish and record the pack workspace; run inside an already-created Git candidate",
+    "establish": "create and record the candidate worktree this item's identity derives",
+    "prepare": "install what the recorded workspace declares; takes no run lock",
+    "retire": "remove that derived worktree, leaving every stamp that names it",
+    "start": "record the pack workspace the caller already stands in; never creates one",
     "check": "from the integrating checkout: grade isolation and report the actual diff",
 }
 USAGE = "usage: " + "\n       ".join(COMMAND_USAGE.values())
@@ -146,53 +174,18 @@ def _git_out(*args: str) -> str:
     return out.strip()
 
 def _dirty_paths() -> list:
-    """``workspace_git._dirty_paths``, in the tree under grade."""
-    return workspace_git._dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
+    """``workspace_git.dirty_paths``, in the tree under grade."""
+    return workspace_git.dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
 
 # --- the ticket, always at the main repository root -------------------------
 
+# Reading git's own output is `workspace_git`'s, beside the porcelain and
+# worktree walks: this facade routes and grades, it never parses.
+_actual_mutations = workspace_git.actual_mutations
 _graded = workspace_git._graded
 _locate = workspace_git._locate
 _record = workspace_git._record
 _sharers = workspace_git._sharers
-
-def _actual_mutations(name_status: str) -> list:
-    """Normalize ``git diff --name-status --no-renames -z`` rows."""
-    tokens = name_status.split("\0")
-    rows = []
-    index = 0
-    operations = {"A": "create", "D": "delete", "M": "change", "T": "change"}
-    while index < len(tokens) and tokens[index]:
-        status = tokens[index]
-        if "\t" in status:
-            status, path = status.split("\t", 1)
-            index += 1
-        elif index + 1 < len(tokens):
-            path = tokens[index + 1]
-            index += 2
-        else:
-            raise Refused("git name-status output ended before its path")
-        operation = operations.get(status[:1])
-        if operation is None:
-            raise Refused(f"git name-status returned unsupported status {status!r}")
-        rows.append((operation, path))
-    return sorted(set(rows))
-
-def _validate_write_paths(entries, root: Path) -> None:
-    """Refuse prose-shaped write declarations before a candidate starts."""
-
-    if not isinstance(entries, list):
-        return
-    for declared in entries:
-        entry = str(declared or "").strip().strip("`").strip()
-        candidate = Path(entry).expanduser()
-        if not candidate.is_absolute():
-            candidate = root / candidate
-        if "(" in entry or ")" in entry or (" " in entry and not candidate.exists()):
-            raise Refused(
-                f"write_scope entry {entry!r} is not a path; "
-                "see contracts/work-item.md"
-            )
 
 # --- subcommands ------------------------------------------------------------
 
@@ -203,91 +196,77 @@ def _positional(rest, count: int, command: str) -> list:
         raise Refused(f"{command} takes <run> <id>. {USAGE}")
     return args
 
-def _cmd_start(rest):
-    """Establish and record the pack workspace. It does not claim."""
+def _seams() -> dict:
+    """The calls the establishment lanes make back through this module.
 
-    run, ticket_id = _positional(rest, 2, "start")
-    path = state_root.tickets_root() / run / f"{ticket_id}.md"
-    if not path.is_file():
-        raise Refused(f"ticket not found: {run}/{ticket_id}")
-    data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
-    # the snapshot the stamps are written against, taken before the git calls
-    # below and not after them: those calls are the seconds a concurrent
-    # `set-status` lands in, and a snapshot taken past them absorbs the write
-    # this guard exists to report
-    prior_text = path.read_text(encoding="utf-8")
-    try:
-        adapter = tickets.adapter_spec(data.get("pack"))
-    except tickets.AdapterError as error:
-        raise Refused(f"{error.code}: {error.detail}") from error
-    mechanism = adapter.key
-    workspace_strategy = adapter.workspace_strategy
-    if workspace_strategy == "evidence-store":
-        store = (state_root.state_root() / "research" / run).resolve()
-        store.mkdir(parents=True, exist_ok=True)
-        outcome = _record(path, prior_text, None, None, str(store))
-        if "error" in outcome:
-            raise Refused(outcome["error"])
-        return {
-            "start": {
-                "run": run,
-                "id": ticket_id,
-                "ticket": str(path),
-                "mechanism": mechanism,
-                PATH_KEY: str(store),
-                "workspace_root": str(store),
-            }
-        }, EXIT_OK
-    if workspace_strategy != "git":
-        raise Refused(
-            f"adapter-not-establishable: {mechanism} does not establish a candidate workspace"
-        )
-    root, located = _locate(run, ticket_id)
-    if located != path:
-        raise Refused(f"ticket identity changed while locating {run}/{ticket_id}")
-    top = Path(_git_out("rev-parse", "--show-toplevel")).resolve()
-    _validate_write_paths(data.get("write_scope"), top)
-    branch, head = workspace_git._head_and_branch(_git_out)
-    dirty = sorted(set(_dirty_paths()))
-    # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
-    # --baseline``, so it goes on naming the revision the item was cut from,
-    # never the moved tree a re-establishment stands in -- a second executor
-    # turn, or the step a read-only verifier is itself required to run. The
-    # observation is reported under its own key instead of recorded: a second
-    # stamp would have to be a key ``contracts/work-item.md`` declares.
-    # Computed either way: this call also refuses a dirty path no
-    # comma-joined frontmatter scalar could carry unambiguously.
-    observed = workspace_git._baseline(head, dirty)
-    stamped = str(data.get(BASELINE_KEY) or "").strip()
-    baseline = stamped or observed
-    outcome = _record(path, prior_text, branch, baseline, str(top))
-    if "error" in outcome:
-        raise Refused(outcome["error"])
-    # after recording, never before: a tree that cannot be prepared is still
-    # a workspace whose branch and baseline the join has to be able to read,
-    # and the preparation's own verdict is reported rather than raised
-    prepared = workspace_prepare.prepare(top)
-    # after recording: this item's own stamp is in the sink, and skipped
-    sharing = _sharers(path, _git_out, _is_ancestor, branch)
+    Resolved on every call and never captured at import: a test that
+    re-points ``_git``, ``_dirty_paths`` or ``_record`` on this module is
+    re-pointing the call the lane actually makes, which is the only way a
+    seam is worth having. ``_git_out`` and ``_dirty_paths`` read ``_git``
+    through the module globals in turn, so aiming ``_GIT_CWD`` aims them
+    both.
+    """
+
     return {
-        "start": {
-            "run": run,
-            "id": ticket_id,
-            "ticket": str(path),
-            BRANCH_KEY: branch,
-            BASELINE_KEY: baseline,
-            PATH_KEY: str(top),
-            # present only on a re-establishment, which its presence declares
-            **({"reestablished": observed} if stamped else {}),
-            "workspace_root": str(top),
-            "main_root": str(root),
-            # a linked tree is necessary, and no longer sufficient
-            "isolated": top != root and not sharing,
-            "shared_with": sharing,
-            "dirty": dirty,
-            **prepared,
-        }
-    }, EXIT_SHARED_WORKSPACE if sharing else EXIT_OK
+        "git_out": _git_out,
+        "dirty_paths": _dirty_paths,
+        "record": _record,
+        "is_ancestor": _is_ancestor,
+    }
+
+def _cmd_start(rest):
+    """Record the workspace the caller already stands in. It does not claim."""
+
+    held = workspace_git.LOCK_HELD in rest
+    run, ticket_id = _positional([a for a in rest if a != workspace_git.LOCK_HELD], 2, "start")
+    return workspace_candidate.observe(run, ticket_id, held=held, seams=_seams())
+
+def _cmd_establish(rest):
+    """Create and record the candidate worktree this item's identity derives.
+
+    ``--repo`` names the tree the candidate is cut from; absent, the caller's
+    own. Every git call runs there, so ``_GIT_CWD`` is aimed before the first
+    one -- an item whose isolation is not ``required`` falls through to the
+    same observation ``start`` makes, and it must observe the named tree
+    rather than whichever directory this process happens to have started in.
+    """
+
+    global _GIT_CWD
+    held = workspace_git.LOCK_HELD in rest
+    args = [argument for argument in rest if argument != workspace_git.LOCK_HELD]
+    aimed = "--repo" in args
+    repo = _extract_flag(args, "--repo")
+    run, ticket_id = _positional(args, 2, "establish")
+    if aimed and repo is None:
+        raise Refused(f"--repo takes <path>. {USAGE}")
+    named = Path(repo).expanduser() if repo is not None else Path.cwd()
+    if not named.is_dir():
+        raise Refused(f"--repo '{repo}' is not a directory")
+    _GIT_CWD = str(named.resolve())
+    return workspace_candidate.establish(
+        run, ticket_id, source=_GIT_CWD, held=held, seams=_seams()
+    )
+
+def _cmd_prepare(rest):
+    """Install what the recorded workspace declares. It writes no ticket.
+
+    Kept out of ``establish`` because it is the one act in this script that
+    costs a package manager's minutes: run inside the dispatch facade's
+    critical section it made every sibling of the run wait for a tree that
+    was not theirs. Nothing here is written under a lock, so it takes none.
+    """
+
+    run, ticket_id = _positional(rest, 2, "prepare")
+    return workspace_candidate.prepare(run, ticket_id)
+
+def _cmd_retire(rest):
+    """Remove the derived worktree. It reads and writes no ticket."""
+
+    force = "--force" in rest
+    run, ticket_id = _positional(
+        [argument for argument in rest if argument != "--force"], 2, "retire"
+    )
+    return workspace_candidate.retire(run, ticket_id, force=force)
 
 def _extract_flag(args: list, flag: str):
     if flag in args:
@@ -409,7 +388,7 @@ def _cmd_check(rest):
                 f"recorded workspace_path {Path(recorded_workspace).resolve()}",
                 EXIT_ISOLATION_MISSING,
             )
-        dirty = workspace_git._dirty_paths(str(ticket_worktree))
+        dirty = workspace_git.dirty_paths(str(ticket_worktree))
         # Emission, not the item's change: an acceptance oracle imports the
         # tree it grades and CPython writes bytecode beside it, so counting
         # those bytes fails the item for having been verified. By path shape,
@@ -460,20 +439,19 @@ def _help_text(command=None) -> str:
 def main(argv=None) -> int:
     # A refusal quotes a path and a ticket's own words, either of which can
     # carry a character a cp1252 console cannot encode; a script that crashes
-    # while printing its verdict reports none. The same treatment
-    # `scripts/tickets.py` and `tools/validate.py` give their one print.
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(errors="replace")
-        except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
-            pass
+    # while printing its verdict reports none. One owner for that treatment,
+    # `scripts/console.py`, which every entrypoint here calls first.
+    console.harden()
     # this process's git aim, held only for the call below: ``main`` is called
     # more than once in one process by the tests, and an aim left set would
     # grade the next call's item against the last call's checkout
     global _GIT_CWD
     _GIT_CWD = None
     arguments = list(sys.argv[1:] if argv is None else argv)
-    handlers = {"start": _cmd_start, "check": _cmd_check}
+    handlers = {
+        "establish": _cmd_establish, "prepare": _cmd_prepare,
+        "retire": _cmd_retire, "start": _cmd_start, "check": _cmd_check,
+    }
     command = arguments[0] if arguments else None
     if command in HELP_FLAGS:
         print(_help_text())
@@ -489,8 +467,14 @@ def main(argv=None) -> int:
     if any(argument in HELP_FLAGS for argument in arguments[1:]):
         print(_help_text(command))
         return EXIT_OK
+    # Serialization inside the guard, not after it: a payload carrying a value
+    # ``json.dumps`` will not encode used to raise past every handler here and
+    # print nothing at all, and a caller that parses this stdout read the
+    # silence as a workspace it never got. One document leaves this function
+    # on every path.
     try:
         payload, code = handler(arguments[1:])
+        document = json.dumps(payload, ensure_ascii=False)
     except Refused as refusal:
         reported = {"error": str(refusal), "code": refusal.code,
                     "verdict": VERDICTS.get(refusal.code, "error")}
@@ -502,8 +486,8 @@ def main(argv=None) -> int:
         print(json.dumps({"error": str(error), "code": EXIT_ERROR}, ensure_ascii=False))
         print(f"workspace: {error}", file=sys.stderr)
         return EXIT_ERROR
-    print(json.dumps(payload, ensure_ascii=False))
+    print(document)
     return code
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(console.run(main))

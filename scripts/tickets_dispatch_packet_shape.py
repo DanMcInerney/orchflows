@@ -6,7 +6,6 @@ if __package__:
     from .tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
-    from .tickets_registry import REVIEW_KINDS
     from .tickets_shapes import (
         DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_REQUIRED,
         DISPATCH_PACKET_VALUES, DISPATCH_PACKET_REFERENCE_FIELDS,
@@ -16,7 +15,6 @@ else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _identity_failure,
     )
-    from tickets_registry import REVIEW_KINDS
     from tickets_shapes import (
         DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_REQUIRED,
         DISPATCH_PACKET_VALUES, DISPATCH_PACKET_REFERENCE_FIELDS,
@@ -24,6 +22,11 @@ else:
     )
 
 PACKET_FORMS = frozenset(DISPATCH_PACKET_VALUES["form"])
+PACKET_DURABILITIES = frozenset(DISPATCH_PACKET_VALUES["durability"])
+# The generated shape spells an absent optional as the string "null";
+# a packet carries JSON null there, so the sentinel comes off here and
+# the nullability is graded by the `is not None` test at the call site.
+PACKET_REVIEW_KINDS = frozenset(DISPATCH_PACKET_VALUES["review_kind"]) - {"null"}
 
 
 def packet_shape(value):
@@ -47,14 +50,14 @@ def packet_shape(value):
     )
     if any(not isinstance(value.get(key), str) or not value[key] for key in required):
         return _classification("packet-invalid", "packet identity or routing field is missing")
-    if value.get("durability") not in ("ticket", "ephemeral"):
+    if value.get("durability") not in PACKET_DURABILITIES:
         return _classification("packet-invalid", "packet durability is unknown")
     base = set(DISPATCH_PACKET_FIELDS) - {"reference", "inline"}
     expected = base | ({"reference"} if form == "reference" else {"inline"})
     if set(value) != expected:
         return _classification("packet-invalid", "packet has unknown or missing fields")
     review_kind = value.get("review_kind")
-    if review_kind is not None and review_kind not in REVIEW_KINDS:
+    if review_kind is not None and review_kind not in PACKET_REVIEW_KINDS:
         return _classification("packet-invalid", "packet review_kind is unknown")
     source = value.get("source")
     if not isinstance(source, dict) or set(source) != {"id", "run"} or any(

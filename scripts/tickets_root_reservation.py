@@ -27,7 +27,7 @@ def reserve(runs_root: Path, run: str, root_id: str, write_atomically):
     encoded = canonical_json(expected) + "\n"
     if path.is_file():
         try:
-            actual = json.loads(path.read_text(encoding="utf-8"))
+            actual = json.loads(path.read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError):
             return None, "provisional root reservation is unreadable"
         if actual != expected:
@@ -48,7 +48,7 @@ def mismatch(runs_root: Path, run: str, root_id: str) -> str | None:
     if not path.is_file():
         return None
     try:
-        record = json.loads(path.read_text(encoding="utf-8"))
+        record = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError):
         return "stamp-generation refused: provisional root reservation is unreadable"
     expected = {"protocol": PROTOCOL, "root_id": root_id, "run": run}

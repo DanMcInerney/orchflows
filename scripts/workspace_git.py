@@ -3,16 +3,44 @@
 from __future__ import annotations
 
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 
+# The owning modules, never the ``tickets`` facade: a helper that imports a
+# facade is what a facade exists to spare its callers, and the one here read
+# through seams the facade re-points at these same modules anyway.
 try:
-    from . import state_root, tickets
+    from . import state_root, tickets_format, tickets_store
 except ImportError:
     import state_root
-    import tickets
+    import tickets_format
+    import tickets_store
 
 
+# One verdict per exit code, spelled where the refusals that carry them are
+# raised. ``workspace.py`` re-exports every name and holds the table its
+# ``--help`` prints; a caller reads these numbers as the answer, so they may
+# not be spelled a second time anywhere in the family.
+EXIT_OK = 0
 EXIT_ERROR = 1
+EXIT_ISOLATION_MISSING = 2
+EXIT_WRONG_BRANCH_POINT = 3
+EXIT_SCOPE_BREACH = 4
+EXIT_NO_RECORD = 5
+EXIT_WRONG_VANTAGE = 6
+EXIT_SHARED_WORKSPACE = 7
+# ``start``'s one coordination flag, spelled once here because the caller that
+# passes it is another process: the dispatch facade already holds this run's
+# lock and runs ``workspace.py`` as its child.
+LOCK_HELD = "--lock-held"
+# The frontmatter keys this family reads and writes, spelled where they are
+# written. ``workspace.py`` re-exports them and holds them against
+# ``contracts/work-item.md``'s own bytes; ``_stamped`` below writes through
+# them, so the name a stamp lands under and the name a grade reads are one.
+ISOLATION_KEY = "isolation"
+BRANCH_KEY = "workspace_branch"
+BASELINE_KEY = "workspace_baseline"
+PATH_KEY = "workspace_path"
 # What ``start`` records for a workspace that is on no branch. ``rev-parse
 # --abbrev-ref HEAD`` answers the literal word ``HEAD`` there, which names no
 # ref at the join: the item graded isolation-missing however clean its work
@@ -80,8 +108,17 @@ def actual_top_level(cwd=None, git=None):
     return Path(value).resolve()
 
 
-def _dirty_paths(cwd, git=_git) -> list:
-    """Every path ``git status`` reports, both ends of a rename included."""
+def dirty_paths(cwd, git=_git) -> list:
+    """Every path ``git status`` reports, both ends of a rename included.
+
+    Public, and the family's one reader of `--porcelain -z`: a rename or a
+    copy spends two NUL-separated fields where every other status spends
+    one, so a walk that steps by one field reads the new name of a rename
+    as a status line and loses the old one. `scripts/isolate.py` had its own
+    copy of the walk; it now calls this with its own git and its own
+    refusal, because those are what differ between the two callers and the
+    walk is not.
+    """
 
     code, out, err = git(cwd, "status", "--porcelain", "-z")
     if code != 0:
@@ -100,6 +137,36 @@ def _dirty_paths(cwd, git=_git) -> list:
                 found.append(fields[index])
                 index += 1
     return found
+
+
+def actual_mutations(name_status: str) -> list:
+    """Normalize ``git diff --name-status --no-renames -z`` rows.
+
+    Here rather than beside its one caller for the reason ``dirty_paths`` is
+    here: reading git's own output is this module's work, and these two walks
+    share one hazard -- a NUL-separated stream whose fields do not map one to
+    one onto rows, so a walk that steps by one field reads the next row's
+    path as this row's status.
+    """
+    tokens = name_status.split("\0")
+    rows = []
+    index = 0
+    operations = {"A": "create", "D": "delete", "M": "change", "T": "change"}
+    while index < len(tokens) and tokens[index]:
+        status = tokens[index]
+        if "\t" in status:
+            status, path = status.split("\t", 1)
+            index += 1
+        elif index + 1 < len(tokens):
+            path = tokens[index + 1]
+            index += 2
+        else:
+            raise Refused("git name-status output ended before its path")
+        operation = operations.get(status[:1])
+        if operation is None:
+            raise Refused(f"git name-status returned unsupported status {status!r}")
+        rows.append((operation, path))
+    return sorted(set(rows))
 
 
 def _current_branch(git_out) -> str:
@@ -121,16 +188,6 @@ def _head_and_branch(git_out):
     """This workspace's branch and the revision it derives from."""
 
     return _current_branch(git_out), git_out("rev-parse", "HEAD")
-
-
-def _checkouts(git_out) -> list:
-    """Every directory this repository is checked out in."""
-
-    return [
-        Path(entry["worktree"]).resolve()
-        for entry in _worktrees(git_out)
-        if entry.get("worktree")
-    ]
 
 
 def _worktrees(git_out) -> list:
@@ -207,6 +264,17 @@ def _baseline(head: str, dirty) -> str:
     return f"{head} clean" if not dirty else f"{head} dirty: {', '.join(dirty)}"
 
 
+def revision_of(baseline) -> str:
+    """The revision a ``workspace_baseline`` stamp names, dirty tail dropped.
+
+    The reader of what ``_baseline`` writes, beside its writer: a stamp is
+    a revision and then what was uncommitted at the time, and every caller
+    that wants to cut from it wants only the first word.
+    """
+
+    return str(baseline or "").strip().split(" ")[0]
+
+
 def _graded(payload, what: str) -> dict:
     """Grade a ``tickets.py`` result by its payload, never by exit status."""
 
@@ -236,8 +304,34 @@ def _record(
     branch,
     baseline,
     workspace_path: str,
+    *,
+    run=None,
+    lock_held: bool = False,
 ) -> dict:
-    """Write both stamps against the snapshot the caller read."""
+    """Write both stamps under the run lock, against the text read there.
+
+    The compare and the write are one invariant, so they are one critical
+    section: without the lock the ticket could be read here, moved by a
+    concurrent ``set-status``, and stamped from the read that preceded the
+    move -- the very race the compare below exists to report.
+
+    ``run`` names the lock; ``None`` is a caller with no run to lock (the
+    byte-domain fixtures stamp a bare file). ``lock_held`` is the dispatch
+    facade's: it holds the run lock across the whole composition and runs
+    this script as a child, and a child taking the same lock would wait on
+    its own parent for as long as the parent waits on it.
+    """
+
+    lock = nullcontext() if lock_held or run is None else tickets_store._run_lock(run)
+    try:
+        with lock:
+            return _stamped(ticket_path, prior_text, branch, baseline, workspace_path)
+    except OSError as error:
+        return {"error": f"unable to lock run '{run}': {error}"}
+
+
+def _stamped(ticket_path, prior_text: str, branch, baseline, workspace_path: str) -> dict:
+    """Read, compare, and stamp: every byte written derives from this read."""
 
     try:
         current_text = ticket_path.read_text(encoding="utf-8")
@@ -246,16 +340,16 @@ def _record(
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the frontmatter write race, retry"}
     try:
-        updated = prior_text
-        recorded = {"workspace_path": workspace_path}
+        updated = current_text
+        recorded = {PATH_KEY: workspace_path}
         if branch is not None:
-            updated = tickets._set_frontmatter_field(updated, "workspace_branch", branch)
-            recorded["workspace_branch"] = branch
+            updated = tickets_format._set_frontmatter_field(updated, BRANCH_KEY, branch)
+            recorded[BRANCH_KEY] = branch
         if baseline is not None:
-            updated = tickets._set_frontmatter_field(updated, "workspace_baseline", baseline)
-            recorded["workspace_baseline"] = baseline
-        updated = tickets._set_frontmatter_field(
-            updated, "workspace_path", workspace_path
+            updated = tickets_format._set_frontmatter_field(updated, BASELINE_KEY, baseline)
+            recorded[BASELINE_KEY] = baseline
+        updated = tickets_format._set_frontmatter_field(
+            updated, PATH_KEY, workspace_path
         )
         # The sink's own writer, not ``write_text``: it pins ``newline='\n'``
         # so a two-scalar stamp stays a two-line diff instead of translating
@@ -263,7 +357,7 @@ def _record(
         # crash mid-write cannot truncate the ticket. ``Path.write_text``
         # grew a ``newline`` argument only in 3.10, below this tree's 3.9
         # floor, so pinning it there would refuse on the floor interpreter.
-        tickets._write_text_atomically(ticket_path, updated)
+        tickets_store._write_text_atomically(ticket_path, updated)
     except (OSError, ValueError) as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
@@ -355,10 +449,10 @@ def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
         # builds this one from the run and id it was given
         if path == ticket_path:
             continue
-        data = tickets._load_ticket(path)
+        data = tickets_store._load_ticket(path)
         if "error" in data or data.get("status") != "claimed":
             continue
-        recorded = str(data.get("workspace_branch") or "").strip()
+        recorded = str(data.get(BRANCH_KEY) or "").strip()
         if _records_this_tree(git_out, is_ancestor, recorded, branch):
             found.append(str(data.get("id") or path.stem))
     return sorted(found)

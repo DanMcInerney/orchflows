@@ -16,3 +16,4 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | synthesize |
 | lens | [references/craft.md#lens](references/craft.md#lens) |
 | evidence | [references/evidence.md](references/evidence.md) |
+| outline | [references/outline.md](references/outline.md) |

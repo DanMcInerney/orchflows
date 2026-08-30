@@ -5,7 +5,7 @@ The author-facing semantic payload is Goal, Context, and optional Suggested
 files. Every command emits one JSON document; a payload carrying ``error``
 exits 1 and every other payload exits 0. ``--help`` owns the live command list.
 
-The run identity at ``<sink>/runs/<run>/`` records exactly `run`,
+The run identity at ``<sink>/runs/<run>/run.json`` records exactly `run`,
 `sink_convention`, `opened_at`, `orchflows`, `orchflows.receipt_version`,
 `orchflows.source_commit`, `terminal_at`, `terminal_ticket_id`,
 `terminal_status`, `elapsed_ms`, `project`, `project.root`, `project.origin`,
@@ -27,6 +27,7 @@ if __package__:
     from . import tickets_bound as _tickets_bound_module
     from . import tickets_format as _tickets_format_module
     from . import tickets_store as _tickets_store_module
+    from . import tickets_store_writes as _tickets_store_writes_module
     from . import tickets_issue as _tickets_issue_module
     from . import tickets_lifecycle as _tickets_lifecycle_module
     from . import tickets_packet as _tickets_packet_module
@@ -41,6 +42,9 @@ if __package__:
     from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
     from . import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     from . import tickets_join as _tickets_join_module
+    from . import tickets_outcome as _tickets_outcome_module
+    from . import tickets_land as _tickets_land_module
+    from . import tickets_instantiate as _tickets_instantiate_module
     from . import tickets_registry as _tickets_registry_module
     from . import tickets_grade as _tickets_grade_module
 else:
@@ -50,6 +54,7 @@ else:
     _tickets_bound_module = __import__('tickets_bound')
     import tickets_format as _tickets_format_module
     import tickets_store as _tickets_store_module
+    import tickets_store_writes as _tickets_store_writes_module
     import tickets_issue as _tickets_issue_module
     import tickets_lifecycle as _tickets_lifecycle_module
     import tickets_packet as _tickets_packet_module
@@ -64,6 +69,9 @@ else:
     import tickets_dispatch_packet as _tickets_dispatch_packet_module
     import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     import tickets_join as _tickets_join_module
+    import tickets_outcome as _tickets_outcome_module
+    import tickets_land as _tickets_land_module
+    import tickets_instantiate as _tickets_instantiate_module
     _tickets_registry_module = __import__('tickets_registry')
     _tickets_grade_module = __import__('tickets_grade')
 
@@ -127,6 +135,7 @@ _sections = _tickets_format_module._sections
 _set_frontmatter_field = _tickets_format_module._set_frontmatter_field
 _split_commas = _tickets_format_module._split_commas
 _unquote = _tickets_format_module._unquote
+dequote = _tickets_format_module.dequote
 _write_section = _tickets_format_module._write_section
 instruction_words = _tickets_format_module.instruction_words
 ticket_defects = _tickets_format_module.ticket_defects
@@ -189,6 +198,8 @@ _run_state_root = _tickets_store_module._run_state_root
 _runs_root = _tickets_store_module._runs_root
 _same_project = _tickets_store_module._same_project
 _segment_error = _tickets_store_module._segment_error
+REPAIR_RUN_IDENTITY_USAGE = _tickets_store_module.REPAIR_RUN_IDENTITY_USAGE
+_cmd_repair_run_identity = _tickets_store_module._cmd_repair_run_identity
 def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
     """Return the terminal identity update through its store owner."""
     return _tickets_store_module._terminal_identity_update(run, ticket_id, status, now)
@@ -213,13 +224,10 @@ _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
 CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE
 JOIN_NOOP_REPAIR_USAGE = _tickets_lifecycle_module.JOIN_NOOP_REPAIR_USAGE
-CLAIM_USAGE = _tickets_lifecycle_module.CLAIM_USAGE
 SET_STATUS_USAGE = _tickets_lifecycle_module.SET_STATUS_USAGE
 _check_under_run_lock = _tickets_lifecycle_module._check_under_run_lock
 _claim_is_stale = _tickets_packet_module._claim_is_stale
-_claim_under_run_lock = _tickets_lifecycle_module._claim_under_run_lock
 _cmd_check = _tickets_lifecycle_module._cmd_check
-_cmd_claim = _tickets_lifecycle_module._cmd_claim
 _cmd_dispatch_open = _tickets_attempts_module._cmd_dispatch_open
 _cmd_dispatch_commit = _tickets_attempts_module._cmd_dispatch_commit
 _cmd_dispatch_retire = _tickets_attempts_module._cmd_dispatch_retire
@@ -228,27 +236,24 @@ _cmd_dispatch_packet = _tickets_dispatch_packet_module._cmd_dispatch_packet
 _cmd_dispatch_receive = _tickets_dispatch_packet_module._cmd_dispatch_receive
 _cmd_dispatch_receipt = _tickets_dispatch_receipt_module._cmd_dispatch_receipt
 _cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
-_cmd_dispatch_outcome = _tickets_join_module._cmd_dispatch_outcome
+_cmd_dispatch_outcome = _tickets_outcome_module._cmd_dispatch_outcome
+LAND_USAGE = _tickets_land_module.LAND_USAGE
+_cmd_land = _tickets_land_module._cmd_land
 _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
 _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
 _cmd_show = _tickets_lifecycle_module._cmd_show
-_do_claim = _tickets_lifecycle_module._do_claim
 _is_stale = _tickets_packet_module._is_stale
 _last_motion = _tickets_packet_module._last_motion
 _join_noop_repair_under_run_lock = _tickets_lifecycle_module._join_noop_repair_under_run_lock
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
-CUT_LENS_PARTS = _tickets_packet_module.CUT_LENS_PARTS
 GATE_CRITIQUE_ID = _tickets_packet_module.GATE_CRITIQUE_ID
 GATE_EXECUTOR_SECTIONS = _tickets_packet_module.GATE_EXECUTOR_SECTIONS
 GATE_REPAIR_ID = _tickets_packet_module.GATE_REPAIR_ID
 GATE_VERIFY_ID = _tickets_packet_module.GATE_VERIFY_ID
 PACKET_SECTIONS = _tickets_packet_module.PACKET_SECTIONS
 PACKET_USAGE = _tickets_packet_module.PACKET_USAGE
-_cmd_packet = _tickets_packet_module._cmd_packet
-_cut_lens_path = _tickets_packet_module._cut_lens_path
-_cut_subtree = _tickets_packet_module._cut_subtree
 _packet_under_run_lock = _tickets_packet_module._packet_under_run_lock
 COVERAGE_RECORD_NAME = _tickets_result_module.COVERAGE_RECORD_NAME
 IMPROVEMENT_USAGE = _tickets_result_module.IMPROVEMENT_USAGE
@@ -312,41 +317,44 @@ _listed_items = _tickets_dispatch_module._listed_items
 _pack_domain = _tickets_dispatch_module._pack_domain
 _template_stubs = _tickets_dispatch_module._template_stubs
 main = _tickets_dispatch_module.main
+console = _tickets_dispatch_module.console
 state_root = _tickets_store_module.state_root
 datetime = _tickets_store_module.datetime
 timezone = _tickets_store_module.timezone
-time = _tickets_store_module.time
-msvcrt = _tickets_store_module.msvcrt
-fcntl = _tickets_store_module.fcntl
+time = _tickets_store_writes_module.time
+msvcrt = _tickets_store_writes_module.msvcrt
+fcntl = _tickets_store_writes_module.fcntl
 json = _tickets_store_module.json
 re = _tickets_format_module.re
 sys = _tickets_dispatch_module.sys
-tempfile = _tickets_store_module.tempfile
+tempfile = _tickets_store_writes_module.tempfile
 contextmanager = _tickets_store_module.contextmanager
 Path = _tickets_store_module.Path
 
 def _sync_seams():
-    _tickets_store_module.REPLACE_BUDGET_SECONDS = REPLACE_BUDGET_SECONDS
-    _tickets_store_module.REPLACE_RETRY_SECONDS = REPLACE_RETRY_SECONDS
+    _tickets_store_writes_module.REPLACE_BUDGET_SECONDS = REPLACE_BUDGET_SECONDS
+    _tickets_store_writes_module.REPLACE_RETRY_SECONDS = REPLACE_RETRY_SECONDS
     _tickets_store_module._cwd = _cwd
     _tickets_store_module.datetime = datetime
     _tickets_lifecycle_module.datetime = datetime
     _tickets_issue_module.datetime = datetime
     _tickets_result_module.datetime = datetime
     _tickets_dispatch_module.datetime = datetime
-    _tickets_store_module.msvcrt = msvcrt
+    _tickets_instantiate_module.datetime = datetime
+    _tickets_store_writes_module.msvcrt = msvcrt
     _tickets_result_module.msvcrt = msvcrt
     _tickets_store_module._write_identity = _write_identity
     _tickets_issue_module._write_identity = _write_identity
     _tickets_lifecycle_module._write_identity = _write_identity
     _tickets_result_module._write_identity = _write_identity
     _tickets_dispatch_module._write_identity = _write_identity
+    _tickets_instantiate_module._write_identity = _write_identity
+    _tickets_instantiate_module._write_text_atomically = _write_text_atomically
     _tickets_store_module._write_text_atomically = _write_text_atomically
     _tickets_lifecycle_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._append_one_line = _append_one_line
     _tickets_dispatch_module._cmd_new = _cmd_new
-    _tickets_dispatch_module._cmd_claim = _cmd_claim
     _tickets_dispatch_module._cmd_dispatch_open = _cmd_dispatch_open
     _tickets_dispatch_module._cmd_dispatch = _cmd_dispatch
     _tickets_dispatch_module._cmd_dispatch_commit = _cmd_dispatch_commit
@@ -357,6 +365,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_receipt = _cmd_dispatch_receipt
     _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
     _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
+    _tickets_dispatch_module._cmd_land = _cmd_land
     _tickets_dispatch_facade_module._cmd_ready = _cmd_ready
     _tickets_dispatch_facade_module._cmd_dispatch_open = _cmd_dispatch_open
     _tickets_dispatch_facade_module._cmd_dispatch_packet = _cmd_dispatch_packet
@@ -367,7 +376,6 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
     _tickets_dispatch_module._cmd_join_noop_repair = _cmd_join_noop_repair
-    _tickets_dispatch_module._cmd_packet = _cmd_packet
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
@@ -375,5 +383,9 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_bound_check = _cmd_bound_check
     _tickets_lint_module._write_text_atomically = _write_text_atomically
 
+# Handed down, never fetched back up: the dispatcher calls this once per
+# invocation and no helper imports this facade to reach it.
+_tickets_dispatch_module._sync_seams = _sync_seams
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(console.run(main))

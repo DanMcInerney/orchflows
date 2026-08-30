@@ -1,10 +1,11 @@
 ---
-name: orch-spec
+name: orch-outline
 description: Freeze and seal a semantic root when evidence, user decisions, kind boundaries, or successor planning are unresolved.
 role: planner
 ---
 
-Require: the request as Goal and workspace facts as Context.
+Require: the request as Goal, workspace facts as Context, and the stamped
+pack's intake taste from `packs.py cells <digest> --for outline`.
 
 Use research craft for one bounded question in Context's source policy. Ask
 unresolved user decisions singly; record verbatim.
@@ -33,13 +34,12 @@ Lifecycle:
 One kind gets stamped root. For multiple, open; persist remainder
 through `tickets.py run-state <first-run> --artifact
 successors.md`; entries name kind, pack, run/root ids, and `planned` state.
-This skill solely writes and materializes `successors.md`.
 
 A drained `orch-frontier` trigger grants no authority. Caller opens a
 materialization run: ordinal-1 root, planner ticket bound
-to this exact skill. Seal it; invoke `tickets.py dispatch` for the root; the
-facade handles readiness, workspace, opening, and projection. Send its packet
-to the matching child. It runs `tickets.py dispatch-receive`.
+to this exact skill. Seal it; invoke `tickets.py dispatch` for the root and
+launch the child from the `launch` object it returns; the child runs
+`tickets.py dispatch-receive`.
 Receiver identity, authority, and committed bytes must agree before its durable
 accepted receipt permits successor materialization. Never send a follow-up
 after the prior planner outcome closed.
@@ -51,7 +51,7 @@ ordinal `1`; make `## Context` cite it; preserve predecessor bytes. Never
 create a second root in the same run.
 
 Draft per [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration)
-using vocabulary and pack craft. Route per [topology](../../../rules/topology.md)
+in the resolved lane's terms. Route per [topology](../../../rules/topology.md)
 §2: bind one executor plus `orch-integrate` directly rather than
 `orch-decompose`. Use it only for a [topology](../../../rules/topology.md) §5
 graph, through `tickets.py new
@@ -64,8 +64,7 @@ run-state --artifact successors.md --replace`, moving `planned` to `opened` and
 keeping the next entry `planned`; unmaterialized entries remain durable.
 
 After the fresh planner outcome crosses `orch-integrate`, the outer coordinator
-dispatches that sealed root by the chosen route and starts `orch-frontier`;
-the planner never starts it.
+dispatches that sealed root by the chosen route and starts `orch-frontier`.
 
 Never: stamp incompatible packs; prescribe implementation or tests in Goal;
 restate owners or exemplar rationale.

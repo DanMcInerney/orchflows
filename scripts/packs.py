@@ -23,8 +23,10 @@ from pathlib import Path
 from typing import Dict, Optional, Sequence
 
 if __package__:
+    from . import console
     from . import packs_support as _support
 else:  # pragma: no cover - direct/installed script path
+    import console
     import packs_support as _support
 
 
@@ -33,6 +35,8 @@ RESOLVER_VERSION = _support.RESOLVER_VERSION
 PACK_CELLS = _support.PACK_CELLS
 EXECUTE_CELLS = _support.EXECUTE_CELLS
 CHECK_CELLS = _support.CHECK_CELLS
+OUTLINE_CELLS = _support.OUTLINE_CELLS
+CONSUMER_CELLS = _support.CONSUMER_CELLS
 TYPED_CELLS = _support.TYPED_CELLS
 PackError = _support.PackError
 ADAPTER_REGISTRY = _support.ADAPTER_REGISTRY
@@ -97,7 +101,9 @@ def _parser() -> argparse.ArgumentParser:
         allow_abbrev=False,
     )
     cells.add_argument("digest")
-    cells.add_argument("--for", dest="consumer", required=True, choices=("execute", "check"))
+    cells.add_argument(
+        "--for", dest="consumer", required=True, choices=tuple(sorted(CONSUMER_CELLS))
+    )
     for subparser in (resolve, cells):
         subparser.add_argument("--canonical-root", dest="canonical_root")
         subparser.add_argument("--project-root", dest="project_root")
@@ -106,6 +112,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    console.harden()
     parser = _parser()
     try:
         args = parser.parse_args(argv)
@@ -129,4 +136,4 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(console.run(main))
