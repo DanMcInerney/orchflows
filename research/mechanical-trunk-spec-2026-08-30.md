@@ -642,6 +642,21 @@ Docs wave follows `research/docs-spec-2026-08-30.md`.
   `workspace.py`, `tickets_dispatch_facade.py` join U8's write scope
   for this item only.
 
+- **A9 (→ U5 scope):** `tools/validate.py`'s `DOC_PATH_EXEMPT_SITES` is
+  keyed by LINE NUMBER — any insertion above an exempt site in a
+  contract silently breaks the exemption (bit U9). Re-key by
+  path + content substring.
+- **A10 (successor, NOT this branch):** the reader frontend still names
+  `orch-spec` (`reader/web/src` fixture id + two capture routes in
+  `reader/docs/view-manifest.json`); fixing it requires a `pnpm`
+  rebuild of the committed dist, impossible offline here. Also
+  `tools/live_routing_bench_support/grading.py` keeps route-class label
+  `spec` because `benchmarks/routing/cases.json` (frozen, with recorded
+  results) owns that vocabulary — rename with the benchmark or accept.
+- **A11 (→ U7 scope):** `reader/tests/test_ui_cases/workflows_catalog.py`
+  is red at HEAD — it still asserts the deleted `fix` composition.
+  U7's fix-row removal extends to this test file.
+
 ## Out of scope (explicit)
 
 - The errand lane (dead by design; user decision pending).

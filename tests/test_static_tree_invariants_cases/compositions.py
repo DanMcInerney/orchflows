@@ -30,7 +30,7 @@ class TestCompositionTemplates(unittest.TestCase):
         "benchmaker": (
             {
                 "00-acquire": "orch-frontier",
-                "01-design": "orch-spec",
+                "01-design": "orch-outline",
                 "02-materialize": "orch-execute",
                 "03-qualify": "orch-check",
                 "04-audit": "orch-check",
@@ -44,7 +44,7 @@ class TestCompositionTemplates(unittest.TestCase):
         ),
         "evolve": (
             {
-                "00-eval": "orch-spec",
+                "00-eval": "orch-outline",
                 "01-eligibility": "orch-check",
                 "02-campaign": "orch-loop",
                 "03-result": "orch-check",

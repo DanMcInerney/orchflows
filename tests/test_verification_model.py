@@ -98,11 +98,11 @@ class GoalEvidenceContractTest(unittest.TestCase):
                 body = read(f"packs/orch-{pack}-pack/references/evidence.md")
                 self.assertTrue(all(anchor in body for anchor in anchors))
                 self.assertNotIn("code tests are required", body.lower())
-        spec = read("skills/workflows/orch-spec/SKILL.md")
+        spec = read("skills/workflows/orch-outline/SKILL.md")
         self.assertIn("consistency observations", spec)
 
     def test_spec_distills_evidence_into_one_executable_semantic_root(self):
-        spec = read("skills/workflows/orch-spec/SKILL.md")
+        spec = read("skills/workflows/orch-outline/SKILL.md")
         match = re.search(r"(?s)Semantic root policy:\n\n(.*?)\n\nLifecycle:", spec)
         self.assertIsNotNone(match)
         fields = {}
@@ -140,7 +140,7 @@ class GoalEvidenceContractTest(unittest.TestCase):
 
 class SpecSuccessorLifecycleTest(unittest.TestCase):
     def test_topology_references_resolve_to_current_numbered_clauses(self):
-        spec = read("skills/workflows/orch-spec/SKILL.md")
+        spec = read("skills/workflows/orch-outline/SKILL.md")
         topology = read("rules/topology.md")
         clauses = set(re.findall(r"(?m)^(\d+)\.", topology))
         references = re.findall(
@@ -149,15 +149,15 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
             spec,
             flags=re.IGNORECASE,
         )
-        self.assertTrue(references, "orch-spec must cite the topology owner")
+        self.assertTrue(references, "orch-outline must cite the topology owner")
         self.assertEqual(
             [],
             [reference for reference in references if reference not in clauses],
-            "orch-spec cites a topology clause that does not exist",
+            "orch-outline cites a topology clause that does not exist",
         )
 
     def test_successor_trigger_has_a_fresh_authorized_materialization_path(self):
-        spec = " ".join(read("skills/workflows/orch-spec/SKILL.md").split())
+        spec = " ".join(read("skills/workflows/orch-outline/SKILL.md").split())
         required = (
             "materialization run",
             "planner ticket bound to this exact skill",

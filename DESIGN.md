@@ -156,7 +156,7 @@ Why this shape:
 
 - **A cell, not a loose reference.** Generic skills reference domain
   facts only through the stamped pack's cells
-  ([rules/composition.md](rules/composition.md) §9). `orch-spec` is
+  ([rules/composition.md](rules/composition.md) §9). `orch-outline` is
   generic and needs the nouns; reaching them any other way is a
   signature leak.
 - **One file, not vocabulary and design separately.** A good craft
@@ -320,7 +320,7 @@ forever while a parser can decay gracefully — `schema_confidence` and
   composition contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
-  admitted because `orch-spec`'s noun source had no owner — not
+  admitted because `orch-outline`'s noun source had no owner — not
   because more reference material seemed nice. The next cell must
   clear the same bar.
 - **A generated Claude Code plugin.** Audited 2026-07-16 against a

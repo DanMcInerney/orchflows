@@ -181,7 +181,7 @@ class TheClauseStillSaysWhatItWasWrittenToSay(unittest.TestCase):
 class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     """The clause renders on role-bearing surfaces and lives nowhere else."""
 
-    PLANNER = "skills/workflows/orch-spec/SKILL.md"
+    PLANNER = "skills/workflows/orch-outline/SKILL.md"
     WORKER = "skills/kernel/orch-execute/SKILL.md"
     GLUE = "skills/engines/orch-frontier/SKILL.md"
 
@@ -285,7 +285,7 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
     to close.
     """
 
-    SPEC = "skills/workflows/orch-spec/SKILL.md"
+    SPEC = "skills/workflows/orch-outline/SKILL.md"
 
     def spec_body(self) -> str:
         return flat(body(ROOT / self.SPEC))
@@ -307,7 +307,7 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(
                     token, text,
-                    f"orch-spec's direct lane omits {token!r}, which names "
+                    f"orch-outline's direct lane omits {token!r}, which names "
                     f"{why}; without it the lane is an intention rather than "
                     "something a reader can run",
                 )

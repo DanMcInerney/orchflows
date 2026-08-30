@@ -115,8 +115,8 @@ skills and compositions are ordinary repository work under
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
-package and template, `four` mints only `orch-spec`, `orch-frontier`,
-and `fix` and leaves every other name to resolve at
+package and template, `four` mints only `orch-outline` and
+`orch-frontier` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
 [profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
@@ -169,7 +169,7 @@ the same loop to the library's own skills.
 `orch-execute` renders a supplied subject as a verified visual page when
 the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
-[`orch-spec`](skills/workflows/orch-spec/SKILL.md),
+[`orch-outline`](skills/workflows/orch-outline/SKILL.md),
 [`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
 [`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
 [verification](rules/verification.md) owns acceptance. This view shows
@@ -178,7 +178,7 @@ their details:
 
 ```mermaid
 flowchart TD
-    spec["orch-spec — freeze one root ticket"] --> pack{"stamp a domain pack"}
+    outline["orch-outline — freeze one root ticket"] --> pack{"stamp a domain pack"}
     pack --> dec["orch-decompose — cut ordered units"]
     dec --> frontier["orch-frontier — dispatch ready units"]
     frontier --> exec["unit executor"]

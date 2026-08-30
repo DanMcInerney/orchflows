@@ -163,7 +163,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                 "benchmaker", "browser-game", "drift-canary", "evolve", "fix", "renovate",
                 "self-improve", "skill-tournament",
                 "orch-check", "orch-decompose", "orch-execute", "orch-frontier",
-                "orch-integrate", "orch-loop", "orch-spec",
+                "orch-integrate", "orch-loop", "orch-outline",
             ],
             [workflow["id"] for workflow in projected],
         )
@@ -178,8 +178,8 @@ class WorkflowCatalogTests(unittest.TestCase):
             "Take a failure to a proven, regression-guarded repair. Use for any bug or defect with an unknown or unverified cause.",
             by_id["fix"]["description"],
         )
-        self.assertEqual("workflow-skill", by_id["orch-spec"]["type"])
-        self.assertEqual("callable", by_id["orch-spec"]["entry"])
+        self.assertEqual("workflow-skill", by_id["orch-outline"]["type"])
+        self.assertEqual("callable", by_id["orch-outline"]["entry"])
 
     def test_validated_summary_is_joined_by_canonical_id(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)

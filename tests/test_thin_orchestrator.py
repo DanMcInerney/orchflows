@@ -39,13 +39,13 @@ def _frontmatter(path: str) -> dict[str, str]:
 
 
 def _skill_path(name: str) -> str:
-    tier = "workflows" if name == "orch-spec" else "kernel"
+    tier = "workflows" if name == "orch-outline" else "kernel"
     return f"skills/{tier}/{name}/SKILL.md"
 
 
 class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
-        "orch-spec": "planner",
+        "orch-outline": "planner",
         "orch-check": "planner",
         "orch-decompose": "planner",
         "orch-execute": "worker",
@@ -92,7 +92,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**answer**",
             "**single**",
             "**graph**",
-            "**spec**",
+            "**outline**",
             "`orch-planner`",
             "`tickets.py dispatch <run>",
             "outer coordinator joins",
@@ -107,7 +107,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("relevant Context", decompose)
         self.assertNotIn("**errand**", collapsed_host)
-        self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
+        self.assertNotIn("sequence: [orch-outline, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
     def test_graph_lane_emits_the_complete_decompose_packet(self):
@@ -116,7 +116,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+        graph = host.partition("**graph**")[2].partition("**outline**")[0]
 
         for anchor in (
             "stamped root",
@@ -143,7 +143,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+        graph = host.partition("**graph**")[2].partition("**outline**")[0]
         frontier = re.sub(
             r"\s+",
             " ",
@@ -202,13 +202,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         ):
             self.assertIn(anchor, role_agent)
 
-    def test_spec_route_consumes_the_root_shape_it_sealed(self):
+    def test_outline_route_consumes_the_root_shape_it_sealed(self):
         host = re.sub(
             r"\s+",
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        spec_route = host.split("**spec**", 1)[1].split("**fix**", 1)[0]
+        spec_route = host.split("**outline**", 1)[1].split("**fix**", 1)[0]
 
         for anchor in (
             "direct root",
@@ -251,7 +251,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-spec", "orch-check", "orch-execute"}:
+        for name in {"orch-outline", "orch-check", "orch-execute"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]

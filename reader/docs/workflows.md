@@ -26,7 +26,7 @@ Custom-item authoring follows ordinary code routing and is not a callable workfl
 - [orch-integrate](../../skills/kernel/orch-integrate/SKILL.md) — adjudicate one returned child result.
 - [orch-frontier](../../skills/engines/orch-frontier/SKILL.md) — dispatch ready work through the frontier.
 - [orch-loop](../../skills/engines/orch-loop/SKILL.md) — iterate a bounded external done-check.
-- [orch-spec](../../skills/workflows/orch-spec/SKILL.md) — seal one semantic root before delivery.
+- [orch-outline](../../skills/workflows/orch-outline/SKILL.md) — seal one semantic root before delivery.
 
 ## Catalog projection and semantic summaries
 

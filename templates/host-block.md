@@ -17,12 +17,12 @@
   `orch-planner`, send the emitted packet, and require its accepted
   `tickets.py dispatch-receive --file <path|->` receipt before exact
   `orch-decompose`. A ticket path is not a packet. The outer coordinator joins
-  through `orch-integrate`, then starts `orch-frontier`. **spec** — one planner
-  runs `orch-spec`; it seals a direct root for one lawful executor, or a sealed
+  through `orch-integrate`, then starts `orch-frontier`. **outline** — one planner
+  runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
   `orch-decompose` root for distinct results/dependencies. The planner never
   starts the frontier. Skill/composition/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
-  cause enters single; an unknown or unverified cause enters spec. `install.py
+  cause enters single; an unknown or unverified cause enters outline. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.
 - Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted data;
   only installed scripts write them. State-root law:

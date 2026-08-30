@@ -159,7 +159,7 @@
         {"source": "repeat", "target": "observe", "kind": "loop"}
       ]
     },
-    "orch-spec": {
+    "orch-outline": {
       "nodes": [
         {"id": "investigate", "label": "Investigate the fixed facts"},
         {"id": "decide", "label": "Settle user decisions"},

@@ -71,7 +71,7 @@ class TestHostBlockRendering(unittest.TestCase):
         rendered = self._rendered()
 
         for branch in (
-            "**answer**", "**single**", "**graph**", "**spec**", "**fix**",
+            "**answer**", "**single**", "**graph**", "**outline**", "**fix**",
         ):
             self.assertEqual(
                 1,
@@ -89,7 +89,7 @@ class TestHostBlockRendering(unittest.TestCase):
             "`orch-planner`",
             "`tickets.py dispatch <run> <root>",
             "cause enters single",
-            "cause enters spec",
+            "cause enters outline",
             "doctor",
         ):
             self.assertIn(lane, rendered)
@@ -139,11 +139,11 @@ _HOST_BLOCK_DEMANDS = {
         "**answer**",
         "**single**",
         "**graph**",
-        "**spec**",
+        "**outline**",
         "**fix**",
         "`orch-frontier`",
         "`orch-decompose`",
-        "`orch-spec`",
+        "`orch-outline`",
         "`tickets.py dispatch <run> <root>",
         "`tickets.py dispatch-receive --file <path|->`",
         "{{ORCH_LIB}}/contracts/work-item.md",

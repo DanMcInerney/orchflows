@@ -86,6 +86,7 @@ class PackResolutionTests(unittest.TestCase):
                 "craft",
                 "evidence",
                 "lens",
+                "outline",
                 "required_spec_fields",
                 "slicing",
                 "stages",
@@ -208,6 +209,47 @@ class PackResolutionTests(unittest.TestCase):
         self.assertNotIn("evidence", execute["cells"])
         self.assertNotIn("workspace", check["cells"])
 
+    def test_the_outline_lane_projects_beside_execute_and_check(self):
+        """The intake lane is a third flat projection over the same leaves,
+        resolved exactly as the other two are -- `craft` sits in all three and
+        `required_spec_fields` in two, with no cell copied to reach a lane."""
+
+        resolved = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
+
+        outline = packs.cells_for(resolved["digest"], canonical_root=PACKS, consumer="outline")
+
+        self.assertEqual({"craft", "outline", "required_spec_fields"}, set(outline["cells"]))
+        self.assertEqual("outline", outline["for"])
+        self.assertEqual("orch-code-pack", outline["pack"])
+        self.assertEqual(resolved["digest"], outline["digest"])
+        self.assertIn("references/outline.md", outline["cells"]["outline"])
+        execute = packs.cells_for(resolved["digest"], canonical_root=PACKS, consumer="execute")
+        check = packs.cells_for(resolved["digest"], canonical_root=PACKS, consumer="check")
+        self.assertEqual(execute["cells"]["craft"], outline["cells"]["craft"])
+        self.assertEqual(check["cells"]["craft"], outline["cells"]["craft"])
+        self.assertEqual(
+            execute["cells"]["required_spec_fields"],
+            outline["cells"]["required_spec_fields"],
+        )
+        self.assertNotIn("lens", outline["cells"])
+        self.assertNotIn("slicing", outline["cells"])
+
+    def test_every_pack_resolves_a_distinct_outline_leaf(self):
+        """A cell earns its slot only when its content differs between packs
+        (contracts/pack-signature.md, Admission)."""
+
+        bodies = {}
+        for name in sorted(path.parent.name for path in PACKS.glob("*/SKILL.md")):
+            resolved = packs.resolve_pack(name, canonical_root=PACKS)
+            projected = packs.cells_for(
+                resolved["digest"], canonical_root=PACKS, consumer="outline"
+            )
+            target = PACKS / name / "references" / "outline.md"
+            self.assertIn(target.name, projected["cells"]["outline"])
+            bodies[name] = target.read_text(encoding="utf-8")
+        self.assertEqual(4, len(bodies))
+        self.assertEqual(len(bodies), len(set(bodies.values())))
+
     def test_cli_emits_json_for_resolve_and_cells(self):
         command = [sys.executable, str(ROOT / "scripts" / "packs.py")]
         resolved = subprocess.run(
@@ -231,6 +273,21 @@ class PackResolutionTests(unittest.TestCase):
         )
         self.assertEqual(0, projected.returncode, projected.stderr)
         self.assertEqual({"craft", "evidence", "lens"}, set(json.loads(projected.stdout)["cells"]))
+        lane = subprocess.run(
+            command + [
+                "cells", payload["digest"], "--for", "outline",
+                "--canonical-root", str(PACKS),
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, lane.returncode, lane.stderr)
+        self.assertEqual(
+            {"craft", "outline", "required_spec_fields"},
+            set(json.loads(lane.stdout)["cells"]),
+        )
 
     def test_scope_aliases_are_not_accepted_by_the_resolver_facade(self):
         command = [sys.executable, str(ROOT / "scripts" / "packs.py")]

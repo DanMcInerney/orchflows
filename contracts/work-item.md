@@ -31,8 +31,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `executor`, optional `sequence`, `profile`, and `pack` — exact dispatch and
   role binding. Callable executors are the seven registered verbs
   `orch-execute`, `orch-check`, `orch-decompose`, `orch-integrate`,
-  `orch-frontier`, `orch-loop`, and `orch-spec`; `script:<repo-relative path>`
-  is the only other executable form. Skill substitution is not allowed.
+  `orch-frontier`, `orch-loop`, and `orch-outline`; `script:<repo-relative path>`
+  is the only other executable form. Skill substitution is not allowed, and a
+  superseded name is refused naming its successor rather than aliased.
 - `depends_on` — ticket ids that must complete first.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate and workspace mechanics.
@@ -345,3 +346,9 @@ remaining a deterministic declaration-to-consumer gate.
 
 T0 supersession record sha256:2d090e77139a186a035e1ca293cc9a9ae53863f4c876ac983812ec77559e6d49:
 the generated T0 section now uses declaration-specific wording.
+
+T0 supersession record sha256:8926075889cc5c2614bb77dd16958956c028162ec8e1a31f8a63f9dbe588d63b:
+the intake verb orch-spec is renamed orch-outline in the seven-verb registry.
+The noun spec — a run's frozen statement — keeps its name, and so does the
+pack's required_spec_fields cell. A dispatch naming the old verb refuses and
+names the successor; nothing aliases it.

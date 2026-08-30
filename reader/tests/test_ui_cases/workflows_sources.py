@@ -242,12 +242,12 @@ class WorkflowSourceTests(unittest.TestCase):
 
         for source_id in requests:
             with self.subTest(source_id=source_id):
-                status, payload = sources.project_source(ROOT, "orch-spec", source_id)
+                status, payload = sources.project_source(ROOT, "orch-outline", source_id)
                 self.assertEqual((404, NOT_FOUND), (status, payload))
                 self.assertNotIn(str(ROOT), repr(payload))
                 self.assertNotIn("state", repr(payload).lower())
 
-        self.assertEqual((), sources.source_inventory(ROOT, "../../orch-spec"))
+        self.assertEqual((), sources.source_inventory(ROOT, "../../orch-outline"))
         self.assertEqual((), sources.source_inventory(ROOT, "missing-workflow"))
 
     def test_escaped_symlink_is_not_opened_and_is_indistinguishable_from_missing(self):

@@ -71,8 +71,8 @@ class BrowserGameCompositionTests(unittest.TestCase):
         self.assertEqual(
             {
                 "00-record": "orch-execute",
-                "01-evidence": "orch-spec",
-                "02-checkpoint": "orch-spec",
+                "01-evidence": "orch-outline",
+                "02-checkpoint": "orch-outline",
             },
             {name: fields["executor"] for name, fields in stubs.items()},
         )

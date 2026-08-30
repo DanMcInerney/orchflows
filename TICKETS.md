@@ -86,7 +86,7 @@ installation. The normative shapes and precedence live in
 
 A delivery run holds one **root ticket** for the whole request. A direct
 root binds its complete work to one executor. A genuinely decomposed root is
-frozen by `orch-spec`, cut by `orch-decompose`, and joined by pre-issued
+frozen by `orch-outline`, cut by `orch-decompose`, and joined by pre-issued
 **gate stubs** for the end-of-run review:
 
     <state sink>/tickets/<run>/

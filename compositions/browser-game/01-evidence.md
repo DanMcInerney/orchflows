@@ -1,6 +1,6 @@
 ---
 id: 01-evidence
-executor: orch-spec
+executor: orch-outline
 pack: orch-research-pack
 depends_on: [00-record]
 bound: <= 120 tool calls

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1734,
+  "count": 1742,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -73,6 +73,11 @@
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_repository_validator_runs_the_browser_game_audit",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_test_or_help_identity_disagreement_is_rejected",
    "test_browser_game_traceability.BrowserGameTraceabilityTests.test_unlisted_implementation_marker_is_rejected",
+   "test_catalog_completeness.CatalogCompletenessTests.test_curated_name_tuples_name_only_shipped_packages",
+   "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_name_reaches_every_host_catalog",
+   "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
+   "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
+   "test_catalog_completeness.CatalogCompletenessTests.test_the_name_reader_is_that_host_s_own_path_template",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_generation_and_gate_operators_are_reachable",
@@ -578,6 +583,7 @@
    "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_cells_projects_exact_consumer_leaves",
    "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
+   "test_packs.PackResolutionTests.test_every_pack_resolves_a_distinct_outline_leaf",
    "test_packs.PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
    "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
    "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
@@ -587,6 +593,7 @@
    "test_packs.PackResolutionTests.test_scope_aliases_are_not_accepted_by_the_resolver_facade",
    "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
+   "test_packs.PackResolutionTests.test_the_outline_lane_projects_beside_execute_and_check",
    "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
    "test_packs.PackShapeRefusalTests.test_unknown_digest_and_consumer_are_closed_refusals",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
@@ -753,6 +760,7 @@
    "test_serial_manifest.TestUnruledOwners.test_the_flag_exits_zero_once_every_scanned_owner_carries_a_ruling",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
+   "test_seven_skills.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
    "test_seven_skills.CallableRegistryTests.test_callable_registry_is_exactly_the_seven_enforced_verbs",
    "test_seven_skills.CallableRegistryTests.test_execute_and_check_require_pack_authority",
    "test_seven_skills.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
@@ -793,7 +801,7 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_packet",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_spec_route_consumes_the_root_shape_it_sealed",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
    "test_ticket_packet_gate_coverage.TicketPacketGateCoverageTest.test_every_active_discrepancy_has_a_routine_canonical_witness",
    "test_ticket_packet_gate_coverage.TicketPacketGateCoverageTest.test_obsolete_gate_fossils_are_absent",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
@@ -1737,7 +1745,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "da331e76cc4d093e0bf03334b8186525bb8636171611d84979d7fc71d3f8d2f1"
+  "sha256": "f3d548f3ccedff1ff57e952f1019c2c42bea03290269c092c26c2cbf4a4aa491"
  },
  "mutation_owners": [
   {
@@ -1820,6 +1828,32 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_catalog_completeness",
+   "owner": "<module>",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_catalog_completeness",
+   "owner": "CatalogCompletenessTests._plan",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_catalog_completeness",
+   "owner": "setUpModule",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {

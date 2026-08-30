@@ -852,7 +852,7 @@
     },
     "successorArtifact": {
       "type": "object",
-      "description": "One proposed artifact and its lawful successor-root coordinates. The kind selects the existing stamped pack; planned changes to opened only when orch-spec materializes the successor under AUTH-05.",
+      "description": "One proposed artifact and its lawful successor-root coordinates. The kind selects the existing stamped pack; planned changes to opened only when orch-outline materializes the successor under AUTH-05.",
       "x-governing-identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
       "additionalProperties": false,
       "required": [

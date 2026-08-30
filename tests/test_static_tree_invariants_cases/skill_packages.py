@@ -13,7 +13,7 @@ ROLE_TABLE = {
     "orch-integrate": "none",
     "orch-decompose": "planner",
     "orch-check": "planner",
-    "orch-spec": "planner",
+    "orch-outline": "planner",
     "orch-execute": "worker",
 }
 

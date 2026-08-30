@@ -41,8 +41,8 @@ that needs a different meaning needs a different word.
   from the envelope per `rules/composition.md`.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
-- **cell** — one field of the pack signature (slicing, executor, assembly,
-  lens, evidence, workspace, required spec fields, craft).
+- **cell** — one field of the pack signature; which cells exist, and which
+  lane each feeds, is the signature's own (below).
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow: a template (below) under
@@ -86,9 +86,11 @@ that needs a different meaning needs a different word.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
-  `contracts/work-item.md`; input to decomposition; `orch-spec` is its
+  `contracts/work-item.md`; input to decomposition; `orch-outline` is its
   only editor, at intake — every other reader, `orch-decompose`
-  included while cutting, treats it as frozen.
+  included while cutting, treats it as frozen. The noun keeps this name
+  after the intake verb was renamed; so does the pack's
+  `required_spec_fields` cell.
 - **semantic root** — the executable delivery contract owned by the caller,
   not the spec's general vision. `rules/delegation.md` owns which facts the
   caller freezes and which deterministic corrections a decomposer may make;
@@ -120,7 +122,7 @@ that needs a different meaning needs a different word.
   `<id>.gate.verify` completes. A successor root lives in a successor run
   opened after the accepted predecessor result identity resolves and cites
   that identity in its Context; the predecessor run's durable `successors.md`
-  names the planned root until `orch-spec` materializes it on the frontier's
+  names the planned root until `orch-outline` materializes it on the frontier's
   completion trigger.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
@@ -139,7 +141,7 @@ that needs a different meaning needs a different word.
   bound; the ticket files are the whole record — no worklog.
 - **routing shape** — the host projection selected before execution:
   `answer` when available evidence decides; `single` for one ordinary ticket;
-  `graph` for a frozen root that needs decomposition; `spec` when a planner
+  `graph` for a frozen root that needs decomposition; `outline` when a planner
   must first freeze that root, preserve its claim lifecycle, then decompose it.
   Small, medium and large are explanatory mappings, never ticket fields.
 - **tracker** — the state sink's `tickets/` directory; there is no external

@@ -154,7 +154,7 @@ DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-
 # Non-navigation occurrences and not-yet-materialized UI design paths. Keys
 # are exact source lines so another occurrence is still graded.
 DOC_PATH_EXEMPT_SITES = frozenset({
-    ("contracts/pack-signature.md", 77, "tests/pins.json"),
+    ("contracts/pack-signature.md", 90, "tests/pins.json"),
     ("reader/docs/modularization.md", 7, "reader/web/src/api/client.ts"),
     ("reader/docs/modularization.md", 7, "reader/web/src/api/schema.ts"),
     ("reader/docs/modularization.md", 7, "reader/web/src/app/registry.ts"),

@@ -89,6 +89,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | assembly | {assembly} |
 | lens | inline: none |
 | evidence | [references/evidence.md](references/evidence.md) |
+| outline | [references/outline.md](references/outline.md) |
 """
 
 
@@ -166,6 +167,7 @@ class _IsolatedTree(unittest.TestCase):
             "references/craft.md": "# Craft\n\nOnly %s terms.\n" % name,
             "references/slicing.md": "# Slicing\n\nCut into %s widgets.\n" % name,
             "references/evidence.md": "# Evidence\n\nOne %s method.\n" % name,
+            "references/outline.md": "# Outline\n\nFreeze one %s root.\n" % name,
         }
         defaults.update(files or {})
         for rel_path, content in defaults.items():

@@ -35,7 +35,7 @@ class TestCodexHooksPreflight(unittest.TestCase):
     def test_no_warning_when_referenced_path_exists(self):
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp)
-            target = codex_home / "skills" / "orch-spec" / "SKILL.md"
+            target = codex_home / "skills" / "orch-outline" / "SKILL.md"
             target.parent.mkdir(parents=True)
             target.write_text("present\n", encoding="utf-8")
             hooks = codex_home / "hooks.json"

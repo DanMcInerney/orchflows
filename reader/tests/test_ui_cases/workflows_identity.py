@@ -25,9 +25,9 @@ class WorkflowIdentityTests(unittest.TestCase):
 
     def test_installed_paths_are_normalized_once_and_must_stay_relative(self):
         self.assertEqual(
-            "lib/skills/workflows/orch-spec/SKILL.md",
+            "lib/skills/workflows/orch-outline/SKILL.md",
             identity.normalize_installed_path(
-                r"lib\skills\workflows\.\orch-spec\SKILL.md"
+                r"lib\skills\workflows\.\orch-outline\SKILL.md"
             ),
         )
         for path in ("", ".", "../bin/tickets.py", "lib/../bin/tickets.py", "/bin/x.py", r"C:\bin\x.py"):
