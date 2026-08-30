@@ -468,3 +468,35 @@ def state(data: dict):
                         "critique adjudication authority differs from the accepted receiver",
                     )
     return parsed, None
+
+
+def attempt_window(data: dict):
+    """Return the current attempt's immutable clock from validated state.
+
+    It reads the clock `state` has just validated, so it belongs beside that
+    reader rather than beside the operations that consume the window.
+    """
+
+    validated, failure = state(data)
+    if failure is not None or validated is None:
+        return None, failure
+    attempts = validated["attempts"]
+    if not attempts:
+        return None, classification(
+            "dispatch-record-invalid", "dispatch_v1 has no execution attempt"
+        )
+    attempt = next(
+        (item for item in reversed(attempts) if item.get("state") == "live"),
+        attempts[-1],
+    )
+    opened = _parse_iso(attempt.get("opened_at"))
+    expires = _parse_iso(attempt.get("lease_expires_at"))
+    if opened is None or expires is None:
+        return None, classification(
+            "dispatch-record-invalid", "dispatch attempt has no absolute lease window"
+        )
+    return {
+        "attempt": attempt,
+        "opened_at": opened,
+        "lease_expires_at": expires,
+    }, None

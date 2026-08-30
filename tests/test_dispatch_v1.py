@@ -104,9 +104,9 @@ class DispatchV1Test(unittest.TestCase):
 
     def replace(
         self, dispatch_id="D1", replacement="D2", lease=None, by="worker-2",
-        record_id="lifecycle:replace-1", seal=None,
+        record_id="lifecycle:replace-1", seal=None, supersede_live=False,
     ):
-        return tickets._dispatch([
+        arguments = [
             "dispatch-replace", "run", "T",
             "--dispatch-id", dispatch_id,
             "--assignment-seal", seal or self.opened_seal,
@@ -114,7 +114,10 @@ class DispatchV1Test(unittest.TestCase):
             "--replacement-dispatch-id", replacement,
             "--by", by,
             "--lease-expires-at", lease or self.lease,
-        ])
+        ]
+        if supersede_live:
+            arguments.append("--supersede-live")
+        return tickets._dispatch(arguments)
 
     def result(
         self, *, dispatch_id="D1", record_id="result-1", by="worker",
@@ -221,11 +224,11 @@ class DispatchV1Test(unittest.TestCase):
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         committed = self.commit()
 
-        replaced = self.replace()
+        replaced = self.replace(supersede_live=True)
         self.assertEqual("replaced", replaced["dispatch"]["outcome"])
         self.assertEqual("D2", replaced["dispatch"]["dispatch_id"])
         self.assertEqual("D1", replaced["dispatch"]["replaces"])
-        self.assertEqual(replaced, self.replace())
+        self.assertEqual(replaced, self.replace(supersede_live=True))
 
         self.assertEqual(committed, self.commit())
         stale = self.commit(record_id="unseen")
@@ -286,6 +289,31 @@ class DispatchV1Test(unittest.TestCase):
         self.assertNotIn("error", self.retire())
         reopened = self.open(dispatch_id="D2", by="worker-2")
         self.assertEqual("opened", reopened["dispatch"]["outcome"])
+
+    def test_replacing_work_inside_its_own_lease_must_be_declared(self):
+        """A caller cannot observe a child think.  Quiet is not evidence that
+        it stopped -- the bound it was opened under is the only evidence the
+        protocol has -- so superseding still-authorized work is a declaration
+        the caller makes, never one the transition infers from silence."""
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        before = self.ticket_text()
+
+        undeclared = self.replace()
+
+        self.assertEqual("supersession-undeclared", undeclared["code"])
+        self.assertIn(self.lease, undeclared["error"])
+        self.assertEqual(before, self.ticket_text())
+
+        declared = self.replace(supersede_live=True)
+
+        self.assertEqual("replaced", declared["dispatch"]["outcome"])
+        state = parse_canonical_json(
+            _parse_frontmatter(self.ticket_text())["dispatch_v1"]
+        )
+        self.assertEqual(["replaced", "live"], [item["state"] for item in state["attempts"]])
 
     def test_expired_attempt_can_cross_the_explicit_atomic_replacement(self):
         soon = (
@@ -436,7 +464,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_text())
 
         committed = self.result()
-        replaced = self.replace()
+        replaced = self.replace(supersede_live=True)
         self.assertNotIn("error", replaced)
         replaced_text = self.ticket_text()
         self.assertEqual(committed, self.result())

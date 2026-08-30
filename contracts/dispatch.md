@@ -47,7 +47,10 @@ is `idempotency-conflict`. Only then may an unseen record be classified as
 attempt is `live-attempt`. Opening, replacing, retiring, outcome import, and
 joining are atomic ticket writes. Expiry makes unseen work stale but does not
 authorize or persist a successor: the expired live attempt must cross
-`dispatch-retire` or the atomic `dispatch-replace` transition first. The
+`dispatch-retire` or the atomic `dispatch-replace` transition first. Replacing
+an attempt still inside its lease supersedes authorized work, and silence is
+not evidence that work stopped: it is `supersession-undeclared` unless the
+caller declares it with `--supersede-live`. The
 absolute lease is never extended by transport or result motion.
 
 ## Packet and receipt

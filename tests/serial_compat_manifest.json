@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1622,
+  "count": 1625,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -150,6 +150,7 @@
    "test_dispatch_v1.DispatchV1Test.test_replace_help_states_lifecycle_record_id_namespace",
    "test_dispatch_v1.DispatchV1Test.test_replacement_identity_injection_is_refused_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
+   "test_dispatch_v1.DispatchV1Test.test_replacing_work_inside_its_own_lease_must_be_declared",
    "test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_result_write_and_receipt_are_one_replayable_operation",
    "test_dispatch_v1.DispatchV1Test.test_retirement_allows_a_unique_new_attempt",
@@ -738,6 +739,7 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
@@ -1359,6 +1361,7 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
@@ -1625,7 +1628,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "27cfd944356726b86ce77cba1c3d58baaea6c53008128947f5e2fdd0803ba7ac"
+  "sha256": "6ff69d401edc12dea787bf8d3984b46fab5c7185d593dac7cba96524a2a5a40b"
  },
  "mutation_owners": [
   {

@@ -59,34 +59,8 @@ DISPATCH_REPLACE_USAGE = (
     "dispatch-replace <run> <id> --assignment-seal <seal> "
     "--dispatch-id <current-id> --record-id <lifecycle:id> "
     "--replacement-dispatch-id <new-id> --by <name> "
-    "--lease-expires-at <absolute-iso>"
+    "--lease-expires-at <absolute-iso> [--supersede-live]"
 )
-
-def attempt_window(data: dict):
-    """Return the current attempt's immutable clock from the state owner."""
-    state, failure = _state(data)
-    if failure is not None or state is None:
-        return None, failure
-    attempts = state["attempts"]
-    if not attempts:
-        return None, _classification(
-            "dispatch-record-invalid", "dispatch_v1 has no execution attempt"
-        )
-    attempt = next(
-        (item for item in reversed(attempts) if item.get("state") == "live"),
-        attempts[-1],
-    )
-    opened = _parse_iso(attempt.get("opened_at"))
-    expires = _parse_iso(attempt.get("lease_expires_at"))
-    if opened is None or expires is None:
-        return None, _classification(
-            "dispatch-record-invalid", "dispatch attempt has no absolute lease window"
-        )
-    return {
-        "attempt": attempt,
-        "opened_at": opened,
-        "lease_expires_at": expires,
-    }, None
 
 def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dict:
     return {"dispatch": {
@@ -431,6 +405,9 @@ def _cmd_dispatch_replace(rest):
     replacement_id = _extract_flag(args, "--replacement-dispatch-id")
     owner = _extract_flag(args, "--by")
     lease_text = _extract_flag(args, "--lease-expires-at")
+    supersede_live = "--supersede-live" in args
+    if supersede_live:
+        args.remove("--supersede-live")
     if len(args) != 2 or not all((
         assignment_seal, dispatch_id, record_id, replacement_id, owner, lease_text,
     )):
@@ -464,6 +441,11 @@ def _cmd_dispatch_replace(rest):
                 f"replacement dispatch_id '{replacement_id}' was already used",
             )
         now = datetime.now(timezone.utc)
+        undeclared = dispatch_guards.undeclared_supersession_failure(
+            current, now, declared=supersede_live,
+        )
+        if undeclared is not None:
+            return text, None, undeclared
         if lease <= now:
             return text, None, _classification(
                 "lease-expired", "replacement lease is not later than the replacement time"

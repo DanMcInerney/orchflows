@@ -122,9 +122,9 @@ def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -
 def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
     if data.get("dispatch_v1"):
         if __package__:
-            from .tickets_attempts import attempt_window
+            from .tickets_dispatch_schema import attempt_window
         else:
-            from tickets_attempts import attempt_window
+            from tickets_dispatch_schema import attempt_window
         window, failure = attempt_window(data)
         if failure is not None:
             return True, [failure["error"]]

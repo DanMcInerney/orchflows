@@ -119,11 +119,24 @@ def _critique_findings(attempt: dict, outcome_evidence: dict) -> str:
         raise ReviewError(
             "critique findings must be a JSON array in Result or Feedback"
         )
+    # One authoritative finding is one finding however many of the
+    # protocol's own carriers it rode: an executor that streams it in a
+    # result record and repeats it in the reserved outcome's copy of that
+    # section recorded the same fact twice, not two findings.  Collapsing
+    # byte-identical values here leaves the id-uniqueness grade below to
+    # convict what it is for -- two distinct records claiming one id.
+    seen, authoritative = set(), []
+    for value in findings:
+        identity = canonical_json(value)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        authoritative.append(value)
     # Validate the flattened carrier before caller-supplied acceptance is
     # considered.  This keeps malformed or duplicate executor findings out of
     # the immutable adjudication boundary even when they arrived in several
     # streamed Result/Feedback records.
-    return canonical_finding_array(canonical_json(findings), "critique findings")
+    return canonical_finding_array(canonical_json(authoritative), "critique findings")
 
 
 def _accepted_file(source: str):

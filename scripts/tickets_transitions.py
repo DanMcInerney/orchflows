@@ -76,7 +76,7 @@ _LIFECYCLE_SPECS = (
     LifecycleSpec("result", ("claimed / receipt accepted",), "claimed / receipt accepted + result record", "accepted receiver", "accepted dispatch-receipt record", "contracts/result.md", "rules/verification.md"),
     LifecycleSpec("dispatch-outcome", ("claimed / receipt accepted", "claimed / receipt accepted + result records"), "claimed / outcome committed", "accepted receiver or relaying caller", "accepted dispatch-receipt record", "contracts/dispatch.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-retire", ("claimed / live attempt",), "claimed / retired attempt", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "live predecessor attempt and assignment seal", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "predecessor attempt and assignment seal; a declared supersession inside its lease", "contracts/dispatch.md", "rules/delegation.md"),
 ) + tuple(
     LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)

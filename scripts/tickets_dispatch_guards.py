@@ -57,4 +57,31 @@ def live_attempt_failure(attempts, now):
     )
 
 
-__all__ = ("admission_failure", "live_attempt_failure", "origin_failure")
+def undeclared_supersession_failure(attempt, now, *, declared: bool):
+    """Refuse replacing work that is still inside the lease it was opened
+    under, unless the caller says that is what it means to do.
+
+    A caller cannot observe a child think.  Quiet is not evidence that the
+    child stopped -- the bound the attempt was opened under is the only
+    evidence this protocol has -- so superseding still-authorized work is a
+    declaration the caller makes, never one the transition infers from
+    silence.  Past the lease the attempt is stale and crosses freely.
+    """
+
+    if declared:
+        return None
+    expiry = _parse_iso(attempt.get("lease_expires_at"))
+    if expiry is None or now >= expiry:
+        return None
+    return classification(
+        "supersession-undeclared",
+        f"dispatch_id '{attempt.get('dispatch_id')}' holds a lease until "
+        f"{attempt.get('lease_expires_at')}; declare --supersede-live to "
+        "replace work that is still within its bound",
+    )
+
+
+__all__ = (
+    "admission_failure", "live_attempt_failure", "origin_failure",
+    "undeclared_supersession_failure",
+)

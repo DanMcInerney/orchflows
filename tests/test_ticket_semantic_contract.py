@@ -145,6 +145,40 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(findings, adjudicated["records"][-1]["findings"])
         self.assertEqual(findings, adjudicated["records"][-1]["accepted"])
 
+    def test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses(self):
+        """A critique that streams a finding and repeats it in the reserved
+        outcome recorded one fact twice.  Two records claiming one id with
+        different content are two claims, and still refuse."""
+
+        finding = {
+            "blocking": True,
+            "class": "correctness",
+            "evidence": ["test-x failed"],
+            "goal_impact": "The target Goal is false.",
+            "id": "B1",
+            "repair": "Repair test-x.",
+            "summary": "test-x is red.",
+        }
+        streamed = {"records": [{
+            "kind": "result",
+            "content": tickets_review.canonical_json(
+                {"body": json.dumps([finding], indent=2), "section": "Feedback"}
+            ),
+        }]}
+
+        carried_twice = tickets_join._critique_findings(
+            streamed,
+            {"Result": tickets_review.canonical_json([finding]), "Feedback": ""},
+        )
+        self.assertEqual(tickets_review.canonical_json([finding]), carried_twice)
+
+        conflicting = dict(finding, summary="test-x is green.")
+        with self.assertRaisesRegex(Exception, "repeats finding id B1"):
+            tickets_join._critique_findings(
+                streamed,
+                {"Result": tickets_review.canonical_json([conflicting]), "Feedback": ""},
+            )
+
     def seal(self, run, root):
         self.dispatch("stamp-generation", run, root)
         validated = self.dispatch("draft-validate", run, root)
