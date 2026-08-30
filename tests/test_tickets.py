@@ -10,6 +10,9 @@ from tests._receiver_vantage import git_checkout, receive_argv, standing_in
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 from tests.test_tickets_cases.cli_help import HelpTest  # noqa: F401
+from tests.test_tickets_cases.escaped_newline import (  # noqa: F401
+    EscapedNewlineShapeTest,
+)
 from tests.test_tickets_cases.family_fixture import (  # noqa: F401
     TestTheTicketFamilyIsDiscoveredNotListed,
 )
