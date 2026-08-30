@@ -163,8 +163,8 @@ def _git_out(*args: str) -> str:
     return out.strip()
 
 def _dirty_paths() -> list:
-    """``workspace_git._dirty_paths``, in the tree under grade."""
-    return workspace_git._dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
+    """``workspace_git.dirty_paths``, in the tree under grade."""
+    return workspace_git.dirty_paths(_GIT_CWD, lambda cwd, *args: _git(*args))
 
 # --- the ticket, always at the main repository root -------------------------
 
@@ -384,7 +384,7 @@ def _cmd_check(rest):
                 f"recorded workspace_path {Path(recorded_workspace).resolve()}",
                 EXIT_ISOLATION_MISSING,
             )
-        dirty = workspace_git._dirty_paths(str(ticket_worktree))
+        dirty = workspace_git.dirty_paths(str(ticket_worktree))
         # Emission, not the item's change: an acceptance oracle imports the
         # tree it grades and CPython writes bytecode beside it, so counting
         # those bytes fails the item for having been verified. By path shape,

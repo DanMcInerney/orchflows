@@ -9,6 +9,37 @@ from unittest import mock
 from tests._receiver_vantage import git_checkout, receive_argv, standing_in
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
+from tests.test_tickets_cases.cli_help import HelpTest  # noqa: F401
+from tests.test_tickets_cases.family_fixture import (  # noqa: F401
+    TestTheTicketFamilyIsDiscoveredNotListed,
+)
+from tests.test_tickets_cases.file_payloads import NoteFilePayloadTest  # noqa: F401
+from tests.test_tickets_cases.identity_core import TestRunIdentity  # noqa: F401
+from tests.test_tickets_cases.identity_terminal import (  # noqa: F401
+    TestAtomicReplace,
+    TestNoFallback,
+    TestRunIdentityCollision,
+)
+from tests.test_tickets_cases.improvement import (  # noqa: F401
+    DocstringHonestyTest,
+    ExitConventionTest,
+    RunIdentitySpecificationTest,
+    TestImprovementWriter,
+)
+from tests.test_tickets_cases.result_crossing import TestResultBodySource  # noqa: F401
+from tests.test_tickets_cases.run_state_artifacts import (  # noqa: F401
+    TestRunStateArtifact,
+    TestRunStateWorklog,
+)
+from tests.test_tickets_cases.run_state_resolution import (  # noqa: F401
+    TestRelativeGitdirPointer,
+    TestRunStateRefusesUnsafeNames,
+)
+from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
+    ArtifactOverwriteTest,
+    OrchTreesTest,
+    TerminalNoteTest,
+)
 
 import scripts.tickets as tickets_mod
 import scripts.tickets_packet as tickets_packet

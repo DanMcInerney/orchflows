@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
+    from .tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
 else:
-    from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
+    from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, TicketWriteRefused, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically, locked_ticket_write
 else:
@@ -31,9 +31,9 @@ else:
 # binding it now grades also lives; re-exported here because the facade and
 # `tickets_dispatch` import these three names from this module.
 if __package__:
-    from .tickets_project import CLAIM_REMEDY, CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
+    from .tickets_project import CLAIM_REMEDY, TERMINAL_REMEDY, binding_refusal
 else:
-    from tickets_project import CLAIM_REMEDY, CLAIM_USAGE, TERMINAL_REMEDY, _claim_under_run_lock, _cmd_claim, _do_claim, binding_refusal
+    from tickets_project import CLAIM_REMEDY, TERMINAL_REMEDY, binding_refusal
 if __package__:
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
 else:
@@ -209,13 +209,13 @@ def _check_under_run_lock(rest, *, ticket_path=None):
     if failure is not None:
         return failure
     data = _parse_frontmatter(text)
-    status = str(data.get('status') or '').strip().strip('`').strip()
+    status = dequote(data.get('status'))
     if status != 'complete':
         return {'error': f"check requires the target executor outcome to be joined complete (status '{status}')"}
-    independence = str(data.get('independence') or 'checker').strip().strip('`')
+    independence = dequote(data.get('independence') or 'checker')
     if independence == 'gate' and _executor_of(data) != ROOT_EXECUTOR:
         return {'error': f'ticket {run}/{ticket_id} defers independence to its downstream gate: a non-root gate-deferred ticket has no checker path and cannot carry checked_by'}
-    prior_checker = str(data.get(CHECKED_BY_KEY) or '').strip().strip('`')
+    prior_checker = dequote(data.get(CHECKED_BY_KEY))
     if prior_checker:
         return {'error': f"ticket {run}/{ticket_id} is already checked by '{prior_checker}': one ticket has one checker identity. An additional adversarial reviewer must be a distinctly named root-gate lens"}
     stage_id = stage_id.strip()

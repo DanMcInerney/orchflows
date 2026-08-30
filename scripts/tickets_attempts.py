@@ -16,7 +16,8 @@ if __package__:
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
         RECORD_KINDS, accepted_receipt_failure,
         classification as _classification, identity_failure as _identity_failure,
-        record_id_is_reserved as _record_id_is_reserved, state as _state,
+        record_id_is_reserved as _record_id_is_reserved,
+        record_id_namespace_ok as _namespace_ok, state as _state,
         validate_state as _validate_state,
     )
     from .tickets_store import (
@@ -35,7 +36,8 @@ else:
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
         RECORD_KINDS, accepted_receipt_failure,
         classification as _classification, identity_failure as _identity_failure,
-        record_id_is_reserved as _record_id_is_reserved, state as _state,
+        record_id_is_reserved as _record_id_is_reserved,
+        record_id_namespace_ok as _namespace_ok, state as _state,
         validate_state as _validate_state,
     )
     from tickets_store import (
@@ -217,14 +219,7 @@ def _commit_record(
             return failure
     if record_kind not in RECORD_KINDS:
         return _classification("record-kind-invalid", f"unknown record kind '{record_kind}'")
-    owned = {
-        "packet": record_id == PACKET_RECORD_ID,
-        "receipt": record_id == RECEIPT_RECORD_ID,
-        "outcome": record_id == OUTCOME_RECORD_ID,
-        "join": record_id.startswith("join:"),
-        "lifecycle": record_id.startswith("lifecycle:"),
-    }
-    if record_kind in owned and not owned[record_kind]:
+    if record_kind not in ("generic", "result") and not _namespace_ok(record_kind, record_id):
         return _classification("record-id-invalid", f"{record_kind} operation used another record namespace")
     if record_kind in ("generic", "result") and _record_id_is_reserved(record_id):
         return _classification("record-id-reserved", f"record_id '{record_id}' belongs to a protocol-owned operation")

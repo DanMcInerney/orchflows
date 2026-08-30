@@ -27,7 +27,7 @@ if __package__:
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
-        _sections, _set_frontmatter_field, _write_section,
+        _sections, _set_frontmatter_field, _write_section, dequote,
     )
     from .tickets_ceiling import (
         INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
@@ -46,7 +46,7 @@ else:
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
-        _sections, _set_frontmatter_field, _write_section,
+        _sections, _set_frontmatter_field, _write_section, dequote,
     )
     from tickets_ceiling import (
         INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
@@ -86,6 +86,8 @@ PACK_NAME_SUFFIX = '-pack'
 ROOT_EXECUTOR = 'orch-decompose'
 CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
+GATE_CRITIQUE_MARKER = '.gate.critique.'
+CHECKER_STAGE_SUFFIX = '.check'
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
 class DuplicateJsonKey(ValueError):
@@ -144,7 +146,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         defects.append(f"unknown ticket frontmatter field '{key}'")
     status = data.get('status')
     if isinstance(status, str) and status.strip():
-        normalized = status.strip().strip('`').strip()
+        normalized = dequote(status)
         if normalized not in VALID_STATUSES:
             defects.append(f"status '{normalized}' is not one of {sorted(VALID_STATUSES)}")
     executor = _executor_of(data)
@@ -156,7 +158,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
                 f"executor-pack-required: {executor} consumes resolved pack cells and "
                 "requires a stamped pack"
             )
-    review_kind = str(data.get('review_kind') or '').strip().strip('`')
+    review_kind = dequote(data.get('review_kind'))
     if review_kind and review_kind not in REVIEW_KINDS:
         defects.append(
             f"review_kind '{review_kind}' is not one of {list(REVIEW_KINDS)}"
@@ -214,4 +216,25 @@ def _split_commas(value) -> list:
     """One comma-separated flag value as a list, empty entries dropped."""
     return [part.strip() for part in str(value or '').split(',') if part.strip()]
 def _executor_of(item: dict) -> str:
-    return str(item.get('executor') or '').strip().strip('`').strip()
+    return dequote(item.get('executor'))
+def is_review_stage_id(ticket_id) -> bool:
+    """Whether an id names a derived review stage rather than executor work.
+
+    The composite gate spells it `<root>.gate.<kind>` and the ordinary
+    checker spells it `<target>.check`; both are the protocol's, never an
+    author's, and both are read off the id because the id is what a caller
+    has before the ticket is loaded. Nine sites open-coded the two
+    substrings, and the two that spelled only half of it read a checker
+    stage as ordinary work.
+    """
+    text = str(ticket_id or '')
+    return GATE_ID_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)
+def is_critique_stage_id(ticket_id) -> bool:
+    """`is_review_stage_id` narrowed to the stages that file findings.
+
+    A repair and a verification stage are review stages that do not: only a
+    critique lens and the ordinary checker produce the findings array the
+    schema grades and the join adjudicates.
+    """
+    text = str(ticket_id or '')
+    return GATE_CRITIQUE_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)

@@ -81,7 +81,7 @@ RUN_JSON_FIELDS = frozenset({
     "workspaces[].first_seen",
 })
 
-RUN_JSON_MARKER = "``<sink>/runs/<run>/``"
+RUN_JSON_MARKER = "``<sink>/runs/<run>/run.json``"
 
 HEADING = re.compile(r"^#{1,6} .*$", re.M)
 BULLET = re.compile(r"^- (.*)$", re.M)

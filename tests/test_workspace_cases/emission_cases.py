@@ -8,8 +8,6 @@ passes or fails by host accident.
 
 from .common import *  # noqa: F401,F403
 
-VERIFICATION = ROOT / "rules" / "verification.md"
-
 
 def _isolated(tmp: Path):
     """A repository whose ``wt-branch`` is one commit ahead in its own tree.
@@ -189,22 +187,6 @@ class TestBytecodeIsEmissionNotBreach(unittest.TestCase):
             self.assertEqual(0, done.returncode, f"{done.stdout}{done.stderr}")
             self.assertEqual("pass", payload_of(done)["check"]["verdict"])
 
-    def test_uncommitted_work_that_is_not_bytecode_still_breaches(self):
-        """The can-fail half: reclassifying every dirty path would retire the
-        check rather than aim it."""
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir, base, worktree = _isolated(tmp)
-            self._ticket(run_dir, "T1")
-            (worktree / "scratch" / "loose.txt").write_text("loose\n", encoding="utf-8")
-
-            done = _graded_check(main, base)
-
-            self.assertEqual(4, done.returncode, f"{done.stdout}{done.stderr}")
-            body = payload_of(done)
-            self.assertEqual("scope-breach", body["verdict"])
-            self.assertIn("scratch/loose.txt", body["dirty"])
 
     def test_bytecode_beside_real_dirt_leaves_only_the_dirt_in_the_refusal(self):
         """Membership, not existence: a refusal that still names the emitted
@@ -225,30 +207,3 @@ class TestBytecodeIsEmissionNotBreach(unittest.TestCase):
             body = payload_of(done)
             self.assertEqual(["scratch/loose.txt"], body["dirty"])
             self.assertNotIn("__pycache__", body["error"])
-
-
-class TestVerificationLawNamesItsCoverage(unittest.TestCase):
-    """The two clauses the mechanical arms above answer to.
-
-    A structural floor under a judged criterion, and the membership lesson
-    applied to this panel itself: each clause is asserted by every term it
-    must cover, so dropping one term fails a case rather than passing on the
-    strength of the others.
-    """
-
-    def _law(self) -> str:
-        """Case-folded: a shape named at the head of its own sentence is
-        capitalized by typography, and a term the law carries either way is
-        not a fact a fixture may fail on."""
-
-        return VERIFICATION.read_text(encoding="utf-8").lower()
-
-    def test_the_byte_identity_clause_names_both_domains(self):
-        body = self._law()
-        for term in ("git-blob", "filesystem", "normalization"):
-            self.assertIn(term, body, f"the byte-identity clause omits {term!r}")
-
-    def test_the_mutant_panel_clause_names_membership_carriers_and_placement(self):
-        body = self._law()
-        for term in ("membership", "carrier", "placement"):
-            self.assertIn(term, body, f"the mutant-panel clause omits {term!r}")

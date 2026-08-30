@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1745,
+  "count": 1929,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -214,6 +214,20 @@
    "test_doclint.ValidateLinkCheckTest.test_a_dangling_link_in_a_graded_tier_is_an_error",
    "test_doclint.ValidateLinkCheckTest.test_a_link_that_resolves_is_not",
    "test_doclint.ValidateLinkCheckTest.test_an_external_url_is_not_the_repositorys_to_resolve",
+   "test_fact_registry.TestOneDequotingPrimitive.test_no_script_spells_the_idiom_beside_its_owner",
+   "test_fact_registry.TestOneDequotingPrimitive.test_the_owner_is_reached_by_its_public_name",
+   "test_fact_registry.TestOneDequotingPrimitive.test_the_primitive_removes_padding_inside_the_backticks_too",
+   "test_fact_registry.TestOneOwnerPerEnumAndMapping.test_checkable_statuses_is_defined_once_and_imported",
+   "test_fact_registry.TestOneOwnerPerEnumAndMapping.test_the_dirty_path_walk_has_one_owner",
+   "test_fact_registry.TestOneOwnerPerEnumAndMapping.test_the_record_id_namespace_mapping_has_one_owner",
+   "test_fact_registry.TestOneReviewStagePredicate.test_no_script_open_codes_the_two_substring_test",
+   "test_fact_registry.TestOneReviewStagePredicate.test_the_predicates_answer_both_spellings_of_a_stage",
+   "test_fact_registry.TestTheGeneratedEnumRatchet.test_a_collection_built_from_names_is_not_a_restatement",
+   "test_fact_registry.TestTheGeneratedEnumRatchet.test_a_planted_restatement_is_refused_by_name",
+   "test_fact_registry.TestTheGeneratedEnumRatchet.test_the_declared_owners_are_the_two_modules_that_may_spell_it",
+   "test_fact_registry.TestTheGeneratedEnumRatchet.test_the_real_tree_carries_no_restatement",
+   "test_fact_registry.TestTheUnreachableIsGone.test_no_module_still_defines_the_deleted_names",
+   "test_fact_registry.TestTheUnreachableIsGone.test_the_motion_reader_takes_only_the_path_it_reads",
    "test_install_doctor.TestInstallDoctor.test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was",
    "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
@@ -516,8 +530,8 @@
    "test_lifecycle_render.LifecycleTableTest.test_the_committed_table_is_exactly_the_rendered_code",
    "test_lifecycle_render.LifecycleTableTest.test_the_repository_validator_refuses_a_hand_edit",
    "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_run_id_refuses_every_mutating_command",
+   "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_run_id_refuses_the_run_only_command",
    "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_ticket_id_refuses_every_mutating_command",
-   "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_the_claim_twin_refuses_the_same_way",
    "test_lock_discipline.TestNoHelperImportsItsFacade.test_no_family_helper_imports_the_tickets_facade",
    "test_lock_discipline.TestNoHelperImportsItsFacade.test_no_family_helper_reaches_the_facade_by_name_either",
    "test_lock_discipline.TestNoHelperImportsItsFacade.test_the_atomic_write_no_longer_syncs_the_facades_seams",
@@ -537,6 +551,7 @@
    "test_lock_discipline.TestTheOneLockedWritePrimitive.test_no_command_reaches_its_handler_outside_that_primitive",
    "test_lock_discipline.TestTheOneLockedWritePrimitive.test_the_primitive_refuses_by_raising_not_by_returning",
    "test_lock_discipline.TestTheOneLockedWritePrimitive.test_the_primitive_yields_the_canonical_ticket_path",
+   "test_lock_discipline.TestTheOneLockedWritePrimitive.test_the_run_only_command_enters_through_its_own_primitive",
    "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_lock_held_stamps_inside_the_callers_critical_section",
    "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_start_waits_for_a_run_lock_another_writer_holds",
    "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_dispatch_facade_tells_its_child_the_lock_is_held",
@@ -607,10 +622,9 @@
    "test_project_binding.TestLegacyRuns.test_a_run_with_no_recorded_project_admits_any_workspace",
    "test_project_binding.TestTerminalAdmission.test_a_terminal_write_from_a_foreign_project_is_refused",
    "test_project_binding.TestTerminalAdmission.test_a_terminal_write_from_the_runs_own_project_proceeds",
-   "test_project_binding.TestTheSeamMoved.test_no_stale_copy_of_the_seam_survives_where_it_left",
-   "test_project_binding.TestTheSeamMoved.test_the_lifecycle_module_and_the_facade_still_export_the_seam",
-   "test_project_binding.TestTheSeamMoved.test_the_project_module_owns_the_binding_law",
-   "test_project_binding.TestTheSeamMoved.test_the_seam_is_defined_in_the_project_module",
+   "test_project_binding.TestTheSeamIsGone.test_both_remaining_doors_refuse_through_that_one_law",
+   "test_project_binding.TestTheSeamIsGone.test_no_door_still_reaches_the_deleted_claim_plumbing",
+   "test_project_binding.TestTheSeamIsGone.test_the_project_module_owns_the_binding_law",
    "test_regen.TestAbsentOwners.test_a_tree_without_the_owners_is_skipped_and_says_so",
    "test_regen.TestCommandSurface.test_the_check_reports_one_machine_readable_line",
    "test_regen.TestCommandSurface.test_writing_refuses_to_be_pointed_at_another_tree",
@@ -670,7 +684,7 @@
    "test_run_required.TestWhatIsNeverStored.test_a_stored_red_command_is_never_served",
    "test_run_required.TestWhatIsNeverStored.test_a_tree_changed_by_the_checks_themselves_is_not_stored",
    "test_run_required.TestWhatIsNeverStored.test_an_unreadable_entry_is_never_served",
-   "test_run_tests.TestCaseTreeReach.test_every_case_package_is_imported_by_a_collected_module",
+   "test_run_tests.TestCaseTreeReach.test_every_case_module_is_imported_by_the_chain_discovery_starts",
    "test_run_tests.TestChildEnv.test_every_other_variable_survives",
    "test_run_tests.TestChildEnv.test_the_childs_stdio_is_pinned_to_utf8",
    "test_run_tests.TestEmit.test_a_stdout_with_no_byte_buffer_still_receives_the_text",
@@ -890,6 +904,8 @@
    "test_tickets_sequence.SequenceAdmissionTests.test_skill_sequence_requires_resolvable_names",
    "test_tickets_sequence.SequenceAdmissionTests.test_the_packet_prompt_names_the_disagreeing_continuation",
    "test_tickets_sequence.SequenceAdmissionTests.test_undeclared_pack_stage_is_refused",
+   "test_tickets_sequence.SequenceRoleReachesTheLintTests.test_an_agreeing_chain_leaves_the_lint_silent",
+   "test_tickets_sequence.SequenceRoleReachesTheLintTests.test_the_lint_carries_the_mismatch_as_a_warning",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
    "test_trace.TestClaudeAdapter.test_malformed_fixture_yields_partial_trace",
@@ -928,6 +944,7 @@
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_nested_contract_prose_is_checked",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_plain_text_mentions_nothing",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_exemption_is_one_live_site_and_not_a_blanket",
+   "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_marker_and_not_the_line_number_decides",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_real_library_tree_carries_no_dead_documented_path",
    "test_validate.TestDocumentedPathsResolveInTheInstalledTree.test_the_test_directory_is_an_error",
    "test_validator.TestCompositionProtocolAdmission.test_a_script_module_named_for_a_composition_is_refused_by_boundary",
@@ -1468,6 +1485,106 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_the_over_ceiling_exemption_reserves_the_only_stampable_root",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
+   "tests.test_tickets_cases.cli_help.HelpTest.test_a_help_flag_taken_as_a_flag_value_is_not_a_help_request",
+   "tests.test_tickets_cases.cli_help.HelpTest.test_bare_help_exits_0_with_usage_on_stdout",
+   "tests.test_tickets_cases.cli_help.HelpTest.test_every_subcommand_help_exits_0_with_non_empty_stdout",
+   "tests.test_tickets_cases.cli_help.HelpTest.test_help_never_touches_the_repository",
+   "tests.test_tickets_cases.cli_help.HelpTest.test_the_subcommand_list_is_not_empty_and_excludes_help_flags",
+   "tests.test_tickets_cases.cli_help.HelpTest.test_the_usage_table_covers_exactly_the_dispatched_subcommands",
+   "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_a_module_added_beside_the_facade_joins_the_family",
+   "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_facade_is_not_one_of_its_own_support_modules",
+   "tests.test_tickets_cases.family_fixture.TestTheTicketFamilyIsDiscoveredNotListed.test_the_support_names_are_the_sorted_siblings_of_the_facade",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_missing_note_file_is_one_refusal_and_no_write",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_given_inline_still_reaches_the_sink",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_read_from_a_file_lands_byte_exactly",
+   "tests.test_tickets_cases.file_payloads.NoteFilePayloadTest.test_a_note_read_from_stdin_lands_byte_exactly",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_failed_first_payload_does_not_freeze_an_opening_identity",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_first_note_stamps_the_identity_document",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_linked_worktree_appends_as_its_own_workspace",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_real_git_worktree_appends_to_the_same_project",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_repeat_write_from_a_recorded_workspace_changes_nothing",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_repository_with_no_config_at_all_has_no_origin",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_a_second_clone_of_one_origin_appends_and_never_rewrites",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_adopting_a_legacy_identity_never_invents_opened_at",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_an_existing_run_directory_without_an_identity_gains_one",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_one_url_spelled_two_ways_by_one_transport_is_one_project",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_receipt_metadata_all_opening_paths_and_legacy_nulls",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_the_config_reader_finds_origin_and_only_origin",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_the_identity_is_moved_into_place_never_written_over",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_the_origin_is_read_from_the_main_checkouts_config",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_the_timestamp_shape_has_one_owner_in_this_script",
+   "tests.test_tickets_cases.identity_core.TestRunIdentity.test_two_concurrent_openings_leave_one_well_formed_identity",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_a_reader_refused_past_the_budget_is_still_refused_by_name",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_a_refusal_that_never_ends_is_reported_when_the_budget_runs_out",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_an_absent_file_is_an_answer_and_is_never_waited_on",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_an_unobstructed_move_costs_one_attempt_on_either_platform",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_posix_takes_the_first_answer",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_the_reader_waits_out_a_writers_move_and_returns_the_document",
+   "tests.test_tickets_cases.identity_terminal.TestAtomicReplace.test_windows_waits_out_a_transient_refusal",
+   "tests.test_tickets_cases.identity_terminal.TestNoFallback.test_every_ticket_writing_subcommand_reports_and_lands_nowhere",
+   "tests.test_tickets_cases.identity_terminal.TestNoFallback.test_run_state_reports_and_lands_nowhere",
+   "tests.test_tickets_cases.identity_terminal.TestRunIdentityCollision.test_a_checkout_that_gained_a_remote_is_still_itself",
+   "tests.test_tickets_cases.identity_terminal.TestRunIdentityCollision.test_a_different_origin_is_refused_by_name_and_nothing_lands",
+   "tests.test_tickets_cases.identity_terminal.TestRunIdentityCollision.test_an_unreadable_identity_is_refused_by_name_not_overwritten",
+   "tests.test_tickets_cases.identity_terminal.TestRunIdentityCollision.test_one_rootless_project_still_appends",
+   "tests.test_tickets_cases.identity_terminal.TestRunIdentityCollision.test_the_refusal_blocks_an_artifact_too",
+   "tests.test_tickets_cases.identity_terminal.TestRunIdentityCollision.test_two_rootless_projects_still_collide",
+   "tests.test_tickets_cases.improvement.DocstringHonestyTest.test_docstring_does_not_claim_exit_0_on_failure",
+   "tests.test_tickets_cases.improvement.ExitConventionTest.test_error_exits_1",
+   "tests.test_tickets_cases.improvement.ExitConventionTest.test_error_exits_1_missing_subcommand",
+   "tests.test_tickets_cases.improvement.ExitConventionTest.test_error_exits_1_missing_ticket",
+   "tests.test_tickets_cases.improvement.ExitConventionTest.test_error_exits_1_set_status_invalid",
+   "tests.test_tickets_cases.improvement.ExitConventionTest.test_success_exits_0_list",
+   "tests.test_tickets_cases.improvement.ExitConventionTest.test_success_exits_0_ready",
+   "tests.test_tickets_cases.improvement.RunIdentitySpecificationTest.test_the_docstring_states_every_field_of_the_document",
+   "tests.test_tickets_cases.improvement.RunIdentitySpecificationTest.test_the_document_written_carries_exactly_those_keys",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_a_covered_line_is_appended_and_every_earlier_line_survives",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_a_malformed_invocation_is_refused_by_name",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_a_proposal_lands_whole_under_the_sink",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_an_unsafe_proposal_name_is_refused_by_name",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_neither_mode_falls_back_into_the_callers_tree",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_ten_concurrent_writers_each_land_one_whole_line",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_the_coverage_record_is_written_through_the_serialised_appender",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_the_proposal_body_can_come_from_a_file_in_the_callers_workspace",
+   "tests.test_tickets_cases.improvement.TestImprovementWriter.test_the_subcommand_is_named_where_a_caller_looks",
+   "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_both_file_and_text_is_an_error",
+   "tests.test_tickets_cases.result_crossing.TestResultBodySource.test_neither_file_nor_text_is_an_error",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateArtifact.test_a_named_artifact_lands_under_the_run_partition",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateArtifact.test_the_body_can_come_from_a_file_inside_the_workspace",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_a_note_from_a_worktree_appends_in_the_sink",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_a_note_waits_past_the_windows_finite_lock_window",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_a_prior_line_and_an_outside_writer_both_survive",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_an_append_waits_past_a_refusal_longer_than_the_finite_window",
+   "tests.test_tickets_cases.run_state_artifacts.TestRunStateWorklog.test_concurrent_notes_all_land_whole",
+   "tests.test_tickets_cases.run_state_resolution.TestRelativeGitdirPointer.test_a_relative_pointer_resolves_against_the_pointer_files_own_parent",
+   "tests.test_tickets_cases.run_state_resolution.TestRelativeGitdirPointer.test_the_two_names_are_the_resolvers_own_functions",
+   "tests.test_tickets_cases.run_state_resolution.TestRunStateRefusesUnsafeNames.test_an_unsafe_artifact_name_is_refused_by_name",
+   "tests.test_tickets_cases.run_state_resolution.TestRunStateRefusesUnsafeNames.test_an_unsafe_run_id_is_refused_by_name",
+   "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_a_first_write_needs_no_flag_and_reports_it_replaced_nothing",
+   "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_a_note_is_an_append_and_never_trips_the_artifact_guard",
+   "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_an_existing_artifact_is_refused_and_the_refusal_names_the_path",
+   "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_replace_is_what_carries_the_overwrite_through",
+   "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_replace_on_an_absent_artifact_is_not_an_error",
+   "tests.test_tickets_cases.run_state_terminal.ArtifactOverwriteTest.test_the_guard_is_the_run_partitioned_path_not_the_bare_name",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_an_explicit_runs_tree_is_the_same_path_as_the_default",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_an_unknown_tree_is_refused_and_the_closed_set_is_named",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_every_addressed_tree_is_gitignored_runtime_state",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_one_file_is_written_and_read_back_in_each_ownerless_tree",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_runs_stays_the_default_and_nothing_is_retired",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_the_overwrite_guard_holds_in_every_tree",
+   "tests.test_tickets_cases.run_state_terminal.OrchTreesTest.test_the_run_id_still_partitions_the_artifact_path",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_a_note_may_not_forge_the_terminal_heading",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_a_read_modify_write_implementation_fails_the_assertion",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_a_second_close_is_refused_and_the_first_stands",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_an_artifact_is_not_a_note_and_survives_the_close",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_creation_writes_no_terminal_placeholder",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_every_run_level_terminal_state_closes_and_the_states_are_the_contract",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_note_note_terminal_note_refuses_the_fourth_in_occurrence_order",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_append_is_one_open_in_append_mode_with_no_read",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_assertion_survives_alternate_open_spellings",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_close_is_per_run_and_per_tree",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_close_requires_a_known_state_and_its_deciding_evidence",
+   "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_write_call_count_is_not_asserted",
    "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_a_changed_clause_still_moves_the_pin",
    "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_crlf_and_lf_pin_the_same_contract",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_each_contract_states_its_sink_path",
@@ -1725,6 +1842,73 @@
    "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_a_tree_with_uncommitted_bytes_is_kept_unless_force_is_given",
    "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_it_removes_the_tree_and_leaves_every_stamp_that_names_it",
    "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_retiring_a_tree_that_was_never_created_is_a_no_op",
+   "tests.test_workspace_cases.cli_cases.NoFormatCallsTest.test_workspace_py_contains_no_format_calls",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_bare_help_prints_usage_at_exit_zero",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_check_from_inside_the_workspace_names_the_vantage",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_check_repo_answers_from_outside_any_repository",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_check_repo_grades_the_named_checkout",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_check_repo_naming_no_directory_is_refused_by_name",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_check_repo_without_a_path_is_refused_not_ignored",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_each_subcommand_help_prints_its_own_usage",
+   "tests.test_workspace_cases.cli_cases.TestHelpAndVantage.test_help_or_vantage_help_does_not_swallow_a_real_usage_error",
+   "tests.test_workspace_cases.contract_cases.TestContractKeySeam.test_each_key_the_script_uses_names_where_it_is_written_or_read",
+   "tests.test_workspace_cases.contract_cases.TestContractKeySeam.test_the_key_names_the_script_uses_are_the_contracts_own_both_ways",
+   "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_module_docstring_names_what_the_deviation_is_read_against",
+   "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_resolvers_are_imported_never_copied",
+   "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_script_is_stdlib_only_and_network_free",
+   "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_a_first_establishment_still_records_what_it_observed",
+   "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_an_empty_stamp_is_no_stamp",
+   "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_re_establishment_preserves_the_stamp_and_reports_what_it_saw",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_beside_real_dirt_leaves_only_the_dirt_in_the_refusal",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_outside_a_pycache_directory_is_still_emission",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_the_baseline_itself_tracks_is_still_emission",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_untracked_bytecode_does_not_fail_the_grade",
+   "tests.test_workspace_cases.grade_cases.RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_already_on_the_callers_head_exits_isolation_missing",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_not_cut_from_the_base_exits_wrong_branch_point",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_that_does_not_resolve_exits_isolation_missing",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_an_in_scope_branch_passes_and_reports_what_it_changed",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_an_unresolvable_base_is_an_internal_error",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_required_with_no_recorded_branch_exits_no_record",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_the_callers_own_branch_exits_isolation_missing",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_usage_errors_exit_one",
+   "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_an_absolute_scope_entry_inside_the_repository_is_normalized",
+   "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_check_passes_after_the_linked_tree_is_removed",
+   "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_the_same_scope_entry_takes_its_own_segment",
+   "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_exact_create_change_and_delete_plan_passes",
+   "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_still_present_isolated_worktree_must_have_no_dirty_oracle_bytes",
+   "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_write_prefix_covers_every_actual_operation_below_it",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_a_removed_workspace_is_refused_rather_than_graded_at_its_revision",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_check_grades_a_scoped_commit_made_after_start",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_one_detached_workspace_is_never_graded_through_another",
+   "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_start_records_the_full_sha_under_the_detached_prefix",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_failing_install_is_reported_with_its_exit_and_start_still_records",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_lockfile_and_a_pnpm_on_path_install_from_the_frozen_lockfile",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_tree_declaring_no_frontend_is_skipped_and_pnpm_is_never_called",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_it_never_installs_a_browser",
+   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_without_pnpm_on_path_it_is_skipped_by_name",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_does_not_resolve_falls_through_to_the_cache",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_resolves_is_present",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_playwright_that_does_not_answer_is_unknown_not_missing",
+   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_an_empty_cache_is_missing",
+   "tests.test_workspace_cases.prepare.TestTheInstallCeilingIsReal.test_the_ceiling_is_ten_minutes_and_a_timeout_is_a_failure",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_branch_record_is_never_resolved_as_a_revision",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_commit_between_two_starts_does_not_silence_that_shared_tree",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_record_naming_some_other_standing_tree_is_not_this_one",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_record_two_standing_trees_could_carry_stays_silent",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_sibling_no_longer_claimed_has_left_the_tree",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_sibling_on_another_branch_is_not_sharing_this_tree",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_sibling_that_recorded_nothing_is_not_sharing_this_tree",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_tree_another_claimed_item_recorded_is_not_isolated",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_tree_no_other_claimed_item_recorded_is_isolated",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_every_claimed_sharer_is_named_not_only_the_first",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_starting_the_same_item_twice_never_flags_it_against_itself",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_the_main_checkout_stays_unisolated_and_still_exits_zero",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_the_main_checkout_that_shares_is_flagged_like_any_other",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_two_claimed_items_in_one_shared_detached_worktree_are_flagged",
+   "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_two_detached_workspaces_at_one_revision_are_not_sharing_a_tree",
+   "tests.test_workspace_cases.sharing_cases.TestTheSharedTreeCodeIsItsOwnAndDocumented.test_the_code_collides_with_no_existing_meaning",
+   "tests.test_workspace_cases.sharing_cases.TestTheSharedTreeCodeIsItsOwnAndDocumented.test_the_docstring_exit_code_table_carries_the_new_code",
    "tests.test_workspace_cases.start_cases.TestCheckDisambiguatesItsRevisionRanges.test_every_range_is_terminated_before_the_pathspec",
    "tests.test_workspace_cases.start_cases.TestCheckUsesTheEstablishedCandidate.test_relocated_branch_does_not_replace_the_recorded_workspace",
    "tests.test_workspace_cases.start_cases.TestStartEstablishesEvidenceStore.test_research_pack_creates_and_records_the_canonical_run_store",
@@ -1748,7 +1932,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e919889e8aa13d3b0704b7e7cc4ba0cc3a16f1cdf490c994bfe47fc62f541367"
+  "sha256": "f09f8ea225e3941f51a3f69caa2bbd23a8350de33583e0cdabeb18e3883023c6"
  },
  "mutation_owners": [
   {
@@ -4017,6 +4201,14 @@
   },
   {
    "module": "tests.test_tickets_cases.common",
+   "owner": "make_real_worktree",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_cases.common",
    "owner": "refusing_to_read",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -4045,23 +4237,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.file_payloads",
-   "owner": "AmendmentRecordFilePayloadTest.test_a_record_read_from_a_file_round_trips_byte_exactly",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.file_payloads",
-   "owner": "AmendmentRecordFilePayloadTest.test_a_record_read_from_stdin_round_trips_byte_exactly",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment",
-    "monkeypatch"
    ]
   },
   {
@@ -4111,30 +4286,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "threads"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.identity_terminal",
-   "owner": "RunTerminalTimingTest.test_fake_clock_decides_exact_elapsed_milliseconds",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.identity_terminal",
-   "owner": "RunTerminalTimingTest.test_same_status_retry_recovers_an_interrupted_terminal_identity",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.identity_terminal",
-   "owner": "RunTerminalTimingTest.test_terminal_identity_failure_is_reported_and_retry_is_durable",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
    ]
   },
   {
@@ -4210,30 +4361,6 @@
    ]
   },
   {
-   "module": "tests.test_tickets_cases.packet_execution",
-   "owner": "RuntimeInterpreterBoundaryTests.test_internal_builtin_commands_use_the_current_interpreter",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.packet_execution",
-   "owner": "RuntimeInterpreterBoundaryTests.test_ticket_commands_inherit_the_caller_environment",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.packet_workspace",
-   "owner": "UnboundWorkspaceTableTest",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
    "module": "tests.test_tickets_cases.run_state_artifacts",
    "owner": "TestRunStateWorklog.test_an_append_waits_past_a_refusal_longer_than_the_finite_window",
    "restoration": "sharded-module-guard",
@@ -4247,30 +4374,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "threads"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.run_state_artifacts",
-   "owner": "make_real_worktree",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.run_state_resolution",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.run_state_resolution",
-   "owner": "TestRunStateRootResolution.test_the_root_comes_from_the_one_resolver_with_no_subprocess",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "cwd"
    ]
   },
   {

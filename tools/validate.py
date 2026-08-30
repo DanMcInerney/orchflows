@@ -151,18 +151,40 @@ STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
 # and skill executors are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
-# Non-navigation occurrences and not-yet-materialized UI design paths. Keys
-# are exact source lines so another occurrence is still graded.
+# Non-navigation occurrences and not-yet-materialized UI design paths. Keyed
+# by the sentence that carries the token, never by its line number: an
+# insertion anywhere above an exempt site silently moved the key off it and
+# the exemption then covered whatever line had taken the number. The marker
+# is a distinctive fragment of the carrying sentence, so the same token on
+# another line is still graded and a reworded sentence fails loudly here
+# rather than quietly widening the exemption.
 DOC_PATH_EXEMPT_SITES = frozenset({
-    ("contracts/pack-signature.md", 90, "tests/pins.json"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/api/client.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/api/schema.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/app/registry.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/feed.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/state/location.ts"),
-    ("reader/docs/modularization.md", 17, "app/catalog.ts"),
-    ("reader/docs/modularization.md", 55, "reader/web/src/state/location.ts"),
+    ("contracts/pack-signature.md", "tests/pins.json",
+     "share the same contract"),
+    ("reader/docs/modularization.md", "reader/web/src/api/client.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/api/schema.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/app/registry.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/feed.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "app/catalog.ts",
+     "Array order is rail/display order only"),
+    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
+     "There is no second registration or routing owner"),
 })
+
+
+def _doc_path_exempt(source_label: str, token: str, line: str) -> bool:
+    """Whether this occurrence of `token` is one of the recorded exemptions."""
+
+    return any(
+        path == source_label and exempt == token and marker in line
+        for path, exempt, marker in DOC_PATH_EXEMPT_SITES
+    )
 
 
 def _documented_path_finding(token: str, source: Path, root: Path):
@@ -234,10 +256,10 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
             if not source.is_file():
                 continue
             text = _read_source(source)
-            for line_number, line in enumerate(text.splitlines(), 1):
+            for line in text.splitlines():
                 for match in DOCUMENTED_PATH_RE.finditer(line):
                     token = match.group(1)
-                    if (rel(source), line_number, token) in DOC_PATH_EXEMPT_SITES:
+                    if _doc_path_exempt(rel(source), token, line):
                         continue
                     finding = _documented_path_finding(token, source, root)
                     if finding is not None:
@@ -273,6 +295,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_carriage(packages, diag)
     validate_cell_duplication(packages, diag)
     validate_cross_tier_duplication(packages, diag)
+    validate_generated_enum_copies(diag)
     validate_envelope(packages, diag)
     validate_composition_admission(diag)
     validate_templates(diag)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 
 if __package__:
     from .tickets_shapes import (
@@ -20,15 +19,19 @@ if __package__:
         DISPATCH_RECEIPT_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
         DISPATCH_OUTCOME_VALUES,
-        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+        EXECUTOR_RESULT_VALUES,
+    )
+    from .tickets_dispatch_identity import (
+        IDENTITY_RE, OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        RECEIPT_RECORD_ID, RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
+        classification, identity_failure, record_id_is_reserved,
+        record_id_namespace_ok,
     )
     from .tickets_format import (
         EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
-        parse_canonical_json,
+        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
 else:
     from tickets_shapes import (
@@ -45,51 +48,30 @@ else:
         DISPATCH_RECEIPT_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
         DISPATCH_OUTCOME_VALUES,
-        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+        EXECUTOR_RESULT_VALUES,
+    )
+    from tickets_dispatch_identity import (
+        IDENTITY_RE, OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        RECEIPT_RECORD_ID, RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
+        classification, identity_failure, record_id_is_reserved,
+        record_id_namespace_ok,
     )
     from tickets_format import (
         EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
-        parse_canonical_json,
+        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
 
-PROTOCOL = DISPATCH_PROTOCOL
-OUTCOME_RECORD_ID = SHAPE_OUTCOME_RECORD_ID
-PACKET_RECORD_ID = SHAPE_PACKET_RECORD_ID
-RECEIPT_RECORD_ID = SHAPE_RECEIPT_RECORD_ID
-RESERVED_RECORD_IDS = frozenset({
-    OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID,
-})
-RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
-IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 ATTEMPT_STATES = frozenset(DISPATCH_ATTEMPT_VALUES["state"])
 ATTEMPT_KEYS = frozenset(DISPATCH_ATTEMPT_FIELDS)
 ATTEMPT_REQUIRED_KEYS = frozenset(DISPATCH_ATTEMPT_REQUIRED)
 RECORD_KEYS = frozenset(DISPATCH_RECORD_FIELDS)
 RECORD_KINDS = frozenset(DISPATCH_RECORD_VALUES["kind"])
 OUTCOME_SECTIONS = frozenset(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
+RESULT_OPERATION = EXECUTOR_RESULT_VALUES["operation"][0]
+RESULT_MODES = frozenset(EXECUTOR_RESULT_VALUES["mode"])
 JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
-
-
-def classification(code: str, detail: str) -> dict:
-    return {"error": detail, "code": code, "protocol": PROTOCOL}
-
-
-def identity_failure(kind: str, value, *, allow_path: bool = False):
-    if not isinstance(value, str) or not value:
-        return classification(f"{kind}-invalid", f"{kind} must be a non-empty string")
-    if any(ord(mark) < 32 or mark == "`" for mark in value):
-        return classification(f"{kind}-invalid", f"{kind} contains a control character or backtick")
-    if not allow_path and IDENTITY_RE.fullmatch(value) is None:
-        return classification(f"{kind}-invalid", f"{kind} is not a canonical protocol identity")
-    return None
-
-
-def record_id_is_reserved(record_id: str) -> bool:
-    return record_id in RESERVED_RECORD_IDS or record_id.startswith(RESERVED_RECORD_PREFIXES)
 
 
 def _invalid(detail: str):
@@ -139,7 +121,7 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
         return "outcome evidence is incomplete"
     if (content["status"] == "suspended") != bool(evidence["Handoff"].strip()):
         return "outcome Handoff does not match its disposition"
-    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+    if is_critique_stage_id(ticket_id):
         try:
             if __package__:
                 from .tickets_review_schema import SchemaError, finding_values
@@ -159,15 +141,15 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
     if not _closed(content, required):
         return _invalid(f"result record '{record_id}' content has an invalid shape")
     if (
-        content.get("operation") != "result"
+        content.get("operation") != RESULT_OPERATION
         or content.get("assignment_seal") != attempt["assignment_seal"]
         or content.get("writer") != attempt["owner"]
         or content.get("section") not in EXECUTOR_SECTIONS
-        or content.get("mode") not in {"write", "append", "replace"}
+        or content.get("mode") not in RESULT_MODES
         or not isinstance(content.get("body"), str)
     ):
         return _invalid(f"result record '{record_id}' content differs from its attempt")
-    if (".gate.critique." in ticket_id or ticket_id.endswith(".check")) and content["section"] in {"Result", "Feedback"}:
+    if is_critique_stage_id(ticket_id) and content["section"] in {"Result", "Feedback"}:
         try:
             if __package__:
                 from .tickets_review_schema import SchemaError, finding_values
@@ -285,7 +267,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     if kind == "join":
         if not isinstance(content, dict):
             return _invalid(f"join record '{record_id}' has invalid content")
-        review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
+        review_stage = is_review_stage_id(ticket_id)
         expected = {
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
@@ -428,7 +410,7 @@ def state(data: dict):
         return parsed, failure
     ticket_id = str(data.get("id") or "").strip()
     review_text = str(data.get("review_v1") or "").strip()
-    review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
+    review_stage = is_review_stage_id(ticket_id)
     if review_text and review_stage:
         try:
             if __package__:

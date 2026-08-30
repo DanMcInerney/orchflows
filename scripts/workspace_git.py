@@ -108,8 +108,17 @@ def actual_top_level(cwd=None, git=None):
     return Path(value).resolve()
 
 
-def _dirty_paths(cwd, git=_git) -> list:
-    """Every path ``git status`` reports, both ends of a rename included."""
+def dirty_paths(cwd, git=_git) -> list:
+    """Every path ``git status`` reports, both ends of a rename included.
+
+    Public, and the family's one reader of `--porcelain -z`: a rename or a
+    copy spends two NUL-separated fields where every other status spends
+    one, so a walk that steps by one field reads the new name of a rename
+    as a status line and loses the old one. `scripts/isolate.py` had its own
+    copy of the walk; it now calls this with its own git and its own
+    refusal, because those are what differ between the two callers and the
+    walk is not.
+    """
 
     code, out, err = git(cwd, "status", "--porcelain", "-z")
     if code != 0:
@@ -149,16 +158,6 @@ def _head_and_branch(git_out):
     """This workspace's branch and the revision it derives from."""
 
     return _current_branch(git_out), git_out("rev-parse", "HEAD")
-
-
-def _checkouts(git_out) -> list:
-    """Every directory this repository is checked out in."""
-
-    return [
-        Path(entry["worktree"]).resolve()
-        for entry in _worktrees(git_out)
-        if entry.get("worktree")
-    ]
 
 
 def _worktrees(git_out) -> list:

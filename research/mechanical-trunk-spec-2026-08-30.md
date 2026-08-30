@@ -667,6 +667,20 @@ Docs wave follows `research/docs-spec-2026-08-30.md`.
   `tickets_lint.lint_findings` as a warning-severity finding (U7 left
   the public function ready; `_cmd_lint` already exits 0 on non-error
   findings).
+- **A15 (→ U8 scope, replaces U5.7 which was rightly not shipped):**
+  the temp-root predicate moves to `scripts/state_root.py`
+  (`inside_temp_root`); `tools/verify_at.py` (joins U8's scope)
+  repoints at it; `scripts/isolate.py` does NOT refuse — it WARNS in
+  its JSON payload when the destination is temp-rooted and its
+  docstring example stops recommending `/tmp/mine`. `tests/test_isolate.py`
+  stays on temp roots by design.
+- **A16 (→ U8 sweep):** `tickets_packet._cmd_packet` is unrouted dead
+  plumbing (`test_command_surface` asserts it; imports exist, calls do
+  not) — same class as the deleted claim route. Grep callers; delete
+  the function + usage if truly dead, with its tests.
+  `tools/validate_support/packages.py:273-304` still strips backticks
+  inline (tools layer) — repoint at the public `dequote` if the import
+  direction allows, else leave with a comment.
 - **A14 (coordination note, all waves):** `validate.py --pin` is lawful
   once per committed baseline — a second `--pin` over an uncommitted
   re-pin finds no git ancestor and demands a supersession record for a

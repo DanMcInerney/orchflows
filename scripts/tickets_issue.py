@@ -10,7 +10,7 @@ if __package__:
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
         ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
-        _set_frontmatter_field, _split_commas, ticket_defects,
+        _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
     from .tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
     from .tickets_store import (
@@ -26,7 +26,7 @@ else:
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
         ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
-        _set_frontmatter_field, _split_commas, ticket_defects,
+        _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
     from tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
     from tickets_store import (
@@ -188,7 +188,7 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
     data = _parse_frontmatter(text)
     if not data:
         return defects
-    independence = str(data.get("independence") or "checker").strip().strip("`")
+    independence = dequote(data.get("independence") or "checker")
     if independence not in INDEPENDENCE_VALUES:
         defects.append(f"independence '{independence}' is not one of {list(INDEPENDENCE_VALUES)}")
     checked_by = str(data.get("checked_by") or "").strip()

@@ -29,9 +29,11 @@ from scripts import tickets as tickets_mod  # noqa: E402
 from scripts import tickets_attempts  # noqa: E402
 from scripts import tickets_dispatch_facade  # noqa: E402
 from scripts import tickets_dispatch_packet  # noqa: E402
+from scripts import tickets_dispatch_gate  # noqa: E402
 from scripts import tickets_join  # noqa: E402
+from scripts import tickets_packet  # noqa: E402
+from scripts import tickets_result  # noqa: E402
 from scripts import tickets_lifecycle  # noqa: E402
-from scripts import tickets_project  # noqa: E402
 from scripts import tickets_store  # noqa: E402
 from scripts import workspace_git  # noqa: E402
 from tests.test_tickets_cases.common import (  # noqa: E402
@@ -88,10 +90,12 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
         self.temporary.cleanup()
 
     def commands(self, run: str, tid: str):
-        """Every mutating route the public facade still dispatches. `claim`
-        is not among them -- the dispatch-v1 cutover left
-        `tickets_project._cmd_claim` reachable only as an import -- so its
-        twin is graded directly, below."""
+        """Every mutating route the public facade dispatches on a ticket.
+
+        `claim` is not among them: the dispatch-v1 cutover left its plumbing
+        reachable only as an import, and it has since been deleted with the
+        rest of the unreachable claim path.
+        """
 
         return (
             ("check", run, tid, "--stage", f"{tid}.check"),
@@ -99,6 +103,8 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
             ("join-noop-repair", run, tid, "--by", "gate-join"),
             ("dispatch-packet", run, tid, "--dispatch-id", "D1",
              "--reply-to", "root"),
+            ("gate", run, tid),
+            ("checker-stage", run, tid),
         )
 
     def assert_refused_without_writing(self, argv, expected: str):
@@ -132,17 +138,17 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
                 with self.subTest(ticket=tid, command=argv[0]):
                     self.assert_refused_without_writing(argv, expected)
 
-    def test_the_claim_twin_refuses_the_same_way(self):
-        for run, tid, expected in (
-            ("..", "T1", "unsafe run id '..'"),
-            ("testrun", "../x", "unsafe ticket id '../x'"),
+    def test_a_malformed_run_id_refuses_the_run_only_command(self):
+        """`run-state` names no ticket, so the run half is all it has to
+        grade -- and it graded it, then ran the handler anyway."""
+
+        for run, expected in (
+            ("..", "unsafe run id '..'"), ("a/b", "unsafe run id 'a/b'"),
         ):
-            with self.subTest(run=run, ticket=tid):
-                before = sink_listing()
-                payload = tickets_project._cmd_claim([run, tid, "--by", "agent-a"])
-                self.assertIn(expected, payload["error"])
-                self.assertEqual(before, sink_listing())
-                self.assertFalse((sink_root() / "locks").exists())
+            with self.subTest(run=run):
+                self.assert_refused_without_writing(
+                    ("run-state", run, "--note", "x"), expected
+                )
 
 
 class TestTheOneLockedWritePrimitive(unittest.TestCase):
@@ -152,8 +158,11 @@ class TestTheOneLockedWritePrimitive(unittest.TestCase):
         tickets_lifecycle._cmd_check,
         tickets_lifecycle._cmd_set_status,
         tickets_lifecycle._cmd_join_noop_repair,
-        tickets_project._cmd_claim,
+        tickets_packet._cmd_packet,
+        tickets_dispatch_gate._cmd_gate,
+        tickets_dispatch_gate._cmd_checker_stage,
     )
+    RUN_ONLY_SUBJECTS = (tickets_result._cmd_run_state,)
 
     def test_every_mutating_command_enters_through_the_primitive(self):
         for subject in self.SUBJECTS:
@@ -172,6 +181,16 @@ class TestTheOneLockedWritePrimitive(unittest.TestCase):
                     source.index("locked_ticket_write("),
                     source.index("_under_run_lock("),
                 )
+
+    def test_the_run_only_command_enters_through_its_own_primitive(self):
+        """`run-state` grades one segment because it names one. The sibling
+        primitive exists so that half cannot be graded inline and skipped."""
+
+        for subject in self.RUN_ONLY_SUBJECTS:
+            with self.subTest(subject.__name__):
+                source = inspect.getsource(subject)
+                self.assertIn("locked_run_write(", source)
+                self.assertNotIn("_segment_error(", source)
 
     def test_the_primitive_refuses_by_raising_not_by_returning(self):
         with self.assertRaises(tickets_store.TicketWriteRefused) as refused:

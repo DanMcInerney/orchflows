@@ -15,9 +15,11 @@ from typing import Optional
 
 if __package__:
     from .packs import PackError, resolve_pack
+    from .tickets_markdown import dequote
     from .tickets_registry import EXECUTOR_REGISTRY
 else:  # pragma: no cover - direct/installed script path
     from packs import PackError, resolve_pack
+    from tickets_markdown import dequote
     from tickets_registry import EXECUTOR_REGISTRY
 
 try:
@@ -39,7 +41,7 @@ ROLE_BEARING = ("planner", "worker")
 def _normalized_entries(declared):
     """Return frontmatter sequence entries with the ticket spelling rules."""
 
-    return [str(entry).strip().strip("`").strip() for entry in declared]
+    return [dequote(entry) for entry in declared]
 
 
 def _is_skill_name(entry: str) -> bool:
@@ -122,7 +124,7 @@ def _head_role(executor: str) -> Optional[str]:
     head has none, so its own declaration answers instead.
     """
 
-    name = str(executor or "").strip().strip("`").strip()
+    name = dequote(executor)
     if not name:
         return None
     registered = EXECUTOR_REGISTRY.get(name)
@@ -275,7 +277,7 @@ def sequence_defects(
     if skill_entries:
         if len(set(entries)) != len(entries):
             defects.append("'sequence' repeats a skill: each chain entry runs once")
-        expected_executor = str(executor or "").strip().strip("`").strip()
+        expected_executor = dequote(executor)
         if entries and entries[0] != expected_executor:
             defects.append(
                 f"sequence head '{entries[0]}' is not the ticket's executor '{expected_executor}': "

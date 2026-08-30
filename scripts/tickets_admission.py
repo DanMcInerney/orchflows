@@ -10,15 +10,17 @@ if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        DELIVERED_STATE, GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
-        canonical_json, _executor_of, _parse_frontmatter,
+        DELIVERED_STATE, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
+        canonical_json, dequote, is_review_stage_id, _executor_of,
+        _parse_frontmatter,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        DELIVERED_STATE, GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
-        canonical_json, _executor_of, _parse_frontmatter,
+        DELIVERED_STATE, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
+        canonical_json, dequote, is_review_stage_id, _executor_of,
+        _parse_frontmatter,
     )
 
 ADMISSION_PENDING = "pending"
@@ -71,8 +73,7 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     unbound = (
         executor.startswith(SCRIPT_EXECUTOR_PREFIX)
         or executor == ROOT_EXECUTOR
-        or ".gate." in ticket_id
-        or ticket_id.endswith(".check")
+        or is_review_stage_id(ticket_id)
     )
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
         target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
@@ -98,8 +99,7 @@ def graph_descendants(ticket_id: str, siblings) -> list:
     return [
         identifier for identifier in dict(siblings or {})
         if identifier.startswith(ticket_id + ".")
-        and GATE_ID_MARKER not in identifier
-        and not identifier.endswith(".check")
+        and not is_review_stage_id(identifier)
     ]
 
 
@@ -129,7 +129,7 @@ def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False
     descendants = graph_descendants(ticket_id, siblings)
     findings = []
     if executor == ROOT_EXECUTOR:
-        if str(data.get("independence") or "").strip().strip("`").strip() == "checker":
+        if dequote(data.get("independence")) == "checker":
             findings.append(finding(
                 "decomposed-root-checker", "independence",
                 "a decomposed root must declare independence=gate",
@@ -213,7 +213,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
         findings.append(adapter_failure)
     # A sealed decomposed root reaches this door before its members are
     # issued; a delivered one has had every member it will ever own.
-    delivered = str(data.get("status") or "").strip().strip("`").strip() == DELIVERED_STATE
+    delivered = dequote(data.get("status")) == DELIVERED_STATE
     findings.extend(graph_findings(
         ticket_id, data, siblings,
         complete=graph_closed(ticket_id, siblings, delivered),

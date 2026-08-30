@@ -95,6 +95,15 @@ def sink_root() -> Path:
     return Path(os.environ[STATE_HOME_ENV_VAR])
 
 
+def git_available() -> bool:
+    try:
+        return subprocess.run(
+            ["git", "--version"], capture_output=True, text=True
+        ).returncode == 0
+    except OSError:
+        return False
+
+
 def make_tickets(run_dir: Path, tickets: dict) -> Path:
     run_dir.mkdir(parents=True, exist_ok=True)
     for tid, (status, deps) in tickets.items():
@@ -379,6 +388,66 @@ def make_worktree(tmp: Path, tickets: dict):
         f"gitdir: {main / '.git' / 'worktrees' / 'wt'}\n", encoding="utf-8"
     )
     return main, worktree, run_dir
+
+
+def run_dir_of(run: str = "testrun") -> Path:
+    return sink_root() / "runs" / run
+
+
+def tree_dir_of(tree: str, run: str = "testrun") -> Path:
+    """One run's directory in a named run-state tree of the sink.
+
+    ``runs`` is the default tree, so ``tree_dir_of("runs")`` and
+    ``run_dir_of()`` are the same path by construction.
+    """
+
+    return sink_root() / tree / run
+
+
+def make_real_worktree(tmp: Path):
+    """A main checkout and a linked worktree that `git worktree add` made.
+
+    `make_worktree` hand-writes the pointer file; this one lets git write it,
+    so the resolver is proved against the shape git actually produces.
+    """
+
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
+        GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid",
+    )
+
+    def git(*args):
+        completed = subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", *args],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", cwd=str(main), env=env,
+        )
+        if completed.returncode != 0:
+            raise unittest.SkipTest(f"git {args[0]} failed: {completed.stderr.strip()}")
+
+    use_sink(tmp)
+    main = tmp / "main"
+    main.mkdir()
+    git("init", "--quiet")
+    (main / "README.md").write_text("baseline\n", encoding="utf-8")
+    git("add", "README.md")
+    git("commit", "--quiet", "-m", "init")
+    worktree = tmp / "wt"
+    git("worktree", "add", "--quiet", "-b", "wt-branch", str(worktree))
+    return main, worktree
+
+
+# --- run identity fixtures ---------------------------------------------
+
+GIT_CONFIG = (
+    "[core]\n\trepositoryformatversion = 0\n"
+    '[remote "{remote}"]\n\turl = {url}\n'
+    "\tfetch = +refs/heads/*:refs/remotes/{remote}/*\n"
+)
+ALPHA = "https://example.invalid/acme/alpha.git"
+BETA = "https://example.invalid/other/beta.git"
+STAMP_RE = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
 
 
 def notes_of(run: str = "testrun") -> Path:

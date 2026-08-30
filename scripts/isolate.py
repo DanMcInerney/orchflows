@@ -39,8 +39,10 @@ from pathlib import Path
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
     from scripts import state_root
+    from scripts.workspace_git import dirty_paths as _walk_dirty_paths
 except ImportError:  # pragma: no cover - the installed copy's path
     import state_root
+    from workspace_git import dirty_paths as _walk_dirty_paths
 
 # Where the snapshot lands inside the isolated tree. Not a second sink root
 # -- `scripts/state_root.py` owns that -- but a copy of one, laid out the
@@ -87,21 +89,14 @@ def excluded_by(name: str, prefixes) -> bool:
 
 
 def dirty_paths(repo: Path) -> list:
-    """Every path `git status` reports, both ends of a rename included."""
-    fields = _git(repo, "status", "--porcelain", "-z").split("\0")
-    found, index = [], 0
-    while index < len(fields):
-        entry = fields[index]
-        index += 1
-        if not entry:
-            continue
-        status, path = entry[:2], entry[3:]
-        found.append(path)
-        if "R" in status or "C" in status:
-            if index < len(fields):
-                found.append(fields[index])
-                index += 1
-    return found
+    """`workspace_git.dirty_paths`, read through this harness's own git.
+
+    The porcelain walk is one fact and has one owner. What differs between
+    the two callers is how each reaches git and how each refuses, so those
+    stay here: `_git` raises this module's `Refused` with its own sentence,
+    which is why the adapter never has a non-zero code to report.
+    """
+    return _walk_dirty_paths(repo, lambda cwd, *args: (0, _git(cwd, *args), ""))
 
 
 def export(repo: Path, rev: str, dest: Path) -> None:

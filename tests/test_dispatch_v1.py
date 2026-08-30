@@ -475,8 +475,16 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_text())
 
     def test_pre_v1_live_claim_requires_owner_cutover(self):
-        claimed = tickets._cmd_claim(["run", "T", "--by", "legacy-owner"])
-        self.assertNotIn("error", claimed, claimed)
+        # The pre-v1 shape, written as the deleted `claim` command wrote it:
+        # a live lease carried by frontmatter alone, with no `dispatch_v1`.
+        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        legacy = path.read_text(encoding="utf-8")
+        for key, value in (
+            ("status", "claimed"), ("claimed_by", "legacy-owner"),
+            ("claimed_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
+        ):
+            legacy = tickets._set_frontmatter_field(legacy, key, value)
+        path.write_text(legacy, encoding="utf-8")
         before = self.ticket_text()
         refusal = self.open()
         self.assertEqual("legacy-live-claim", refusal["code"])

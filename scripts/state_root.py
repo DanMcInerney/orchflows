@@ -93,6 +93,31 @@ def worktrees_root() -> Path:
     return orchflows_home() / WORKTREES_SUBPATH
 
 
+def segment_defect(kind: str, value):
+    """Why ``value`` is not one path segment under a sink root, else ``None``.
+
+    The one-segment rule is this module's because every path built out of a
+    run id or a ticket id is built here or from here: the sink trees, the
+    derived worktree, and the ticket file the store opens. It was stated
+    twice -- once as a raised ``ValueError`` beside ``candidate_paths`` and
+    once as a returned payload in ``tickets_store._segment_error`` -- and the
+    two sentences had already drifted apart, so a caller reading one of them
+    learned a different rule from a caller reading the other. The store's
+    refusal now delegates here; this module depends on nothing, which is why
+    the predicate lives at this end of the edge rather than the other.
+    """
+
+    text = str(value or "")
+    if not text.strip():
+        return f"{kind} is empty"
+    if "/" in text or "\\" in text or ".." in text or text == ".":
+        return (
+            f"unsafe {kind} '{value}': one path segment only, with no path "
+            "separator and no '..'"
+        )
+    return None
+
+
 def candidate_paths(run: str, ticket_id: str) -> dict:
     """The one derivation of a work item's candidate worktree and branch.
 
@@ -105,18 +130,13 @@ def candidate_paths(run: str, ticket_id: str) -> dict:
     The segments are refused here rather than trusted, because the run
     and the id are what the path is built out of: a separator or a ``..``
     in either would name a tree outside the root this function exists to
-    keep every candidate inside.
+    keep every candidate inside. The rule itself is ``segment_defect``'s.
     """
 
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
-        text = str(value or "")
-        if not text.strip():
-            raise ValueError(f"{kind} is empty")
-        if "/" in text or "\\" in text or ".." in text or text == ".":
-            raise ValueError(
-                f"unsafe {kind} '{value}': a derived worktree path takes one "
-                "path segment, with no path separator and no '..'"
-            )
+        defect = segment_defect(kind, value)
+        if defect is not None:
+            raise ValueError(defect)
     return {
         "path": worktrees_root() / run / ticket_id,
         "branch": f"{WORKTREE_BRANCH_PREFIX}/{run}/{ticket_id}",

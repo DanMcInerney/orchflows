@@ -12,8 +12,10 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 try:
     from scripts.tickets_adapters import ADAPTER_REGISTRY
+    from scripts.tickets_markdown import dequote
 except ImportError:
     from tickets_adapters import ADAPTER_REGISTRY
+    from tickets_markdown import dequote
 
 
 RESOLVER_VERSION = "orchflows.pack-resolver.v2"
@@ -99,7 +101,7 @@ def _read_bytes(path: Path, subject: str) -> bytes:
 
 
 def _pack_name(value: object) -> str:
-    name = str(value or "").strip().strip("`").strip()
+    name = dequote(value)
     if not name or not _PACK_NAME_RE.fullmatch(name) or name in (".", ".."):
         raise PackError("pack-invalid", f"invalid pack name: {name or '<missing>'}")
     return name
@@ -190,7 +192,7 @@ def _candidate_path(name: str, packs_root: Path) -> Path:
 
 def _frontmatter_name(text: str, path: Path) -> Optional[str]:
     match = _FRONTMATTER_NAME_RE.search(text)
-    return match.group(1).strip().strip("`").strip() if match else None
+    return dequote(match.group(1)) if match else None
 
 
 def _parse_rows(

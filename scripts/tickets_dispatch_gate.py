@@ -3,7 +3,7 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
     from .tickets_generations import assignment_digest, seal_findings
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
@@ -11,10 +11,10 @@ if __package__:
     from .tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
     from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_review import ReviewError, review_records, state_from_text
-    from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
+    from .tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
     from tickets_generations import assignment_digest, seal_findings
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
@@ -22,7 +22,7 @@ else:
     from tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
     from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from tickets_review import ReviewError, review_records, state_from_text
-    from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
+    from tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
@@ -90,26 +90,30 @@ def _cmd_gate(rest):
     probe = list(rest)
     for flag in ("--lens", "--ordered-lens-bundle"):
         _extract_flag(probe, flag)
-    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
-        return _gate_under_run_lock(rest)
+    if len(probe) != 2:
+        return {"error": f"usage: {GATE_USAGE}"}
     try:
-        with _run_lock(probe[0]):
+        with locked_ticket_write(probe[0], probe[1]):
             return _gate_under_run_lock(rest)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {"error": f"unable to create gate: {error}"}
 
 
 def _cmd_checker_stage(rest):
-    if len(rest) != 2 or _segment_error("run id", rest[0]) is not None:
-        return _checker_stage_under_run_lock(rest)
+    if len(rest) != 2:
+        return {"error": f"usage: {CHECKER_STAGE_USAGE}"}
     try:
-        with _run_lock(rest[0]):
-            return _checker_stage_under_run_lock(rest)
+        with locked_ticket_write(rest[0], rest[1]) as target_path:
+            return _checker_stage_under_run_lock(rest, target_path=target_path)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {"error": f"unable to create checker stage: {error}"}
 
 
-def _checker_stage_under_run_lock(rest):
+def _checker_stage_under_run_lock(rest, *, target_path=None):
     if len(rest) != 2:
         return {"error": f"usage: {CHECKER_STAGE_USAGE}"}
     run, target_id = rest
@@ -121,7 +125,8 @@ def _checker_stage_under_run_lock(rest):
     if root is None:
         return {"error": NO_SINK_ERROR}
     directory = root / run
-    target_path = directory / f"{target_id}.md"
+    if target_path is None:
+        target_path = directory / f"{target_id}.md"
     if not target_path.is_file():
         return {"error": f"checker target not found: {run}/{target_id}"}
     target = _load_ticket(target_path)
@@ -131,7 +136,7 @@ def _checker_stage_under_run_lock(rest):
         return {"error": f"ticket {run}/{target_id} defers independence to its downstream gate"}
     if str(target.get("checked_by") or "").strip():
         return {"error": f"ticket {run}/{target_id} is already checked"}
-    if not str(target.get("pack") or "").strip().strip("`"):
+    if not dequote(target.get("pack")):
         return {"error": "checker-stage requires target pack authority"}
     root_generation = str(target.get("root_generation") or "")
     if not root_generation:

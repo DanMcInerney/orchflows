@@ -14,6 +14,11 @@ from pathlib import Path
 import re
 import sys
 
+try:  # in-repo; the installed copy sits flat beside tickets.py
+    from scripts.tickets_markdown import dequote
+except ImportError:  # pragma: no cover - the installed copy's path
+    from tickets_markdown import dequote
+
 
 STATUS_RE = re.compile(r"^status:\s*([^\r\n]+)$", re.MULTILINE)
 ID_RE = re.compile(r"^id:\s*([^\r\n]+)$", re.MULTILINE)
@@ -36,7 +41,7 @@ def _section(text: str, heading: str) -> str:
 
 def _identity(text: str, expression: re.Pattern[str], field: str) -> str:
     match = expression.search(text)
-    value = match.group(1).strip().strip("`") if match else ""
+    value = dequote(match.group(1)) if match else ""
     if not value:
         raise FixtureError(f"completed ticket has no {field}")
     return value

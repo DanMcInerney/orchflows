@@ -7,8 +7,10 @@ from pathlib import Path
 
 try:
     from scripts import state_root
+    from scripts.tickets_markdown import dequote
 except ImportError:
     import state_root
+    from tickets_markdown import dequote
 
 
 @dataclass(frozen=True)
@@ -84,7 +86,7 @@ def _candidate_roots(root=None):
 def pack_path(pack, *, root=None) -> Path:
     """Resolve the stamped pack in project, installed, then source scope."""
 
-    name = str(pack or "").strip().strip("`").strip()
+    name = dequote(pack)
     if not name:
         raise AdapterError("pack-unresolved", "ticket names no pack")
     seen = set()
@@ -119,7 +121,7 @@ def declared_adapter(pack, *, root=None) -> str:
         raise AdapterError("pack-resolver-unavailable", str(error)) from error
     except packs_support.PackError as error:
         raise AdapterError("adapter-declaration-invalid", error.detail) from error
-    normalized = value.strip().strip("`").strip()
+    normalized = dequote(value)
     if not normalized:
         raise AdapterError(
             "adapter-declaration-invalid",

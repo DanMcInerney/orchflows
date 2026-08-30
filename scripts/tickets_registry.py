@@ -8,6 +8,11 @@ validated by their path rather than this registry.
 
 from __future__ import annotations
 
+try:
+    from scripts.tickets_markdown import dequote
+except ImportError:
+    from tickets_markdown import dequote
+
 
 # Keep this order stable: it is the user-facing registry artifact and is
 # rendered in refusal messages and help/test projections.
@@ -45,19 +50,19 @@ REVIEW_KINDS = ("critique", "repair", "verify")
 def executor_registered(executor: str) -> bool:
     """Return whether ``executor`` is one of the seven callable verbs."""
 
-    return str(executor or "").strip().strip("`").strip() in EXECUTOR_REGISTRY
+    return dequote(executor) in EXECUTOR_REGISTRY
 
 
 def executor_successor(executor: str):
     """Return the successor verb for a superseded name, else ``None``."""
 
-    return SUPERSEDED_EXECUTORS.get(str(executor or "").strip().strip("`").strip())
+    return SUPERSEDED_EXECUTORS.get(dequote(executor))
 
 
 def executor_refusal(executor: str) -> str:
     """Return one stable, actionable refusal for an unknown callable."""
 
-    value = str(executor or "").strip().strip("`").strip() or "<missing>"
+    value = dequote(executor) or "<missing>"
     successor = SUPERSEDED_EXECUTORS.get(value)
     if successor:
         return (

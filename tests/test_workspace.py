@@ -12,6 +12,36 @@ from tests.test_workspace_cases.candidate_cases import (  # noqa: F401
     TestOwnershipOfTheEstablishmentLanes,
     TestRetireRemovesTheDerivedCandidate,
 )
+from tests.test_workspace_cases.cli_cases import (  # noqa: F401
+    NoFormatCallsTest,
+    TestHelpAndVantage,
+)
+from tests.test_workspace_cases.contract_cases import (  # noqa: F401
+    TestContractKeySeam,
+    TestScriptShape,
+)
+from tests.test_workspace_cases.emission_cases import (  # noqa: F401
+    TestBaselineIsWrittenOnce,
+    TestBytecodeIsEmissionNotBreach,
+)
+from tests.test_workspace_cases.grade_cases import (  # noqa: F401
+    RuntimeInterpreterBoundaryTests,
+    TestCheckGradesFromTheCallersGit,
+    TestVerdictSurvivesCleanupAndScopeIsSegmentExact,
+)
+from tests.test_workspace_cases.operation_cases import (  # noqa: F401
+    TestJoinGradesActualOperations,
+)
+from tests.test_workspace_cases.prepare import (  # noqa: F401
+    TestDetachedWorkspaceIsRecordedAndGraded,
+    TestStartPreparesTheFrontendTree,
+    TestStartReportsTheBrowserWithoutFetchingOne,
+    TestTheInstallCeilingIsReal,
+)
+from tests.test_workspace_cases.sharing_cases import (  # noqa: F401
+    TestStartSeesWhoElseRecordedThisTree,
+    TestTheSharedTreeCodeIsItsOwnAndDocumented,
+)
 from tests.test_workspace_cases.start_cases import (  # noqa: F401
     TestCheckDisambiguatesItsRevisionRanges,
     TestCheckUsesTheEstablishedCandidate,

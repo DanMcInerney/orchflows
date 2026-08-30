@@ -18,7 +18,8 @@ if __package__:
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_format import (
         TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8,
-        _section_body, _write_section, canonical_json, parse_canonical_json,
+        _section_body, _write_section, canonical_json, is_critique_stage_id,
+        parse_canonical_json,
     )
     from .tickets_markdown import SECTION_SENTINEL
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
@@ -35,7 +36,8 @@ else:
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_format import (
         TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8,
-        _section_body, _write_section, canonical_json, parse_canonical_json,
+        _section_body, _write_section, canonical_json, is_critique_stage_id,
+        parse_canonical_json,
     )
     from tickets_markdown import SECTION_SENTINEL
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
@@ -249,7 +251,7 @@ def _outcome_failure(run: str, ticket_id: str, content):
         return _classification("handoff-required", "suspension requires Handoff evidence")
     if content["status"] != "suspended" and evidence["Handoff"].strip():
         return _classification("outcome-invalid", "terminal outcome cannot carry a Handoff")
-    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+    if is_critique_stage_id(ticket_id):
         # Critique Result and Feedback are generated finding carriers, not
         # arbitrary prose.  Keep the import lazy because tickets_review
         # consumes this module while joining a review stage.

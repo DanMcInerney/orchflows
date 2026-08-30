@@ -12,8 +12,9 @@ if __package__:
     )
     from .tickets_shapes import DISPATCH_OUTCOME_VALUES
     from .tickets_format import (
-        TERMINAL_STATES, _extract_flag, _read_utf8,
-        _set_frontmatter_field, canonical_json, parse_canonical_json,
+        GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
+        _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
+        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
     from .tickets_store import UTC_STAMP, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
@@ -30,8 +31,9 @@ else:
     )
     from tickets_shapes import DISPATCH_OUTCOME_VALUES
     from tickets_format import (
-        TERMINAL_STATES, _extract_flag, _read_utf8,
-        _set_frontmatter_field, canonical_json, parse_canonical_json,
+        GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
+        _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
+        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
     from tickets_store import UTC_STAMP, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
@@ -203,7 +205,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         failure = _identity_failure(kind, value)
         if failure is not None:
             return failure
-    review_stage = ".gate.critique." in ticket_id or ticket_id.endswith(".check")
+    review_stage = is_critique_stage_id(ticket_id)
     if accepted_file is not None and not review_stage:
         return _classification(
             "review-invalid", "--accepted-file applies only to critique joins"
@@ -231,7 +233,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         "operation": "join",
         "outcome_record_id": outcome_record_id,
     }
-    if ".gate." in ticket_id or ticket_id.endswith(".check"):
+    if is_review_stage_id(ticket_id):
         content["review"] = {"accepted": accepted, "artifact": artifact}
 
     def join(text, _data, attempt, _state):
@@ -261,10 +263,10 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         status = outcome["status"]
         try:
             review = state_from_text(text, allow_legacy=True)
-            if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+            if is_critique_stage_id(ticket_id):
                 lens = (
-                    "checker" if ticket_id.endswith(".check")
-                    else ticket_id.split(".gate.critique.", 1)[1]
+                    "checker" if ticket_id.endswith(CHECKER_STAGE_SUFFIX)
+                    else ticket_id.split(GATE_CRITIQUE_MARKER, 1)[1]
                 )
                 review = adjudicate(
                     review, _critique_findings(

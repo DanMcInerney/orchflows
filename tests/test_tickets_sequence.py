@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+from scripts.tickets_lint import lint_findings
 from scripts.tickets_sequence import (
     sequence_block, sequence_defects, sequence_role_findings,
 )
@@ -112,6 +113,71 @@ class SequenceAdmissionTests(unittest.TestCase):
                 (project / ".orchflows" / "skills").rmdir()
                 (project / ".orchflows").rmdir()
                 project.rmdir()
+
+
+class SequenceRoleReachesTheLintTests(unittest.TestCase):
+    """The grade has a caller. A finding produced by a function nothing
+    calls is a finding nobody sees, which is what `sequence_role_findings`
+    was until the lint carried it."""
+
+    TICKET = """---
+id: T1
+run: testrun
+status: pending
+executor: orch-execute
+sequence: [orch-execute, orch-check]
+pack: orch-code-pack
+depends_on: []
+isolation: required
+bound: 30m
+---
+
+## Goal
+
+Deliver the behavior.
+
+## Context
+
+[]
+
+## Result
+
+## Verification
+
+## Feedback
+
+[]
+
+## Risks
+
+[]
+"""
+
+    def test_the_lint_carries_the_mismatch_as_a_warning(self):
+        findings = lint_findings(self.TICKET, ticket_id="T1")
+        mismatch = [
+            item for item in findings if item["code"] == "sequence-role-mismatch"
+        ]
+        self.assertEqual(1, len(mismatch), findings)
+        self.assertEqual("warning", mismatch[0]["severity"])
+        self.assertIn("orch-check", mismatch[0]["message"])
+        # A warning is not a refusal: `_cmd_lint` exits 1 only on an error.
+        self.assertFalse(
+            any(item["severity"] == "error" for item in findings), findings
+        )
+
+    def test_an_agreeing_chain_leaves_the_lint_silent(self):
+        agreeing = self.TICKET.replace(
+            "sequence: [orch-execute, orch-check]",
+            "sequence: [orch-execute, orch-integrate]",
+        )
+        self.assertEqual(
+            [],
+            [
+                item for item in lint_findings(agreeing, ticket_id="T1")
+                if item["code"] == "sequence-role-mismatch"
+            ],
+        )
 
 
 if __name__ == "__main__":

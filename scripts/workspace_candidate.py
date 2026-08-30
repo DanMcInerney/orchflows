@@ -76,7 +76,7 @@ def _validate_write_paths(entries, root: Path) -> None:
     if not isinstance(entries, list):
         return
     for declared in entries:
-        entry = str(declared or "").strip().strip("`").strip()
+        entry = tickets_format.dequote(declared)
         candidate = Path(entry).expanduser()
         if not candidate.is_absolute():
             candidate = root / candidate
@@ -294,7 +294,7 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
     else:
         replayed = True
     observed_branch, head = workspace_git._head_and_branch(_git_out(target))
-    dirty = sorted(set(workspace_git._dirty_paths(str(target))))
+    dirty = sorted(set(workspace_git.dirty_paths(str(target))))
     # never restamped: the baseline names the revision this item was cut
     # from, and a re-establishment that rewrote it would move the revision
     # every later grade measures the item's own change against

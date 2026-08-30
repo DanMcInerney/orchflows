@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 import json
-import tempfile
-import time
 from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime, timezone
@@ -11,65 +9,48 @@ try:
     from scripts import state_root
 except ImportError:
     import state_root
-try:
-    import msvcrt
-except ImportError:
-    msvcrt = None
-try:
-    import fcntl
-except ImportError:
-    fcntl = None
 if __package__:
-    from .tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
+    from .tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, dequote
+    from .tickets_store_writes import (
+        REPLACE_BUDGET_SECONDS, REPLACE_RETRY_SECONDS, RUN_IDENTITY_NAME,
+        RUN_LOCKS_DIR, WINDOWS_LOCK_RETRY_SECONDS, _create_text_exclusively,
+        _lock_windows_byte, _replace_atomically, _run_lock,
+        _waiting_out_windows, _write_identity, _write_text_atomically,
+    )
 else:
-    from tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8
+    from tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, dequote
+    from tickets_store_writes import (
+        REPLACE_BUDGET_SECONDS, REPLACE_RETRY_SECONDS, RUN_IDENTITY_NAME,
+        RUN_LOCKS_DIR, WINDOWS_LOCK_RETRY_SECONDS, _create_text_exclusively,
+        _lock_windows_byte, _replace_atomically, _run_lock,
+        _waiting_out_windows, _write_identity, _write_text_atomically,
+    )
 
 UTC_STAMP = '%Y-%m-%dT%H:%M:%SZ'
-RUN_IDENTITY_NAME = 'run.json'
-RUN_LOCKS_DIR = 'locks'
 SINK_CONVENTION = 2
 NO_SINK_ERROR = 'cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory'
 RUN_STATE_TREES = ('runs', 'research', 'improvement', 'handoffs')
 DEFAULT_RUN_STATE_TREE = 'runs'
 RUN_NOTES_NAME = 'notes.md'
-WINDOWS_LOCK_RETRY_SECONDS = 0.05
-
-
-def _lock_windows_byte(handle):
-    """Wait for the run's byte lock without ``LK_LOCK``'s finite retry cap.
-
-    ``msvcrt.LK_LOCK`` stops retrying after ten attempts, unlike the blocking
-    ``flock`` used on POSIX.  Polling the non-blocking operation preserves the
-    same wait-until-acquired contract on Windows while still surfacing errors
-    that are not lock contention.
-    """
-
-    while True:
-        try:
-            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
-            return
-        except PermissionError:
-            time.sleep(WINDOWS_LOCK_RETRY_SECONDS)
 
 
 def normalized_isolation(declared) -> str:
     """contracts/work-item.md's `isolation`, read one way by both scripts.
 
-    Absent or empty reads `none`. Backticks are ordinary frontmatter
-    punctuation here, stripped exactly as `_normalized_scope` and the
-    executor check strip them, so the pre-dispatch establishment gate and
-    `scripts/workspace.py` grade one value. Normalizing it in two places is
-    how an accepted candidate and a skipped grade can disagree behind a green
-    suite.
+    Absent or empty reads `none`. Backticks come off through `dequote`, the
+    one de-quoting primitive every frontmatter reader shares, so the
+    pre-dispatch establishment gate and `scripts/workspace.py` grade one
+    value. Normalizing it in two places is how an accepted candidate and a
+    skipped grade can disagree behind a green suite.
     """
-    return str(declared or 'none').strip().strip('`').strip() or 'none'
+    return dequote(declared) or 'none'
 def _executor_script(executor: str):
     """The path a ``script:<path>`` executor names, or ``None``.
 
     One reader, so nothing else in this file has to know the prefix's
     spelling to tell a script node from a skill.
     """
-    text = str(executor or '').strip().strip('`').strip()
+    text = dequote(executor)
     if not text.startswith(SCRIPT_EXECUTOR_PREFIX):
         return None
     return text[len(SCRIPT_EXECUTOR_PREFIX):].strip() or None
@@ -97,49 +78,6 @@ def _runs_root():
         return state_root.runs_root()
     except Exception:
         return None
-@contextmanager
-def _run_lock(run: str):
-    """Hold the one process lock protecting a physical run's mutations.
-
-    Atomic replace protects readers from partial files, but it cannot make a
-    read/check/write invariant atomic.  Every command that can move a run's
-    tickets or identity therefore holds this lock from its first state read
-    through its final write.  The lock lives outside the run payload trees so
-    a refused command does not create a ticket, worklog, or run identity.
-    """
-    try:
-        sink = state_root.state_root()
-        lock_dir = sink / RUN_LOCKS_DIR
-        lock_dir.mkdir(parents=True, exist_ok=True)
-        path = lock_dir / (run + '.lock')
-        handle = open(path, 'a+b')
-    except OSError as error:
-        raise OSError(f"unable to lock run '{run}': {error}") from error
-    locked = False
-    try:
-        handle.seek(0, 2)
-        if handle.tell() == 0:
-            handle.write(b'\x00')
-            handle.flush()
-        handle.seek(0)
-        if msvcrt is not None:
-            _lock_windows_byte(handle)
-        elif fcntl is not None:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        else:
-            raise OSError('this host provides neither msvcrt nor fcntl locking')
-        locked = True
-        yield
-    finally:
-        try:
-            if locked:
-                handle.seek(0)
-                if msvcrt is not None:
-                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
-                elif fcntl is not None:
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        finally:
-            handle.close()
 def _improvement_root():
     """The sink's improvement tree, or ``None`` when no root can be resolved."""
     try:
@@ -157,12 +95,14 @@ def _run_state_root(tree: str):
     except Exception:
         return None
 def _segment_error(kind: str, value: str):
-    """Refuse, by name, anything that is not one path segment under the root."""
-    if not value or not value.strip():
-        return {'error': f'{kind} is empty'}
-    if '/' in value or '\\' in value or '..' in value or (value == '.'):
-        return {'error': f"unsafe {kind} '{value}': one path segment only, with no path separator and no '..'"}
-    return None
+    """Refuse, by name, anything that is not one path segment under the root.
+
+    The rule is `state_root.segment_defect`'s -- every sink path is built
+    from that module's roots, so the predicate belongs at the dependency-free
+    end. This is only its payload spelling for a JSON channel.
+    """
+    defect = state_root.segment_defect(kind, value)
+    return None if defect is None else {'error': defect}
 class TicketWriteRefused(Exception):
     """A structured refusal raised before any lock is opened or byte written.
 
@@ -198,6 +138,20 @@ def locked_ticket_write(run: str, ticket_id: str):
         if tickets_root is None:
             raise TicketWriteRefused({'error': NO_SINK_ERROR})
         yield tickets_root / run / f'{ticket_id}.md'
+@contextmanager
+def locked_run_write(run: str):
+    """`locked_ticket_write` for a command whose subject is the run itself.
+
+    Run state, the gate ledger and the checker stage name no ticket, so the
+    ticket half of the identity is not theirs to grade -- but the run half
+    still is, and a malformed run id reaching a handler unlocked is the same
+    hole in either shape.
+    """
+    refusal = _segment_error('run id', run)
+    if refusal is not None:
+        raise TicketWriteRefused(refusal)
+    with _run_lock(run):
+        yield
 def _iter_run_dirs(tickets_root: Path, run_filter):
     if tickets_root is None or not tickets_root.is_dir():
         return []
@@ -312,28 +266,6 @@ def _installed_orchflows_metadata() -> dict:
     if not isinstance(commit, str) or not commit.strip():
         commit = None
     return {'receipt_version': version, 'source_commit': commit}
-REPLACE_BUDGET_SECONDS = 2.0
-REPLACE_RETRY_SECONDS = 0.005
-def _waiting_out_windows(action):
-    """Run ``action``, retrying only the refusal only Windows raises.
-
-    ``PermissionError`` alone, never ``OSError``: a missing file and an
-    unreachable directory are answers, and waiting two seconds for one of
-    those on every run that has yet to open would cost the ordinary path
-    to spare the rare one.
-
-    No facade import here, nor anywhere else in this family: a helper that
-    reaches back up to ``tickets.py`` closes an import cycle to re-point
-    whatever seam the facade held, and this one paid it per atomic write.
-    """
-    deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
-    while True:
-        try:
-            return action()
-        except PermissionError:
-            if msvcrt is None or time.monotonic() >= deadline:
-                raise
-            time.sleep(REPLACE_RETRY_SECONDS)
 def _read_identity(path: Path):
     """``(document, error)``: the run's identity, ``(None, None)`` when absent.
 
@@ -401,47 +333,6 @@ def _identity_document(run: str, path: Path, project: dict, workspace: str, now,
     elif not isinstance(existing.get('workspaces'), list):
         updated['workspaces'] = seen
     return (updated, None) if updated != existing else (None, None)
-def _replace_atomically(temporary: Path, target: Path) -> None:
-    """Move ``temporary`` onto ``target``, waiting out a transient refusal."""
-    _waiting_out_windows(lambda: temporary.replace(target))
-def _write_identity(run_dir: Path, document: dict) -> None:
-    """Whole-file, and atomically.
-
-    The run id partitions this document, but two workspaces of one project
-    still open it at once, and a reader must never meet a half-written one.
-    Written beside the target and moved over it, so the move is the only
-    thing a concurrent reader can observe.
-    """
-    handle = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', newline='\n', dir=str(run_dir), prefix=RUN_IDENTITY_NAME + '.', suffix='.tmp', delete=False)
-    temporary = Path(handle.name)
-    try:
-        with handle:
-            handle.write(json.dumps(document, ensure_ascii=False, indent=2) + '\n')
-        _replace_atomically(temporary, run_dir / RUN_IDENTITY_NAME)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
-def _write_text_atomically(path: Path, text: str) -> None:
-    """Replace one existing text artifact without exposing a partial file."""
-    if not isinstance(path, Path):
-        path.write_text(text, encoding='utf-8')
-        return
-    if path.exists():
-        with open(path, 'r+', encoding='utf-8'):
-            pass
-    handle = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', newline='\n', dir=str(path.parent), prefix=path.name + '.', suffix='.tmp', delete=False)
-    temporary = Path(handle.name)
-    try:
-        with handle:
-            handle.write(text)
-        _replace_atomically(temporary, path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
-def _create_text_exclusively(path: Path, text: str) -> None:
-    """Create one immutable identity, losing rather than replacing a race."""
-    with open(path, 'x', encoding='utf-8', newline='\n') as handle:
-        handle.write(text)
 def _identity_update(run: str, now, runs_root=None):
     """Prepare this writer's one immutable run-identity update."""
     runs_root = _runs_root() if runs_root is None else runs_root
