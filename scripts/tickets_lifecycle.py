@@ -355,8 +355,6 @@ def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
         return _classification('review-invalid', str(error))
     timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
     updated = _set_frontmatter_field(text, 'status', 'claimed')
-    updated = _set_frontmatter_field(updated, 'claimed_by', written_by)
-    updated = _set_frontmatter_field(updated, 'claimed_at', timestamp)
     updated = _write_section(updated, 'Result', f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n[]')
     updated = _set_frontmatter_field(updated, REVIEW_FIELD, canonical_json(review))
     updated = _set_frontmatter_field(updated, 'status', 'complete')
@@ -364,7 +362,7 @@ def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
         _write_text_atomically(ticket_path, updated)
     except OSError as error:
         return {'error': f'unable to complete clean repair at join: {error}'}
-    return {'join_noop_repair': {'run': run, 'id': ticket_id, 'status': 'complete', 'by': written_by, 'claimed_at': timestamp}}
+    return {'join_noop_repair': {'run': run, 'id': ticket_id, 'status': 'complete', 'by': written_by, 'at': timestamp}}
 
 def _set_status_under_run_lock(rest, *, ticket_path=None):
     args = list(rest)

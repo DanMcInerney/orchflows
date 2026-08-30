@@ -41,7 +41,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`dispatch_v1`", "`orchflows.dispatch.v1`", "`dispatch-open`",
             "`dispatch-commit`", "`dispatch-retire`", "`dispatch-replace`",
             "`dispatch-join`",
-            "`legacy-live-claim`", "`idempotency-conflict`",
+            "`claim-without-dispatch`", "`idempotency-conflict`",
             "`dispatch-mismatch`", "`assignment-mismatch`", "`stale-attempt`",
         ):
             self.assertIn(token, dispatch)
@@ -95,7 +95,7 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("transport silence", collapsed_frontier.lower())
         self.assertIn("same recorded child", collapsed_frontier)
         self.assertIn("`dispatch-replace`", frontier)
-        self.assertIn("`legacy-live-claim`", tickets)
+        self.assertIn("`claim-without-dispatch`", tickets)
         for obsolete in (
             "completion test", "same write scope", "stale claim sent back",
             "Hitting an excluded action", "optional\n  `## Context`",

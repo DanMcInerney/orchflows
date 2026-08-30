@@ -158,7 +158,6 @@ def _cmd_loop_arm(rest):
         "depends_on": [],
         "isolation": dequote(data.get("isolation")) or None,
         "bound": data.get("bound"),
-        "claimed_by": "", "claimed_at": "",
         "root_generation": data.get("root_generation"),
     }
     body = [
@@ -234,7 +233,6 @@ def _evaluate(run, loop_id, run_dir, data, text, loop):
             "pack": dequote(data.get("pack")) or None,
             "independence": "gate", "depends_on": [iteration_id],
             "isolation": "none", "bound": data.get("bound"),
-            "claimed_by": "", "claimed_at": "",
             "root_generation": data.get("root_generation"),
             "review_kind": "verify", "review_order": 0,
         }

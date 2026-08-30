@@ -5,7 +5,6 @@ pack: orch-research-pack
 depends_on: []
 bound: <= 120 tool calls
 independence: gate
-isolation: required
 profile: orch-worker
 ---
 

@@ -6,7 +6,6 @@ loop: {"done":{"form":"check","value":"Every canary item carries a verdict again
 depends_on: [00-run]
 bound: <= 40 tool calls
 independence: checker
-isolation: none
 ---
 
 ## Goal

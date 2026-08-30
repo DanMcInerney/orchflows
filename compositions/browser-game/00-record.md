@@ -1,7 +1,6 @@
 ---
 id: 00-record
 executor: orch-execute
-sequence: [draft, edit]
 pack: orch-content-pack
 depends_on: []
 bound: <= 80 tool calls

@@ -5,7 +5,6 @@ pack: orch-code-pack
 depends_on: [02-campaign]
 bound: <= 30 tool calls
 independence: checker
-isolation: required
 ---
 
 ## Goal

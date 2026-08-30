@@ -22,7 +22,7 @@ context in any checkout resumes a run mid-flight.
     │ executor: orch-execute    pack: orch-code-pack              │
     │ depends_on: [00-root.01]  <- graph edge                     │
     │ bound: 45m                <- time budget                    │
-    │ claimed_by / claimed_at / checked_by                        │
+    │ checked_by (the lease lives in dispatch_v1)                 │
     │ ---                                                         │
     │ ## Goal              observable result             ┐        │
     │ ## Context           facts and constraints          │ seal   │
@@ -84,9 +84,9 @@ done. `dispatch-outcome` and `dispatch-join` remain public for recovery.
 Reference packets are normal. Inline packets carry the sealed ticket snapshot,
 but the authoritative sink must still authenticate receipt; self-carried
 offline material cannot authorize role-bearing execution. A ticket projection
-cannot be downgraded to ephemeral. A pre-v1 live claim without an attempt refuses
-`legacy-live-claim`: its existing owner must complete or abandon it before v1
-installation. The normative shapes and precedence live in
+cannot be downgraded to ephemeral. A claimed ticket without an attempt refuses
+`claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
+whose owner and opened time are the lease. The normative shapes and precedence live in
 [contracts/dispatch.md](contracts/dispatch.md).
 
 ## A run is a directory of tickets

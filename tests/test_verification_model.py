@@ -238,8 +238,6 @@ class SeparateRepairGateTest(unittest.TestCase):
             "depends_on": list(depends_on),
             "isolation": "required" if executor == "orch-execute" else "none",
             "bound": "20m",
-            "claimed_by": "",
-            "claimed_at": "",
             "root_generation": "root:root:1:sha256:test",
         }
         return _render_ticket(fields, [

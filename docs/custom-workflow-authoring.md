@@ -47,9 +47,9 @@ scope, or at a broader custom scope than requested.
    planner freezes a root against fills it like any other. A T0 shape change is a
    supersession change and follows its contract's pinning procedure.
 4. For a composition, start from the nearest template under `compositions/`,
-   pin its open decisions, and keep control flow in ticket stubs. A stub's
-   `sequence` may take either legal form; which role its chain runs at is
-   [roles.md](../rules/roles.md) §4's alone. Run
+   pin its open decisions, and keep control flow in ticket stubs. A
+   multi-stage pack's stages run at one role, [roles.md](../rules/roles.md)
+   §4's alone; a loop is a stub's `loop` field. Run
    `tickets.py instantiate` against the finished template as deterministic
    admission.
 5. Build host integrations from the top-level [host records](../hosts/). Use

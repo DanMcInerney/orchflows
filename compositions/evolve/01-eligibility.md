@@ -5,7 +5,6 @@ pack: orch-code-pack
 depends_on: [00-eval]
 bound: <= 30 tool calls
 independence: checker
-isolation: required
 ---
 
 ## Goal

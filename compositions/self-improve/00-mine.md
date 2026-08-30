@@ -6,7 +6,6 @@ loop: {"done":{"form":"check","value":"Ranked qualifying proposals are written t
 depends_on: []
 bound: <= 60 tool calls
 independence: checker
-isolation: none
 profile: orch-planner
 ---
 

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1984,
+  "count": 1968,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -160,6 +160,7 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
+   "test_dispatch_v1.DispatchV1Test.test_a_claim_without_a_dispatch_record_is_refused",
    "test_dispatch_v1.DispatchV1Test.test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
    "test_dispatch_v1.DispatchV1Test.test_an_exact_reopen_replays_before_the_assignment_seal_is_graded",
@@ -189,7 +190,6 @@
    "test_dispatch_v1.DispatchV1Test.test_outcome_materializes_only_unstreamed_evidence_once",
    "test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_the_receipt_is_a_byte_preserving_refusal",
    "test_dispatch_v1.DispatchV1Test.test_persisted_receipt_after_outcome_is_a_byte_preserving_refusal",
-   "test_dispatch_v1.DispatchV1Test.test_pre_v1_live_claim_requires_owner_cutover",
    "test_dispatch_v1.DispatchV1Test.test_protocol_owned_record_ids_cannot_be_squatted",
    "test_dispatch_v1.DispatchV1Test.test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join",
    "test_dispatch_v1.DispatchV1Test.test_replace_help_states_lifecycle_record_id_namespace",
@@ -748,7 +748,7 @@
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_the_selection_names_the_revision_it_decided_over",
    "test_script_executors.AdapterIsolationAdmissionTest.test_a_non_isolating_adapter_does_not_require_isolation",
    "test_script_executors.AdapterIsolationAdmissionTest.test_a_skill_is_not_rejected_for_its_pack_executor_pair",
-   "test_script_executors.AdapterIsolationAdmissionTest.test_an_isolating_adapter_requires_isolation_for_any_executor",
+   "test_script_executors.AdapterIsolationAdmissionTest.test_an_isolating_adapter_derives_isolation_for_any_executor",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_bare_script_prefix_names_no_path_and_is_refused",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_directory_is_not_a_tested_script",
    "test_script_executors.ScriptExecutorAdmissionTest.test_a_script_executor_naming_no_file_in_the_tree_is_refused",
@@ -831,7 +831,7 @@
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_finding_names_the_order_it_wants",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_backticked_isolation_value_still_accepts",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_real_divergence_is_still_refused",
-   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_an_absent_isolation_field_accepts_the_normalized_packet",
+   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_an_absent_isolation_field_accepts_the_derived_packet",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_a_stale_receipt_is_not_told_to_promote",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_named_promotion_is_the_one_that_works",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_refusal_names_the_promotion",
@@ -925,11 +925,6 @@
    "test_tickets_bound.BoundGrammarTest.test_the_minutes_only_name_its_callers_hold_reads_the_same_table",
    "test_tickets_bound.BoundGrammarTest.test_the_stated_conversions_are_the_stated_constants",
    "test_tickets_bound.BoundGrammarTest.test_the_viewer_measures_every_kind_but_the_one_with_no_number",
-   "test_tickets_bound.ParkPredicateTest.test_a_bound_elapsed_with_no_motion_after_it_is_the_park",
-   "test_tickets_bound.ParkPredicateTest.test_a_bound_that_has_not_elapsed_parks_nothing",
-   "test_tickets_bound.ParkPredicateTest.test_a_claim_with_no_readable_start_has_no_deadline_to_have_passed",
-   "test_tickets_bound.ParkPredicateTest.test_motion_after_the_bound_elapsed_is_over_bound_and_not_parked",
-   "test_tickets_bound.ParkPredicateTest.test_the_facade_exports_the_predicate_the_engine_rule_names",
    "test_tickets_grade.FixedGateCommandTest.test_grade_command_reads_one_exact_run_snapshot",
    "test_tickets_grade.FixedGateCommandTest.test_unchanged_fixed_result_does_not_emit_checker_and_changed_one_does",
    "test_tickets_grade.GradeSnapshotTest.test_direct_and_loop_shapes_have_one_result_width",
@@ -946,17 +941,6 @@
    "test_tickets_loop.LoopStubProtocolTest.test_arm_creates_the_next_iteration_and_replays_while_it_is_live",
    "test_tickets_loop.LoopStubProtocolTest.test_evaluate_follows_the_landed_iteration_only",
    "test_tickets_loop.LoopStubProtocolTest.test_two_iterations_without_a_result_delta_exit_stalled",
-   "test_tickets_sequence.SequenceAdmissionTests.test_a_disagreeing_continuation_role_is_graded_but_never_refused",
-   "test_tickets_sequence.SequenceAdmissionTests.test_an_agreeing_or_roleless_continuation_is_graded_clean",
-   "test_tickets_sequence.SequenceAdmissionTests.test_declared_pack_stages_are_accepted",
-   "test_tickets_sequence.SequenceAdmissionTests.test_later_skill_role_does_not_change_the_head_binding",
-   "test_tickets_sequence.SequenceAdmissionTests.test_project_skill_sequence_resolves_from_project_scope",
-   "test_tickets_sequence.SequenceAdmissionTests.test_skill_and_cell_forms_cannot_be_mixed",
-   "test_tickets_sequence.SequenceAdmissionTests.test_skill_sequence_requires_resolvable_names",
-   "test_tickets_sequence.SequenceAdmissionTests.test_the_packet_prompt_names_the_disagreeing_continuation",
-   "test_tickets_sequence.SequenceAdmissionTests.test_undeclared_pack_stage_is_refused",
-   "test_tickets_sequence.SequenceRoleReachesTheLintTests.test_an_agreeing_chain_leaves_the_lint_silent",
-   "test_tickets_sequence.SequenceRoleReachesTheLintTests.test_the_lint_carries_the_mismatch_as_a_warning",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
    "test_trace.TestClaudeAdapter.test_malformed_fixture_yields_partial_trace",
@@ -1987,7 +1971,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "32386128d7d533a46d84d8d2597f76f416cb24d324cca216e8eaf30e0653b39e"
+  "sha256": "96fc9a50e69368734841e825cc03ef0d82edaaf74192117652a6c0cba74b5785"
  },
  "mutation_owners": [
   {

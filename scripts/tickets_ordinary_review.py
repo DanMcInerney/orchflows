@@ -83,10 +83,10 @@ def ordinary_stage_text(run: str, target_id: str, target: dict, kind: str) -> st
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": "pending", "executor": executor,
-        "sequence": None, "pack": target.get("pack"),
+        "pack": target.get("pack"),
         "independence": "gate", "depends_on": dependencies,
         "isolation": "none", "bound": f"{DEFAULT_BOUND_MINUTES}m",
-        "review_order": None, "claimed_by": "", "claimed_at": "",
+        "review_order": None,
         "root_generation": target.get("root_generation"),
         "review_kind": kind,
     }

@@ -30,12 +30,13 @@ if __package__:
         REQUIRED_ISOLATION, TERMINAL_STATES, _extract_flag, _parse_frontmatter,
         _read_utf8,
     )
+    from .tickets_adapters import derived_isolation
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
     from .tickets_join import _cmd_dispatch_join
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_lifecycle import _cmd_ready
     from .tickets_store import (
-        NO_SINK_ERROR, _run_lock, _tickets_root, normalized_isolation,
+        NO_SINK_ERROR, _run_lock, _tickets_root,
         segment_refusal,
     )
 else:  # pragma: no cover - direct/installed flat script path
@@ -43,12 +44,13 @@ else:  # pragma: no cover - direct/installed flat script path
         REQUIRED_ISOLATION, TERMINAL_STATES, _extract_flag, _parse_frontmatter,
         _read_utf8,
     )
+    from tickets_adapters import derived_isolation
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
     from tickets_join import _cmd_dispatch_join
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_lifecycle import _cmd_ready
     from tickets_store import (
-        NO_SINK_ERROR, _run_lock, _tickets_root, normalized_isolation,
+        NO_SINK_ERROR, _run_lock, _tickets_root,
         segment_refusal,
     )
 
@@ -104,7 +106,7 @@ def _derived_isolation(run: str, ticket_id: str) -> bool:
     if failure is not None:
         return False
     data = _parse_frontmatter(text)
-    return normalized_isolation(data.get("isolation")) == REQUIRED_ISOLATION
+    return derived_isolation(data.get("isolation"), data.get("pack")) == REQUIRED_ISOLATION
 
 
 def _retire_workspace(run: str, ticket_id: str, status: str) -> dict:

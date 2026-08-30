@@ -97,7 +97,16 @@ def write_ticket(
 ) -> Path:
     run_dir = sink / "tickets" / run
     run_dir.mkdir(parents=True, exist_ok=True)
-    claimed = "claimed_at: {0}\nclaimed_by: unit_01\n".format(claimed_at) if claimed_at else ""
+    claimed = ""
+    if claimed_at:
+        state = {"protocol": "orchflows.dispatch.v1", "attempts": [{
+            "assignment_seal": "sha256:sealed", "dispatch_id": "D1",
+            "lease_expires_at": "2099-01-01T00:00:00Z",
+            "opened_at": claimed_at,
+            "outcome_record_id": "outcome", "owner": "unit_01",
+            "records": [], "state": "live",
+        }]}
+        claimed = "dispatch_v1: " + json.dumps(state, separators=(",", ":"), sort_keys=True) + "\n"
     path = run_dir / (tid + ".md")
     path.write_text(
         TICKET.format(tid=tid, run=run, status=status, executor=executor, claimed=claimed, verification=verification),

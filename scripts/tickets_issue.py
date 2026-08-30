@@ -38,7 +38,7 @@ else:
 
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
-    "[--suggested-file PATH ...] [--sequence E[,E...]] [--depends-on a,b] "
+    "[--suggested-file PATH ...] [--depends-on a,b] "
     "[--bound B] [--pack P] [--profile P] [--independence gate|checker] "
     "[--isolation required|none] | new <run> [<id>] --file <path>"
 )
@@ -80,7 +80,6 @@ def _cmd_new(rest):
     args = list(rest)
     file_arg = _extract_flag(args, "--file")
     executor = _extract_flag(args, "--executor")
-    sequence = _extract_flag(args, "--sequence")
     goal = _extract_flag(args, "--goal")
     context = _extract_flag(args, "--context")
     suggested = _extract_all(args, "--suggested-file")
@@ -94,7 +93,7 @@ def _cmd_new(rest):
     if stray is not None:
         return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
     supplied = (
-        ("--executor", executor), ("--sequence", sequence), ("--goal", goal),
+        ("--executor", executor), ("--goal", goal),
         ("--context", context), ("--suggested-file", suggested or None),
         ("--depends-on", depends_on), ("--bound", bound), ("--pack", pack),
         ("--profile", profile), ("--independence", independence),
@@ -124,15 +123,14 @@ def _cmd_new(rest):
     # orderings of one edge set are two assignment digests, and the digest
     # cannot absorb the difference without invalidating every historical
     # seal, so the canonical order is established where the list is written.
-    # `sequence` is a chain and keeps the order it was given.
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
-        "sequence": _split_commas(sequence) or None, "pack": pack,
+        "pack": pack,
         "independence": independence,
         "depends_on": sorted(_split_commas(depends_on)),
         "isolation": isolation, "bound": bound or NEW_DEFAULT_BOUND,
-        "claimed_by": "", "claimed_at": "", "profile": profile,
+        "profile": profile,
     }
     sections = [("Goal", goal), ("Context", context)]
     if suggested:
@@ -171,8 +169,6 @@ def _project_file_ticket(
     text = _set_frontmatter_field(text, "run", run)
     text = _set_frontmatter_field(text, "status", "pending")
     text = _invalidate_assignment(text)
-    text = _set_frontmatter_field(text, "claimed_by", "")
-    text = _set_frontmatter_field(text, "claimed_at", "")
     return (ticket_id, text), None
 
 

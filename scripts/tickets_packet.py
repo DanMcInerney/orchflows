@@ -8,32 +8,30 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec
+    from .tickets_adapters import AdapterError, adapter_spec, derived_isolation
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
-        ROOT_EXECUTOR, _executor_of, parse_loop,
+        ROOT_EXECUTOR, _executor_of, lease_of, parse_loop,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json, dequote,
     )
     from .tickets_registry import REVIEW_KINDS
-    from .tickets_sequence import sequence_block
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
         normalized_isolation,
     )
 else:
-    from tickets_adapters import AdapterError, adapter_spec
+    from tickets_adapters import AdapterError, adapter_spec, derived_isolation
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
-        ROOT_EXECUTOR, _executor_of, parse_loop,
+        ROOT_EXECUTOR, _executor_of, lease_of, parse_loop,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json, dequote,
     )
     from tickets_registry import REVIEW_KINDS
-    from tickets_sequence import sequence_block
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
@@ -73,10 +71,7 @@ def workspace_establishment_finding(data: dict, workspace):
         adapter = adapter_spec(pack)
     except AdapterError as error:
         return error.code, error.detail
-    required = (
-        adapter.establishes_isolation
-        and normalized_isolation(data.get("isolation")) == "required"
-    )
+    required = derived_isolation(data.get("isolation"), pack) == "required"
     if not required:
         return None
     recorded = str(data.get("workspace_path") or "").strip()
@@ -106,23 +101,6 @@ def workspace_establishment_finding(data: dict, workspace):
     return None
 
 
-def _last_motion(ticket_path: Path):
-    """The ticket file is the durable motion record; result writes update it."""
-    try:
-        return datetime.fromtimestamp(Path(ticket_path).stat().st_mtime, timezone.utc), []
-    except OSError as error:
-        return None, [f"could not stat {ticket_path}: {error}"]
-
-
-def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -> bool:
-    parsed = _parse_iso(claimed_at)
-    if parsed is None:
-        return True
-    if last_motion is not None and last_motion > parsed:
-        parsed = last_motion
-    return now - parsed > timedelta(minutes=bound_minutes)
-
-
 def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
     if data.get("dispatch_v1"):
         if __package__:
@@ -137,8 +115,9 @@ def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
             attempt.get("state") != "live" or now >= window["lease_expires_at"],
             [],
         )
-    motion, unreadable = _last_motion(Path(ticket_path))
-    return _is_stale(data.get("claimed_at"), _parse_bound_minutes(data.get("bound")), now, motion), unreadable
+    # Without a dispatch record there is no live claim to defend: the
+    # lease lives in dispatch_v1 alone (contracts/dispatch.md).
+    return True, []
 
 
 def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
@@ -219,9 +198,9 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     run_id = str(loaded.get("run") or run)
     script = Path(__file__).with_name("tickets.py").resolve()
     executor_script = _executor_script(executor)
-    assigned_name = str(dispatched_name or loaded.get("claimed_by") or "").strip() or None
+    assigned_name = str(dispatched_name or lease_of(loaded)[0] or "").strip() or None
     if assigned_name is None:
-        return {"error": "packet requires the dispatched child identity through --by when it differs from claimed_by"}
+        return {"error": "packet requires the dispatched child identity through --by when it differs from the dispatch attempt owner"}
     if review_kind == "critique":
         prompt = [
             "Apply orch-check to the immutable review ledger and fixed artifact.",
@@ -249,7 +228,8 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             "The sealed semantic assignment is Goal, Context, and optional Suggested files. Suggested files are non-binding; inspect and change or create any repository files needed for Goal.",
             "Choose the implementation, tests, and verification yourself. Repository-global deterministic gates run on the integrated tip.",
         ]
-        prompt.extend(sequence_block(loaded))
+        if loaded.get("pack"):
+            prompt.append("Run the stamped pack's declared stages in order through this one role; the craft's Stages section narrates them.")
         prompt.extend(_dependency_prompt(loaded, ticket_path))
     if workspace:
         prompt.append(f"Workspace: {workspace}")
@@ -258,7 +238,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             "Immutable review ledger; consume this exact predecessor chain:",
             canonical_json(review_state),
         ))
-    isolation = normalized_isolation(loaded.get("isolation"))
+    isolation = derived_isolation(loaded.get("isolation"), loaded.get("pack"))
     if review_kind == "critique":
         prompt.append("File the complete findings array in Result or Feedback as evidence is produced; the join accepts only an --accepted-file subset and sets terminal status.")
     elif review_kind == "verify":
@@ -296,5 +276,5 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
 __all__ = (
     "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS", "GATE_REPAIR_ID",
     "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE", "_claim_is_stale",
-    "_is_stale", "_last_motion", "_packet_under_run_lock",
+    "_packet_under_run_lock",
 )

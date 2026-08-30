@@ -58,16 +58,14 @@ else:
         INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
         instruction_breakdown, instruction_words,
     )
-# The bound grammar is `tickets_bound`'s and the chain grammar is
-# `tickets_sequence`'s, read here so every holder gets the one spelling.
+# The bound grammar is `tickets_bound`'s, read here so every holder
+# gets the one spelling.
 # Reached by name in the sibling branch: the import census is pinned.
 if __package__:
     from .tickets_bound import DEFAULT_BOUND_MINUTES, _parse_bound_minutes
-    from .tickets_sequence import sequence_defects
 else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
-    from tickets_sequence import sequence_defects
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
 DISPATCHING_EXECUTORS = ('orch-frontier',)
 SCRIPT_EXECUTOR_PREFIX = 'script:'
@@ -192,11 +190,35 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if not sections.get('context', '').strip():
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
-    defects.extend(sequence_defects(
-        data.get('sequence'), _executor_of(data), data.get('pack')
-    ))
     defects.extend(loop_defects(data.get('loop'), _executor_of(data)))
     return defects
+def lease_of(data):
+    """(owner, opened_at) of the ticket's current dispatch attempt.
+
+    The dispatch record owns the lease (contracts/dispatch.md); the ticket
+    carries no claimed_by/claimed_at projection beside it. This is the
+    light display/ordering read: the live attempt if one exists, else the
+    latest attempt, else ('', ''). Lease-law decisions read the validated
+    window in tickets_dispatch_schema instead.
+    """
+    raw = str(data.get('dispatch_v1') or '').strip()
+    if not raw:
+        return '', ''
+    try:
+        state = json.loads(raw)
+    except ValueError:
+        return '', ''
+    attempts = state.get('attempts') if isinstance(state, dict) else None
+    if not isinstance(attempts, list) or not attempts:
+        return '', ''
+    attempt = next(
+        (item for item in reversed(attempts)
+         if isinstance(item, dict) and item.get('state') == 'live'),
+        attempts[-1],
+    )
+    if not isinstance(attempt, dict):
+        return '', ''
+    return str(attempt.get('owner') or ''), str(attempt.get('opened_at') or '')
 def parse_loop(data):
     """The parsed frontmatter ``loop`` object of one ticket, or None."""
     raw = str(data.get('loop') or '').strip()

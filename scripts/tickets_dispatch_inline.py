@@ -20,12 +20,12 @@ if __package__:
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_dispatch_schema import classification as _classification
     from .tickets_format import canonical_json
-    from .tickets_store import normalized_isolation
+    from .tickets_adapters import derived_isolation
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_dispatch_schema import classification as _classification
     from tickets_format import canonical_json
-    from tickets_store import normalized_isolation
+    from tickets_adapters import derived_isolation
 
 
 def _semantic_digest(value) -> str:
@@ -43,24 +43,22 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
         return _classification("assignment-divergent", "inline system identity is missing")
     executor = assignment.get("executor")
     role, assignment_profile = resolved_role_profile(executor, system.get("profile"))
-    # Both sides of `isolation` are normalized here and nowhere else. The
-    # seal stores the field verbatim -- absent on a ticket that declares no
-    # isolation -- while the projection carries `normalized_isolation`'s
-    # value, so a ticket with no isolation field compared `None` against
-    # `"none"` and every valid inline packet for it was refused as
-    # divergent. What the seal hashes is untouched: this is the comparison's
-    # own reading of two spellings of one value.
+    # Both sides of `isolation` are derived here and nowhere else. The
+    # seal stores the rare declared override verbatim -- absent on a ticket
+    # that declares none -- while the projection carries the derived value
+    # (the stamped pack's adapter decides), so both sides read through the
+    # one derivation. What the seal hashes is untouched.
     expected = {
         "executor": executor,
         "independence": system.get("independence") or "checker",
-        "isolation": normalized_isolation(system.get("isolation")),
+        "isolation": derived_isolation(system.get("isolation"), system.get("pack")),
         "pack": system.get("pack"),
         "profile": assignment_profile,
         "review_kind": system.get("review_kind"),
         "role": role,
     }
     observed = {key: packet.get(key) for key in expected}
-    observed["isolation"] = normalized_isolation(observed["isolation"])
+    observed["isolation"] = derived_isolation(observed["isolation"], packet.get("pack"))
     if observed != expected:
         return _classification(
             "assignment-divergent",

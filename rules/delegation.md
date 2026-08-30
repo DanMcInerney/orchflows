@@ -24,7 +24,6 @@ connect this law to each authorized dispatch event and predecessor record.
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
 4. A child executes its exact named skill directly
-   — or, when its packet states an ordered `sequence`, each named skill
    or pack stage in that stated order, one witness in this one
    context at the one role [roles.md](roles.md) §4 resolves — and never
    re-dispatches that primary work. A child identity stops at the ticket
@@ -84,8 +83,8 @@ connect this law to each authorized dispatch event and predecessor record.
     concise Handoff and parks; it never edits a parent ticket.
 15. Before a worker becomes ready, is claimed, or receives a packet, the
     caller seals the exact validated assignment digest over Goal, Context,
-    optional Suggested files, dependencies, and executor, its
-    `sequence` included. Those fields are immutable after seal. A semantic-root
+    optional Suggested files, dependencies, and executor. Those fields are
+    immutable after seal. A semantic-root
     change cannot create an in-run amendment generation: a later cut may evolve
     members only under unchanged root semantics, and the one route out is a
     successor run, which the caller may open no earlier than the accepted

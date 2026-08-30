@@ -17,7 +17,8 @@ path. A successor has its own run view after its predecessor result is fixed.
 
 - `goal` — the root ticket's `## Goal` and `## Context` verbatim; for a loop
   run the loop ticket's, and for a template run its terminal ticket's.
-- `iterations` — every ticket in `claimed_at` order, each with its
+- `iterations` — every ticket ordered by its dispatch attempt's
+  `opened_at` (the lease the record owns), each with its
   `## Verification` entries.
 - `failed_approaches` — the `## Result` and `## Feedback` of every
   `failed` or `limited` ticket, and of every loop iteration ticket: the

@@ -6,7 +6,6 @@ loop: {"done":{"form":"check","value":"The frozen promotion rule and margin are 
 depends_on: [01-eligibility]
 bound: {{bound}}
 independence: checker
-isolation: required
 profile: orch-worker
 ---
 

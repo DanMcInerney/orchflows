@@ -249,7 +249,7 @@ class FixedGateCommandTest(unittest.TestCase):
             "admission": "git:sha256:admission", "executor": "orch-tdd",
             "pack": "orch-code-pack", "independence": "checker",
             "isolation": "required", "depends_on": [], "bound": "30m",
-            "claimed_by": "", "claimed_at": "", "root_generation": "root:R",
+            "root_generation": "root:R",
             "cut_generation": "cut:R", "assignment_seal": assignment_seal,
         }
         text = _render_ticket(fields, [

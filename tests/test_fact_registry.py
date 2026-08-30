@@ -19,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 
+from scripts import tickets_bound  # noqa: F401
 from scripts import isolate, tickets_dispatch_identity, tickets_format  # noqa: E402
 from scripts import tickets_markdown, tickets_packet  # noqa: E402
 from scripts import tickets_transitions, workspace_git  # noqa: E402
@@ -238,7 +239,7 @@ class TestTheUnreachableIsGone(unittest.TestCase):
         was handed and the tuple after it had been unread since that became
         the record, and the caller was extracting the body to pass it."""
 
-        signature = inspect.signature(tickets_packet._last_motion)
+        signature = inspect.signature(tickets_bound._last_motion)
         self.assertEqual(["ticket_path"], list(signature.parameters))
 
 
