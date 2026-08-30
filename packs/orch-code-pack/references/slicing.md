@@ -11,3 +11,6 @@ leaves unproven.
 - Test selection and verification method remain executor-owned. A
   standards-owner pointer is a Context fact when relevant, never a prescribed
   check.
+- A Goal ordering growth into a named file prices that file against the
+  standards owner's bounds at cut time — a measurement command in Context,
+  never a relayed count — test modules included.

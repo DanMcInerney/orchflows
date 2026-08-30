@@ -53,6 +53,7 @@ def validate_the_real_tree():
 REAL_PACKS = frozenset({
     "orch-code-pack",
     "orch-content-pack",
+    "orch-data-pack",
     "orch-design-pack",
     "orch-research-pack",
 })
@@ -228,6 +229,13 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
             (
                 "document tree:", "identities are document revisions",
                 "one direct owner for a whole artifact", "actual candidate changes",
+            ),
+        ),
+        "orch-data-pack": (
+            "git",
+            (
+                "git:", "committed manifests pin dataset bytes by digest",
+                "ordinary diffs", "re-materialized once",
             ),
         ),
         "orch-design-pack": (

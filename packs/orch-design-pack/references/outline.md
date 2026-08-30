@@ -4,8 +4,9 @@
 
 - A closed breakpoint set, plus the states each view is required to render
   rather than have assumed for it.
-- Executable render, capture and diff commands; a visual bar nothing can run
-  is an opinion held for later, not something frozen.
+- Executable render, capture and diff commands, each marked pre-existing or
+  to-be-authored; a visual bar nothing can run is an opinion held for later,
+  not something frozen.
 - An accessibility floor with the command deciding it, and either golden
   identities or their deliberate absence on greenfield.
 

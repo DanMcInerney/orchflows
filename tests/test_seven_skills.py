@@ -169,6 +169,7 @@ Deliver one result.
         expected = {
             "orch-code-pack": ("red-green", "repair", "conflict"),
             "orch-content-pack": ("draft", "assembly", "cut log"),
+            "orch-data-pack": ("pipeline", "reproduce", "leakage"),
             "orch-design-pack": ("view identities", "capture", "golden"),
             "orch-research-pack": ("primary sources", "synthesize", "gaps"),
         }

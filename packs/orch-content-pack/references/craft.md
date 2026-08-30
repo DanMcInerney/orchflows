@@ -11,7 +11,8 @@ The shape principles every domain shares are
   what one document means mechanically.
 - **voice contract** — the dimensions a judge scores: register (the
   formality and energy band of the prose), person, stance (the writer's
-  relation to the claim), cadence (sentence rhythm).
+  relation to the claim), cadence (sentence rhythm) — and, where
+  dimensions or budget can collide, which yields.
 - **arc** — the sequence in which understanding is built; every genre
   has one (problem → stakes → turn → resolution; task → steps → proof).
 - **section job** — the one thing a slot does for the throughline;
@@ -26,7 +27,7 @@ The shape principles every domain shares are
 ## Shape
 
 - Concrete before abstract: an abstraction is earned by the instance
-  beneath it.
+  beneath it, and a named instance or number beats a category word.
 - The length budget is design pressure: cut weakest-first, into the
   cut log.
 

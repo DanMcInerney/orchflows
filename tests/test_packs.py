@@ -247,7 +247,7 @@ class PackResolutionTests(unittest.TestCase):
             target = PACKS / name / "references" / "outline.md"
             self.assertIn(target.name, projected["cells"]["outline"])
             bodies[name] = target.read_text(encoding="utf-8")
-        self.assertEqual(4, len(bodies))
+        self.assertEqual(5, len(bodies))
         self.assertEqual(len(bodies), len(set(bodies.values())))
 
     def test_cli_emits_json_for_resolve_and_cells(self):

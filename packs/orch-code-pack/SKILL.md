@@ -12,7 +12,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | required_spec_fields | target repository; standards owner by pointer; observable result |
 | craft | [references/craft.md](references/craft.md) |
 | adapter | git |
-| stages | [tdd] |
+| stages | [red-green] |
 | assembly | none |
 | lens | [references/craft.md#lens](references/craft.md#lens) |
 | evidence | [references/evidence.md](references/evidence.md) |

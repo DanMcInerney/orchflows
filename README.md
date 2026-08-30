@@ -265,7 +265,7 @@ still there for recovery; nothing needs them on a healthy path.
     │                         skill, engines/ that add control flow, workflows/
     │                         assembled from both, instances/ that do a domain's
     │                         hands-on work, utilities/
-    ├── Layer 2 · packs/     — per-domain data (code, content, research, design),
+    ├── Layer 2 · packs/     — per-domain data (code, content, research, design, data),
     │                         never control flow
     └── Layer 3 · compositions/ — named workflows, callable like any skill
 
@@ -280,6 +280,8 @@ this README does not keep a second copy of it.
     │                        workspace: git, one worktree per work item
     ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-execute, assembly stage
     │                        workspace: document tree with outline slots
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-execute, assembly stage
+    │                        workspace: git, datasets pinned by digest manifest
     ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-execute
     │                        workspace: git plus render (view × breakpoint × state)
     └── orch-research-pack — delivers answers     · source evidence       · executor orch-execute, assembly stage

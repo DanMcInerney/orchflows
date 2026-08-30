@@ -35,7 +35,12 @@ CELL_DUPLICATION_ALLOWLIST = (
             "workspace-kind abstraction factoring those mechanics out is not "
             "worth a permanent concept for two packs: this duplication is "
             "paid consciously and revisited when a third git-workspace pack "
-            "appears -- that arrival is the trigger, not a judgment call."
+            "appears -- that arrival is the trigger, not a judgment call. "
+            "The third git-workspace pack has since arrived and the revisit "
+            "held the line: the shared mechanics already have one typed "
+            "owner, the adapter key in scripts/tickets_adapters.py, and the "
+            "new cell states only its domain's identities and conflict "
+            "semantics rather than joining this family."
         ),
         # Normalized clauses, matched exactly. The seam's other two halves
         # -- 'standards owner by pointer' and the conflict-owner binding --
