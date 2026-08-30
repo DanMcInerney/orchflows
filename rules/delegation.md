@@ -15,7 +15,11 @@ connect this law to each authorized dispatch event and predecessor record.
    already in context. Neither executes a role-bearing skill body nor
    authors or changes a deliverable. Every such skill runs in a child
    at the role [roles.md](roles.md) §4 resolves; inline execution is
-   forbidden.
+   forbidden. Those mechanics are one command each way and the root
+   improvises neither: `tickets.py dispatch` emits the concrete `launch`
+   to invoke verbatim — never a retyped model, agent, or effort — and
+   `tickets.py land` is the return. Both are
+   [dispatch.md](../contracts/dispatch.md)'s transactions.
 3. Star topology: children never communicate peer to peer; every result
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
@@ -36,15 +40,16 @@ connect this law to each authorized dispatch event and predecessor record.
 7. Fan out only independent breadth-first work; dependent work runs
    through `orch-frontier` or sequentially.
 8. Dispatch names carry behavioral weight through the closed callable
-   registry: `orch-execute` resolves the stamped pack's execute cells and
-   `orch-check` resolves its check cells, while the remaining five verbs own
-   their routing mechanics. A pack stage is data, not another callable name;
-   no dispatch may revive a superseded skill binding, split a verb into a
-   generic shell plus method file, or maintain a second parser.
-9. The caller retires a child the moment its result crosses `dispatch-join`
+   registry [work-item.md](../contracts/work-item.md#template-and-executor-form)
+   lists; what a stage name is instead is
+   [pack-signature.md](../contracts/pack-signature.md)'s. A superseded name is
+   never revived or aliased: the dispatch refuses, naming its successor. No verb
+   is split into a generic shell plus a method file.
+9. The caller retires a child the moment its result crosses the join
    (rule 5) — accepted, rejected, needs-verify, or suspended — or the
    dispatch is abandoned; retirement is the dispatching caller's own
-   action, never a separate watchdog.
+   action, never a separate watchdog. `tickets.py land` crosses it and
+   retires the derived worktree in the same transaction.
    Suspension and escalation cross the ticket's committed `## Handoff`
    ([work-item.md](../contracts/work-item.md)), never as a failure,
    under a once-per-dispatch bound.
@@ -82,10 +87,12 @@ connect this law to each authorized dispatch event and predecessor record.
     optional Suggested files, dependencies, and executor, its
     `sequence` included. Those fields are immutable after seal. A semantic-root
     change cannot create an in-run amendment generation: a later cut may evolve
-    members only under unchanged root semantics. The caller waits for the
-    accepted predecessor result identity, opens a successor run, and cites that
-    identity in the successor root's Context. The executor-owned `Result`,
-    `Verification`, `Feedback`, `Risks`, and `Handoff` sections remain
+    members only under unchanged root semantics, and the one route out is a
+    successor run, which the caller may open no earlier than the accepted
+    predecessor result identity
+    ([work-item.md](../contracts/work-item.md#roots-decomposition-and-integration)
+    owns what it carries).
+    The executor-owned sections [result.md](../contracts/result.md) names stay
     append-only and outside the sealed assignment.
 16. Every role-bearing call and return follows the closed
    [dispatch contract](../contracts/dispatch.md). The ticket write is the

@@ -17,11 +17,10 @@ Semantic assignment), promote it with `tickets.py ready`, and run that ticket
 through `orch-frontier`, which owns its dispatch-v1 attempt and receipt; start
 fresh from the frozen goal plus the worklog
 `tickets.py worklog` renders; dispatch the body per
-[rules/delegation.md](../../../rules/delegation.md), each packet field
-emitted as a canonical JSON `--input` record — sorted keys, no spaces,
-no duplicate key — because a record the sink cannot round-trip is
-refused as `input-json-noncanonical` at the door rather than at the
-oracle; adjudicate the return through `orch-integrate`; let the
+[rules/delegation.md](../../../rules/delegation.md), carrying the context
+packet in the iteration ticket's own `## Context` so the committed dispatch
+packet delivers it and no field travels beside the ticket;
+adjudicate the return through `orch-integrate`; let the
 done-check decide per the contract's class policy.
 
 Exit `complete` on [rules/loops.md](../../../rules/loops.md) §1's

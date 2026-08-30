@@ -3,7 +3,7 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, establishes the profile, sends the complete packet, and joins
+- Root routes, launches what `dispatch` emits, and lands
   returns; relay a `kind: user-only` question verbatim. Never author a
   role-bearing payload. Packet-less or wrong-profile role-bearing work refuses;
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
@@ -13,11 +13,12 @@
   its executor chooses implementation and verification. **graph** — for one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
-  --reply-to <parent-name> [--workspace <tree>]`; establish the matching
-  `orch-planner`, send the emitted packet, and require its accepted
+  --reply-to <parent-name> --host <host> [--workspace <tree>]` and invoke its
+  emitted `launch` verbatim; require the accepted
   `tickets.py dispatch-receive --file <path|->` receipt before exact
-  `orch-decompose`. A ticket path is not a packet. The outer coordinator joins
-  through `orch-integrate`, then starts `orch-frontier`. **outline** — one planner
+  `orch-decompose`. A ticket path is not the complete packet. Then
+  `tickets.py land` its
+  return through `orch-integrate` and start `orch-frontier`. **outline** — one planner
   runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
   `orch-decompose` root for distinct results/dependencies. The planner never
   starts the frontier. Skill/composition/pack/contract/router work carries

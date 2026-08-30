@@ -56,7 +56,9 @@ structured refusal.
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
 delivery. The caller invokes `tickets.py dispatch`, which promotes readiness,
 establishes the workspace, opens one attempt, and commits its immutable
-reference or inline projection atomically. The granular `dispatch-open` and
+reference or inline projection atomically — then resolves the child's host
+launch and returns it, so the caller invokes a `launch` object rather than
+transcribing a model and agent by hand. The granular `dispatch-open` and
 `dispatch-packet` operations remain public for recovery. Pass the response `.packet` value—not the response wrapper
 or a reconstructed shell literal—to `dispatch-receive` through `--file <path>`
 or UTF-8 standard input with `--file -`. The established child supplies its
@@ -69,10 +71,15 @@ replays the stored projection to the same child; it never creates a second live
 child. Retirement precedes replacement, and `dispatch-replace` performs both
 sides atomically. The packet carries one reserved `outcome` identity. The
 child commits its unstreamed closing evidence delta with `dispatch-outcome`.
-`dispatch-join` consumes only that durable outcome after the committed
+The join consumes only that durable outcome after the committed
 `dispatch-receipt`, so recovery never guesses
 which streamed write closed the attempt. Fixed record ids replay identically
 and conflicting or unseen stale traffic refuses.
+
+`tickets.py land` is the return in one command: it imports the outcome, joins
+it, retires the derived worktree, and reports the frontier that join made
+ready — one lock around all three, and it says which steps it found already
+done. `dispatch-outcome` and `dispatch-join` remain public for recovery.
 
 Reference packets are normal. Inline packets carry the sealed ticket snapshot,
 but the authoritative sink must still authenticate receipt; self-carried
@@ -105,8 +112,10 @@ Cut shape — what a unit may be, who owns what — is
 
 The frontmatter carries two related mechanisms:
 
-- **`depends_on`** is the dependency graph. A ticket is admitted only
-  when every dependency is `complete`; `orch-frontier` dispatches every
+- **`depends_on`** is the dependency graph. A ticket is admitted only once
+  every dependency has landed a Result — `complete`, or `limited` where the
+  work stopped short but still delivered one; `blocked` and `failed` do not
+  satisfy it. `orch-frontier` dispatches every
   ticket whose dependencies are done, all in parallel — the rolling
   frontier, no phase barriers.
 - **`root_generation`, `cut_generation`, and `assignment_seal`** bind every
@@ -122,7 +131,7 @@ The frontmatter carries two related mechanisms:
      pending ─────────────────▶ ready ────────────────▶ claimed
                                                            │ outcome,
                                                            ▼ join
-                                                     dispatch-join
+                                                    tickets.py land
                                                            │
                                                ┌───────────────────┤
                                                ▼                   ▼
@@ -160,8 +169,8 @@ Three moments use readers who did not produce the fixed artifact
    composite gate. Both use fresh read-only `orch-check`; neither repairs
    its own target. `tickets.py checker-stage <run> <id>` derives one explicit
    `<id>.check` review ticket from the sealed target. That stage uses the same
-   `dispatch-packet` → accepted `dispatch-receive` → `dispatch-outcome` →
-   `dispatch-join` carrier as every role-bearing execution. Only
+   `dispatch` → accepted `dispatch-receive` → `land` carrier as every
+   role-bearing execution. Only
    `tickets.py check <run> <id> --stage <id>.check` may attach the joined,
    identity-anchored adjudication to `checked_by`; callers cannot write trusted
    findings directly.
@@ -183,7 +192,7 @@ Three moments use readers who did not produce the fixed artifact
   `receipt-required`. Other command families expose their closed codes in
   `--help` and their owning contracts instead of doing something approximate.
 - **The join rules on everything.** No returned result is trusted until
-  `orch-integrate` adjudicates it. For v1, only `dispatch-join` sets suspended or terminal
+  `orch-integrate` adjudicates it. For v1, only the join sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
 - **Silence is explicit.** Findings go to `## Feedback`, hazards to

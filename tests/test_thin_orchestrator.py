@@ -93,9 +93,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**single**",
             "**graph**",
             "**outline**",
-            "`orch-planner`",
+            "`launch`",
             "`tickets.py dispatch <run>",
-            "outer coordinator joins",
+            "`tickets.py land`",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
@@ -122,20 +122,29 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "stamped root",
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "--reply-to <parent-name> [--workspace <tree>]",
+            "--reply-to <parent-name> --host <host> [--workspace <tree>]",
             "tickets.py dispatch-receive",
             "accepted",
             "exact `orch-decompose`",
-            "establish the matching `orch-planner`",
-            "send the emitted packet",
-            "ticket path is not a packet",
-            "outer coordinator joins",
-            "starts `orch-frontier`",
+            "invoke its emitted `launch` verbatim",
+            "ticket path is not the complete packet",
+            "tickets.py land",
+            "start `orch-frontier`",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)
-        self.assertNotIn("tickets.py claim", graph)
-        self.assertNotIn("tickets.py packet", graph)
+        # The facade owns each of these; the route may not re-teach a manual
+        # spelling of a step `dispatch` or `land` already performs.
+        for absent in (
+            "tickets.py claim",
+            "tickets.py packet",
+            "tickets.py dispatch-open",
+            "tickets.py dispatch-packet",
+            "tickets.py dispatch-join",
+            "workspace.py establish",
+        ):
+            with self.subTest(absent=absent):
+                self.assertNotIn(absent, graph)
 
     def test_host_and_frontier_establish_the_workspace_before_dispatch(self):
         host = re.sub(
@@ -156,7 +165,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             with self.subTest(owner="graph" if text is graph else "frontier"):
                 self.assertIn("tickets.py dispatch", text)
                 if text is frontier:
-                    self.assertIn("workspace_path", text)
+                    # Establishment is inside the dispatch transaction now, so
+                    # the engine states that rather than a separate step.
+                    self.assertIn("establishes the workspace", text)
                 self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):

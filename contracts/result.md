@@ -29,7 +29,10 @@ one atomic write. An exact retry of a committed `dispatch_id` plus `record_id`
 returns the stored success without adding content, even after retirement,
 replacement, or lease expiry. Changed operation content for that pair is an
 `idempotency-conflict`; an unseen record on an ended attempt is stale. Every
-refusal leaves the ticket byte-identical.
+refusal leaves the ticket byte-identical. A filed body may itself carry `## `
+headings without being read as a second ticket section, and survives the round
+trip byte for byte; how it is stored that way is
+[`scripts/tickets_markdown.py`](../scripts/tickets_markdown.py)'s.
 An unseen result requires the attempt's durable `dispatch-receipt`, proving the
 established receiver accepted the exact committed packet before execution.
 

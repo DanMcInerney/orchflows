@@ -39,10 +39,21 @@ that needs a different meaning needs a different word.
 - **checker** — `orch-check`: the planner-role callable rendering findings
   or verdicts over a fixed artifact and never a deliverable; it is exempt
   from the envelope per `rules/composition.md`.
+- **outline** — `orch-outline`: the planner-role callable that freezes and
+  seals a semantic root at intake, resolving the stamped pack's outline taste
+  (below) to do it. It supersedes the earlier intake-verb name, which no
+  dispatch revives; the noun **spec** (below) is unrenamed. As a routing shape it is
+  the shape (below) that reaches this verb.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature; which cells exist, and which
   lane each feeds, is the signature's own (below).
+- **lane / taste** — one projection of a pack's cells for one verb, resolved
+  through `packs.py cells <digest> --for <lane>`. A pack has three: **execute**
+  taste for `orch-execute`, **check** taste for `orch-check`, and **outline**
+  taste for `orch-outline`, whose members are the `outline`,
+  `required_spec_fields`, and `craft` cells. The signature owns which cells each
+  carries; a cell appearing in two lanes is not copied to earn the second slot.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
 - **composition** — a T3 named workflow: a template (below) under
@@ -156,6 +167,13 @@ that needs a different meaning needs a different word.
   slicing cannot cover.
 - **workspace** — where results live and what identities mean there (git
   revisions, doc slots, evidence store), per the pack's workspace cell.
+- **candidate worktree** — the derived tree an isolation-`required` item works
+  in, at the path and branch `scripts/state_root.py` derives from the run and
+  ticket ids. Nothing else computes either.
+- **establish / prepare / retire** — the three acts on that tree, all
+  `scripts/workspace.py`'s. `establish` creates and records it inside the
+  dispatch transaction; `prepare` installs what the recorded workspace declares,
+  lock-free, afterwards; `retire` removes it at the join. Each replays.
 - **standards owner** — the workspace's own canonical statement of its
   conventions (linter config, style doc, CI); named by pointer, never
   restated.
@@ -234,9 +252,18 @@ composition).
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. Suggested files do not attenuate it; actual changes
   are adjudicated at the join.
+- **launch spec** — the `launch` object `tickets.py dispatch` returns once the
+  packet is committed: the host, verb, agent, model, effort, native fields, and
+  prompt for the child, resolved from the host record. It is CLI output the
+  caller invokes verbatim — never persisted, never on the dispatch wire, and so
+  not one of `contracts/dispatch.md`'s shapes.
+- **land** — `tickets.py land`: one locked transaction importing the outcome,
+  joining it, retiring the candidate worktree, and reporting the frontier that
+  join made ready. It composes the granular return operations, which stay public
+  for recovery, and reports which of its steps already replayed.
 - **join** — the single point where a caller integrates one child
-  result, always `orch-integrate`. `rules/delegation.md` owns what
-  happens there and names its own terms: the closed **disposition** set
+  result, always `orch-integrate`, carried by `land`. `rules/delegation.md` owns
+  what happens there and names its own terms: the closed **disposition** set
   (§9), and the two **blame** classes —
   caller under-supplied, child under-delivered.
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
@@ -249,7 +276,9 @@ composition).
   owned by `skills/engines/orch-frontier/references/profiles.md`; a
   packet's optional `profile` slot names one explicitly, overriding role
   resolution for that dispatch.
-- **host** — the runtime carrying the agents: Claude Code or Codex.
+- **host** — the runtime carrying the agents; one record per host under
+  `hosts/` names them and owns each one's launch binding. `tickets.py dispatch
+  --host <host>` selects one, defaulting to `$ORCHFLOWS_HOST`, else `claude`.
 
 ## Iteration
 

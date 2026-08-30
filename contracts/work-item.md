@@ -44,9 +44,11 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   deterministic generation, validation, seal, and admission records.
 - `claimed_by`, `claimed_at`, `checked_by`, `review_stage`, `workspace_path`,
   `workspace_branch`, and `workspace_baseline` — lifecycle observations written
-  by their owning tools. `workspace_path` names the pre-dispatch candidate or
-  canonical run-scoped evidence store; the Git-only fields fix its branch and
-  starting revision.
+  by their owning tools. `workspace.py establish` is the mechanical owner of the
+  candidate an isolated item runs in: it derives, creates, and records that tree,
+  and re-establishing it never restamps the baseline. `workspace_path` names that
+  candidate or the canonical run-scoped evidence store; the Git-only fields fix
+  its branch and starting revision.
 - `review_stage` names the completed derived `<id>.check` ticket whose
   protocol-owned join authenticates `checked_by`; it is never a caller's
   findings payload.

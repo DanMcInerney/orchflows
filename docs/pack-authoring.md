@@ -28,8 +28,16 @@ what each step feeds the next.
    contract already matches; write a new one only when the unit loop
    genuinely differs, named by its method.
 7. Required spec fields last — they fall out of the cells above. Then the
-   description, in the packs' shared idiom, ending in its
+   `outline` cell, written against the binding
+   [contracts/pack-signature.md](../contracts/pack-signature.md) states for it.
+   Then the description, in the packs' shared idiom, ending in its
    "Stamp when …" sentence.
+
+The finished pack projects three tastes — execute, check, outline — and that
+same signature is the one table of which cells each carries. Read a projection
+with `uv run --no-project python scripts/packs.py cells <digest> --for <lane>`,
+the resolver the verbs themselves use, and grade every cell against the
+signature's admission line before keeping it.
 
 Close with the admission in
 [custom workflow authoring](custom-workflow-authoring.md).
