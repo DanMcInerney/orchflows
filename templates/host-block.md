@@ -13,7 +13,7 @@
   its executor chooses implementation and verification. **graph** — for one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
-  --reply-to <parent-name> --host <host> [--workspace <tree>]` and invoke its
+  --reply-to <parent-name> [--host <host>] [--workspace <tree>]` and invoke its
   emitted `launch` verbatim; require the accepted
   `tickets.py dispatch-receive --file <path|->` receipt before exact
   `orch-decompose`. A ticket path is not the complete packet. Then
