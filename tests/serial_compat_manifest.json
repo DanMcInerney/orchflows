@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1970,
+  "count": 1971,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -907,6 +907,7 @@
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
    "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
    "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
+   "test_tickets.AdapterRegistryTest.test_dispatch_receive_resolves_the_pack_under_the_packet_workspace",
    "test_tickets.AdapterRegistryTest.test_unknown_pack_cells_fail_through_the_shared_resolver_parser",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
@@ -1973,7 +1974,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1c9272e425421790ffd71a7e4345db4be86e8bccb8b1039c6d3c011fc2b30ae7"
+  "sha256": "c54531b89e5d40ef03fa41f49bcdc398adcd3446c4e3fc9ae247fbe49b7d33d2"
  },
  "mutation_owners": [
   {
