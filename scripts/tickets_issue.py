@@ -120,11 +120,17 @@ def _cmd_new(rest):
     for flag, value, allowed in (("--independence", independence, INDEPENDENCE_VALUES), ("--isolation", isolation, ISOLATION_VALUES)):
         if value is not None and value.strip() not in allowed:
             return {"error": f"{flag} '{value}' is not one of {list(allowed)}"}
+    # Sorted here, at the one door that authors the list from a flag. Two
+    # orderings of one edge set are two assignment digests, and the digest
+    # cannot absorb the difference without invalidating every historical
+    # seal, so the canonical order is established where the list is written.
+    # `sequence` is a chain and keeps the order it was given.
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
         "sequence": _split_commas(sequence) or None, "pack": pack,
-        "independence": independence, "depends_on": _split_commas(depends_on),
+        "independence": independence,
+        "depends_on": sorted(_split_commas(depends_on)),
         "isolation": isolation, "bound": bound or NEW_DEFAULT_BOUND,
         "claimed_by": "", "claimed_at": "", "profile": profile,
     }
@@ -205,7 +211,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
     if GATE_ID_MARKER in ticket_id:
-        return {"error": f"ticket id '{ticket_id}' is reserved for tickets.py gate"}
+        return {"error": f"ticket id '{ticket_id}' is reserved for `tickets.py gate`"}
     root = _tickets_root()
     if root is None:
         return {"error": NO_SINK_ERROR}

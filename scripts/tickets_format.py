@@ -28,6 +28,7 @@ if __package__:
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section, dequote,
+        quote_filed_body, unquote_filed_body,
     )
     from .tickets_ceiling import (
         INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
@@ -47,6 +48,7 @@ else:
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section, dequote,
+        quote_filed_body, unquote_filed_body,
     )
     from tickets_ceiling import (
         INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,

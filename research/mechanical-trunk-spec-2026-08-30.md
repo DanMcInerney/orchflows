@@ -681,6 +681,16 @@ Docs wave follows `research/docs-spec-2026-08-30.md`.
   `tools/validate_support/packages.py:273-304` still strips backticks
   inline (tools layer) — repoint at the public `dequote` if the import
   direction allows, else leave with a comment.
+- **A17 (→ U8 sweep):** two coherence leftovers from U4:
+  `scripts/tickets_readiness.py::readiness_facts` still requires
+  `complete` for a dependency while admission now accepts
+  `RESULT_BEARING_STATES` (complete, limited) — align it; and the
+  template `instantiate` path (`validate_draft`/`_sealed_template_snapshot`)
+  bypasses `_draft_findings`, so a template stub with unsorted
+  `depends_on` seals without refusal — route it through the same
+  finding or sort at instantiate. Optional: split the 714-line
+  `tests/test_staleness_and_remedies.py` into a `*_cases` package per
+  house convention.
 - **A14 (coordination note, all waves):** `validate.py --pin` is lawful
   once per committed baseline — a second `--pin` over an uncommitted
   re-pin finds no git ancestor and demands a supersession record for a

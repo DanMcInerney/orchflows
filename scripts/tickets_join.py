@@ -16,7 +16,7 @@ if __package__:
         _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
         is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
-    from .tickets_store import UTC_STAMP, _segment_error
+    from .tickets_store import UTC_STAMP, _run_lock, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
     from .tickets_worklog import _run_goal, _run_tickets
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
@@ -35,7 +35,7 @@ else:
         _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
         is_critique_stage_id, is_review_stage_id, parse_canonical_json,
     )
-    from tickets_store import UTC_STAMP, _segment_error
+    from tickets_store import UTC_STAMP, _run_lock, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
     from tickets_worklog import _run_goal, _run_tickets
     from tickets_project import TERMINAL_REMEDY, binding_refusal
@@ -178,9 +178,14 @@ def _attempt_workspace(attempt: dict) -> str | None:
 def _cmd_dispatch_join(rest, *, _lock_held=False):
     """Commit or replay one outcome-fenced join and its lifecycle transition.
 
-    ``_lock_held`` is the landing composition's, as above; the terminal
-    timing write below then lands inside that same critical section rather
-    than after its own lock has been released.
+    Two writes, one critical section. The record commit and the run's
+    terminal timing are one transaction wherever this is called from: the
+    landing composition passes ``_lock_held`` and owns the lock, and the
+    direct route takes the same lock here for the whole pair. It used to
+    take it only inside ``_commit_record`` and stamp the identity after that
+    lock had been released, which left the window every other mutating path
+    was closed against -- and the identity is written once and never
+    rewritten, so a loss in that window is permanent.
     """
 
     args = list(rest)
@@ -320,25 +325,34 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             )
         return updated, response, None
 
-    result = _commit_record(
-        run, ticket_id, dispatch_id, join_record_id, content,
-        mutate=join, expected_seal=assignment_seal, record_kind="join",
-        _lock_held=_lock_held,
-    )
-    if "error" in result:
+    def transaction():
+        result = _commit_record(
+            run, ticket_id, dispatch_id, join_record_id, content,
+            mutate=join, expected_seal=assignment_seal, record_kind="join",
+            _lock_held=True,
+        )
+        if "error" in result:
+            return result
+        status = result["join"]["status"]
+        if status not in TERMINAL_STATES or not _closes_the_run(run, ticket_id):
+            return result
+        identity_dir, identity, refusal = _terminal_identity_update(
+            run, ticket_id, status, datetime.now(timezone.utc)
+        )
+        if refusal is not None:
+            return refusal
+        if identity is not None:
+            try:
+                identity_dir.mkdir(parents=True, exist_ok=True)
+                _write_identity(identity_dir, identity)
+            except OSError as error:
+                return {"error": f"join committed and terminal timing remains pending: {error}"}
         return result
-    status = result["join"]["status"]
-    if status not in TERMINAL_STATES or not _closes_the_run(run, ticket_id):
-        return result
-    identity_dir, identity, refusal = _terminal_identity_update(
-        run, ticket_id, status, datetime.now(timezone.utc)
-    )
-    if refusal is not None:
-        return refusal
-    if identity is not None:
-        try:
-            identity_dir.mkdir(parents=True, exist_ok=True)
-            _write_identity(identity_dir, identity)
-        except OSError as error:
-            return {"error": f"join committed and terminal timing remains pending: {error}"}
-    return result
+
+    if _lock_held:
+        return transaction()
+    try:
+        with _run_lock(run):
+            return transaction()
+    except OSError as error:
+        return {"error": f"unable to lock run '{run}' for the join: {error}"}

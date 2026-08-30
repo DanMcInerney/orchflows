@@ -65,8 +65,26 @@ def _run_snapshot(run_dir: Path):
     texts, failures = run_snapshot(run_dir)
     return texts, [{'id': stem, 'reason': 'ticket unreadable before claimed-state grading: ' + failure['error']} for stem, failure in failures]
 def _snapshot_matches(run_dir: Path, snapshot: dict, _ids=None) -> bool:
+    """Whether the bytes this grade was taken over are still on disk.
+
+    Scoped to ``_ids`` -- the graded ticket and the dependencies its grade
+    actually read (`grade_admission`'s ``snapshot_ids``). A whole-run
+    comparison made every promotion lose to any concurrent sibling write:
+    a run of eight refused seven readies because the eighth ticket had been
+    touched, and none of the seven had read it. What the compare-and-swap
+    is protecting is the grade, so its scope is what the grade consulted.
+
+    ``None`` keeps the whole-run comparison for a caller that names no
+    scope; an unreadable member inside the scope refuses, one outside it is
+    not this promotion's business.
+    """
     current, failures = _run_snapshot(run_dir)
-    return not failures and current == snapshot
+    if _ids is None:
+        return not failures and current == snapshot
+    scope = {str(value) for value in _ids}
+    if any(str(failure.get('id') or '') in scope for failure in failures):
+        return False
+    return all(current.get(key) == snapshot.get(key) for key in scope)
 def _admit_ready_cas(run: str, ticket_id: str, prior_text: str, snapshot: dict, grade: dict):
     tickets_root = _tickets_root()
     if tickets_root is None:

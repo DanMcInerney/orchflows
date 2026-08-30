@@ -12,7 +12,7 @@ if __package__:
     from .tickets_format import (
         DELIVERED_STATE, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
         canonical_json, dequote, is_review_stage_id, _executor_of,
-        _parse_frontmatter,
+        _parse_frontmatter, _set_frontmatter_field,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
@@ -20,10 +20,16 @@ else:
     from tickets_format import (
         DELIVERED_STATE, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
         canonical_json, dequote, is_review_stage_id, _executor_of,
-        _parse_frontmatter,
+        _parse_frontmatter, _set_frontmatter_field,
     )
 
 ADMISSION_PENDING = "pending"
+# The terminal states that leave a Result behind for a dependent to read.
+# `complete` delivered the whole Goal and `limited` delivered part of it with
+# honest accounting; both file the evidence the next item is written against.
+# `blocked`, `failed` and `stalled` filed no such artifact, so a dependent
+# admitted over them would be reading an absence.
+RESULT_BEARING_STATES = (DELIVERED_STATE, "limited")
 _RECEIPT_RE = re.compile(r"^([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 
 
@@ -224,7 +230,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             findings.append(finding("dependency-dangling", "depends_on", dependency))
         else:
             status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
-            if status != "complete":
+            if status not in RESULT_BEARING_STATES:
                 findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
     findings.extend(binding_findings(ticket_id, data))
     sealed_record = None
@@ -298,8 +304,65 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     }
 
 
+def dependency_order_findings(ticket_id: str, data: dict) -> list:
+    """Refuse an unsorted ``depends_on`` where it is still cheap to fix.
+
+    Two orderings of one edge set are two assignment digests, so the same
+    cut authored twice seals as two different generations. The digest is not
+    changed to absorb that -- doing so would invalidate every historical
+    seal -- the authoring door refuses it instead, while the list is still a
+    draft nobody has been dispatched against.
+    """
+
+    dependencies = [str(value) for value in (data.get("depends_on") or [])]
+    if dependencies == sorted(dependencies):
+        return []
+    return [{
+        "code": "depends-on-unsorted",
+        "field": "depends_on",
+        "ticket": ticket_id,
+        "detail": "depends_on must be in ascending order: " + ", ".join(sorted(dependencies)),
+    }]
+
+
+def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
+    """Re-issue the receipts one lawful mutation of this run invalidated.
+
+    A receipt names the exact state it was taken over, so a member promoted
+    under one generation holds a receipt only that generation recomputes.
+    Re-generationing the run therefore leaves every promoted member stale --
+    a lawful recut, and then the root's next packet refused for a staleness
+    the recut itself introduced, five times before this was written.
+
+    Only a member already carrying a real receipt is touched: a pending one
+    holds ``ADMISSION_PENDING`` and takes its receipt at promotion, and a
+    member the mutation left ungradable keeps the stale value rather than
+    being given a receipt over findings. Returns the ids rewritten, so the
+    caller reports the repair instead of leaving it silent.
+    """
+
+    if __package__:
+        from .tickets_context import graded_admission
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_context import graded_admission
+    current = dict(snapshot)
+    rewritten = []
+    for ticket_id in sorted(current):
+        stored = str(_parse_frontmatter(current[ticket_id]).get("admission") or "")
+        if not stored or stored == ADMISSION_PENDING:
+            continue
+        grade = graded_admission(ticket_id, current[ticket_id], current, run)
+        if grade["findings"] or grade["receipt"] == stored:
+            continue
+        text = _set_frontmatter_field(current[ticket_id], "admission", grade["receipt"])
+        current[ticket_id] = text
+        write_atomically(Path(run_dir) / f"{ticket_id}.md", text)
+        rewritten.append(ticket_id)
+    return rewritten
+
+
 __all__ = (
-    "ADMISSION_PENDING", "adapter_id",
-    "binding_findings", "finding", "graph_findings",
-    "grade_admission", "is_receipt",
+    "ADMISSION_PENDING", "RESULT_BEARING_STATES", "adapter_id",
+    "binding_findings", "dependency_order_findings", "finding",
+    "graph_findings", "grade_admission", "is_receipt", "refresh_admissions",
 )

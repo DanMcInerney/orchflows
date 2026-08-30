@@ -287,7 +287,7 @@ def _read_identity(path: Path):
         if isinstance(data, dict):
             return (data, None)
         reason = 'the document is not an object'
-    return (None, {'error': f"run identity {path} is unreadable ({reason}); repair or remove it. Refusing to overwrite a run's identity with a guess"})
+    return (None, {'error': f"run identity {path} is unreadable ({reason}). Refusing to overwrite a run's identity with a guess: run `tickets.py repair-run-identity {path.parent.name}` to quarantine it and rebuild the minimal identity from this run's ticket evidence"})
 def _identity_document(run: str, path: Path, project: dict, workspace: str, now, *, authoritative: bool = False):
     """``(document_to_write, error)`` — create, extend, correct, or refuse.
 
@@ -383,6 +383,82 @@ def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
     updated = dict(existing)
     updated.update({'terminal_at': terminal_stamp, 'terminal_ticket_id': ticket_id, 'terminal_status': status, 'elapsed_ms': max(0, int((terminal_at - opened_at).total_seconds() * 1000))})
     return (run_dir, updated, None)
+REPAIR_RUN_IDENTITY_USAGE = 'repair-run-identity <run>'
+CORRUPT_IDENTITY_MARKER = '.corrupt-'
+QUARANTINE_STAMP = '%Y%m%dT%H%M%SZ'
+def _quarantine_path(path: Path, now) -> Path:
+    """A free name beside the identity for the document being set aside.
+
+    Colon-free, because this name is a Windows filename as often as a POSIX
+    one, and counted upward so a second repair in the same second cannot
+    overwrite the evidence the first one preserved.
+    """
+    base = path.name + CORRUPT_IDENTITY_MARKER + now.strftime(QUARANTINE_STAMP)
+    candidate = path.with_name(base)
+    ordinal = 1
+    while candidate.exists():
+        candidate = path.with_name(f'{base}-{ordinal}')
+        ordinal += 1
+    return candidate
+def _cmd_repair_run_identity(rest):
+    """Set an unreadable ``run.json`` aside and rebuild the minimal identity.
+
+    ``_read_identity`` refuses to overwrite a corrupt identity with a guess,
+    which is right and, until now, terminal: every command that touches the
+    run reported the same refusal and no command repaired it. This is that
+    command, and it is deliberately the only one -- the quarantine keeps the
+    unreadable bytes, so nothing a reader might still want is destroyed.
+
+    What is rebuilt is minimal by design: the run's own id, the sink
+    convention, an opening instant taken from the earliest ticket the run
+    directory holds, the installed library identity, and the repairing
+    workspace's project. Terminal timing is not invented; a run whose close
+    was recorded only in the lost document is a run that closed without a
+    readable record of when, and guessing that is the failure this file's
+    refusal exists to prevent.
+
+    Refused only when the evidence is genuinely absent: a run with no
+    tickets names no opening instant and no project, and an identity
+    fabricated for it would say nothing true.
+    """
+    if len(rest) != 1:
+        return {'error': f'usage: {REPAIR_RUN_IDENTITY_USAGE}'}
+    run = rest[0]
+    runs_root = _runs_root()
+    tickets_root = _tickets_root()
+    if runs_root is None or tickets_root is None:
+        return {'error': NO_SINK_ERROR}
+    try:
+        with locked_run_write(run):
+            identity_dir = runs_root / run
+            identity_path = identity_dir / RUN_IDENTITY_NAME
+            existing, failure = _read_identity(identity_path)
+            if failure is None and existing is not None:
+                return {'repair_run_identity': {'run': run, 'outcome': 'intact', 'path': str(identity_path), 'quarantined': None}}
+            run_dir = tickets_root / run
+            tickets = sorted(run_dir.glob('*.md')) if run_dir.is_dir() else []
+            if not tickets:
+                return {'error': f"run '{run}' has no ticket evidence at {run_dir}: an identity is rebuilt from the run's own tickets and this run has none. Nothing was written"}
+            now = datetime.now(timezone.utc)
+            quarantined = None
+            if identity_path.exists():
+                quarantined = _quarantine_path(identity_path, now)
+                identity_path.rename(quarantined)
+            opened = min(path.stat().st_mtime for path in tickets)
+            project, workspace = _writer_identity()
+            document = {
+                'run': run, 'sink_convention': SINK_CONVENTION,
+                'opened_at': datetime.fromtimestamp(opened, timezone.utc).strftime(UTC_STAMP),
+                'orchflows': _installed_orchflows_metadata(), 'project': project,
+                'workspaces': [{'path': workspace, 'first_seen': now.strftime(UTC_STAMP)}],
+            }
+            identity_dir.mkdir(parents=True, exist_ok=True)
+            _write_identity(identity_dir, document)
+    except TicketWriteRefused as refused:
+        return refused.payload
+    except OSError as error:
+        return {'error': f'unable to repair run identity: {error}'}
+    return {'repair_run_identity': {'run': run, 'outcome': 'rebuilt', 'path': str(identity_path), 'quarantined': None if quarantined is None else str(quarantined), 'tickets': [path.stem for path in tickets]}}
 def _load_ticket(path: Path) -> dict:
     text, failure = _read_utf8(path)
     if failure is not None:

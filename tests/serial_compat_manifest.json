@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1929,
+  "count": 1967,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -802,6 +802,44 @@
    "test_source_sizes.SourceSizeCheckerTest.test_an_oversized_test_warns_without_blocking",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
    "test_source_sizes.SourceSizeCheckerTest.test_git_reader_is_nul_safe_and_keeps_hidden_paths",
+   "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_a_cut_section_is_left_exactly_as_authored",
+   "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_the_body_survives_the_round_trip",
+   "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_the_headings_do_not_become_ticket_sections",
+   "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_the_quoting_is_injective_and_byte_stable",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_a_pending_member_is_left_at_its_pending_receipt",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_resealing_the_same_generation_refreshes_nothing",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_the_next_packet_emission_needs_no_manual_repair",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_the_seal_reissues_the_claimed_roots_receipt",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_without_the_repair_that_same_packet_is_refused",
+   "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_an_invented_command_is_caught",
+   "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_every_named_command_is_routed",
+   "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_the_guard_reads_the_messages_it_is_for",
+   "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_complete_and_limited_carry_a_result",
+   "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_result_bearing_set_is_stated_once",
+   "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_states_that_filed_nothing_still_refuse",
+   "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_draft_validation_refuses_an_unsorted_member",
+   "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_no_dependency_still_writes_the_empty_list",
+   "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_authoring_flag_writes_them_sorted",
+   "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_finding_names_the_order_it_wants",
+   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_backticked_isolation_value_still_accepts",
+   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_real_divergence_is_still_refused",
+   "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_an_absent_isolation_field_accepts_the_normalized_packet",
+   "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_a_stale_receipt_is_not_told_to_promote",
+   "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_named_promotion_is_the_one_that_works",
+   "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_refusal_names_the_promotion",
+   "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_a_corrupt_identity_is_quarantined_and_rebuilt",
+   "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_a_malformed_run_id_is_refused_before_any_lock",
+   "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_a_run_with_no_ticket_evidence_is_refused",
+   "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_an_intact_identity_is_left_exactly_alone",
+   "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_the_run_is_writable_again_and_the_repair_replays",
+   "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_the_stores_own_refusal_names_this_command",
+   "test_staleness_and_remedies.TestTheCompareAndSwapIsScopedToTheGrade.test_a_read_dependency_moving_refuses",
+   "test_staleness_and_remedies.TestTheCompareAndSwapIsScopedToTheGrade.test_a_scoped_member_that_vanished_refuses",
+   "test_staleness_and_remedies.TestTheCompareAndSwapIsScopedToTheGrade.test_an_unread_sibling_moving_does_not_refuse",
+   "test_staleness_and_remedies.TestTheCompareAndSwapIsScopedToTheGrade.test_no_scope_still_compares_the_whole_run",
+   "test_staleness_and_remedies.TestTheCompareAndSwapIsScopedToTheGrade.test_the_grade_names_the_scope_it_read",
+   "test_staleness_and_remedies.TestTheJoinsTerminalWriteIsInsideTheLock.test_the_identity_is_stamped_while_the_run_lock_is_held",
+   "test_staleness_and_remedies.TestTheJoinsTerminalWriteIsInsideTheLock.test_the_join_still_records_the_terminal_timing",
    "test_super_research_runner.SuperResearchRunnerTests.test_accepts_module_and_class_selectors",
    "test_super_research_runner.SuperResearchRunnerTests.test_delegates_to_installed_python_39",
    "test_super_research_runner.SuperResearchRunnerTests.test_discovers_tests_from_project_scope_directory",
@@ -1932,7 +1970,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f09f8ea225e3941f51a3f69caa2bbd23a8350de33583e0cdabeb18e3883023c6"
+  "sha256": "cce44e4587ded1a89b55db5bf07d7c1d47430a8ce991dd157f3b8db830127deb"
  },
  "mutation_owners": [
   {
@@ -3921,6 +3959,39 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_staleness_and_remedies",
+   "owner": "SinkTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_staleness_and_remedies",
+   "owner": "TestARecutRepairsTheReceiptsItInvalidated.test_without_the_repair_that_same_packet_is_refused",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_staleness_and_remedies",
+   "owner": "TestTheJoinsTerminalWriteIsInsideTheLock.test_the_identity_is_stamped_while_the_run_lock_is_held",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_staleness_and_remedies",
+   "owner": "TestTheJoinsTerminalWriteIsInsideTheLock.test_the_identity_is_stamped_while_the_run_lock_is_held.probing_write",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
    ]
   },
   {

@@ -44,6 +44,7 @@ if __package__:
     from . import tickets_join as _tickets_join_module
     from . import tickets_outcome as _tickets_outcome_module
     from . import tickets_land as _tickets_land_module
+    from . import tickets_instantiate as _tickets_instantiate_module
     from . import tickets_registry as _tickets_registry_module
     from . import tickets_grade as _tickets_grade_module
 else:
@@ -70,6 +71,7 @@ else:
     import tickets_join as _tickets_join_module
     import tickets_outcome as _tickets_outcome_module
     import tickets_land as _tickets_land_module
+    import tickets_instantiate as _tickets_instantiate_module
     _tickets_registry_module = __import__('tickets_registry')
     _tickets_grade_module = __import__('tickets_grade')
 
@@ -196,6 +198,8 @@ _run_state_root = _tickets_store_module._run_state_root
 _runs_root = _tickets_store_module._runs_root
 _same_project = _tickets_store_module._same_project
 _segment_error = _tickets_store_module._segment_error
+REPAIR_RUN_IDENTITY_USAGE = _tickets_store_module.REPAIR_RUN_IDENTITY_USAGE
+_cmd_repair_run_identity = _tickets_store_module._cmd_repair_run_identity
 def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
     """Return the terminal identity update through its store owner."""
     return _tickets_store_module._terminal_identity_update(run, ticket_id, status, now)
@@ -336,6 +340,7 @@ def _sync_seams():
     _tickets_issue_module.datetime = datetime
     _tickets_result_module.datetime = datetime
     _tickets_dispatch_module.datetime = datetime
+    _tickets_instantiate_module.datetime = datetime
     _tickets_store_writes_module.msvcrt = msvcrt
     _tickets_result_module.msvcrt = msvcrt
     _tickets_store_module._write_identity = _write_identity
@@ -343,6 +348,8 @@ def _sync_seams():
     _tickets_lifecycle_module._write_identity = _write_identity
     _tickets_result_module._write_identity = _write_identity
     _tickets_dispatch_module._write_identity = _write_identity
+    _tickets_instantiate_module._write_identity = _write_identity
+    _tickets_instantiate_module._write_text_atomically = _write_text_atomically
     _tickets_store_module._write_text_atomically = _write_text_atomically
     _tickets_lifecycle_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._write_text_atomically = _write_text_atomically

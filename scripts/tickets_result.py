@@ -111,8 +111,10 @@ def _result_under_run_lock(rest):
         body = text_arg
     if body is None:
         return {"error": f"result requires a readable body from --file <path> or --text <string>. usage: {RESULT_USAGE}"}
-    if any((line.startswith('## ') for line in body.splitlines())):
-        return {'error': f"a '## {canonical}' body may not contain a level-2 heading ('## ...'): it would be read as a sibling ticket section. Use '###' or deeper for sub-headings inside a section"}
+    # A level-2 heading in the body is the writer's, not a sibling section:
+    # `tickets_markdown` indent-quotes it on the way in and takes the quote
+    # off on the way out, so `## Findings` inside `## Result` is filed as
+    # written and read back byte for byte.
     if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
         return {'error': f"a result body may not contain the canonical writer attribution prefix '{RESULT_ATTRIBUTION_PREFIX}': tickets.py adds exactly one for this write"}
     tickets_root = _tickets_root()

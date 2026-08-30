@@ -10,9 +10,9 @@ if __package__:
     from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from .tickets_packet import PACKET_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
-    from .tickets_generations import GENERATION_SUBCOMMANDS
+    from .tickets_seal import GENERATION_SUBCOMMANDS
     from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_REPLACE_USAGE, DISPATCH_RETIRE_USAGE
     from .tickets_dispatch_packet import DISPATCH_PACKET_USAGE, DISPATCH_RECEIVE_USAGE
     from .tickets_dispatch_receipt import DISPATCH_RECEIPT_USAGE
@@ -25,9 +25,9 @@ else:
     from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from tickets_packet import PACKET_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
-    from tickets_store import DEFAULT_RUN_STATE_TREE, RUN_STATE_TREES
+    from tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE
-    GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
+    GENERATION_SUBCOMMANDS = __import__("tickets_seal").GENERATION_SUBCOMMANDS
     _attempts = __import__("tickets_attempts")
     DISPATCH_COMMIT_USAGE = _attempts.DISPATCH_COMMIT_USAGE
     DISPATCH_OPEN_USAGE = _attempts.DISPATCH_OPEN_USAGE
@@ -82,6 +82,7 @@ SUBCOMMAND_USAGE = {
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
+    "repair-run-identity": REPAIR_RUN_IDENTITY_USAGE,
     "improvement": IMPROVEMENT_USAGE,
     "bound-check": BOUND_CHECK_USAGE,
     "lint": LINT_USAGE,
@@ -114,6 +115,7 @@ SUBCOMMAND_SUMMARY = {
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
     "worklog": "Render the run worklog.",
     "run-state": f"Write run state under {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}).",
+    "repair-run-identity": "Quarantine an unreadable run identity and rebuild the minimal one from ticket evidence.",
     "improvement": "Write improvement evidence.",
     "bound-check": "Report live claims against their operational bound.",
     "lint": "Grade the exact pre-issue file projection or one current ticket.",

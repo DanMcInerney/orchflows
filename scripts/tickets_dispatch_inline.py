@@ -20,10 +20,12 @@ if __package__:
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_dispatch_schema import classification as _classification
     from .tickets_format import canonical_json
+    from .tickets_store import normalized_isolation
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_dispatch_schema import classification as _classification
     from tickets_format import canonical_json
+    from tickets_store import normalized_isolation
 
 
 def _semantic_digest(value) -> str:
@@ -41,16 +43,25 @@ def _inline_assignment_failure(packet: dict, assignment: dict):
         return _classification("assignment-divergent", "inline system identity is missing")
     executor = assignment.get("executor")
     role, assignment_profile = resolved_role_profile(executor, system.get("profile"))
+    # Both sides of `isolation` are normalized here and nowhere else. The
+    # seal stores the field verbatim -- absent on a ticket that declares no
+    # isolation -- while the projection carries `normalized_isolation`'s
+    # value, so a ticket with no isolation field compared `None` against
+    # `"none"` and every valid inline packet for it was refused as
+    # divergent. What the seal hashes is untouched: this is the comparison's
+    # own reading of two spellings of one value.
     expected = {
         "executor": executor,
         "independence": system.get("independence") or "checker",
-        "isolation": system.get("isolation"),
+        "isolation": normalized_isolation(system.get("isolation")),
         "pack": system.get("pack"),
         "profile": assignment_profile,
         "review_kind": system.get("review_kind"),
         "role": role,
     }
-    if any(packet.get(key) != value for key, value in expected.items()):
+    observed = {key: packet.get(key) for key in expected}
+    observed["isolation"] = normalized_isolation(observed["isolation"])
+    if observed != expected:
         return _classification(
             "assignment-divergent",
             "inline routing does not match the sealed assignment",
