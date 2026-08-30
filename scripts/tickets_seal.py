@@ -103,7 +103,7 @@ def _validated_documents(run: str) -> list:
     directory = _generation_dir(run)
     for path in sorted(directory.glob("*.validated.json")) if directory.is_dir() else []:
         try:
-            value = json.loads(path.read_text(encoding="utf-8"))
+            value = json.loads(path.read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError):
             continue
         if isinstance(value, dict) and isinstance(value.get("draft"), dict):
@@ -161,7 +161,7 @@ def _record_failure(run: str, root_id: str, findings: list, bound: int, write_at
     path = _failure_path(run, root_id)
     history = []
     if path.is_file():
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(path.read_text(encoding="utf-8-sig"))
         history = list(value.get("history") or []) if isinstance(value, dict) else []
     decision = correction_decision(findings, history, bound)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -227,7 +227,7 @@ def _cmd_seal(rest) -> dict:
             validated_path = _state_path(run, cut_generation, "validated")
             if not validated_path.is_file():
                 return {"error": "seal refused: no validation receipt for requested cut generation"}
-            document = json.loads(validated_path.read_text(encoding="utf-8"))
+            document = json.loads(validated_path.read_text(encoding="utf-8-sig"))
             draft, receipt = document["draft"], document["receipt"]
             if draft.get("cut_generation") != cut_generation:
                 return {"error": "seal refused: validation receipt names another cut generation"}

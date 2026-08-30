@@ -19,16 +19,20 @@ directory as the project rather than the checkout above it.
 Where a work item's own candidate worktree goes is the third fact, and
 it lives here for the same reason: derived from the run and the ticket
 id alone, by one function, so two siblings of one run cannot be handed
-one tree and no caller can spell the same tree a second way.
+one tree and no caller can spell the same tree a second way. Whether a
+path lies in the host's system temp root is the fourth, asked by a
+checker in ``tools/`` and a harness in ``scripts/`` that cannot import
+each other.
 
-This module is the single owner of all three facts. ``tickets.py``,
-``friction.py`` and ``workspace.py`` call it; none of them reimplements
-it.
+This module is the single owner of all four facts. ``tickets.py``,
+``friction.py``, ``workspace.py``, ``isolate.py`` and
+``tools/verify_at.py`` call it; none of them reimplements it.
 """
 
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 ENV_VAR = "ORCHFLOWS_STATE_HOME"
@@ -141,6 +145,37 @@ def candidate_paths(run: str, ticket_id: str) -> dict:
         "path": worktrees_root() / run / ticket_id,
         "branch": f"{WORKTREE_BRANCH_PREFIX}/{run}/{ticket_id}",
     }
+
+
+def _one_spelling(path) -> str:
+    """One spelling for one location, on a case-folding filesystem too."""
+
+    return os.path.normcase(os.path.realpath(os.fspath(path)))
+
+
+def inside_temp_root(candidate) -> bool:
+    """Whether ``candidate`` lies inside this host's system temp root.
+
+    A fact about a path, so it lives beside the other three, and it lives
+    at *this* end of the edge for the reason ``segment_defect`` does: two
+    callers in two layers ask it -- the checker that refuses to build a
+    worktree there (``tools/verify_at.py``) and the harness that warns when
+    it built an isolated tree there (``scripts/isolate.py``) -- and ``tools``
+    may import ``scripts`` while the reverse is forbidden, so only this end
+    is reachable from both.
+
+    Why anyone asks: a checkout under the system temp root is not merely
+    untidy. ``tools/run_tests.py``'s ``meaningful_sys_path`` reads paths
+    there as dead scratch, so a suite run inside one reads differently
+    about itself, and a red that means only "you ran me in the temp root"
+    is indistinguishable from a real one.
+    """
+
+    root = _one_spelling(tempfile.gettempdir())
+    try:
+        return os.path.commonpath((root, _one_spelling(candidate))) == root
+    except ValueError:  # different drives have no common path at all
+        return False
 
 
 def main_checkout_root(git_file: Path):

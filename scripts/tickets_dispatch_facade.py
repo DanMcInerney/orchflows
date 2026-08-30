@@ -27,17 +27,67 @@ else:
     from tickets_store import _run_lock, _segment_error
 
 
+def _workspace(source: Path, verb: str, arguments: list):
+    """``(response, failure)`` from one ``workspace.py`` verb run in ``source``.
+
+    Workspace work is intentionally kept behind its public script: it owns
+    adapter selection, the derived candidate worktree, and the host checkout
+    observation. Only the structured response is fed back, so a refusal
+    cannot be repaired here or translated into a second protocol. One reader
+    for both verbs, because every one of these failure shapes -- a launch
+    that will not start, output that will not parse, an object that is not
+    one, a non-zero status -- belongs to the protocol and not to the verb.
+    """
+
+    script = Path(__file__).with_name("workspace.py").resolve()
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(script), verb, *arguments],
+            cwd=str(source), capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
+    except (OSError, ValueError) as error:
+        return None, {"error": f"workspace {verb} failed: {error}"}
+    try:
+        response = json.loads(completed.stdout)
+    except (TypeError, ValueError) as error:
+        return None, {"error": f"workspace {verb} returned invalid JSON: {error}"}
+    if not isinstance(response, dict):
+        return None, {"error": f"workspace {verb} returned a non-object response"}
+    if "error" in response:
+        return None, response
+    if completed.returncode:
+        return None, {
+            "error": f"workspace {verb} refused",
+            "code": completed.returncode,
+            "response": response,
+        }
+    return response, None
+
+
+def _workspace_prepare(run: str, ticket_id: str, workspace: str | None) -> dict:
+    """Install what the established tree declares, reporting either answer.
+
+    Called after the run lock is released, never inside it: a cold
+    ``pnpm install`` is minutes, and inside the critical section every
+    sibling of this run waited them out for a tree that was not theirs. Its
+    verdict is reported rather than raised, exactly as the workspace owner
+    reports it -- a tree that could not be prepared is still the workspace
+    the packet names, and the child reads the answer and plans around it.
+    """
+
+    source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
+    response, failure = _workspace(source, "prepare", [run, ticket_id])
+    return failure if failure is not None else response.get("prepare", response)
+
+
 def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
     """Run the workspace owner and return its one JSON response.
 
-    Workspace establishment is intentionally kept behind its public script:
-    it owns adapter selection, the derived candidate worktree, and the host
-    checkout observation. ``--workspace`` names the tree the candidate is cut
-    from, never the candidate itself -- an isolation-required item's tree is
-    derived from its identity by ``workspace.py``, which is what stops two
-    siblings of one run from being dispatched into one directory. The facade
-    feeds back only the structured response, so a refusal cannot be repaired
-    or translated into a second protocol.
+    ``--workspace`` names the tree the candidate is cut from, never the
+    candidate itself -- an isolation-required item's tree is derived from its
+    identity by ``workspace.py``, which is what stops two siblings of one run
+    from being dispatched into one directory.
 
     ``--lock-held`` (``workspace_git.LOCK_HELD``, pinned by a test) says this
     process already holds the run lock across the whole composition: the child
@@ -45,31 +95,12 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
     its own parent holds while waiting for the child.
     """
 
-    script = Path(__file__).with_name("workspace.py").resolve()
     source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
-    try:
-        completed = subprocess.run(
-            [sys.executable, str(script), "establish", run, ticket_id,
-             "--repo", str(source), "--lock-held"],
-            cwd=str(source), capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
-        )
-    except (OSError, ValueError) as error:
-        return {"error": f"workspace establish failed: {error}"}
-    try:
-        response = json.loads(completed.stdout)
-    except (TypeError, ValueError) as error:
-        return {"error": f"workspace establish returned invalid JSON: {error}"}
-    if not isinstance(response, dict):
-        return {"error": "workspace establish returned a non-object response"}
-    if "error" in response:
-        return response
-    if completed.returncode:
-        return {
-            "error": "workspace establish refused",
-            "code": completed.returncode,
-            "response": response,
-        }
+    response, failure = _workspace(source, "establish", [
+        run, ticket_id, "--repo", str(source), "--lock-held",
+    ])
+    if failure is not None:
+        return failure
     established = response.get("establish")
     if not isinstance(established, dict) or not str(
         established.get("workspace_path") or ""
@@ -107,7 +138,7 @@ def _write_packet_file(destination: str, packet: dict):
 
 
 def _cmd_dispatch(rest):
-    """Compose ready, workspace, attempt, packet, and launch for one caller.
+    """Compose ready, workspace, attempt, packet, launch and preparation.
 
     The established public operations remain the recovery seam. This
     caller convenience operation composes them in order, relays every
@@ -119,6 +150,10 @@ def _cmd_dispatch(rest):
     ticket is still untouched, and once from the committed packet, which is
     the authority on what was actually projected. Both ask the one resolver,
     under this one lock, so they cannot disagree.
+
+    Only the steps that decide the dispatch run under that lock. Tree
+    preparation decides nothing and costs the most, so it follows the lock
+    rather than sitting inside it.
     """
 
     args = list(rest)
@@ -156,77 +191,98 @@ def _cmd_dispatch(rest):
         return ready
 
     with _run_lock(run):
-        # Before the first side effect: an attempt opened for a launch that
-        # cannot resolve is an attempt nobody can start. Then open before
-        # workspace establishment, because workspace.start stamps the ticket
-        # and doing it first would mutate bytes on a pre-open refusal.
-        record, failure = precheck(run, ticket_id, host)
-        if failure is not None:
-            return failure
+        dispatched = _dispatched_under_run_lock(
+            run, ticket_id, host=host, owner=owner, dispatch_id=dispatch_id,
+            lease=lease, reply_to=reply_to, workspace=workspace,
+            artifact=artifact, form=form, review_kind=review_kind,
+            packet_file=packet_file, inline_limit=inline_limit,
+        )
+    if "error" in dispatched:
+        return dispatched
+    # Outside the lock, and last: preparing the tree is a package manager's
+    # minutes against a directory that already exists and belongs to this one
+    # item, and every second of it spent inside the critical section was a
+    # second every sibling of this run waited for a tree that was not theirs.
+    # Its verdict rides along; it never decides the dispatch.
+    return {**dispatched, "prepare": _workspace_prepare(run, ticket_id, workspace)}
 
-        opening = _cmd_dispatch_open([
-            run, ticket_id, "--by", owner, "--dispatch-id", dispatch_id,
-            "--lease-expires-at", lease,
-        ], _lock_held=True)
-        if "error" in opening:
-            return opening
-        dispatch = opening.get("dispatch")
-        if not isinstance(dispatch, dict):
-            return {"error": "dispatch-open returned no dispatch response"}
-        newly_opened = dispatch.get("outcome") == "opened"
 
-        established = _workspace_establish(run, ticket_id, workspace)
-        if "error" in established:
-            projected = established
+def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
+                               lease, reply_to, workspace, artifact, form,
+                               review_kind, packet_file, inline_limit):
+    """Everything the run lock has to hold, and nothing that does not."""
+
+    # Before the first side effect: an attempt opened for a launch that
+    # cannot resolve is an attempt nobody can start. Then open before
+    # workspace establishment, because workspace.start stamps the ticket
+    # and doing it first would mutate bytes on a pre-open refusal.
+    record, failure = precheck(run, ticket_id, host)
+    if failure is not None:
+        return failure
+
+    opening = _cmd_dispatch_open([
+        run, ticket_id, "--by", owner, "--dispatch-id", dispatch_id,
+        "--lease-expires-at", lease,
+    ], _lock_held=True)
+    if "error" in opening:
+        return opening
+    dispatch = opening.get("dispatch")
+    if not isinstance(dispatch, dict):
+        return {"error": "dispatch-open returned no dispatch response"}
+    newly_opened = dispatch.get("outcome") == "opened"
+
+    established = _workspace_establish(run, ticket_id, workspace)
+    if "error" in established:
+        projected = established
+    else:
+        # only establishment's own answer reaches the packet: the caller's
+        # ``--workspace`` named the tree to cut from, and a packet built
+        # from that instead has carried another item's workspace
+        candidate = established.get("establish")
+        workspace_path = (
+            candidate.get("workspace_path") if isinstance(candidate, dict) else None
+        )
+        if not str(workspace_path or "").strip():
+            projected = {"error": "workspace establish did not record workspace_path"}
         else:
-            # only establishment's own answer reaches the packet: the caller's
-            # ``--workspace`` named the tree to cut from, and a packet built
-            # from that instead has carried another item's workspace
-            candidate = established.get("establish")
-            workspace_path = (
-                candidate.get("workspace_path") if isinstance(candidate, dict) else None
-            )
-            if not str(workspace_path or "").strip():
-                projected = {"error": "workspace establish did not record workspace_path"}
-            else:
-                packet_args = [
-                    run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
-                    "--workspace", workspace_path, "--form", form,
-                ]
-                if review_kind is not None:
-                    packet_args.extend(("--review-kind", review_kind))
-                if artifact is not None:
-                    packet_args.extend(("--artifact", artifact))
-                if inline_limit is not None:
-                    packet_args.extend(("--inline-limit", inline_limit))
-                try:
-                    projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
-                    if not isinstance(projected, dict):
-                        projected = {
-                            "error": "dispatch-packet returned a non-object response"
-                        }
-                    elif "error" not in projected and not isinstance(
-                        projected.get("packet"), dict
-                    ):
-                        projected = {"error": "dispatch-packet returned no packet"}
-                except Exception as error:
-                    projected = {"error": str(error)}
-        if "error" not in projected:
-            return _launched(projected, record, packet_file)
-        if newly_opened:
-            retirement = _cmd_dispatch_retire([
-                run, ticket_id, "--assignment-seal", dispatch["assignment_seal"],
-                "--dispatch-id", dispatch_id,
-                "--record-id", f"lifecycle:dispatch-facade-{dispatch_id}",
-            ], _lock_held=True)
-            if not isinstance(retirement, dict) or "error" in retirement:
-                return {
-                    "error": "dispatch attempt retirement failed after projection refusal",
-                    "code": "dispatch-retirement-failed",
-                    "projection": projected,
-                    "retirement": retirement,
-                }
-        return projected
+            packet_args = [
+                run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
+                "--workspace", workspace_path, "--form", form,
+            ]
+            if review_kind is not None:
+                packet_args.extend(("--review-kind", review_kind))
+            if artifact is not None:
+                packet_args.extend(("--artifact", artifact))
+            if inline_limit is not None:
+                packet_args.extend(("--inline-limit", inline_limit))
+            try:
+                projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
+                if not isinstance(projected, dict):
+                    projected = {
+                        "error": "dispatch-packet returned a non-object response"
+                    }
+                elif "error" not in projected and not isinstance(
+                    projected.get("packet"), dict
+                ):
+                    projected = {"error": "dispatch-packet returned no packet"}
+            except Exception as error:
+                projected = {"error": str(error)}
+    if "error" not in projected:
+        return _launched(projected, record, packet_file)
+    if newly_opened:
+        retirement = _cmd_dispatch_retire([
+            run, ticket_id, "--assignment-seal", dispatch["assignment_seal"],
+            "--dispatch-id", dispatch_id,
+            "--record-id", f"lifecycle:dispatch-facade-{dispatch_id}",
+        ], _lock_held=True)
+        if not isinstance(retirement, dict) or "error" in retirement:
+            return {
+                "error": "dispatch attempt retirement failed after projection refusal",
+                "code": "dispatch-retirement-failed",
+                "projection": projected,
+                "retirement": retirement,
+            }
+    return projected
 
 
 def _launched(projected: dict, record: dict, packet_file):
@@ -243,4 +299,7 @@ def _launched(projected: dict, record: dict, packet_file):
     return {**projected, "launch": launch}
 
 
-__all__ = ("_cmd_dispatch", "_launched", "_workspace_establish")
+__all__ = (
+    "_cmd_dispatch", "_dispatched_under_run_lock", "_launched",
+    "_workspace_establish", "_workspace_prepare",
+)

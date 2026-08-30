@@ -22,11 +22,13 @@ if _SIBLING_DIR not in sys.path:
     sys.path.append(_SIBLING_DIR)
 
 if __package__:  # in-repo package import; installed scripts sit flat together
+    from scripts import console
     from scripts import search_plan_advance as _advance_module
     from scripts import search_plan_archive as _archive
     from scripts import search_plan_projection as _projection
     from scripts import search_plan_protocol as _protocol
 else:  # pragma: no cover - direct/installed script path
+    import console
     import search_plan_advance as _advance_module
     import search_plan_archive as _archive
     import search_plan_projection as _projection
@@ -101,6 +103,7 @@ def _advance(request):
 
 
 def main(argv):
+    console.harden()
     if argv != ["advance"]:
         sys.stderr.write("search-plan: expected advance\n")
         return 2
@@ -115,4 +118,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(console.run(main, sys.argv[1:]))

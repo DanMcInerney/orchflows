@@ -15,8 +15,10 @@ import re
 import sys
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
+    from scripts import console
     from scripts.tickets_markdown import dequote
 except ImportError:  # pragma: no cover - the installed copy's path
+    import console
     from tickets_markdown import dequote
 
 
@@ -76,11 +78,16 @@ def freeze_ticket(source: Path, output: Path) -> dict:
     encoded = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     if manifest_path.exists() and manifest_path.read_text(encoding="utf-8") != encoded:
         raise FixtureError(f"fixture manifest already differs: {manifest_path}")
-    manifest_path.write_text(encoded, encoding="utf-8")
+    # LF, written by this tool rather than by the console: `write_text`
+    # translates on Windows, so the one manifest had two byte forms and
+    # a fixture frozen on one host did not match itself on the other.
+    with open(manifest_path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(encoded)
     return {"fixture": {"id": ticket_id, "path": str(destination), "sha256": digest, "manifest": str(manifest_path)}}
 
 
 def main(argv=None) -> int:
+    console.harden()
     parser = argparse.ArgumentParser(usage=USAGE)
     parser.add_argument("source", type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -95,5 +102,5 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(console.run(main))
 

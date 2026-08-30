@@ -83,6 +83,16 @@ SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
 REQUIRED_ISOLATION = 'required'
 DELIVERED_STATE = 'complete'
 TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
+# The terminal states that leave a Result behind for a dependent to read.
+# `complete` delivered the whole Goal and `limited` delivered part of it with
+# honest accounting; both file the evidence the next item is written against.
+# `blocked`, `failed` and `stalled` filed no such artifact, so a dependent
+# admitted over them would be reading an absence. Beside the states it is
+# drawn from rather than in one of its two readers: `tickets_admission`
+# grades a sealed assignment against it and `tickets_readiness` answers the
+# reader's promotion question with it, and the two disagreed -- readiness
+# went on requiring `complete` after admission stopped.
+RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
 ROOT_EXECUTOR = 'orch-decompose'

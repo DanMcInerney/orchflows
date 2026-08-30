@@ -31,7 +31,6 @@ from scripts import tickets_dispatch_facade  # noqa: E402
 from scripts import tickets_dispatch_packet  # noqa: E402
 from scripts import tickets_dispatch_gate  # noqa: E402
 from scripts import tickets_join  # noqa: E402
-from scripts import tickets_packet  # noqa: E402
 from scripts import tickets_result  # noqa: E402
 from scripts import tickets_lifecycle  # noqa: E402
 from scripts import tickets_store  # noqa: E402
@@ -158,7 +157,6 @@ class TestTheOneLockedWritePrimitive(unittest.TestCase):
         tickets_lifecycle._cmd_check,
         tickets_lifecycle._cmd_set_status,
         tickets_lifecycle._cmd_join_noop_repair,
-        tickets_packet._cmd_packet,
         tickets_dispatch_gate._cmd_gate,
         tickets_dispatch_gate._cmd_checker_stage,
     )

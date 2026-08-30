@@ -11,6 +11,13 @@ records what it created. Nothing improvises that tree, and nothing falls
 back to the tree the caller happened to be standing in. ``retire`` removes
 it again, leaving every stamp that names it in place for the join.
 
+``prepare`` installs what the recorded workspace's tree declares, against
+the ``workspace_path`` establishment already stamped. It is a verb of its
+own because it is the one act here that costs a package manager's minutes
+and writes no ticket: run inside a caller's critical section it made every
+sibling of the run wait for a tree that was not theirs, so it takes no lock
+and is called once the establishment's lock is let go.
+
 ``start`` is the observation that predates it and still answers for
 everything else: it records the durable ``workspace_path`` for every
 supported adapter, adds ``workspace_branch`` and ``workspace_baseline`` for
@@ -45,6 +52,7 @@ Exit codes:
 
 Subcommands:
     establish <run> <id> [--repo <source-tree>]
+    prepare <run> <id>
     retire <run> <id> [--force]
     start <run> <id>  # from a Git candidate, or anywhere for evidence-store
     check <run> <id> --base <rev> [--repo <path>]
@@ -76,6 +84,7 @@ _SIBLING_DIR = str(Path(__file__).resolve().parent)
 if _SIBLING_DIR not in sys.path:
     sys.path.append(_SIBLING_DIR)
 
+import console  # noqa: E402  the console discipline every entrypoint takes first
 import state_root  # noqa: E402  the sink resolver, imported and never copied
 import tickets  # noqa: E402  frontmatter and isolation, imported and never copied
 
@@ -129,12 +138,14 @@ VERDICTS = {
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {
     "establish": "workspace.py establish <run> <id> [--repo <source-tree>]",
+    "prepare": "workspace.py prepare <run> <id>",
     "retire": "workspace.py retire <run> <id> [--force]",
     "start": "workspace.py start <run> <id>",
     "check": "workspace.py check <run> <id> --base <rev> [--repo <path>]",
 }
 COMMAND_HELP = {
     "establish": "create and record the candidate worktree this item's identity derives",
+    "prepare": "install what the recorded workspace declares; takes no run lock",
     "retire": "remove that derived worktree, leaving every stamp that names it",
     "start": "record the pack workspace the caller already stands in; never creates one",
     "check": "from the integrating checkout: grade isolation and report the actual diff",
@@ -168,32 +179,13 @@ def _dirty_paths() -> list:
 
 # --- the ticket, always at the main repository root -------------------------
 
+# Reading git's own output is `workspace_git`'s, beside the porcelain and
+# worktree walks: this facade routes and grades, it never parses.
+_actual_mutations = workspace_git.actual_mutations
 _graded = workspace_git._graded
 _locate = workspace_git._locate
 _record = workspace_git._record
 _sharers = workspace_git._sharers
-
-def _actual_mutations(name_status: str) -> list:
-    """Normalize ``git diff --name-status --no-renames -z`` rows."""
-    tokens = name_status.split("\0")
-    rows = []
-    index = 0
-    operations = {"A": "create", "D": "delete", "M": "change", "T": "change"}
-    while index < len(tokens) and tokens[index]:
-        status = tokens[index]
-        if "\t" in status:
-            status, path = status.split("\t", 1)
-            index += 1
-        elif index + 1 < len(tokens):
-            path = tokens[index + 1]
-            index += 2
-        else:
-            raise Refused("git name-status output ended before its path")
-        operation = operations.get(status[:1])
-        if operation is None:
-            raise Refused(f"git name-status returned unsupported status {status!r}")
-        rows.append((operation, path))
-    return sorted(set(rows))
 
 # --- subcommands ------------------------------------------------------------
 
@@ -254,6 +246,18 @@ def _cmd_establish(rest):
     return workspace_candidate.establish(
         run, ticket_id, source=_GIT_CWD, held=held, seams=_seams()
     )
+
+def _cmd_prepare(rest):
+    """Install what the recorded workspace declares. It writes no ticket.
+
+    Kept out of ``establish`` because it is the one act in this script that
+    costs a package manager's minutes: run inside the dispatch facade's
+    critical section it made every sibling of the run wait for a tree that
+    was not theirs. Nothing here is written under a lock, so it takes none.
+    """
+
+    run, ticket_id = _positional(rest, 2, "prepare")
+    return workspace_candidate.prepare(run, ticket_id)
 
 def _cmd_retire(rest):
     """Remove the derived worktree. It reads and writes no ticket."""
@@ -435,13 +439,9 @@ def _help_text(command=None) -> str:
 def main(argv=None) -> int:
     # A refusal quotes a path and a ticket's own words, either of which can
     # carry a character a cp1252 console cannot encode; a script that crashes
-    # while printing its verdict reports none. The same treatment
-    # `scripts/tickets.py` and `tools/validate.py` give their one print.
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(errors="replace")
-        except (AttributeError, ValueError):  # pragma: no cover - not a TextIOWrapper
-            pass
+    # while printing its verdict reports none. One owner for that treatment,
+    # `scripts/console.py`, which every entrypoint here calls first.
+    console.harden()
     # this process's git aim, held only for the call below: ``main`` is called
     # more than once in one process by the tests, and an aim left set would
     # grade the next call's item against the last call's checkout
@@ -449,8 +449,8 @@ def main(argv=None) -> int:
     _GIT_CWD = None
     arguments = list(sys.argv[1:] if argv is None else argv)
     handlers = {
-        "establish": _cmd_establish, "retire": _cmd_retire,
-        "start": _cmd_start, "check": _cmd_check,
+        "establish": _cmd_establish, "prepare": _cmd_prepare,
+        "retire": _cmd_retire, "start": _cmd_start, "check": _cmd_check,
     }
     command = arguments[0] if arguments else None
     if command in HELP_FLAGS:
@@ -490,4 +490,4 @@ def main(argv=None) -> int:
     return code
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(console.run(main))

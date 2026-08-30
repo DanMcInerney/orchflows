@@ -11,8 +11,15 @@ it reads the revision's state rather than whatever the live sink holds
 by then. `--baseline` stops after the export, so the comparison reading
 comes from the same harness rather than a second recipe.
 
-    python scripts/isolate.py /tmp/mine --dirty --exclude docs/notes.md
-    python scripts/isolate.py /tmp/base --baseline
+    python scripts/isolate.py ../isolated/mine --dirty --exclude docs/notes.md
+    python scripts/isolate.py ../isolated/base --baseline
+
+A destination inside the host's system temp root is built, and said so:
+`tools/run_tests.py`'s `meaningful_sys_path` reads paths there as dead
+scratch, so a suite run in one reads differently about itself and a red
+there can mean only "you ran me in the temp root". The harness refuses
+nothing over it -- a caller who meant it gets the tree -- but the report
+names it rather than leaving the reader to discover it in a verdict.
 
 A named path absent from the working tree is a deletion and is unlinked
 from the export; a named directory is overlaid whole. Anything the
@@ -38,9 +45,10 @@ import tempfile
 from pathlib import Path
 
 try:  # in-repo; the installed copy sits flat beside tickets.py
-    from scripts import state_root
+    from scripts import console, state_root
     from scripts.workspace_git import dirty_paths as _walk_dirty_paths
 except ImportError:  # pragma: no cover - the installed copy's path
+    import console
     import state_root
     from workspace_git import dirty_paths as _walk_dirty_paths
 
@@ -232,10 +240,23 @@ def build(args) -> str:
     )
     # Where to point `ORCHFLOWS_STATE_HOME`; silent when nothing was copied,
     # because naming an empty snapshot invites a check to read one.
-    return report if not args.orch_run else "{} in {}/".format(report, SINK_COPY)
+    if args.orch_run:
+        report = "{} in {}/".format(report, SINK_COPY)
+    # Named, never refused. The rule is `state_root.inside_temp_root`'s and
+    # `tools/verify_at.py` refuses on it, because a checker's verdict has to
+    # be the repository's. This harness builds trees a caller reads by hand
+    # as often as a check does, so it says what it built and hands it over.
+    if state_root.inside_temp_root(dest):
+        report += (
+            "\nisolate: warning: {} is inside the system temp root; a suite "
+            "run there reads its own scratch paths as dead and can go red for "
+            "its location alone".format(dest)
+        )
+    return report
 
 
 def main(argv=None) -> int:
+    console.harden()
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("dest", help="destination directory")
     parser.add_argument("--repo", default=".", help="repository or worktree to read")
@@ -259,4 +280,4 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(console.run(main))

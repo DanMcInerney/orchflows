@@ -21,6 +21,11 @@ seconds no sibling has to wait through. The stamp that follows is the
 locked half, and it is written against the ticket's bytes as they were
 read -- a write that landed in between is reported, never absorbed.
 
+``prepare`` is the same argument taken to its end: installing what the
+tree declares costs a package manager's minutes and writes no ticket at
+all, so it is its own verb, run against the recorded ``workspace_path``
+after the establishment's lock has been let go.
+
 Nothing here records a success it did not achieve. A refused establishment
 leaves the ticket exactly as it was found, and never falls back to the
 shared tree the item was dispatched from: an unisolated item that believes
@@ -164,10 +169,6 @@ def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
     )
     if "error" in outcome:
         raise Refused(outcome["error"])
-    # after recording, never before: a tree that cannot be prepared is still
-    # a workspace whose branch and baseline the join has to be able to read,
-    # and the preparation's own verdict is reported rather than raised
-    prepared = workspace_prepare.prepare(top)
     # after recording: this item's own stamp is in the sink, and skipped
     sharing = workspace_git._sharers(path, git_out, seams["is_ancestor"], branch)
     body = {
@@ -185,7 +186,6 @@ def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
         "isolated": top != root and not sharing,
         "shared_with": sharing,
         "dirty": dirty,
-        **prepared,
     }
     return body, EXIT_SHARED_WORKSPACE if sharing else EXIT_OK
 
@@ -304,7 +304,6 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
     )
     if "error" in outcome:
         raise Refused(outcome["error"])
-    prepared = workspace_prepare.prepare(target)
     return {
         "run": run,
         "id": ticket_id,
@@ -320,7 +319,6 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
         "shared_with": [],
         "dirty": dirty,
         "replayed": replayed,
-        **prepared,
     }, EXIT_OK
 
 
@@ -353,6 +351,47 @@ def establish(run: str, ticket_id: str, *, source, held: bool, seams: dict):
     """``establish``: give an isolation-required item the tree it derives."""
 
     return _establishment(run, ticket_id, ESTABLISH_KEY, held, seams, source, source)
+
+
+def prepare(run: str, ticket_id: str):
+    """Install what this item's recorded tree declares, holding no lock.
+
+    Separated from ``establish`` because of what it costs: a cold
+    ``pnpm install`` is minutes, and while it ran inside the dispatch
+    facade's critical section every sibling of the run waited it out for a
+    tree that was not theirs. Nothing here writes a ticket or a stamp, so
+    there is no lock to take -- it reads the ``workspace_path`` the
+    establishment already recorded and works in that directory.
+
+    The preparation's verdict is reported, never raised: a tree that cannot
+    be prepared is still a workspace whose branch and baseline the join has
+    to be able to read. Only a workspace that was never recorded refuses,
+    because there is then no directory to prepare and the caller has skipped
+    a step rather than hit one that failed.
+    """
+
+    path, data, _ = _loaded(run, ticket_id)
+    recorded = str(data.get(PATH_KEY) or "").strip()
+    if not recorded:
+        raise Refused(
+            f"{run}/{ticket_id} records no {PATH_KEY}: establish it first with "
+            f"'workspace.py establish {run} {ticket_id}'"
+        )
+    top = Path(recorded).expanduser()
+    if not top.is_dir():
+        raise Refused(
+            f"recorded {PATH_KEY} {top} is not a directory: establish it again "
+            f"with 'workspace.py establish {run} {ticket_id}'"
+        )
+    return {
+        "prepare": {
+            "run": run,
+            "id": ticket_id,
+            "ticket": str(path),
+            PATH_KEY: str(top),
+            **workspace_prepare.prepare(top),
+        }
+    }, EXIT_OK
 
 
 def retire(run: str, ticket_id: str, *, force: bool = False):
@@ -394,5 +433,5 @@ def retire(run: str, ticket_id: str, *, force: bool = False):
 
 
 __all__ = (
-    "ESTABLISH_KEY", "START_KEY", "establish", "observe", "retire",
+    "ESTABLISH_KEY", "START_KEY", "establish", "observe", "prepare", "retire",
 )

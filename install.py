@@ -64,30 +64,6 @@ if sys.version_info < MIN_PYTHON:
         f"install.py`."
     )
 
-SCRIPT_NAMES = (
-    "browser_game_validate.py",
-    "cutcheck.py",
-    "doclint.py",
-    "friction.py",
-    "migrate_state.py",
-    "packs.py",
-    "search_plan.py",
-    "state_root.py",
-    "tickets.py",
-    "trace.py",
-    "ui.py",
-    "workspace.py",
-)
-SCRIPT_SUPPORT_PREFIXES = (
-    "tickets",
-    "ui",
-    "cutcheck",
-    "packs",
-    "search_plan",
-    "trace",
-    "workspace",
-    "migrate_state",
-)
 _LOCAL_ROOT = Path(__file__).resolve().parent
 if str(_LOCAL_ROOT) not in sys.path:
     sys.path.insert(0, str(_LOCAL_ROOT))
@@ -100,19 +76,11 @@ if _loaded_installer is not None:
                 del sys.modules[_module_name]
 
 
-def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
-    """Return entrypoints plus flat helpers owned by compatibility facades."""
-
-    entrypoints = set(SCRIPT_NAMES)
-    support = sorted(
-        path.name
-        for path in scripts_dir.glob("*.py")
-        if path.name not in entrypoints
-        and any(path.stem.startswith(f"{prefix}_") for prefix in SCRIPT_SUPPORT_PREFIXES)
-    )
-    return SCRIPT_NAMES + tuple(support)
-
-
+# Which files are installed is `installer/inventory.py`'s; re-exported here
+# because every caller reaches them through this facade.
+from installer.inventory import (
+    SCRIPT_NAMES, SCRIPT_SUPPORT_PREFIXES, discover_script_names,
+)
 from installer import planning as _planning
 from installer import presentation as _presentation
 from installer import application as _application

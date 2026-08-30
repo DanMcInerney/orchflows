@@ -254,7 +254,7 @@ def _installed_orchflows_metadata() -> dict:
     missing = {'receipt_version': None, 'source_commit': None}
     try:
         receipt_path = state_root.state_root().parent / 'receipt.json'
-        receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+        receipt = json.loads(receipt_path.read_text(encoding='utf-8-sig'))
     except (OSError, UnicodeDecodeError, ValueError):
         return missing
     if not isinstance(receipt, dict):
@@ -274,7 +274,7 @@ def _read_identity(path: Path):
     document exists to prevent.
     """
     try:
-        text = _waiting_out_windows(lambda: path.read_text(encoding='utf-8'))
+        text = _waiting_out_windows(lambda: path.read_text(encoding='utf-8-sig'))
     except (FileNotFoundError, NotADirectoryError):
         return (None, None)
     except (OSError, UnicodeDecodeError) as error:

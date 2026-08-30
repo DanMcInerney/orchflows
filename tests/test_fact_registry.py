@@ -210,7 +210,11 @@ class TestTheUnreachableIsGone(unittest.TestCase):
     GONE = {
         "tickets_project.py": ("_cmd_claim", "_do_claim", "_claim_under_run_lock",
                                "CLAIM_USAGE", "_project_at", "_root_ticket_text"),
-        "tickets_packet.py": ("_cut_lens_path", "_cut_subtree", "CUT_LENS_PARTS"),
+        # `_cmd_packet` joined them: `packet` stopped being routed at the
+        # dispatch-v1 cutover and the handler stayed reachable as an
+        # import, which is the same shape the claim path had.
+        "tickets_packet.py": ("_cut_lens_path", "_cut_subtree",
+                              "CUT_LENS_PARTS", "_cmd_packet"),
         "workspace_git.py": ("_checkouts",),
     }
 

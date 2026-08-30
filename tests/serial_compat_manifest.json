@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1967,
+  "count": 1979,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -83,6 +83,15 @@
    "test_command_surface.CurrentCommandSurfaceTest.test_generation_and_gate_operators_are_reachable",
    "test_command_surface.CurrentCommandSurfaceTest.test_help_usage_and_summary_name_one_exact_surface",
    "test_command_surface.CurrentCommandSurfaceTest.test_removed_authority_commands_have_no_route_or_facade_export",
+   "test_console_io.TestAClosedReaderIsNotAFailure.test_a_tool_piped_into_a_closed_pipe_exits_clean",
+   "test_console_io.TestAClosedReaderIsNotAFailure.test_run_answers_zero_and_says_nothing_when_stdout_breaks",
+   "test_console_io.TestAFileThisLibraryWritesIsTheSameFileEverywhere.test_no_module_asks_for_a_keyword_the_floor_does_not_have",
+   "test_console_io.TestAFileThisLibraryWritesIsTheSameFileEverywhere.test_no_text_write_leaves_its_line_ending_to_the_platform",
+   "test_console_io.TestEveryEntrypointTakesTheConsoleFirst.test_each_module_reaches_the_one_owner_rather_than_reconfiguring",
+   "test_console_io.TestEveryEntrypointTakesTheConsoleFirst.test_no_guard_calls_its_main_without_the_console",
+   "test_console_io.TestEveryEntrypointTakesTheConsoleFirst.test_the_set_is_not_empty",
+   "test_console_io.TestHardenNeverCostsTheReport.test_a_stream_that_cannot_reconfigure_is_not_an_error",
+   "test_console_io.TestHardenNeverCostsTheReport.test_both_streams_are_put_on_utf8_replacing",
    "test_constitution.AmendedPrinciplesTest.test_dropping_any_scaffolding_fact_fails_the_check",
    "test_constitution.AmendedPrinciplesTest.test_principle_8_naming_the_mechanism_fails_the_check",
    "test_constitution.AmendedPrinciplesTest.test_the_constitution_carries_every_amended_fact",
@@ -1920,15 +1929,18 @@
    "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_check_grades_a_scoped_commit_made_after_start",
    "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_one_detached_workspace_is_never_graded_through_another",
    "tests.test_workspace_cases.prepare.TestDetachedWorkspaceIsRecordedAndGraded.test_start_records_the_full_sha_under_the_detached_prefix",
-   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_failing_install_is_reported_with_its_exit_and_start_still_records",
-   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_lockfile_and_a_pnpm_on_path_install_from_the_frozen_lockfile",
-   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_a_tree_declaring_no_frontend_is_skipped_and_pnpm_is_never_called",
-   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_it_never_installs_a_browser",
-   "tests.test_workspace_cases.prepare.TestStartPreparesTheFrontendTree.test_without_pnpm_on_path_it_is_skipped_by_name",
-   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_does_not_resolve_falls_through_to_the_cache",
-   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_resolves_is_present",
-   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_a_playwright_that_does_not_answer_is_unknown_not_missing",
-   "tests.test_workspace_cases.prepare.TestStartReportsTheBrowserWithoutFetchingOne.test_an_empty_cache_is_missing",
+   "tests.test_workspace_cases.prepare.TestPreparationIsOutsideEveryLock.test_neither_establishment_lane_installs_while_it_stamps",
+   "tests.test_workspace_cases.prepare.TestPreparationIsOutsideEveryLock.test_prepare_refuses_an_item_that_recorded_no_workspace",
+   "tests.test_workspace_cases.prepare.TestPreparationIsOutsideEveryLock.test_the_facade_prepares_after_it_lets_the_lock_go",
+   "tests.test_workspace_cases.prepare.TestPrepareInstallsTheFrontendTree.test_a_failing_install_is_reported_with_its_exit_and_prepare_still_answers",
+   "tests.test_workspace_cases.prepare.TestPrepareInstallsTheFrontendTree.test_a_lockfile_and_a_pnpm_on_path_install_from_the_frozen_lockfile",
+   "tests.test_workspace_cases.prepare.TestPrepareInstallsTheFrontendTree.test_a_tree_declaring_no_frontend_is_skipped_and_pnpm_is_never_called",
+   "tests.test_workspace_cases.prepare.TestPrepareInstallsTheFrontendTree.test_it_never_installs_a_browser",
+   "tests.test_workspace_cases.prepare.TestPrepareInstallsTheFrontendTree.test_without_pnpm_on_path_it_is_skipped_by_name",
+   "tests.test_workspace_cases.prepare.TestPrepareReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_does_not_resolve_falls_through_to_the_cache",
+   "tests.test_workspace_cases.prepare.TestPrepareReportsTheBrowserWithoutFetchingOne.test_a_named_executable_that_resolves_is_present",
+   "tests.test_workspace_cases.prepare.TestPrepareReportsTheBrowserWithoutFetchingOne.test_a_playwright_that_does_not_answer_is_unknown_not_missing",
+   "tests.test_workspace_cases.prepare.TestPrepareReportsTheBrowserWithoutFetchingOne.test_an_empty_cache_is_missing",
    "tests.test_workspace_cases.prepare.TestTheInstallCeilingIsReal.test_the_ceiling_is_ten_minutes_and_a_timeout_is_a_failure",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_branch_record_is_never_resolved_as_a_revision",
    "tests.test_workspace_cases.sharing_cases.TestStartSeesWhoElseRecordedThisTree.test_a_commit_between_two_starts_does_not_silence_that_shared_tree",
@@ -1970,7 +1982,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "cce44e4587ded1a89b55db5bf07d7c1d47430a8ce991dd157f3b8db830127deb"
+  "sha256": "abb0048b02a87702c793c04c653bc875c84137567d10698b18715d87d7e61b71"
  },
  "mutation_owners": [
   {

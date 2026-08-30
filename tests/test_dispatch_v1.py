@@ -1031,11 +1031,16 @@ class DispatchV1Test(unittest.TestCase):
             events.append("launch")
             return {"verb": "Agent"}, None
 
+        def prepare(_run, _ticket, _workspace):
+            events.append("prepare")
+            return {"frontend": "skipped: no-lockfile"}
+
         with (
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_run_lock", return_value=Lock()),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_ready", side_effect=ready),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "precheck", side_effect=launch_precheck),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_establish", side_effect=workspace),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_prepare", side_effect=prepare),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open", side_effect=open_attempt),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_packet", side_effect=packet),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "launch_spec", side_effect=launch),
@@ -1047,14 +1052,22 @@ class DispatchV1Test(unittest.TestCase):
             ])
 
         self.assertEqual(
-            {"packet": {"dispatch_id": "D1"}, "launch": {"verb": "Agent"}}, result
+            {
+                "packet": {"dispatch_id": "D1"},
+                "launch": {"verb": "Agent"},
+                "prepare": {"frontend": "skipped: no-lockfile"},
+            },
+            result,
         )
         # `ready` sits outside the lock because promotion takes that same
         # lock per admitted ticket and `_run_lock` is not reentrant; every
-        # mutating step of this ticket's own transaction is inside it.
+        # mutating step of this ticket's own transaction is inside it. The
+        # tree preparation sits outside it at the other end, and for the
+        # opposite reason: it decides nothing and costs a package manager's
+        # minutes, which inside the lock every sibling of the run waited out.
         self.assertEqual(
             ["ready", "lock-enter", ("launch-precheck", "claude"), ("open", True),
-             "workspace", ("packet", True), "launch", "lock-exit"],
+             "workspace", ("packet", True), "launch", "lock-exit", "prepare"],
             events,
         )
 

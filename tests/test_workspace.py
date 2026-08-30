@@ -34,8 +34,9 @@ from tests.test_workspace_cases.operation_cases import (  # noqa: F401
 )
 from tests.test_workspace_cases.prepare import (  # noqa: F401
     TestDetachedWorkspaceIsRecordedAndGraded,
-    TestStartPreparesTheFrontendTree,
-    TestStartReportsTheBrowserWithoutFetchingOne,
+    TestPrepareInstallsTheFrontendTree,
+    TestPrepareReportsTheBrowserWithoutFetchingOne,
+    TestPreparationIsOutsideEveryLock,
     TestTheInstallCeilingIsReal,
 )
 from tests.test_workspace_cases.sharing_cases import (  # noqa: F401

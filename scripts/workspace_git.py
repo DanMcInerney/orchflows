@@ -139,6 +139,36 @@ def dirty_paths(cwd, git=_git) -> list:
     return found
 
 
+def actual_mutations(name_status: str) -> list:
+    """Normalize ``git diff --name-status --no-renames -z`` rows.
+
+    Here rather than beside its one caller for the reason ``dirty_paths`` is
+    here: reading git's own output is this module's work, and these two walks
+    share one hazard -- a NUL-separated stream whose fields do not map one to
+    one onto rows, so a walk that steps by one field reads the next row's
+    path as this row's status.
+    """
+    tokens = name_status.split("\0")
+    rows = []
+    index = 0
+    operations = {"A": "create", "D": "delete", "M": "change", "T": "change"}
+    while index < len(tokens) and tokens[index]:
+        status = tokens[index]
+        if "\t" in status:
+            status, path = status.split("\t", 1)
+            index += 1
+        elif index + 1 < len(tokens):
+            path = tokens[index + 1]
+            index += 2
+        else:
+            raise Refused("git name-status output ended before its path")
+        operation = operations.get(status[:1])
+        if operation is None:
+            raise Refused(f"git name-status returned unsupported status {status!r}")
+        rows.append((operation, path))
+    return sorted(set(rows))
+
+
 def _current_branch(git_out) -> str:
     """This checkout's branch, named so that it resolves in either state.
 

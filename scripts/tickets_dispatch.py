@@ -11,10 +11,10 @@ import json
 import sys
 from datetime import datetime, timezone
 if __package__:
+    from . import console
     from .tickets_format import _extract_flag, _read_utf8
     from .tickets_issue import _cmd_new
     from .tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
-    from .tickets_packet import _cmd_packet
     from .tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from .tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from .tickets_dispatch_packet import _cmd_dispatch_packet, _cmd_dispatch_receive
@@ -33,10 +33,10 @@ if __package__:
     from .tickets_seal import GENERATION_SUBCOMMANDS
     from .tickets_dispatch_gate import _cmd_checker_stage, _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain
 else:  # pragma: no cover - direct/installed flat script path
+    import console
     from tickets_format import _extract_flag, _read_utf8
     from tickets_issue import _cmd_new
     from tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
-    from tickets_packet import _cmd_packet
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from tickets_dispatch_packet import _cmd_dispatch_packet, _cmd_dispatch_receive
@@ -212,10 +212,7 @@ def _dispatch(argv):
         return _cmd_improvement(rest)
     return {'error': f'unknown subcommand: {command}'}
 def main(argv=None):
-    try:
-        sys.stdout.reconfigure(errors='replace')
-    except (AttributeError, ValueError):
-        pass
+    console.harden()
     arguments = sys.argv[1:] if argv is None else argv
     try:
         result = _dispatch(arguments)

@@ -55,8 +55,8 @@ class TestScriptShape(unittest.TestCase):
         self.assertEqual(
             set(),
             imported - {
-                "__future__", "json", "subprocess", "sys", "pathlib",
-                "state_root", "tickets",
+                "__future__", "console", "json", "subprocess", "sys",
+                "pathlib", "state_root", "tickets",
             },
             f"unexpected import in workspace.py: {sorted(imported)}",
         )

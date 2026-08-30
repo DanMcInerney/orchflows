@@ -20,8 +20,8 @@ if __package__:
     from .tickets_sequence import sequence_block
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
-        NO_SINK_ERROR, TicketWriteRefused, _executor_script, _load_ticket,
-        _tickets_root, locked_ticket_write, normalized_isolation,
+        NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
+        normalized_isolation,
     )
 else:
     from tickets_adapters import AdapterError, adapter_spec
@@ -36,12 +36,17 @@ else:
     from tickets_sequence import sequence_block
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
-        NO_SINK_ERROR, TicketWriteRefused, _executor_script, _load_ticket,
-        _tickets_root, locked_ticket_write, normalized_isolation,
+        NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
+        normalized_isolation,
     )
 
 PACKET_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-PACKET_USAGE = "packet <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
+# What projection itself reads, not a command line: `packet` was routed
+# once and is not any more, and a refusal shaped like an invocation is
+# an invitation to run a subcommand that answers `unknown subcommand`.
+# The one door is `dispatch-packet`, whose own usage `tickets_commands`
+# publishes.
+PACKET_USAGE = "packet projection reads <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
 GATE_VERIFY_ID = "{root}.gate.verify"
@@ -134,21 +139,6 @@ def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
         )
     motion, unreadable = _last_motion(Path(ticket_path))
     return _is_stale(data.get("claimed_at"), _parse_bound_minutes(data.get("bound")), now, motion), unreadable
-
-
-def _cmd_packet(rest):
-    probe = list(rest)
-    for flag in ("--reply-to", "--by", "--workspace", "--review-kind"):
-        _extract_flag(probe, flag)
-    if len(probe) != 2:
-        return {"error": f"usage: {PACKET_USAGE}"}
-    try:
-        with locked_ticket_write(probe[0], probe[1]):
-            return _packet_under_run_lock(rest)
-    except TicketWriteRefused as refused:
-        return refused.payload
-    except OSError as error:
-        return {"error": f"unable to emit packet: {error}"}
 
 
 def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
@@ -301,5 +291,5 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
 __all__ = (
     "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS", "GATE_REPAIR_ID",
     "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE", "_claim_is_stale",
-    "_cmd_packet", "_is_stale", "_last_motion", "_packet_under_run_lock",
+    "_is_stale", "_last_motion", "_packet_under_run_lock",
 )

@@ -23,8 +23,10 @@ from pathlib import Path
 from typing import Dict, Optional, Sequence
 
 if __package__:
+    from . import console
     from . import packs_support as _support
 else:  # pragma: no cover - direct/installed script path
+    import console
     import packs_support as _support
 
 
@@ -110,6 +112,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    console.harden()
     parser = _parser()
     try:
         args = parser.parse_args(argv)
@@ -133,4 +136,4 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(console.run(main))

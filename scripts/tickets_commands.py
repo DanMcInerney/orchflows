@@ -8,7 +8,6 @@ if __package__:
     from .tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from .tickets_issue import NEW_USAGE
     from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
-    from .tickets_packet import PACKET_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from .tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
@@ -23,7 +22,6 @@ else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
     from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
-    from tickets_packet import PACKET_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE

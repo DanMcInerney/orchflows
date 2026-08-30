@@ -139,7 +139,7 @@ def resolve_host(host):
         )
     path = hosts_dir() / f"{name}.json"
     try:
-        record = json.loads(path.read_text(encoding="utf-8"))
+        record = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeDecodeError, ValueError) as error:
         return None, classification(
             "host-unresolved", f"unreadable host record {path}: {error}"

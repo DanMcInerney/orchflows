@@ -29,6 +29,11 @@ import re
 import sys
 from pathlib import Path
 
+try:  # in-repo; the installed copy sits flat beside doclint.py
+    from scripts import console
+except ImportError:  # pragma: no cover - the installed copy's path
+    import console
+
 LINK_RE = re.compile(r"\]\(([^)]+)\)")
 EXTERNAL_PREFIXES = ("http://", "https://", "mailto:")
 
@@ -273,6 +278,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> int:
+    console.harden()
     args = build_parser().parse_args(argv)
     root = Path(args.root)
     if not root.is_dir():
@@ -286,4 +292,4 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(console.run(main, sys.argv[1:]))

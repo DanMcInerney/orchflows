@@ -25,6 +25,7 @@ if __package__:
         _run_lock, _runs_root, _segment_error, _tickets_root, _write_identity,
         _write_text_atomically,
     )
+    from .tickets_admission import dependency_order_findings
     from .tickets_worklog import _template_order
     from .tickets_emission import grade_run_emission
     from .tickets_context import run_snapshot
@@ -46,6 +47,7 @@ else:  # pragma: no cover - direct/installed flat script path
         _run_lock, _runs_root, _segment_error, _tickets_root, _write_identity,
         _write_text_atomically,
     )
+    from tickets_admission import dependency_order_findings
     from tickets_worklog import _template_order
     from tickets_emission import grade_run_emission
     from tickets_context import run_snapshot
@@ -105,6 +107,14 @@ def _template_stubs(directory: Path, values: dict):
         declared_id = str(data.get('id') or '').strip()
         if declared_id != path.stem:
             return (None, {'error': f"stub {path.name} names id '{declared_id}': a stub's id is its file stem, and `depends_on` names ids"})
+        # The same refusal draft validation makes, at the same authoring
+        # door: `_sealed_template_snapshot` seals through the generation
+        # algebra without passing `_draft_findings`, so a template stub whose
+        # `depends_on` was written out of order sealed as a second digest for
+        # the one edge set and nothing said so.
+        unordered = dependency_order_findings(path.stem, data)
+        if unordered:
+            return (None, {'error': f"stub {path.name} is off contract (contracts/work-item.md): {unordered[0]['detail']}", 'findings': unordered})
         stubs[path.stem] = (text, list(data.get('depends_on') or []))
     return (stubs, None)
 

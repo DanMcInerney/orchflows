@@ -208,7 +208,12 @@ def _write_rendered_worklog(run: str, markdown: str):
             return None, {"error": f"{path} was not rendered by this subcommand: refusing to overwrite it"}
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(markdown, encoding="utf-8", newline="\n")
+        # `open`, not `Path.write_text(newline=...)`: that keyword arrived
+        # in 3.10 and this library's floor is 3.9, where the same call is a
+        # TypeError -- and the rendered worklog is exactly the artifact a
+        # host standing on the floor would fail to write.
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(markdown)
     except OSError as error:
         return None, {"error": f"unwritable worklog: {error}"}
     return path, None

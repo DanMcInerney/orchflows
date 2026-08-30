@@ -10,26 +10,25 @@ if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        DELIVERED_STATE, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
-        canonical_json, dequote, is_review_stage_id, _executor_of,
-        _parse_frontmatter, _set_frontmatter_field,
+        DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
+        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
+        is_review_stage_id, _executor_of, _parse_frontmatter,
+        _set_frontmatter_field,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        DELIVERED_STATE, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
-        canonical_json, dequote, is_review_stage_id, _executor_of,
-        _parse_frontmatter, _set_frontmatter_field,
+        DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
+        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
+        is_review_stage_id, _executor_of, _parse_frontmatter,
+        _set_frontmatter_field,
     )
 
 ADMISSION_PENDING = "pending"
-# The terminal states that leave a Result behind for a dependent to read.
-# `complete` delivered the whole Goal and `limited` delivered part of it with
-# honest accounting; both file the evidence the next item is written against.
-# `blocked`, `failed` and `stalled` filed no such artifact, so a dependent
-# admitted over them would be reading an absence.
-RESULT_BEARING_STATES = (DELIVERED_STATE, "limited")
+# Re-exported, never respelled: `tickets_format` owns which terminal states
+# carry a Result, because `tickets_readiness` answers the same question for
+# the reader and the two spellings had already drifted.
 _RECEIPT_RE = re.compile(r"^([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 
 
@@ -243,8 +242,8 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     else:
         directory = Path(runs_root) / run / "generations"
         try:
-            sealed_record = json.loads((directory / f"{match.group(4)}.sealed.json").read_text(encoding="utf-8"))
-            validated = json.loads((directory / f"{match.group(4)}.validated.json").read_text(encoding="utf-8"))
+            sealed_record = json.loads((directory / f"{match.group(4)}.sealed.json").read_text(encoding="utf-8-sig"))
+            validated = json.loads((directory / f"{match.group(4)}.validated.json").read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeDecodeError, ValueError):
             findings.append(finding("seal-state-missing", "cut_generation", "sealed and validated records must resolve"))
         else:

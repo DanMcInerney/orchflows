@@ -254,7 +254,6 @@ GATE_REPAIR_ID = _tickets_packet_module.GATE_REPAIR_ID
 GATE_VERIFY_ID = _tickets_packet_module.GATE_VERIFY_ID
 PACKET_SECTIONS = _tickets_packet_module.PACKET_SECTIONS
 PACKET_USAGE = _tickets_packet_module.PACKET_USAGE
-_cmd_packet = _tickets_packet_module._cmd_packet
 _packet_under_run_lock = _tickets_packet_module._packet_under_run_lock
 COVERAGE_RECORD_NAME = _tickets_result_module.COVERAGE_RECORD_NAME
 IMPROVEMENT_USAGE = _tickets_result_module.IMPROVEMENT_USAGE
@@ -318,6 +317,7 @@ _listed_items = _tickets_dispatch_module._listed_items
 _pack_domain = _tickets_dispatch_module._pack_domain
 _template_stubs = _tickets_dispatch_module._template_stubs
 main = _tickets_dispatch_module.main
+console = _tickets_dispatch_module.console
 state_root = _tickets_store_module.state_root
 datetime = _tickets_store_module.datetime
 timezone = _tickets_store_module.timezone
@@ -376,7 +376,6 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
     _tickets_dispatch_module._cmd_join_noop_repair = _cmd_join_noop_repair
-    _tickets_dispatch_module._cmd_packet = _cmd_packet
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state
@@ -389,4 +388,4 @@ def _sync_seams():
 _tickets_dispatch_module._sync_seams = _sync_seams
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(console.run(main))
