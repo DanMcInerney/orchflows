@@ -116,12 +116,12 @@ class TestLicensedCopies(unittest.TestCase):
 
 
 class TestLensAnchor(_IsolatedTree):
-    """validate_lens_anchor: a pack's lens cell anchor lands on a heading.
+    """validate_lens_anchor: a pack craft carries the `## Lens` heading.
 
-    The lens row is compared as three words of text and deliberately not
-    resolved, so deleting `## Lens` from a craft reference left the
-    validator at exit 0 and the suite green while every gate lane the pack
-    stamps pointed at a section that was not there.
+    The check lane reads its review criteria from craft's `## Lens`, so
+    deleting that heading once left the validator at exit 0 and the suite
+    green while every gate lane the pack stamps pointed at a section that
+    was not there.
     """
 
     def _write_pack(self, name: str, craft: str):
@@ -130,25 +130,23 @@ class TestLensAnchor(_IsolatedTree):
         (pack_dir / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| lens | `orch-critique` with "
-            "[references/craft.md#lens](references/craft.md#lens) |\n",
+            "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
         (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
 
-    def test_a_lens_anchor_with_no_heading_is_an_error(self):
+    def test_a_craft_without_the_lens_heading_is_an_error(self):
         self._write_pack("orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n")
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("craft.md#lens", result.stdout)
         self.assertIn("## Lens", result.stdout)
 
-    def test_a_lens_anchor_resolving_to_the_heading_is_clean(self):
+    def test_a_craft_with_the_lens_heading_is_clean(self):
         self._write_pack(
             "orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n\n## Lens\n\ncriteria.\n"
         )
         result = self._run()
-        self.assertNotIn("craft.md#lens", result.stdout)
+        self.assertNotIn("no `## Lens` heading", result.stdout)
 
 
 class TestWordBudgetAndLinks(_IsolatedTree):

@@ -51,6 +51,19 @@ CELL_DUPLICATION_ALLOWLIST = (
             "current revision at dispatch, merged at the join",
         ),
     },
+    {
+        "family": "identity-term craft citation",
+        "reason": (
+            "The signature requires every domain term another cell uses to "
+            "be defined once in craft, so a workspace cell naming its "
+            "identity unit cites craft for it -- two such citations rhyme "
+            "by mandate, not by drift."
+        ),
+        "clauses": (
+            "git plus render: identities are [view identities](references/craft.md)",
+            "evidence store: identities are [evidence packets](references/craft.md)",
+        ),
+    },
 )
 
 

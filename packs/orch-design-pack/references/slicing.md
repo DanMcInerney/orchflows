@@ -10,8 +10,8 @@ stays unproven.
 
 - Each ticket is one view with its full identity set (the spec's
   breakpoints × its enumerated states), provable by capture and the
-  ticket's deterministic checks; dependency edges where one view
-  composes another.
+  ticket's deterministic checks; one view composing another is the
+  only edge.
 - Each view item repeats verbatim its identity list, its render,
   capture and diff commands, its accessibility bar and design
   language, and the standards owner pointer.

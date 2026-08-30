@@ -24,7 +24,6 @@ PACK_CELLS = (
     "workspace",
     "required_spec_fields",
     "craft",
-    "lens",
     "evidence",
     "outline",
     "adapter",
@@ -40,7 +39,7 @@ EXECUTE_CELLS = (
     "stages",
     "assembly",
 )
-CHECK_CELLS = ("lens", "evidence", "craft")
+CHECK_CELLS = ("evidence", "craft")
 OUTLINE_CELLS = ("outline", "required_spec_fields", "craft")
 CONSUMER_CELLS = {
     "execute": EXECUTE_CELLS,

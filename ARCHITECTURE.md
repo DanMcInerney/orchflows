@@ -11,8 +11,7 @@ Ceiling: 850 whitespace-delimited words. Terms are
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
   skill-free primitives; `engines/` control flow; `workflows/`
-  domain-blind behavior; `instances/` domain executors/lenses;
-  `utilities/` generic leaves. A package owns its `SKILL.md`,
+  domain-blind behavior. A package owns its `SKILL.md`,
   `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.

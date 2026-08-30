@@ -75,7 +75,7 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
             "| slicing | inline |\n| workspace | inline |\n"
             "| required_spec_fields | inline |\n| craft | [references/craft.md](references/craft.md) |\n"
             "| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| lens | inline |\n| evidence | inline |\n",
+            "| assembly | none |\n| evidence | inline |\n",
             encoding="utf-8",
         )
 
@@ -213,7 +213,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             "| slicing | inline |\n| workspace | inline |\n"
             "| required_spec_fields | inline |\n| craft | inline |\n"
             "| adapter | git |\n| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| lens | inline |\n| evidence | inline |"
+            "| assembly | none |\n| evidence | inline |"
         )
         self._write_pack(
             "orch-duplicate-pack",

@@ -13,12 +13,14 @@ OVERLAP_ANCHORS = ("Suggested files may overlap", "never grant authority")
 CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
 EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
-CURRENT_UNIT_ANCHORS = (
+# The member assignment shape has one owner, contracts/work-item.md; a
+# pack slicing cell restating it was the drift surface this guard once
+# policed, so the guard now polices the restatement itself.
+CURRENT_UNIT_ANCHORS = ("executor-owned",)
+RETIRED_SHAPE_RESTATEMENTS = (
     "one observable `Goal`",
-    "`Context`",
     "optional non-binding `Suggested files`",
     "system metadata",
-    "executor-owned",
 )
 
 
@@ -73,7 +75,9 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
                     f"code pack slicing does not name {anchor!r}, so a code "
                     "cut can drift from the current work-item assignment",
                 )
-        for removed in ("runnable check commands", "oracle_class", "workspace cell"):
+        for removed in (
+            "runnable check commands", "oracle_class", "workspace cell",
+        ) + RETIRED_SHAPE_RESTATEMENTS:
             with self.subTest(removed=removed):
                 self.assertNotIn(
                     removed, text,

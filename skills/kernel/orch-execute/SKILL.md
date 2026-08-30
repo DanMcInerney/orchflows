@@ -8,8 +8,7 @@ Require: one claimed ticket with a stamped pack digest and its semantic
 assignment.
 
 Resolve the pack's execute projection through `packs.py cells <digest> --for
-execute`. Apply the returned slicing, workspace, required-field, craft,
-adapter, stage, and assembly cells to the assignment; choose implementation,
+execute`. Apply every returned cell to the assignment; choose implementation,
 tests, and verification from those cells and repository law. Stream the
 executor record as work is produced, then commit the reserved outcome.
 

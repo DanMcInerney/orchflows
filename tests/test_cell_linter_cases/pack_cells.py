@@ -88,7 +88,6 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | adapter | git |
 | stages | [stage] |
 | assembly | {assembly} |
-| lens | inline: none |
 | evidence | [references/evidence.md](references/evidence.md) |
 | outline | [references/outline.md](references/outline.md) |
 """
@@ -171,6 +170,10 @@ class _IsolatedTree(unittest.TestCase):
             "references/outline.md": "# Outline\n\nFreeze one %s root.\n" % name,
         }
         defaults.update(files or {})
+        # Every valid craft carries `## Lens` (validate_lens_anchor); append
+        # it so a case about some other cell is not convicted for its craft.
+        if "## Lens" not in defaults["references/craft.md"]:
+            defaults["references/craft.md"] += "\n## Lens\n\ncriteria.\n"
         for rel_path, content in defaults.items():
             (pack_dir / rel_path).write_text(content, encoding="utf-8")
 
@@ -222,34 +225,35 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
     EXPECTED = {
         "orch-code-pack": (
             "git",
-            ("git:", "repository write authority", "actual diffs", "ordinary Git conflicts"),
+            ("git:", "identities are commits", "ordinary diffs", "Git conflicts"),
         ),
         "orch-content-pack": (
             "document-tree",
             (
                 "document tree:", "identities are document revisions",
-                "one direct owner for a whole artifact", "actual candidate changes",
+                "actual candidate changes", "section overlap",
             ),
         ),
         "orch-data-pack": (
             "git",
             (
                 "git:", "committed manifests pin dataset bytes by digest",
-                "ordinary diffs", "re-materialized once",
+                "raw data living outside the repository",
+                "re-materializes any derived output in contention",
             ),
         ),
         "orch-design-pack": (
             "git-plus-render",
             (
-                "git plus render:", "identities are [view identities]", "actual diff",
-                "render conflicts",
+                "git plus render:", "identities are [view identities]",
+                "fresh captures", "render conflicts",
             ),
         ),
         "orch-research-pack": (
             "evidence-store",
             (
                 "evidence store:", "identities are [evidence packets]",
-                "isolation is a run-scoped directory", "actual lane artifacts",
+                "run-scoped lane directory", "actual lane packets",
             ),
         ),
     }
@@ -273,9 +277,11 @@ class CurrentWorkspaceBindingTest(unittest.TestCase):
                 self.assertEqual(adapter, cells["adapter"])
                 for fragment in substrate:
                     self.assertIn(fragment, workspace)
-                for field in ("root_generation", "cut_generation", "assignment_seal"):
-                    self.assertIn(field, workspace)
-                self.assertIn("Suggested files are non-binding", workspace)
+                # Assignment metadata, candidate authority, and Suggested
+                # files law are contracts/work-item.md's and rules/topology.md
+                # §9's; a workspace cell repeating them was a copy, so the
+                # binding proof is the adapter key plus the cell's own
+                # domain semantics above.
 
 
 class TestCellClauseSplitter(unittest.TestCase):
@@ -491,7 +497,7 @@ class TestAllowlist(unittest.TestCase):
 # those are fixed. Raising it is a decision, and it belongs in the commit
 # message that raises it.
 BASELINE_WARNINGS = 47
-WARNING_CEILING = 9
+WARNING_CEILING = 0
 
 # The cross-tier linter's own ratchet (validate.py's
 # validate_cross_tier_duplication). Every one of these is a clause two
@@ -504,7 +510,7 @@ WARNING_CEILING = 9
 # docs/ (vocabulary.md excepted -- the definitional owner) and
 # compositions/ and compares skills against skills. V2 deliberately binds
 # names across tier owners; its exact count has no headroom and only falls.
-CROSS_TIER_WARNING_CEILING = 56
+CROSS_TIER_WARNING_CEILING = 29
 
 # A clone is the whole tree minus version control, runtime state and
 # caches -- never an extract of the directories the check happens to read
