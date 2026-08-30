@@ -3,8 +3,8 @@
 ## What a frozen code root carries
 
 - Observable behavior at a seam, never the modules that will carry it.
-- The failure paths the result must survive: an executor derives its first
-  failing check from Goal alone, so an unstated path is an unchecked one.
+- The failure paths the result must survive: an executor's checks answer
+  to Goal alone, so an unstated path is an unchecked one.
 - A pointer to the standards owner, and no test oracle at all.
 
 ## Worth asking at intake

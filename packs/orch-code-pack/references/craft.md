@@ -9,8 +9,6 @@ The shape principles every domain shares are
   testable; completion checks live at seams.
 - **tracer** — a thin end-to-end slice proving the seams early, before
   anything widens.
-- **tautological check** — a check that asserts the implementation's
-  shape instead of its behavior; void per rules/verification.md §6.
 - **idiom** — the surrounding code's existing names and patterns; new
   code reconciles to them, never imports a foreign style.
 
@@ -22,18 +20,19 @@ The shape principles every domain shares are
 - Explicit over clever: static, followable call sites; no runtime
   registries or metaprogrammed dispatch — they blind exact search and
   language servers at once.
-- Comments state only what code cannot: invariants, ordering
-  constraints, why-not-the-obvious.
+- Failure is loud and typed: a silent fallback hides the red a later
+  agent needs.
+- Comments state only what code cannot: the module's opening contract,
+  invariants, ordering constraints, why-not-the-obvious.
 - Test economy: one deterministic, parallel-safe check per behavior at
   its seam; internals earn none, a check repeating covered behavior is
   deleted, and suite time is paid by every future change.
-- Checks pin shapes, never sentences: a test asserts a field, a set, a
-  count by kind, or a verdict — not an owner file's prose, and never a
-  whole report where it means one finding kind; a ratchet counts the
-  kind it was written for. Where a check must read an owner file, it
-  reads a stable anchor — a heading, a backticked name, a field, a
-  fenced command — never a sentence; the wrong result it fails against
-  drops the fact, not the anchor, which would only prove the grep.
+- Checks pin shapes, never sentences: assert a field, a set, a count
+  by kind, or a verdict — never an owner file's prose; a ratchet
+  counts the kind it was written for. A check reading an owner file
+  reads a stable anchor — a heading, a backticked name, a fenced
+  command — and its wrong result drops the fact, not the anchor,
+  which would only prove the grep.
 
 ## Lens
 
@@ -56,13 +55,13 @@ are `blocking: false` — reported, never repaired in the same run.
 
 ## Execute stages
 
-- Derive a failing, observable check from Goal alone, before
-  implementation: a check derived after mirrors the code, not the Goal.
-- Keep the red-green slice at one seam: the smallest change that turns
-  the check green, guard retained unweakened — a wrong check is
-  corrected against Goal and recorded, never quietly relaxed.
-- Reconcile with surrounding idiom; a unit runs its narrow affected
-  checks only — the full suite is the gate's row, never a unit's.
+- Implement at seams, reconciling with the surrounding idiom; take the
+  tracer first where Goal leaves a seam unproven.
+- Checks answer to Goal, never to the code: each acceptance behavior
+  carries a check derived from the ticket's Goal, its failing reading
+  recorded — authored at any point, weakened at none.
+- Run the narrow affected checks; the full suite is the gate's row,
+  never a unit's.
 - For conflict or repair work, read both candidate diffs and the accepted
   blocker ledger; resolve only evidence-backed overlap and record the
   resulting identity.
