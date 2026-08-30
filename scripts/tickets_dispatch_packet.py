@@ -23,7 +23,7 @@ if __package__:
     from .tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from .tickets_dispatch_schema import stored_state
     from .tickets_review import packet_mutation, packet_state_result
-    from .tickets_store import _run_lock, _tickets_root, segment_refusal
+    from .tickets_store import _run_lock, _tickets_root, normalized_isolation, segment_refusal
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
@@ -39,7 +39,7 @@ else:
     from tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from tickets_dispatch_schema import stored_state
     from tickets_review import packet_mutation, packet_state_result
-    from tickets_store import _run_lock, _tickets_root, segment_refusal
+    from tickets_store import _run_lock, _tickets_root, normalized_isolation, segment_refusal
 
 DISPATCH_PACKET_USAGE = (
     "dispatch-packet <run> <id> --dispatch-id <id> --reply-to <name> "
@@ -137,7 +137,7 @@ def _projection_packet(
         "executor": executor,
         "form": form,
         "independence": legacy.get("independence"),
-        "isolation": legacy.get("isolation"),
+        "isolation": normalized_isolation(legacy.get("isolation")),
         "lease_expires_at": attempt.get("lease_expires_at"),
         "outcome_record_id": attempt.get("outcome_record_id"),
         "pack": legacy.get("pack"),

@@ -6,8 +6,9 @@ import hashlib
 import json
 from pathlib import Path
 
+from .foundation import _scope_home
 from .managed_text import upsert_import_line, upsert_marked_block
-from .models import Plan
+from .models import Plan, _host_block_content
 from .runtime import (
     private_runtime_home,
     private_runtime_is_healthy,
@@ -334,3 +335,98 @@ def inspect_installation(
         "status": "coherent" if not findings else "drift",
         "findings": findings,
     }
+
+
+# --- the quick freshness verdict ------------------------------------------
+# ``install.py doctor --quick`` answers one question -- is what is installed
+# still what this checkout would install -- without building the plan the full
+# sweep compares against. Two facts decide it: the ``source_commit`` the
+# receipt recorded, and the rendered host instruction block every host reads,
+# which changes whenever the library's entrypoints or law text move. Neither
+# needs package discovery, so this reads two files and renders one block. It
+# writes nothing, here or anywhere: a stale verdict names the reinstall, it
+# never performs one.
+
+QUICK_REINSTALL = "reinstall to update: python install.py --user --yes"
+
+
+def _quick_host_block(receipt: dict, path: Path) -> list[dict]:
+    """Grade the installed instruction block against this checkout's render."""
+
+    try:
+        expected, _start, _end = _host_block_content()
+    except (OSError, UnicodeError, ValueError, KeyError) as error:
+        return [_finding("checkout.host-block-unrenderable", path, actual=type(error).__name__)]
+    entry = next(
+        (
+            item
+            for item in receipt.get("files", [])
+            if isinstance(item, dict) and item.get("kind") == "host-block"
+        ),
+        None,
+    )
+    findings = []
+    if entry is None:
+        findings.append(_finding("receipt.missing-entry", path, kind="host-block"))
+    if not path.is_file():
+        findings.append(_finding("configuration.missing", path, kind="host-block"))
+        return findings
+    if entry is not None and entry.get("sha256") != _digest(path):
+        findings.append(_finding("receipt.hash", path, kind="host-block"))
+    try:
+        installed = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        findings.append(
+            _finding("configuration.unreadable", path, kind="host-block", actual=type(error).__name__)
+        )
+        return findings
+    if installed != expected:
+        findings.append(_finding("configuration.content", path, kind="host-block"))
+    return findings
+
+
+def quick_report(
+    current_source_commit: str | None = None,
+    *,
+    scope: str = "user",
+    project_root: Path | None = None,
+) -> dict:
+    """Return the fast freshness verdict without touching the filesystem."""
+
+    scope_home = _scope_home(scope, project_root)
+    receipt_path = scope_home / "receipt.json"
+    receipt, unreadable = _read_receipt(receipt_path)
+    findings = [unreadable] if unreadable is not None else []
+    if receipt is not None:
+        if (
+            current_source_commit is not None
+            and receipt.get("source_commit") != current_source_commit
+        ):
+            findings.append(
+                _finding(
+                    "receipt.source-commit",
+                    receipt_path,
+                    expected=current_source_commit,
+                    actual=receipt.get("source_commit"),
+                )
+            )
+        findings.extend(_quick_host_block(receipt, scope_home / "host-block.md"))
+    findings.sort(key=lambda item: (item["id"], item.get("path", "")))
+    identities = sorted({item["id"] for item in findings})
+    return {
+        "status": "coherent" if not findings else "drift",
+        "findings": findings,
+        "summary": (
+            f"orchflows install is current: {receipt_path}"
+            if not findings
+            else f"orchflows install is stale ({', '.join(identities)}); {QUICK_REINSTALL}"
+        ),
+    }
+
+
+def run_quick(current_source_commit: str | None = None) -> int:
+    """Print the one-line verdict and return the process exit code."""
+
+    report = quick_report(current_source_commit)
+    print(report["summary"])
+    return 0 if report["status"] == "coherent" else 1

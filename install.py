@@ -117,7 +117,7 @@ from installer import planning as _planning
 from installer import presentation as _presentation
 from installer import application as _application
 from installer import runtime as _runtime
-from installer.doctor import inspect_installation
+from installer.doctor import inspect_installation, run_quick
 from installer.application import (
     _diverged_role_agents,
     _installed_file,
@@ -133,12 +133,10 @@ from installer.foundation import (
     AUTO_REMOVE_KINDS,
     CANONICAL_DIRS,
     CLAUDE_ADAPTER_SETS,
-    CLAUDE_CLI_CANDIDATES,
-    CLAUDE_MAX_TOOL_USE_CONCURRENCY,
+    CLAUDE_CLI_CANDIDATES, CLAUDE_MAX_TOOL_USE_CONCURRENCY,
     CLAUDE_SETTINGS_SCHEMA,
     CODEX_CLI_CANDIDATES,
-    CODEX_LIMITS_END,
-    CODEX_LIMITS_START,
+    CODEX_LIMITS_END, CODEX_LIMITS_START,
     CODEX_MAX_DEPTH,
     CODEX_MAX_THREADS,
     GROK_CLI_CANDIDATES, GROK_LIMITS_END, GROK_LIMITS_START,
@@ -157,12 +155,10 @@ from installer.foundation import (
     _claude_scope_home,
     _claude_settings_path,
     _claude_user_home,
-    _codex_agents_dir,
-    _codex_agents_path,
+    _codex_agents_dir, _codex_agents_path,
     _codex_config_path,
     _codex_hooks_warnings,
-    _codex_scope_home,
-    _codex_user_home,
+    _codex_scope_home, _codex_user_home,
     _frontend_home,
     _grok_agents_dir, _grok_config_path, _grok_rules_path,
     _grok_skills_dir, _grok_user_home,
@@ -364,6 +360,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Inspect the user installation for bootstrap drift; write nothing.",
     )
+    parser.add_argument("--quick", action="store_true", help="Doctor: compare only the receipt's source commit and host block, then exit; write nothing.")
     parser.add_argument(
         "--claude-adapters",
         choices=CLAUDE_ADAPTER_SETS,
@@ -399,7 +396,7 @@ def _resolve_scope(args) -> tuple[str, Path | None]:
 def main(argv=None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    doctor_requested = args.command == "doctor" or args.doctor
+    doctor_requested = args.command == "doctor" or args.doctor or args.quick
 
     if doctor_requested and args.uninstall:
         print("error: doctor and --uninstall are mutually exclusive", file=sys.stderr)
@@ -445,6 +442,9 @@ def main(argv=None) -> int:
     except ValueError as error:
         print(f"error: refusing source identity: {error}", file=sys.stderr)
         return 1
+
+    if args.quick:
+        return run_quick(source_commit)
 
     try:
         plan = build_plan(scope, project_root, args.claude_adapters)

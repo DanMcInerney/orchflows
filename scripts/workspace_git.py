@@ -17,11 +17,30 @@ except ImportError:
     import tickets_store
 
 
+# One verdict per exit code, spelled where the refusals that carry them are
+# raised. ``workspace.py`` re-exports every name and holds the table its
+# ``--help`` prints; a caller reads these numbers as the answer, so they may
+# not be spelled a second time anywhere in the family.
+EXIT_OK = 0
 EXIT_ERROR = 1
+EXIT_ISOLATION_MISSING = 2
+EXIT_WRONG_BRANCH_POINT = 3
+EXIT_SCOPE_BREACH = 4
+EXIT_NO_RECORD = 5
+EXIT_WRONG_VANTAGE = 6
+EXIT_SHARED_WORKSPACE = 7
 # ``start``'s one coordination flag, spelled once here because the caller that
 # passes it is another process: the dispatch facade already holds this run's
-# lock and runs ``workspace.py start`` as its child.
+# lock and runs ``workspace.py`` as its child.
 LOCK_HELD = "--lock-held"
+# The frontmatter keys this family reads and writes, spelled where they are
+# written. ``workspace.py`` re-exports them and holds them against
+# ``contracts/work-item.md``'s own bytes; ``_stamped`` below writes through
+# them, so the name a stamp lands under and the name a grade reads are one.
+ISOLATION_KEY = "isolation"
+BRANCH_KEY = "workspace_branch"
+BASELINE_KEY = "workspace_baseline"
+PATH_KEY = "workspace_path"
 # What ``start`` records for a workspace that is on no branch. ``rev-parse
 # --abbrev-ref HEAD`` answers the literal word ``HEAD`` there, which names no
 # ref at the join: the item graded isolation-missing however clean its work
@@ -216,6 +235,17 @@ def _baseline(head: str, dirty) -> str:
     return f"{head} clean" if not dirty else f"{head} dirty: {', '.join(dirty)}"
 
 
+def revision_of(baseline) -> str:
+    """The revision a ``workspace_baseline`` stamp names, dirty tail dropped.
+
+    The reader of what ``_baseline`` writes, beside its writer: a stamp is
+    a revision and then what was uncommitted at the time, and every caller
+    that wants to cut from it wants only the first word.
+    """
+
+    return str(baseline or "").strip().split(" ")[0]
+
+
 def _graded(payload, what: str) -> dict:
     """Grade a ``tickets.py`` result by its payload, never by exit status."""
 
@@ -282,15 +312,15 @@ def _stamped(ticket_path, prior_text: str, branch, baseline, workspace_path: str
         return {"error": "ticket changed since read; lost the frontmatter write race, retry"}
     try:
         updated = current_text
-        recorded = {"workspace_path": workspace_path}
+        recorded = {PATH_KEY: workspace_path}
         if branch is not None:
-            updated = tickets_format._set_frontmatter_field(updated, "workspace_branch", branch)
-            recorded["workspace_branch"] = branch
+            updated = tickets_format._set_frontmatter_field(updated, BRANCH_KEY, branch)
+            recorded[BRANCH_KEY] = branch
         if baseline is not None:
-            updated = tickets_format._set_frontmatter_field(updated, "workspace_baseline", baseline)
-            recorded["workspace_baseline"] = baseline
+            updated = tickets_format._set_frontmatter_field(updated, BASELINE_KEY, baseline)
+            recorded[BASELINE_KEY] = baseline
         updated = tickets_format._set_frontmatter_field(
-            updated, "workspace_path", workspace_path
+            updated, PATH_KEY, workspace_path
         )
         # The sink's own writer, not ``write_text``: it pins ``newline='\n'``
         # so a two-scalar stamp stays a two-line diff instead of translating
@@ -393,7 +423,7 @@ def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
         data = tickets_store._load_ticket(path)
         if "error" in data or data.get("status") != "claimed":
             continue
-        recorded = str(data.get("workspace_branch") or "").strip()
+        recorded = str(data.get(BRANCH_KEY) or "").strip()
         if _records_this_tree(git_out, is_ancestor, recorded, branch):
             found.append(str(data.get("id") or path.stem))
     return sorted(found)

@@ -841,8 +841,8 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}) as ready,
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
-                "_workspace_start",
-                return_value={"start": {"workspace_path": str(self.candidate)}},
+                "_workspace_establish",
+                return_value={"establish": {"workspace_path": str(self.candidate)}},
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened) as open_call,
             mock.patch.object(
@@ -876,8 +876,8 @@ class DispatchV1Test(unittest.TestCase):
     def test_dispatch_facade_returns_the_committed_packet(self):
         with mock.patch.object(
             tickets._tickets_dispatch_facade_module,
-            "_workspace_start",
-            return_value={"start": {"workspace_path": str(self.candidate)}},
+            "_workspace_establish",
+            return_value={"establish": {"workspace_path": str(self.candidate)}},
         ):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
@@ -900,7 +900,7 @@ class DispatchV1Test(unittest.TestCase):
         with mock.patch.object(
             tickets, "_cmd_ready", return_value=refusal,
         ) as ready, mock.patch.object(
-            tickets._tickets_dispatch_facade_module, "_workspace_start",
+            tickets._tickets_dispatch_facade_module, "_workspace_establish",
         ) as workspace:
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
@@ -925,7 +925,7 @@ class DispatchV1Test(unittest.TestCase):
                 tickets, "_cmd_dispatch_open", return_value=refusal,
             ),
             mock.patch.object(
-                tickets._tickets_dispatch_facade_module, "_workspace_start",
+                tickets._tickets_dispatch_facade_module, "_workspace_establish",
             ) as workspace,
         ):
             result = tickets._dispatch([
@@ -957,8 +957,8 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
-                "_workspace_start",
-                return_value={"start": {"workspace_path": str(self.candidate)}},
+                "_workspace_establish",
+                return_value={"establish": {"workspace_path": str(self.candidate)}},
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(
@@ -1003,7 +1003,7 @@ class DispatchV1Test(unittest.TestCase):
 
         def workspace(_run, _ticket, _workspace):
             events.append("workspace")
-            return {"start": {"workspace_path": str(self.candidate)}}
+            return {"establish": {"workspace_path": str(self.candidate)}}
 
         def open_attempt(_args, *, _lock_held=False):
             events.append(("open", _lock_held))
@@ -1016,7 +1016,7 @@ class DispatchV1Test(unittest.TestCase):
         with (
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_run_lock", return_value=Lock()),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_ready", side_effect=ready),
-            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_start", side_effect=workspace),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_establish", side_effect=workspace),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open", side_effect=open_attempt),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_packet", side_effect=packet),
         ):
@@ -1045,8 +1045,8 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
-                "_workspace_start",
-                return_value={"start": {"workspace_path": str(self.candidate)}},
+                "_workspace_establish",
+                return_value={"establish": {"workspace_path": str(self.candidate)}},
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(tickets, "_cmd_dispatch_packet", return_value=None),

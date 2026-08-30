@@ -25,14 +25,17 @@ else:
     from tickets_store import _run_lock, _segment_error
 
 
-def _workspace_start(run: str, ticket_id: str, workspace: str | None):
+def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
     """Run the workspace owner and return its one JSON response.
 
     Workspace establishment is intentionally kept behind its public script:
-    it owns adapter selection and the host checkout observation. The facade
-    supplies the candidate as the child process' working directory and feeds
-    back only the structured response, so a refusal cannot be repaired or
-    translated into a second protocol.
+    it owns adapter selection, the derived candidate worktree, and the host
+    checkout observation. ``--workspace`` names the tree the candidate is cut
+    from, never the candidate itself -- an isolation-required item's tree is
+    derived from its identity by ``workspace.py``, which is what stops two
+    siblings of one run from being dispatched into one directory. The facade
+    feeds back only the structured response, so a refusal cannot be repaired
+    or translated into a second protocol.
 
     ``--lock-held`` (``workspace_git.LOCK_HELD``, pinned by a test) says this
     process already holds the run lock across the whole composition: the child
@@ -41,32 +44,35 @@ def _workspace_start(run: str, ticket_id: str, workspace: str | None):
     """
 
     script = Path(__file__).with_name("workspace.py").resolve()
-    candidate = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
+    source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
     try:
         completed = subprocess.run(
-            [sys.executable, str(script), "start", run, ticket_id, "--lock-held"],
-            cwd=str(candidate), capture_output=True, text=True,
+            [sys.executable, str(script), "establish", run, ticket_id,
+             "--repo", str(source), "--lock-held"],
+            cwd=str(source), capture_output=True, text=True,
             encoding="utf-8", errors="replace",
         )
     except (OSError, ValueError) as error:
-        return {"error": f"workspace start failed: {error}"}
+        return {"error": f"workspace establish failed: {error}"}
     try:
         response = json.loads(completed.stdout)
     except (TypeError, ValueError) as error:
-        return {"error": f"workspace start returned invalid JSON: {error}"}
+        return {"error": f"workspace establish returned invalid JSON: {error}"}
     if not isinstance(response, dict):
-        return {"error": "workspace start returned a non-object response"}
+        return {"error": "workspace establish returned a non-object response"}
     if "error" in response:
         return response
     if completed.returncode:
         return {
-            "error": "workspace start refused",
+            "error": "workspace establish refused",
             "code": completed.returncode,
             "response": response,
         }
-    started = response.get("start")
-    if not isinstance(started, dict) or not str(started.get("workspace_path") or "").strip():
-        return {"error": "workspace start did not record workspace_path"}
+    established = response.get("establish")
+    if not isinstance(established, dict) or not str(
+        established.get("workspace_path") or ""
+    ).strip():
+        return {"error": "workspace establish did not record workspace_path"}
     return response
 
 
@@ -117,14 +123,19 @@ def _cmd_dispatch(rest):
             return {"error": "dispatch-open returned no dispatch response"}
         newly_opened = dispatch.get("outcome") == "opened"
 
-        established = _workspace_start(run, ticket_id, workspace)
+        established = _workspace_establish(run, ticket_id, workspace)
         if "error" in established:
             projected = established
         else:
-            start = established.get("start")
-            workspace_path = start.get("workspace_path") if isinstance(start, dict) else None
+            # only establishment's own answer reaches the packet: the caller's
+            # ``--workspace`` named the tree to cut from, and a packet built
+            # from that instead has carried another item's workspace
+            candidate = established.get("establish")
+            workspace_path = (
+                candidate.get("workspace_path") if isinstance(candidate, dict) else None
+            )
             if not str(workspace_path or "").strip():
-                projected = {"error": "workspace start did not record workspace_path"}
+                projected = {"error": "workspace establish did not record workspace_path"}
             else:
                 packet_args = [
                     run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
@@ -164,4 +175,4 @@ def _cmd_dispatch(rest):
         return projected
 
 
-__all__ = ("_cmd_dispatch", "_workspace_start")
+__all__ = ("_cmd_dispatch", "_workspace_establish")

@@ -92,7 +92,7 @@ class LifecycleTableTest(unittest.TestCase):
             try:
                 validate.ROOT = root
                 diag = validate.Diagnostics()
-                validate.validate_lifecycle_render(diag)
+                validate.validate_regenerated_artifacts(diag, ("lifecycle",))
             finally:
                 validate.ROOT = prior
             self.assertTrue(diag.has_errors)

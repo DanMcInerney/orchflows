@@ -609,6 +609,32 @@ Docs wave follows `research/docs-spec-2026-08-30.md`.
   runs after `_commit_record` releases the lock (pre-existing). U4 puts
   it under the same lock while editing `tickets_lifecycle`/`tickets_join`
   adjacency, or reports why not.
+- **A5 (→ U4 scope):** pre-existing inline-lane bug:
+  `_inline_assignment_failure` compares the packet's NORMALIZED
+  `isolation` against the sealed assignment's RAW `system.isolation`
+  (`assignment_payload` stores it verbatim) — a ticket with no
+  `isolation` field yields `None` vs `"none"` and `dispatch-receive`
+  refuses a valid inline packet. Fix by normalizing BOTH sides at the
+  comparison; never change what the seal hashes.
+- **A6 (→ U5 scope):** two more duplicate-fact repoints:
+  `state_root.candidate_paths` restates the one-segment rule
+  `tickets_store._segment_error` owns (invert: predicate lives in
+  `state_root`, `_segment_error` delegates — state_root is the
+  dependency-free home); `tickets_grade.py:291` re-derives the revision
+  `workspace_git.revision_of` now owns. Also A1 has a SECOND instance:
+  `tests/test_workspace_cases/` — only `start_cases` +
+  `candidate_cases` are wired; `cli_cases`, `contract_cases`,
+  `emission_cases`, `grade_cases`, `operation_cases`, `prepare`,
+  `sharing_cases` (~1900 lines) are uncollected and some no longer
+  import (`workspace.WRITE_SCOPE_KEY` is gone). Same repair-or-delete
+  ruling as A1, same reachability-test strengthening.
+- **A7 (→ U3 scope):** `tickets_commands.DISPATCH_USAGE` still spells
+  `[--workspace <path>]` without saying it now means the SOURCE tree to
+  cut from (U2 changed the meaning) — fix the usage text.
+  `workspace_prepare.prepare()` (pnpm install, 600s ceiling) still runs
+  inside the facade's run lock under `--lock-held`; U3's facade
+  restructuring moves it outside the lock or reports why not.
+  `install.py` is also now AT the 510 ceiling (A3 applies to it).
 
 ## Out of scope (explicit)
 

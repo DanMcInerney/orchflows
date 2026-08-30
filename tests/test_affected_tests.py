@@ -272,8 +272,11 @@ class TestLiveFacadeMappings(unittest.TestCase):
         cls.for_lint = affected_tests.affected(["scripts/tickets_lint.py"])
         cls.for_issue = affected_tests.affected(["scripts/tickets_issue.py"])
 
-    def test_the_lint_owner_selects_the_current_protocol_suite(self):
-        self.assertIn("tests.test_ticket_protocol", self.for_lint["modules"])
+    def test_the_lint_owner_selects_the_facade_suite(self):
+        # The protocol suite imports only lint-free helpers, and helpers no
+        # longer pull the facade, so lint's honest blast radius is the suites
+        # that reach lint itself -- the facade suite chief among them.
+        self.assertIn("tests.test_tickets", self.for_lint["modules"])
 
     def test_the_issue_owner_selects_the_current_admission_suite(self):
         self.assertIn("tests.test_ticket_semantic_contract", self.for_issue["modules"])

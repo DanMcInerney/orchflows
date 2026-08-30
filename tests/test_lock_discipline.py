@@ -242,7 +242,7 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         """Two processes, one flag: without this the facade's own lock and the
         child's request for it are a deadlock, each waiting on the other."""
 
-        source = inspect.getsource(tickets_dispatch_facade._workspace_start)
+        source = inspect.getsource(tickets_dispatch_facade._workspace_establish)
         self.assertIn(workspace_git.LOCK_HELD, source)
 
     def test_the_facade_really_starts_a_workspace_inside_its_own_run_lock(self):
@@ -254,7 +254,7 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         outcome = {}
 
         def start():
-            outcome["response"] = tickets_dispatch_facade._workspace_start(
+            outcome["response"] = tickets_dispatch_facade._workspace_establish(
                 "testrun", "T1", str(self.here)
             )
 

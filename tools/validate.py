@@ -31,9 +31,7 @@ for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
         sys.path.insert(0, str(_import_root))
 
 import doclint
-from tools import render_lifecycle as _render_lifecycle
-from tools import render_hosts as _render_hosts_module
-from tools import render_shapes as _render_shapes_module
+from tools import regen as _regen
 
 from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
@@ -120,27 +118,16 @@ def validate_markdown_links(diag: Diagnostics) -> None:
         _restore_support(state)
 
 
-def validate_lifecycle_render(diag: Diagnostics) -> None:
-    """Refuse a missing or hand-edited lifecycle view."""
-    owners = (
-        ROOT / "scripts" / "tickets_transitions.py",
-        ROOT / "scripts" / "tickets_lifecycle.py",
-    )
-    target = ROOT / "docs" / "lifecycle.md"
-    missing = [path for path in owners if not path.is_file()]
-    if missing:
-        diag.warn("docs/lifecycle.md", "lifecycle render check skipped: transition owners are absent")
-        return
-    try:
-        actual = target.read_text(encoding="utf-8")
-    except OSError as error:
-        diag.error("docs/lifecycle.md", f"generated lifecycle table is unreadable: {error}")
-        return
-    if actual != _render_lifecycle.render():
-        diag.error(
-            "docs/lifecycle.md",
-            "generated lifecycle table drifted from transition code; run tools/render_lifecycle.py",
-        )
+def validate_regenerated_artifacts(diag: Diagnostics, names=None) -> None:
+    """Refuse any derived artifact whose generator would change its bytes.
+
+    `tools/regen.py` owns the artifact-to-generator declaration and every
+    comparison; this reports what it found, so a stale generated file fails
+    the five required checks rather than waiting for a sixth.
+    """
+
+    for finding in _regen.check(ROOT, names=names):
+        (diag.error if finding.level == "error" else diag.warn)(finding.label, finding.message)
 
 # --- documented paths resolve in the installed tree --------------------
 # install.py owns the installed layout, so its directory roster is imported
@@ -228,33 +215,6 @@ def validate_documented_paths(diag: Diagnostics) -> None:
         _restore_support(state)
 
 
-def validate_rendered_hosts(diag: Diagnostics) -> None:
-    source = ROOT / "hosts"
-    rendered = ROOT / "installer" / "host_adapters"
-    if not source.is_dir() or not rendered.is_dir():
-        return
-    try:
-        _render_hosts_module.check_all(
-            source, rendered, ROOT / "templates" / "host-block.md"
-        )
-    except ValueError as error:
-        diag.error("hosts", str(error))
-
-
-def validate_shape_render(diag: Diagnostics) -> None:
-    """Refuse drift between the T0 declaration and its generated consumers."""
-
-    source = ROOT / "contracts" / "shapes.json"
-    validator = ROOT / "scripts" / "tickets_shapes.py"
-    if not source.is_file() or not validator.is_file():
-        diag.warn("contracts/shapes.json", "T0 shape render check skipped: declaration or validator is absent")
-        return
-    try:
-        _render_shapes_module.check(ROOT)
-    except (OSError, KeyError, ValueError) as error:
-        diag.error("contracts/shapes.json", f"generated T0 shape consumers are stale: {error}")
-
-
 def _validate_documented_paths_impl(diag: Diagnostics) -> None:
     """Resolve backticked paths across shipped prose; skip non-library fixtures."""
 
@@ -321,9 +281,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_names(packages, diag)
     validate_lens_anchor(packages, diag)
     validate_markdown_links(diag)
-    validate_lifecycle_render(diag)
-    validate_shape_render(diag)
-    validate_rendered_hosts(diag)
+    validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)
     validate_pins(diag)
