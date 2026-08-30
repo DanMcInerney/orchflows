@@ -1001,6 +1001,12 @@ class DispatchV1Test(unittest.TestCase):
             events.append("ready")
             return {"ready": []}
 
+        def launch_precheck(_run, _ticket, host):
+            # before the first side effect: an attempt opened for a launch
+            # that cannot resolve is an attempt nobody can start
+            events.append(("launch-precheck", host))
+            return {"id": host, "launch": {"verb": "Agent"}}, None
+
         def workspace(_run, _ticket, _workspace):
             events.append("workspace")
             return {"establish": {"workspace_path": str(self.candidate)}}
@@ -1013,12 +1019,18 @@ class DispatchV1Test(unittest.TestCase):
             events.append(("packet", _lock_held))
             return {"packet": {"dispatch_id": "D1"}}
 
+        def launch(_record, _packet, *, packet_file=None):
+            events.append("launch")
+            return {"verb": "Agent"}, None
+
         with (
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_run_lock", return_value=Lock()),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_ready", side_effect=ready),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "precheck", side_effect=launch_precheck),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_establish", side_effect=workspace),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open", side_effect=open_attempt),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_packet", side_effect=packet),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "launch_spec", side_effect=launch),
         ):
             result = tickets._tickets_dispatch_facade_module._cmd_dispatch([
                 "run", "T", "--by", "worker", "--dispatch-id", "D1",
@@ -1026,10 +1038,15 @@ class DispatchV1Test(unittest.TestCase):
                 "--workspace", str(self.candidate),
             ])
 
-        self.assertEqual({"packet": {"dispatch_id": "D1"}}, result)
         self.assertEqual(
-            ["lock-enter", "ready", ("open", True), "workspace",
-             ("packet", True), "lock-exit"],
+            {"packet": {"dispatch_id": "D1"}, "launch": {"verb": "Agent"}}, result
+        )
+        # `ready` sits outside the lock because promotion takes that same
+        # lock per admitted ticket and `_run_lock` is not reentrant; every
+        # mutating step of this ticket's own transaction is inside it.
+        self.assertEqual(
+            ["ready", "lock-enter", ("launch-precheck", "claude"), ("open", True),
+             "workspace", ("packet", True), "launch", "lock-exit"],
             events,
         )
 

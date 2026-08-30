@@ -628,13 +628,19 @@ Docs wave follows `research/docs-spec-2026-08-30.md`.
   `sharing_cases` (~1900 lines) are uncollected and some no longer
   import (`workspace.WRITE_SCOPE_KEY` is gone). Same repair-or-delete
   ruling as A1, same reachability-test strengthening.
-- **A7 (→ U3 scope):** `tickets_commands.DISPATCH_USAGE` still spells
-  `[--workspace <path>]` without saying it now means the SOURCE tree to
-  cut from (U2 changed the meaning) — fix the usage text.
-  `workspace_prepare.prepare()` (pnpm install, 600s ceiling) still runs
-  inside the facade's run lock under `--lock-held`; U3's facade
-  restructuring moves it outside the lock or reports why not.
-  `install.py` is also now AT the 510 ceiling (A3 applies to it).
+- **A7 (→ U3 scope, DONE except second half):** usage text fixed by U3.
+  `install.py` is at the 510 ceiling (A3 applies). `tickets_dispatch.py`
+  is at 509 — the next unit adding a subcommand line splits it
+  (`_cmd_instantiate`/`_cmd_improvement` are the natural extractions).
+- **A8 (→ U8 scope):** move `workspace_prepare.prepare()` out of the
+  facade's locked span, per U3's analysis: `workspace_candidate` stops
+  calling `prepare` (returns without the `**prepared` keys),
+  `workspace.py` gains a lock-free `prepare <run> <id>` subcommand
+  running against the recorded `workspace_path`, and
+  `tickets_dispatch_facade._cmd_dispatch` calls it AFTER the
+  `with _run_lock(run)` block. Files: `workspace_candidate.py`,
+  `workspace.py`, `tickets_dispatch_facade.py` join U8's write scope
+  for this item only.
 
 ## Out of scope (explicit)
 

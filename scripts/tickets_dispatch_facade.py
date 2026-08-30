@@ -12,15 +12,17 @@ if __package__:
         _cmd_dispatch_open, _cmd_dispatch_retire,
     )
     from .tickets_commands import DISPATCH_USAGE
+    from .tickets_dispatch_launch import launch_spec, precheck, selected_host
     from .tickets_dispatch_packet import _cmd_dispatch_packet
-    from .tickets_format import _extract_flag
+    from .tickets_format import _extract_flag, canonical_json
     from .tickets_lifecycle import _cmd_ready
     from .tickets_store import _run_lock, _segment_error
 else:
     from tickets_attempts import _cmd_dispatch_open, _cmd_dispatch_retire
     from tickets_commands import DISPATCH_USAGE
+    from tickets_dispatch_launch import launch_spec, precheck, selected_host
     from tickets_dispatch_packet import _cmd_dispatch_packet
-    from tickets_format import _extract_flag
+    from tickets_format import _extract_flag, canonical_json
     from tickets_lifecycle import _cmd_ready
     from tickets_store import _run_lock, _segment_error
 
@@ -76,13 +78,47 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
     return response
 
 
+def _write_packet_file(destination: str, packet: dict):
+    """Put the committed packet where the launched child can read it.
+
+    UTF-8 with LF, written whole: the child is told a path rather than told
+    to reconstruct a shell literal, which is how a packet came to be
+    truncated by a console code page. The packet is already durable in the
+    attempt when this runs, so a write that fails is reported with the one
+    command that replays it rather than pretending the dispatch failed.
+    """
+
+    path = Path(destination).expanduser()
+    try:
+        if path.parent and not path.parent.is_dir():
+            path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(canonical_json(packet) + "\n")
+    except (OSError, ValueError) as error:
+        return {
+            "error": (
+                f"dispatch packet is committed and the packet file could not be "
+                f"written: {error}. Replay this exact `tickets.py dispatch` call "
+                "to write it"
+            ),
+            "code": "packet-file-unwritable",
+        }
+    return None
+
+
 def _cmd_dispatch(rest):
-    """Compose ready, workspace, attempt, and packet for one caller.
+    """Compose ready, workspace, attempt, packet, and launch for one caller.
 
     The established public operations remain the recovery seam. This
     caller convenience operation composes them in order, relays every
     structured refusal unchanged, and retires a newly opened attempt if
     packet projection refuses so no live attempt is left behind.
+
+    The launch binding is resolved twice on purpose: once before anything is
+    opened, so a host or role that cannot be launched refuses while the
+    ticket is still untouched, and once from the committed packet, which is
+    the authority on what was actually projected. Both ask the one resolver,
+    under this one lock, so they cannot disagree.
     """
 
     args = list(rest)
@@ -94,6 +130,9 @@ def _cmd_dispatch(rest):
     artifact = _extract_flag(args, "--artifact")
     form = (_extract_flag(args, "--form") or "reference").strip()
     review_kind = _extract_flag(args, "--review-kind")
+    host = selected_host(_extract_flag(args, "--host"))
+    packet_file = _extract_flag(args, "--packet-file")
+    inline_limit = _extract_flag(args, "--inline-limit")
     if len(args) != 2 or not all((owner, dispatch_id, lease, reply_to)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
     if form not in ("reference", "inline"):
@@ -104,13 +143,26 @@ def _cmd_dispatch(rest):
         if invalid is not None:
             return invalid
 
+    # Before the lock, and it has to be: promotion takes the run lock for
+    # itself for each ticket it admits, and `_run_lock` is not reentrant, so
+    # readying a sealed-but-pending item from inside our own lock is this
+    # process waiting on itself -- which is what the ordinary first dispatch
+    # of a sealed root did. Nothing is lost by promoting first: it is a
+    # whole-run convenience, not part of this ticket's transaction, and
+    # `dispatch-open` re-grades admission under the lock below and refuses a
+    # ticket that is not ready however it got there.
+    ready = _cmd_ready(["--run", run])
+    if "error" in ready:
+        return ready
+
     with _run_lock(run):
-        # Keep the whole composition under one lock, but open before workspace
-        # establishment: workspace.start stamps the ticket, so doing it first
-        # would mutate bytes on a pre-open admission refusal.
-        ready = _cmd_ready(["--run", run])
-        if "error" in ready:
-            return ready
+        # Before the first side effect: an attempt opened for a launch that
+        # cannot resolve is an attempt nobody can start. Then open before
+        # workspace establishment, because workspace.start stamps the ticket
+        # and doing it first would mutate bytes on a pre-open refusal.
+        record, failure = precheck(run, ticket_id, host)
+        if failure is not None:
+            return failure
 
         opening = _cmd_dispatch_open([
             run, ticket_id, "--by", owner, "--dispatch-id", dispatch_id,
@@ -145,6 +197,8 @@ def _cmd_dispatch(rest):
                     packet_args.extend(("--review-kind", review_kind))
                 if artifact is not None:
                     packet_args.extend(("--artifact", artifact))
+                if inline_limit is not None:
+                    packet_args.extend(("--inline-limit", inline_limit))
                 try:
                     projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
                     if not isinstance(projected, dict):
@@ -158,7 +212,7 @@ def _cmd_dispatch(rest):
                 except Exception as error:
                     projected = {"error": str(error)}
         if "error" not in projected:
-            return projected
+            return _launched(projected, record, packet_file)
         if newly_opened:
             retirement = _cmd_dispatch_retire([
                 run, ticket_id, "--assignment-seal", dispatch["assignment_seal"],
@@ -175,4 +229,18 @@ def _cmd_dispatch(rest):
         return projected
 
 
-__all__ = ("_cmd_dispatch", "_workspace_establish")
+def _launched(projected: dict, record: dict, packet_file):
+    """The committed packet plus the concrete invocation that carries it."""
+
+    packet = projected["packet"]
+    if packet_file is not None:
+        failure = _write_packet_file(packet_file, packet)
+        if failure is not None:
+            return {**failure, "packet": packet}
+    launch, failure = launch_spec(record, packet, packet_file=packet_file)
+    if failure is not None:
+        return {**failure, "packet": packet}
+    return {**projected, "launch": launch}
+
+
+__all__ = ("_cmd_dispatch", "_launched", "_workspace_establish")

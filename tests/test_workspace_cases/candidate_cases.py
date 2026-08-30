@@ -496,6 +496,15 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                 mock.patch.object(facade, "_cmd_ready", return_value={"ready": []}),
                 mock.patch.object(facade, "_cmd_dispatch_open", side_effect=opened),
                 mock.patch.object(facade, "_cmd_dispatch_packet", side_effect=packet),
+                # the launch is one more neighbour of the hop under test: the
+                # fixture ticket binds no role, and resolving one is what the
+                # dispatch-launch suite is for
+                mock.patch.object(
+                    facade, "precheck", return_value=({"id": "claude"}, None)
+                ),
+                mock.patch.object(
+                    facade, "launch_spec", return_value=({"verb": "Agent"}, None)
+                ),
             ):
                 for ticket_id in ("T1", "T2"):
                     result = facade._cmd_dispatch([

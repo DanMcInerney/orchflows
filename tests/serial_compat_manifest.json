@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1706,
+  "count": 1734,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -90,6 +90,34 @@
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
    "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
+   "test_dispatch_launch.DispatchLaunchTest.test_a_non_numeric_inline_limit_refuses",
+   "test_dispatch_launch.DispatchLaunchTest.test_a_packet_profile_override_resolves_the_planner_binding",
+   "test_dispatch_launch.DispatchLaunchTest.test_an_ordinary_inline_packet_is_under_the_default_ceiling",
+   "test_dispatch_launch.DispatchLaunchTest.test_an_oversized_inline_packet_is_refused_and_commits_no_packet",
+   "test_dispatch_launch.DispatchLaunchTest.test_an_unknown_host_refuses_before_the_attempt_is_opened",
+   "test_dispatch_launch.DispatchLaunchTest.test_an_unresolved_role_refuses_before_the_attempt_is_opened",
+   "test_dispatch_launch.DispatchLaunchTest.test_an_unwritable_packet_file_names_the_replay_and_keeps_the_packet",
+   "test_dispatch_launch.DispatchLaunchTest.test_dispatching_a_sealed_pending_item_readies_it_without_hanging",
+   "test_dispatch_launch.DispatchLaunchTest.test_the_dispatch_carries_the_launch_its_host_record_declares",
+   "test_dispatch_launch.DispatchLaunchTest.test_the_host_flag_selects_another_hosts_binding",
+   "test_dispatch_launch.DispatchLaunchTest.test_the_packet_file_is_written_and_the_prompt_names_it",
+   "test_dispatch_launch.DispatchLaunchTest.test_the_prompts_receive_command_is_the_one_that_accepts_the_packet",
+   "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
+   "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
+   "test_dispatch_launch.LandTest.test_land_imports_the_outcome_it_is_handed",
+   "test_dispatch_launch.LandTest.test_land_joins_a_committed_outcome_and_reports_the_frontier",
+   "test_dispatch_launch.LandTest.test_land_refuses_a_malformed_identity_without_writing",
+   "test_dispatch_launch.LandTest.test_land_relays_a_join_refusal_unchanged",
+   "test_dispatch_launch.LandTest.test_land_replays_end_to_end_and_says_which_steps_it_found_done",
+   "test_dispatch_launch.LaunchResolutionTest.test_a_changed_model_in_the_record_changes_the_launch",
+   "test_dispatch_launch.LaunchResolutionTest.test_a_host_missing_the_role_profile_refuses",
+   "test_dispatch_launch.LaunchResolutionTest.test_an_unknown_host_refuses_and_names_the_ones_that_resolve",
+   "test_dispatch_launch.LaunchResolutionTest.test_an_unresolved_role_refuses_and_names_the_two_profiles",
+   "test_dispatch_launch.LaunchResolutionTest.test_every_host_and_role_resolves_from_that_hosts_own_record",
+   "test_dispatch_launch.LaunchResolutionTest.test_the_agent_identity_comes_from_the_hosts_own_role_agent_path",
+   "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
+   "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
+   "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_accepted_receipt_is_a_durable_replayable_attempt_record",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_historical_reply_to_replays_before_current_validation",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
@@ -1709,7 +1737,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e339e16a2fa034f4bf0febf7c87e0c29bee25d6cc5df8d7816a056e065b127b7"
+  "sha256": "da331e76cc4d093e0bf03334b8186525bb8636171611d84979d7fc71d3f8d2f1"
  },
  "mutation_owners": [
   {
@@ -1800,6 +1828,80 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "DispatchLaunchTest.established",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "DispatchLaunchTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "DispatchLaunchTest.test_an_unknown_host_refuses_before_the_attempt_is_opened",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "DispatchLaunchTest.test_an_unresolved_role_refuses_before_the_attempt_is_opened",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "DispatchLaunchTest.test_an_unwritable_packet_file_names_the_replay_and_keeps_the_packet",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "DispatchLaunchTest.test_dispatching_a_sealed_pending_item_readies_it_without_hanging",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LandTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

@@ -1,28 +1,53 @@
-"""Typed outcome carrier construction for dispatch-v1."""
+"""The dispatch-v1 reserved outcome: its carrier, its grade, its commit.
+
+The whole outcome half of the return, in the module that already owned how
+a carrier is built and read. It moved here from the join because the join is
+what consumes an outcome, not what makes one, and because a module that owns
+both had no room left to say why either works.
+"""
 
 from __future__ import annotations
 
+import sys
+
 if __package__:
-    from .tickets_attempts import OUTCOME_RECORD_ID, PROTOCOL
+    from .tickets_attempts import (
+        OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
+        _identity_failure, accepted_receipt_failure,
+    )
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_format import (
-        _extract_flag, _parse_frontmatter, _read_utf8, canonical_json,
-        parse_canonical_json,
+        TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8,
+        _section_body, _write_section, canonical_json, parse_canonical_json,
     )
-    from .tickets_store import NO_SINK_ERROR, _tickets_root
-    from .tickets_shapes import DISPATCH_OUTCOME_VALUES
+    from .tickets_markdown import SECTION_SENTINEL
+    from .tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from .tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
+    from .tickets_shapes import (
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
+        DISPATCH_OUTCOME_VALUES,
+    )
 else:
-    from tickets_attempts import OUTCOME_RECORD_ID, PROTOCOL
+    from tickets_attempts import (
+        OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
+        _identity_failure, accepted_receipt_failure,
+    )
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_format import (
-        _extract_flag, _parse_frontmatter, _read_utf8, canonical_json,
-        parse_canonical_json,
+        TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8,
+        _section_body, _write_section, canonical_json, parse_canonical_json,
     )
-    from tickets_store import NO_SINK_ERROR, _tickets_root
-    from tickets_shapes import DISPATCH_OUTCOME_VALUES
+    from tickets_markdown import SECTION_SENTINEL
+    from tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
+    from tickets_shapes import (
+        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
+        DISPATCH_OUTCOME_VALUES,
+    )
 
 
 JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
+OUTCOME_SECTIONS = tuple(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 OUTCOME_FILE_FLAGS = {
     "Result": "--result-file",
     "Verification": "--verification-file",
@@ -33,7 +58,7 @@ OUTCOME_FILE_FLAGS = {
 DISPATCH_OUTCOME_USAGE = (
     "dispatch-outcome <run> <id> --status <complete|blocked|stalled|limited|failed|suspended> "
     "[--result-file <path>] [--verification-file <path>] [--feedback-file <path>] "
-    "[--risks-file <path>] [--handoff-file <path>] | --file <canonical-outcome-path>"
+    "[--risks-file <path>] [--handoff-file <path>] | --file <canonical-outcome-path|->"
 )
 
 
@@ -90,9 +115,28 @@ def _prior_result_body(attempt: dict, section: str):
 
 
 def _outcome_file(path):
-    """Read one complete canonical outcome carrier from a file."""
+    """Read one complete canonical outcome carrier from a file or stdin.
 
-    raw, failure = _read_utf8(path, "canonical outcome file")
+    ``-`` is standard input, decoded as UTF-8 the way the accepted-blocker
+    seam reads it: a relaying coordinator holds the envelope in memory, and
+    telling it to land the envelope in a file first is a step that exists
+    only to be forgotten.
+    """
+
+    if path == "-":
+        try:
+            stream = getattr(sys.stdin, "buffer", sys.stdin)
+            value = stream.read()
+            raw, failure = (
+                value.decode("utf-8") if isinstance(value, bytes) else value, None
+            )
+        except (OSError, UnicodeDecodeError, AttributeError) as error:
+            return None, {
+                "error": f"unreadable canonical outcome file: {error}",
+                "code": "outcome-invalid", "protocol": PROTOCOL,
+            }
+    else:
+        raw, failure = _read_utf8(path, "canonical outcome file")
     if failure is not None:
         return None, failure
     try:
@@ -179,8 +223,163 @@ def _outcome_content(args: list):
     return {"status": status, "_files": file_args}, None
 
 
+def _outcome_failure(run: str, ticket_id: str, content):
+    required = set(DISPATCH_OUTCOME_REQUIRED)
+    if not isinstance(content, dict) or set(content) != required:
+        return _classification("outcome-invalid", "outcome envelope has unknown or missing fields")
+    if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
+        return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
+    if content.get("outcome_record_id") != OUTCOME_RECORD_ID:
+        return _classification("outcome-invalid", "outcome envelope does not use the reserved identity")
+    if content.get("status") not in JOIN_STATUSES:
+        return _classification("outcome-invalid", "outcome status is not a join disposition")
+    for kind, value in (("owner", content.get("by")), ("dispatch-id", content.get("dispatch_id"))):
+        failure = _identity_failure(kind, value)
+        if failure is not None:
+            return _classification("outcome-invalid", failure["error"])
+    evidence = content.get("evidence")
+    if not isinstance(evidence, dict) or set(evidence) != set(OUTCOME_SECTIONS):
+        return _classification("outcome-invalid", "outcome evidence must close the five executor sections")
+    if any(not isinstance(evidence.get(section), str) for section in OUTCOME_SECTIONS):
+        return _classification("outcome-invalid", "outcome evidence bodies must be strings")
+    required_sections = ("Result", "Verification", "Feedback", "Risks")
+    if any(not evidence[section].strip() for section in required_sections):
+        return _classification("outcome-invalid", "terminal outcome evidence is incomplete")
+    if content["status"] == "suspended" and not evidence["Handoff"].strip():
+        return _classification("handoff-required", "suspension requires Handoff evidence")
+    if content["status"] != "suspended" and evidence["Handoff"].strip():
+        return _classification("outcome-invalid", "terminal outcome cannot carry a Handoff")
+    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+        # Critique Result and Feedback are generated finding carriers, not
+        # arbitrary prose.  Keep the import lazy because tickets_review
+        # consumes this module while joining a review stage.
+        if __package__:
+            from .tickets_review import ReviewError, canonical_finding_array
+        else:
+            from tickets_review import ReviewError, canonical_finding_array
+        for section in ("Result", "Feedback"):
+            try:
+                canonical_finding_array(evidence[section], f"critique outcome {section}")
+            except ReviewError as error:
+                return _classification("outcome-invalid", str(error))
+    for body in evidence.values():
+        if any(line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines()):
+            return _classification("outcome-invalid", "outcome evidence contains a reserved heading or attribution")
+    return None
+
+
+def _cmd_dispatch_outcome(rest, *, _lock_held=False):
+    """Commit or replay the reserved outcome envelope.
+
+    ``_lock_held`` is the landing composition's: it holds this run's lock
+    across import, join, and retirement, and a commit that opened a second
+    lock on the same run would wait on its own caller.
+    """
+
+    args = list(rest)
+    if len(args) < 2:
+        return {"error": f"usage: {DISPATCH_OUTCOME_USAGE}"}
+    run, ticket_id = args[:2]
+    remaining = args[2:]
+    for kind, value in (("run id", run), ("ticket id", ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    carrier, failure = _outcome_content(remaining)
+    if failure is not None:
+        return failure
+
+    inferred, failure = _outcome_attempt(run, ticket_id)
+    if failure is not None:
+        return failure
+    _path, _text, _data, _state, attempt = inferred
+    # A caller without an accepted receipt may not write an execution record
+    # at all, so it is told that before its evidence is graded: resolving
+    # closing files first answers a receipt-less caller with a complaint
+    # about content it was never entitled to commit.
+    failure = accepted_receipt_failure(attempt)
+    if failure is not None:
+        return failure
+    if isinstance(carrier, dict) and "_files" in carrier:
+        evidence = {}
+        for section in OUTCOME_SECTIONS:
+            source = carrier["_files"].get(section)
+            if source is not None:
+                body, read_failure = _read_utf8(source, f"{section} evidence file")
+                if read_failure is not None:
+                    return read_failure
+            elif section in {"Result", "Verification"}:
+                body = _prior_result_body(attempt, section)
+                if body is None:
+                    return _classification(
+                        "outcome-invalid",
+                        f"outcome requires {section} evidence through --{section.lower()}-file or a prior result record",
+                    )
+            elif section in {"Feedback", "Risks"}:
+                body = "[]"
+            else:
+                body = ""
+            if body is None:
+                body = ""
+            evidence[section] = body
+        content = {
+            "protocol": PROTOCOL,
+            "run": run,
+            "id": ticket_id,
+            "assignment_seal": attempt["assignment_seal"],
+            "dispatch_id": attempt["dispatch_id"],
+            "outcome_record_id": OUTCOME_RECORD_ID,
+            "by": attempt["owner"],
+            "status": carrier["status"],
+            "evidence": evidence,
+        }
+    else:
+        content = carrier
+    failure = _outcome_attempt_match(content, run, ticket_id, attempt)
+    if failure is not None:
+        return failure
+    if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
+        return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
+    if not isinstance(content, dict):
+        return _classification("outcome-invalid", "outcome envelope must be an object")
+    failure = _outcome_failure(run, ticket_id, content)
+    if failure is not None:
+        return failure
+
+    def commit_outcome(text, _data, _attempt, _state):
+        updated = text
+        try:
+            for section in OUTCOME_SECTIONS:
+                body = content["evidence"][section]
+                if not body:
+                    continue
+                prior = _section_body(updated, section)
+                materialized = (
+                    f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}"
+                )
+                if prior == materialized or f"\n\n{materialized}" in prior:
+                    return text, None, _classification(
+                        "outcome-invalid",
+                        f"outcome {section} repeats evidence already materialized by this dispatch",
+                    )
+                updated = _write_section(
+                    updated, section, materialized,
+                    bool(prior and prior != SECTION_SENTINEL),
+                )
+        except TicketFormatError as error:
+            return text, None, _classification("outcome-invalid", str(error))
+        return updated, {"outcome": content}, None
+
+    return _commit_record(
+        run, ticket_id, content["dispatch_id"], OUTCOME_RECORD_ID, content,
+        mutate=commit_outcome, expected_seal=content["assignment_seal"],
+        expected_owner=content["by"], record_kind="outcome",
+        _lock_held=_lock_held,
+    )
+
 __all__ = (
     "DISPATCH_OUTCOME_USAGE", "JOIN_STATUSES", "OUTCOME_FILE_FLAGS",
-    "_outcome_attempt", "_outcome_attempt_match", "_outcome_content",
+    "OUTCOME_SECTIONS", "_cmd_dispatch_outcome", "_outcome_attempt",
+    "_outcome_attempt_match", "_outcome_content", "_outcome_failure",
     "_prior_result_body",
 )

@@ -53,6 +53,11 @@ not evidence that work stopped: it is `supersession-undeclared` unless the
 caller declares it with `--supersede-live`. The
 absolute lease is never extended by transport or result motion.
 
+Facade transactions order side effects after the last refusable check; a
+failed step surfaces its own error plus any failed cleanup; every step
+replays idempotently. A composition over these operations therefore replays
+as a whole, and reports which of its steps it found already done.
+
 ## Packet and receipt
 
 `dispatch-packet` commits the projection and `dispatch-receive` validates it

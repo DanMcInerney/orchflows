@@ -41,6 +41,8 @@ if __package__:
     from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
     from . import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     from . import tickets_join as _tickets_join_module
+    from . import tickets_outcome as _tickets_outcome_module
+    from . import tickets_land as _tickets_land_module
     from . import tickets_registry as _tickets_registry_module
     from . import tickets_grade as _tickets_grade_module
 else:
@@ -64,6 +66,8 @@ else:
     import tickets_dispatch_packet as _tickets_dispatch_packet_module
     import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     import tickets_join as _tickets_join_module
+    import tickets_outcome as _tickets_outcome_module
+    import tickets_land as _tickets_land_module
     _tickets_registry_module = __import__('tickets_registry')
     _tickets_grade_module = __import__('tickets_grade')
 
@@ -228,7 +232,9 @@ _cmd_dispatch_packet = _tickets_dispatch_packet_module._cmd_dispatch_packet
 _cmd_dispatch_receive = _tickets_dispatch_packet_module._cmd_dispatch_receive
 _cmd_dispatch_receipt = _tickets_dispatch_receipt_module._cmd_dispatch_receipt
 _cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
-_cmd_dispatch_outcome = _tickets_join_module._cmd_dispatch_outcome
+_cmd_dispatch_outcome = _tickets_outcome_module._cmd_dispatch_outcome
+LAND_USAGE = _tickets_land_module.LAND_USAGE
+_cmd_land = _tickets_land_module._cmd_land
 _cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
@@ -357,6 +363,7 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_receipt = _cmd_dispatch_receipt
     _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
     _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
+    _tickets_dispatch_module._cmd_land = _cmd_land
     _tickets_dispatch_facade_module._cmd_ready = _cmd_ready
     _tickets_dispatch_facade_module._cmd_dispatch_open = _cmd_dispatch_open
     _tickets_dispatch_facade_module._cmd_dispatch_packet = _cmd_dispatch_packet
