@@ -87,13 +87,15 @@ def payload_of(completed) -> dict:
 
 def make_ticket(
     run_dir: Path, tid: str, *, scope=("scratch",), extra=(),
-    pack="orch-code-pack",
+    pack="orch-code-pack", isolation="required",
 ) -> Path:
     """A fixture work item, never this run's own ticket.
 
     The cutover made an isolated candidate the only lawful Git-adapter
     shape, so the item carries ``isolation: required`` unless a caller is
-    grading some other value through ``extra``.
+    grading some other value through ``extra`` or ``isolation``.
+    ``isolation=None`` omits the field entirely, for a fixture proving what
+    an absent declaration derives from the stamped pack.
     """
 
     lines = [
@@ -108,8 +110,8 @@ def make_ticket(
     ]
     lines += [f"  - {entry}" for entry in scope]
     lines += ["bound: 30m"]
-    if not any(key == "isolation" for key, _ in extra):
-        lines += ["isolation: required"]
+    if not any(key == "isolation" for key, _ in extra) and isolation is not None:
+        lines += [f"isolation: {isolation}"]
     lines += [f"{key}: {value}" for key, value in extra]
     if not any(key == "mutations" for key, _ in extra):
         plans = []
@@ -269,13 +271,16 @@ def tearDownModule():
 
 def graded_item(tid, *, branch="wt-branch", scope=("scratch",), isolation="required",
                 recorded=True, extra=()):
-    """A ticket of the shared repository, under this test's own id."""
+    """A ticket of the shared repository, under this test's own id.
+
+    ``isolation=None`` omits the field, for a fixture proving what an
+    absent declaration derives from the stamped pack.
+    """
 
     graded = graded_repository()
-    declared = ((workspace.ISOLATION_KEY, isolation),) if isolation else ()
     stamps = ((workspace.BRANCH_KEY, branch),) if recorded else ()
     make_ticket(
-        graded["run_dir"], tid, scope=scope,
-        extra=declared + stamps + tuple(extra),
+        graded["run_dir"], tid, scope=scope, isolation=isolation,
+        extra=stamps + tuple(extra),
     )
     return graded
