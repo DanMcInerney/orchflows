@@ -10,9 +10,10 @@ Framework specifics live with the workspace's standards owner.
   capture shows, a verdict covers, and a golden capture pins.
 - **breakpoint** — a named viewport width where layout decisions may
   change; the spec's breakpoint set closes the list.
-- **state** — one interaction or data condition of a view: hover,
-  focus, disabled, empty, loading, error, overflow; enumerated per
-  view, each one rendered, never assumed.
+- **state** — one interaction, data, or user-preference condition of a
+  view: hover, focus, disabled, empty, loading, error, overflow,
+  reduced motion, forced colors; enumerated per view, each one
+  rendered, never assumed.
 - **capture** — the saved rendered image at one view identity; the
   only evidence a visual verdict accepts.
 - **golden capture** — an approved capture frozen as the baseline for

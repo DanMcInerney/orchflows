@@ -85,7 +85,6 @@ class PackResolutionTests(unittest.TestCase):
                 "assembly",
                 "craft",
                 "evidence",
-                "lens",
                 "outline",
                 "required_spec_fields",
                 "slicing",
@@ -205,7 +204,7 @@ class PackResolutionTests(unittest.TestCase):
             {"adapter", "assembly", "craft", "required_spec_fields", "slicing", "stages", "workspace"},
             set(execute["cells"]),
         )
-        self.assertEqual({"craft", "evidence", "lens"}, set(check["cells"]))
+        self.assertEqual({"craft", "evidence"}, set(check["cells"]))
         self.assertNotIn("evidence", execute["cells"])
         self.assertNotIn("workspace", check["cells"])
 
@@ -231,7 +230,7 @@ class PackResolutionTests(unittest.TestCase):
             execute["cells"]["required_spec_fields"],
             outline["cells"]["required_spec_fields"],
         )
-        self.assertNotIn("lens", outline["cells"])
+        self.assertNotIn("evidence", outline["cells"])
         self.assertNotIn("slicing", outline["cells"])
 
     def test_every_pack_resolves_a_distinct_outline_leaf(self):
@@ -247,7 +246,7 @@ class PackResolutionTests(unittest.TestCase):
             target = PACKS / name / "references" / "outline.md"
             self.assertIn(target.name, projected["cells"]["outline"])
             bodies[name] = target.read_text(encoding="utf-8")
-        self.assertEqual(4, len(bodies))
+        self.assertEqual(5, len(bodies))
         self.assertEqual(len(bodies), len(set(bodies.values())))
 
     def test_cli_emits_json_for_resolve_and_cells(self):
@@ -272,7 +271,7 @@ class PackResolutionTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(0, projected.returncode, projected.stderr)
-        self.assertEqual({"craft", "evidence", "lens"}, set(json.loads(projected.stdout)["cells"]))
+        self.assertEqual({"craft", "evidence"}, set(json.loads(projected.stdout)["cells"]))
         lane = subprocess.run(
             command + [
                 "cells", payload["digest"], "--for", "outline",

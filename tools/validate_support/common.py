@@ -52,18 +52,12 @@ PACK_SIGNATURE_CELLS = (
     "adapter",
     "stages",
     "assembly",
-    "lens",
     "evidence",
     "outline",
 )
 PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
 # The cells whose content is a whole reference file, so the duplication
-# linter compares what they point at rather than the pointer row. `lens`
-# is not among them: it binds a section of `craft`, not a file of its
-# own, and resolving it to craft.md would compare craft's content twice,
-# once under each cell name (REVIEW-2026-08-15
-# T7). Its row is compared as the text it is, which is three words and
-# so sits under CELL_CLAUSE_MIN_WORDS.
+# linter compares what they point at rather than the pointer row.
 CRAFT_CELLS_BY_POINTER = ("slicing", "evidence", "craft", "outline")
 CRAFT_BUDGET = 60
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s

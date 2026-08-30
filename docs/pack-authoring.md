@@ -1,7 +1,7 @@
 # Pack authoring
 
 The order of work when adding a domain pack — the pack factory of
-[documentation.md](documentation.md) §7, its library instances the four
+[documentation.md](documentation.md) §7, its library instances the five
 under `packs/`, a project's landing per
 [custom workflow authoring](custom-workflow-authoring.md). The law
 lives with its owners — admission, cells, sharing constraints, and craft
@@ -24,9 +24,10 @@ what each step feeds the next.
    [docs/vocabulary.md](vocabulary.md) before keeping it — a
    collision with a pinned field name is permanent.
 5. Slicing fifth: how a spec cuts and what every ticket carries.
-6. Executor and lens sixth: bind an existing instance when its
-   contract already matches; write a new one only when the unit loop
-   genuinely differs, named by its method.
+6. Lens sixth: the craft's `## Lens` section, one finding class per
+   bullet — the check lane reads its criteria there. Then the three
+   cells machinery branches on: adapter from the registry, stages,
+   assembly.
 7. Required spec fields last — they fall out of the cells above. Then the
    `outline` cell, written against the binding
    [contracts/pack-signature.md](../contracts/pack-signature.md) states for it.

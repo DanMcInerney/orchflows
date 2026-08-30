@@ -167,8 +167,9 @@ Deliver one result.
     def test_pack_craft_carries_each_absorbed_execution_family(self):
         root = Path(__file__).resolve().parents[1] / "packs"
         expected = {
-            "orch-code-pack": ("red-green", "repair", "conflict"),
+            "orch-code-pack": ("checks answer to goal", "repair", "conflict"),
             "orch-content-pack": ("draft", "assembly", "cut log"),
+            "orch-data-pack": ("pipeline", "reproduce", "leakage"),
             "orch-design-pack": ("view identities", "capture", "golden"),
             "orch-research-pack": ("primary sources", "synthesize", "gaps"),
         }

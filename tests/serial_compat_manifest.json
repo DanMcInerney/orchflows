@@ -1845,8 +1845,8 @@
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_a_doc_restating_a_rule_is_reported",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_a_template_stub_restating_a_rule_is_reported",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_two_skills_carrying_one_clause_are_reported_against_each_other",
-   "tests.test_validator_cases.corpus_and_surfaces.TestLensAnchor.test_a_lens_anchor_resolving_to_the_heading_is_clean",
-   "tests.test_validator_cases.corpus_and_surfaces.TestLensAnchor.test_a_lens_anchor_with_no_heading_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestLensAnchor.test_a_craft_with_the_lens_heading_is_clean",
+   "tests.test_validator_cases.corpus_and_surfaces.TestLensAnchor.test_a_craft_without_the_lens_heading_is_an_error",
    "tests.test_validator_cases.corpus_and_surfaces.TestLicensedCopies.test_the_licensed_pair_is_not_reported_against_the_real_tree",
    "tests.test_validator_cases.corpus_and_surfaces.TestLicensedCopies.test_the_visibility_copy_in_the_host_block_is_licensed",
    "tests.test_validator_cases.corpus_and_surfaces.TestSurfaceBudgets.test_a_host_block_over_its_budget_is_refused",
@@ -1982,7 +1982,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "abb0048b02a87702c793c04c653bc875c84137567d10698b18715d87d7e61b71"
+  "sha256": "de73499111e946a625bdc7780426712193597fb22922e1e2e879fb9f08200380"
  },
  "mutation_owners": [
   {

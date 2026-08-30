@@ -187,9 +187,10 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
 class CritiqueContractTest(unittest.TestCase):
     def test_check_owns_blockers_and_verification(self):
         check = read("skills/kernel/orch-check/SKILL.md")
-        self.assertIn("A critique enumerates evidence-backed blockers", check)
-        self.assertIn("smallest repair set", check)
-        self.assertIn("a verification records methods", check)
+        self.assertIn("A critique enumerates evidence-backed findings", check)
+        self.assertIn("one thread per shared cause", check)
+        self.assertIn("extinguishes the class", check)
+        self.assertIn("A verification records", check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-check/SKILL.md")

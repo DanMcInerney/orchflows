@@ -22,6 +22,10 @@ The shape principles every domain shares are
 ## Shape
 
 - Date every claim; undated evidence ages silently.
+- Quantify: a magnitude with a unit beats a directional adjective;
+  mark what resists quantification as such.
+- Spend as much search on the disconfirming source as the confirming
+  one; its absence is a recorded search, not an assumption.
 
 ## Lens
 

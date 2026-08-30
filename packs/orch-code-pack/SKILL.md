@@ -8,12 +8,11 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 | cell | binding |
 | --- | --- |
 | slicing | [references/slicing.md](references/slicing.md) |
-| workspace | git: isolated branch or worktree candidates have repository write authority; Suggested files are non-binding; integration inspects actual diffs and ordinary Git conflicts, resolves overlaps through the conflict owner, regenerates shared derived artifacts once, then runs the final gate; assignment references: root_generation, cut_generation, assignment_seal; lifecycle metadata: workspace_path, workspace_branch, workspace_baseline |
+| workspace | git: identities are commits; isolation is a branch or worktree per candidate; changes are ordinary diffs; Git conflicts and shared derived artifacts resolve once at the join through the conflict owner |
 | required_spec_fields | target repository; standards owner by pointer; observable result |
 | craft | [references/craft.md](references/craft.md) |
 | adapter | git |
-| stages | [tdd] |
+| stages | [implement] |
 | assembly | none |
-| lens | [references/craft.md#lens](references/craft.md#lens) |
 | evidence | [references/evidence.md](references/evidence.md) |
 | outline | [references/outline.md](references/outline.md) |

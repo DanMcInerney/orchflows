@@ -305,11 +305,11 @@
       "contract": "pack-signature.md",
       "fields": [
         "slicing", "workspace", "required_spec_fields", "craft", "adapter",
-        "stages", "assembly", "lens", "evidence", "outline"
+        "stages", "assembly", "evidence", "outline"
       ],
       "required": [
         "slicing", "workspace", "required_spec_fields", "craft", "adapter",
-        "stages", "assembly", "lens", "evidence", "outline"
+        "stages", "assembly", "evidence", "outline"
       ],
       "values": {"assembly": ["none", "stage name"]}
     }

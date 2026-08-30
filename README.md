@@ -263,9 +263,8 @@ still there for recovery; nothing needs them on a healthy path.
     │                         interface between everything above them
     ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
     │                         skill, engines/ that add control flow, workflows/
-    │                         assembled from both, instances/ that do a domain's
-    │                         hands-on work, utilities/
-    ├── Layer 2 · packs/     — per-domain data (code, content, research, design),
+    │                         assembled from both
+    ├── Layer 2 · packs/     — per-domain data (code, content, research, design, data),
     │                         never control flow
     └── Layer 3 · compositions/ — named workflows, callable like any skill
 
@@ -280,17 +279,19 @@ this README does not keep a second copy of it.
     │                        workspace: git, one worktree per work item
     ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-execute, assembly stage
     │                        workspace: document tree with outline slots
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-execute, assembly stage
+    │                        workspace: git, datasets pinned by digest manifest
     ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-execute
     │                        workspace: git plus render (view × breakpoint × state)
     └── orch-research-pack — delivers answers     · source evidence       · executor orch-execute, assembly stage
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's
-vocabulary, artifact evidence, executors, workspace rules, and design
-principles, all satisfying one frozen pack-signature, so everything the
-library builds inside a domain stays cohesive. Stamp a different pack
-on the root ticket and the identical pipeline ships code, documents,
-research, or UI.
+vocabulary, artifact evidence, workspace rules, and design principles,
+all satisfying one frozen pack-signature, so everything the library
+builds inside a domain stays cohesive. Stamp a different pack on the
+root ticket and the identical pipeline ships code, documents, research,
+analyses, or UI.
 
 Each pack is read three ways, one per verb — its **execute** taste when
 work is produced, its **check** taste when work is challenged, and its

@@ -8,11 +8,13 @@ Require: one immutable review ledger naming the fixed artifact, Goal,
 assignment evidence, and the pack digest.
 
 Resolve the pack's check projection through `packs.py cells <digest> --for
-check`. Apply its lens, evidence, and craft cells to the fixed artifact and
-the executor record. A critique enumerates evidence-backed blockers and the
-smallest repair set; a verification records methods, covered identities, and
-the warranted verdict. Stream the review record and commit the reserved
-outcome.
+check`. Apply its evidence and craft cells to the fixed artifact and the
+executor record. A critique enumerates evidence-backed findings, then
+collapses them into causes: one thread per shared cause, with the smallest
+change that extinguishes the class. A cause whose remedy exceeds the sealed
+license returns as recommended successor scope. A verification records
+methods, covered identities, and the warranted verdict. Stream the review
+record and commit the reserved outcome.
 
 Never: edit the artifact or sealed semantics; infer a verdict from effort;
 mix a review stage with another kind; or import craft outside the resolved
