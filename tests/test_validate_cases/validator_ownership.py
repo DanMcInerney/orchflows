@@ -197,7 +197,7 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self._write_skill(name, skill_body)
 
     def _write_skill(self, name: str, body: str):
-        skill = self.tmp_path / "skills" / "instances" / name
+        skill = self.tmp_path / "skills" / "workflows" / name
         skill.mkdir(parents=True, exist_ok=True)
         (skill / "SKILL.md").write_text(
             SKILL_MD.format(name=name, body=body), encoding="utf-8"
@@ -215,7 +215,7 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self.assertEqual(1, len(findings), result.stdout)
         self.assertTrue(findings[0].startswith("WARN "), findings[0])
         self.assertIn("rules/duplication.md", findings[0])
-        self.assertIn("skills/instances/orch-echo/SKILL.md", findings[0])
+        self.assertIn("skills/workflows/orch-echo/SKILL.md", findings[0])
         self.assertIn("at 1.00", findings[0])
         self.assertEqual(0, result.returncode, result.stdout)
 
@@ -253,8 +253,8 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self._write_skill("orch-mimic", COPIED_SENTENCE + ".")
         result, findings = self._findings()
         self.assertEqual(1, len(findings), result.stdout)
-        self.assertIn("skills/instances/orch-echo/SKILL.md", findings[0])
-        self.assertIn("skills/instances/orch-mimic/SKILL.md", findings[0])
+        self.assertIn("skills/workflows/orch-echo/SKILL.md", findings[0])
+        self.assertIn("skills/workflows/orch-mimic/SKILL.md", findings[0])
         self.assertIn("(within skills)", findings[0])
         self.assertEqual(("skills",), tuple(sorted(validate.SAME_TIER_COMPARED)))
 

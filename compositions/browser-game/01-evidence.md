@@ -5,7 +5,6 @@ pack: orch-research-pack
 depends_on: [00-record]
 bound: <= 120 tool calls
 independence: checker
-isolation: required
 profile: orch-worker
 ---
 

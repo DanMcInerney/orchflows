@@ -137,9 +137,10 @@ a protocol operation.
 ## Cutover
 
 The public facade has no role-bearing `claim` or legacy `packet` route and no
-dual reader. A historical claimed or suspended ticket without this record is
-`legacy-live-claim`; its existing owner must complete or abandon it before
-installation. History is never inferred or rewritten.
+dual reader. A claimed or suspended ticket without this record is
+`claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
+and the attempt's `owner` and `opened_at` are the lease — the ticket carries
+no projection of them. History is never inferred or rewritten.
 
 T0 supersession record sha256:82cecc2a7e182409496a6ed451f9121bfb990ab0bf7ca9e69012073093f8be67:
 persisted dispatch semantics now close every record kind and stored success,

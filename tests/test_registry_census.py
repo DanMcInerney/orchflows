@@ -1,4 +1,4 @@
-"""U12 callable registry and review discriminator contract."""
+"""Callable registry census and review discriminator contract."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ Deliver one result.
 
 
 class CallableRegistryTests(unittest.TestCase):
-    def test_callable_registry_is_exactly_the_seven_enforced_verbs(self):
+    def test_callable_registry_is_exactly_the_six_enforced_verbs(self):
         self.assertEqual(
             (
                 "orch-execute",
@@ -52,7 +52,6 @@ class CallableRegistryTests(unittest.TestCase):
                 "orch-decompose",
                 "orch-integrate",
                 "orch-frontier",
-                "orch-loop",
                 "orch-outline",
             ),
             tickets.CALLABLE_EXECUTORS,
@@ -95,7 +94,7 @@ Deliver one result.
     def test_a_superseded_verb_is_refused_naming_its_successor(self):
         """rules/delegation.md 8: no dispatch may revive a superseded skill
         binding. The refusal carries the remedy rather than the registry list,
-        so a caller holding the old name is not left to guess which of seven
+        so a caller holding the old name is not left to guess which of six
         replaced it."""
 
         text = _TICKET.replace("EXECUTOR", "orch-spec")
@@ -121,7 +120,15 @@ Deliver one result.
         for superseded, successor in registry.SUPERSEDED_EXECUTORS.items():
             with self.subTest(superseded=superseded):
                 self.assertNotIn(superseded, registry.EXECUTOR_REGISTRY)
-                self.assertIn(successor, registry.EXECUTOR_REGISTRY)
+                # A successor is a registered verb to bind, or the mechanism
+                # that replaced the verb, named as the remedy it is.
+                if successor not in registry.EXECUTOR_REGISTRY:
+                    self.assertIn(successor, registry.executor_refusal(superseded))
+        # The absorbed loop engine refuses toward the loop field mechanism.
+        loop_refusal = registry.executor_refusal("orch-loop")
+        self.assertIn("superseded", loop_refusal)
+        self.assertIn("loop-arm", loop_refusal)
+        self.assertNotIn("bind '", loop_refusal)
 
     def test_execute_and_check_require_pack_authority(self):
         text = """---

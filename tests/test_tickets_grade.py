@@ -17,11 +17,12 @@ from scripts.tickets_grade import fixed_gate_snapshot, grade_snapshot, GradeErro
 from scripts import tickets_review
 
 
-def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", context: str = "The repository is fixed.") -> str:
+def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", context: str = "The repository is fixed.", loop: str = "") -> str:
     return "\n".join((
         "---",
         f"id: {ticket_id}",
         f"executor: {executor}",
+        *((f"loop: {loop}",) if loop else ()),
         "pack: orch-code-pack",
         "---",
         "",
@@ -69,7 +70,10 @@ class GradeSnapshotTest(unittest.TestCase):
 
     def test_direct_and_loop_shapes_have_one_result_width(self):
         direct = {"R": ticket("R", "orch-tdd")}
-        loop = {"R": ticket("R", "orch-loop")}
+        loop = {"R": ticket(
+            "R", "orch-execute",
+            loop='{"done":{"form":"command","value":"exit 0"}}',
+        )}
         self.assertEqual("single", grade_snapshot("R", direct)["shape"])
         self.assertEqual(1, grade_snapshot("R", direct)["width"])
         self.assertEqual("loop", grade_snapshot("R", loop)["shape"])
@@ -245,7 +249,7 @@ class FixedGateCommandTest(unittest.TestCase):
             "admission": "git:sha256:admission", "executor": "orch-tdd",
             "pack": "orch-code-pack", "independence": "checker",
             "isolation": "required", "depends_on": [], "bound": "30m",
-            "claimed_by": "", "claimed_at": "", "root_generation": "root:R",
+            "root_generation": "root:R",
             "cut_generation": "cut:R", "assignment_seal": assignment_seal,
         }
         text = _render_ticket(fields, [

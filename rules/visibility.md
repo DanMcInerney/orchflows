@@ -26,8 +26,8 @@
    it. This clause governs every directory the sink holds, not only
    `runs/` and `tickets/`. A run writes on two
    channels and they never cross: content is written with file tools
-   inside the workspace and leaves it only by the channel the pack's
-   workspace cell names; run state is written only through the installed
+   inside the workspace and leaves it only by the channel the pack craft's
+   `## Workspace` section names; run state is written only through the installed
    scripts, which resolve one user-scope state sink —
    `$ORCHFLOWS_STATE_HOME`, else `~/.orchflows/state` — from any
    workspace in any repository, so a run outlives the checkout it

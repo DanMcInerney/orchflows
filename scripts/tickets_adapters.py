@@ -146,11 +146,29 @@ def adapter_spec(pack, *, root=None) -> Adapter:
     return adapter_for_key(declared_adapter(pack, root=root))
 
 
+def derived_isolation(declared, pack, *, root=None) -> str:
+    """The ticket's effective isolation: the rare declared override, else
+    what the stamped pack's adapter establishes (contracts/work-item.md).
+
+    Fail-closed: a pack that cannot resolve derives 'required', because
+    assuming isolation never lets two candidates share a tree by accident.
+    """
+    value = dequote(declared)
+    if value:
+        return "required" if value == "required" else "none"
+    if not dequote(pack):
+        return "none"
+    try:
+        return "required" if adapter_spec(pack, root=root).establishes_isolation else "none"
+    except AdapterError:
+        return "required"
+
+
 def adapter_id(pack, *, root=None) -> str:
     return adapter_spec(pack, root=root).key
 
 
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
-    "adapter_id", "adapter_spec", "declared_adapter", "pack_path",
+    "adapter_id", "adapter_spec", "declared_adapter", "derived_isolation", "pack_path",
 )

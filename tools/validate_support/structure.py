@@ -112,13 +112,12 @@ def validate_call_graph(packages, diag: Diagnostics) -> None:
         name_to_file = {pkg["path"].name: pkg["skill_md"] for pkg in packages}
         label = rel(name_to_file[cycle[0]]) if cycle[0] in name_to_file else "call-graph"
         diag.error(label, f"call graph cycle: {' -> '.join(cycle)}")
-    # composition rule 1: kernel and utility skills are primitives.
+    # composition rule 1: kernel skills are primitives.
     for pkg in packages:
-        if pkg["kind"] in ("kernel", "utilities") and graph.get(pkg["path"].name):
+        if pkg["kind"] == "kernel" and graph.get(pkg["path"].name):
             called = ", ".join(sorted(graph[pkg["path"].name]))
-            tier = "kernel" if pkg["kind"] == "kernel" else "utility"
             diag.error(rel(pkg["skill_md"]),
-                       f"{tier} skill has call edges ({called}); {tier} skills are primitives and call no skill")
+                       f"kernel skill has call edges ({called}); kernel skills are primitives and call no skill")
 
 
 def validate_domain_blindness(packages, diag: Diagnostics) -> None:

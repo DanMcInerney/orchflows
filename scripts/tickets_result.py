@@ -8,9 +8,9 @@ try:
 except ImportError:
     msvcrt = None
 if __package__:
-    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, dequote, is_critique_stage_id
+    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, dequote, is_critique_stage_id, lease_of
 else:
-    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, dequote, is_critique_stage_id
+    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section, dequote, is_critique_stage_id, lease_of
 if __package__:
     from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
 else:
@@ -136,7 +136,7 @@ def _result_under_run_lock(rest):
         status = dequote(data.get('status'))
         if status != 'claimed':
             return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
-        if str(data.get('claimed_by') or '').strip() != written_by:
+        if lease_of(data)[0] != written_by:
             return text, None, {'code': 'identity-mismatch', 'error': 'result writer does not match the current ticket claimant', 'protocol': PROTOCOL}
         critique_failure = _validate_critique_body(ticket_id, canonical, body)
         if critique_failure is not None:

@@ -1,29 +1,17 @@
 """The bound grammar, and `bound-check` over one run's live claims.
 
 A bound is the one field that says when a claim stops protecting anything,
-and every reader of one -- the staleness check that hands a claim to the
-next taker, the viewer's meter, and now the engine's re-check -- had to
-read it through a pattern that admitted two shapes. `<= 40 tool calls` and
-`banana` both aged a claim at the same substituted 60 minutes, so a bound
-the cut had actually stated was indistinguishable from one nobody had.
+and every reader of one -- the dispatch window, the viewer's meter, and the
+engine's re-check -- reads it through the one grammar here. `<= 40 tool
+calls` and `banana` both aged a claim at the same substituted 60 minutes,
+so a bound the cut had actually stated was indistinguishable from one
+nobody had; `parse_bound` names the kind beside the minutes.
 
-This module owns the widened grammar and the two questions the engine asks
-of it, kept apart on purpose: `overdue` is about the bound alone, and
-`should_park` is about whether anything moved after the bound elapsed. A
-ticket that is over its bound and still moving is a report; one that is
-over its bound and still is a decision for its caller.
-
-It therefore owns when a claim goes stale, which contracts/work-item.md
-states only as a field: a claim is stale when no write to the ticket file
-has landed for longer than the minutes `parse_bound` reads
-off that item's bound -- a stated duration as itself, a tool-call or
-iteration count at its stated conversion, and 60 minutes,
-`DEFAULT_BOUND_MINUTES`, only for a bound this grammar cannot read at all.
-Substituting the default for every non-duration bound is the defect the
-paragraph above names, not the rule. Staleness never rests on wall clock
-alone, and `should_park` is the reading of that rule: `_last_motion`
-supplies the motion, and a claim still writing past its deadline is
-reported, not taken.
+A claim exists only as a dispatch attempt (contracts/dispatch.md): the
+attempt's absolute lease window decides overdue, motion cannot extend it,
+and a claimed ticket with no record is over every bound. `_last_motion`
+still reports whether anything moved, so a row says not only that a claim
+is overdue but whether its holder stopped.
 
 Imported at module scope by nothing here: `_cmd_bound_check`'s siblings are
 reached inside the call, because `tickets_format` imports this module for
@@ -81,35 +69,25 @@ def _parse_bound_minutes(bound) -> int:
     return parse_bound(bound)[0]
 
 
-def should_park(claimed_at, bound_minutes: int, last_motion, now) -> bool:
-    """True when the bound elapsed and nothing moved after it did.
-
-    Pure, and on datetimes rather than a row, because it is the one rule
-    the engine's prose states and a rule stated in two places drifts. Being
-    over the bound is not enough: an item still moving past its bound is a
-    report, and only one that stopped inside it is a decision its caller
-    has to make. A claim whose start cannot be read has no deadline that
-    can be said to have passed, so it is reported and never parked.
-    """
-    if claimed_at is None:
-        return False
-    deadline = claimed_at + timedelta(minutes=bound_minutes)
-    if now <= deadline:
-        return False
-    return last_motion is None or last_motion <= deadline
+def _last_motion(ticket_path: Path):
+    """The ticket file is the durable motion record; result writes update it."""
+    try:
+        return datetime.fromtimestamp(Path(ticket_path).stat().st_mtime, timezone.utc), []
+    except OSError as error:
+        return None, [f"could not stat {ticket_path}: {error}"]
 
 
 def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
     """``(row, unreadable)`` for one claimed ticket."""
     minutes, kind = parse_bound(item.get('bound'))
-    motion, unreadable = support['_last_motion'](Path(item['path']))
-    claimed = support['_parse_iso'](item.get('claimed_at'))
+    motion, unreadable = _last_motion(Path(item['path']))
+    claimed = None
     lease_expires_at = None
     if item.get('dispatch_v1'):
         window, failure = support['attempt_window'](item)
         if failure is not None:
             unreadable.append(failure['error'])
-            claimed = None
+            overdue, park = True, False
         else:
             claimed = window['opened_at']
             expires = window['lease_expires_at']
@@ -118,25 +96,24 @@ def _bound_row(item: dict, now: datetime, support: dict) -> tuple:
             overdue = now > expires
             park = overdue
     else:
-        overdue = claimed is None or now > claimed + timedelta(minutes=minutes)
-        park = should_park(claimed, minutes, motion, now)
+        # A claim exists only as a dispatch attempt (contracts/dispatch.md);
+        # a claimed ticket with no record is over every bound.
+        unreadable.append(f"claimed ticket carries no dispatch record: {item.get('id')}")
+        overdue, park = True, False
     elapsed = None if claimed is None else max(int((now - claimed).total_seconds() // 60), 0)
     return ({
         'id': item.get('id'),
         'bound': item.get('bound'),
         'bound_kind': kind,
         'bound_minutes': minutes,
-        'claimed_at': item.get('claimed_at'),
+        'claimed_at': None if claimed is None else claimed.strftime(support['UTC_STAMP']),
         'lease_expires_at': lease_expires_at,
         'last_motion_at': None if motion is None else motion.strftime(support['UTC_STAMP']),
         'elapsed_minutes': elapsed,
-        # The deadline `should_park` reads, not the whole minutes the row
-        # displays: 30m30s into a `30m` bound is past that bound, and a row
-        # that floored it answered `park: true` beside `overdue: false` and
-        # left the run at exit 0 -- the engine's rule and the exit status its
-        # re-check reads on opposite sides of one deadline. An unreadable
-        # start is over every bound rather than inside one: the lease already
-        # hands such a claim to the next taker.
+        # The absolute lease deadline, not the floored minutes the row
+        # displays: 30m30s into a `30m` lease is past it. An unreadable
+        # claim is over every bound rather than inside one: the lease
+        # already hands such a claim to the next taker.
         'overdue': overdue,
         'park': park,
     }, unreadable)
@@ -152,18 +129,16 @@ def _bound_support() -> dict:
         from .tickets_dispatch_schema import attempt_window
         from .tickets_commands import BOUND_CHECK_USAGE
         from .tickets_format import _extract_flag, _parse_iso
-        from .tickets_packet import _last_motion
         from .tickets_store import UTC_STAMP
         from .tickets_worklog import _run_tickets
     else:
         from tickets_dispatch_schema import attempt_window
         from tickets_commands import BOUND_CHECK_USAGE
         from tickets_format import _extract_flag, _parse_iso
-        from tickets_packet import _last_motion
         from tickets_store import UTC_STAMP
         from tickets_worklog import _run_tickets
     return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'UTC_STAMP': UTC_STAMP, 'attempt_window': attempt_window, '_extract_flag': _extract_flag,
-            '_last_motion': _last_motion, '_parse_iso': _parse_iso, '_run_tickets': _run_tickets}
+            '_parse_iso': _parse_iso, '_run_tickets': _run_tickets}
 
 
 def _cmd_bound_check(rest):

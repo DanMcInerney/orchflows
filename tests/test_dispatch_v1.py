@@ -474,24 +474,21 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("stale-attempt", stale_result["code"])
         self.assertEqual(before, self.ticket_text())
 
-    def test_pre_v1_live_claim_requires_owner_cutover(self):
-        # The pre-v1 shape, written as the deleted `claim` command wrote it:
-        # a live lease carried by frontmatter alone, with no `dispatch_v1`.
+    def test_a_claim_without_a_dispatch_record_is_refused(self):
+        # A live claim exists only as a dispatch-v1 attempt: a ticket whose
+        # status says claimed with no record is off protocol, not a lease.
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
-        legacy = path.read_text(encoding="utf-8")
-        for key, value in (
-            ("status", "claimed"), ("claimed_by", "legacy-owner"),
-            ("claimed_at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
-        ):
-            legacy = tickets._set_frontmatter_field(legacy, key, value)
-        path.write_text(legacy, encoding="utf-8")
+        mangled = tickets._set_frontmatter_field(
+            path.read_text(encoding="utf-8"), "status", "claimed"
+        )
+        path.write_text(mangled, encoding="utf-8")
         before = self.ticket_text()
         refusal = self.open()
-        self.assertEqual("legacy-live-claim", refusal["code"])
+        self.assertEqual("claim-without-dispatch", refusal["code"])
         self.assertEqual(before, self.ticket_text())
         self.opened_seal = _parse_frontmatter(before)["assignment_seal"]
-        result_refusal = self.result(by="legacy-owner")
-        self.assertEqual("legacy-live-claim", result_refusal["code"])
+        result_refusal = self.result(by="anyone")
+        self.assertEqual("claim-without-dispatch", result_refusal["code"])
         self.assertEqual(before, self.ticket_text())
 
     def test_result_write_and_receipt_are_one_replayable_operation(self):
@@ -639,8 +636,9 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("suspended", joined["join"]["status"])
         data = _parse_frontmatter(self.ticket_text())
         self.assertEqual("suspended", data["status"])
-        self.assertEqual("worker", data["claimed_by"])
         state = parse_canonical_json(data["dispatch_v1"])
+        # The retained claimant observation IS the retired attempt.
+        self.assertEqual("worker", state["attempts"][0]["owner"])
         self.assertEqual("retired", state["attempts"][0]["state"])
 
     def test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join(self):

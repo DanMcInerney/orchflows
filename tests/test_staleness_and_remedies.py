@@ -655,9 +655,9 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
 
 
 class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
-    """The seal stores `isolation` verbatim and the packet carries it
-    normalized, so a ticket declaring none compared `None` against `"none"`
-    and every valid inline packet for it was refused as divergent."""
+    """The seal stores the rare declared override verbatim and the packet
+    carries the derived value, so both sides read through the one
+    derivation: absent on a git pack derives `required`."""
 
     def packet(self, **overrides) -> dict:
         base = {
@@ -693,9 +693,9 @@ class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
             "assignment": assignment, "envelope_seal": _semantic_digest(envelope),
         })
 
-    def test_an_absent_isolation_field_accepts_the_normalized_packet(self):
+    def test_an_absent_isolation_field_accepts_the_derived_packet(self):
         assignment = self.assignment()
-        packet = self.sealed(self.packet(), assignment)
+        packet = self.sealed(self.packet(isolation="required"), assignment)
         self.assertIsNone(_inline_assignment_failure(packet, assignment))
 
     def test_a_backticked_isolation_value_still_accepts(self):

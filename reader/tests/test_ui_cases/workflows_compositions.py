@@ -79,7 +79,7 @@ class WorkflowCompositionTests(unittest.TestCase):
                 "work:evolve/02-campaign",
                 "work:evolve/03-result",
                 "skill:orch-check",
-                "skill:orch-loop",
+                "skill:orch-execute",
                 "skill:orch-outline",
             },
             node_ids,
@@ -95,7 +95,7 @@ class WorkflowCompositionTests(unittest.TestCase):
                 ("dependency", "work:evolve/02-campaign", "work:evolve/03-result"),
                 ("executor", "work:evolve/00-eval", "skill:orch-outline"),
                 ("executor", "work:evolve/01-eligibility", "skill:orch-check"),
-                ("executor", "work:evolve/02-campaign", "skill:orch-loop"),
+                ("executor", "work:evolve/02-campaign", "skill:orch-execute"),
                 ("executor", "work:evolve/03-result", "skill:orch-check"),
                 ("loop", "work:evolve/02-campaign", "work:evolve/02-campaign"),
             },
@@ -118,8 +118,8 @@ class WorkflowCompositionTests(unittest.TestCase):
             by_id["work:evolve/02-campaign"]["source_id"],
         )
         self.assertEqual(
-            identity.source_id("lib/skills/engines/orch-loop/SKILL.md"),
-            by_id["skill:orch-loop"]["source_id"],
+            identity.source_id("lib/skills/kernel/orch-execute/SKILL.md"),
+            by_id["skill:orch-execute"]["source_id"],
         )
         self.assertEqual(
             sorted(detail["edges"], key=lambda edge: (

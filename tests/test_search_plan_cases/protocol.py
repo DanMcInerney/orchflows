@@ -36,8 +36,8 @@ class TestArchitecture(unittest.TestCase):
             self.assertTrue((path / "template.md").is_file(), f"{path} has no manifest")
         for path in (EVOLVE_GENERATION, SEARCH_PROTOCOL, SEARCH_SCRIPT):
             self.assertTrue(path.is_file(), f"missing search-planning surface: {path}")
-        self.assertFalse(
-            (ROOT / "skills" / "utilities" / "orch-search-plan").exists(),
+        self.assertEqual(
+            [], [str(path) for path in (ROOT / "skills").rglob("orch-search-plan")],
             "the search planner is a script, not a skill wrapping one command",
         )
 
@@ -59,7 +59,7 @@ class TestArchitecture(unittest.TestCase):
         moved."""
         campaign = read(EVOLVE / "02-campaign.md")
         self.assertIn("search_plan.py advance", campaign)
-        self.assertEqual("orch-loop", EXECUTOR_RE.search(campaign).group(1))
+        self.assertEqual("orch-execute", EXECUTOR_RE.search(campaign).group(1))
 
     def test_planner_is_evaluation_mode_agnostic(self):
         protocol = read(SEARCH_PROTOCOL)

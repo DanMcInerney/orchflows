@@ -31,6 +31,55 @@ The shape principles every domain shares are
 - The length budget is design pressure: cut weakest-first, into the
   cut log.
 
+## Workspace
+
+document tree: identities are document revisions; integration compares
+actual candidate changes and resolves section overlap.
+
+## Spec fields
+
+target directory; audience; voice contract; length budget; citation policy
+
+## Outline
+
+### What a frozen document root carries
+
+- The audience, and the voice contract on every dimension a judge will score.
+- A length budget stated as a number; weakest-first cutting has no meaning
+  without one, and the cut log then measures against nothing.
+- One throughline, phrased as a claim or a question, so a section job can be
+  caught undone.
+
+### Worth asking at intake
+
+- Who reads this, and what can they do afterwards that they cannot now?
+- Which genre's arc is it — problem to resolution, or task to proof?
+- Which assertions have to trace to supplied evidence, and where does that
+  evidence sit?
+- What citation policy applies, and does the reader see the citations?
+
+### Exemplar policy
+
+Point at a document and say which dimensions to borrow: register, cadence,
+skim layer. Subject matter is never borrowed, and a piece admired whole was
+never an exemplar.
+
+## Slicing
+
+When one executor owns a complete artifact — one document, or a named set
+edited together — issue one direct `orch-execute` root for the whole of it.
+Goal names the finished document; Context carries the voice contract,
+citation policy, length bound, and fixed evidence.
+
+One terminal assembly ticket names and assembles the decomposed sections in
+one final editorial pass.
+
+## Evidence
+
+Identify the document revision. Record applicable render and structure
+observations, prose-lint output, claim-to-source support, reader fit against
+the audience and voice facts, and uncovered claims.
+
 ## Lens
 
 - Voice: does every section hold the spec's voice contract on every
@@ -47,7 +96,7 @@ The shape principles every domain shares are
 - Audience: the stated reader can act on this without knowledge the
   spec does not grant them.
 
-## Execute stages
+## Stages
 
 - Draft from the fixed evidence and voice contract; every section has one
   section job and earns its place in the throughline.

@@ -91,11 +91,6 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         adapter, adapter_failure = adapter_resolution(pack)
         if adapter_failure is not None:
             findings.append(adapter_failure)
-        elif adapter and adapter_spec(pack).establishes_isolation and str(data.get("isolation") or "none").strip() != "required":
-            findings.append(finding(
-                "vcs-isolation-required", "isolation",
-                "the selected adapter requires an isolated candidate workspace",
-            ))
     return findings
 
 

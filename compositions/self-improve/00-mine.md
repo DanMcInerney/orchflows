@@ -1,10 +1,11 @@
 ---
 id: 00-mine
-executor: orch-loop
+executor: orch-execute
+pack: orch-content-pack
+loop: {"done":{"form":"check","value":"Ranked qualifying proposals are written to the state sink's improvement/ and the top-ranked proposal, or the finding that nothing qualified, is named in Result."}}
 depends_on: []
 bound: <= 60 tool calls
 independence: checker
-isolation: none
 profile: orch-planner
 ---
 

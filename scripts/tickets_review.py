@@ -7,7 +7,7 @@ import re
 import subprocess
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec
+    from .tickets_adapters import AdapterError, adapter_spec, derived_isolation
     from .tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         dequote, parse_canonical_json,
@@ -18,7 +18,7 @@ if __package__:
         nonempty as _nonempty, validate_records,
     )
 else:
-    from tickets_adapters import AdapterError, adapter_spec
+    from tickets_adapters import AdapterError, adapter_spec, derived_isolation
     from tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         dequote, parse_canonical_json,
@@ -174,7 +174,7 @@ def gate_plan(ticket_path: Path, artifact: str, workspace: str) -> dict:
         "GatePlan", None,
         artifact=artifact.strip(),
         criteria=criteria,
-        isolation=str(data.get("isolation") or "none"),
+        isolation=derived_isolation(data.get("isolation"), data.get("pack")),
         mode="gate",
         pack=data.get("pack"),
         root=_gate_root(ticket_path.stem),

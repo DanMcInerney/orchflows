@@ -16,14 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 # reader can grep the report for every check that did not run.
 SKIPPED = "absent; check skipped"
 
-SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+SKILL_TIERS = ("kernel", "engines", "workflows")
 # Words, not lines: a line count is met by widening lines, and was.
 # Markdown link targets are stripped first so a citation costs its label,
 # not its path.
 BODY_BUDGET = {
     "kernel": 300,
-    "instances": 300,
-    "utilities": 300,
     "engines": 450,
     "workflows": 450,
     "pack": 150,
@@ -45,21 +43,30 @@ ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
 ROLE_NONE_TIERS = ("engines",)
 PACK_SIGNATURE_CELLS = (
-    "slicing",
-    "workspace",
-    "required_spec_fields",
-    "craft",
     "adapter",
     "stages",
     "assembly",
-    "evidence",
-    "outline",
+    "craft",
 )
 PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
-# The cells whose content is a whole reference file, so the duplication
-# linter compares what they point at rather than the pointer row.
-CRAFT_CELLS_BY_POINTER = ("slicing", "evidence", "craft", "outline")
-CRAFT_BUDGET = 60
+# The one cell whose content is a whole reference file, so the duplication
+# linter compares what it points at rather than the pointer row — section
+# by section, per contracts/pack-signature.md's craft-section table.
+CRAFT_CELLS_BY_POINTER = ("craft",)
+# The craft sections every pack must carry (contracts/pack-signature.md
+# `## Craft sections`), and the optional two the linter still compares.
+CRAFT_MANDATORY_SECTIONS = (
+    "Vocabulary",
+    "Workspace",
+    "Spec fields",
+    "Outline",
+    "Slicing",
+    "Evidence",
+    "Lens",
+)
+CRAFT_OPTIONAL_SECTIONS = ("Shape", "Stages")
+# The sum of the folded parts at the fold (2026-08-30); only falls.
+CRAFT_BUDGET = 130
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s
 # ratio under them the reported pair set is a function of these two and of
 # `doclint.DISTINCTIVE_MAX`, so moving any of them changes what the check
@@ -125,7 +132,6 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
 # named-T0-carrier form.
 ENVELOPE_UNITS = (
-    "orch-loop",
     "orch-frontier",
 )
 ENVELOPE_VOCAB_RES = (
@@ -190,7 +196,7 @@ CARRIAGE_DASH_SPLIT_RE = re.compile(r"[–—]")  # en dash, em dash
 # the store the packet names."
 # That law's two filing destinations -- "the ticket -- or the store the
 # packet names" -- are this check's two pass conditions: the bound skill's
-# own body names the ticket/work-item filing, or the pack's workspace cell
+# own body names the ticket/work-item filing, or the pack's workspace
 # names a store; kernel-tier primitives stay domain-blind per the redteam
 # critique's Move 7 and rely on the second, rather than hardcoding
 # pack-specific filing language).
@@ -235,7 +241,8 @@ __all__ = (
     'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES', 'ROLE_NONE_TIERS',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
-    'CRAFT_CELLS_BY_POINTER', 'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
+    'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
+    'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
     'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',

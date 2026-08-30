@@ -370,7 +370,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         self.assertTrue(tickets_join._closes_the_run("testrun", "T1"))
 
     def test_a_loop_runs_single_ticket_is_its_own_root(self):
-        ticket_at(self.run_dir, "L", executor="orch-loop")
+        ticket_at(self.run_dir, "L", executor="orch-execute")
         self.assertTrue(tickets_join._closes_the_run("testrun", "L"))
 
     def test_an_unreadable_or_absent_run_closes_nothing(self):

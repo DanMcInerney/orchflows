@@ -123,8 +123,8 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
             status = str(data.get("status") or "")
             if state is None and status in ("claimed", "suspended"):
                 return _classification(
-                    "legacy-live-claim",
-                    "pre-v1 live claim must be completed or abandoned by its existing owner before dispatch-v1 cutover",
+                    "claim-without-dispatch",
+                    "a live claim exists only as a dispatch-v1 attempt; this claimed ticket has no dispatch record",
                 )
             seal = str(data.get("assignment_seal") or "").strip()
             request = {
@@ -184,8 +184,6 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
             encoded = canonical_json({"attempts": attempts, "protocol": PROTOCOL})
             updated = _set_frontmatter_field(text, "dispatch_v1", encoded)
             updated = _set_frontmatter_field(updated, "status", "claimed")
-            updated = _set_frontmatter_field(updated, "claimed_by", owner)
-            updated = _set_frontmatter_field(updated, "claimed_at", attempt["opened_at"])
             _write_text_atomically(path, updated)
             return _open_response(run, ticket_id, attempt, "opened")
     except OSError as error:
@@ -244,8 +242,8 @@ def _commit_record(
             if state is None:
                 if str(data.get("status") or "") in ("claimed", "suspended"):
                     return _classification(
-                        "legacy-live-claim",
-                        "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
+                        "claim-without-dispatch",
+                        "a live claim exists only as a dispatch-v1 attempt; this claimed ticket has no dispatch record",
                     )
                 return _classification("dispatch-mismatch", "ticket has no dispatch-v1 attempt")
             attempt = next(
@@ -481,8 +479,6 @@ def _cmd_dispatch_replace(rest):
         current["replacement"] = response
         state["attempts"].append(replacement)
         updated = _set_frontmatter_field(text, "status", "claimed")
-        updated = _set_frontmatter_field(updated, "claimed_by", owner)
-        updated = _set_frontmatter_field(updated, "claimed_at", opened_at)
         return updated, response, None
 
     return _commit_record(

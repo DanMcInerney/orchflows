@@ -51,7 +51,7 @@ __all__ = (
 
 
 class AdapterRegistryTest(unittest.TestCase):
-    """A pack selects one registered mechanism through its workspace cell."""
+    """A pack selects one registered mechanism through its typed adapter cell."""
 
     def _pack(self, root: Path, adapter: str):
         pack = root / "packs" / "widget-pack"
@@ -59,7 +59,6 @@ class AdapterRegistryTest(unittest.TestCase):
         (pack / "SKILL.md").write_text(
             "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| workspace | widget records; conflicts are ordinary overlaps |\n"
             f"| adapter | {adapter} |\n",
             encoding="utf-8",
         )
@@ -147,10 +146,21 @@ class AdapterRegistryTest(unittest.TestCase):
 
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
+    # The lease is the dispatch attempt; the fixture writes the record the
+    # attribution check reads through lease_of.
     (tmp / ".git").mkdir()
     run_dir = use_sink(tmp) / "tickets" / "testrun"
     run_dir.mkdir(parents=True)
-    claim = f"claimed_by: {claimed_by}\n" if claimed_by is not None else ""
+    claim = ""
+    if claimed_by is not None:
+        state = {"protocol": "orchflows.dispatch.v1", "attempts": [{
+            "assignment_seal": "sha256:sealed", "dispatch_id": "D1",
+            "lease_expires_at": "2099-01-01T00:00:00Z",
+            "opened_at": "2026-01-01T00:00:00Z",
+            "outcome_record_id": "outcome", "owner": claimed_by,
+            "records": [], "state": "live",
+        }]}
+        claim = "dispatch_v1: " + json.dumps(state, separators=(",", ":"), sort_keys=True) + "\n"
     ticket = run_dir / "T1.md"
     ticket.write_text(
         "---\n"

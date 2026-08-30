@@ -320,7 +320,7 @@ def cell_clauses(text: str) -> list:
 
     A clause is one assertion: a markdown table's data row, or a
     sentence, cut again at every ';' because this library's prose joins
-    independent assertions with the semicolon (a workspace cell is one
+    independent assertions with the semicolon (a workspace section is one
     such list). A ',' is not a cut point: it joins parts of one
     assertion, and cutting there reports shared connective idiom
     ('never by count') as duplicated content.

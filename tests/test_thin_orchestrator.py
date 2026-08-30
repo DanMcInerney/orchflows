@@ -61,7 +61,6 @@ class ThinOrchestratorContractTests(unittest.TestCase):
 
         glue = {
             "skills/engines/orch-frontier/SKILL.md",
-            "skills/engines/orch-loop/SKILL.md",
             "skills/kernel/orch-integrate/SKILL.md",
         }
         for path in glue:

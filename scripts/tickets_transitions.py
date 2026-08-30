@@ -17,7 +17,6 @@ else:
 
 PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
 STATUSES = tuple(sorted(VALID_STATUSES))
-LEASE_FIELDS = ("claimed_by", "claimed_at")
 CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})
 ADMISSION_OWNED_TARGETS = (READY, CLAIMED)
 Row = namedtuple("Row", ("command", "sources", "target", "sets", "blanks", "remedy"))
@@ -46,10 +45,10 @@ def set_status_command(target: str) -> str:
 
 
 _ROWS = (
-    Row("claim", (PENDING, READY), CLAIMED, ("admission", "status") + LEASE_FIELDS, (), "claim it"),
+    Row("claim", (PENDING, READY), CLAIMED, ("admission", "status"), (), "claim it"),
     Row("check", tuple(sorted(CHECKABLE_STATUSES)), None, ("checked_by",), (), "check it"),
-    Row("join-noop-repair", (READY,), COMPLETE, ("status",) + LEASE_FIELDS, (), "complete the clean repair at its join"),
-    Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), LEASE_FIELDS, "release it to pending"),
+    Row("join-noop-repair", (READY,), COMPLETE, ("status",), (), "complete the clean repair at its join"),
+    Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), (), "release it to pending"),
     Row(set_status_command(SUSPENDED), STATUSES, SUSPENDED, ("status",), (), "suspend it"),
 ) + tuple(
     Row(set_status_command(state), STATUSES, state, ("status",), (), f"set status {state}")
@@ -57,8 +56,8 @@ _ROWS = (
 )
 COMMANDS = tuple(sorted({row.command for row in _ROWS}))
 STAMPS = {
-    "stamp": Stamp(PENDING, ADMISSION_PENDING, LEASE_FIELDS, (PENDING, READY)),
-    "draft-validate": Stamp(PENDING, ADMISSION_PENDING, LEASE_FIELDS, (PENDING, READY, SUSPENDED)),
+    "stamp": Stamp(PENDING, ADMISSION_PENDING, (), (PENDING, READY)),
+    "draft-validate": Stamp(PENDING, ADMISSION_PENDING, (), (PENDING, READY, SUSPENDED)),
 }
 
 # This is executable metadata beside the guards that own the transitions.

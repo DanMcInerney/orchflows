@@ -40,8 +40,6 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, re
         "depends_on": list(dependencies),
         "isolation": "required" if executor == "orch-execute" else "none",
         "bound": "30m",
-        "claimed_by": "",
-        "claimed_at": "",
         "root_generation": root_generation,
     }
     if review_kind is not None:
@@ -376,8 +374,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         draft = _remove_frontmatter_field(draft, "admission")
         draft = _remove_frontmatter_field(draft, "run")
         draft = tickets._set_frontmatter_field(draft, "status", "complete")
-        draft = tickets._set_frontmatter_field(draft, "claimed_by", "forged-owner")
-        draft = tickets._set_frontmatter_field(draft, "claimed_at", "2099-01-01T00:00:00Z")
         source.write_text(draft, encoding="utf-8")
         before = source.read_bytes()
 
@@ -396,8 +392,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual("issued-run", data["run"])
         self.assertEqual("pending", data["status"])
         self.assertEqual("pending", data["admission"])
-        self.assertEqual("", data.get("claimed_by") or "")
-        self.assertEqual("", data.get("claimed_at") or "")
+        self.assertNotIn("claimed_by", data)
 
     def test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch(self):
         source = Path(self.temporary.name) / "R1.md"
@@ -720,7 +715,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             Path(self.temporary.name) / "tickets" / "clean" / "R.gate.repair.md"
         ).read_text(encoding="utf-8")
         self.assertIn("status: complete", repair)
-        self.assertIn("claimed_by: root-join", repair)
         self.assertIn("### Written by `root-join`\n\n[]", repair)
         repair_review = json.loads(_parse_frontmatter(repair)["review_v1"])
         self.assertEqual(
@@ -1283,8 +1277,8 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_content_pack_preserves_whole_artifact_direct_route(self):
         pack = (ROOT / "packs" / "orch-content-pack" / "SKILL.md").read_text(encoding="utf-8")
-        slicing = (ROOT / "packs" / "orch-content-pack" / "references" / "slicing.md").read_text(encoding="utf-8")
-        text = (pack + "\n" + slicing).lower()
+        craft = (ROOT / "packs" / "orch-content-pack" / "references" / "craft.md").read_text(encoding="utf-8")
+        text = (pack + "\n" + craft).lower()
         self.assertIn("whole", text)
         self.assertIn("direct", text)
         self.assertIn("one executor", text)

@@ -30,6 +30,61 @@ The shape principles every domain shares are
   spread, interval, or stated caveat.
 - Record seeds, versions, and environment wherever they change a number.
 
+## Workspace
+
+git: identities are commits whose committed manifests pin dataset bytes
+by digest, raw data living outside the repository; the join
+re-materializes any derived output in contention.
+
+## Spec fields
+
+target repository; dataset identities or the pinning policy; the
+question; rerun policy; claim bar — the robustness checks every
+load-bearing number must survive
+
+## Outline
+
+### What a frozen data root carries
+
+- One question answerable by numbers or a modeled relationship, never
+  "explore the data" — with the sub-questions coverage requires.
+- Dataset identities, or the pinning policy that will fix them; a root
+  over unpinned data freezes a guess.
+- The claim bar as named robustness checks, and the rerun policy that
+  makes reproduction possible.
+
+### Worth asking at intake
+
+- What decision moves on these numbers, and at what precision does it
+  stop moving?
+- Are the datasets reachable, licensed, and sufficient at the bar — or
+  is acquisition its own preceding kind?
+- Which choices freeze now — population, window, metric — and which
+  stay executor-owned degrees of freedom?
+- What would make the answer wrong even with every pipeline green?
+
+### Exemplar policy
+
+Cite a prior analysis by identity and name each property the imitation
+carries: pipeline discipline, uncertainty reporting, robustness set.
+"As rigorous as that one" is a mood, not a property list.
+
+## Slicing
+
+Slice only genuinely separable pipelines — by dataset, population, or
+sub-question — or dependency-ordered stages: pinning before analysis, analysis
+before the terminal reproduction. Context carries each member's dataset
+identities and frozen choices. Every lane materializes its own outputs from
+the shared pinned inputs; terminal reproduction reruns every recorded pipeline
+and reconciles the findings.
+
+## Evidence
+
+Identify the candidate revision. Record dataset identities, pipeline commands
+with output digests, the fresh reproduction reading for every load-bearing
+number, spent degrees of freedom, robustness readings, and unanswered parts
+of Goal.
+
 ## Lens
 
 - Reproduction: rerunning each recorded pipeline from its dataset
@@ -44,7 +99,7 @@ The shape principles every domain shares are
   identity, and the uncertainty reaches the findings, not only the
   raw output.
 
-## Execute stages
+## Stages
 
 - Analyze inside the fixed question and dataset identities, recording
   each degree of freedom as it is spent, dead ends included.

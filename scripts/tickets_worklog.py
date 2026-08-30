@@ -10,7 +10,7 @@ if __package__:
     from .tickets_format import (
         REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE,
         TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8,
-        _sections, ticket_defects,
+        _sections, lease_of, ticket_defects,
     )
     from .tickets_store import (
         NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root,
@@ -19,7 +19,7 @@ else:
     from tickets_format import (
         REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE,
         TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8,
-        _sections, ticket_defects,
+        _sections, lease_of, ticket_defects,
     )
     from tickets_store import (
         NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root,
@@ -163,7 +163,9 @@ def _quoted(body: str) -> list:
 
 
 def _claim_order(items: list) -> list:
-    return sorted(items, key=lambda item: (not str(item.get("claimed_at") or "").strip(), str(item.get("claimed_at") or ""), item["id"]))
+    def opened(item):
+        return lease_of(item)[1]
+    return sorted(items, key=lambda item: (not opened(item).strip(), opened(item), item["id"]))
 
 
 def _on_offer(item: dict) -> str:
@@ -184,7 +186,7 @@ def _render_worklog(run: str, items: list, root: dict, kind: str = "root") -> st
         *_quoted(sections.get("Goal")), "", "Context:", "", *_quoted(sections.get("Context")), "", "## iterations", "",
     ]
     for item in _claim_order(items):
-        stamp = str(item.get("claimed_at") or "").strip()
+        stamp = lease_of(item)[1].strip()
         waiting = _on_offer(item) if not stamp and item.get("status") == "ready" else ""
         claim = f"claimed {stamp}" if stamp else "never claimed" + waiting
         lines.append(f"- `{item['id']}` — executor `{_executor_of(item) or 'none'}` — status `{item.get('status') or 'none'}` — {claim}")

@@ -18,7 +18,7 @@ if __package__:
     from .tickets_format import (
         GATE_ID_MARKER, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE,
         _executor_of, _extract_all, _extract_flag, _parse_frontmatter,
-        _read_utf8, _set_frontmatter_field, ticket_defects,
+        _read_utf8, _set_frontmatter_field, lease_of, ticket_defects,
     )
     from .tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket,
@@ -40,7 +40,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import (
         GATE_ID_MARKER, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE,
         _executor_of, _extract_all, _extract_flag, _parse_frontmatter,
-        _read_utf8, _set_frontmatter_field, ticket_defects,
+        _read_utf8, _set_frontmatter_field, lease_of, ticket_defects,
     )
     from tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update, _load_ticket,
@@ -320,7 +320,7 @@ def _cmd_stamp_generation(rest):
             for member_id in members:
                 data = _parse_frontmatter(snapshot[member_id])
                 status = str(data.get('status') or '')
-                if status not in ('pending', 'ready') or str(data.get('claimed_by') or '').strip():
+                if status not in ('pending', 'ready') or lease_of(data)[0]:
                     return {'error': f"stamp-generation refused: {run}/{member_id} is '{status or '<missing>'}', and a stamp rewrites the assignment it would be working against (rules/verification.md §3). Nothing was written"}
                 if str(data.get('root_generation') or '').strip():
                     return {'error': f'stamp-generation refused: {run}/{member_id} already carries a generation; the lifecycle is opened once. Nothing was written'}

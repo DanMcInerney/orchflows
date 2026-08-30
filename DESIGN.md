@@ -105,8 +105,9 @@ bodies were mostly sequencing, and every recurring shape grew the
 routing table — the one surface every session pays for on every
 request. The replacement:
 
-- **The routing table stays fixed while the named tier grows.** Five
-  branches — answer, single, graph, spec, fix — and one closed rule: everything else
+- **The routing table stays fixed while the named tier grows.** Four
+  branches — answer, single, graph, and the intake verb since renamed
+  outline — and one closed rule: everything else
   runs only when named. Recurring shapes accumulate as templates under
   `compositions/`, never in the dispatch prose (diluted attention: the
   always-paid cost never grows).
@@ -126,7 +127,8 @@ Its open decisions closed as: ticket sets drained by `orch-frontier`,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured
 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
 the delegation contract merged into `work-item.md`; orch-delegate (the
-skill) deleted; the domain instances and `orch-loop` kept.
+skill) deleted; the domain instances and the loop engine kept (the
+engine since absorbed into the driver as the ticket `loop` field, 2026-08-30).
 
 ## Why documentation is designed this way
 

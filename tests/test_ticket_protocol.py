@@ -41,7 +41,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`dispatch_v1`", "`orchflows.dispatch.v1`", "`dispatch-open`",
             "`dispatch-commit`", "`dispatch-retire`", "`dispatch-replace`",
             "`dispatch-join`",
-            "`legacy-live-claim`", "`idempotency-conflict`",
+            "`claim-without-dispatch`", "`idempotency-conflict`",
             "`dispatch-mismatch`", "`assignment-mismatch`", "`stale-attempt`",
         ):
             self.assertIn(token, dispatch)
@@ -88,15 +88,14 @@ class TicketProtocolTest(unittest.TestCase):
         for surface in (profiles, tickets):
             for command in ("dispatch-open", "dispatch-packet", "dispatch-receive"):
                 self.assertIn(command, surface)
-        loop = (root / "skills" / "engines" / "orch-loop" / "SKILL.md").read_text(encoding="utf-8")
-        for routing in (host, frontier, loop):
+        for routing in (host, frontier):
             self.assertNotIn("tickets.py claim", routing)
             self.assertNotIn("tickets.py packet", routing)
         collapsed_frontier = " ".join(frontier.split())
         self.assertIn("transport silence", collapsed_frontier.lower())
         self.assertIn("same recorded child", collapsed_frontier)
         self.assertIn("`dispatch-replace`", frontier)
-        self.assertIn("`legacy-live-claim`", tickets)
+        self.assertIn("`claim-without-dispatch`", tickets)
         for obsolete in (
             "completion test", "same write scope", "stale claim sent back",
             "Hitting an excluded action", "optional\n  `## Context`",

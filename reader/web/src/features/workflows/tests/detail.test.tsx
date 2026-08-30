@@ -32,7 +32,7 @@ describe("WorkflowDetailView", () => {
       "work:evolve/02-campaign",
       "work:evolve/03-result",
       "skill:orch-eval-design",
-      "skill:orch-loop",
+      "skill:orch-execute",
       "skill:orch-verify",
     ]);
     expect(screen.getByRole("link", { name: "Workflows" }).getAttribute("href")).toBe("/workflows?fixture=complex-loop");

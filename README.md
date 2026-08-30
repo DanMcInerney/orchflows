@@ -89,7 +89,7 @@ the way, the router's off flag stands it down for the session.
 
 Name the bricks yourself when you want a specific shape:
 
-    > orch-loop the build until `pytest -q` exits 0
+    > loop the build until `pytest -q` exits 0
     > orch-check this cache design — rank what it gets wrong
     > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
@@ -220,8 +220,8 @@ self-improvement wired into every run.
 - **One brick, one job.** `orch-outline` freezes the root, `orch-decompose`
   cuts it, `orch-frontier` runs the graph,
   `orch-check` challenges Goal and evidence, its typed verify lane independently
-  decides Goal, `orch-loop` iterates, and `orch-integrate` adjudicates every
-  return.
+  decides Goal, a ticket's loop field iterates it, and `orch-integrate`
+  adjudicates every return.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.

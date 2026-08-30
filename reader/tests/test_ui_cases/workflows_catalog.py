@@ -54,7 +54,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             )
             for name in ("orch-tdd", "orch-verify"):
                 self._write(
-                    root / "skills" / "instances" / name / "SKILL.md",
+                    root / "skills" / "workflows" / name / "SKILL.md",
                     f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
                 )
 
@@ -101,7 +101,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                 "depends_on: []\nbound: 30m\n---\n",
             )
             self._write(
-                root / "skills" / "instances" / "orch-draft" / "SKILL.md",
+                root / "skills" / "workflows" / "orch-draft" / "SKILL.md",
                 "---\nname: orch-draft\ndescription: Execute draft.\nrole: worker\n---\n",
             )
 
@@ -163,7 +163,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                 "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament",
                 "orch-check", "orch-decompose", "orch-execute", "orch-frontier",
-                "orch-integrate", "orch-loop", "orch-outline",
+                "orch-integrate", "orch-outline",
             ],
             [workflow["id"] for workflow in projected],
         )

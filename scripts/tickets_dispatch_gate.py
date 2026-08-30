@@ -74,13 +74,12 @@ def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
-        "sequence": metadata.get("sequence"), "pack": pack,
+        "pack": pack,
         "independence": metadata.get("independence") or "gate",
         "depends_on": list(depends_on),
         "isolation": metadata.get("isolation"), "bound": NEW_DEFAULT_BOUND,
         "review_order": metadata.get("review_order"),
         "review_kind": metadata.get("review_kind"),
-        "claimed_by": "", "claimed_at": "",
         "root_generation": metadata.get("root_generation"),
     }
     return _render_ticket(fields, sections or [])

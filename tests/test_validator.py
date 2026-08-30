@@ -20,7 +20,7 @@ from tests.test_validator_cases.contracts_and_names import (
 )
 from tests.test_validator_cases.corpus_and_surfaces import (
     TestDuplicationCorpus,
-    TestLensAnchor,
+    TestCraftSections,
     TestLicensedCopies,
     TestWordBudgetAndLinks,
 )
@@ -72,10 +72,9 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         (pack / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: synthetic pack\n---\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| slicing | inline |\n| workspace | inline |\n"
-            "| required_spec_fields | inline |\n| craft | [references/craft.md](references/craft.md) |\n"
             "| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| evidence | inline |\n",
+            "| assembly | none |\n"
+            "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
 
@@ -156,7 +155,7 @@ class TestPrivateReferenceAdmission(_IsolatedTree):
 
 
 class TestStructuralAdmissionMutants(_IsolatedTree):
-    def _write_skill(self, name, body, tier="instances", role="worker"):
+    def _write_skill(self, name, body, tier="kernel", role="worker"):
         path = self.tmp_path / "skills" / tier / name
         path.mkdir(parents=True)
         (path / "SKILL.md").write_text(
@@ -188,17 +187,17 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         result = self._run()
         self.assertIn("Return must be the terminal paragraph", result.stdout)
 
-    def test_a_utility_call_edge_is_primitive_impurity(self):
+    def test_a_kernel_call_edge_is_primitive_impurity(self):
         self._write_skill(
             "orch-target", "Require: input.\nNever: skip.\nReturn: the completed ticket.\n"
         )
         self._write_skill(
             "orch-helper",
             "Require: input.\nCall `orch-target`.\nNever: skip.\nReturn: the completed ticket.\n",
-            tier="utilities",
+            tier="kernel",
         )
         result = self._run()
-        self.assertIn("utility skills are primitives", result.stdout)
+        self.assertIn("kernel skills are primitives", result.stdout)
 
     def test_pack_control_flow_is_rejected(self):
         self._write_pack(

@@ -14,13 +14,13 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR, is_review_stage_id
+    from .tickets_format import GATE_ID_MARKER, ROOT_EXECUTOR, is_review_stage_id, parse_loop
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import GATE_ID_MARKER, LOOP_EXECUTOR, ROOT_EXECUTOR, is_review_stage_id
+    from tickets_format import GATE_ID_MARKER, ROOT_EXECUTOR, is_review_stage_id, parse_loop
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -78,7 +78,8 @@ def _member_ids(root_id: str, snapshot: dict) -> list[str]:
     return members
 
 
-_TABLE_ROW = re.compile(r"^\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*$")
+_SPEC_FIELDS_HEADING = re.compile(r"(?m)^##\s+Spec fields\s*$")
+_NEXT_CRAFT_SECTION = re.compile(r"(?m)^##\s+")
 _FIELD_SEPARATOR = re.compile(r"\s*;\s*")
 _EM_DASH = re.compile(r"\s+[—–-]\s+")
 _WORDS = re.compile(r"[a-z0-9_]+")
@@ -90,15 +91,20 @@ _COVERS_LINE = re.compile(
 
 def _required_spec_fields(pack: str) -> list[str]:
     try:
-        text = pack_path(pack).read_text(encoding="utf-8")
+        craft = pack_path(pack).parent / "references" / "craft.md"
+        text = craft.read_text(encoding="utf-8")
     except (AdapterError, OSError, UnicodeDecodeError) as error:
         raise GradeError(str(error)) from error
-    declared = None
-    for line in text.splitlines():
-        match = _TABLE_ROW.match(line)
-        if match and match.group(1).strip().lower() == "required_spec_fields":
-            declared = match.group(2).strip()
-            break
+    match = _SPEC_FIELDS_HEADING.search(text)
+    if not match:
+        return []
+    rest = text[match.end():]
+    boundary = _NEXT_CRAFT_SECTION.search(rest)
+    declared = " ".join(
+        line.strip()
+        for line in (rest[: boundary.start()] if boundary else rest).splitlines()
+        if line.strip()
+    )
     if not declared:
         return []
     fields = []
@@ -143,9 +149,7 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         if not members:
             raise GradeError(f"root {root_id} has no executor result members")
         shape, width = "graph", len(members)
-    elif root_executor == LOOP_EXECUTOR:
-        if members:
-            raise GradeError(f"root {root_id} is a loop root with executor-result members")
+    elif parse_loop(root_data) is not None:
         shape, width = "loop", 1
     else:
         if members:

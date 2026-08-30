@@ -1,4 +1,4 @@
-"""Validate canonical names and lens anchors."""
+"""Validate canonical names and mandatory craft sections."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ _read_source = __dep_packages._read_source
 rel = __dep_packages.rel
 
 from tools.validate_support import common as __dep_common
+CRAFT_MANDATORY_SECTIONS = __dep_common.CRAFT_MANDATORY_SECTIONS
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
 ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
@@ -85,12 +86,16 @@ def validate_names(packages, diag: Diagnostics) -> None:
             )
 
 
-def validate_lens_anchor(packages, diag: Diagnostics) -> None:
-    """Each pack's craft carries the `## Lens` section the check lane reads.
+CRAFT_SECTION_HEADING_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
 
-    contracts/pack-signature.md binds the check lane's review criteria to
-    the pack craft's `## Lens`, and every gate lane the pack stamps reads
-    its criteria there. Deleting the heading left the validator at exit 0.
+
+def validate_craft_sections(packages, diag: Diagnostics) -> None:
+    """Each pack's craft carries every mandatory `##` section.
+
+    contracts/pack-signature.md's craft-section table names the sections
+    each verb reads — the heading does what the lane projection did, so a
+    missing one silently drops a domain's slicing, evidence, or review
+    criteria. Deleting a heading left the validator at exit 0.
     """
 
     for pkg in packages:
@@ -99,12 +104,15 @@ def validate_lens_anchor(packages, diag: Diagnostics) -> None:
         craft = pkg["path"] / "references" / "craft.md"
         if not craft.is_file():
             continue  # a missing craft is validate_pack_signature's finding
-        if "lens" not in _heading_slugs(_read_source(craft)):
-            diag.error(
-                rel(craft),
-                "craft carries no `## Lens` heading — the check lane reads "
-                "its review criteria there, so that section has to be there",
-            )
+        found = set(CRAFT_SECTION_HEADING_RE.findall(_read_source(craft)))
+        for section in CRAFT_MANDATORY_SECTIONS:
+            if section not in found:
+                diag.error(
+                    rel(craft),
+                    f"craft carries no `## {section}` heading — "
+                    "contracts/pack-signature.md's craft-section table makes "
+                    "it mandatory, so that section has to be there",
+                )
 
 
 def validate_unique_names(packages, diag: Diagnostics) -> None:
@@ -119,6 +127,6 @@ def validate_unique_names(packages, diag: Diagnostics) -> None:
 __all__ = (
     'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
     'HOST_ROUTING_DIRECTIVES',
-    'NAME_CHECK_MARKER', 'HEADING_RE',
-    '_heading_slugs', 'validate_names', 'validate_lens_anchor', 'validate_unique_names',
+    'NAME_CHECK_MARKER', 'HEADING_RE', 'CRAFT_SECTION_HEADING_RE',
+    '_heading_slugs', 'validate_names', 'validate_craft_sections', 'validate_unique_names',
 )

@@ -22,33 +22,34 @@ CALLABLE_EXECUTORS = (
     "orch-decompose",
     "orch-integrate",
     "orch-frontier",
-    "orch-loop",
     "orch-outline",
 )
 
 EXECUTOR_REGISTRY = {
-    "orch-execute": {"role": "worker", "consumer": "execute", "requires_pack": True},
-    "orch-check": {"role": "planner", "consumer": "check", "requires_pack": True},
-    "orch-decompose": {"role": "planner", "consumer": None},
-    "orch-integrate": {"role": "none", "consumer": None},
-    "orch-frontier": {"role": "none", "consumer": None},
-    "orch-loop": {"role": "none", "consumer": None},
-    "orch-outline": {"role": "planner", "consumer": "outline"},
+    "orch-execute": {"role": "worker", "requires_pack": True},
+    "orch-check": {"role": "planner", "requires_pack": True},
+    "orch-decompose": {"role": "planner"},
+    "orch-integrate": {"role": "none"},
+    "orch-frontier": {"role": "none"},
+    "orch-outline": {"role": "planner"},
 }
 
 # A superseded verb and the successor that replaced it, per
 # ``rules/delegation.md`` 8: no dispatch may revive a superseded skill
 # binding.  The refusal names the successor so a caller holding the old
 # name has a mechanical remedy instead of a registry list to guess from.
+# A successor that is itself a registered verb is offered as a binding;
+# any other successor is a mechanism, named as the remedy it is.
 SUPERSEDED_EXECUTORS = {
     "orch-spec": "orch-outline",
+    "orch-loop": "the ticket `loop` field, driven by tickets.py loop-arm | loop-evaluate | loop-advance",
 }
 
 REVIEW_KINDS = ("critique", "repair", "verify")
 
 
 def executor_registered(executor: str) -> bool:
-    """Return whether ``executor`` is one of the seven callable verbs."""
+    """Return whether ``executor`` is one of the six callable verbs."""
 
     return dequote(executor) in EXECUTOR_REGISTRY
 
@@ -64,11 +65,13 @@ def executor_refusal(executor: str) -> str:
 
     value = dequote(executor) or "<missing>"
     successor = SUPERSEDED_EXECUTORS.get(value)
-    if successor:
+    if successor and successor in EXECUTOR_REGISTRY:
         return (
             f"executor-unregistered: '{value}' was superseded by '{successor}'; "
             f"bind '{successor}' instead"
         )
+    if successor:
+        return f"executor-unregistered: '{value}' was superseded by {successor}"
     names = ", ".join(CALLABLE_EXECUTORS)
     return f"executor-unregistered: '{value}' is not a registered callable; expected one of: {names}"
 
