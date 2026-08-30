@@ -7,11 +7,11 @@ import json
 import re
 from pathlib import Path
 if __package__:
-    from .tickets_admission import binding_findings, graph_findings
+    from .tickets_admission import binding_findings, graph_closed, graph_findings
     from .tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from .tickets_transitions import CLAIMED, stamp
 else:
-    from tickets_admission import binding_findings, graph_findings
+    from tickets_admission import binding_findings, graph_closed, graph_findings
     from tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from tickets_transitions import CLAIMED, stamp
 
@@ -183,15 +183,9 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -
         raise GenerationError("draft validation failed: supplied draft is not the exact snapshot grade")
     members = [item["id"] for item in draft.get("assignments") or []]
     root_data = _parse_frontmatter(snapshot[root_id])
-    graph_members = [
-        identifier for identifier in snapshot
-        if identifier.startswith(root_id + ".")
-        and ".gate." not in identifier
-        and not identifier.endswith(".check")
-    ]
     findings = list(graph_findings(
         root_id, root_data, snapshot,
-        complete=bool(members or graph_members or root_data.get("cut_generation")),
+        complete=graph_closed(root_id, snapshot, members, root_data.get("cut_generation")),
     ))
     for ticket_id in [root_id, *members]:
         data = _parse_frontmatter(snapshot[ticket_id])
@@ -377,15 +371,9 @@ def _draft_findings(root_id: str, snapshot: dict) -> list:
     positions = frozenset(stamp("draft-validate").draft_statuses)
     findings = []
     root_data = _parse_frontmatter(snapshot[root_id])
-    graph_members = [
-        identifier for identifier in snapshot
-        if identifier.startswith(root_id + ".")
-        and ".gate." not in identifier
-        and not identifier.endswith(".check")
-    ]
     findings.extend(graph_findings(
         root_id, root_data, snapshot,
-        complete=bool(graph_members or root_data.get("cut_generation")),
+        complete=graph_closed(root_id, snapshot, root_data.get("cut_generation")),
     ))
     for ticket_id in [root_id, *_cut_members(root_id, snapshot)]:
         data = _parse_frontmatter(snapshot[ticket_id])

@@ -10,12 +10,12 @@ from collections import namedtuple
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from .tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
 
-PENDING, READY, CLAIMED, SUSPENDED, COMPLETE = "pending", "ready", "claimed", "suspended", "complete"
+PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
 STATUSES = tuple(sorted(VALID_STATUSES))
 LEASE_FIELDS = ("claimed_by", "claimed_at")
 CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})

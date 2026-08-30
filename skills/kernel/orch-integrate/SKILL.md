@@ -17,35 +17,32 @@ Goal claims yield needs-verify. Grade bare returns by their contract. Suspension
 resumes from `## Handoff`.
 
 The returning name and artifact identity must match the committed dispatch-v1
-packet and its accepted receipt; reject mismatches and expired attempts.
-Inspect candidate Git state: integration owns actual candidate diffs and conflict
-adjudication, resolves overlap and ordinary Git conflicts, and performs one
-shared-artifact finalization after all candidate joins. It records the fixed
-joined identity for the terminal gate. For required isolation, run
-`workspace.py check` from the integrating checkout (exit 6 is caller-vantage
-failure).
+packet and accepted receipt; reject mismatches and expired attempts.
+Integration owns candidate diffs and conflict adjudication: inspect actual Git
+state, resolve overlap and ordinary conflicts, finalize shared artifacts once
+after all joins, and stamp the identity the terminal gate runs on.
+Under required isolation run `workspace.py check` from the integrating checkout
+(exit 6 is caller-vantage failure).
 
-Record blame on run-state. For dispatch v1, only this join calls
+Record blame on run-state. Under dispatch v1 only this join calls
 `tickets.py dispatch-join` with packet assignment seal/dispatch id, fixed
 `outcome` id, and this name. Disposition comes from the validated
-outcome envelope, never transport or arbitrary section record. Relay an inline
+outcome envelope, never transport or section record. Relay an inline
 envelope unchanged through `tickets.py dispatch-outcome` first. Pre-v1 alone
 uses `tickets.py set-status`.
-An accepted defect set of `[]` from every critique feeding
-`<root>.gate.repair` completes that repair here without dispatch through
+When every critique feeding `<root>.gate.repair` accepts `[]`, complete that
+repair here without dispatch through
 `tickets.py join-noop-repair <run> <root>.gate.repair --by <join-name>`, the
-atomic attributed join-owned transition. Accepted non-blocking findings go to the run's
+atomic attributed join-owned transition. Accepted non-blocking findings go to run
 improvement or successor candidates, never that repair.
-For each critique join, pass the accepted subset through a UTF-8 file (or
-standard input) with `dispatch-join --accepted-file <path|->`; the protocol
-normalizes and binds it against the executor's complete findings. For repair
-and verification packet and join operations, pass the fixed artifact with
-`--artifact`. For ordinary `<id>.check`, use the same accepted-file seam.
-Apply it using
-`check <run> <id> --stage <id>.check`; it accepts no findings, and must succeed
-before `checked_by` is trusted.
+Every critique join passes its accepted subset through a UTF-8 file (or standard
+input) with `dispatch-join --accepted-file <path|->`; the protocol normalizes and
+binds it against the executor's complete findings. Repair and verification packet
+and join operations pass the fixed artifact with `--artifact`. Ordinary
+`<id>.check` uses that same seam through `check <run> <id> --stage <id>.check`;
+it accepts no findings and must succeed before `checked_by` is trusted.
 
 Never: treat Suggested files as authority, accept unresolved Git conflicts, or repair here.
 
-Return: the disposition (accepted, rejected(blame), suspended, or needs-verify),
+Return: the disposition (accepted, rejected(blame), suspended, needs-verify),
 invalidated evidence, and integrated state.

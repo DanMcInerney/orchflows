@@ -10,15 +10,15 @@ if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
-        GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
-        _executor_of, _parse_frontmatter,
+        DELIVERED_STATE, GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
+        canonical_json, _executor_of, _parse_frontmatter,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
-        GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
-        _executor_of, _parse_frontmatter,
+        DELIVERED_STATE, GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id,
+        canonical_json, _executor_of, _parse_frontmatter,
     )
 
 ADMISSION_PENDING = "pending"
@@ -93,6 +93,29 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     return findings
 
 
+def graph_descendants(ticket_id: str, siblings) -> list:
+    """The executor-result members one ticket owns, gates and checks excluded."""
+    return [
+        identifier for identifier in dict(siblings or {})
+        if identifier.startswith(ticket_id + ".")
+        and GATE_ID_MARKER not in identifier
+        and not identifier.endswith(".check")
+    ]
+
+
+def graph_closed(ticket_id: str, siblings, *evidence) -> bool:
+    """Whether a decomposed root yet owes ``graph_findings`` a member count.
+
+    Members close the shape wherever it is graded.  Each door adds the
+    evidence it alone owns that the cut is final -- a delivered status, a
+    draft's named membership, a carried cut identity.  A sealed root with
+    none of them is still at the graph bootstrap door: it is dispatched to
+    the decomposer precisely so that its members can come to exist, and
+    grading the count there would refuse every run at its first dispatch.
+    """
+    return bool(graph_descendants(ticket_id, siblings)) or any(bool(item) for item in evidence)
+
+
 def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False) -> list:
     """Grade the graph shape owned by one ticket without consulting prose.
 
@@ -102,14 +125,8 @@ def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False
     member-count checks are deferred until a generation is being validated:
     the first root ticket is necessarily issued before its members exist.
     """
-    siblings = dict(siblings or {})
     executor = _executor_of(data)
-    descendants = [
-        identifier for identifier in siblings
-        if identifier.startswith(ticket_id + ".")
-        and GATE_ID_MARKER not in identifier
-        and not identifier.endswith(".check")
-    ]
+    descendants = graph_descendants(ticket_id, siblings)
     findings = []
     if executor == ROOT_EXECUTOR:
         if str(data.get("independence") or "").strip().strip("`").strip() == "checker":
@@ -194,12 +211,12 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     adapter, adapter_failure = adapter_resolution(data.get("pack"))
     if adapter_failure is not None:
         findings.append(adapter_failure)
-    # A ticket only reaches admission after a cut has been sealed.  During
-    # issue/stamp emission the root is deliberately incomplete; once it
-    # carries a cut identity, its graph is a closed shape and must satisfy
-    # the same member-count grade as the generation and routing doors.
+    # A sealed decomposed root reaches this door before its members are
+    # issued; a delivered one has had every member it will ever own.
+    delivered = str(data.get("status") or "").strip().strip("`").strip() == DELIVERED_STATE
     findings.extend(graph_findings(
-        ticket_id, data, siblings, complete=bool(str(data.get("cut_generation") or "").strip())
+        ticket_id, data, siblings,
+        complete=graph_closed(ticket_id, siblings, delivered),
     ))
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     for dependency in dependencies:

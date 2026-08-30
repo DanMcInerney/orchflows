@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests._receiver_vantage import git_checkout, receive_argv, standing_in
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 
@@ -139,7 +140,9 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
 
 
 def _v1_result_ticket(tmp: Path, *, by="agent-a"):
-    (tmp / ".git").mkdir()
+    # A receipt derives its workspace from a real Git top-level, so the
+    # fixture needs an actual checkout rather than a bare `.git` directory.
+    git_checkout(tmp)
     sink = use_sink(tmp)
     tickets_mod._dispatch([
         "new", "testrun", "T1", "--executor", "orch-execute",
@@ -172,12 +175,12 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         "--reply-to", "root", "--workspace", str(tmp.resolve()),
         "--form", "reference",
     ])["packet"]
-    tickets_mod._dispatch([
-        "dispatch-receive", "--content",
-        json.dumps(packet, sort_keys=True, separators=(",", ":")),
-        "--role", packet["role"], "--profile", packet["profile"],
-        "--by", by, "--reply-to", "root", "--workspace", str(tmp.resolve()),
-    ])
+    packet_path = tmp / "packet-D1.json"
+    packet_path.write_text(
+        json.dumps(packet, sort_keys=True, separators=(",", ":")), encoding="utf-8",
+    )
+    with standing_in(tmp):
+        tickets_mod._dispatch(receive_argv(packet_path, packet, by))
     return ticket, opened["assignment_seal"]
 
 

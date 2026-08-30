@@ -12,9 +12,12 @@ import tempfile
 import unittest
 from unittest import mock
 
+from tests._receiver_vantage import git_checkout, standing_in
 from scripts import tickets, tickets_review
 from scripts.tickets_packet import workspace_establishment_finding
+from scripts.tickets_dispatch_packet import DISPATCH_RECEIVE_USAGE
 from scripts.tickets_format import canonical_json, parse_canonical_json
+from scripts.tickets_outcome import DISPATCH_OUTCOME_USAGE
 
 
 class DispatchPacketV1Test(unittest.TestCase):
@@ -38,10 +41,11 @@ class DispatchPacketV1Test(unittest.TestCase):
             validated["draft_validation"]["cut_generation"],
         )
         self.dispatch("ready", "--run", "run")
+        self.candidate = self._candidate_checkout()
         self.ticket_path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         established = self.ticket_path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", "C:/candidate"),
+            ("workspace_path", str(self.candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -65,39 +69,45 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertNotIn("error", result, result)
         return result
 
-    def project(self, form="reference", workspace="C:/candidate"):
+    def _candidate_checkout(self) -> Path:
+        """The receiver's workspace authority is where it actually stands.
+
+        `--workspace` was removed from `dispatch-receive` so a child cannot
+        name a tree other than the one it can write, which makes a real Git
+        top-level the only fixture that can reach an accepted receipt.
+        """
+
+        return git_checkout(Path(self.temporary.name) / "candidate")
+
+    def project(self, form="reference", workspace=None):
         return tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "root", "--workspace", workspace,
+            "--reply-to", "root",
+            "--workspace", str(self.candidate) if workspace is None else workspace,
             "--form", form,
         ])
 
-    def receive(self, packet, **overrides):
+    def _receive_argv(self, carrier, **overrides):
         actual = {
             "role": "worker", "profile": "orch-worker", "by": "worker",
-            "reply_to": "root", "workspace": "C:/candidate",
+            "reply_to": "root",
         }
         actual.update(overrides)
-        arguments = [
-            "dispatch-receive", "--content", canonical_json(packet),
+        return [
+            "dispatch-receive", *carrier,
             "--role", actual["role"], "--profile", actual["profile"],
             "--by", actual["by"], "--reply-to", actual["reply_to"],
-            "--workspace", actual["workspace"],
         ]
-        return tickets._dispatch(arguments)
 
-    def receive_file(self, path, **overrides):
-        actual = {
-            "role": "worker", "profile": "orch-worker", "by": "worker",
-            "reply_to": "root", "workspace": "C:/candidate",
-        }
-        actual.update(overrides)
-        return tickets._dispatch([
-            "dispatch-receive", "--file", str(path),
-            "--role", actual["role"], "--profile", actual["profile"],
-            "--by", actual["by"], "--reply-to", actual["reply_to"],
-            "--workspace", actual["workspace"],
-        ])
+    def receive(self, packet, standing=None, **overrides):
+        path = Path(self.temporary.name) / "received-packet.json"
+        path.write_text(canonical_json(packet), encoding="utf-8")
+        return self.receive_file(path, standing=standing, **overrides)
+
+    def receive_file(self, path, standing=None, **overrides):
+        argv = self._receive_argv(["--file", str(path)], **overrides)
+        with standing_in(self.candidate if standing is None else standing):
+            return tickets._dispatch(argv)
 
     def ticket_state(self):
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
@@ -181,7 +191,7 @@ class DispatchPacketV1Test(unittest.TestCase):
 
         refusal = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "/root", "--workspace", "C:/candidate",
+            "--reply-to", "/root", "--workspace", str(self.candidate),
         ])
 
         self.assertEqual("reply-to-invalid", refusal["code"], refusal)
@@ -208,7 +218,7 @@ class DispatchPacketV1Test(unittest.TestCase):
 
         replayed = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "/root", "--workspace", "C:/candidate",
+            "--reply-to", "/root", "--workspace", str(self.candidate),
         ])
 
         self.assertEqual(stored, replayed)
@@ -269,7 +279,7 @@ class DispatchPacketV1Test(unittest.TestCase):
 
         replayed = tickets._dispatch([
             "dispatch-packet", "run", legacy_id, "--dispatch-id", "D1",
-            "--reply-to", "root", "--workspace", "C:/candidate",
+            "--reply-to", "root", "--workspace", str(self.candidate),
             "--artifact", f"git:{old_head}", "--form", "reference",
             "--review-kind", "repair",
         ])
@@ -433,10 +443,7 @@ class DispatchPacketV1Test(unittest.TestCase):
                 "--dispatch-id", "D1", "--record-id", "result-1",
                 "--by", "worker", "--section", "Result", "--text", "delivered",
             ],
-            [
-                "dispatch-outcome", "run", "T", "--content",
-                canonical_json(outcome),
-            ],
+            ["dispatch-outcome", "run", "T", "--status", "complete"],
             [
                 "dispatch-join", "run", "T", "--assignment-seal",
                 self.assignment_seal, "--dispatch-id", "D1",
@@ -467,8 +474,9 @@ class DispatchPacketV1Test(unittest.TestCase):
             [
                 sys.executable, str(script), "dispatch-receive", "--file", "-",
                 "--role", "worker", "--profile", "orch-worker", "--by", "worker",
-                "--reply-to", "root", "--workspace", "C:/candidate",
+                "--reply-to", "root",
             ],
+            cwd=str(self.candidate),
             input=canonical_json(packet).encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -501,7 +509,7 @@ class DispatchPacketV1Test(unittest.TestCase):
             [
                 sys.executable, str(script), "dispatch-packet", "run", "T",
                 "--dispatch-id", "D1", "--reply-to", "root",
-                "--workspace", "C:/candidate", "--form", "reference",
+                "--workspace", str(self.candidate), "--form", "reference",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -549,12 +557,39 @@ class DispatchPacketV1Test(unittest.TestCase):
             ({"role": "planner"}, "role-mismatch"),
             ({"profile": "orch-planner"}, "profile-mismatch"),
             ({"reply_to": "other"}, "authority-mismatch"),
-            ({"workspace": "C:/other"}, "authority-mismatch"),
         )
         for overrides, code in cases:
             with self.subTest(overrides=overrides):
                 refusal = self.receive(packet, **overrides)
                 self.assertEqual(code, refusal["code"], refusal)
+
+        elsewhere = git_checkout(Path(self.temporary.name) / "elsewhere")
+        standing_elsewhere = self.receive(packet, standing=elsewhere)
+        self.assertEqual("authority-mismatch", standing_elsewhere["code"])
+
+    def test_removed_receiver_workspace_and_outcome_content_forms_refuse(self):
+        """The cutover removed both flags; neither may be silently tolerated."""
+
+        packet = self.project()["packet"]
+        path = Path(self.temporary.name) / "removed-forms.json"
+        path.write_text(canonical_json(packet), encoding="utf-8")
+        before = self.ticket_bytes()
+
+        with standing_in(self.candidate):
+            supplied_workspace = tickets._dispatch(
+                self._receive_argv(["--file", str(path)])
+                + ["--workspace", str(self.candidate)]
+            )
+        self.assertIn("usage:", supplied_workspace["error"])
+        self.assertNotIn("--workspace", DISPATCH_RECEIVE_USAGE)
+
+        relayed_content = tickets._dispatch([
+            "dispatch-outcome", "run", "T", "--content",
+            canonical_json({"status": "complete"}),
+        ])
+        self.assertEqual("outcome-invalid", relayed_content["code"])
+        self.assertNotIn("--content", DISPATCH_OUTCOME_USAGE)
+        self.assertEqual(before, self.ticket_bytes())
 
     def test_committed_projection_replay_precedes_retirement_and_conflict(self):
         committed = self.project()
@@ -567,7 +602,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(committed, self.project())
         changed = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "other", "--workspace", "C:/candidate",
+            "--reply-to", "other", "--workspace", str(self.candidate),
             "--form", "reference",
         ])
         self.assertEqual("idempotency-conflict", changed["code"])
