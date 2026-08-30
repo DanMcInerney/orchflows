@@ -2667,6 +2667,14 @@
    ]
   },
   {
+   "module": "tests.test_installer_cases.managed_text.host_block",
+   "owner": "_flags_by_bracket_depth",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_installer_cases.planning.host_detection",
    "owner": "DryRunOracleTest._dry_run",
    "restoration": "sharded-module-guard",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..support import *  # noqa: F403
+from scripts.tickets_commands import DISPATCH_USAGE
 
 
 class TestHostBlockRendering(unittest.TestCase):
@@ -275,3 +276,89 @@ class TestHostBlockDemands(unittest.TestCase):
                             _demand_gaps(cut),
                             f"{name}: dropping {anchor!r} left the check green",
                         )
+
+
+# The route demand above pins that `tickets.py dispatch <run> <root>` is
+# named at all, and stops at the command's positional arguments -- the flag
+# list past them is unpinned on both sides: a routed example can omit a flag
+# the command actually requires, or hold one out as required that the
+# command treats as optional, and neither text carries the other's proof.
+# (state sink friction/2026-08.jsonl, 2026-08-30T20:37:01Z: `tickets.py
+# dispatch` refused the block's own graph-route invocation with a usage
+# error.) This binds both sides to one reader instead: `DISPATCH_USAGE`
+# (scripts/tickets_commands.py) is the command's own required-flag
+# authority, and the block's routed example is read the same way it is
+# written, by bracket depth -- `[...]` is optional, bare is required.
+_FLAG_RE = re.compile(r"--[a-z][a-z-]*")
+_GRAPH_EXAMPLE_RE = re.compile(r"`(tickets\.py dispatch <run> <root>[^`]*)`")
+
+
+def _flags_by_bracket_depth(text: str) -> tuple:
+    """(required, optional) flag sets in `text`, split by bracket nesting.
+
+    A flag named outside every `[...]` is required; nested inside one it is
+    optional. Depth is counted from the unmatched brackets before each
+    match rather than tracked in one pass, because the strings this reads
+    are a single short line -- never worth a second traversal to save.
+    """
+    required, optional = set(), set()
+    for match in _FLAG_RE.finditer(text):
+        prefix = text[: match.start()]
+        depth = prefix.count("[") - prefix.count("]")
+        (required if depth == 0 else optional).add(match.group(0))
+    return frozenset(required), frozenset(optional)
+
+
+def _graph_dispatch_example() -> str:
+    """The routed `tickets.py dispatch <run> <root> ...` command, verbatim,
+    off the collapsed (unrendered) template -- `{{...}}` placeholders never
+    appear in this command, so rendering is not needed to read it."""
+    match = _GRAPH_EXAMPLE_RE.search(_collapsed_block())
+    return match.group(1) if match else ""
+
+
+class TestHostBlockDispatchFlags(unittest.TestCase):
+    """The graph-route dispatch example and `tickets.py dispatch`'s own
+    required flags cannot diverge unobserved."""
+
+    def test_dispatch_example_names_exactly_the_required_flags(self):
+        example = _graph_dispatch_example()
+        self.assertTrue(
+            example, "no `tickets.py dispatch <run> <root>` example found"
+        )
+        example_required, _ = _flags_by_bracket_depth(example)
+        usage_required, _ = _flags_by_bracket_depth(DISPATCH_USAGE)
+        self.assertEqual(
+            usage_required,
+            example_required,
+            "templates/host-block.md's routed dispatch example names "
+            f"{sorted(example_required)} as required; `tickets.py dispatch` "
+            f"actually requires {sorted(usage_required)}",
+        )
+
+    def test_dispatch_example_flag_pin_can_fail(self):
+        """Can-fail evidence (rules/verification.md §8), taken on copies
+        beside the tree and never by mutating it under test: an example that
+        drops a required flag, a command that grows one the example never
+        names, and an example that holds an optional flag out as required
+        (the exact shape of the friction this closes, before `--host` was
+        bracketed) each leave the check above red.
+        """
+        example = _graph_dispatch_example()
+        usage_required, _ = _flags_by_bracket_depth(DISPATCH_USAGE)
+        example_required, _ = _flags_by_bracket_depth(example)
+        self.assertEqual(usage_required, example_required)  # green on arrival
+
+        omitted = example.replace("--reply-to <parent-name>", "")
+        omitted_required, _ = _flags_by_bracket_depth(omitted)
+        self.assertNotEqual(usage_required, omitted_required)
+
+        grown_usage = DISPATCH_USAGE.replace(
+            "--reply-to <name> ", "--reply-to <name> --new-required <x> "
+        )
+        grown_required, _ = _flags_by_bracket_depth(grown_usage)
+        self.assertNotEqual(grown_required, example_required)
+
+        overclaimed = example.replace("[--host <host>]", "--host <host>")
+        overclaimed_required, _ = _flags_by_bracket_depth(overclaimed)
+        self.assertNotEqual(usage_required, overclaimed_required)
