@@ -829,12 +829,12 @@
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_no_dependency_still_writes_the_empty_list",
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_authoring_flag_writes_them_sorted",
    "test_staleness_and_remedies.TestDependsOnIsCanonicallyOrdered.test_the_finding_names_the_order_it_wants",
+   "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_recommitted_record_is_pointed_at_a_fresh_record_id",
+   "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_reopened_dispatch_id_is_pointed_at_dispatch_and_replace",
+   "test_staleness_and_remedies.TestIdempotencyConflictsNameDistinctRemedies.test_a_reused_replacement_id_is_pointed_at_a_fresh_replacement_id",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_backticked_isolation_value_still_accepts",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_a_real_divergence_is_still_refused",
    "test_staleness_and_remedies.TestInlineIsolationIsReadTheOneWay.test_an_absent_isolation_field_accepts_the_derived_packet",
-   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_different_cause_is_not_told_that_remedy",
-   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_a_repeated_section_names_its_flag",
-   "test_staleness_and_remedies.TestOutcomeNamesTheDeltaFlag.test_the_named_flag_is_the_one_that_works",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_a_stale_receipt_is_not_told_to_promote",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_named_promotion_is_the_one_that_works",
    "test_staleness_and_remedies.TestPendingNamesItsPromotion.test_the_refusal_names_the_promotion",
@@ -1976,7 +1976,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d7daaa51f37729d3d8bbbff981895d023ab43adedebfc87273e9b5abc94e2720"
+  "sha256": "203df4a8de2dbe7cd5c6c2a3d927d74c12c117be6196960db5b435a88740725f"
  },
  "mutation_owners": [
   {

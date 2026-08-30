@@ -767,5 +767,66 @@ class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
         self.assertEqual("assignment-divergent", failure["code"])
 
 
+class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):
+    """Three refusals share one code, `idempotency-conflict`, and until now
+    one message: a reopened dispatch id, a recommitted record, and a reused
+    replacement id were all silent on the fix, or -- worse -- pointed a
+    driver at attempt surgery (`dispatch-retire`) that a different cause's
+    refusal does not accept.
+    """
+
+    def replace(self, dispatch_id, replacement_id, record_id):
+        return tickets._dispatch([
+            "dispatch-replace", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", dispatch_id, "--record-id", record_id,
+            "--replacement-dispatch-id", replacement_id,
+            "--by", "worker", "--lease-expires-at", self.lease,
+            "--supersede-live",
+        ])
+
+    def test_a_reopened_dispatch_id_is_pointed_at_dispatch_and_replace(self):
+        changed = self.refuse(
+            "dispatch-open", "run", "T", "--by", "worker",
+            "--dispatch-id", "D1", "--lease-expires-at", "2099-01-01T00:00:00Z",
+        )
+        self.assertEqual("idempotency-conflict", changed["code"])
+        self.assertIn("`tickets.py dispatch`", changed["error"])
+        self.assertIn("`tickets.py dispatch-replace`", changed["error"])
+        self.assertNotIn("--record-id", changed["error"])
+        self.assertNotIn("--replacement-dispatch-id", changed["error"])
+
+    def test_a_recommitted_record_is_pointed_at_a_fresh_record_id(self):
+        self.assertNotIn("error", self.dispatch(
+            "dispatch-commit", "run", "T", "--dispatch-id", "D1",
+            "--record-id", "R1", "--content", '{"value":1}',
+        ))
+        conflict = self.refuse(
+            "dispatch-commit", "run", "T", "--dispatch-id", "D1",
+            "--record-id", "R1", "--content", '{"value":2}',
+        )
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        self.assertIn("--record-id", conflict["error"])
+        self.assertNotIn("dispatch-replace", conflict["error"])
+        self.assertNotIn("--replacement-dispatch-id", conflict["error"])
+
+    def test_a_reused_replacement_id_is_pointed_at_a_fresh_replacement_id(self):
+        self.assertNotIn(
+            "error", self.replace("D1", "D2", "lifecycle:replace-1")
+        )
+        conflict = self.refuse(
+            "dispatch-replace", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D2", "--record-id", "lifecycle:replace-2",
+            "--replacement-dispatch-id", "D1",
+            "--by", "worker", "--lease-expires-at", self.lease,
+            "--supersede-live",
+        )
+        self.assertEqual("idempotency-conflict", conflict["code"])
+        self.assertIn("--replacement-dispatch-id", conflict["error"])
+        self.assertNotIn("--record-id", conflict["error"])
+        self.assertNotIn("fresh --dispatch-id", conflict["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

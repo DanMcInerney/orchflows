@@ -150,7 +150,11 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                     return _open_response(run, ticket_id, same, "replayed")
                 return _classification(
                     "idempotency-conflict",
-                    f"dispatch_id '{dispatch_id}' was already opened with different content",
+                    f"dispatch_id '{dispatch_id}' was already opened with different "
+                    "content; `tickets.py dispatch` retires a failed attempt "
+                    "automatically, so open a fresh --dispatch-id instead of "
+                    "reusing this one, or run `tickets.py dispatch-replace` to "
+                    "replace a still-live attempt explicitly",
                 )
             if seal_findings(ticket_id, text):
                 return _classification(
@@ -266,7 +270,10 @@ def _commit_record(
                 if prior.get("content") != normalized:
                     return _classification(
                         "idempotency-conflict",
-                        f"record_id '{record_id}' was already committed with different content",
+                        f"record_id '{record_id}' was already committed with "
+                        "different content; choose a different --record-id for "
+                        "new content, or match the original content exactly to "
+                        "replay it",
                     )
                 success = prior.get("success")
                 if not isinstance(success, dict):
@@ -436,7 +443,8 @@ def _cmd_dispatch_replace(rest):
         if any(item.get("dispatch_id") == replacement_id for item in state["attempts"]):
             return text, None, _classification(
                 "idempotency-conflict",
-                f"replacement dispatch_id '{replacement_id}' was already used",
+                f"replacement dispatch_id '{replacement_id}' was already used; "
+                "choose a different --replacement-dispatch-id",
             )
         now = datetime.now(timezone.utc)
         undeclared = dispatch_guards.undeclared_supersession_failure(
