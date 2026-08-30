@@ -62,6 +62,20 @@ class TestCheckGradesFromTheCallersGit(unittest.TestCase):
         self.assertEqual(2, done.returncode, done.stdout)
         self.assertEqual("isolation-missing", payload_of(done)["verdict"])
 
+    def test_an_absent_isolation_field_is_graded_as_required(self):
+        """No declared ``isolation`` on a git-adapter pack still derives
+        ``required`` at the join: an absent field must not read as ``none``
+        and skip the grade at exit 0 with ``not required``
+        (``contracts/work-item.md``, ``scripts/tickets_adapters.derived_isolation``)."""
+
+        graded = graded_repository()
+        graded_item("T-absent-own", branch=graded["own"], isolation=None)
+        done = run_workspace(
+            graded["main"], "check", "testrun", "T-absent-own", "--base", graded["base"]
+        )
+        self.assertEqual(2, done.returncode, done.stdout)
+        self.assertEqual("isolation-missing", payload_of(done)["verdict"])
+
     def test_a_branch_already_on_the_callers_head_exits_isolation_missing(self):
         # stale-branch sits at the base the caller has since moved past
         graded = graded_item("T-stale", branch="stale-branch")

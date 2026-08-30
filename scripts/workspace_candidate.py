@@ -333,7 +333,7 @@ def _establishment(run, ticket_id, key, held, seams, source, where):
             f"adapter-not-establishable: {adapter.key} does not establish a "
             "candidate workspace"
         )
-    isolation = tickets_store.normalized_isolation(data.get(ISOLATION_KEY))
+    isolation = tickets_adapters.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
     if source is None or isolation != REQUIRED:
         body, code = _observed(run, ticket_id, path, data, prior_text, held, seams, where)
         return {key: body}, code
