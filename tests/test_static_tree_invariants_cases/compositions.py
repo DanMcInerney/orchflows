@@ -39,14 +39,14 @@ class TestCompositionTemplates(unittest.TestCase):
             "05-measure",
         ),
         "drift-canary": (
-            {"00-run": "orch-frontier", "01-diff": "orch-loop"},
+            {"00-run": "orch-frontier", "01-diff": "orch-execute"},
             "01-diff",
         ),
         "evolve": (
             {
                 "00-eval": "orch-outline",
                 "01-eligibility": "orch-check",
-                "02-campaign": "orch-loop",
+                "02-campaign": "orch-execute",
                 "03-result": "orch-check",
             },
             "03-result",
@@ -60,7 +60,7 @@ class TestCompositionTemplates(unittest.TestCase):
             "02-deliver",
         ),
         "self-improve": (
-            {"00-mine": "orch-loop", "01-deliver": "orch-frontier"},
+            {"00-mine": "orch-execute", "01-deliver": "orch-frontier"},
             "01-deliver",
         ),
         "skill-tournament": (

@@ -17,6 +17,8 @@ else:
 if __package__:
     from .tickets_adapters import adapter_id
     from .tickets_shapes import (
+        LOOP_DONE_FIELDS, LOOP_DONE_REQUIRED, LOOP_DONE_VALUES,
+        LOOP_STUB_FIELDS, LOOP_STUB_REQUIRED,
         TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
         TICKET_FRONTMATTER_VALUES,
     )
@@ -37,6 +39,8 @@ if __package__:
 else:
     from tickets_adapters import adapter_id
     from tickets_shapes import (
+        LOOP_DONE_FIELDS, LOOP_DONE_REQUIRED, LOOP_DONE_VALUES,
+        LOOP_STUB_FIELDS, LOOP_STUB_REQUIRED,
         TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
         TICKET_FRONTMATTER_VALUES,
     )
@@ -65,8 +69,7 @@ else:
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
     from tickets_sequence import sequence_defects
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
-LOOP_EXECUTOR = 'orch-loop'
-DISPATCHING_EXECUTORS = ('orch-frontier', LOOP_EXECUTOR)
+DISPATCHING_EXECUTORS = ('orch-frontier',)
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
 REQUIRED_TICKET_KEYS = tuple(
@@ -192,6 +195,63 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     defects.extend(sequence_defects(
         data.get('sequence'), _executor_of(data), data.get('pack')
     ))
+    defects.extend(loop_defects(data.get('loop'), _executor_of(data)))
+    return defects
+def parse_loop(data):
+    """The parsed frontmatter ``loop`` object of one ticket, or None."""
+    raw = str(data.get('loop') or '').strip()
+    if not raw:
+        return None
+    try:
+        loop = json.loads(raw)
+    except ValueError:
+        return None
+    return loop if isinstance(loop, dict) else None
+def loop_defects(value, executor) -> list:
+    """Shape defects for one frontmatter ``loop`` value, or [].
+
+    contracts/work-item.md's loop_stub/loop_done shapes: a loop stub's
+    executor is the iteration body's verb, and ``done`` binds the external
+    done-check in exactly one closed form.
+    """
+    raw = str(value or '').strip()
+    if not raw:
+        return []
+    try:
+        loop = json.loads(raw)
+    except ValueError:
+        return ['loop is not canonical JSON']
+    if not isinstance(loop, dict):
+        return ['loop must be one JSON object']
+    defects = []
+    for key in sorted(set(loop) - set(LOOP_STUB_FIELDS)):
+        defects.append(f"loop carries unknown field '{key}'")
+    for key in sorted(LOOP_STUB_REQUIRED):
+        if key not in loop:
+            defects.append(f"loop is missing required field '{key}'")
+    done = loop.get('done')
+    if isinstance(done, dict):
+        for key in sorted(set(done) - set(LOOP_DONE_FIELDS)):
+            defects.append(f"loop done carries unknown field '{key}'")
+        for key in sorted(LOOP_DONE_REQUIRED):
+            if key not in done:
+                defects.append(f"loop done is missing required field '{key}'")
+        form = str(done.get('form') or '')
+        if 'form' in done and form not in LOOP_DONE_VALUES['form']:
+            defects.append(
+                'loop done form must be one of '
+                + ', '.join(LOOP_DONE_VALUES['form']) + f": got '{form}'"
+            )
+        if 'value' in done and not str(done.get('value') or '').strip():
+            defects.append('loop done value is empty')
+    elif 'done' in loop:
+        defects.append('loop done must be one JSON object')
+    verb = dequote(executor)
+    if not defects and not executor_registered(verb):
+        defects.append(
+            f"loop stub executor '{verb}' is not a registered callable; "
+            "the stub's executor is the iteration body's verb"
+        )
     return defects
 def _parse_iso(value):
     if not isinstance(value, str) or not value.strip():

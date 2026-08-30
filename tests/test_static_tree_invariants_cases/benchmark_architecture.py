@@ -40,7 +40,7 @@ class TestBenchmarkArchitecture(unittest.TestCase):
     EVOLVE_GRAPH = {
         "00-eval": ("orch-outline", []),
         "01-eligibility": ("orch-check", ["00-eval"]),
-        "02-campaign": ("orch-loop", ["01-eligibility"]),
+        "02-campaign": ("orch-execute", ["01-eligibility"]),
         "03-result": ("orch-check", ["02-campaign"]),
     }
     TOURNAMENT_GRAPH = {

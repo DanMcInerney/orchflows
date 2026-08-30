@@ -16,7 +16,7 @@ judgment.
    shapes are [the search-plan protocol](../../docs/search-plan-protocol.md)'s.
    Append it to the current iteration through the Worklog owner. A scoring
    lane scores and dispatches nothing: the children applying a candidate are
-   dispatched by the loop's own engine at the depth
+   dispatched by the loop's driver at the depth
    [profiles.md](../../skills/engines/orch-frontier/references/profiles.md)
    allows. The latest
    Worklog entry persists the accepted

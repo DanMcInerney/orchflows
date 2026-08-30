@@ -18,6 +18,7 @@ if __package__:
     from .tickets_join import DISPATCH_JOIN_USAGE
     from .tickets_outcome import DISPATCH_OUTCOME_USAGE
     from .tickets_land import LAND_USAGE
+    from .tickets_loop import LOOP_ADVANCE_USAGE, LOOP_ARM_USAGE, LOOP_EVALUATE_USAGE
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from tickets_issue import NEW_USAGE
@@ -38,6 +39,8 @@ else:
     DISPATCH_JOIN_USAGE = __import__("tickets_join").DISPATCH_JOIN_USAGE
     DISPATCH_OUTCOME_USAGE = __import__("tickets_outcome").DISPATCH_OUTCOME_USAGE
     LAND_USAGE = __import__('tickets_land').LAND_USAGE
+    _loop = __import__('tickets_loop')
+    LOOP_ARM_USAGE, LOOP_EVALUATE_USAGE, LOOP_ADVANCE_USAGE = (_loop.LOOP_ARM_USAGE, _loop.LOOP_EVALUATE_USAGE, _loop.LOOP_ADVANCE_USAGE)
 
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
@@ -65,6 +68,9 @@ SUBCOMMAND_USAGE = {
     "ready": "ready [--run R]",
     "dispatch": DISPATCH_USAGE,
     "land": LAND_USAGE,
+    "loop-arm": LOOP_ARM_USAGE,
+    "loop-evaluate": LOOP_EVALUATE_USAGE,
+    "loop-advance": LOOP_ADVANCE_USAGE,
     "dispatch-open": DISPATCH_OPEN_USAGE,
     "dispatch-commit": DISPATCH_COMMIT_USAGE,
     "dispatch-retire": DISPATCH_RETIRE_USAGE,
@@ -98,6 +104,9 @@ SUBCOMMAND_SUMMARY = {
     "ready": "Promote sealed tickets whose dependencies are complete.",
     "dispatch": "Atomically ready, establish, open, and project one dispatch packet, and resolve its host launch.",
     "land": "Atomically import the outcome, join it, retire the derived worktree, and report the frontier.",
+    "loop-arm": "Create or replay the next iteration ticket of one loop stub from its frozen goal.",
+    "loop-evaluate": "Read the done-check for the latest terminal iteration: run the command, or mint/read the fresh check.",
+    "loop-advance": "Re-arm the loop, or close it complete, limited, or stalled off the done reading.",
     "dispatch-open": "Atomically open or replay one fenced dispatch-v1 execution attempt.",
     "dispatch-commit": "Commit or replay one idempotent record on a live dispatch-v1 attempt.",
     "dispatch-retire": "Retire or replay retirement of one dispatch-v1 attempt.",

@@ -16,19 +16,19 @@ class TestEnvelopeCheck(_IsolatedTree):
 
     def test_bound_unit_return_without_envelope_is_error(self):
         self._write_skill(
-            "orch-loop",
+            "orch-frontier",
             "Require: a body and a bound.\nNever: exceed the bound.\n"
             "Return: assumptions and feedback.\n",
         )
         result = self._run()
         self.assertEqual(1, result.returncode)
-        self.assertIn("orch-loop", result.stdout)
+        self.assertIn("orch-frontier", result.stdout)
         self.assertIn("does not lead with the result envelope", result.stdout)
         self.assertIn("contracts/result.md", result.stdout)
 
     def test_bound_unit_leading_with_the_envelope_passes(self):
         self._write_skill(
-            "orch-loop",
+            "orch-frontier",
             "Require: a body and a bound.\nNever: exceed the bound.\n"
             "Return: status, results by identity, and final verification; "
             "then bounds spent. Terminal states are stalled or limited.\n",

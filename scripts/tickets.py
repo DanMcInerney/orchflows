@@ -92,7 +92,6 @@ EXECUTOR_SECTIONS_BY_KEY = _tickets_format_module.EXECUTOR_SECTIONS_BY_KEY
 INSTRUCTION_BUDGET = _tickets_format_module.INSTRUCTION_BUDGET
 INSTRUCTION_SECTIONS = _tickets_format_module.INSTRUCTION_SECTIONS
 LINK_TARGET_RE = _tickets_format_module.LINK_TARGET_RE
-LOOP_EXECUTOR = _tickets_format_module.LOOP_EXECUTOR
 OPTIONAL_SECTIONS = _tickets_format_module.OPTIONAL_SECTIONS
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX

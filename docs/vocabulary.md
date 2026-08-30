@@ -22,8 +22,8 @@ that needs a different meaning needs a different word.
   contract in Require / procedure / Never / Return anatomy.
 - **body** — a skill's procedure text: the always-paid part of its
   `SKILL.md`, budgeted by `rules/token-economy.md`. What a loop
-  iteration dispatches is its **loop body** (`rules/loops.md`), named in
-  plain text by the caller and never a call edge.
+  iteration dispatches is its **loop body**: the loop stub's own
+  `executor` verb (`rules/loops.md`), never a call edge.
 - **kernel** — the primitive skills under `skills/kernel/`; a kernel
   skill calls no skill.
 - **engine** — a control-flow skill: declarative shape,
@@ -63,8 +63,7 @@ that needs a different meaning needs a different word.
 - **combinator** — one of the three ways a template composes its stubs:
   a `depends_on` edge, disjoint parallel stubs (no dependency path
   between them, so the frontier may run them together), and a loop stub
-  (`executor: orch-loop`). There is no fourth, and none of them is a
-  field: each is a shape the ticket graph already carries.
+  (the `loop` field of `contracts/work-item.md`). There is no fourth.
 - **dispatchable unit / envelope** — a skill or composition another may
   bind as a step or loop body, and the leading `Return` fields it must
   carry — status, result identity, verification — per
@@ -284,8 +283,8 @@ composition).
 ## Iteration
 
 - **context packet** — the converged state an iteration receives beside
-  the frozen goal and worklog; design owned by `orch-loop`'s packet
-  reference.
+  the frozen goal and worklog — identities, verdicts, decisions, never
+  transcript prose; law in `rules/loops.md` §2.
 - **done-check / bound** — the external oracle that alone decides a
   loop is complete (any oracle class per `contracts/verdict.md`; an
   iteration count is a deterministic one), and the resource cap —

@@ -147,18 +147,6 @@
         {"source": "adjudicate", "target": "record", "kind": "sequence"}
       ]
     },
-    "orch-loop": {
-      "nodes": [
-        {"id": "observe", "label": "Observe the done-check"},
-        {"id": "decide", "label": "Decide whether Goal holds"},
-        {"id": "repeat", "label": "Repeat within the bound"}
-      ],
-      "edges": [
-        {"source": "observe", "target": "decide", "kind": "sequence"},
-        {"source": "decide", "target": "repeat", "kind": "branch"},
-        {"source": "repeat", "target": "observe", "kind": "loop"}
-      ]
-    },
     "orch-outline": {
       "nodes": [
         {"id": "investigate", "label": "Investigate the fixed facts"},

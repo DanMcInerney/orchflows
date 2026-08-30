@@ -167,6 +167,8 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                      'fields': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
                      'required': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
                      'values': {'mode': ('write', 'append', 'replace'), 'operation': ('result',)}},
+ 'loop_done': {'contract': 'work-item.md', 'fields': ('form', 'value'), 'required': ('form', 'value'), 'values': {'form': ('command', 'check')}},
+ 'loop_stub': {'contract': 'work-item.md', 'fields': ('done',), 'required': ('done',), 'values': {}},
  'pack_cells': {'contract': 'pack-signature.md',
                 'fields': ('adapter', 'stages', 'assembly', 'craft'),
                 'required': ('adapter', 'stages', 'assembly', 'craft'),
@@ -221,6 +223,7 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                    'depends_on',
                                    'isolation',
                                    'bound',
+                                   'loop',
                                    'claimed_by',
                                    'claimed_at',
                                    'checked_by',
@@ -388,6 +391,14 @@ TICKET_ASSIGNMENT_SECTIONS_VALUES = SHAPES['ticket_assignment_sections']['values
 TICKET_FRONTMATTER_FIELDS = tuple(SHAPES['ticket_frontmatter']['fields'])
 TICKET_FRONTMATTER_REQUIRED = frozenset(SHAPES['ticket_frontmatter']['required'])
 TICKET_FRONTMATTER_VALUES = SHAPES['ticket_frontmatter']['values']
+
+LOOP_STUB_FIELDS = tuple(SHAPES['loop_stub']['fields'])
+LOOP_STUB_REQUIRED = frozenset(SHAPES['loop_stub']['required'])
+LOOP_STUB_VALUES = SHAPES['loop_stub']['values']
+
+LOOP_DONE_FIELDS = tuple(SHAPES['loop_done']['fields'])
+LOOP_DONE_REQUIRED = frozenset(SHAPES['loop_done']['required'])
+LOOP_DONE_VALUES = SHAPES['loop_done']['values']
 
 EXECUTOR_RESULT_FIELDS = tuple(SHAPES['executor_result']['fields'])
 EXECUTOR_RESULT_REQUIRED = frozenset(SHAPES['executor_result']['required'])

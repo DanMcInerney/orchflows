@@ -134,7 +134,6 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
 # named-T0-carrier form.
 ENVELOPE_UNITS = (
-    "orch-loop",
     "orch-frontier",
 )
 ENVELOPE_VOCAB_RES = (

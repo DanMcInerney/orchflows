@@ -88,8 +88,7 @@ class TicketProtocolTest(unittest.TestCase):
         for surface in (profiles, tickets):
             for command in ("dispatch-open", "dispatch-packet", "dispatch-receive"):
                 self.assertIn(command, surface)
-        loop = (root / "skills" / "engines" / "orch-loop" / "SKILL.md").read_text(encoding="utf-8")
-        for routing in (host, frontier, loop):
+        for routing in (host, frontier):
             self.assertNotIn("tickets.py claim", routing)
             self.assertNotIn("tickets.py packet", routing)
         collapsed_frontier = " ".join(frontier.split())

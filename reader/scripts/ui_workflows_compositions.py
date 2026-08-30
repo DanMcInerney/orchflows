@@ -85,7 +85,8 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
         except identity.WorkflowIdentityError as error:
             raise WorkflowCompositionError("composition has a malformed dependency") from error
     bound = fields.get("bound")
-    if executors == ["orch-loop"] and (
+    is_loop = bool(str(fields.get("loop") or "").strip())
+    if is_loop and (
         not isinstance(bound, str) or not bound or bound != bound.strip()
     ):
         raise WorkflowCompositionError("loop work must declare its bound")
@@ -95,6 +96,7 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
         "executors": executors,
         "depends_on": dependencies,
         "bound": bound,
+        "loop": is_loop,
         "installed_path": installed_path,
     }
 
@@ -219,7 +221,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
             edges.setdefault(edge["id"], edge)
             executor_positions.setdefault(edge["id"], position)
 
-        if stub["executors"] == ["orch-loop"]:
+        if stub["loop"]:
             edge = _edge(
                 "loop",
                 work_id,

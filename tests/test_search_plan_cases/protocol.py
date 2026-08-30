@@ -59,7 +59,7 @@ class TestArchitecture(unittest.TestCase):
         moved."""
         campaign = read(EVOLVE / "02-campaign.md")
         self.assertIn("search_plan.py advance", campaign)
-        self.assertEqual("orch-loop", EXECUTOR_RE.search(campaign).group(1))
+        self.assertEqual("orch-execute", EXECUTOR_RE.search(campaign).group(1))
 
     def test_planner_is_evaluation_mode_agnostic(self):
         protocol = read(SEARCH_PROTOCOL)

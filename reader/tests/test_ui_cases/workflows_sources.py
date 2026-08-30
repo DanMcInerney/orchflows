@@ -171,7 +171,7 @@ class WorkflowSourceTests(unittest.TestCase):
             "lib/compositions/evolve/01-eligibility.md",
             "lib/compositions/evolve/02-campaign.md",
             "lib/compositions/evolve/03-result.md",
-            "lib/skills/engines/orch-loop/SKILL.md",
+            "lib/skills/kernel/orch-execute/SKILL.md",
             "lib/skills/kernel/orch-check/SKILL.md",
             "lib/skills/workflows/orch-outline/SKILL.md",
         }

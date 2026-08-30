@@ -12,7 +12,7 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
-        LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
+        ROOT_EXECUTOR, _executor_of, parse_loop,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json, dequote,
     )
@@ -28,7 +28,7 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
         CHECKED_BY_KEY, DISPATCHING_EXECUTORS, EXECUTOR_SECTIONS,
-        LOOP_EXECUTOR, ROOT_EXECUTOR, _executor_of,
+        ROOT_EXECUTOR, _executor_of, parse_loop,
         _extract_flag, _parse_bound_minutes, _parse_iso, _read_utf8, _sections,
         canonical_json, dequote,
     )
@@ -189,6 +189,13 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         return {"error": f"ticket has no current admission receipt: stored {stored or '<missing>'}, current {grade['receipt']}"}
     sections = _sections(text)
     executor = _executor_of(loaded)
+    if parse_loop(loaded) is not None:
+        return {"error": (
+            f"ticket {run}/{ticket_id} is a loop stub and is never dispatched: "
+            "the driver arms, evaluates, and advances it through "
+            "tickets.py loop-arm | loop-evaluate | loop-advance, and its "
+            "iterations are what dispatch"
+        )}
     missing = []
     if not reply_to:
         missing.append("reply_to (--reply-to)")
@@ -244,8 +251,6 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         ]
         prompt.extend(sequence_block(loaded))
         prompt.extend(_dependency_prompt(loaded, ticket_path))
-    if executor == LOOP_EXECUTOR:
-        prompt.append(f"Each pass works toward Goal and stops when it is achieved or the operational bound {loaded.get('bound')} is exhausted.")
     if workspace:
         prompt.append(f"Workspace: {workspace}")
     if review_state is not None:

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1979,
+  "count": 1984,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -650,6 +650,13 @@
    "test_regen.TestSerialCompatManifest.test_the_child_interpreter_and_this_one_return_the_same_verdict",
    "test_regen.TestValidateGate.test_a_reconciled_tree_draws_no_error_from_the_same_gate",
    "test_regen.TestValidateGate.test_a_stale_serial_manifest_fails_validate_and_names_the_command",
+   "test_registry_census.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
+   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_six_enforced_verbs",
+   "test_registry_census.CallableRegistryTests.test_execute_and_check_require_pack_authority",
+   "test_registry_census.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
+   "test_registry_census.CallableRegistryTests.test_packet_shape_requires_typed_review_kind_field",
+   "test_registry_census.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
+   "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
    "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
@@ -782,13 +789,6 @@
    "test_serial_manifest.TestUnruledOwners.test_the_flag_exits_zero_once_every_scanned_owner_carries_a_ruling",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_and_exits_zero",
    "test_serial_manifest.TestWriteManifestFlag.test_the_flag_reconciles_a_tree_that_grew_one_test_for_the_requirement",
-   "test_seven_skills.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
-   "test_seven_skills.CallableRegistryTests.test_callable_registry_is_exactly_the_seven_enforced_verbs",
-   "test_seven_skills.CallableRegistryTests.test_execute_and_check_require_pack_authority",
-   "test_seven_skills.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
-   "test_seven_skills.CallableRegistryTests.test_packet_shape_requires_typed_review_kind_field",
-   "test_seven_skills.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
-   "test_seven_skills.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_shapes_render.ShapeRenderTest.test_contract_render_is_closed_over_declaration",
    "test_shapes_render.ShapeRenderTest.test_declaration_change_invalidates_both_consumers",
    "test_shapes_render.ShapeRenderTest.test_declarations_have_generated_validator_and_contract_consumers",
@@ -941,6 +941,11 @@
    "test_tickets_grade.GradeSnapshotTest.test_prose_verification_covers_are_read_as_fixed_result_evidence",
    "test_tickets_grade.GradeSnapshotTest.test_review_verification_accepts_optional_closed_covers",
    "test_tickets_grade.GradeSnapshotTest.test_review_verification_rejects_empty_closed_covers",
+   "test_tickets_loop.LoopStubProtocolTest.test_a_ticket_without_a_loop_object_is_refused",
+   "test_tickets_loop.LoopStubProtocolTest.test_advance_rearms_then_closes_complete_on_the_done_reading",
+   "test_tickets_loop.LoopStubProtocolTest.test_arm_creates_the_next_iteration_and_replays_while_it_is_live",
+   "test_tickets_loop.LoopStubProtocolTest.test_evaluate_follows_the_landed_iteration_only",
+   "test_tickets_loop.LoopStubProtocolTest.test_two_iterations_without_a_result_delta_exit_stalled",
    "test_tickets_sequence.SequenceAdmissionTests.test_a_disagreeing_continuation_role_is_graded_but_never_refused",
    "test_tickets_sequence.SequenceAdmissionTests.test_an_agreeing_or_roleless_continuation_is_graded_clean",
    "test_tickets_sequence.SequenceAdmissionTests.test_declared_pack_stages_are_accepted",
@@ -1982,7 +1987,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a17a3325d7281a3ce0acacf66bdf60a2c988e48cb8570da16cad2f9a2976c7fe"
+  "sha256": "32386128d7d533a46d84d8d2597f76f416cb24d324cca216e8eaf30e0653b39e"
  },
  "mutation_owners": [
   {
@@ -4466,6 +4471,22 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_loop",
+   "owner": "LoopStubProtocolTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets_loop",
+   "owner": "LoopStubProtocolTest.setUp.restore",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

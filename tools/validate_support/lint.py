@@ -163,10 +163,8 @@ def validate_pin_supersessions(diag: Diagnostics) -> None:
 # a file and, when present, a heading in that file. External URLs and
 # templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
 LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates", "benchmarks")
-# One occurrence whose heading carries a parenthetical suffix.
-MARKDOWN_ANCHOR_EXEMPT_SITES = frozenset({
-    ("skills/engines/orch-loop/SKILL.md", "../../../contracts/work-item.md#admission-and-migration"),
-})
+# Sites whose heading carries a parenthetical suffix; none currently.
+MARKDOWN_ANCHOR_EXEMPT_SITES = frozenset()
 
 
 def _linked_markdown_files():

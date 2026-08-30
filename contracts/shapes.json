@@ -266,7 +266,8 @@
       "contract": "work-item.md",
       "fields": [
         "id", "run", "status", "admission", "executor", "sequence", "pack",
-        "profile", "independence", "depends_on", "isolation", "bound", "claimed_by",
+        "profile", "independence", "depends_on", "isolation", "bound", "loop",
+        "claimed_by",
         "claimed_at", "checked_by", "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "workspace_path", "dispatch_v1",
         "review_order", "review_v1", "review_stage", "review_kind"
@@ -276,6 +277,19 @@
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
         "review_kind": ["critique", "repair", "verify", "null"]
       }
+    },
+    {
+      "name": "loop_stub",
+      "contract": "work-item.md",
+      "fields": ["done"],
+      "required": ["done"]
+    },
+    {
+      "name": "loop_done",
+      "contract": "work-item.md",
+      "fields": ["form", "value"],
+      "required": ["form", "value"],
+      "values": {"form": ["command", "check"]}
     },
     {
       "name": "executor_result",
