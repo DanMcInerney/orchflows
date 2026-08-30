@@ -20,8 +20,8 @@ connect this law to each authorized dispatch event and predecessor record.
    crosses exactly one join owned by the dispatching caller. There is no
    sideways handoff of control — only call/return and suspension.
 4. A child executes its exact named skill directly
-   — or, when its packet states an ordered `sequence` of skills, each
-   exact named skill in that stated order, one witness in this one
+   — or, when its packet states an ordered `sequence`, each named skill
+   or pack stage in that stated order, one witness in this one
    context at the one role [roles.md](roles.md) §4 resolves — and never
    re-dispatches that primary work. A child identity stops at the ticket
    boundary and is never reused by another ticket. Critique and repair are

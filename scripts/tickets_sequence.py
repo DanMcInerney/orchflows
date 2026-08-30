@@ -15,8 +15,10 @@ from typing import Optional
 
 if __package__:
     from .packs import PackError, resolve_pack
+    from .tickets_registry import EXECUTOR_REGISTRY
 else:  # pragma: no cover - direct/installed script path
     from packs import PackError, resolve_pack
+    from tickets_registry import EXECUTOR_REGISTRY
 
 try:
     from . import state_root
@@ -26,6 +28,12 @@ except ImportError:
 SEQUENCE_NAME_RE = re.compile(r"^orch-[a-z][a-z-]*$")
 PROJECT_SKILL_RE = re.compile(r"^project:[a-z][a-z0-9-]*$")
 STAGE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+SKILL_TIERS = ("instances", "kernel", "engines", "workflows", "utilities")
+FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.DOTALL)
+ROLE_RE = re.compile(r"^role:\s*([A-Za-z][A-Za-z0-9_-]*)\s*$", re.MULTILINE)
+# The two role-bearing capability classes of ``rules/roles.md`` clause 2.
+# ``none`` declares no role at all, so it never disagrees with a head.
+ROLE_BEARING = ("planner", "worker")
 
 
 def _normalized_entries(declared):
@@ -66,36 +74,115 @@ def _source_skill_roots() -> tuple[Path, ...]:
     return tuple(result)
 
 
-def _canonical_skill_resolves(name: str) -> bool:
-    return any(
-        (root / tier / name / "SKILL.md").is_file()
-        for root in _source_skill_roots()
-        for tier in ("instances", "kernel", "engines", "workflows", "utilities")
-    )
+def _skill_manifest(name: str) -> Optional[Path]:
+    """The one resolved ``SKILL.md`` behind a sequence entry, or ``None``.
+
+    Both resolution questions this module asks -- does the entry name a
+    skill that exists, and what role does that skill declare -- read the
+    same file, so they resolve it once here.
+    """
+
+    if name.startswith("project:"):
+        skill_name = name.split(":", 1)[1]
+        current = Path.cwd().resolve()
+        for directory in (current, *current.parents):
+            candidate = directory / ".orchflows" / "skills" / skill_name / "SKILL.md"
+            if candidate.is_file():
+                return candidate
+        return None
+    for root in _source_skill_roots():
+        for tier in SKILL_TIERS:
+            candidate = root / tier / name / "SKILL.md"
+            if candidate.is_file():
+                return candidate
+    return None
 
 
-def _project_skill_resolves(name: str) -> bool:
-    """Resolve ``project:<name>`` from the nearest project scope."""
+def _declared_role(name: str) -> Optional[str]:
+    """The ``role:`` a resolved skill declares for itself, or ``None``."""
 
-    skill_name = name.split(":", 1)[1]
-    current = Path.cwd().resolve()
-    for directory in (current, *current.parents):
-        candidate = directory / ".orchflows" / "skills" / skill_name / "SKILL.md"
-        if candidate.is_file():
-            return True
-    return False
+    manifest = _skill_manifest(name)
+    if manifest is None:
+        return None
+    try:
+        text = manifest.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    block = FRONTMATTER_RE.match(text)
+    if block is None:
+        return None
+    match = ROLE_RE.search(block.group(1))
+    return match.group(1) if match else None
+
+
+def _head_role(executor: str) -> Optional[str]:
+    """The role a chain's head establishes for the whole chain.
+
+    The registry is the authority for a callable verb; a project-scoped
+    head has none, so its own declaration answers instead.
+    """
+
+    name = str(executor or "").strip().strip("`").strip()
+    if not name:
+        return None
+    registered = EXECUTOR_REGISTRY.get(name)
+    if registered is not None:
+        return registered.get("role")
+    return _declared_role(name)
+
+
+def sequence_role_findings(declared, executor) -> list:
+    """Warning-level findings for a skill chain whose continuations
+    declare a role the head's binding will not give them.
+
+    Not a defect: ``rules/roles.md`` clause 4 makes a continuation's own
+    ``role:`` inert by law, so the chain is lawful and the caller has
+    already accepted the head's binding by ordering it. What the caller
+    may not have noticed is the consequence -- a planner-declared skill
+    run inside a worker child renders no independent verdict -- and that
+    is what each finding names.
+    """
+
+    if not isinstance(declared, list):
+        return []
+    entries = _normalized_entries(declared)
+    if len(entries) < 2 or not all(_is_skill_name(entry) for entry in entries):
+        return []
+    head_role = _head_role(executor or entries[0])
+    if head_role not in ROLE_BEARING:
+        return []
+    findings = []
+    for entry in entries[1:]:
+        role = _declared_role(entry)
+        if role not in ROLE_BEARING or role == head_role:
+            continue
+        findings.append({
+            "code": "sequence-role-mismatch",
+            "severity": "warning",
+            "entry": entry,
+            "declared_role": role,
+            "head_role": head_role,
+            "message": (
+                f"sequence continuation '{entry}' declares role '{role}' and runs "
+                f"at the head's '{head_role}' binding instead; its own `role:` has "
+                "no dispatch effect (rules/roles.md §4), so anything it renders over "
+                "this chain's own work carries no fresh independent verdict "
+                "(rules/verification.md §11) — a step needing one is its own ticket."
+            ),
+        })
+    return findings
 
 
 def _skill_resolution_defect(entry: str) -> Optional[str]:
     if entry.startswith("project:"):
         if not PROJECT_SKILL_RE.fullmatch(entry):
             return f"sequence entry '{entry}' is not a valid project skill name"
-        if not _project_skill_resolves(entry):
+        if _skill_manifest(entry) is None:
             return f"sequence skill '{entry}' does not resolve from the project scope"
         return None
     if not SEQUENCE_NAME_RE.fullmatch(entry):
         return f"sequence entry '{entry}' is not an exact skill name"
-    if not _canonical_skill_resolves(entry):
+    if _skill_manifest(entry) is None:
         return f"sequence skill '{entry}' does not resolve under skills/"
     return None
 
@@ -262,6 +349,10 @@ def sequence_block(loaded: dict) -> list:
         "so the caller choosing this order accepts that binding "
         "(rules/roles.md §4)."
     )
+    lines.extend(
+        finding["message"]
+        for finding in sequence_role_findings(declared, loaded.get("executor"))
+    )
     lines.append(
         "The chain is one witness: a verdict you render on work this chain "
         "changed is void (rules/verification.md §11) — file it as work, and "
@@ -283,8 +374,10 @@ def _by_name_root():
 
 __all__ = (
     "PROJECT_SKILL_RE",
+    "ROLE_BEARING",
     "SEQUENCE_NAME_RE",
     "STAGE_NAME_RE",
     "sequence_block",
     "sequence_defects",
+    "sequence_role_findings",
 )

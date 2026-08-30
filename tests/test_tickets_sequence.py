@@ -4,7 +4,9 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from scripts.tickets_sequence import sequence_block, sequence_defects
+from scripts.tickets_sequence import (
+    sequence_block, sequence_defects, sequence_role_findings,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +40,45 @@ class SequenceAdmissionTests(unittest.TestCase):
             sequence_block({"sequence": ["orch-execute", "orch-check"]})
         )
         self.assertIn("head's binding", prompt)
+
+    def test_a_disagreeing_continuation_role_is_graded_but_never_refused(self):
+        """rules/roles.md 4 makes the continuation's own `role:` inert, so
+        the chain stays lawful; the caller is told what that costs."""
+
+        chain = ["orch-execute", "orch-check"]
+        self.assertEqual([], sequence_defects(chain, "orch-execute"))
+
+        findings = sequence_role_findings(chain, "orch-execute")
+
+        self.assertEqual(1, len(findings), findings)
+        self.assertEqual(
+            {
+                "code": "sequence-role-mismatch",
+                "severity": "warning",
+                "entry": "orch-check",
+                "declared_role": "planner",
+                "head_role": "worker",
+            },
+            {key: value for key, value in findings[0].items() if key != "message"},
+        )
+
+    def test_an_agreeing_or_roleless_continuation_is_graded_clean(self):
+        for chain, executor in (
+            (["orch-check", "orch-decompose"], "orch-check"),
+            (["orch-execute", "orch-integrate"], "orch-execute"),
+            (["draft", "edit"], "orch-execute"),
+        ):
+            with self.subTest(chain=chain):
+                self.assertEqual([], sequence_role_findings(chain, executor))
+
+    def test_the_packet_prompt_names_the_disagreeing_continuation(self):
+        prompt = "\n".join(sequence_block({
+            "sequence": ["orch-execute", "orch-check"],
+            "executor": "orch-execute",
+        }))
+
+        self.assertIn("'orch-check' declares role 'planner'", prompt)
+        self.assertIn("no fresh independent verdict", prompt)
 
     def test_skill_sequence_requires_resolvable_names(self):
         defects = sequence_defects(

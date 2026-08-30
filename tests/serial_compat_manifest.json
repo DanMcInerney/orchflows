@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1742,
+  "count": 1745,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -881,11 +881,14 @@
    "test_tickets_grade.GradeSnapshotTest.test_prose_verification_covers_are_read_as_fixed_result_evidence",
    "test_tickets_grade.GradeSnapshotTest.test_review_verification_accepts_optional_closed_covers",
    "test_tickets_grade.GradeSnapshotTest.test_review_verification_rejects_empty_closed_covers",
+   "test_tickets_sequence.SequenceAdmissionTests.test_a_disagreeing_continuation_role_is_graded_but_never_refused",
+   "test_tickets_sequence.SequenceAdmissionTests.test_an_agreeing_or_roleless_continuation_is_graded_clean",
    "test_tickets_sequence.SequenceAdmissionTests.test_declared_pack_stages_are_accepted",
    "test_tickets_sequence.SequenceAdmissionTests.test_later_skill_role_does_not_change_the_head_binding",
    "test_tickets_sequence.SequenceAdmissionTests.test_project_skill_sequence_resolves_from_project_scope",
    "test_tickets_sequence.SequenceAdmissionTests.test_skill_and_cell_forms_cannot_be_mixed",
    "test_tickets_sequence.SequenceAdmissionTests.test_skill_sequence_requires_resolvable_names",
+   "test_tickets_sequence.SequenceAdmissionTests.test_the_packet_prompt_names_the_disagreeing_continuation",
    "test_tickets_sequence.SequenceAdmissionTests.test_undeclared_pack_stage_is_refused",
    "test_trace.TestClaudeAdapter.test_clean_fixture_shape_and_fields",
    "test_trace.TestClaudeAdapter.test_cli_exits_zero_on_malformed_input",
@@ -1745,7 +1748,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f3d548f3ccedff1ff57e952f1019c2c42bea03290269c092c26c2cbf4a4aa491"
+  "sha256": "e919889e8aa13d3b0704b7e7cc4ba0cc3a16f1cdf490c994bfe47fc62f541367"
  },
  "mutation_owners": [
   {

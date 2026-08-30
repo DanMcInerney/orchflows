@@ -17,7 +17,6 @@ EXPECTED_WORKFLOWS = {
     "browser-game",
     "drift-canary",
     "evolve",
-    "fix",
     "orch-check",
     "orch-decompose",
     "orch-execute",

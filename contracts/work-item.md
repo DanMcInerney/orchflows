@@ -143,10 +143,10 @@ substitutes placeholders, validates one acyclic graph with one terminal, seals
 the exact snapshot, and writes all tickets or none.
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
-Optional `sequence` is an ordered chain of stage names declared by the stamped
-pack's execute-side `stages` cell; stage names are pack data, not skill
-bindings. A sequence is one child, established once at the role resolved from
-its callable executor. `orch-execute` resolves the pack's execute cells and
+Optional `sequence` is an ordered chain taking exactly one closed form: exact
+skill names, or stage names declared by the stamped pack's execute-side
+`stages` cell. Its one child and one role are [roles.md](../rules/roles.md)
+§4's. `orch-execute` resolves the pack's execute cells and
 `orch-check` resolves its check cells; neither may import a superseded skill
 body or invent a second pack parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to

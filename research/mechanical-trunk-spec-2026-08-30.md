@@ -657,6 +657,24 @@ Docs wave follows `research/docs-spec-2026-08-30.md`.
   is red at HEAD — it still asserts the deleted `fix` composition.
   U7's fix-row removal extends to this test file.
 
+- **A12 (→ U8 scope):** two reader test modules red at HEAD with stale
+  expectations from the cutover:
+  `reader/tests/test_ui_cases/workflows_compositions.py` and
+  `…/workflows_sources.py` both expect `skill:orch-eval-design` for the
+  `evolve` composition; the stub now binds `orch-outline`. Align them.
+- **A13 (→ U5 scope, + `scripts/tickets_lint.py`):** wire
+  `tickets_sequence.sequence_role_findings` into
+  `tickets_lint.lint_findings` as a warning-severity finding (U7 left
+  the public function ready; `_cmd_lint` already exits 0 on non-error
+  findings).
+- **A14 (coordination note, all waves):** `validate.py --pin` is lawful
+  once per committed baseline — a second `--pin` over an uncommitted
+  re-pin finds no git ancestor and demands a supersession record for a
+  prose edit. Recover with `git checkout HEAD -- tests/pins.json` then
+  one re-pin. Also: `_t0_shape`'s enum sniffing treats any contract line
+  matching `one of|enum|value(s)` as enum-bearing — phrase contract
+  prose to avoid it.
+
 ## Out of scope (explicit)
 
 - The errand lane (dead by design; user decision pending).

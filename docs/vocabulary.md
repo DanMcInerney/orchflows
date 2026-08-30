@@ -107,7 +107,7 @@ that needs a different meaning needs a different word.
 - **stamp** — the pack fixed at intake, carried by a ticket's `pack`
   field, which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
-  design); selects an item's pack and gate lens, per [topology](../rules/topology.md) 5a.
+  design); selects an item's pack and gate lens, per [topology](../rules/topology.md) §§5–6.
 - **work item / ticket** — a sealed Goal, Context, optional Suggested files,
   lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
@@ -143,6 +143,8 @@ that needs a different meaning needs a different word.
   `answer` when available evidence decides; `single` for one ordinary ticket;
   `graph` for a frozen root that needs decomposition; `outline` when a planner
   must first freeze that root, preserve its claim lifecycle, then decompose it.
+  `fix` is no fifth shape: it disambiguates a known cause into `single` and an
+  unknown or unverified one into `outline`.
   Small, medium and large are explanatory mappings, never ticket fields.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
