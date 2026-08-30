@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1616,
+  "count": 1622,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -108,6 +108,7 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_ticket_packet_cannot_be_downgraded_to_ephemeral",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_removed_receiver_workspace_and_outcome_content_forms_refuse",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_research_projection_requires_the_recorded_store_to_exist",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_result_outcome_and_join_require_the_accepted_receipt",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_ticket_inline_cannot_be_downgraded_to_ephemeral",
@@ -120,10 +121,12 @@
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_is_a_public_one_call_surface",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_preserves_ticket_bytes_on_a_pre_open_refusal",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_readiness_refusal_without_starting_workspace",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_surfaces_a_retirement_that_failed_to_resolve",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_can_cross_the_explicit_atomic_replacement",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_rejects_unseen_records_without_mutation",
@@ -410,11 +413,14 @@
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
    "test_installer.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped",
    "test_installer.TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
+   "test_installer.TestSourceCommit.test_a_dry_run_says_why_it_could_not_resolve_a_source_commit",
+   "test_installer.TestSourceCommit.test_a_mutating_install_without_an_accepted_identity_changes_nothing",
    "test_installer.TestSourceCommit.test_accepted_source_commit_is_one_fail_closed_gate_identity",
    "test_installer.TestSourceCommit.test_an_empty_gitdir_pointer_does_not_read_the_working_tree",
+   "test_installer.TestSourceCommit.test_an_unresolved_checkout_refuses_a_mutating_install",
+   "test_installer.TestSourceCommit.test_dry_run_and_doctor_still_inspect_without_an_accepted_identity",
    "test_installer.TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
    "test_installer.TestSourceCommit.test_main_refuses_a_nonmatching_accepted_source_before_application",
-   "test_installer.TestSourceCommit.test_main_warns_when_the_installed_receipt_names_no_source_commit",
    "test_installer.TestSourceCommit.test_receipt_carries_resolved_source_commit",
    "test_installer.TestSourceCommit.test_resolve_source_commit_falls_back_to_packed_refs",
    "test_installer.TestSourceCommit.test_resolve_source_commit_follows_a_branch_ref",
@@ -1619,7 +1625,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "14c415afd5c8b0c025390c77b8d9f8256cfc7c11ed2abe350f416b6f871cafbd"
+  "sha256": "27cfd944356726b86ce77cba1c3d58baaea6c53008128947f5e2fdd0803ba7ac"
  },
  "mutation_owners": [
   {
@@ -1644,6 +1650,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests._receiver_vantage",
+   "owner": "standing_in",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "cwd"
    ]
   },
   {
@@ -1780,6 +1794,14 @@
   },
   {
    "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_preserves_ticket_bytes_on_a_pre_open_refusal",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
    "owner": "DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -1805,6 +1827,14 @@
   {
    "module": "tests.test_dispatch_v1",
    "owner": "DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_surfaces_a_retirement_that_failed_to_resolve",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -2605,6 +2635,38 @@
   },
   {
    "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_a_dry_run_says_why_it_could_not_resolve_a_source_commit",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_a_mutating_install_without_an_accepted_identity_changes_nothing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_an_unresolved_checkout_refuses_a_mutating_install",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_dry_run_and_doctor_still_inspect_without_an_accepted_identity",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
    "owner": "TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -2614,14 +2676,6 @@
   {
    "module": "tests.test_installer_cases.receipt.source_commit",
    "owner": "TestSourceCommit.test_main_refuses_a_nonmatching_accepted_source_before_application",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.receipt.source_commit",
-   "owner": "TestSourceCommit.test_main_warns_when_the_installed_receipt_names_no_source_commit",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

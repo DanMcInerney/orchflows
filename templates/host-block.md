@@ -43,8 +43,9 @@ skill/rule/contract gap, or workaround: log; continue:
 Optional flags: `--skill <orch-name>`, `--ticket <id>`, `--run <run-id>`.
 
 If the logger cannot run, append one JSON line
-(ts, observed, expected, host, project, project_source) to state-sink
-`friction/<yyyy-mm>.jsonl` outside worktrees; never skip it. If refusal bars
+(ts, observed, expected, host, project, project_source) to
+`friction/<yyyy-mm>.jsonl` in the state sink
+({{ORCH_LIB}}/rules/visibility.md §3) outside worktrees; never skip it. If refusal bars
 worktree writes, write where dispatch permits and return the path. Unresolved:
 project `null`, project_source `none`; session/run/ticket/skill optional. Law:
 {{ORCH_LIB}}/rules/improvement.md §1.

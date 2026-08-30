@@ -434,18 +434,17 @@ def main(argv=None) -> int:
         return 0
 
     source_commit = resolve_source_commit()
-    if doctor_requested or not args.dry_run or args.accepted_source is not None:
-        # Uninstall has already returned above; what remains that is not a
-        # dry run or a doctor probe consumes the checkout and must name the
-        # identity its gate accepted.
-        mutating = not (args.dry_run or doctor_requested)
-        try:
-            accepted_source_commit(
-                source_commit, args.accepted_source, mutating=mutating
-            )
-        except ValueError as error:
-            print(f"error: refusing source identity: {error}", file=sys.stderr)
-            return 1
+    # Uninstall has already returned above; what remains that is not a dry
+    # run or a doctor probe consumes the checkout and must name the identity
+    # its gate accepted.  A read-only path grades one only if given one.
+    try:
+        accepted_source_commit(
+            source_commit, args.accepted_source,
+            mutating=not (args.dry_run or doctor_requested),
+        )
+    except ValueError as error:
+        print(f"error: refusing source identity: {error}", file=sys.stderr)
+        return 1
 
     try:
         plan = build_plan(scope, project_root, args.claude_adapters)
