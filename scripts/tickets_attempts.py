@@ -125,11 +125,6 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                     "pre-v1 live claim must be completed or abandoned by its existing owner before dispatch-v1 cutover",
                 )
             seal = str(data.get("assignment_seal") or "").strip()
-            findings = seal_findings(ticket_id, text)
-            if findings:
-                return _classification(
-                    "assignment-mismatch", "ticket assignment is not sealed at its current semantic generation"
-                )
             request = {
                 "assignment_seal": seal,
                 "dispatch_id": dispatch_id,
@@ -141,6 +136,12 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                 (attempt for attempt in attempts if attempt.get("dispatch_id") == dispatch_id),
                 None,
             )
+            # contracts/dispatch.md's attempt precedence, which `_commit_record`
+            # already keeps: an exact replay of an opened dispatch_id returns
+            # its stored success first, and only an unseen open may then be
+            # classified assignment-mismatch. Graded the other way round, a
+            # retry of the very call that opened the attempt was refused for
+            # the seal it had itself been opened against.
             if same is not None:
                 prior = {key: same.get(key) for key in request}
                 if prior == request:
@@ -148,6 +149,10 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                 return _classification(
                     "idempotency-conflict",
                     f"dispatch_id '{dispatch_id}' was already opened with different content",
+                )
+            if seal_findings(ticket_id, text):
+                return _classification(
+                    "assignment-mismatch", "ticket assignment is not sealed at its current semantic generation"
                 )
             failure = dispatch_guards.admission_failure(path, text, data, run, ticket_id)
             if failure is not None:
@@ -368,11 +373,11 @@ def _cmd_dispatch_retire(rest, *, _lock_held=False):
     }
 
     def retire(text, _data, attempt, _state_record):
-        if attempt.get("state") != "live":
-            return text, None, _classification(
-                "stale-attempt",
-                f"dispatch_id '{dispatch_id}' is already {attempt.get('state')}",
-            )
+        # No state guard here: `_commit_record` refuses an unseen record on an
+        # attempt whose state is not live as `stale-attempt` before any mutate
+        # runs, and an exact replay returns its stored success without
+        # reaching this at all. A second copy of that rule could only ever
+        # disagree with the one that decides.
         retired_at = datetime.now(timezone.utc).strftime(UTC_STAMP)
         response = {"dispatch": {
             "protocol": PROTOCOL,

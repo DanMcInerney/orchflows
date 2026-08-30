@@ -23,6 +23,7 @@ if __package__:
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
     from .tickets_store import UTC_STAMP, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
+    from .tickets_worklog import _run_goal, _run_tickets
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
     from .tickets_outcome import (
         DISPATCH_OUTCOME_USAGE, _outcome_attempt,
@@ -50,6 +51,7 @@ else:
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
     from tickets_store import UTC_STAMP, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
+    from tickets_worklog import _run_goal, _run_tickets
     from tickets_project import TERMINAL_REMEDY, binding_refusal
     from tickets_outcome import (
         DISPATCH_OUTCOME_USAGE, _outcome_attempt,
@@ -156,6 +158,25 @@ def _accepted_file(source: str):
         except (OSError, UnicodeDecodeError, AttributeError) as error:
             return None, {"error": f"unreadable accepted blocker file: {error}"}
     return _read_utf8(source, "accepted blocker file")
+
+
+def _closes_the_run(run: str, ticket_id: str) -> bool:
+    """Whether this ticket's terminal join is the run's own terminal moment.
+
+    The run's goal ticket, read from `tickets_worklog._run_goal` -- the one
+    owner `worklog` and `set-status` already read it from: the root of a cut
+    run, and the single ticket of an ad-hoc, direct, or loop run. Any other
+    member reaching a terminal status is one item finishing, and the run
+    identity's terminal timing is written once and never rewritten, so
+    stamping it there froze the whole run's elapsed time at whichever
+    sibling happened to join first.
+    """
+
+    items, failure = _run_tickets(run)
+    if failure is not None or not items:
+        return False
+    goal, _kind = _run_goal(items)
+    return str(goal.get("id") or "") == ticket_id
 
 
 def _attempt_workspace(attempt: dict) -> str | None:
@@ -465,7 +486,7 @@ def _cmd_dispatch_join(rest):
     if "error" in result:
         return result
     status = result["join"]["status"]
-    if status not in TERMINAL_STATES:
+    if status not in TERMINAL_STATES or not _closes_the_run(run, ticket_id):
         return result
     identity_dir, identity, refusal = _terminal_identity_update(
         run, ticket_id, status, datetime.now(timezone.utc)

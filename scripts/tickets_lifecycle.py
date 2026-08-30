@@ -8,9 +8,9 @@ if __package__:
 else:
     from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json
 if __package__:
-    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from .tickets_store import NO_SINK_ERROR, UTC_STAMP, TicketWriteRefused, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically, locked_ticket_write
 else:
-    from tickets_store import NO_SINK_ERROR, UTC_STAMP, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically
+    from tickets_store import NO_SINK_ERROR, UTC_STAMP, TicketWriteRefused, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically, locked_ticket_write
 if __package__:
     from .tickets_worklog import _run_goal, _run_tickets
 else:
@@ -183,23 +183,26 @@ def _cmd_ready(rest):
 def _cmd_check(rest):
     probe = list(rest)
     _extract_flag(probe, '--stage')
-    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
-        return _check_under_run_lock(rest)
+    if len(probe) != 2:
+        return {'error': f'usage: {CHECK_USAGE}'}
     try:
-        with _run_lock(probe[0]):
-            return _check_under_run_lock(rest)
+        with locked_ticket_write(probe[0], probe[1]) as ticket_path:
+            return _check_under_run_lock(rest, ticket_path=ticket_path)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {'error': f'unable to record check: {error}'}
-def _check_under_run_lock(rest):
+def _check_under_run_lock(rest, *, ticket_path=None):
     args = list(rest)
     stage_id = _extract_flag(args, '--stage')
     if len(args) != 2 or not (stage_id or '').strip():
         return {'error': f'usage: {CHECK_USAGE}'}
     run, ticket_id = args
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if ticket_path is None:
+        tickets_root = _tickets_root()
+        if tickets_root is None:
+            return {'error': NO_SINK_ERROR}
+        ticket_path = tickets_root / run / f'{ticket_id}.md'
     if not ticket_path.is_file():
         return {'error': f'ticket not found: {run}/{ticket_id}'}
     text, failure = _read_utf8(ticket_path)
@@ -218,7 +221,7 @@ def _check_under_run_lock(rest):
     stage_id = stage_id.strip()
     if stage_id != f'{ticket_id}.check':
         return {'error': f"check stage must be the target's explicit review ticket {ticket_id}.check"}
-    stage_path = tickets_root / run / f'{stage_id}.md'
+    stage_path = ticket_path.with_name(f'{stage_id}.md')
     stage_text, failure = _read_utf8(stage_path)
     if failure is not None:
         return failure
@@ -262,29 +265,33 @@ def _check_under_run_lock(rest):
         return {'error': f'unwritable ticket: {error}'}
     return {'check': {'run': data.get('run') or run, 'id': data.get('id') or ticket_id, 'checked_by': checked_by, 'stage': stage_id}}
 def _cmd_set_status(rest):
-    if len(rest) != 3 or _segment_error('run id', rest[0]) is not None:
-        return _set_status_under_run_lock(rest)
+    if len(rest) != 3:
+        return {'error': f'usage: {SET_STATUS_USAGE}'}
     try:
-        with _run_lock(rest[0]):
-            return _set_status_under_run_lock(rest)
+        with locked_ticket_write(rest[0], rest[1]) as ticket_path:
+            return _set_status_under_run_lock(rest, ticket_path=ticket_path)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {'error': f'unable to record status and terminal timing: {error}'}
 
 def _cmd_join_noop_repair(rest):
     probe = list(rest)
     _extract_flag(probe, '--by')
-    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
-        return _join_noop_repair_under_run_lock(rest)
-    held = binding_refusal(probe[0], CLAIM_REMEDY)
-    if held is not None:
-        return {'error': held}
+    if len(probe) != 2:
+        return {'error': f'usage: {JOIN_NOOP_REPAIR_USAGE}'}
     try:
-        with _run_lock(probe[0]):
-            return _join_noop_repair_under_run_lock(rest)
+        with locked_ticket_write(probe[0], probe[1]) as ticket_path:
+            held = binding_refusal(probe[0], CLAIM_REMEDY)
+            if held is not None:
+                return {'error': held}
+            return _join_noop_repair_under_run_lock(rest, ticket_path=ticket_path)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {'error': f'unable to complete clean repair at join: {error}'}
 
-def _join_noop_repair_under_run_lock(rest):
+def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
     args = list(rest)
     written_by = _extract_flag(args, '--by')
     if len(args) != 2 or not (written_by or '').strip():
@@ -295,10 +302,11 @@ def _join_noop_repair_under_run_lock(rest):
     run, ticket_id = args
     if not ticket_id.endswith('.gate.repair'):
         return {'error': 'join-noop-repair requires a .gate.repair ticket'}
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if ticket_path is None:
+        tickets_root = _tickets_root()
+        if tickets_root is None:
+            return {'error': NO_SINK_ERROR}
+        ticket_path = tickets_root / run / f'{ticket_id}.md'
     if not ticket_path.is_file():
         return {'error': f'ticket not found: {run}/{ticket_id}'}
     text, failure = _read_utf8(ticket_path)
@@ -340,7 +348,7 @@ def _join_noop_repair_under_run_lock(rest):
         return {'error': f'unable to complete clean repair at join: {error}'}
     return {'join_noop_repair': {'run': run, 'id': ticket_id, 'status': 'complete', 'by': written_by, 'claimed_at': timestamp}}
 
-def _set_status_under_run_lock(rest):
+def _set_status_under_run_lock(rest, *, ticket_path=None):
     args = list(rest)
     if len(args) != 3:
         return {'error': f'usage: {SET_STATUS_USAGE}'}
@@ -357,10 +365,11 @@ def _set_status_under_run_lock(rest):
         held = binding_refusal(run, TERMINAL_REMEDY)
         if held is not None:
             return {'error': held}
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if ticket_path is None:
+        tickets_root = _tickets_root()
+        if tickets_root is None:
+            return {'error': NO_SINK_ERROR}
+        ticket_path = tickets_root / run / f'{ticket_id}.md'
     if not ticket_path.is_file():
         return {'error': f'ticket not found: {run}/{ticket_id}'}
     text, failure = _read_utf8(ticket_path)
@@ -408,9 +417,21 @@ def _set_status_under_run_lock(rest):
             identity_dir.mkdir(parents=True, exist_ok=True)
             _write_identity(identity_dir, identity)
     except OSError as error:
+        # The two-file write keeps its order -- ticket first, identity second
+        # -- so a failed identity write is rolled back off the ticket. When
+        # the rollback fails too, the pair is genuinely split and nothing may
+        # swallow the second error: the caller is told both, and told the one
+        # command that lands the pair, which replays idempotently from either
+        # half's state.
         try:
             _write_text_atomically(ticket_path, text)
-        except OSError:
-            pass
+        except OSError as rollback:
+            return {'error': (
+                f'unable to record status and terminal timing: {error}; and '
+                f'the ticket could not be rolled back: {rollback}. The ticket '
+                f"may now read status '{status}' with no terminal timing "
+                f'beside it. Replay `tickets.py set-status {run} {ticket_id} '
+                f'{status}` to record both.'
+            )}
         return {'error': f'unable to record status and terminal timing: {error}'}
     return {'set_status': {'run': run, 'id': ticket_id, 'status': status}}

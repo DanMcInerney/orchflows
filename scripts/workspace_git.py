@@ -3,16 +3,25 @@
 from __future__ import annotations
 
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 
+# The owning modules, never the ``tickets`` facade: a helper that imports a
+# facade is what a facade exists to spare its callers, and the one here read
+# through seams the facade re-points at these same modules anyway.
 try:
-    from . import state_root, tickets
+    from . import state_root, tickets_format, tickets_store
 except ImportError:
     import state_root
-    import tickets
+    import tickets_format
+    import tickets_store
 
 
 EXIT_ERROR = 1
+# ``start``'s one coordination flag, spelled once here because the caller that
+# passes it is another process: the dispatch facade already holds this run's
+# lock and runs ``workspace.py start`` as its child.
+LOCK_HELD = "--lock-held"
 # What ``start`` records for a workspace that is on no branch. ``rev-parse
 # --abbrev-ref HEAD`` answers the literal word ``HEAD`` there, which names no
 # ref at the join: the item graded isolation-missing however clean its work
@@ -236,8 +245,34 @@ def _record(
     branch,
     baseline,
     workspace_path: str,
+    *,
+    run=None,
+    lock_held: bool = False,
 ) -> dict:
-    """Write both stamps against the snapshot the caller read."""
+    """Write both stamps under the run lock, against the text read there.
+
+    The compare and the write are one invariant, so they are one critical
+    section: without the lock the ticket could be read here, moved by a
+    concurrent ``set-status``, and stamped from the read that preceded the
+    move -- the very race the compare below exists to report.
+
+    ``run`` names the lock; ``None`` is a caller with no run to lock (the
+    byte-domain fixtures stamp a bare file). ``lock_held`` is the dispatch
+    facade's: it holds the run lock across the whole composition and runs
+    this script as a child, and a child taking the same lock would wait on
+    its own parent for as long as the parent waits on it.
+    """
+
+    lock = nullcontext() if lock_held or run is None else tickets_store._run_lock(run)
+    try:
+        with lock:
+            return _stamped(ticket_path, prior_text, branch, baseline, workspace_path)
+    except OSError as error:
+        return {"error": f"unable to lock run '{run}': {error}"}
+
+
+def _stamped(ticket_path, prior_text: str, branch, baseline, workspace_path: str) -> dict:
+    """Read, compare, and stamp: every byte written derives from this read."""
 
     try:
         current_text = ticket_path.read_text(encoding="utf-8")
@@ -246,15 +281,15 @@ def _record(
     if current_text != prior_text:
         return {"error": "ticket changed since read; lost the frontmatter write race, retry"}
     try:
-        updated = prior_text
+        updated = current_text
         recorded = {"workspace_path": workspace_path}
         if branch is not None:
-            updated = tickets._set_frontmatter_field(updated, "workspace_branch", branch)
+            updated = tickets_format._set_frontmatter_field(updated, "workspace_branch", branch)
             recorded["workspace_branch"] = branch
         if baseline is not None:
-            updated = tickets._set_frontmatter_field(updated, "workspace_baseline", baseline)
+            updated = tickets_format._set_frontmatter_field(updated, "workspace_baseline", baseline)
             recorded["workspace_baseline"] = baseline
-        updated = tickets._set_frontmatter_field(
+        updated = tickets_format._set_frontmatter_field(
             updated, "workspace_path", workspace_path
         )
         # The sink's own writer, not ``write_text``: it pins ``newline='\n'``
@@ -263,7 +298,7 @@ def _record(
         # crash mid-write cannot truncate the ticket. ``Path.write_text``
         # grew a ``newline`` argument only in 3.10, below this tree's 3.9
         # floor, so pinning it there would refuse on the floor interpreter.
-        tickets._write_text_atomically(ticket_path, updated)
+        tickets_store._write_text_atomically(ticket_path, updated)
     except (OSError, ValueError) as error:
         return {"error": f"unwritable ticket: {error}"}
     return {
@@ -355,7 +390,7 @@ def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
         # builds this one from the run and id it was given
         if path == ticket_path:
             continue
-        data = tickets._load_ticket(path)
+        data = tickets_store._load_ticket(path)
         if "error" in data or data.get("status") != "claimed":
             continue
         recorded = str(data.get("workspace_branch") or "").strip()

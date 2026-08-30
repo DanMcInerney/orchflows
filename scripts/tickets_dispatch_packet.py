@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
@@ -22,7 +23,7 @@ if __package__:
     from .tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from .tickets_dispatch_schema import stored_state
     from .tickets_review import packet_mutation, packet_state_result
-    from .tickets_store import _tickets_root
+    from .tickets_store import _run_lock, _tickets_root, segment_refusal
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
@@ -38,7 +39,7 @@ else:
     from tickets_dispatch_packet_shape import PACKET_FORMS, packet_shape as _packet_shape
     from tickets_dispatch_schema import stored_state
     from tickets_review import packet_mutation, packet_state_result
-    from tickets_store import _tickets_root
+    from tickets_store import _run_lock, _tickets_root, segment_refusal
 
 DISPATCH_PACKET_USAGE = (
     "dispatch-packet <run> <id> --dispatch-id <id> --reply-to <name> "
@@ -234,6 +235,14 @@ def _replay_projection(attempt: dict, run, ticket_id, form, reply_to, workspace,
 
 
 def _cmd_dispatch_packet(rest, *, _lock_held=False):
+    """Project and commit one packet as a single locked transaction.
+
+    Every read decides what the commit writes -- stored attempt, replay
+    comparison, review state, seal -- so the lock covers the reads too. Held
+    by the caller (the dispatch facade) or taken here; `_commit_record` is
+    then told so rather than opening a second lock on the same run.
+    """
+
     args = list(rest)
     dispatch_id = _extract_flag(args, "--dispatch-id")
     reply_to = _extract_flag(args, "--reply-to")
@@ -244,6 +253,24 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     if len(args) != 2 or not dispatch_id or not reply_to or form not in PACKET_FORMS:
         return {"error": f"usage: {DISPATCH_PACKET_USAGE}"}
     run, ticket_id = args
+    invalid = segment_refusal(run, ticket_id)
+    if invalid is not None:
+        return invalid
+    try:
+        with nullcontext() if _lock_held else _run_lock(run):
+            return _packet_transaction(
+                run, ticket_id, dispatch_id, reply_to, workspace, artifact,
+                form, review_kind,
+            )
+    except OSError as error:
+        return _classification("state-inaccessible", f"unable to lock run '{run}': {error}")
+
+
+def _packet_transaction(
+    run, ticket_id, dispatch_id, reply_to, workspace, artifact, form, review_kind
+):
+    """The whole projection, under the run lock its caller holds."""
+
     root = _tickets_root()
     if root is None:
         return _classification("state-inaccessible", "state sink is not configured")
@@ -296,7 +323,7 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     committed = _commit_record(
         run, ticket_id, dispatch_id, PACKET_RECORD_ID, content,
         mutate=packet_mutation(review_state, run, ticket_id, dispatch_id, PACKET_RECORD_ID, content),
-        record_kind="packet", _lock_held=_lock_held,
+        record_kind="packet", _lock_held=True,
     )
     if "error" in committed:
         return committed

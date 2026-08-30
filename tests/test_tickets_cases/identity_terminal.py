@@ -2,6 +2,8 @@
 
 from .identity_core import *  # noqa: F401,F403
 
+from scripts import tickets_store as store_mod  # noqa: E402
+
 class RunTerminalTimingTest(unittest.TestCase):
     def test_fake_clock_decides_exact_elapsed_milliseconds(self):
         opened = datetime(2026, 8, 18, 1, 2, 3, tzinfo=timezone.utc)
@@ -143,6 +145,11 @@ class TestAtomicReplace(unittest.TestCase):
     every other host it is unreachable code that three cells of the matrix
     are the first to run. `msvcrt` is the discriminator the module already
     uses, so setting it is how this host asks the Windows question.
+
+    Set on `scripts/tickets_store`, the module that reads it, rather than on
+    the facade: these cases call the writer directly instead of through the
+    CLI, and the facade's seam sync used to reach them only because the
+    atomic write imported the facade back on every call.
     """
 
     def refusals(self, count: int):
@@ -170,10 +177,10 @@ class TestAtomicReplace(unittest.TestCase):
             tmp = Path(tmp)
             source, target = self.move(tmp)
             replace, state = self.refusals(3)
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+            with mock.patch.object(store_mod, "msvcrt", object()), mock.patch.object(
                 Path, "replace", replace
             ):
-                tickets_mod._replace_atomically(source, target)
+                store_mod._replace_atomically(source, target)
             self.assertEqual(4, state["calls"])
             self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
 
@@ -182,11 +189,11 @@ class TestAtomicReplace(unittest.TestCase):
             tmp = Path(tmp)
             source, target = self.move(tmp)
             replace, _ = self.refusals(10**6)
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
-                tickets_mod, "REPLACE_BUDGET_SECONDS", 0.05
+            with mock.patch.object(store_mod, "msvcrt", object()), mock.patch.object(
+                store_mod, "REPLACE_BUDGET_SECONDS", 0.05
             ), mock.patch.object(Path, "replace", replace):
                 with self.assertRaises(PermissionError):
-                    tickets_mod._replace_atomically(source, target)
+                    store_mod._replace_atomically(source, target)
             self.assertFalse(target.exists())
 
     def test_posix_takes_the_first_answer(self):
@@ -197,11 +204,11 @@ class TestAtomicReplace(unittest.TestCase):
             tmp = Path(tmp)
             source, target = self.move(tmp)
             replace, state = self.refusals(1)
-            with mock.patch.object(tickets_mod, "msvcrt", None), mock.patch.object(
+            with mock.patch.object(store_mod, "msvcrt", None), mock.patch.object(
                 Path, "replace", replace
             ):
                 with self.assertRaises(PermissionError):
-                    tickets_mod._replace_atomically(source, target)
+                    store_mod._replace_atomically(source, target)
             self.assertEqual(1, state["calls"])
 
     def test_an_unobstructed_move_costs_one_attempt_on_either_platform(self):
@@ -210,10 +217,10 @@ class TestAtomicReplace(unittest.TestCase):
                 tmp = Path(tmp)
                 source, target = self.move(tmp)
                 replace, state = self.refusals(0)
-                with mock.patch.object(tickets_mod, "msvcrt", sentinel), mock.patch.object(
+                with mock.patch.object(store_mod, "msvcrt", sentinel), mock.patch.object(
                     Path, "replace", replace
                 ):
-                    tickets_mod._replace_atomically(source, target)
+                    store_mod._replace_atomically(source, target)
                 self.assertEqual(1, state["calls"])
                 self.assertFalse(source.exists())
                 self.assertEqual("moved\n", target.read_text(encoding="utf-8"))
@@ -230,9 +237,9 @@ class TestAtomicReplace(unittest.TestCase):
             calls.append(1)
             raise FileNotFoundError(2, "No such file or directory")
 
-        with mock.patch.object(tickets_mod, "msvcrt", object()):
+        with mock.patch.object(store_mod, "msvcrt", object()):
             with self.assertRaises(FileNotFoundError):
-                tickets_mod._waiting_out_windows(missing)
+                store_mod._waiting_out_windows(missing)
         self.assertEqual(1, len(calls))
 
     def test_the_reader_waits_out_a_writers_move_and_returns_the_document(self):
@@ -252,10 +259,10 @@ class TestAtomicReplace(unittest.TestCase):
                     raise PermissionError(13, "Permission denied")
                 return real(self, *args, **kwargs)
 
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
+            with mock.patch.object(store_mod, "msvcrt", object()), mock.patch.object(
                 Path, "read_text", read_text
             ):
-                document, error = tickets_mod._read_identity(path)
+                document, error = store_mod._read_identity(path)
             self.assertIsNone(error)
             self.assertEqual({"run": "testrun"}, document)
             self.assertEqual(0, state["left"])
@@ -268,10 +275,10 @@ class TestAtomicReplace(unittest.TestCase):
             def read_text(self, *args, **kwargs):
                 raise PermissionError(13, "Permission denied")
 
-            with mock.patch.object(tickets_mod, "msvcrt", object()), mock.patch.object(
-                tickets_mod, "REPLACE_BUDGET_SECONDS", 0.05
+            with mock.patch.object(store_mod, "msvcrt", object()), mock.patch.object(
+                store_mod, "REPLACE_BUDGET_SECONDS", 0.05
             ), mock.patch.object(Path, "read_text", read_text):
-                document, error = tickets_mod._read_identity(path)
+                document, error = store_mod._read_identity(path)
             self.assertIsNone(document)
             self.assertIn("unreadable run identity", error["error"])
 

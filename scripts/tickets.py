@@ -375,5 +375,9 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_bound_check = _cmd_bound_check
     _tickets_lint_module._write_text_atomically = _write_text_atomically
 
+# Handed down, never fetched back up: the dispatcher calls this once per
+# invocation and no helper imports this facade to reach it.
+_tickets_dispatch_module._sync_seams = _sync_seams
+
 if __name__ == "__main__":
     raise SystemExit(main())

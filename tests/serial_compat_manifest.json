@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1625,
+  "count": 1654,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -117,7 +117,9 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
+   "test_dispatch_v1.DispatchV1Test.test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
+   "test_dispatch_v1.DispatchV1Test.test_an_exact_reopen_replays_before_the_assignment_seal_is_graded",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_is_a_public_one_call_surface",
@@ -471,6 +473,33 @@
    "test_lifecycle_render.LifecycleTableTest.test_every_public_lifecycle_event_has_the_owned_seven_cells",
    "test_lifecycle_render.LifecycleTableTest.test_the_committed_table_is_exactly_the_rendered_code",
    "test_lifecycle_render.LifecycleTableTest.test_the_repository_validator_refuses_a_hand_edit",
+   "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_run_id_refuses_every_mutating_command",
+   "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_a_malformed_ticket_id_refuses_every_mutating_command",
+   "test_lock_discipline.TestMalformedIdentityRefusesBeforeTheLock.test_the_claim_twin_refuses_the_same_way",
+   "test_lock_discipline.TestNoHelperImportsItsFacade.test_no_family_helper_imports_the_tickets_facade",
+   "test_lock_discipline.TestNoHelperImportsItsFacade.test_no_family_helper_reaches_the_facade_by_name_either",
+   "test_lock_discipline.TestNoHelperImportsItsFacade.test_the_atomic_write_no_longer_syncs_the_facades_seams",
+   "test_lock_discipline.TestNoHelperImportsItsFacade.test_the_facade_installs_its_seam_sync_on_the_dispatcher",
+   "test_lock_discipline.TestOneOwnerForTheEndedAttemptRule.test_retirement_carries_no_second_ended_attempt_guard",
+   "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_a_cut_runs_root_closes_it_and_its_members_do_not",
+   "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_a_loop_runs_single_ticket_is_its_own_root",
+   "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_an_ad_hoc_runs_single_ticket_is_its_own_root",
+   "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_an_unreadable_or_absent_run_closes_nothing",
+   "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_the_join_asks_before_it_stamps",
+   "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_the_root_decides_whichever_member_joins_first",
+   "test_lock_discipline.TestSplitTerminalWriteIsSurfaced.test_a_failed_identity_write_alone_still_rolls_the_ticket_back",
+   "test_lock_discipline.TestSplitTerminalWriteIsSurfaced.test_a_failed_rollback_names_both_errors_and_the_retry_that_replays",
+   "test_lock_discipline.TestStandaloneDispatchPacketIsLocked.test_the_commit_is_told_the_lock_is_already_held",
+   "test_lock_discipline.TestStandaloneDispatchPacketIsLocked.test_the_whole_projection_waits_for_the_run_lock",
+   "test_lock_discipline.TestTheOneLockedWritePrimitive.test_every_mutating_command_enters_through_the_primitive",
+   "test_lock_discipline.TestTheOneLockedWritePrimitive.test_no_command_reaches_its_handler_outside_that_primitive",
+   "test_lock_discipline.TestTheOneLockedWritePrimitive.test_the_primitive_refuses_by_raising_not_by_returning",
+   "test_lock_discipline.TestTheOneLockedWritePrimitive.test_the_primitive_yields_the_canonical_ticket_path",
+   "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_lock_held_stamps_inside_the_callers_critical_section",
+   "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_start_waits_for_a_run_lock_another_writer_holds",
+   "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_dispatch_facade_tells_its_child_the_lock_is_held",
+   "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_facade_really_starts_a_workspace_inside_its_own_run_lock",
+   "test_lock_discipline.TestWorkspaceStampsUnderTheRunLock.test_the_stamp_derives_from_the_text_read_under_the_lock",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_category_free_entry_does_not_gain_one",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_historical_category_value_is_preserved",
    "test_migrate_state_cases.apply.TestLegacyFriction.test_a_line_that_is_not_json_is_carried_across_unaltered",
@@ -1628,7 +1657,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "6ff69d401edc12dea787bf8d3984b46fab5c7185d593dac7cba96524a2a5a40b"
+  "sha256": "564885a170aba266d1b64a2636213aff65082bd2bbba23792465c98fd89771c0"
  },
  "mutation_owners": [
   {
@@ -3134,6 +3163,38 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_lock_discipline",
+   "owner": "TestSplitTerminalWriteIsSurfaced.test_a_failed_identity_write_alone_still_rolls_the_ticket_back",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_lock_discipline",
+   "owner": "TestSplitTerminalWriteIsSurfaced.test_a_failed_rollback_names_both_errors_and_the_retry_that_replays",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_lock_discipline",
+   "owner": "TestWorkspaceStampsUnderTheRunLock.test_start_waits_for_a_run_lock_another_writer_holds",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_lock_discipline",
+   "owner": "TestWorkspaceStampsUnderTheRunLock.test_the_facade_really_starts_a_workspace_inside_its_own_run_lock",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
    ]
   },
   {

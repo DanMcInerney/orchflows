@@ -163,6 +163,41 @@ def _segment_error(kind: str, value: str):
     if '/' in value or '\\' in value or '..' in value or (value == '.'):
         return {'error': f"unsafe {kind} '{value}': one path segment only, with no path separator and no '..'"}
     return None
+class TicketWriteRefused(Exception):
+    """A structured refusal raised before any lock is opened or byte written.
+
+    Returned as a payload it is one more thing a caller may forget to check,
+    which is how a malformed run id came to skip the lock and run the handler
+    anyway. Raised, the caller may only relay the payload or fail.
+    """
+
+    def __init__(self, payload: dict):
+        super().__init__(str(payload.get('error') or ''))
+        self.payload = payload
+def segment_refusal(run: str, ticket_id: str):
+    """Refuse either half of a ticket's identity that is not one segment."""
+    for kind, value in (('run id', run), ('ticket id', ticket_id)):
+        invalid = _segment_error(kind, value)
+        if invalid is not None:
+            return invalid
+    return None
+@contextmanager
+def locked_ticket_write(run: str, ticket_id: str):
+    """Refuse, lock, then yield the one path a mutating command may write.
+
+    One primitive holds all three, so no mutating command can hold two: both
+    identity segments are graded before the lock opens, the run lock covers
+    the whole body, and the body is handed the canonical ticket path rather
+    than a run and an id it rebuilds for itself.
+    """
+    refusal = segment_refusal(run, ticket_id)
+    if refusal is not None:
+        raise TicketWriteRefused(refusal)
+    with _run_lock(run):
+        tickets_root = _tickets_root()
+        if tickets_root is None:
+            raise TicketWriteRefused({'error': NO_SINK_ERROR})
+        yield tickets_root / run / f'{ticket_id}.md'
 def _iter_run_dirs(tickets_root: Path, run_filter):
     if tickets_root is None or not tickets_root.is_dir():
         return []
@@ -286,12 +321,11 @@ def _waiting_out_windows(action):
     unreachable directory are answers, and waiting two seconds for one of
     those on every run that has yet to open would cost the ordinary path
     to spare the rare one.
+
+    No facade import here, nor anywhere else in this family: a helper that
+    reaches back up to ``tickets.py`` closes an import cycle to re-point
+    whatever seam the facade held, and this one paid it per atomic write.
     """
-    if __package__:
-        from .tickets import _sync_seams
-    else:
-        from tickets import _sync_seams
-    _sync_seams()
     deadline = time.monotonic() + REPLACE_BUDGET_SECONDS
     while True:
         try:

@@ -160,6 +160,70 @@ class DispatchV1Test(unittest.TestCase):
             "--record-id <lifecycle:id>", payload["help"]["usage"],
         )
 
+    def test_an_exact_reopen_replays_before_the_assignment_seal_is_graded(self):
+        """contracts/dispatch.md's attempt precedence, which `dispatch-open`
+        was the one operation not to keep: an exact committed identity returns
+        its stored success first, and only an unseen open may then be refused
+        as `assignment-mismatch`. Graded the other way round, the retry of the
+        very call that opened an attempt was refused for a divergence that
+        arrived after it."""
+
+        opened = self.open()
+        self.assertEqual("opened", opened["dispatch"]["outcome"])
+        ticket = Path(self.temporary.name) / "tickets" / "run" / "T.md"
+        ticket.write_text(
+            self.ticket_text().replace(
+                "Deliver the behavior.", "Deliver a different behavior."
+            ),
+            encoding="utf-8",
+        )
+        diverged = self.ticket_text()
+        self.assertIn("Deliver a different behavior.", diverged)
+
+        replayed = self.open()
+        self.assertEqual("replayed", replayed["dispatch"]["outcome"])
+        self.assertEqual(
+            dict(opened["dispatch"], outcome="replayed"), replayed["dispatch"]
+        )
+        self.assertEqual(diverged, self.ticket_text())
+
+        unseen = self.open(dispatch_id="D2")
+        self.assertEqual("assignment-mismatch", unseen["code"])
+        self.assertEqual(diverged, self.ticket_text())
+
+    def test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten(self):
+        """The run identity's terminal timing is written once and never
+        rewritten, so the first member to join terminal used to freeze the
+        whole run's elapsed time at its own moment."""
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.assertNotIn("error", self.outcome())
+        # written after the outcome, so admission grades the sealed member
+        # alone: from here the run has a root, and `T` is one of its items
+        (Path(self.temporary.name) / "tickets" / "run" / "R.md").write_text(
+            "---\nid: R\nrun: run\nstatus: pending\nexecutor: orch-decompose\n"
+            "depends_on: []\n---\n\n## Objective\n\nThe run's root.\n",
+            encoding="utf-8",
+        )
+
+        joined = tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+
+        self.assertEqual("complete", joined["join"]["status"])
+        identity = json.loads(
+            (Path(self.temporary.name) / "runs" / "run" / "run.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertNotIn("terminal_at", identity)
+        self.assertNotIn("terminal_ticket_id", identity)
+
     def test_open_is_atomic_replayable_and_fences_a_second_live_attempt(self):
         opened = self.open()
         self.assertEqual("opened", opened["dispatch"]["outcome"])

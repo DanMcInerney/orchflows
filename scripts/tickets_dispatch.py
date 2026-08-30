@@ -58,6 +58,11 @@ else:
     try: GENERATION_SUBCOMMANDS = __import__("tickets_generations").GENERATION_SUBCOMMANDS
     except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
     _root_reservation_mismatch = __import__('tickets_root_reservation').mismatch
+# Installed by `scripts/tickets.py` at facade import, never imported back up
+# from here: the facade owns which seams it re-points, and a helper reaching
+# up for that is the import cycle `tickets_store` used to close per write.
+# `None` is a dispatcher loaded without its facade -- nothing to sync.
+_sync_seams = None
 def git_head():
     done = subprocess.run(["git", "rev-parse", "HEAD"], text=True, capture_output=True)
     return done.stdout.strip() if done.returncode == 0 else None
@@ -412,11 +417,8 @@ def _cmd_improvement(rest):
         return {'error': f'unwritable improvement record: {error}'}
     return {'improvement': {'mode': 'proposal' if proposal is not None else 'covered', 'name': proposal, 'path': str(path)}}
 def _dispatch(argv):
-    if __package__:
-        from .tickets import _sync_seams
-    else:
-        from tickets import _sync_seams
-    _sync_seams()
+    if _sync_seams is not None:
+        _sync_seams()
     if not argv:
         return {'error': 'missing subcommand: new | lint | bound-check | instantiate | grade | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | dispatch-receipt | check | set-status | join-noop-repair | result | worklog | run-state | improvement'}
     command, rest = (argv[0], argv[1:])

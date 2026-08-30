@@ -33,13 +33,18 @@ def _workspace_start(run: str, ticket_id: str, workspace: str | None):
     supplies the candidate as the child process' working directory and feeds
     back only the structured response, so a refusal cannot be repaired or
     translated into a second protocol.
+
+    ``--lock-held`` (``workspace_git.LOCK_HELD``, pinned by a test) says this
+    process already holds the run lock across the whole composition: the child
+    stamps inside the caller's critical section rather than waiting for a lock
+    its own parent holds while waiting for the child.
     """
 
     script = Path(__file__).with_name("workspace.py").resolve()
     candidate = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
     try:
         completed = subprocess.run(
-            [sys.executable, str(script), "start", run, ticket_id],
+            [sys.executable, str(script), "start", run, ticket_id, "--lock-held"],
             cwd=str(candidate), capture_output=True, text=True,
             encoding="utf-8", errors="replace",
         )

@@ -33,13 +33,13 @@ except ImportError:
     import state_root
 if __package__:
     from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
-    from .tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
+    from .tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, TicketWriteRefused, _load_ticket, _origin_url, _project_key, _read_identity, _runs_root, _same_project, _tickets_root, _writer_identity, locked_ticket_write, segment_refusal
     from .tickets_context import graded_admission
     from .tickets_packet import _claim_is_stale
     from .tickets_transitions import refusal
 else:
     from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
-    from tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
+    from tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, TicketWriteRefused, _load_ticket, _origin_url, _project_key, _read_identity, _runs_root, _same_project, _tickets_root, _writer_identity, locked_ticket_write, segment_refusal
     from tickets_context import graded_admission
     from tickets_packet import _claim_is_stale
     from tickets_transitions import refusal
@@ -198,10 +198,14 @@ def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime
     return {'claimed': claimed, 'skipped': skipped} if skipped else {'claimed': claimed}
 def _cmd_claim(rest):
     probe = list(rest)
-    _extract_flag(probe, '--by')
-    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
-        return _claim_under_run_lock(rest)
+    if _extract_flag(probe, '--by') is None:
+        return {'error': 'claim requires --by <name>'}
+    if len(probe) != 2:
+        return {'error': f'usage: {CLAIM_USAGE}'}
     run, ticket_id = probe
+    refused = segment_refusal(run, ticket_id)
+    if refused is not None:
+        return refused
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
@@ -223,11 +227,13 @@ def _cmd_claim(rest):
             if grade['findings']:
                 return {'error': 'admission refused', 'findings': grade['findings']}
     try:
-        with _run_lock(run):
-            return _claim_under_run_lock(rest, prior_text=prior_text, snapshot=snapshot, grade=grade)
+        with locked_ticket_write(run, ticket_id) as ticket_path:
+            return _claim_under_run_lock(rest, prior_text=prior_text, snapshot=snapshot, grade=grade, ticket_path=ticket_path)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {'error': f'unwritable ticket: {error}'}
-def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
+def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None, ticket_path=None):
     """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
     live claim, landing only while that exact snapshot still matches, so a moved ticket,
     dependency loses the race instead of claiming on a stale receipt. `ready`
@@ -247,10 +253,11 @@ def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
     held = binding_refusal(run, CLAIM_REMEDY)
     if held is not None:
         return {'error': held}
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
+    if ticket_path is None:
+        tickets_root = _tickets_root()
+        if tickets_root is None:
+            return {'error': NO_SINK_ERROR}
+        ticket_path = tickets_root / run / f'{ticket_id}.md'
     if not ticket_path.is_file():
         return {'error': f'ticket not found: {run}/{ticket_id}'}
     loaded = _load_ticket(ticket_path)

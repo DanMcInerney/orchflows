@@ -110,7 +110,6 @@ VERDICTS = {
     EXIT_WRONG_VANTAGE: "wrong-vantage",
     EXIT_SHARED_WORKSPACE: "shared-workspace",
 }
-AMBIGUOUS = workspace_git.AMBIGUOUS
 # Candidate diffs are reported in full. Suggested files are not read here.
 # One spelling of each subcommand's arguments, joined into ``USAGE`` for the
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
@@ -206,7 +205,8 @@ def _positional(rest, count: int, command: str) -> list:
 def _cmd_start(rest):
     """Establish and record the pack workspace. It does not claim."""
 
-    run, ticket_id = _positional(rest, 2, "start")
+    held = workspace_git.LOCK_HELD in rest
+    run, ticket_id = _positional([a for a in rest if a != workspace_git.LOCK_HELD], 2, "start")
     path = state_root.tickets_root() / run / f"{ticket_id}.md"
     if not path.is_file():
         raise Refused(f"ticket not found: {run}/{ticket_id}")
@@ -225,7 +225,7 @@ def _cmd_start(rest):
     if workspace_strategy == "evidence-store":
         store = (state_root.state_root() / "research" / run).resolve()
         store.mkdir(parents=True, exist_ok=True)
-        outcome = _record(path, prior_text, None, None, str(store))
+        outcome = _record(path, prior_text, None, None, str(store), run=run, lock_held=held)
         if "error" in outcome:
             raise Refused(outcome["error"])
         return {
@@ -260,7 +260,7 @@ def _cmd_start(rest):
     observed = workspace_git._baseline(head, dirty)
     stamped = str(data.get(BASELINE_KEY) or "").strip()
     baseline = stamped or observed
-    outcome = _record(path, prior_text, branch, baseline, str(top))
+    outcome = _record(path, prior_text, branch, baseline, str(top), run=run, lock_held=held)
     if "error" in outcome:
         raise Refused(outcome["error"])
     # after recording, never before: a tree that cannot be prepared is still
