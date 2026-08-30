@@ -46,7 +46,7 @@ class ProjectInstallBoundaryTest(unittest.TestCase):
                 side_effect=AssertionError("application reached"),
             ) as application:
                 with self.assertRaisesRegex(ValueError, "user"):
-                    install.apply_plan(project_plan)
+                    install.apply_plan(project_plan, accepted_source=install.resolve_source_commit())
             application.assert_not_called()
 
             home = root / "home"
@@ -70,7 +70,7 @@ class ProjectInstallBoundaryTest(unittest.TestCase):
                 manage_host_surfaces=False,
             )
             with patch.object(install, "resolve_source_commit", return_value="test-commit"):
-                user_receipt = install.apply_plan(user_application_plan)
+                user_receipt = install.apply_plan(user_application_plan, accepted_source=install.resolve_source_commit())
             self.assertEqual("user", user_receipt["scope"])
             self.assertTrue(user_application_plan.receipt_path.is_file())
 
@@ -244,7 +244,7 @@ class TestFrontendDistribution(unittest.TestCase):
                 frontend_action="refuse", manage_host_surfaces=False,
             )
             with self.assertRaisesRegex(RuntimeError, "healthy frontend assets"):
-                install.apply_plan(plan)
+                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
             self.assertFalse(plan.receipt_path.exists())
 
     def test_apply_repairs_receipts_and_reports_without_a_javascript_toolchain(self):
@@ -260,7 +260,7 @@ class TestFrontendDistribution(unittest.TestCase):
             (plan.frontend_home / "stale.js").write_text("stale", encoding="utf-8")
 
             with patch("subprocess.run", side_effect=AssertionError("Node/pnpm process invoked")):
-                receipt = install.apply_plan(plan)
+                receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             self.assertEqual(
                 install._frontend_manifest_identity(plan.frontend_home),
@@ -299,7 +299,7 @@ class TestFrontendDistribution(unittest.TestCase):
 
             with patch("installer.application.shutil.copy2", side_effect=interrupted_copy):
                 with self.assertRaisesRegex(OSError, "interrupted staging"):
-                    install.apply_plan(broken_plan)
+                    install.apply_plan(broken_plan, accepted_source=install.resolve_source_commit())
             self.assertEqual(install._frontend_manifest(plan.frontend_home), old_identity)
 
     def test_failed_swap_and_failed_restore_keep_the_prior_backup(self):
@@ -320,7 +320,7 @@ class TestFrontendDistribution(unittest.TestCase):
 
             with patch.object(Path, "replace", fail_swaps):
                 with self.assertRaisesRegex(OSError, "forced replacement failure"):
-                    install.apply_plan(plan)
+                    install.apply_plan(plan, accepted_source=install.resolve_source_commit())
             backups = list(plan.frontend_home.parent.glob(".ui-backup-*"))
             self.assertEqual(1, len(backups))
             self.assertEqual("prior", (backups[0] / "index.html").read_text(encoding="utf-8"))
@@ -332,7 +332,7 @@ class TestFrontendDistribution(unittest.TestCase):
             source.mkdir()
             (source / "index.html").write_text("<main>observe</main>", encoding="utf-8")
             plan = self._frontend_plan(root, source)
-            install.apply_plan(plan)
+            install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             with patch.object(install.Path, "home", return_value=root / "home"):
                 report = install.run_uninstall("user", None, dry_run=False)
@@ -360,7 +360,7 @@ class TestFrontendDistribution(unittest.TestCase):
             source.mkdir()
             (source / "index.html").write_text("observe", encoding="utf-8")
             plan = self._frontend_plan(root, source)
-            install.apply_plan(plan)
+            install.apply_plan(plan, accepted_source=install.resolve_source_commit())
             with patch.object(install.Path, "home", return_value=root / "home"):
                 report = install.run_uninstall("user", None, dry_run=True)
             self.assertTrue(plan.frontend_home.is_dir())

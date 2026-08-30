@@ -110,7 +110,7 @@ class TestScriptNames(unittest.TestCase):
             (home / ".claude").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
-                install.apply_plan(plan)
+                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             sink = home / "sink"
             elsewhere = home / "not-a-repo"

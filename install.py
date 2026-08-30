@@ -327,7 +327,7 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None, *, accepted_sou
         raise ValueError("installation supports user scope only")
     _sync_installer_seams()
     observed = resolve_source_commit() if source_commit is None else source_commit
-    accepted_source_commit(observed, accepted_source)
+    accepted_source_commit(observed, accepted_source, mutating=True)
     return _apply_plan(plan, observed, keep_role_agents)
 
 
@@ -433,11 +433,16 @@ def main(argv=None) -> int:
             print(result["note"])
         return 0
 
-    source_commit = None
+    source_commit = resolve_source_commit()
     if doctor_requested or not args.dry_run or args.accepted_source is not None:
-        source_commit = resolve_source_commit()
+        # Uninstall has already returned above; what remains that is not a
+        # dry run or a doctor probe consumes the checkout and must name the
+        # identity its gate accepted.
+        mutating = not (args.dry_run or doctor_requested)
         try:
-            accepted_source_commit(source_commit, args.accepted_source)
+            accepted_source_commit(
+                source_commit, args.accepted_source, mutating=mutating
+            )
         except ValueError as error:
             print(f"error: refusing source identity: {error}", file=sys.stderr)
             return 1
@@ -461,6 +466,9 @@ def main(argv=None) -> int:
     # like a run that had planned the whole install.
     if args.dry_run:
         print_plan(plan)
+        unresolved = source_commit_warning(source_commit)
+        if unresolved:
+            print(unresolved, file=sys.stderr)
         if plan.runtime_action == "refuse":
             print(
                 f"error: refusing install because {private_runtime_home()} is "
@@ -495,10 +503,6 @@ def main(argv=None) -> int:
     drift = source_commit_drift_message(old_receipt, receipt.get("source_commit"))
     if drift:
         print(drift)
-    unresolved = source_commit_warning(receipt.get("source_commit"))
-    if unresolved:
-        print(unresolved, file=sys.stderr)
-
     print_summary(plan)
     return 0
 

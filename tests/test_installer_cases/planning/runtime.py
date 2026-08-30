@@ -246,7 +246,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
         # reads it; the adapter writes and the receipt are what is graded.
         plan.lib_copies = []
         with patch.object(install.Path, "home", return_value=self.home):
-            receipt = install.apply_plan(plan, keep_role_agents=True)
+            receipt = install.apply_plan(plan, keep_role_agents=True, accepted_source=install.resolve_source_commit())
         adapters = [
             entry for entry in receipt["files"] if entry["kind"] == "adapter"
         ]
