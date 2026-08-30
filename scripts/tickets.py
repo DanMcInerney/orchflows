@@ -143,6 +143,7 @@ Adapter = _tickets_adapters_module.Adapter
 AdapterError = _tickets_adapters_module.AdapterError
 adapter_id = _tickets_adapters_module.adapter_id
 adapter_spec = _tickets_adapters_module.adapter_spec
+derived_isolation = _tickets_adapters_module.derived_isolation
 binding_findings = _tickets_admission_module.binding_findings
 graph_findings = _tickets_admission_module.graph_findings
 grade_admission = _tickets_admission_module.grade_admission

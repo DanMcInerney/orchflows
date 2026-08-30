@@ -225,6 +225,27 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
             self.assertEqual(str(main.resolve()), body[workspace.PATH_KEY])
             self.assertFalse(derived["path"].exists())
 
+    def test_an_item_with_no_isolation_field_derives_the_git_adapters_default(self):
+        """Absent ``isolation`` is not ``none``: a git-adapter pack still
+        establishes a tree of the item's own (``contracts/work-item.md``,
+        ``scripts/tickets_adapters.derived_isolation``). Established through
+        the shared source tree instead is the defect this proves against."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir = make_repo(tmp)
+            make_ticket(run_dir, "T1", isolation=None)
+            derived = state_root.candidate_paths("testrun", "T1")
+
+            done = self.establish(tmp, main)
+
+            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+            body = payload_of(done)["establish"]
+            self.assertEqual(str(derived["path"]), body[workspace.PATH_KEY])
+            self.assertEqual(derived["branch"], body[workspace.BRANCH_KEY])
+            self.assertTrue(body["isolated"])
+            self.assertNotEqual(str(main.resolve()), body[workspace.PATH_KEY])
+
     def test_the_tree_is_cut_before_the_run_lock_and_stamped_inside_it(self):
         """The lock protects the ticket's bytes, not git's seconds. Cutting
         the tree under it would make every sibling of a run wait through a

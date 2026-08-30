@@ -35,7 +35,8 @@ failure mode, and every ``tickets.py`` call it makes is graded by parsing
 the returned payload, never by exit status.
 
 Exit codes:
-    0  success, including ``isolation: none`` or absent
+    0  success, including ``isolation: none`` or an absent field whose
+       stamped pack's adapter does not establish isolation
     1  usage or internal error
     2  isolation-missing
     3  wrong-branch-point
@@ -312,7 +313,7 @@ def _cmd_check(rest):
     data = _graded(tickets._load_ticket(path), f"read {run}/{ticket_id}")
     reported = {"run": run, "id": ticket_id, "ticket": str(path)}
 
-    isolation = tickets.normalized_isolation(data.get(ISOLATION_KEY))
+    isolation = tickets.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
     if isolation != REQUIRED:
         # read-only lanes and unisolated-by-design items never reach git
         reported.update({ISOLATION_KEY: isolation, "verdict": "not required"})

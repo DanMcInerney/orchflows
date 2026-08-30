@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1968,
+  "count": 1970,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1861,6 +1861,7 @@
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_a_second_establishment_replays_without_moving_a_byte",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_a_stamped_baseline_decides_the_revision_the_tree_is_cut_from",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_an_item_that_declares_no_isolation_observes_the_source_tree",
+   "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_an_item_with_no_isolation_field_derives_the_git_adapters_default",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_it_creates_the_derived_worktree_and_records_what_it_created",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_the_tree_is_cut_before_the_run_lock_and_stamped_inside_it",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_two_siblings_of_one_run_are_established_into_two_trees",
@@ -1903,6 +1904,7 @@
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_already_on_the_callers_head_exits_isolation_missing",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_not_cut_from_the_base_exits_wrong_branch_point",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_that_does_not_resolve_exits_isolation_missing",
+   "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_an_absent_isolation_field_is_graded_as_required",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_an_in_scope_branch_passes_and_reports_what_it_changed",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_an_unresolvable_base_is_an_internal_error",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_required_with_no_recorded_branch_exits_no_record",
@@ -1971,7 +1973,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "790f9d5fee86e19cb6bf3c217e0f10833541fa5e505bbcda3ba88f50de689c93"
+  "sha256": "1c9272e425421790ffd71a7e4345db4be86e8bccb8b1039c6d3c011fc2b30ae7"
  },
  "mutation_owners": [
   {
