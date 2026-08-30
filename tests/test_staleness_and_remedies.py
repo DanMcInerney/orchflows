@@ -654,6 +654,63 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
         self.assertEqual("T", identity["terminal_ticket_id"])
 
 
+class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
+    """A closing section that repeats evidence a streamed result record
+    already materialized used to say only that it repeated -- not which flag
+    carries the unstreamed delta instead, so the caller had to guess one."""
+
+    def accept(self):
+        packet = self.project()["packet"]
+        path = self.home / "packet.json"
+        path.write_text(canonical_json(packet), encoding="utf-8")
+        with standing_in(self.candidate):
+            return self.dispatch(*receive_argv(path, packet, "worker"))
+
+    def stream_result(self, body="delivered"):
+        path = self.home / "streamed.md"
+        path.write_text(body, encoding="utf-8")
+        return self.dispatch(
+            "result", "run", "T",
+            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
+            "--dispatch-id", "D1", "--record-id", "result-1", "--by", "worker",
+            "--section", "Result", "--file", str(path),
+        )
+
+    def evidence_file(self, name, body):
+        path = self.home / f"outcome-{name}.txt"
+        path.write_text(body, encoding="utf-8")
+        return str(path)
+
+    def close(self, *, result="delivered", verification="verified"):
+        return tickets._dispatch([
+            "dispatch-outcome", "run", "T", "--status", "complete",
+            "--result-file", self.evidence_file("result", result),
+            "--verification-file", self.evidence_file("verification", verification),
+        ])
+
+    def test_a_repeated_section_names_its_flag(self):
+        self.accept()
+        self.stream_result()
+        refused = self.close(result="delivered")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("--result-file", refused["error"])
+
+    def test_a_different_cause_is_not_told_that_remedy(self):
+        """Empty Result evidence refuses `outcome-invalid` for being
+        incomplete, a cause the repeated-section flag has no bearing on."""
+
+        self.accept()
+        refused = self.close(result="")
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertNotIn("--result-file", refused["error"])
+
+    def test_the_named_flag_is_the_one_that_works(self):
+        self.accept()
+        self.stream_result()
+        committed = self.close(result="closing result delta")
+        self.assertNotIn("error", committed)
+
+
 class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
     """The seal stores the rare declared override verbatim and the packet
     carries the derived value, so both sides read through the one

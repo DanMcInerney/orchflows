@@ -360,9 +360,12 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
                     f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}"
                 )
                 if prior == materialized or f"\n\n{materialized}" in prior:
+                    flag = OUTCOME_FILE_FLAGS[section]
                     return text, None, _classification(
                         "outcome-invalid",
-                        f"outcome {section} repeats evidence already materialized by this dispatch",
+                        f"outcome {section} repeats evidence already materialized "
+                        f"by this dispatch. Pass only the unstreamed delta through "
+                        f"`{flag}`",
                     )
                 updated = _write_section(
                     updated, section, materialized,
