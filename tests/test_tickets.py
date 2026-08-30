@@ -42,6 +42,7 @@ from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
 )
 
 import scripts.tickets as tickets_mod
+import scripts.tickets_dispatch_receipt as tickets_dispatch_receipt
 import scripts.tickets_packet as tickets_packet
 import scripts.tickets_review as tickets_review
 
@@ -143,6 +144,39 @@ class AdapterRegistryTest(unittest.TestCase):
                         "widget-pack", "not-a-git-identity", str(root),
                     )
             self.assertIn("git:<full-commit-id>", str(caught.exception))
+
+    def test_dispatch_receive_resolves_the_pack_under_the_packet_workspace(self):
+        """A receiver's cwd never decides which pack answers a packet.
+
+        Regression for state sink friction/2026-08.jsonl, entry ts
+        2026-08-30T20:48:12Z: `dispatch-receive` refused `authority-mismatch
+        (pack does not resolve: field-notes-pack)` for a project-scope pack
+        that lived only inside the packet's own committed workspace, solely
+        because the receiving process happened to be standing elsewhere.
+        Pack resolution must walk from the packet's `workspace`, not from
+        `Path.cwd()`.
+        """
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = Path(raw) / "workspace"
+            workspace.mkdir()
+            self._pack(workspace, "evidence-store")
+            elsewhere = Path(raw) / "elsewhere-receiver"
+            elsewhere.mkdir()
+
+            packet = {"pack": "widget-pack", "workspace": str(workspace)}
+            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
+                accepted = tickets_dispatch_receipt._workspace_failure(packet)
+            self.assertIsNone(accepted)
+
+            # A pack that resolves in neither the established workspace nor
+            # installed/canonical scope still refuses closed, regardless of
+            # where the receiver stands.
+            bare = Path(raw) / "workspace-without-the-pack"
+            bare.mkdir()
+            unresolved = {"pack": "widget-pack", "workspace": str(bare)}
+            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
+                refused = tickets_dispatch_receipt._workspace_failure(unresolved)
+            self.assertEqual("authority-mismatch", refused["code"])
 
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):

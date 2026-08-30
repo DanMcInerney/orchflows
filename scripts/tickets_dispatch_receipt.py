@@ -54,17 +54,25 @@ def _workspace_failure(packet: dict):
     dispatcher.  The receiver must prove that fact from its own mechanism;
     accepting a second path argument here would let the receiver choose the
     authority it is supposed to authenticate.
+
+    The pack itself is resolved under that same established workspace, not
+    under the receiver's current directory: a project-scope pack the
+    dispatcher could see from inside the workspace must resolve the same
+    way for a receiver that has not yet stepped into it, and a receiver
+    standing somewhere unrelated must not have that location decide which
+    pack answers.
     """
 
+    expected = packet.get("workspace")
+    pack_root = expected if isinstance(expected, str) and expected.strip() else None
     try:
-        adapter = adapter_spec(packet.get("pack"))
+        adapter = adapter_spec(packet.get("pack"), root=pack_root)
     except AdapterError as error:
         return classification(
             "authority-mismatch",
             f"cannot derive workspace authority from packet adapter: {error.detail}",
         )
 
-    expected = packet.get("workspace")
     strategy = adapter.workspace_strategy
     if strategy == "git":
         if not isinstance(expected, str) or not expected.strip():
