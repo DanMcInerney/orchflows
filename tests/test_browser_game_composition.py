@@ -70,8 +70,8 @@ class BrowserGameCompositionTests(unittest.TestCase):
         }
         self.assertEqual(
             {
-                "00-record": "orch-draft",
-                "01-evidence": "orch-investigate",
+                "00-record": "orch-execute",
+                "01-evidence": "orch-spec",
                 "02-checkpoint": "orch-spec",
             },
             {name: fields["executor"] for name, fields in stubs.items()},
@@ -103,9 +103,8 @@ class BrowserGameCompositionTests(unittest.TestCase):
                     os.environ.pop(tickets.state_root.ENV_VAR, None)
                 else:
                     os.environ[tickets.state_root.ENV_VAR] = previous
-        self.assertIn("error", result, result)
-        self.assertIn("executor-unregistered", result["error"])
-        self.assertIn("orch-draft", result["error"])
+        self.assertNotIn("error", result, result)
+        self.assertIn("instantiate", result)
 
     def test_installer_adapter_exposes_exact_required_settings_without_legacy(self):
         path, text, _ = self._template()

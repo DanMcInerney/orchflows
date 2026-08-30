@@ -1,6 +1,6 @@
 ---
 id: 01-deliver
-executor: orch-decompose
+executor: orch-frontier
 depends_on: [00-mine]
 bound: <= 120 tool calls
 independence: gate

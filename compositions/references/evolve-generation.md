@@ -26,7 +26,7 @@ judgment.
    the same Worklog entry before delegation; pass every return through the join
    owner. Execute each slot in the mode 00-eval froze — that stub owns the mode
    dispatch — and freeze what it returns as the result/evidence. Submit that
-   fixed evidence to the eligibility verifier.
+   fixed evidence to the eligibility checker.
 4. Score the incumbent and the eligible candidates as one fixed set under the
    frozen evaluation, then apply the frozen promotion rule and margin;
    a `pending` response launches nothing.

@@ -44,7 +44,7 @@ class TestGrokRoleProfiles(unittest.TestCase):
         self.assertEqual(
             {
                 "orch-planner": ("gpt-5.6-sol", "ultra", "claude-opus-5", "max"),
-                "orch-worker": ("gpt-5.6-sol", "high", "claude-opus-5", "high"),
+                "orch-worker": ("gpt-5.6-luna", "xhigh", "claude-sonnet-5", "xhigh"),
             },
             {
                 name: (

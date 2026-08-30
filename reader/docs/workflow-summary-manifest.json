@@ -14,20 +14,6 @@
         {"source": "checkpoint", "target": "successors", "kind": "branch"}
       ]
     },
-    "fix": {
-      "nodes": [
-        {"id": "reproduce", "label": "Reproduce the failure"},
-        {"id": "cause", "label": "Prove the root cause"},
-        {"id": "repair", "label": "Repair the defect"},
-        {"id": "verify", "label": "Verify the regression guard"}
-      ],
-      "edges": [
-        {"source": "reproduce", "target": "cause", "kind": "sequence"},
-        {"source": "cause", "target": "cause", "kind": "loop"},
-        {"source": "cause", "target": "repair", "kind": "sequence"},
-        {"source": "repair", "target": "verify", "kind": "sequence"}
-      ]
-    },
     "benchmaker": {
       "nodes": [
         {"id": "acquire", "label": "Acquire fixed evidence"},

@@ -93,16 +93,16 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**single**",
             "**graph**",
             "**spec**",
-            "Establish `orch-planner` child",
-            "`tickets.py dispatch`",
-            "outer coordinator",
+            "`orch-planner`",
+            "`tickets.py dispatch <run>",
+            "outer coordinator joins",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
         self.assertEqual(1, host.count(authoring_pointer))
         self.assertRegex(
             collapsed_host,
-            re.compile(r"Skill/composition/pack/contract/router work uses those routes; seal .*custom-workflow-authoring\.md` in Context"),
+            re.compile(r"Skill/composition/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
         decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("relevant Context", decompose)
@@ -124,12 +124,12 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
             "--reply-to <parent-name> [--workspace <tree>]",
             "tickets.py dispatch-receive",
-            "accepted receipt",
+            "accepted",
             "exact `orch-decompose`",
-            "Establish `orch-planner` child",
-            "Send the emitted packet",
+            "establish the matching `orch-planner`",
+            "send the emitted packet",
             "ticket path is not a packet",
-            "outer coordinator integrates",
+            "outer coordinator joins",
             "starts `orch-frontier`",
         ):
             with self.subTest(anchor=anchor):
@@ -155,7 +155,8 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for text in (graph, frontier):
             with self.subTest(owner="graph" if text is graph else "frontier"):
                 self.assertIn("tickets.py dispatch", text)
-                self.assertIn("workspace_path", text)
+                if text is frontier:
+                    self.assertIn("workspace_path", text)
                 self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
@@ -213,17 +214,14 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "direct root",
             "lawful executor",
             "`orch-decompose` root",
-            "distinct outcomes or dependencies",
-            "same planner",
-            "`tickets.py dispatch`",
-            "outer coordinator",
-            "`orch-frontier`",
+            "distinct results/dependencies",
+            "one planner",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
 
-        self.assertRegex(spec_route, r"same planner.*`orch-decompose` root")
-        self.assertRegex(spec_route, r"outer coordinator.*`orch-frontier`")
+        self.assertRegex(spec_route, r"one planner.*`orch-decompose` root")
+        self.assertIn("planner never starts the frontier", spec_route)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
         with tempfile.TemporaryDirectory() as tmp:

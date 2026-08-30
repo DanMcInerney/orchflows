@@ -2,7 +2,7 @@
 """Run an opt-in, usage-consuming routing benchmark over two adapter sets.
 
 benchmarks/routing/README.md's decision rule gates one question: does Claude ship every skill
-adapter, or only the four both hosts expose? This measures it. For each
+adapter, or only the bounded names both hosts expose? This measures it. For each
 adapter set the probe renders an isolated user-scope install into a fresh
 temporary home, opens a plain temporary git repository as the session's
 working directory -- no AGENTS.md, so the installed host block is the only
@@ -49,7 +49,6 @@ from tools.live_routing_bench_support.grading import (  # noqa: E402
     ANSWER_LINE_RE,
     BY_NAME_RE,
     ERROR,
-    FIX_SKILL,
     ROUTE_CLASSES,
     SKILL_TOOLS,
     TEMPLATE_RE,

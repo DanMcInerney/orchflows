@@ -82,6 +82,7 @@ SCRIPT_SUPPORT_PREFIXES = (
     "tickets",
     "ui",
     "cutcheck",
+    "packs",
     "search_plan",
     "trace",
     "workspace",
@@ -193,6 +194,7 @@ from installer.models import (
     _is_build_artifact,
 )
 from installer.packages import (
+    accepted_source_commit,
     FORK_ARRIVAL_CLAUSE,
     ROLE_INSTRUCTIONS,
     TEMPLATE_MANIFEST,
@@ -320,11 +322,13 @@ def print_plan(plan: Plan) -> None:
     _presentation.print_plan(plan, resolve_source_commit())
 
 
-def apply_plan(plan: Plan, keep_role_agents: bool | None = None) -> dict:
+def apply_plan(plan: Plan, keep_role_agents: bool | None = None, *, accepted_source: str | None = None, source_commit: str | None = None) -> dict:
     if plan.scope != "user":
         raise ValueError("installation supports user scope only")
     _sync_installer_seams()
-    return _apply_plan(plan, resolve_source_commit(), keep_role_agents)
+    observed = resolve_source_commit() if source_commit is None else source_commit
+    accepted_source_commit(observed, accepted_source, mutating=True)
+    return _apply_plan(plan, observed, keep_role_agents)
 
 
 # --- CLI -----------------------------------------------------------------
@@ -353,6 +357,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip the prompts: user scope, and keep any role agent this machine has changed.",
     )
+    parser.add_argument("--accepted-source", metavar="COMMIT", help="Require this exact composite-gate source commit.")
     parser.add_argument("--dry-run", action="store_true", help="Print the full plan; write nothing.")
     parser.add_argument(
         "--doctor",
@@ -428,6 +433,19 @@ def main(argv=None) -> int:
             print(result["note"])
         return 0
 
+    source_commit = resolve_source_commit()
+    # Uninstall has already returned above; what remains that is not a dry
+    # run or a doctor probe consumes the checkout and must name the identity
+    # its gate accepted.  A read-only path grades one only if given one.
+    try:
+        accepted_source_commit(
+            source_commit, args.accepted_source,
+            mutating=not (args.dry_run or doctor_requested),
+        )
+    except ValueError as error:
+        print(f"error: refusing source identity: {error}", file=sys.stderr)
+        return 1
+
     try:
         plan = build_plan(scope, project_root, args.claude_adapters)
     except Exception as error:
@@ -435,9 +453,7 @@ def main(argv=None) -> int:
         return 1
 
     if doctor_requested:
-        report = inspect_installation(
-            plan, current_source_commit=resolve_source_commit()
-        )
+        report = inspect_installation(plan, current_source_commit=source_commit)
         print(json.dumps(report, sort_keys=True, separators=(",", ":")))
         return 0 if report["status"] == "coherent" else 1
 
@@ -449,6 +465,9 @@ def main(argv=None) -> int:
     # like a run that had planned the whole install.
     if args.dry_run:
         print_plan(plan)
+        unresolved = source_commit_warning(source_commit)
+        if unresolved:
+            print(unresolved, file=sys.stderr)
         if plan.runtime_action == "refuse":
             print(
                 f"error: refusing install because {private_runtime_home()} is "
@@ -474,7 +493,8 @@ def main(argv=None) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 1
     try:
-        receipt = apply_plan(plan, keep_role_agents=True if args.yes else None)
+        receipt = apply_plan(plan, keep_role_agents=True if args.yes else None,
+                             accepted_source=args.accepted_source, source_commit=source_commit)
     except Exception as error:
         print(f"error: install failed: {error}", file=sys.stderr)
         return 1
@@ -482,10 +502,6 @@ def main(argv=None) -> int:
     drift = source_commit_drift_message(old_receipt, receipt.get("source_commit"))
     if drift:
         print(drift)
-    unresolved = source_commit_warning(receipt.get("source_commit"))
-    if unresolved:
-        print(unresolved, file=sys.stderr)
-
     print_summary(plan)
     return 0
 

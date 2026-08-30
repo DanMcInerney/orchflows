@@ -1,10 +1,11 @@
 ---
 id: 03-result
-executor: orch-verify
+executor: orch-check
+pack: orch-code-pack
 depends_on: [02-campaign]
 bound: <= 30 tool calls
 independence: checker
-isolation: none
+isolation: required
 ---
 
 ## Goal

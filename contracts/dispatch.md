@@ -47,7 +47,10 @@ is `idempotency-conflict`. Only then may an unseen record be classified as
 attempt is `live-attempt`. Opening, replacing, retiring, outcome import, and
 joining are atomic ticket writes. Expiry makes unseen work stale but does not
 authorize or persist a successor: the expired live attempt must cross
-`dispatch-retire` or the atomic `dispatch-replace` transition first. The
+`dispatch-retire` or the atomic `dispatch-replace` transition first. Replacing
+an attempt still inside its lease supersedes authorized work, and silence is
+not evidence that work stopped: it is `supersession-undeclared` unless the
+caller declares it with `--supersede-live`. The
 absolute lease is never extended by transport or result motion.
 
 ## Packet and receipt
@@ -112,9 +115,10 @@ joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
 For review-stage tickets the same atomic join also advances the ticket's
 validated `orchflows.review.v1` chain: critique requires the canonical accepted
-subset, repair requires the exact output artifact, and verification must match
-that artifact and carry a `PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review
-kind has one closed field schema, and the ledger tip equals the
+subset from the file-based `--accepted-file <path|->` seam, repair requires the
+exact output artifact, and verification must match that artifact and carry a
+`PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review kind has one closed field
+schema, and the ledger tip equals the
 protocol-owned join's `review_identity`. `GatePlan` seals the normalized
 workspace; a code artifact is a full Git commit that resolves to that
 workspace's exact HEAD before packet commit and after repair.

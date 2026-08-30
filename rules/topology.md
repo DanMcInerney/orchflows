@@ -13,9 +13,8 @@ connects this law to the admission-owned state transition.
    an atom when its Goal is independently observable and fits its bound.
    Dependencies express result ordering, never preference.
 4. Parallel candidates are isolated. Predicted files need not be disjoint and
-   Suggested files grant no authority. At integration, inspect each actual
-   diff, detect overlapping paths and ordinary Git conflicts, resolve them,
-   regenerate shared derived artifacts once, and run the final gate.
+   Suggested files grant no authority. Integration itself is
+   [work-item.md](../contracts/work-item.md)'s.
 5. A graph is the mechanically observable shape of two or more executor
    results, sequential or parallel. Its decomposed physical run has one root
    generation and one composite gate: read-only two-pass blocker critiques

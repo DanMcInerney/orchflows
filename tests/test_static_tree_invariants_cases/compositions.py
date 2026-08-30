@@ -29,26 +29,43 @@ class TestCompositionTemplates(unittest.TestCase):
     TEMPLATES = {
         "benchmaker": (
             {
-                "00-acquire": "orch-decompose",
-                "01-design": "orch-eval-design",
-                "02-materialize": "orch-decompose",
-                "03-qualify": "orch-decompose",
-                "04-audit": "orch-critique",
-                "05-measure": "orch-verify",
+                "00-acquire": "orch-frontier",
+                "01-design": "orch-spec",
+                "02-materialize": "orch-execute",
+                "03-qualify": "orch-check",
+                "04-audit": "orch-check",
+                "05-measure": "orch-check",
             },
             "05-measure",
         ),
         "drift-canary": (
-            {"00-run": "orch-frontier", "01-diff": "orch-verify"},
+            {"00-run": "orch-frontier", "01-diff": "orch-loop"},
             "01-diff",
+        ),
+        "evolve": (
+            {
+                "00-eval": "orch-spec",
+                "01-eligibility": "orch-check",
+                "02-campaign": "orch-loop",
+                "03-result": "orch-check",
+            },
+            "03-result",
         ),
         "renovate": (
             {
-                "00-audit": "orch-critique",
-                "01-triage": "orch-triage",
-                "02-deliver": "orch-decompose",
+                "00-audit": "orch-check",
+                "01-triage": "orch-check",
+                "02-deliver": "orch-frontier",
             },
             "02-deliver",
+        ),
+        "self-improve": (
+            {"00-mine": "orch-loop", "01-deliver": "orch-frontier"},
+            "01-deliver",
+        ),
+        "skill-tournament": (
+            {"00-benchmark": "orch-frontier", "01-campaign": "orch-frontier"},
+            "01-campaign",
         ),
     }
 
@@ -72,6 +89,20 @@ class TestCompositionTemplates(unittest.TestCase):
                     expected,
                     {stub: fields.get("executor") for stub, fields in stubs.items()},
                 )
+
+    def test_no_composition_stub_uses_a_removed_executor(self):
+        registered = set(validate._ticket_law().CALLABLE_EXECUTORS)
+        for directory in sorted(COMPOSITIONS.iterdir()):
+            if not directory.is_dir() or directory.name == "references":
+                continue
+            with self.subTest(template=directory.name):
+                for path in directory.glob("*.md"):
+                    if path.name == TEMPLATE_FILE:
+                        continue
+                    fields = validate._ticket_law()._parse_frontmatter(
+                        path.read_text(encoding="utf-8")
+                    )
+                    self.assertIn(fields.get("executor"), registered, path)
 
     def test_each_template_ends_at_the_stub_carrying_its_done_check(self):
         for name, (_, terminal) in self.TEMPLATES.items():

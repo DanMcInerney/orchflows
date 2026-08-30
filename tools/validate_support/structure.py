@@ -34,10 +34,6 @@ COMPOSITION_SCRIPT_SUFFIXES = frozenset({
 })
 COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
 COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
-SUPERSEDED_COMPOSITION_EXECUTORS = frozenset({
-    "orch-critique", "orch-draft", "orch-eval-design", "orch-investigate",
-    "orch-repair", "orch-self-improve", "orch-tdd", "orch-triage", "orch-verify",
-})
 from tools.validate_support import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
@@ -401,13 +397,6 @@ def _validate_stub_executor(
                 f"executor names script '{target}', which does not exist in the tree",
             )
         return
-    if executor in SUPERSEDED_COMPOSITION_EXECUTORS:
-        diag.warn(
-            file_label,
-            f"executor-unregistered: '{executor}' is a superseded shipped "
-            "composition binding; instantiate will refuse it by callable registry",
-        )
-        return
     if executor not in skill_names:
         diag.error(
             file_label,
@@ -454,10 +443,7 @@ def validate_templates(diag: Diagnostics) -> None:
         for path, message in tickets.template_defects(directory):
             label = rel(Path(path))
             executor = tickets._parse_frontmatter(_read_source(Path(path))).get("executor")
-            if "executor-unregistered:" in message and executor in SUPERSEDED_COMPOSITION_EXECUTORS:
-                diag.warn(label, message + "; instantiate refuses this shipped stub")
-            else:
-                diag.error(label, message)
+            diag.error(label, message)
 
         manifest_text = _read_source(directory / manifest_name)
         n = body_words(_split_frontmatter(manifest_text)[1])
@@ -475,8 +461,6 @@ def validate_templates(diag: Diagnostics) -> None:
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")
             if isinstance(executor, str) and executor.strip():
-                if executor.strip() in SUPERSEDED_COMPOSITION_EXECUTORS:
-                    continue
                 _validate_stub_executor(
                     executor.strip(), rel(path), skill_names, diag, tickets
                 )

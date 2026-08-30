@@ -1,6 +1,6 @@
 ---
 id: 03-qualify
-executor: orch-decompose
+executor: orch-check
 pack: {{pack}}
 depends_on: [02-materialize]
 bound: <= 80 tool calls

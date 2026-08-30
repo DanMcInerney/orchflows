@@ -5,8 +5,11 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import state_root
-import tickets
+try:
+    from . import state_root, tickets
+except ImportError:
+    import state_root
+    import tickets
 
 
 EXIT_ERROR = 1
@@ -54,6 +57,27 @@ def _git(cwd, *args: str):
         completed.stdout.decode("utf-8", "replace"),
         completed.stderr.decode("utf-8", "replace"),
     )
+
+
+def actual_top_level(cwd=None, git=None):
+    """Return the Git checkout top-level observed from ``cwd``.
+
+    A receiver's workspace authority is a fact of where that receiver is
+    standing.  It must not be supplied as an argument to the receipt command,
+    because doing so lets a child name a different tree than the one it can
+    actually write.  Keep the observation here with the other Git mechanics
+    so receipt validation does not grow a second Git reader.
+    """
+
+    if git is None:
+        git = _git
+    code, out, err = git(cwd, "rev-parse", "--show-toplevel")
+    if code != 0:
+        raise Refused(f"git rev-parse --show-toplevel: {err.strip()}")
+    value = out.strip()
+    if not value:
+        raise Refused("git rev-parse --show-toplevel returned no path")
+    return Path(value).resolve()
 
 
 def _dirty_paths(cwd, git=_git) -> list:

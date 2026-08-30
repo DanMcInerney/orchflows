@@ -409,7 +409,7 @@ def adjudicate(
     except (TypeError, ValueError) as error:
         raise ReviewError(f"critique findings and accepted set must be valid JSON arrays: {error}") from error
     if not isinstance(findings, list) or not isinstance(accepted, list):
-        raise ReviewError("critique join requires --accepted <json-array>")
+        raise ReviewError("critique join requires an accepted blocker file")
     try:
         _finding_values(findings, "critique findings")
         _finding_values(accepted, "critique accepted")

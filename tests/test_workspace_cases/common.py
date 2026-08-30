@@ -89,22 +89,27 @@ def make_ticket(
     run_dir: Path, tid: str, *, scope=("scratch",), extra=(),
     pack="orch-code-pack",
 ) -> Path:
-    """A fixture work item. Never this run's own ticket: the base revision of
-    this run does not contain ``workspace.py``, so no ticket of it declares
-    ``isolation`` and none may be graded by it."""
+    """A fixture work item, never this run's own ticket.
+
+    The cutover made an isolated candidate the only lawful Git-adapter
+    shape, so the item carries ``isolation: required`` unless a caller is
+    grading some other value through ``extra``.
+    """
 
     lines = [
         "---",
         f"id: {tid}",
         "run: testrun",
         "status: claimed",
-        "executor: orch-tdd",
+        "executor: orch-execute",
         f"pack: {pack}",
         "depends_on: []",
         "write_scope:",
     ]
     lines += [f"  - {entry}" for entry in scope]
     lines += ["bound: 30m"]
+    if not any(key == "isolation" for key, _ in extra):
+        lines += ["isolation: required"]
     lines += [f"{key}: {value}" for key, value in extra]
     if not any(key == "mutations" for key, _ in extra):
         plans = []

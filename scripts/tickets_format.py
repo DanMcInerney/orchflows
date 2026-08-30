@@ -79,7 +79,8 @@ SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
 # twin and the issue refusal cannot drift apart. Re-exported here because
 # this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
-TERMINAL_STATES = ('complete', 'blocked', 'stalled', 'limited', 'failed')
+DELIVERED_STATE = 'complete'
+TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
 ROOT_EXECUTOR = 'orch-decompose'

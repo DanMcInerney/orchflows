@@ -47,7 +47,7 @@ class TestInstallReceipt(unittest.TestCase):
                 ],
             )
 
-            receipt = install.apply_plan(plan)
+            receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             self.assertEqual(4, receipt["version"])
             self.assertIn("source_commit", receipt)
@@ -86,7 +86,7 @@ class TestInstallReceipt(unittest.TestCase):
                 codex_agents=[(agent, 'name = "orch-worker"\n')],
             )
 
-            receipt = install.apply_plan(plan, keep_role_agents=True)
+            receipt = install.apply_plan(plan, keep_role_agents=True, accepted_source=install.resolve_source_commit())
 
             self.assertEqual("personal = true\n", agent.read_text(encoding="utf-8"))
             # The rest of the install is no longer collateral of one
@@ -124,7 +124,7 @@ class TestInstallReceipt(unittest.TestCase):
                 project, receipt_path=receipt_path, claude_agents=[(agent, "updated\n")]
             )
 
-            install.apply_plan(plan, keep_role_agents=True)
+            install.apply_plan(plan, keep_role_agents=True, accepted_source=install.resolve_source_commit())
 
             # A receipt-owned path dropped from the plan would be deleted as
             # stale; keeping it must not mean losing it.
@@ -139,7 +139,7 @@ class TestInstallReceipt(unittest.TestCase):
             agent.write_text("modified\n", encoding="utf-8")
             plan = self._role_agent_plan(project, claude_agents=[(agent, "updated\n")])
 
-            install.apply_plan(plan, keep_role_agents=False)
+            install.apply_plan(plan, keep_role_agents=False, accepted_source=install.resolve_source_commit())
 
             self.assertEqual("updated\n", agent.read_text(encoding="utf-8"))
 
@@ -151,7 +151,7 @@ class TestInstallReceipt(unittest.TestCase):
             plan = self._role_agent_plan(project, claude_agents=[(agent, "updated\n")])
 
             with self.assertRaisesRegex(FileExistsError, "not a regular file"):
-                install.apply_plan(plan, keep_role_agents=True)
+                install.apply_plan(plan, keep_role_agents=True, accepted_source=install.resolve_source_commit())
 
     def test_legacy_header_role_profile_without_receipt_is_kept(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -167,7 +167,7 @@ class TestInstallReceipt(unittest.TestCase):
                 project, codex_agents=[(agent, 'name = "orch-worker"\n')]
             )
 
-            install.apply_plan(plan, keep_role_agents=True)
+            install.apply_plan(plan, keep_role_agents=True, accepted_source=install.resolve_source_commit())
 
             self.assertEqual(legacy_header + "old = true\n", agent.read_text(encoding="utf-8"))
 
@@ -178,7 +178,7 @@ class TestInstallReceipt(unittest.TestCase):
             {"model": "claude-opus-5", "effort": "max"}, profiles["orch-planner"]["claude"]
         )
         self.assertEqual(
-            {"model": "claude-opus-5", "effort": "high"}, profiles["orch-worker"]["claude"]
+            {"model": "claude-sonnet-5", "effort": "xhigh"}, profiles["orch-worker"]["claude"]
         )
 
     def test_reinstall_removes_receipt_owned_hyphenated_codex_agent(self):
@@ -214,7 +214,7 @@ class TestInstallReceipt(unittest.TestCase):
                 codex_agents=[(new_agent, 'name = "orch_worker"\n')],
             )
 
-            install.apply_plan(plan)
+            install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             self.assertFalse(old_agent.exists())
             self.assertEqual('name = "orch_worker"\n', new_agent.read_text(encoding="utf-8"))
@@ -257,7 +257,7 @@ class TestInstallReceipt(unittest.TestCase):
                 install.Path, "home", return_value=home
             ), mock_host_clis("grok"), self._no_runtime_build():
                 plan = install.build_plan("user", None)
-                receipt = install.apply_plan(plan)
+                receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             configs = [entry for entry in plan.configs if entry.kind == "grok-config"]
             self.assertEqual(1, len(configs))
@@ -327,7 +327,7 @@ class TestInstallReceipt(unittest.TestCase):
                     grok_agents=[(kept_agent, "worker\n")],
                 )
 
-                install.apply_plan(plan)
+                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
                 self.assertFalse(stale_skill.exists())
                 self.assertFalse(stale_skill.parent.exists())
@@ -358,7 +358,7 @@ class TestInstallReceipt(unittest.TestCase):
                     install.Path, "home", return_value=home
                 ), mock_host_clis(*hosts), self._no_runtime_build():
                     plan = install.build_plan("user", None)
-                    install.apply_plan(plan)
+                    install.apply_plan(plan, accepted_source=install.resolve_source_commit())
                 censuses.append(
                     {
                         str(path.relative_to(home)): digest(path)

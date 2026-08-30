@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1600,
+  "count": 1625,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -93,6 +93,9 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_accepted_receipt_is_a_durable_replayable_attempt_record",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_historical_reply_to_replays_before_current_validation",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_dispatch_receipt_inspection_distinguishes_missing_attempt_and_receipt",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_dispatch_receipt_inspection_projects_only_the_persisted_receipt",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_dispatch_receipt_inspection_refuses_inaccessible_and_malformed_state",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_file_and_standard_input_carry_the_packet_without_shell_reconstruction",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse",
@@ -105,6 +108,7 @@
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_ticket_packet_cannot_be_downgraded_to_ephemeral",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_without_state_sink_is_a_structured_refusal",
+   "test_dispatch_packet_v1.DispatchPacketV1Test.test_removed_receiver_workspace_and_outcome_content_forms_refuse",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_research_projection_requires_the_recorded_store_to_exist",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_result_outcome_and_join_require_the_accepted_receipt",
    "test_dispatch_packet_v1.DispatchPacketV1Test.test_ticket_inline_cannot_be_downgraded_to_ephemeral",
@@ -115,10 +119,14 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_is_a_public_one_call_surface",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_preserves_ticket_bytes_on_a_pre_open_refusal",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_readiness_refusal_without_starting_workspace",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_surfaces_a_retirement_that_failed_to_resolve",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_can_cross_the_explicit_atomic_replacement",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_rejects_unseen_records_without_mutation",
@@ -142,6 +150,7 @@
    "test_dispatch_v1.DispatchV1Test.test_replace_help_states_lifecycle_record_id_namespace",
    "test_dispatch_v1.DispatchV1Test.test_replacement_identity_injection_is_refused_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_replacement_is_atomic_and_old_commits_obey_replay_first_precedence",
+   "test_dispatch_v1.DispatchV1Test.test_replacing_work_inside_its_own_lease_must_be_declared",
    "test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation",
    "test_dispatch_v1.DispatchV1Test.test_result_write_and_receipt_are_one_replayable_operation",
    "test_dispatch_v1.DispatchV1Test.test_retirement_allows_a_unique_new_attempt",
@@ -175,6 +184,8 @@
    "test_install_doctor.TestInstallDoctor.test_desired_plan_and_receipt_drift_have_stable_findings",
    "test_install_doctor.TestInstallDoctor.test_each_bootstrap_surface_reports_drift_by_stable_identity",
    "test_install_doctor.TestInstallDoctor.test_each_grok_artifact_reports_presence_and_staleness_by_receipt",
+   "test_install_doctor.TestInstallDoctor.test_owned_runtime_mismatch_is_a_read_only_failure",
+   "test_install_doctor.TestInstallDoctor.test_runtime_receipt_paths_must_match_the_runtime_under_inspection",
    "test_install_doctor.TestInstallDoctor.test_the_doctor_inspects_whatever_grok_home_the_override_names",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_kind_the_receipt_carries_is_a_kind_the_doctor_knows",
    "test_install_doctor_parity.TestDoctorInspectsWhatTheInstallerWrites.test_every_receipt_entry_the_installer_writes_is_one_the_doctor_inspects",
@@ -403,9 +414,14 @@
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
    "test_installer.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped",
    "test_installer.TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
+   "test_installer.TestSourceCommit.test_a_dry_run_says_why_it_could_not_resolve_a_source_commit",
+   "test_installer.TestSourceCommit.test_a_mutating_install_without_an_accepted_identity_changes_nothing",
+   "test_installer.TestSourceCommit.test_accepted_source_commit_is_one_fail_closed_gate_identity",
    "test_installer.TestSourceCommit.test_an_empty_gitdir_pointer_does_not_read_the_working_tree",
+   "test_installer.TestSourceCommit.test_an_unresolved_checkout_refuses_a_mutating_install",
+   "test_installer.TestSourceCommit.test_dry_run_and_doctor_still_inspect_without_an_accepted_identity",
    "test_installer.TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
-   "test_installer.TestSourceCommit.test_main_warns_when_the_installed_receipt_names_no_source_commit",
+   "test_installer.TestSourceCommit.test_main_refuses_a_nonmatching_accepted_source_before_application",
    "test_installer.TestSourceCommit.test_receipt_carries_resolved_source_commit",
    "test_installer.TestSourceCommit.test_resolve_source_commit_falls_back_to_packed_refs",
    "test_installer.TestSourceCommit.test_resolve_source_commit_follows_a_branch_ref",
@@ -498,7 +514,11 @@
    "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
    "test_packs.PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
    "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
+   "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
+   "test_packs.PackResolutionTests.test_public_facade_uses_same_family_resolver_owner",
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
+   "test_packs.PackResolutionTests.test_root_keyword_is_not_a_resolver_compatibility_alias",
+   "test_packs.PackResolutionTests.test_scope_aliases_are_not_accepted_by_the_resolver_facade",
    "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
    "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
@@ -683,6 +703,7 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "test_templates.TemplateTest.test_all_routed_compositions_have_current_ticket_shape",
+   "test_templates.TemplateTest.test_every_routed_composition_instantiates",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
@@ -713,16 +734,17 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_rejects_superseded_composition_executors",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
@@ -734,6 +756,7 @@
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
    "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
    "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
+   "test_tickets.AdapterRegistryTest.test_unknown_pack_cells_fail_through_the_shared_resolver_parser",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
@@ -1065,7 +1088,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_slash_command_is_read_by_its_first_token",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_text_answer_after_a_skill_never_overrides_the_skill",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_transcript_with_nothing_route_bearing_is_unrouted",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_windows_rendered_fix_path_still_grades_as_fix",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_a_windows_rendered_removed_fix_path_stays_named",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_empty_transcript_is_unrouted",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_an_unauthenticated_session_grades_error_not_answer",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_any_other_skill_grades_as_that_name",
@@ -1084,7 +1107,7 @@
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_cost_is_taken_from_the_stream_when_it_reports_one",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_deciding_event_is_reported",
    "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_first_route_bearing_event_decides_it",
-   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_fix_skill_and_the_fix_instantiation_both_grade_as_fix",
+   "tests.test_live_harnesses_cases.routing_grading_cases.TestRoutingGrading.test_the_removed_fix_name_is_only_a_named_invocation",
    "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_failing_install_is_reported_rather_than_measured",
    "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_a_timed_out_case_is_recorded_as_an_error_not_a_misroute",
    "tests.test_live_harnesses_cases.routing_run_cases.TestRoutingBenchRun.test_case_requires_role_and_exact_skill",
@@ -1265,6 +1288,7 @@
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionLinks.test_every_composition_link_resolves",
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_each_template_binds_the_executors_its_composition_named",
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_each_template_ends_at_the_stub_carrying_its_done_check",
+   "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_no_composition_stub_uses_a_removed_executor",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_decomposer_states_the_goal_by_anchor",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_join_skips_the_repair_on_an_empty_accepted_set",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_cells_put_proven_seams_on_the_first_frontier",
@@ -1332,16 +1356,17 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_fix_template_rejects_superseded_composition_executors",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_routes_actual_overlap_to_integration",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
@@ -1603,7 +1628,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "103df541555dd7f090cf414df53712abbbbee295ea893315363d551f0b564fed"
+  "sha256": "6ff69d401edc12dea787bf8d3984b46fab5c7185d593dac7cba96524a2a5a40b"
  },
  "mutation_owners": [
   {
@@ -1628,6 +1653,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests._receiver_vantage",
+   "owner": "standing_in",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "cwd"
    ]
   },
   {
@@ -1699,6 +1732,14 @@
   },
   {
    "module": "tests.test_dispatch_packet_v1",
+   "owner": "DispatchPacketV1Test.test_dispatch_receipt_inspection_refuses_inaccessible_and_malformed_state",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_packet_v1",
    "owner": "DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -1748,7 +1789,31 @@
   },
   {
    "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_preserves_ticket_bytes_on_a_pre_open_refusal",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
    "owner": "DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -1765,6 +1830,14 @@
   {
    "module": "tests.test_dispatch_v1",
    "owner": "DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_v1",
+   "owner": "DispatchV1Test.test_dispatch_facade_surfaces_a_retirement_that_failed_to_resolve",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -2565,6 +2638,38 @@
   },
   {
    "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_a_dry_run_says_why_it_could_not_resolve_a_source_commit",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_a_mutating_install_without_an_accepted_identity_changes_nothing",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_an_unresolved_checkout_refuses_a_mutating_install",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
+   "owner": "TestSourceCommit.test_dry_run_and_doctor_still_inspect_without_an_accepted_identity",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.receipt.source_commit",
    "owner": "TestSourceCommit.test_main_prints_drift_on_second_install_with_moved_head",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -2573,7 +2678,7 @@
   },
   {
    "module": "tests.test_installer_cases.receipt.source_commit",
-   "owner": "TestSourceCommit.test_main_warns_when_the_installed_receipt_names_no_source_commit",
+   "owner": "TestSourceCommit.test_main_refuses_a_nonmatching_accepted_source_before_application",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -3581,6 +3686,14 @@
    "module": "tests.test_super_research_runner",
    "owner": "SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_templates",
+   "owner": "TemplateTest.test_every_routed_composition_instantiates",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]

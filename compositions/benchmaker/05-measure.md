@@ -1,10 +1,11 @@
 ---
 id: 05-measure
-executor: orch-verify
+executor: orch-check
+pack: {{pack}}
 depends_on: [04-audit]
 bound: <= 40 tool calls
 independence: checker
-isolation: none
+isolation: required
 ---
 
 ## Goal

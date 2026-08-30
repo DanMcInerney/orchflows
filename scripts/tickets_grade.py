@@ -126,14 +126,20 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
     root_executor = _executor(root_value)
     members = _member_ids(root_id, snapshot)
     if root_executor == ROOT_EXECUTOR:
+        if str(root_data.get("independence") or "").strip().strip("`").strip() == "checker":
+            raise GradeError(f"decomposed root {root_id} must declare independence=gate")
         if len(members) == 1:
             raise GradeError(f"root {root_id} is over-decomposition: one executor result member")
         if not members:
             raise GradeError(f"root {root_id} has no executor result members")
         shape, width = "graph", len(members)
     elif root_executor == LOOP_EXECUTOR:
+        if members:
+            raise GradeError(f"root {root_id} is a loop root with executor-result members")
         shape, width = "loop", 1
     else:
+        if members:
+            raise GradeError(f"root {root_id} is a direct root with executor-result members")
         shape, width = "single", 1
     pack = str(root_data.get("pack") or "").strip().strip("`").strip()
     if not pack:

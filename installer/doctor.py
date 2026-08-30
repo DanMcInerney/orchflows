@@ -8,6 +8,12 @@ from pathlib import Path
 
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
+from .runtime import (
+    private_runtime_home,
+    private_runtime_is_healthy,
+    private_runtime_is_owned,
+    private_runtime_python,
+)
 
 
 def _digest(path: Path) -> str:
@@ -181,6 +187,50 @@ def _inspect_receipt(
     return findings
 
 
+def _inspect_runtime(plan: Plan, receipt: dict) -> list[dict]:
+    """Compare the installed private runtime with the plan and receipt.
+
+    Runtime files intentionally stay out of ``files``: the environment is a
+    private venv whose interpreter and package closure are owned by
+    ``installer.runtime``.  A real user plan carries ``runtime_action``;
+    hand-built plan fixtures leave it ``None`` and do not claim a runtime.
+    Keeping that distinction makes the doctor check the same runtime the
+    installer would use without teaching fixtures (or legacy receipts) a
+    second home.
+    """
+
+    if plan.runtime_action is None:
+        return []
+
+    home = private_runtime_home()
+    python = private_runtime_python(home)
+    runtime = receipt.get("runtime")
+    findings = []
+    if not isinstance(runtime, dict):
+        findings.append(_finding("receipt.runtime-shape", plan.receipt_path))
+    else:
+        expected = {
+            "home": str(home),
+            "python": str(python),
+            "uninstall": "retained",
+        }
+        for field, value in expected.items():
+            if runtime.get(field) != value:
+                findings.append(
+                    _finding(
+                        f"receipt.runtime-{field}",
+                        plan.receipt_path,
+                        expected=value,
+                        actual=runtime.get(field),
+                    )
+                )
+
+    if not private_runtime_is_healthy(home):
+        identity = "runtime.unowned" if not private_runtime_is_owned(home) else "runtime.unhealthy"
+        findings.append(_finding(identity, home, python=str(python)))
+    return findings
+
+
 def _inspect_planned_file(surface, kind, destination, source, content):
     if source is not None and not source.is_file():
         return _finding("desired-plan.missing-source", source, kind=kind)
@@ -271,6 +321,7 @@ def inspect_installation(
         findings.extend(
             _inspect_receipt(plan, receipt, planned_files, current_source_commit)
         )
+        findings.extend(_inspect_runtime(plan, receipt))
 
     findings.sort(
         key=lambda item: (

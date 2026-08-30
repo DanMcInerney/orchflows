@@ -139,12 +139,23 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
         return "outcome evidence is incomplete"
     if (content["status"] == "suspended") != bool(evidence["Handoff"].strip()):
         return "outcome Handoff does not match its disposition"
+    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
+        try:
+            if __package__:
+                from .tickets_review_schema import SchemaError, finding_values
+            else:
+                from tickets_review_schema import SchemaError, finding_values
+            for section in ("Result", "Feedback"):
+                values = parse_canonical_json(evidence[section])
+                finding_values(values, f"critique outcome {section}")
+        except (TypeError, ValueError, SchemaError) as error:
+            return f"critique outcome findings are invalid: {error}"
     return None
 
 
 def _result_failure(record, content, *, run, ticket_id, attempt):
     record_id = record["record_id"]
-    required = {"assignment_seal", "body", "mode", "operation", "section", "writer"}
+    required = set(DISPATCH_RESULT_RECORD_FIELDS)
     if not _closed(content, required):
         return _invalid(f"result record '{record_id}' content has an invalid shape")
     if (
@@ -156,6 +167,15 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
         or not isinstance(content.get("body"), str)
     ):
         return _invalid(f"result record '{record_id}' content differs from its attempt")
+    if (".gate.critique." in ticket_id or ticket_id.endswith(".check")) and content["section"] in {"Result", "Feedback"}:
+        try:
+            if __package__:
+                from .tickets_review_schema import SchemaError, finding_values
+            else:
+                from tickets_review_schema import SchemaError, finding_values
+            finding_values(parse_canonical_json(content["body"]), f"critique {content['section']} result")
+        except (TypeError, ValueError, SchemaError) as error:
+            return _invalid(f"result record '{record_id}' critique findings are invalid: {error}")
     success = record["success"]
     if not _closed(success, set(DISPATCH_RESULT_SUCCESS_FIELDS)):
         return _invalid(f"result record '{record_id}' has a non-canonical stored success")
@@ -448,3 +468,35 @@ def state(data: dict):
                         "critique adjudication authority differs from the accepted receiver",
                     )
     return parsed, None
+
+
+def attempt_window(data: dict):
+    """Return the current attempt's immutable clock from validated state.
+
+    It reads the clock `state` has just validated, so it belongs beside that
+    reader rather than beside the operations that consume the window.
+    """
+
+    validated, failure = state(data)
+    if failure is not None or validated is None:
+        return None, failure
+    attempts = validated["attempts"]
+    if not attempts:
+        return None, classification(
+            "dispatch-record-invalid", "dispatch_v1 has no execution attempt"
+        )
+    attempt = next(
+        (item for item in reversed(attempts) if item.get("state") == "live"),
+        attempts[-1],
+    )
+    opened = _parse_iso(attempt.get("opened_at"))
+    expires = _parse_iso(attempt.get("lease_expires_at"))
+    if opened is None or expires is None:
+        return None, classification(
+            "dispatch-record-invalid", "dispatch attempt has no absolute lease window"
+        )
+    return {
+        "attempt": attempt,
+        "opened_at": opened,
+        "lease_expires_at": expires,
+    }, None

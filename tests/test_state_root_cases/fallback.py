@@ -207,7 +207,7 @@ class TestThereIsNoFallback(SinkFixture):
     def test_the_flat_installed_layout_resolves_when_the_resolver_is_beside_it(self):
         flat = self.tmp / "bin"
         flat.mkdir()
-        names = ["friction.py", "state_root.py"] + [
+        names = ["friction.py", "packs.py", "packs_support.py", "state_root.py"] + [
             path.name for path in SCRIPTS_DIR.glob("tickets*.py")
         ]
         for name in names:

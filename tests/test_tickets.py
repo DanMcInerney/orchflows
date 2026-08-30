@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests._receiver_vantage import git_checkout, receive_argv, standing_in
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 
@@ -52,6 +53,24 @@ class AdapterRegistryTest(unittest.TestCase):
             with self.assertRaises(tickets_mod.AdapterError) as caught:
                 tickets_mod.adapter_id("widget-pack", root=root)
             self.assertEqual("adapter-unregistered", caught.exception.code)
+
+    def test_unknown_pack_cells_fail_through_the_shared_resolver_parser(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            pack = root / "packs" / "widget-pack"
+            pack.mkdir(parents=True)
+            (pack / "SKILL.md").write_text(
+                "---\nname: widget-pack\n---\n\n"
+                "| cell | binding |\n| --- | --- |\n"
+                "| workspace | widget records |\n"
+                "| adapter | git |\n"
+                "| executor | orch-tdd |\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(tickets_mod.AdapterError) as caught:
+                tickets_mod.adapter_id("widget-pack", root=root)
+            self.assertEqual("adapter-declaration-invalid", caught.exception.code)
 
     def test_admission_reports_exactly_adapter_unregistered_for_the_pack_key(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -121,7 +140,9 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
 
 
 def _v1_result_ticket(tmp: Path, *, by="agent-a"):
-    (tmp / ".git").mkdir()
+    # A receipt derives its workspace from a real Git top-level, so the
+    # fixture needs an actual checkout rather than a bare `.git` directory.
+    git_checkout(tmp)
     sink = use_sink(tmp)
     tickets_mod._dispatch([
         "new", "testrun", "T1", "--executor", "orch-execute",
@@ -154,12 +175,12 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         "--reply-to", "root", "--workspace", str(tmp.resolve()),
         "--form", "reference",
     ])["packet"]
-    tickets_mod._dispatch([
-        "dispatch-receive", "--content",
-        json.dumps(packet, sort_keys=True, separators=(",", ":")),
-        "--role", packet["role"], "--profile", packet["profile"],
-        "--by", by, "--reply-to", "root", "--workspace", str(tmp.resolve()),
-    ])
+    packet_path = tmp / "packet-D1.json"
+    packet_path.write_text(
+        json.dumps(packet, sort_keys=True, separators=(",", ":")), encoding="utf-8",
+    )
+    with standing_in(tmp):
+        tickets_mod._dispatch(receive_argv(packet_path, packet, by))
     return ticket, opened["assignment_seal"]
 
 

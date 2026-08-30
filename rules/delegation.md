@@ -29,9 +29,9 @@ connect this law to each authorized dispatch event and predecessor record.
    verdict context.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
-   it; no caller states a parallel prose join. Isolated candidates have
-   repository write authority. The join inspects
-   actual diffs and Git conflicts; Suggested files never limit the result.
+   it; no caller states a parallel prose join. What that join grades --
+   candidate write authority, actual diffs and conflicts, the standing of
+   Suggested files -- is [work-item.md](../contracts/work-item.md)'s.
 6. Every join applies the [result contract](../contracts/result.md).
 7. Fan out only independent breadth-first work; dependent work runs
    through `orch-frontier` or sequentially.

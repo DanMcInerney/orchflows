@@ -7,9 +7,11 @@ import json
 import re
 from pathlib import Path
 if __package__:
+    from .tickets_admission import binding_findings, graph_closed, graph_findings
     from .tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from .tickets_transitions import CLAIMED, stamp
 else:
+    from tickets_admission import binding_findings, graph_closed, graph_findings
     from tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
     from tickets_transitions import CLAIMED, stamp
 
@@ -179,9 +181,28 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -
     expected = draft_snapshot(root_id, snapshot, ordinal, member_ids)
     if expected != draft:
         raise GenerationError("draft validation failed: supplied draft is not the exact snapshot grade")
+    members = [item["id"] for item in draft.get("assignments") or []]
+    root_data = _parse_frontmatter(snapshot[root_id])
+    findings = list(graph_findings(
+        root_id, root_data, snapshot,
+        complete=graph_closed(root_id, snapshot, members, root_data.get("cut_generation")),
+    ))
+    for ticket_id in [root_id, *members]:
+        data = _parse_frontmatter(snapshot[ticket_id])
+        findings.extend(binding_findings(ticket_id, data))
+        current = str(data.get("assignment_seal") or "").strip()
+        if current and current != assignment_digest(ticket_id, snapshot[ticket_id]):
+            findings.append({
+                "code": "assignment-seal-mismatch",
+                "field": "assignment_seal",
+                "ticket": ticket_id,
+                "detail": "sealed digest does not match the current assignment",
+            })
     gate_findings = composite_gate_findings(root_id, snapshot, member_ids)
-    if gate_findings:
-        raise GenerationError("draft validation failed: composite gate topology: " + canonical_json(gate_findings))
+    findings.extend(gate_findings)
+    if findings:
+        reason = "composite gate topology" if gate_findings else "assignment grade"
+        raise GenerationError("draft validation failed: " + reason + ": " + canonical_json(findings))
     return {
         "cut_generation": draft["cut_generation"],
         "draft_digest": "sha256:" + _digest(draft),
@@ -349,6 +370,11 @@ def _draft_findings(root_id: str, snapshot: dict) -> list:
     # A claimed root is an allowed grading vantage; a claimed member is not.
     positions = frozenset(stamp("draft-validate").draft_statuses)
     findings = []
+    root_data = _parse_frontmatter(snapshot[root_id])
+    findings.extend(graph_findings(
+        root_id, root_data, snapshot,
+        complete=graph_closed(root_id, snapshot, root_data.get("cut_generation")),
+    ))
     for ticket_id in [root_id, *_cut_members(root_id, snapshot)]:
         data = _parse_frontmatter(snapshot[ticket_id])
         status = str(data.get("status") or "")
@@ -357,6 +383,7 @@ def _draft_findings(root_id: str, snapshot: dict) -> list:
             findings.append({"code": "generation-missing", "field": "root_generation", "ticket": ticket_id})
         if status not in (positions | {CLAIMED} if ticket_id == root_id else positions):
             findings.append({"code": "draft-status", "field": "status", "ticket": ticket_id})
+        findings.extend(binding_findings(ticket_id, data))
     findings.extend(composite_gate_findings(root_id, snapshot))
     return findings
 

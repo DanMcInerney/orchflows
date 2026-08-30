@@ -24,7 +24,9 @@ FRICTION_OWNER = ROOT / "scripts" / "state_root.py"
 FRICTION_RESOLVER = "friction_root"
 FRICTION_IN_REPOSITORY = ".orch/"
 FRICTION_TERM_RE = re.compile(r"^- \*\*friction log\*\*.*?(?=\n- \*\*|\Z)", re.MULTILINE | re.DOTALL)
-FRICTION_FALLBACK_RE = re.compile(r"Whenever the logger cannot run.*?never skip the log\.")
+# The managed host block carries the refusal-safe sink instruction verbatim;
+# this check only validates its destination against scripts/state_root.py.
+FRICTION_FALLBACK_RE = re.compile(r"If the logger cannot run.*?never skip (?:the log|it)\.")
 
 
 def _friction_join_tree(node) -> str:
@@ -98,8 +100,8 @@ def _friction_validate_fallback_copy(path: Path, tree: str, diag: Diagnostics) -
     if match is None:
         diag.error(
             file_label,
-            "could not locate the blocked-case friction sentence ('Whenever the logger cannot "
-            "run ... never skip the log.') to check against scripts/state_root.py",
+            "could not locate the blocked-case friction sentence ('If the logger cannot "
+            "run ... never skip it.') to check against scripts/state_root.py",
         )
         return
     sentence = match.group(0)

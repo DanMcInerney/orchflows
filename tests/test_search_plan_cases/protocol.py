@@ -75,7 +75,7 @@ class TestArchitecture(unittest.TestCase):
         tournament = template_text(TOURNAMENT)
         leaf = read(SEARCH_SCRIPT)
 
-        closing = evolve + "\n---\nid: 04-closing\nexecutor: orch-verify\n---\n"
+        closing = evolve + "\n---\nid: 04-closing\nexecutor: orch-check\n---\n"
         self.assertIn(
             "closing-wrapper",
             architecture_errors(closing, generation, tournament, leaf),
@@ -85,7 +85,7 @@ class TestArchitecture(unittest.TestCase):
             "tournament-internal-call",
             architecture_errors(evolve, generation, direct_panel, leaf),
         )
-        extra_leaf_call = leaf + "\nCall `orch-verify`.\n"
+        extra_leaf_call = leaf + "\nCall `orch-check`.\n"
         self.assertIn(
             "leaf-call",
             architecture_errors(evolve, generation, tournament, extra_leaf_call),
@@ -102,7 +102,7 @@ class TestArchitecture(unittest.TestCase):
             architecture_errors(evolve, generation, judged_here, leaf),
         )
 
-        unresolved = evolve.replace("executor: orch-verify", "executor: orch-critique", 1)
+        unresolved = evolve.replace("executor: orch-check", "executor: orch-spec", 1)
         self.assertIn(
             "eligibility-unit",
             architecture_errors(unresolved, generation, tournament, leaf),

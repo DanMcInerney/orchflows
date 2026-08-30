@@ -122,9 +122,9 @@ def _is_stale(claimed_at, bound_minutes: int, now: datetime, last_motion=None) -
 def _claim_is_stale(ticket_path, text: str, data: dict, now: datetime):
     if data.get("dispatch_v1"):
         if __package__:
-            from .tickets_attempts import attempt_window
+            from .tickets_dispatch_schema import attempt_window
         else:
-            from tickets_attempts import attempt_window
+            from tickets_dispatch_schema import attempt_window
         window, failure = attempt_window(data)
         if failure is not None:
             return True, [failure["error"]]
@@ -250,7 +250,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         prompt = [
             "Apply orch-check to the immutable review ledger and fixed artifact.",
             "Read the fixed artifact identity, Goal, Context, executor Result and Verification evidence, and pack lens.",
-            "Remain read-only. Enumerate every evidence-backed material blocker, then synthesize and rank the smallest architectural repair set. File findings in Feedback, never rewrite Result or Verification.",
+            "Remain read-only. Enumerate every evidence-backed material blocker, then synthesize and rank the smallest architectural repair set. File one complete seven-field JSON findings array in Result or Feedback; never rewrite Result or Verification.",
         ]
     elif review_kind == "verify":
         prompt = [
@@ -286,7 +286,7 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
         ))
     isolation = normalized_isolation(loaded.get("isolation"))
     if review_kind == "critique":
-        prompt.append("File Feedback and Risks as findings are produced; the join alone sets terminal status.")
+        prompt.append("File the complete findings array in Result or Feedback as evidence is produced; the join accepts only an --accepted-file subset and sets terminal status.")
     elif review_kind == "verify":
         prompt.append("File Verification, Feedback, and Risks as evidence is produced; the join alone sets terminal status.")
     else:

@@ -10,12 +10,12 @@ from collections import namedtuple
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from .tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
 
-PENDING, READY, CLAIMED, SUSPENDED, COMPLETE = "pending", "ready", "claimed", "suspended", "complete"
+PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
 STATUSES = tuple(sorted(VALID_STATUSES))
 LEASE_FIELDS = ("claimed_by", "claimed_at")
 CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})
@@ -76,7 +76,7 @@ _LIFECYCLE_SPECS = (
     LifecycleSpec("result", ("claimed / receipt accepted",), "claimed / receipt accepted + result record", "accepted receiver", "accepted dispatch-receipt record", "contracts/result.md", "rules/verification.md"),
     LifecycleSpec("dispatch-outcome", ("claimed / receipt accepted", "claimed / receipt accepted + result records"), "claimed / outcome committed", "accepted receiver or relaying caller", "accepted dispatch-receipt record", "contracts/dispatch.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-retire", ("claimed / live attempt",), "claimed / retired attempt", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "live predecessor attempt and assignment seal", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "predecessor attempt and assignment seal; a declared supersession inside its lease", "contracts/dispatch.md", "rules/delegation.md"),
 ) + tuple(
     LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)

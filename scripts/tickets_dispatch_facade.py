@@ -93,16 +93,14 @@ def _cmd_dispatch(rest):
         if invalid is not None:
             return invalid
 
-    ready = _cmd_ready(["--run", run])
-    if "error" in ready:
-        return ready
-
-    established = _workspace_start(run, ticket_id, workspace)
-    if "error" in established:
-        return established
-    workspace_path = established["start"]["workspace_path"]
-
     with _run_lock(run):
+        # Keep the whole composition under one lock, but open before workspace
+        # establishment: workspace.start stamps the ticket, so doing it first
+        # would mutate bytes on a pre-open admission refusal.
+        ready = _cmd_ready(["--run", run])
+        if "error" in ready:
+            return ready
+
         opening = _cmd_dispatch_open([
             run, ticket_id, "--by", owner, "--dispatch-id", dispatch_id,
             "--lease-expires-at", lease,
@@ -114,26 +112,50 @@ def _cmd_dispatch(rest):
             return {"error": "dispatch-open returned no dispatch response"}
         newly_opened = dispatch.get("outcome") == "opened"
 
-        packet_args = [
-            run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
-            "--workspace", workspace_path, "--form", form,
-        ]
-        if review_kind is not None:
-            packet_args.extend(("--review-kind", review_kind))
-        if artifact is not None:
-            packet_args.extend(("--artifact", artifact))
-        try:
-            projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
-        except Exception as error:
-            projected = {"error": str(error)}
+        established = _workspace_start(run, ticket_id, workspace)
+        if "error" in established:
+            projected = established
+        else:
+            start = established.get("start")
+            workspace_path = start.get("workspace_path") if isinstance(start, dict) else None
+            if not str(workspace_path or "").strip():
+                projected = {"error": "workspace start did not record workspace_path"}
+            else:
+                packet_args = [
+                    run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
+                    "--workspace", workspace_path, "--form", form,
+                ]
+                if review_kind is not None:
+                    packet_args.extend(("--review-kind", review_kind))
+                if artifact is not None:
+                    packet_args.extend(("--artifact", artifact))
+                try:
+                    projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
+                    if not isinstance(projected, dict):
+                        projected = {
+                            "error": "dispatch-packet returned a non-object response"
+                        }
+                    elif "error" not in projected and not isinstance(
+                        projected.get("packet"), dict
+                    ):
+                        projected = {"error": "dispatch-packet returned no packet"}
+                except Exception as error:
+                    projected = {"error": str(error)}
         if "error" not in projected:
             return projected
         if newly_opened:
-            _cmd_dispatch_retire([
+            retirement = _cmd_dispatch_retire([
                 run, ticket_id, "--assignment-seal", dispatch["assignment_seal"],
                 "--dispatch-id", dispatch_id,
                 "--record-id", f"lifecycle:dispatch-facade-{dispatch_id}",
             ], _lock_held=True)
+            if not isinstance(retirement, dict) or "error" in retirement:
+                return {
+                    "error": "dispatch attempt retirement failed after projection refusal",
+                    "code": "dispatch-retirement-failed",
+                    "projection": projected,
+                    "retirement": retirement,
+                }
         return projected
 
 

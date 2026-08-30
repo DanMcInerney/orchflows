@@ -147,11 +147,12 @@ class TicketProtocolTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         ui_model = (root / "reader" / "scripts" / "ui_model.py").read_text(encoding="utf-8")
 
+        self.assertIn("complete packet", host)
+        self.assertIn("response `.packet`", frontier)
         for projection in (host, frontier):
-            self.assertIn("response `.packet`", projection)
             self.assertIn("--file", projection)
             self.assertIn("workspace", projection.lower())
-            self.assertIn("evidence-store", projection.lower())
+        self.assertIn("evidence-store", frontier.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)
         self.assertNotIn("Parked claims stay live", frontier)
         self.assertNotIn("holds the lease", ui_model)

@@ -266,7 +266,7 @@ class TestConservativeUninstall(unittest.TestCase):
                     "grok"
                 ), patch.object(install, "private_runtime_action", return_value=None):
                     plan = install.build_plan("user", None)
-                    install.apply_plan(plan)
+                    install.apply_plan(plan, accepted_source=install.resolve_source_commit())
                     self.assertIn("max_concurrent", config.read_text(encoding="utf-8"))
                     # Grok appends its own table within 0.2s of any subcommand,
                     # and a TOML editor lands it ahead of a trailing END
@@ -280,7 +280,7 @@ class TestConservativeUninstall(unittest.TestCase):
                         ),
                         encoding="utf-8",
                     )
-                    install.apply_plan(install.build_plan("user", None))
+                    install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
                     reinstalled = config.read_text(encoding="utf-8")
                     self.assertIn("default_skills_installs_purged = true", reinstalled)
                     self.assertIn("max_concurrent", reinstalled)

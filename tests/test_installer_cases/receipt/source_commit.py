@@ -125,7 +125,7 @@ class TestSourceCommit(unittest.TestCase):
             )
 
             with patch.object(install, "resolve_source_commit", return_value="cafe"):
-                receipt = install.apply_plan(plan)
+                receipt = install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             self.assertEqual("cafe", receipt["source_commit"])
 
@@ -150,7 +150,95 @@ class TestSourceCommit(unittest.TestCase):
     def test_source_commit_warning_is_silent_when_a_commit_was_resolved(self):
         self.assertIsNone(install.source_commit_warning("cafe"))
 
-    def test_main_warns_when_the_installed_receipt_names_no_source_commit(self):
+    def test_accepted_source_commit_is_one_fail_closed_gate_identity(self):
+        accepted = "A" * 40
+        self.assertEqual(accepted.lower(), install.accepted_source_commit(accepted.lower(), accepted))
+        with self.assertRaisesRegex(ValueError, "non-empty"):
+            install.accepted_source_commit("abc123", " ")
+        with self.assertRaisesRegex(ValueError, "unresolved"):
+            install.accepted_source_commit(None, accepted)
+        with self.assertRaisesRegex(ValueError, "not the accepted"):
+            install.accepted_source_commit("b" * 40, accepted)
+        # Read-only inspection may omit the identity; consuming the checkout
+        # may not, or the one finalization-gate-install path is optional.
+        self.assertEqual("abc123", install.accepted_source_commit("abc123", None))
+        with self.assertRaisesRegex(ValueError, "requires the accepted"):
+            install.accepted_source_commit("abc123", None, mutating=True)
+
+    def test_a_mutating_install_without_an_accepted_identity_changes_nothing(self):
+        for arguments, expected in (
+            (["--user", "--yes"], "requires the accepted"),
+            (["--user", "--yes", "--accepted-source", "   "], "non-empty"),
+        ):
+            with self.subTest(arguments=arguments), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                (home / ".claude").mkdir(parents=True)
+                before = sorted(path.name for path in home.rglob("*"))
+                with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                    "claude"
+                ), patch.object(
+                    install, "resolve_source_commit", return_value="b" * 40
+                ), patch.object(
+                    install, "apply_plan", side_effect=AssertionError("application reached")
+                ) as application:
+                    err = io.StringIO()
+                    with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                        code = install.main(arguments)
+
+                self.assertEqual(1, code)
+                self.assertIn(expected, err.getvalue())
+                application.assert_not_called()
+                self.assertEqual(before, sorted(path.name for path in home.rglob("*")))
+
+    def test_an_unresolved_checkout_refuses_a_mutating_install(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(install, "resolve_source_commit", return_value=None), patch.object(
+                install, "apply_plan", side_effect=AssertionError("application reached")
+            ) as application:
+                err = io.StringIO()
+                with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                    code = install.main(["--user", "--yes", "--accepted-source", "a" * 40])
+
+            self.assertEqual(1, code)
+            self.assertIn("unresolved", err.getvalue())
+            application.assert_not_called()
+
+    def test_dry_run_and_doctor_still_inspect_without_an_accepted_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(install, "resolve_source_commit", return_value="b" * 40):
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    self.assertEqual(0, install.main(["--user", "--dry-run"]))
+
+    def test_main_refuses_a_nonmatching_accepted_source_before_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            accepted = "a" * 40
+            with patch.object(install.Path, "home", return_value=home), mock_host_clis(
+                "claude"
+            ), patch.object(install, "resolve_source_commit", return_value="b" * 40), patch.object(
+                install, "apply_plan", side_effect=AssertionError("application reached")
+            ) as application:
+                err = io.StringIO()
+                with redirect_stdout(io.StringIO()), redirect_stderr(err):
+                    code = install.main(["--user", "--yes", "--accepted-source", accepted])
+
+            self.assertEqual(1, code)
+            self.assertIn("accepted composite-gate commit", err.getvalue())
+            application.assert_not_called()
+
+    def test_a_dry_run_says_why_it_could_not_resolve_a_source_commit(self):
+        """A mutating install refuses an unresolved checkout outright, so the
+        warning has one live consumer left: the read-only plan."""
+
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
@@ -160,7 +248,7 @@ class TestSourceCommit(unittest.TestCase):
             ), patch.object(install, "resolve_source_commit", return_value=None):
                 err = io.StringIO()
                 with redirect_stdout(io.StringIO()), redirect_stderr(err):
-                    code = install.main(["--user", "--yes"])
+                    code = install.main(["--user", "--dry-run"])
 
             self.assertEqual(0, code)
             self.assertIn("source commit unresolved", err.getvalue())
@@ -175,10 +263,14 @@ class TestSourceCommit(unittest.TestCase):
             ), patch.object(install, "resolve_source_commit", side_effect=["sha1", "sha2"]):
                 first = io.StringIO()
                 with redirect_stdout(first):
-                    code1 = install.main(["--user", "--yes"])
+                    code1 = install.main(
+                        ["--user", "--yes", "--accepted-source", "sha1"]
+                    )
                 second = io.StringIO()
                 with redirect_stdout(second):
-                    code2 = install.main(["--user", "--yes"])
+                    code2 = install.main(
+                        ["--user", "--yes", "--accepted-source", "sha2"]
+                    )
 
             self.assertEqual(0, code1)
             self.assertEqual(0, code2)
@@ -214,7 +306,10 @@ class TestUnreadableReceipt(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 err = io.StringIO()
                 with redirect_stdout(io.StringIO()), redirect_stderr(err):
-                    code = install.main(["--user", "--yes"])
+                    code = install.main([
+                        "--user", "--yes",
+                        "--accepted-source", install.resolve_source_commit(),
+                    ])
 
             self.assertEqual(1, code)
             self.assertIn("unreadable", err.getvalue())

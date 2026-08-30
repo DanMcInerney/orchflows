@@ -14,6 +14,7 @@ FACADE_PREFIXES = (
     "tickets",
     "ui",
     "cutcheck",
+    "packs",
     "search_plan",
     "trace",
     "workspace",

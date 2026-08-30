@@ -428,7 +428,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     errors = []
     combined_evolve = evolve + generation
     # Who runs each step is the stubs' `executor`, not a backticked name in
-    # prose. `orch-verify` twice: eligibility opens the campaign, the final
+    # prose. `orch-check` twice: eligibility opens the campaign, the final
     # score card closes it. Since P3 it is also the one scorer -- `orch-judge`
     # merged into it (a score scale in the criteria), `orch-delegate` into
     # rules/delegation.md, `orch-worklog` into the `tickets.py` view -- and
@@ -436,7 +436,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     # loop body's reduce. None of the four may reappear.
     executors = Counter(EXECUTOR_RE.findall(evolve))
     required = Counter(
-        {"orch-eval-design": 1, "orch-loop": 1, "orch-verify": 2}
+        {"orch-spec": 1, "orch-loop": 1, "orch-check": 2}
     )
     if executors != required:
         errors.append("evolve-call-graph")
@@ -444,7 +444,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         evolve.index("id: 01-eligibility") : evolve.index("id: 02-campaign")
     ]
     campaign = evolve[evolve.index("id: 02-campaign") : evolve.index("id: 03-result")]
-    if "executor: orch-verify" not in eligibility:
+    if "executor: orch-check" not in eligibility:
         errors.append("eligibility-unit")
     # The campaign reuses the eligibility verdicts rather than re-taking
     # them: it cites that stub's Result as its own fixed input.
@@ -464,7 +464,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     tournament_calls = set(CALL_EDGE_RE.findall(tournament))
     if tournament_calls:
         errors.append("tournament-internal-call")
-    if "writer=orch-tdd" not in normalized(tournament):
+    if "writer=orch-execute" not in normalized(tournament):
         errors.append("tournament-writer-binding")
     # The campaign's promotion judgment is evolve's, and the tournament may
     # not restate it. Since 2026-08-16 (thread T27) the tournament does name

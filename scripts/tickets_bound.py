@@ -149,14 +149,14 @@ def _bound_support() -> dict:
     named at module scope here would close a cycle at import time.
     """
     if __package__:
-        from .tickets_attempts import attempt_window
+        from .tickets_dispatch_schema import attempt_window
         from .tickets_commands import BOUND_CHECK_USAGE
         from .tickets_format import _extract_flag, _parse_iso
         from .tickets_packet import _last_motion
         from .tickets_store import UTC_STAMP
         from .tickets_worklog import _run_tickets
     else:
-        from tickets_attempts import attempt_window
+        from tickets_dispatch_schema import attempt_window
         from tickets_commands import BOUND_CHECK_USAGE
         from tickets_format import _extract_flag, _parse_iso
         from tickets_packet import _last_motion

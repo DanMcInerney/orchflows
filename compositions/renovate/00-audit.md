@@ -1,10 +1,11 @@
 ---
 id: 00-audit
-executor: orch-critique
+executor: orch-check
+pack: {{pack}}
 depends_on: []
 bound: {{audit_bound}}
 independence: checker
-isolation: none
+isolation: required
 profile: orch-planner
 ---
 
