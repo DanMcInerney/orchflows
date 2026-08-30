@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1988,
+  "count": 1990,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -379,6 +379,8 @@
    "test_installer.TestHostBlockDemands.test_host_block_demands_dropped_one_at_a_time_fail_the_check",
    "test_installer.TestHostBlockDemands.test_host_block_demands_fit_the_every_turn_budget",
    "test_installer.TestHostBlockDemands.test_host_block_demands_number_exactly_eight",
+   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_flag_pin_can_fail",
+   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockRendering.test_render_host_block_substitutes_resolved_interpreter",
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
@@ -1991,7 +1993,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "8f4ec02b7db1e572950926e65a4bbb6e2f7024c4775a90277d7727cf4e9052d6"
+  "sha256": "9aaa92a28e3def32634adff782b46b41d0f7e8d15921dafa4370cd34f40f0df9"
  },
  "mutation_owners": [
   {
