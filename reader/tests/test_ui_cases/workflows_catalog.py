@@ -126,9 +126,9 @@ class WorkflowCatalogTests(unittest.TestCase):
                 root = Path(directory)
                 external = Path(outside) / "demo"
                 external.mkdir()
-                external_template = external / "template.md"
+                external_template = external / "SKILL.md"
                 external_template.write_text(
-                    "---\nname: demo\ndescription: EXTERNAL_SECRET\nentry: named\n---\n",
+                    "---\nname: demo\ndescription: EXTERNAL_SECRET\n---\n",
                     encoding="utf-8",
                 )
                 composition = root / "example-workflows" / "demo"
@@ -138,7 +138,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                         os.symlink(external, composition, target_is_directory=True)
                     else:
                         composition.mkdir()
-                        os.symlink(external_template, composition / "template.md")
+                        os.symlink(external_template, composition / "SKILL.md")
                 except OSError as error:
                     self.skipTest(f"symlink unavailable: {error}")
                 summary_path = self._write_summary(root, {"demo": self._summary()})
@@ -146,7 +146,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                 with self.assertRaises(catalog.WorkflowCatalogError):
                     catalog.project_catalog(root, summary_path)
 
-    def test_repository_catalog_is_derived_from_compositions_and_workflow_skills(self):
+    def test_repository_catalog_is_derived_from_both_canonical_homes(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)
 
         self.assertEqual(
@@ -162,8 +162,10 @@ class WorkflowCatalogTests(unittest.TestCase):
             for workflow in projected
         ))
         by_id = {workflow["id"]: workflow for workflow in projected}
-        self.assertEqual("composition", by_id["browser-game"]["type"])
-        self.assertEqual("named", by_id["browser-game"]["entry"])
+        # Both homes carry the same kind now: a library workflow and a brick
+        # are alike skills, differing only in what their prose calls.
+        self.assertEqual("workflow-skill", by_id["browser-game"]["type"])
+        self.assertEqual("callable", by_id["browser-game"]["entry"])
         self.assertEqual(
             "Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.",
             by_id["browser-game"]["description"],
@@ -189,13 +191,10 @@ class WorkflowCatalogTests(unittest.TestCase):
             with self.assertRaises(catalog.WorkflowCatalogError):
                 catalog.project_catalog(root, summary_path)
 
-    def test_duplicate_owner_identity_and_unknown_entry_are_closed_errors(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write_owner(root, name="demo", entry="automatic")
-            summary_path = self._write_summary(root, {"demo": self._summary()})
-            with self.assertRaises(catalog.WorkflowCatalogError):
-                catalog.project_catalog(root, summary_path)
+    def test_duplicate_owner_identity_is_a_closed_error(self):
+        """One name, two canonical homes: `example-workflows/demo/` and
+        `skills/workflows/demo/` both claim `demo`, and the catalog refuses
+        rather than picking one."""
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -211,11 +210,12 @@ class WorkflowCatalogTests(unittest.TestCase):
                 catalog.project_catalog(root, summary_path)
 
     @staticmethod
-    def _write_owner(root: Path, *, name: str, entry: str = "named") -> None:
-        template = root / "example-workflows" / "demo" / "template.md"
-        template.parent.mkdir(parents=True)
-        template.write_text(
-            f"---\nname: {name}\ndescription: Demonstrate one flow.\nentry: {entry}\n---\n",
+    def _write_owner(root: Path, *, name: str) -> None:
+        body = root / "example-workflows" / "demo" / "SKILL.md"
+        body.parent.mkdir(parents=True)
+        body.write_text(
+            f"---\nname: {name}\ndescription: Demonstrate one flow.\n"
+            "disable-model-invocation: true\n---\n",
             encoding="utf-8",
         )
 

@@ -56,8 +56,12 @@ def _owner(root: Path, path: Path, workflow_type: str) -> dict:
 
 
 def _canonical_owners(root: Path) -> list[dict]:
+    # Two canonical homes, one owner file. `example-workflows/<name>/` holds
+    # the workflow skills — prose that opens a frame and calls bricks — and
+    # `skills/` holds the bricks themselves. Neither is a template, so both
+    # are read as workflow skills off the same `SKILL.md`.
     compositions = sorted(
-        (root / "example-workflows").glob("*/template.md"),
+        (root / "example-workflows").glob("*/SKILL.md"),
         key=lambda path: path.parent.name,
     )
     skill_paths = set((root / "skills" / "workflows").glob("*/SKILL.md"))
@@ -67,7 +71,7 @@ def _canonical_owners(root: Path) -> list[dict]:
         if (root / "skills" / "kernel" / name / "SKILL.md").is_file()
     )
     workflow_skills = sorted(skill_paths, key=lambda path: path.parent.name)
-    owners = [_owner(root, path, "composition") for path in compositions]
+    owners = [_owner(root, path, "workflow-skill") for path in compositions]
     owners.extend(_owner(root, path, "workflow-skill") for path in workflow_skills)
     ids = [owner["id"] for owner in owners]
     if len(ids) != len(set(ids)):
