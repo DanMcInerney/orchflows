@@ -34,11 +34,19 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   `orch-frontier`, and `orch-outline`; `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
+- optional `done` — the canonical JSON done predicate, `{"form", "value"}`:
+  form `command`, a deterministic command whose exit 0 is the verdict, or
+  form `check`, a criterion no oracle covers, judged by one minted
+  `orch-check` ticket. `tickets.py land` is the only evaluator: it runs the
+  command in the integrated tree, and that run is the one outside execution
+  ([verification.md](../rules/verification.md) §6). A refused command arms
+  the next `<id>.repair.NN` round rather than closing the ticket; two rounds
+  with no result delta close it `stalled`. A ticket carrying no predicate is
+  graded by the driver at the join instead.
 - optional `loop` — the canonical JSON loop object making this ticket a loop
-  stub: `done` binds the external done-check as `{"form", "value"}`, form
-  `command` (a deterministic command whose exit 0 is the done reading) or
-  `check` (a frozen criterion judged by a fresh `orch-check` ticket minted per
-  iteration). The stub's own `executor` is the iteration body's verb. A loop
+  stub. Its `done` is the same binding under the same grammar, read for the
+  iteration rather than for the stub. The stub's own `executor` is the
+  iteration body's verb. A loop
   stub is never dispatched: `scripts/tickets_loop.py` arms iteration
   `<id>.iter.NN` tickets, evaluates the done-check, and advances — re-arm, or
   terminal `complete` | `limited` | `stalled` — with the worklog as the state
@@ -50,8 +58,10 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   value from the stamped pack's adapter (`establishes_isolation`), read
   through one derivation everywhere.
 - `review_order` — the sealed zero-based order of a composite-gate lens.
-- `review_kind` — optional typed review lane: `critique`, `repair`, or
-  `verify`; its value selects the mechanical checker or repair projection.
+- `review_kind` — optional typed review lane: `critique` or `repair`; its
+  value selects the mechanical checker or repair projection. There is no
+  standing verification lane: the fresh outside check is the root's own
+  `done` predicate, run by land.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
 - `checked_by`, `review_stage`,
@@ -72,7 +82,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 `status` is `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`,
 `stalled`, `failed`, or `limited`. Admission alone creates `ready`; claim alone
-creates `claimed`; the join alone records terminal status.
+creates `claimed`; the join alone records terminal status, off the ticket's
+evaluated `done` predicate or the driver's own grade — never off a
+disposition the executor claimed for itself.
 
 Sealing fingerprints Goal, Context, optional Suggested files, exact executor,
 dependencies, and necessary system identity. It never creates file authority
@@ -106,10 +118,10 @@ exact prior record identity as `predecessor`. `GatePlan` fixes the artifact,
 pack, normalized isolation, and ordered lens assignment identities;
 `CritiqueAdjudication` fixes complete findings and their accepted subset;
 `RepairOutcome` fixes the resulting artifact or proves no-op from an empty
-accepted set; `Verification` fixes its artifact, verdict, and evidence.
+accepted set, and closes the chain.
 
-A composite gate lane consumes only the validated predecessor chain. Critique,
-repair, and verification joins append their stage atomically with the lifecycle
+A composite gate lane consumes only the validated predecessor chain. Critique
+and repair joins append their stage atomically with the lifecycle
 join. The ordinary distinct checker writes the same `GatePlan` and
 `CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
 artifact, complete canonical findings, and accepted subset.
@@ -146,8 +158,9 @@ Decomposition may suggest files, but it does not grant exclusive predicted
 scope and parallel tickets need not predict disjoint paths. Isolated candidates
 receive repository/workspace write authority by default. At integration, the
 integrator mechanically inspects actual diffs and ordinary Git conflicts,
-resolves overlaps, regenerates shared derived artifacts once, and runs the
-final deterministic gate. An actual diff differing from Suggested files is
+resolves overlaps, and regenerates shared derived artifacts once; `land`
+merges the candidate into the tree the run stands on and runs the root's
+`done` predicate there. An actual diff differing from Suggested files is
 never by itself a rejection.
 
 ## Template and executor form
@@ -396,3 +409,17 @@ the packet projection section becomes the launch section. This ticket is the
 assignment the dispatch contract's generated prompt points at, and nothing
 copies it; the executor-record identities are the attempt's, carried into
 that prompt with a `RECORD_ID` placeholder the child fills per write.
+
+T0 supersession record sha256:b569907384410354a1abdd66c60a6a0264536243db41103f202b297853b27678:
+the ticket gains the optional `done` predicate. It is the binding the loop
+object already carried, promoted to the frontmatter and renamed
+`done_binding` because it now has two homes and one grammar, and it joins
+the sealed assignment fields: a changed `done` is a changed assignment.
+`tickets.py land` is its only evaluator -- it merges the candidate into the
+tree the run stands on, runs the command there, and files the exit as
+system-written Verification -- and a refused command arms the next
+`<id>.repair.NN` round rather than closing the item. Terminal status is that
+predicate's reading or the driver's grade at the join, never the executor's
+claim. `review_kind` loses `verify`, the review ledger ends at
+`RepairOutcome`, and the `Verification` record and its shape are removed
+with the standing verification lane they served.

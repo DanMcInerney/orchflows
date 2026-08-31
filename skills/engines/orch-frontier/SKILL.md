@@ -27,8 +27,8 @@ lands its return, then anchors the joined stage with `check <run> <id> --stage
 <id>.check`. `GatePlan` carries fixed artifact, Goal, Context, executor
 evidence. Then:
 
-- an accepted checked target invokes `gate <run> <id>` for one separate repair ticket and
-  fresh verification without another critique;
+- an accepted checked target invokes `gate <run> <id>` for one separate repair
+  ticket without another critique; `land` runs the target's `done` predicate;
 - a clean checked target closes without repair; and
 - a gate-deferred root invokes `gate <run> <root>` for its composite gate,
   never `checker-stage` ([verification](../../../rules/verification.md) §7).

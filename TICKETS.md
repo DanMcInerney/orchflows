@@ -92,9 +92,8 @@ frozen by `orch-outline`, cut by `orch-decompose`, and joined by pre-issued
     ├── 00-root.01.md   ┐
     ├── 00-root.02.md   │ unit tickets, one bounded work item each
     ├── 00-root.03.md   ┘
-    ├── 00-root.gate.critique.code.md  ┐
-    ├── 00-root.gate.repair.md         │ the composite gate, run last
-    └── 00-root.gate.verify.md         ┘
+    ├── 00-root.gate.critique.code.md  ┐ the composite gate, run last
+    └── 00-root.gate.repair.md         ┘
 
 Cut shape — what a unit may be, who owns what — is
 [rules/topology.md](rules/topology.md)'s.
@@ -145,10 +144,10 @@ claimant observations and `## Handoff`, but it has no live attempt.
 Three moments use readers who did not produce the fixed artifact
 ([rules/verification.md](rules/verification.md) §7):
 
-    decompose ─▶ CUT CHECK ─▶ rolling frontier ─▶ GATE
-                 before units      one outside path    critique
-                                                      -> repair
-                                                      -> verify
+    decompose ─▶ CUT CHECK ─▶ rolling frontier ─▶ GATE ─▶ LAND
+                 before units      one outside path    critique   runs the
+                                                      -> repair   done
+                                                                  predicate
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
    issued ticket set as data and returns blockers to the decomposer before a

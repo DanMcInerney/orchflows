@@ -78,7 +78,8 @@ path inside the established workspace, that workspace and the instruction to
 run from inside it, this host's verified interpreter, the resolved pack craft,
 the review lane's root ticket path, the assigned name, the lease deadline, the
 filled filing and closing commands, the craft's verification scope, and that
-every check runs to completion in the turn it starts. It names no skill for
+every check runs to completion in the turn it starts. It teaches no verdict
+token: a child files evidence, never a disposition. It names no skill for
 the child to invoke and no pack for it to resolve: it hands the paths. The
 public command emits ASCII-escaped canonical JSON, preserving every prompt
 character independently of the subprocess code page.
@@ -97,18 +98,21 @@ run, to run from the wrong directory, or to refuse.
 
 Every attempt reserves exactly one durable return identity, `outcome`. Its
 closed envelope has exactly `protocol`, `run`, `id`, `assignment_seal`,
-`dispatch_id`, `outcome_record_id`, `by`, `status`, and `evidence`. Evidence has
+`dispatch_id`, `outcome_record_id`, `by`, and `evidence`. Evidence has
 exactly string bodies for `Result`, `Verification`, `Feedback`, `Risks`, and
-`Handoff`; the first four are non-empty, Handoff is non-empty only for
-`suspended`. Evidence is the non-empty closing delta not already materialized
+`Handoff`; the first four are non-empty and `Handoff` is optional.
+Evidence is the non-empty closing delta not already materialized
 through result records; repeated material is refused so each item is written
-once. `dispatch-outcome` validates the envelope, imports its attributed
+once. The envelope names no disposition: its existence closes the attempt and
+says nothing about what the item became. `dispatch-outcome` validates the
+envelope, imports its attributed
 evidence atomically, and commits or replays the reserved outcome record. A
 child commits it directly, and a coordinator relaying for one passes the same
 envelope through `--file` rather than inventing another payload.
 
-`dispatch-join` consumes only that distinguished record and derives disposition
-from it. Its id is `join:outcome`; exact replay returns stored success after
+`dispatch-join` consumes only that distinguished record and records the
+disposition `--status` names. Its id is `join:outcome`; exact replay returns
+stored success after
 retirement, changed join content conflicts, and an unseen join on an ended
 attempt is stale. Only join writes suspended or terminal ticket status. Every
 joined disposition, including suspension, retires its attempt; suspension
@@ -116,10 +120,9 @@ retains claimant observations for handoff but leaves no live dispatch.
 The join reads the tree the item was executed in off the attempt.
 For review-stage tickets the same atomic join also advances the ticket's
 validated `orchflows.review.v1` chain: critique requires the canonical accepted
-subset from the file-based `--accepted-file <path|->` seam, repair requires the
-exact output artifact, and verification must match that artifact and carry a
-`PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review kind has one closed field
-schema, and the ledger tip equals the
+subset from the file-based `--accepted-file <path|->` seam, and repair requires
+the exact output artifact. The chain ends there. Every review kind has one
+closed field schema, and the ledger tip equals the
 protocol-owned join's `review_identity`. A review lane's prompt names that
 ledger by the ticket path holding it and by its tip identity; the chain
 itself is never copied. `GatePlan` seals the normalized
@@ -199,6 +202,20 @@ closing commands, and the turn-completion rule for every check. The launch
 record carries no identity of its own: its stored success binds it to the
 attempt, and the join reads the executed tree off the attempt's
 `workspace_path` rather than off any record.
+
+T0 supersession record sha256:6c60b8402bfe79e2ed262b91c512471c2b850d5fca73403ce8c9a73ae7309308:
+the closing envelope no longer names a disposition. `status` leaves the
+`dispatch_outcome` shape and the whole typed-close flag it selected, so an
+outcome's existence closes the attempt and says nothing more; `Handoff`
+stops being coupled to a disposition the envelope cannot carry and is
+simply optional evidence. `dispatch-join` takes the disposition it records
+through a required `--status`, and `dispatch_join_success` is that value's
+one declaring home. The review chain ends at `RepairOutcome`: the
+`Verification` record kind, its shape, the `verify` review kind, and the
+`PASS`/`FAIL`/`UNVERIFIED` verdict token the join used to parse out of a
+child's prose are all removed, and the prompt teaches no token in their
+place. The fresh outside check is the landed ticket's own `done` predicate,
+run by `land` in the tree it has just merged the candidate into.
 
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape

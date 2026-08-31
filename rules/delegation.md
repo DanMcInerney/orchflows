@@ -45,7 +45,7 @@ connect this law to each authorized dispatch event and predecessor record.
    never revived or aliased: the dispatch refuses, naming its successor. No verb
    is split into a generic shell plus a method file.
 9. The caller retires a child the moment its result crosses the join
-   (rule 5) — accepted, rejected, needs-verify, or suspended — or the
+   (rule 5) — accepted, rejected, needs-check, or suspended — or the
    dispatch is abandoned; retirement is the dispatching caller's own
    action, never a separate watchdog. `tickets.py land` crosses it and
    retires the derived worktree in the same transaction.

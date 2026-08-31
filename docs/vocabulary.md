@@ -125,7 +125,7 @@ that needs a different meaning needs a different word.
 - **root ticket** — the ticket named by a `root_generation`, directly bound to
   any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
   any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
-  `<id>.gate.verify` completes. A successor root lives in a successor run
+  `land` reads its `done` predicate as met. A successor root lives in a successor run
   opened after the accepted predecessor result identity resolves and cites
   that identity in its Context; the predecessor run's durable `successors.md`
   names the planned root until `orch-outline` materializes it on the frontier's
@@ -205,19 +205,19 @@ that needs a different meaning needs a different word.
   identities. Their independent critique tickets remain parallel; the order
   does not add execution dependencies.
 - **gate** — a decomposed run's immutable predecessor-linked `GatePlan` →
-  `CritiqueAdjudication` → `RepairOutcome` → `Verification` path. It fixes
+  `CritiqueAdjudication` → `RepairOutcome` path. It fixes
   reviewed and repaired artifact identities, accepted blockers, root pack,
   established workspace, and normalized isolation `none`; authoring admission
   and benchmark qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
-  other candidates: the `verify` review kind where criteria carry a score scale,
+  other candidates: an `orch-check` ticket whose criteria carry a score scale,
   blindness being a property of the assignment's `inputs`, not of a skill.
 
 The benchmark pipeline's artifacts are named here and defined by their
 producers, never restated: **evaluation design** (the execute lane's
 Return), **benchmark** and its manifest field set
 (`compositions/references/benchmaker-manifest.md`), **score card**
- (the verify review kind's Return where the criteria carry a scale), **evolution
+ (the judging check's Return where the criteria carry a scale), **evolution
 result**, **evaluation mode** and **incumbent** (the `evolve`
 composition).
 

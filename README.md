@@ -219,15 +219,15 @@ self-improvement wired into every run.
 
 - **One brick, one job.** `orch-outline` freezes the root, `orch-decompose`
   cuts it, `orch-frontier` runs the graph,
-  `orch-check` challenges Goal and evidence, its typed verify lane independently
-  decides Goal, a ticket's loop field iterates it, and `orch-integrate`
+  `orch-check` challenges Goal and evidence, a ticket's `done` predicate
+  decides Goal at `land`, its loop field iterates it, and `orch-integrate`
   adjudicates every return.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
   outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
-  status, writer, and evidence. The durable result identity then feeds any
+  writer, and evidence. The durable result identity then feeds any
   successor's evidence. A named workflow is just
   tickets with the edges between them written down, so a chain needs
   no per-pair glue.

@@ -5,7 +5,8 @@ connects this law to the admission-owned state transition.
 
 1. Every run composes from: freeze the contract; dispatch through the
    delegation boundary; execute as one item, parallel candidates, a rolling
-   dependency frontier, or a bounded loop; join; verify; escalate at most once.
+   dependency frontier, or a bounded loop; join; check done; escalate at most
+   once.
 2. Intake chooses the smallest shape that owns the request. A whole artifact
    with one lawful executor is a direct root. Decompose only genuinely distinct
    outcomes or dependencies.
@@ -18,7 +19,8 @@ connects this law to the admission-owned state transition.
 5. A graph is the mechanically observable shape of two or more executor
    results, sequential or parallel. Its decomposed physical run has one root
    generation and one composite gate: read-only two-pass blocker critiques
-   feed at most one repair and fresh verification. Answer and direct-single
+   feed at most one repair, and the root's own `done` predicate is the fresh
+   outside check. Answer and direct-single
    runs keep their ordinary path. Additional review is a named lens feeding
    that same gate.
 6. A pack belongs to a ticket, not a run. Incompatible workspace semantics use

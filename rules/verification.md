@@ -14,16 +14,20 @@ place this evidence law in the ticket lifecycle.
 4. `orch-check` owns blocker enumeration and root-cause synthesis. Its
    exclusions and ranking are the shared review model, not a pack variation.
 5. Accepted blockers enter one distinct repair pass. That change invalidates
-   prior critique verdicts; a new verifier reads the repaired identity and no
-   second critique follows.
+   prior critique verdicts, and no second critique follows.
 6. A proof method must be able to contradict the claim it supports. For a test
    authored during implementation, the executor records the relevant failing
    observation before the passing one. The integrated candidate still answers
-   to repository-wide deterministic gates.
+   to repository-wide deterministic gates, and `tickets.py land` is what runs
+   them: the ticket's `done` predicate, in the tree land has just merged that
+   candidate into, is the one outside execution. Done is a checked condition,
+   never a disposition an executor recorded for itself.
 7. Each ticket takes one independence path: a blocker-only `orch-check`
    checker recorded by `checked_by`, or its downstream composite gate. A
    gate-deferred ticket does not use `checked_by`. Additional review is a
-   uniquely named lens feeding the same one repair and fresh verification.
+   uniquely named lens feeding the same one repair. Independence comes from
+   that checker or from the predicate, never from a standing verification
+   child.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
@@ -32,7 +36,6 @@ place this evidence law in the ticket lifecycle.
    chain. `GatePlan` freezes criteria plus artifact/workspace; Git requires
    equality with that workspace's HEAD. `CritiqueAdjudication` carries all
    observations and only the chosen blockers. `RepairOutcome` repeats those
-   blockers and identifies the successor artifact; only an empty set permits
-   `no_op`. `Verification` accepts that successor identity and the declared
-   verdict. Ordinary checks are derived tickets crossing the dispatch
-   lifecycle; callers cannot inject findings.
+   blockers, identifies the successor artifact, and closes the chain; only an
+   empty set permits `no_op`. Ordinary checks are derived tickets crossing the
+   dispatch lifecycle; callers cannot inject findings.
