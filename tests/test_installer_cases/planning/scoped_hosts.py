@@ -365,7 +365,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             # of one file, and a workflow's is a pointer, because the body's
             # own relative links resolve against the library directory it
             # lives in rather than the host surface the stub is written to.
-            templates = install.discover_templates()
+            templates = install.discover_workflow_skills()
             template_names = {directory.name for directory, _, _ in templates}
             self.assertEqual(
                 len(install.discover_packages()) + len(templates),
@@ -426,7 +426,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 if dest.parent.name not in template_names:
                     self.assertIn("follow it exactly.", body)
 
-    def test_discover_templates_requires_a_named_workflow_body(self):
+    def test_discover_workflow_skills_requires_a_named_workflow_body(self):
         """A name surface is a workflow directory holding one `SKILL.md` that
         declares a `name`. Everything else under `example-workflows/` is
         library data: the shared `references/` tree, a directory mid-authoring,
@@ -458,7 +458,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            found = install.discover_templates(root)
+            found = install.discover_workflow_skills(root)
             self.assertEqual(["fix"], [directory.name for directory, _, _ in found])
             directory, frontmatter, body = found[0]
             self.assertEqual("fix", install.frontmatter_field(frontmatter, "name"))
@@ -478,7 +478,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            templates = install.discover_templates()
+            templates = install.discover_workflow_skills()
             if not templates:
                 self.skipTest("no invocable workflows in this tree")
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
@@ -513,7 +513,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             by_name_root = (home / ".orchflows" / "lib" / "by-name").resolve()
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             packages = install.discover_packages()
-            templates = install.discover_templates()
+            templates = install.discover_workflow_skills()
             # One flat entry per canonical name — skills across every tier,
             # packs, and invocable templates alike — no tier in the path.
             self.assertEqual(len(packages) + len(templates), len(plan.by_name))
@@ -540,7 +540,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 plan = install.build_plan("user", None)
             self.assertEqual([], plan.claude_adapters)
             self.assertEqual(
-                len(install.discover_packages()) + len(install.discover_templates()),
+                len(install.discover_packages()) + len(install.discover_workflow_skills()),
                 len(plan.by_name),
             )
 
@@ -610,7 +610,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             bodies = {dest.parent.name: content for dest, content in plan.grok_skills}
             self.assertEqual(
                 {path.parent.name for path in packages}
-                | {directory.name for directory, _, _ in install.discover_templates()},
+                | {directory.name for directory, _, _ in install.discover_workflow_skills()},
                 set(bodies),
             )
             # Two spellings of one directory, because the installer writes

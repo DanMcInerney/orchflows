@@ -267,7 +267,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         """No length refuses a ticket: the planner owns what its child needs."""
 
         goal = " ".join(["word"] * 400)
-        for executor in ("orch-do", tickets.ROOT_EXECUTOR):
+        for executor in ("orch-do", "orch-judge"):
             run = "root-" + executor.removeprefix("orch-")
             with self.subTest(executor):
                 created = retired_doors.run([
@@ -305,7 +305,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         goal = " ".join(["word"] * 400)
         created = retired_doors.run([
-            "new", "unit-length", "R.01", "--executor", tickets.ROOT_EXECUTOR,
+            "new", "unit-length", "R.01", "--executor", "orch-judge",
             "--goal", goal, "--context", "[]",
         ])
         self.assertNotIn("error", created, created)
@@ -487,21 +487,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertIn(
             "### Written by `worker`\n\nfiled from the emitted prompt", ticket,
         )
-
-    def test_decomposed_root_uses_same_semantic_shape(self):
-        self.dispatch("new", "cut", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
-        for suffix in ("01", "02"):
-            self.dispatch("new", "cut", f"R.{suffix}", "--executor", "orch-do", "--goal", f"Produce component {suffix}.", "--context", "It feeds the root result.", "--pack", "orch-code-pack", "--isolation", "required")
-        self.dispatch("stamp-generation", "cut", "R")
-        validated = self.dispatch("draft-validate", "cut", "R")
-        self.dispatch(
-            "seal", "cut", "R", "--cut-generation",
-            validated["draft_validation"]["cut_generation"],
-        )
-        for path in sorted((Path(self.temporary.name) / "tickets" / "cut").glob("*.md")):
-            sections = _sections(path.read_text(encoding="utf-8"))
-            self.assertIn("Goal", sections)
-            self.assertIn("Context", sections)
 
     def test_complete_code_cut_keeps_one_root_generation_before_and_after_seal(self):
         initial = {"R": assignment("R", "orch-slice")}

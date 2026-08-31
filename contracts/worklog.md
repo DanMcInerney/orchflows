@@ -11,12 +11,10 @@ reconstructable from them by observation. Free notes a run appends
 through `tickets.py run-state --note` land in `runs/<run>/notes.md`
 beside the view and are not the view.
 
-A decomposed root-ticket run is one physical run with one root and one
-composite gate. Answer and direct-single work keep their ordinary independence
-path. A successor has its own run view after its predecessor result is fixed.
+Each physical run has one root ticket (contracts/work-item.md). A successor
+has its own run view after its predecessor result is fixed.
 
-- `goal` — the root ticket's `## Goal` and `## Context` verbatim; for a loop
-  run the loop ticket's, and for a template run its terminal ticket's.
+- `goal` — the root ticket's `## Goal` and `## Context` verbatim.
 - `iterations` — every ticket ordered by its dispatch attempt's
   `opened_at` (the lease the record owns), each with its
   `## Verification` entries.
@@ -27,8 +25,7 @@ path. A successor has its own run view after its predecessor result is fixed.
 - `queued_scope` — the tickets that `depends_on` the run's gate:
   discovered work, queued behind the frozen goal and never merged into
   it.
-- `terminal` — empty until the run exits, then the root ticket's
-  `status` — for a loop or template run the loop or terminal ticket's —
+- `terminal` — empty until the run exits, then the root ticket's `status`,
   read in the terminal set
   [work-item.md](work-item.md) owns: `complete` | `blocked` | `stalled` |
   `limited` | `failed`. A parked-only pause is not an exit: no

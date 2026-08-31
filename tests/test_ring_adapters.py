@@ -287,26 +287,5 @@ class PortabilityTests(unittest.TestCase):
             )
 
 
-class InstantiateResolutionTests(unittest.TestCase):
-    def test_a_workflow_name_resolves_and_a_bare_path_still_works(self):
-        from scripts import tickets_instantiate
-
-        with _world() as world:
-            template = world["home"] / "workflows" / "team-flow" / "SKILL.md"
-            template.parent.mkdir(parents=True)
-            template.write_bytes(b"---\nname: team-flow\ndescription: does it.\n---\n")
-
-            with patch.object(rings.Path, "cwd", return_value=world["root"]):
-                resolved, failure = tickets_instantiate._template_directory("team-flow")
-                self.assertIsNone(failure)
-                self.assertEqual(template.parent, resolved)
-                direct, failure = tickets_instantiate._template_directory(str(template.parent))
-                self.assertIsNone(failure)
-                self.assertEqual(template.parent, direct)
-                missing, failure = tickets_instantiate._template_directory("no-such-flow")
-                self.assertIsNone(missing)
-                self.assertIn("does not resolve", failure["error"])
-
-
 if __name__ == "__main__":
     unittest.main()

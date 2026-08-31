@@ -7,7 +7,6 @@ import re
 from pathlib import Path
 
 from reader.scripts import (
-    ui_workflows_compositions as compositions,
     ui_workflows_identity as identity,
     ui_workflows_skills as skills,
 )
@@ -41,30 +40,9 @@ def _workflow_type(root: Path, workflow_id: object) -> str | None:
         identity.workflow_node_id(workflow_id)
     except identity.WorkflowIdentityError:
         return None
-    if identity.contained_file(
-        root, root / "example-workflows" / workflow_id / "template.md"
-    ):
-        return "composition"
     if skills.workflow_skill_path(root, workflow_id) is not None:
         return "workflow-skill"
     return None
-
-
-def _composition_paths(root: Path, workflow_id: str) -> set[str]:
-    detail = compositions.project_composition(root, workflow_id)
-    installed_skills, _ = skills.skill_index(root)
-    installed = {f"lib/example-workflows/{workflow_id}/template.md"}
-    for node in detail["nodes"]:
-        if "source_id" not in node:
-            continue
-        if node["kind"] == "work":
-            installed.add(f"lib/example-workflows/{workflow_id}/{node['label']}.md")
-        elif node["kind"] == "skill":
-            path = installed_skills.get(node["label"])
-            if path is None:
-                raise WorkflowSourceError("composition source inventory is inconsistent")
-            installed.add(path)
-    return installed
 
 
 def _workflow_skill_paths(root: Path, workflow_id: str) -> set[str]:
@@ -87,15 +65,11 @@ def _workflow_skill_paths(root: Path, workflow_id: str) -> set[str]:
     return installed
 
 
-def _inventory(root: Path, workflow_id: str, workflow_type: str) -> dict[str, str]:
+def _inventory(root: Path, workflow_id: str) -> dict[str, str]:
     try:
-        if workflow_type == "composition":
-            paths = _composition_paths(root, workflow_id)
-        else:
-            paths = _workflow_skill_paths(root, workflow_id)
+        paths = _workflow_skill_paths(root, workflow_id)
         return {identity.source_id(path): path for path in paths}
     except (
-        compositions.WorkflowCompositionError,
         skills.WorkflowSkillError,
         identity.WorkflowIdentityError,
     ) as error:
@@ -106,10 +80,9 @@ def source_inventory(root: Path = ROOT, workflow_id: str = "") -> tuple[str, ...
     """Return only the exhaustive opaque source IDs for one workflow."""
 
     root = Path(root)
-    workflow_type = _workflow_type(root, workflow_id)
-    if workflow_type is None:
+    if _workflow_type(root, workflow_id) is None:
         return ()
-    return tuple(sorted(_inventory(root, workflow_id, workflow_type)))
+    return tuple(sorted(_inventory(root, workflow_id)))
 
 
 def _redact(text: str, root: Path) -> tuple[str, bool]:
@@ -140,11 +113,10 @@ def project_source(
     root = Path(root)
     if not isinstance(source_id, str) or SOURCE_ID_RE.fullmatch(source_id) is None:
         return 404, NOT_FOUND
-    workflow_type = _workflow_type(root, workflow_id)
-    if workflow_type is None:
+    if _workflow_type(root, workflow_id) is None:
         return 404, NOT_FOUND
     try:
-        installed_path = _inventory(root, workflow_id, workflow_type).get(source_id)
+        installed_path = _inventory(root, workflow_id).get(source_id)
     except WorkflowSourceError:
         return 422, UNREADABLE
     if installed_path is None:

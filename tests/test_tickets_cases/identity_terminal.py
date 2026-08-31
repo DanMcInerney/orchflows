@@ -307,7 +307,7 @@ class TestNoFallback(unittest.TestCase):
             self.block_the_sink(tmp)
             before = self.listing(repo)
             for args in (
-                ("join-noop-repair", "testrun", "T1", "--by", "agent-a"),
+                ("check", "testrun", "T1", "--stage", "T1.check"),
                 ("set-status", "testrun", "T1", "complete"),
                 ("result", "testrun", "T1", "--file", str(body)),
             ):

@@ -10,18 +10,18 @@ if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec, pack_digest
     from .tickets_format import (
-        RESULT_BEARING_STATES, ROOT_EXECUTOR,
+        RESULT_BEARING_STATES,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
-        dequote, is_review_stage_id, round_parent, _executor_of,
+        is_review_stage_id, round_parent, _executor_of,
         _parse_frontmatter, _set_frontmatter_field,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec, pack_digest
     from tickets_format import (
-        RESULT_BEARING_STATES, ROOT_EXECUTOR,
+        RESULT_BEARING_STATES,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
-        dequote, is_review_stage_id, round_parent, _executor_of,
+        is_review_stage_id, round_parent, _executor_of,
         _parse_frontmatter, _set_frontmatter_field,
     )
 
@@ -102,7 +102,6 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         ))
     unbound = (
         executor.startswith(SCRIPT_EXECUTOR_PREFIX)
-        or executor == ROOT_EXECUTOR
         or is_review_stage_id(ticket_id)
     )
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
@@ -162,29 +161,6 @@ def post_seal_parent(ticket_id: str, data: dict, siblings) -> str | None:
     if declared and declared in dict(siblings or {}):
         return declared
     return landing_round_parent(ticket_id, siblings)
-
-
-def graph_findings(ticket_id: str, data: dict) -> list:
-    """Grade the one shape rule a decomposed root still owns.
-
-    ``orch-slice`` is the only root executor that may own executor-result
-    members, and a root marked as an ordinary checker would leave the graph's
-    authority with a caller, so it is refused at every admission door.
-
-    The member-count rules that stood beside this -- `graph-no-members`,
-    `graph-one-member`, `graph-direct-members` -- are gone with the cut
-    membership law they guarded. Parentage owns shape now: a runtime child
-    declares whose call it is and binds through that parent's seal, so
-    counting id-descendants said nothing a `parent` field does not say
-    better, and said it wrongly for every brick minted under a brick.
-    """
-    findings = []
-    if _executor_of(data) == ROOT_EXECUTOR and dequote(data.get("independence")) == "checker":
-        findings.append(finding(
-            "decomposed-root-checker", "independence",
-            "a decomposed root must declare independence=gate",
-        ))
-    return findings
 
 
 def _canonical_json(value) -> bytes:
@@ -254,7 +230,6 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     adapter, adapter_failure = adapter_resolution(data.get("pack"))
     if adapter_failure is not None:
         findings.append(adapter_failure)
-    findings.extend(graph_findings(ticket_id, data))
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     for dependency in dependencies:
         if dependency not in siblings:
@@ -384,7 +359,7 @@ def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
 __all__ = (
     "ADMISSION_PENDING", "RESULT_BEARING_STATES", "adapter_id",
     "binding_findings", "dependency_order_findings", "finding",
-    "graph_findings", "grade_admission", "is_receipt",
+    "grade_admission", "is_receipt",
     "landing_round_parent",
     "pinned_digest_finding", "post_seal_parent", "refresh_admissions",
     "sealed_parent_target",

@@ -45,19 +45,16 @@ Deliver one result.
 
 
 class CallableRegistryTests(unittest.TestCase):
-    def test_callable_registry_is_the_two_bricks_plus_the_temporary_decomposer(self):
-        """`orch-slice` stays registered through this wave: the wave-2
-        arbiter ruling (2026-08-31) found admission refuses it the instant
-        it retires, but the decomposed-root machinery it discriminates
-        (`ROOT_EXECUTOR` in `scripts/tickets_format.py`) is still live and
-        fenced from this ticket. Its registration retires together with
-        that machinery in W3a, not with the other three verbs here."""
+    def test_callable_registry_is_exactly_the_two_bricks(self):
+        """`orch-slice` retired in W4a together with the instantiate layer
+        that was its only minter of decomposed roots (`ROOT_EXECUTOR` in
+        `scripts/tickets_format.py` is gone with it): the two brick doors
+        are the whole callable tier now."""
 
         self.assertEqual(
             (
                 "orch-do",
                 "orch-judge",
-                "orch-slice",
             ),
             tickets.CALLABLE_EXECUTORS,
         )
@@ -161,33 +158,27 @@ Deliver one result.
         self.assertNotIn("loop-arm", loop_refusal)
         self.assertNotIn("bind '", loop_refusal)
 
-    def test_the_outline_doorway_and_its_predecessor_collapse_to_one_remedy(self):
-        """`orch-outline` retires as a verb this wave; its craft survives as
-        the planning `do` reading the pack craft's Outline and Spec fields
-        sections (`.orchflows/lego-design-2026-08-31.md`). Its own
-        predecessor `orch-spec` refuses toward that same living remedy
-        rather than toward `orch-outline`, so no refusal chains through a
-        name that itself refuses. `orch-slice` is not part of this
-        collapse: it stays registered (see the callable-registry test
-        above), so its own predecessor `orch-decompose` refuses by naming
-        it directly, the ordinary registered-successor shape."""
+    def test_the_outline_and_slice_doorways_collapse_to_one_remedy(self):
+        """`orch-outline` retired as a verb in wave 3; `orch-slice` retires
+        in W4a together with the instantiate layer that was its only
+        minter of decomposed roots. Both leave their craft behind as the
+        planning `do` reading the pack craft's Outline and Spec fields
+        sections (`.orchflows/lego-design-2026-08-31.md`), and both
+        predecessors -- `orch-spec` and `orch-decompose` -- refuse toward
+        that same living remedy rather than toward a name that itself
+        refuses."""
 
         remedy = (
             "a planning `do` reading the pack craft's Outline and Spec "
             "fields sections"
         )
-        for retired in ("orch-outline", "orch-spec"):
+        for retired in ("orch-outline", "orch-spec", "orch-slice", "orch-decompose"):
             with self.subTest(retired=retired):
                 self.assertEqual(remedy, registry.executor_successor(retired))
                 refusal = registry.executor_refusal(retired)
                 self.assertIn("superseded", refusal)
                 self.assertIn(remedy, refusal)
                 self.assertNotIn("bind '", refusal)
-
-        self.assertEqual("orch-slice", registry.executor_successor("orch-decompose"))
-        decompose_refusal = registry.executor_refusal("orch-decompose")
-        self.assertIn("superseded", decompose_refusal)
-        self.assertIn("bind 'orch-slice' instead", decompose_refusal)
 
     def test_do_and_judge_require_pack_authority(self):
         text = """---

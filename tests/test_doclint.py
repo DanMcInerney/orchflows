@@ -388,7 +388,6 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
     def test_custom_authoring_standard_preserves_admission_and_user_scope_boundaries(self):
         standard = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(encoding="utf-8")
         for anchor in (
-            "tickets.py instantiate",
             "context: fork",
             "matching `agent`",
             "resolve the declared role",

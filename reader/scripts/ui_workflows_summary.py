@@ -18,7 +18,6 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "evolve",
     "orch-do",
     "orch-judge",
-    "orch-slice",
     "renovate",
     "self-improve",
     "skill-tournament",

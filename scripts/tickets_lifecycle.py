@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, REPORT_SECTION, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
+    from .tickets_format import CHECKED_BY_KEY, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _sections, _set_frontmatter_field, dequote
 else:
-    from tickets_format import CHECKED_BY_KEY, REPORT_SECTION, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
+    from tickets_format import CHECKED_BY_KEY, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _sections, _set_frontmatter_field, dequote
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, TicketWriteRefused, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically, locked_ticket_write
 else:
@@ -28,16 +28,11 @@ if __package__:
 else:
     from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 # The claim-admission seam lives in `tickets_project`, where the project
-# binding it now grades also lives; re-exported here because the facade and
-# `tickets_dispatch` import these three names from this module.
+# binding it now grades also lives.
 if __package__:
-    from .tickets_project import CLAIM_REMEDY, TERMINAL_REMEDY, binding_refusal
+    from .tickets_project import TERMINAL_REMEDY, binding_refusal
 else:
-    from tickets_project import CLAIM_REMEDY, TERMINAL_REMEDY, binding_refusal
-if __package__:
-    from .tickets_result import RESULT_ATTRIBUTION_PREFIX
-else:
-    from tickets_result import RESULT_ATTRIBUTION_PREFIX
+    from tickets_project import TERMINAL_REMEDY, binding_refusal
 if __package__:
     from .tickets_attempts import _classification
 else:
@@ -47,17 +42,15 @@ if __package__:
 else:
     from tickets_readiness import readiness_facts
 if __package__:
-    from .tickets_review import REVIEW_FIELD, ReviewError, launch_state, repair_outcome, review_records, state_from_text
+    from .tickets_review import ReviewError, review_records, state_from_text
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_dispatch_schema import status_ownership_returned
 else:
-    from tickets_review import REVIEW_FIELD, ReviewError, launch_state, repair_outcome, review_records, state_from_text
+    from tickets_review import ReviewError, review_records, state_from_text
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_dispatch_schema import status_ownership_returned
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --stage <id.check>'
-JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
-NOOP_REPAIR_NOTE = 'No repair: every critique lens accepted an empty blocker set.'
 
 
 def lifecycle_rows() -> tuple:
@@ -234,8 +227,8 @@ def _check_under_run_lock(rest, *, ticket_path=None):
     if status != 'complete':
         return {'error': f"check requires the target executor outcome to be joined complete (status '{status}')"}
     independence = dequote(data.get('independence') or 'checker')
-    if independence == 'gate' and _executor_of(data) != ROOT_EXECUTOR:
-        return {'error': f'ticket {run}/{ticket_id} defers independence to its downstream gate: a non-root gate-deferred ticket has no checker path and cannot carry checked_by'}
+    if independence == 'gate':
+        return {'error': f'ticket {run}/{ticket_id} defers independence to its caller: a gate-deferred ticket has no checker path and cannot carry checked_by'}
     prior_checker = dequote(data.get(CHECKED_BY_KEY))
     if prior_checker:
         return {'error': f"ticket {run}/{ticket_id} is already checked by '{prior_checker}': one ticket has one checker identity. An additional adversarial reviewer must be a distinctly named root-gate lens"}
@@ -295,77 +288,6 @@ def _cmd_set_status(rest):
         return refused.payload
     except OSError as error:
         return {'error': f'unable to record status and terminal timing: {error}'}
-
-def _cmd_join_noop_repair(rest):
-    probe = list(rest)
-    _extract_flag(probe, '--by')
-    if len(probe) != 2:
-        return {'error': f'usage: {JOIN_NOOP_REPAIR_USAGE}'}
-    try:
-        with locked_ticket_write(probe[0], probe[1]) as ticket_path:
-            held = binding_refusal(probe[0], CLAIM_REMEDY)
-            if held is not None:
-                return {'error': held}
-            return _join_noop_repair_under_run_lock(rest, ticket_path=ticket_path)
-    except TicketWriteRefused as refused:
-        return refused.payload
-    except OSError as error:
-        return {'error': f'unable to complete clean repair at join: {error}'}
-
-def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
-    args = list(rest)
-    written_by = _extract_flag(args, '--by')
-    if len(args) != 2 or not (written_by or '').strip():
-        return {'error': f'usage: {JOIN_NOOP_REPAIR_USAGE}'}
-    written_by = written_by.strip()
-    if any(mark in written_by for mark in ('`', '\r', '\n')):
-        return {'error': 'join-noop-repair --by contains backticks or line breaks'}
-    run, ticket_id = args
-    if not ticket_id.endswith('.gate.repair'):
-        return {'error': 'join-noop-repair requires a .gate.repair ticket'}
-    if ticket_path is None:
-        tickets_root = _tickets_root()
-        if tickets_root is None:
-            return {'error': NO_SINK_ERROR}
-        ticket_path = tickets_root / run / f'{ticket_id}.md'
-    if not ticket_path.is_file():
-        return {'error': f'ticket not found: {run}/{ticket_id}'}
-    text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return failure
-    data = _parse_frontmatter(text)
-    if str(data.get('status') or '') != 'ready':
-        return {'error': f'join-noop-repair requires a ready ticket: {run}/{ticket_id}'}
-    if _executor_of(data) != 'orch-do' or str(data.get('review_kind') or '') != 'repair':
-        return {'error': 'join-noop-repair requires review_kind repair on an orch-do ticket'}
-    dependencies = [str(value) for value in (data.get('depends_on') or [])]
-    if not dependencies:
-        return {'error': 'join-noop-repair requires completed critique dependencies'}
-    critique_prefix = ticket_id[:-len('repair')] + 'critique.'
-    for dependency in dependencies:
-        loaded = _load_ticket(ticket_path.with_name(f'{dependency}.md'))
-        if ('error' in loaded or not dependency.startswith(critique_prefix)
-                or _executor_of(loaded) != 'orch-judge'
-                or str(loaded.get('review_kind') or '') != 'critique'
-                or str(loaded.get('status') or '') != 'complete'):
-            return {'error': f'join-noop-repair dependency is not a completed gate critique: {dependency}'}
-    if _section_body(text, REPORT_SECTION):
-        return {'error': f'join-noop-repair requires an empty repair {REPORT_SECTION}'}
-    try:
-        review = launch_state(ticket_path, text, None, None)
-        review = repair_outcome(review, '', NOOP_REPAIR_NOTE, written_by, no_op=True)
-    except ReviewError as error:
-        return _classification('review-invalid', str(error))
-    timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
-    updated = _set_frontmatter_field(text, 'status', 'claimed')
-    updated = _write_section(updated, REPORT_SECTION, f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n{NOOP_REPAIR_NOTE}')
-    updated = _set_frontmatter_field(updated, REVIEW_FIELD, canonical_json(review))
-    updated = _set_frontmatter_field(updated, 'status', 'complete')
-    try:
-        _write_text_atomically(ticket_path, updated)
-    except OSError as error:
-        return {'error': f'unable to complete clean repair at join: {error}'}
-    return {'join_noop_repair': {'run': run, 'id': ticket_id, 'status': 'complete', 'by': written_by, 'at': timestamp}}
 
 def _set_status_under_run_lock(rest, *, ticket_path=None):
     args = list(rest)

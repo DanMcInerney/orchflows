@@ -98,7 +98,6 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
         return (
             ("check", run, tid, "--stage", f"{tid}.check"),
             ("set-status", run, tid, "complete"),
-            ("join-noop-repair", run, tid, "--by", "gate-join"),
             ("dispatch", run, tid, "--by", "worker", "--dispatch-id", "D1",
              "--lease-expires-at", "2099-01-01T00:00:00Z"),
         )
@@ -153,7 +152,6 @@ class TestTheOneLockedWritePrimitive(unittest.TestCase):
     SUBJECTS = (
         tickets_lifecycle._cmd_check,
         tickets_lifecycle._cmd_set_status,
-        tickets_lifecycle._cmd_join_noop_repair,
     )
     RUN_ONLY_SUBJECTS = (tickets_result._cmd_run_state,)
 

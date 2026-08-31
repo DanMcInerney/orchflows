@@ -122,17 +122,6 @@
         {"source": "resolve", "target": "apply", "kind": "sequence"},
         {"source": "apply", "target": "evidence", "kind": "sequence"}
       ]
-    },
-    "orch-slice": {
-      "nodes": [
-        {"id": "root", "label": "Read the stamped root"},
-        {"id": "slice", "label": "Cut independent outcomes"},
-        {"id": "seal", "label": "Seal the exact draft"}
-      ],
-      "edges": [
-        {"source": "root", "target": "slice", "kind": "sequence"},
-        {"source": "slice", "target": "seal", "kind": "sequence"}
-      ]
     }
   }
 }

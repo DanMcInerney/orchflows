@@ -10,10 +10,10 @@ from __future__ import annotations
 import hashlib
 import re
 if __package__:
-    from .tickets_admission import binding_findings, graph_findings
+    from .tickets_admission import binding_findings
     from .tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
 else:
-    from tickets_admission import binding_findings, graph_findings
+    from tickets_admission import binding_findings
     from tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
@@ -144,8 +144,7 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -
     if expected != draft:
         raise GenerationError("draft validation failed: supplied draft is not the exact snapshot grade")
     members = [item["id"] for item in draft.get("assignments") or []]
-    root_data = _parse_frontmatter(snapshot[root_id])
-    findings = list(graph_findings(root_id, root_data))
+    findings = []
     for ticket_id in [root_id, *members]:
         data = _parse_frontmatter(snapshot[ticket_id])
         findings.extend(binding_findings(ticket_id, data))

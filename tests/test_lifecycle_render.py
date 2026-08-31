@@ -27,7 +27,6 @@ class LifecycleTableTest(unittest.TestCase):
                 "dispatch-replace",
                 "dispatch-retire",
                 "issue",
-                "join-noop-repair",
                 "ready",
                 "result",
                 "set-status blocked",

@@ -12,7 +12,6 @@ from reader.scripts.ui_workflows_summary import SummaryManifestError, validate_m
 
 
 ROOT = Path(__file__).resolve().parents[2]
-COMPOSITION_ENTRIES = frozenset({"routed", "named"})
 
 
 class WorkflowCatalogError(ValueError):
@@ -32,7 +31,7 @@ def _text_field(fields: dict, key: str, subject: str) -> str:
     return value
 
 
-def _owner(root: Path, path: Path, workflow_type: str) -> dict:
+def _owner(root: Path, path: Path) -> dict:
     try:
         fields = _parse_frontmatter(identity.read_contained_text(root, path))
     except (identity.ContainedFileError, ValueError) as error:
@@ -41,16 +40,10 @@ def _owner(root: Path, path: Path, workflow_type: str) -> dict:
     if name != path.parent.name:
         raise WorkflowCatalogError("workflow owner name does not match its package")
     description = _text_field(fields, "description", name)
-    if workflow_type == "composition":
-        entry = _text_field(fields, "entry", name)
-        if entry not in COMPOSITION_ENTRIES:
-            raise WorkflowCatalogError("composition has an unknown entry mode")
-    else:
-        entry = "callable"
     return {
         "id": name,
-        "type": workflow_type,
-        "entry": entry,
+        "type": "workflow-skill",
+        "entry": "callable",
         "description": description,
     }
 
@@ -71,8 +64,8 @@ def _canonical_owners(root: Path) -> list[dict]:
         if (root / "skills" / "kernel" / name / "SKILL.md").is_file()
     )
     workflow_skills = sorted(skill_paths, key=lambda path: path.parent.name)
-    owners = [_owner(root, path, "workflow-skill") for path in compositions]
-    owners.extend(_owner(root, path, "workflow-skill") for path in workflow_skills)
+    owners = [_owner(root, path) for path in compositions]
+    owners.extend(_owner(root, path) for path in workflow_skills)
     ids = [owner["id"] for owner in owners]
     if len(ids) != len(set(ids)):
         raise WorkflowCatalogError("canonical workflow identities are not unique")

@@ -19,7 +19,7 @@ gone; nothing below can hide their absence, because `_dispatch` still answers
 from __future__ import annotations
 
 from scripts import tickets
-from scripts.tickets_instantiate import _cmd_stamp_generation
+from scripts.tickets_stamp_generation import _cmd_stamp_generation
 from scripts.tickets_lifecycle import _cmd_ready
 from scripts.tickets_seal import _cmd_draft_validate, _cmd_seal
 

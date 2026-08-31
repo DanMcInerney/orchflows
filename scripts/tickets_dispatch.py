@@ -14,7 +14,7 @@ if __package__:
     from . import console
     from .tickets_format import _extract_flag, _read_utf8
     from .tickets_issue import _cmd_new
-    from .tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
+    from .tickets_lifecycle import _cmd_check, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from .tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from .tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from .tickets_join import _cmd_dispatch_join
@@ -29,12 +29,11 @@ if __package__:
     from .tickets_frame import _cmd_frame_close, _cmd_frame_open
     from .tickets_dispatch_facade import _cmd_dispatch
     from .tickets_land import _cmd_land
-    from .tickets_instantiate import _cmd_instantiate, _cmd_stamp_generation, _sealed_template_snapshot, _template_stubs, git_head, render_stub
 else:  # pragma: no cover - direct/installed flat script path
     import console
     from tickets_format import _extract_flag, _read_utf8
     from tickets_issue import _cmd_new
-    from tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
+    from tickets_lifecycle import _cmd_check, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from tickets_join import _cmd_dispatch_join
@@ -49,8 +48,6 @@ else:  # pragma: no cover - direct/installed flat script path
     _frame = __import__('tickets_frame'); _cmd_frame_open = _frame._cmd_frame_open; _cmd_frame_close = _frame._cmd_frame_close
     from tickets_dispatch_facade import _cmd_dispatch
     _cmd_land = __import__('tickets_land')._cmd_land
-    _instantiate_module = __import__('tickets_instantiate'); _cmd_instantiate = _instantiate_module._cmd_instantiate; _cmd_stamp_generation = _instantiate_module._cmd_stamp_generation
-    _sealed_template_snapshot = _instantiate_module._sealed_template_snapshot; _template_stubs = _instantiate_module._template_stubs; git_head = _instantiate_module.git_head; render_stub = _instantiate_module.render_stub
 # Installed by `scripts/tickets.py` at facade import, never imported back up
 # from here: the facade owns which seams it re-points, and a helper reaching
 # up for that is the import cycle `tickets_store` used to close per write.
@@ -140,7 +137,7 @@ def _dispatch(argv):
     if _sync_seams is not None:
         _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | do | judge | frame-open | frame-close | lint | bound-check | instantiate | grade | list | show | dispatch | land | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | join-noop-repair | result | worklog | run-state | repair-run-identity | improvement'}
+        return {'error': 'missing subcommand: new | do | judge | frame-open | frame-close | lint | bound-check | grade | list | show | dispatch | land | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | result | worklog | run-state | repair-run-identity | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -154,7 +151,6 @@ def _dispatch(argv):
     # Named one per line, not folded into a membership test: `cli_help`
     # reads the dispatched set off these comparisons, and a subcommand
     # reachable only through a lookup is one whose `--help` silently errs.
-    if command == 'instantiate': return _cmd_instantiate(rest)
     if command == 'grade': return _cmd_grade(rest)
     if command == 'list':
         return _cmd_list(rest)
@@ -183,8 +179,6 @@ def _dispatch(argv):
         return _cmd_check(rest)
     if command == 'set-status':
         return _cmd_set_status(rest)
-    if command == 'join-noop-repair':
-        return _cmd_join_noop_repair(rest)
     if command == 'result':
         return _cmd_result(rest)
     if command == 'worklog':

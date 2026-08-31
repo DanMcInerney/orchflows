@@ -17,20 +17,13 @@ except ImportError:
 # Keep this order stable: it is the user-facing registry artifact and is
 # rendered in refusal messages and help/test projections.
 #
-# `orch-slice` stays registered on the driver's own ruling (2026-08-31,
-# wave-2 arbiter, re-affirmed at W3a): admission refuses it the moment it
-# retires, but the decomposed-root discriminator ROOT_EXECUTOR names
-# (scripts/tickets_format.py) is still live and still reached from the
-# instantiate layer -- retiring the verb without first deleting that layer
-# is a hole, not a tombstone. `orch-slice`'s registration dies together with
-# `instantiate` in W4a; that unit removes this entry, moves it into
-# SUPERSEDED_EXECUTORS pointing at `_PLANNING_DO_REMEDY` below, and updates
-# `orch-decompose`'s successor to match. Until then, treat this comment as
-# the marker.
+# `orch-slice` retired in W4a together with `tickets.py instantiate`, its
+# only minter of decomposed roots: with nothing left to mint one, the
+# decomposed-root discriminator ROOT_EXECUTOR (scripts/tickets_format.py)
+# is gone too, and the two brick doors are the whole callable tier.
 CALLABLE_EXECUTORS = (
     "orch-do",
     "orch-judge",
-    "orch-slice",
 )
 
 # ``files_findings`` marks the verb whose product is a findings file rather
@@ -40,16 +33,14 @@ CALLABLE_EXECUTORS = (
 EXECUTOR_REGISTRY = {
     "orch-do": {"role": "worker", "requires_pack": True},
     "orch-judge": {"role": "planner", "requires_pack": True, "files_findings": True},
-    "orch-slice": {"role": "planner"},
 }
 
-# `orch-outline` retired this wave toward this living remedy: a planning
-# `do` -- goal a frozen root or a call plan -- reading the pack craft's
-# Outline and Spec fields sections in `do`'s stead. Its own predecessor
-# intake verb (`orch-spec`) points at the same remedy rather than at the
-# retired name that once stood between them, so no refusal chains through
-# a name that itself refuses. `orch-slice`'s own Slicing section stays
-# `orch-slice`'s until W4a folds it in alongside the verb's retirement.
+# `orch-outline` and `orch-slice` both retired toward this living remedy: a
+# planning `do` -- goal a frozen root or a call plan -- reading the pack
+# craft's Outline and Spec fields sections in `do`'s stead. Their own
+# predecessor intake verbs (`orch-spec`, `orch-decompose`) point at the same
+# remedy rather than at a retired name that itself refuses, so no refusal
+# chains through a name with no binding left to offer.
 _PLANNING_DO_REMEDY = (
     "a planning `do` reading the pack craft's Outline and Spec fields "
     "sections"
@@ -66,7 +57,8 @@ SUPERSEDED_EXECUTORS = {
     "orch-check": "orch-judge",
     "orch-outline": _PLANNING_DO_REMEDY,
     "orch-spec": _PLANNING_DO_REMEDY,
-    "orch-decompose": "orch-slice",
+    "orch-slice": _PLANNING_DO_REMEDY,
+    "orch-decompose": _PLANNING_DO_REMEDY,
     "orch-loop": (
         "a prose loop in the calling workflow over repeated `do` bricks, with "
         "the ticket `done` predicate evaluated by tickets.py land"

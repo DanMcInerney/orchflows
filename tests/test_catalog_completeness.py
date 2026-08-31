@@ -67,7 +67,7 @@ def registered_names() -> set:
     """Every canonical name a host must be able to invoke, from its owner."""
 
     packs = {path.parent.name for path in sorted((ROOT / "packs").glob("*/SKILL.md"))}
-    templates = {directory.name for directory, _fm, _body in install.discover_templates()}
+    templates = {directory.name for directory, _fm, _body in install.discover_workflow_skills()}
     return set(CALLABLE_EXECUTORS) | packs | templates
 
 
@@ -187,7 +187,7 @@ class CatalogCompletenessTests(unittest.TestCase):
         mints nothing, which is how a rename hides here."""
 
         discovered = {path.parent.name for path in install.discover_packages()}
-        discovered |= {d.name for d, _f, _b in install.discover_templates()}
+        discovered |= {d.name for d, _f, _b in install.discover_workflow_skills()}
         self.assertEqual(
             set(),
             set(install.SHARED_ADAPTER_NAMES) - discovered,

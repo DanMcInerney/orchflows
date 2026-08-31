@@ -4,7 +4,7 @@
 
 ## Catalog experience
 
-Each catalog row uses its canonical owner `name` as stable ID, labels its vocabulary type, and presents that name as a descriptive native link beside source-derived when-use copy and a validated, noninteractive semantic summary. A [T3 composition is the reader's spelling of a workflow; a T1 workflow skill is an assembled, domain-blind skill](../vocabulary.md#structure). Every library workflow is now a workflow skill whose prose calls bricks, so its trigger is its own callable name and its entry mode is `callable`; the `composition` type and its `routed`/`named` entries remain projectable for a ring bundle still carrying that shape. The UI does not author identity or when-use copy.
+Each catalog row uses its canonical owner `name` as stable ID, labels its vocabulary type, and presents that name as a descriptive native link beside source-derived when-use copy and a validated, noninteractive semantic summary. A [T3 composition is the reader's spelling of a workflow; a T1 workflow skill is an assembled, domain-blind skill](../vocabulary.md#structure). Every library workflow is now a workflow skill whose prose calls bricks, so its trigger is its own callable name and its entry mode is `callable`; the `composition` type retired with `tickets.py instantiate`, its only minter. The UI does not author identity or when-use copy.
 
 ### Library workflow skills
 
@@ -21,7 +21,6 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 Custom-item authoring follows ordinary code routing and is not a callable workflow.
 - [orch-do](../../skills/kernel/orch-do/SKILL.md) — produce one artifact through the stamped pack's craft, or plan through its Outline and Spec fields sections.
 - [orch-judge](../../skills/kernel/orch-judge/SKILL.md) — judge a fixed artifact or verify a repair.
-- [orch-slice](../../skills/kernel/orch-slice/SKILL.md) — cut a stamped root into independent items; retires with the decomposed-root concept.
 
 ## Catalog projection and semantic summaries
 

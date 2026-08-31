@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 
 from reader.scripts import ui_workflows_catalog as catalog
-from reader.scripts import ui_workflows_compositions as compositions
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -17,109 +16,6 @@ SUMMARY = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 
 
 class WorkflowCatalogTests(unittest.TestCase):
-    def test_uninstantiated_executor_slot_invents_no_skill_projection(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: {{executor}}\n"
-                "depends_on: []\nbound: {{bound}}\n---\n",
-            )
-
-            detail = compositions.project_composition(root, "demo")
-
-        self.assertEqual(
-            ["workflow:demo", "work:demo/00-deliver"],
-            [node["id"] for node in detail["nodes"]],
-        )
-        self.assertEqual([], detail["edges"])
-        self.assertEqual([], detail["diagnostics"])
-
-    def test_a_stub_projects_its_one_executor_and_no_retired_sequence(self):
-        """`sequence` was retired with the multi-stage chain: a stub runs its
-        one `executor`, and a pack's stages run inside that one child. A stub
-        still carrying the key gets no second executor edge from it."""
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: orch-tdd\n"
-                "sequence: [orch-tdd, orch-verify]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-            for name in ("orch-tdd", "orch-verify"):
-                self._write(
-                    root / "skills" / "workflows" / name / "SKILL.md",
-                    f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
-                )
-
-            detail = compositions.project_composition(root, "demo")
-
-        executor_edges = [
-            edge for edge in detail["edges"] if edge["kind"] == "executor"
-        ]
-        self.assertEqual(
-            ["skill:orch-tdd"],
-            [edge["to"] for edge in executor_edges],
-        )
-        self.assertEqual(executor_edges, [
-            edge for edge in detail["relations"] if edge["kind"] == "executor"
-        ])
-        self.assertNotIn(
-            "skill:orch-verify", {node["id"] for node in detail["nodes"]}
-        )
-
-    def test_pack_cell_sequence_projects_only_its_bound_executor(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: orch-draft\n"
-                "pack: orch-content-pack\nsequence: [draft, edit]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-            self._write(
-                root / "skills" / "workflows" / "orch-draft" / "SKILL.md",
-                "---\nname: orch-draft\ndescription: Execute draft.\nrole: worker\n---\n",
-            )
-
-            detail = compositions.project_composition(root, "demo")
-
-        self.assertEqual(["skill:orch-draft"], [
-            edge["to"] for edge in detail["edges"] if edge["kind"] == "executor"
-        ])
-        self.assertNotIn("skill:draft", [node["id"] for node in detail["nodes"]])
-        self.assertNotIn("skill:edit", [node["id"] for node in detail["nodes"]])
-
-    def test_list_valued_executor_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-verify]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-
-            with self.assertRaises(compositions.WorkflowCompositionError):
-                compositions.project_composition(root, "demo")
-
     def test_escaping_file_and_directory_symlink_owners_are_rejected(self):
         for link_kind in ("file", "directory"):
             with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
@@ -153,7 +49,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             [
                 "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament", "super-research",
-                "orch-do", "orch-judge", "orch-slice",
+                "orch-do", "orch-judge",
             ],
             [workflow["id"] for workflow in projected],
         )
