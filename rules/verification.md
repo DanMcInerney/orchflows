@@ -23,18 +23,17 @@ place this evidence law in the ticket lifecycle.
    candidate into, is the one outside execution. Done is a checked condition,
    never a disposition an executor recorded for itself.
 7. Each ticket takes one independence path: a blocker-only `orch-judge`
-   checker recorded by `checked_by`, or its downstream composite gate. A
-   gate-deferred ticket does not use `checked_by`. Additional review is a
-   uniquely named lens feeding the same one repair. Independence comes from
-   that checker or from the predicate, never from a standing verification
-   child. Walking either path is mechanical, and the driver walks it: the
-   checker path creates `<id>.check` with `checker-stage`, spends one
-   distinct read-only `orch-judge` dispatch on it, lands that return, then
-   anchors the joined stage through `check <run> <id> --stage <id>.check`.
-   An accepted checked target takes `gate <run> <id>` for one separate
-   repair ticket; a clean one closes with no repair at all; a gate-deferred
-   root takes `gate <run> <root>` for its composite gate, never
-   `checker-stage`.
+   checker recorded by `checked_by`, or none at all. A gate-deferred ticket
+   does not use `checked_by`. Independence comes from that checker or from
+   the predicate, never from a standing verification child. The checker path
+   is the driver's to walk: author `<id>.check` against the sealed target,
+   spend one distinct read-only `orch-judge` dispatch on it, land that
+   return, then anchor the joined stage through
+   `check <run> <id> --stage <id>.check`. An accepted checked target takes
+   one separate
+   repair ticket, opened as a `do` brick against the blockers it accepted;
+   a clean one closes with no repair at all; a gate-deferred root takes no
+   stage, because no door emits a review family for it.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the

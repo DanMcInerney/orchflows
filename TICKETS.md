@@ -152,11 +152,10 @@ Three moments use readers who did not produce the fixed artifact
    accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — each result takes one outside-independence path:
-   either the ordinary durable evaluator/adjudication carrier or the downstream
-   composite gate. Both use fresh read-only `orch-judge`; neither repairs
-   its own target. `tickets.py checker-stage <run> <id>` derives one explicit
-   `<id>.check` review ticket from the sealed target. That stage uses the same
-   `dispatch` → `land` carrier as every
+   the ordinary durable evaluator/adjudication carrier, or none. It uses a
+   fresh read-only `orch-judge`, and it never repairs its own target. The
+   `<id>.check` review ticket is authored against the sealed target and
+   uses the same `dispatch` → `land` carrier as every
    role-bearing execution. Only
    `tickets.py check <run> <id> --stage <id>.check` may attach the joined,
    identity-anchored adjudication to `checked_by`; callers cannot write trusted

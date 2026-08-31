@@ -23,6 +23,7 @@ from unittest import mock
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
+from tests import _retired_doors as retired_doors
 from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
 from scripts import tickets_dispatch_launch as launch_module
@@ -53,12 +54,12 @@ class SinkTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def dispatch(self, *arguments):
-        result = tickets._dispatch([str(value) for value in arguments])
+        result = retired_doors.run([str(value) for value in arguments])
         self.assertNotIn("error", result, result)
         return result
 
     def refuse(self, *arguments):
-        result = tickets._dispatch([str(value) for value in arguments])
+        result = retired_doors.run([str(value) for value in arguments])
         self.assertIn("error", result, result)
         return result
 
@@ -117,9 +118,28 @@ class SealedRunTest(SinkTest):
         record_established_workspace(path, self.candidate)
 
     def recut(self):
-        """The lawful membership change: one checker stage joins the cut."""
+        """The lawful membership change: one more member joins the cut.
 
-        self.dispatch("checker-stage", "run", "T")
+        Written by hand rather than through a door: `checker-stage` minted
+        this member until W3a retired the gate choreography, and what the
+        cases below turn on is the membership change itself -- a second
+        generation, and the receipts the first one leaves stale.
+        """
+
+        self.dispatch(
+            "new", "run", "T.check", "--executor", "orch-judge",
+            "--goal", "Judge what T delivered against its Goal.",
+            "--context", "The repository is authoritative.",
+            "--pack", "orch-code-pack", "--isolation", "none",
+        )
+        path = self.ticket_path("T.check")
+        path.write_text(
+            _set_frontmatter_field(
+                path.read_text(encoding="utf-8"), "root_generation",
+                self.frontmatter("T")["root_generation"],
+            ),
+            encoding="utf-8",
+        )
         return self.dispatch("draft-validate", "run", "T")
 
     def launch(self):
@@ -297,7 +317,7 @@ class TestARefusalNamesACommandThatExists(unittest.TestCase):
 
         found = {(script, command) for _, script, command in self.named_commands()}
         self.assertIn(("tickets", "repair-run-identity"), found)
-        self.assertIn(("tickets", "ready"), found)
+        self.assertIn(("tickets", "dispatch"), found)
         self.assertIn(("workspace", "retire"), found)
 
     def test_an_invented_command_is_caught(self):
@@ -415,7 +435,7 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
     def file_result(self, body):
         path = self.home / "body.md"
         path.write_text(body, encoding="utf-8")
-        return tickets._dispatch([
+        return retired_doors.run([
             "result", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", "D1", "--record-id", "R1", "--by", "worker",
@@ -557,11 +577,11 @@ class TestPendingNamesItsPromotion(SinkTest):
 
         refused = self.open_it()
         self.assertEqual("admission-mismatch", refused["code"])
-        self.assertIn("tickets.py ready --run run", refused["error"])
+        self.assertIn("tickets.py dispatch run T", refused["error"])
 
     def test_a_stale_receipt_is_not_told_to_promote(self):
         """A promoted ticket whose receipt went stale is a different repair,
-        and sending it to `ready` would be the wrong instruction."""
+        and sending it back to promotion would be the wrong instruction."""
 
         self.dispatch("ready", "--run", "run")
         path = self.ticket_path("T")
@@ -686,7 +706,7 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
         )
 
     def close(self, *, note="delivered"):
-        return tickets._dispatch([
+        return retired_doors.run([
             "dispatch-outcome", "run", "T", "--note", note,
         ])
 
@@ -715,7 +735,7 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
             "--risks-file", "--handoff-file",
         ):
             with self.subTest(flag=flag):
-                refused = tickets._dispatch([
+                refused = retired_doors.run([
                     "dispatch-outcome", "run", "T", flag, str(self.home / "x"),
                 ])
                 self.assertEqual("outcome-invalid", refused["code"])
@@ -731,7 +751,7 @@ class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):
     """
 
     def replace(self, dispatch_id, replacement_id, record_id):
-        return tickets._dispatch([
+        return retired_doors.run([
             "dispatch-replace", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", dispatch_id, "--record-id", record_id,

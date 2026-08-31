@@ -59,13 +59,10 @@ else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
-# The one value the `loop` marker takes, read off the declared shape rather
-# than spelled twice.
-LOOP_MARKER = TICKET_FRONTMATTER_VALUES['loop'][0]
-# The one value the `frame` marker takes, read the same way. A frame is the
-# durable record of one workflow invocation; the marker is what tells every
-# reader that the ticket in front of it binds no executor because nothing
-# dispatches it.
+# The one value the `frame` marker takes, read off the declared shape rather
+# than spelled twice. A frame is the durable record of one workflow
+# invocation; the marker is what tells every reader that the ticket in front
+# of it binds no executor because nothing dispatches it.
 FRAME_MARKER = TICKET_FRONTMATTER_VALUES['frame'][0]
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
@@ -98,19 +95,17 @@ GATE_ID_MARKER = '.gate.'
 GATE_CRITIQUE_MARKER = '.gate.critique.'
 CHECKER_STAGE_SUFFIX = '.check'
 # The ids the round machinery mints after a cut is already sealed, and the
-# one grammar that names them. `loop-arm` writes a loop stub's `<id>.iter.NN`
-# body, a landing whose `done` command refused arms its `<id>.repair.NN`
-# round, and the `check` done form mints a `<round>.done` judge beside
-# either. Three readers have to agree on which ids those are -- the arm, the
-# advance, and the sealed-admission door -- and while the grammar was spelled
-# only inside `tickets_loop`, that door answered by never asking: it read
-# every armed iteration as an assignment the seal did not name and refused
-# the whole loop lane at its first dispatch.
-ITERATION_MARKER = 'iter'
+# one grammar that names them. A landing whose `done` command refused arms
+# its `<id>.repair.NN` round, and the `check` done form mints a
+# `<round>.done` judge beside one. Two readers have to agree on which ids
+# those are -- the advance and the sealed-admission door -- and while the
+# grammar was spelled inside the lane that minted them, that door answered by
+# never asking: it read every armed round as an assignment the seal did not
+# name and refused the whole lane at its first dispatch.
 REPAIR_MARKER = 'repair'
 DONE_TICKET_SUFFIX = '.done'
 ROUND_ID_RE = re.compile(
-    f'^(?P<parent>.+)\\.(?:{ITERATION_MARKER}|{REPAIR_MARKER})\\.(?P<number>\\d+)$'
+    f'^(?P<parent>.+)\\.{REPAIR_MARKER}\\.(?P<number>\\d+)$'
 )
 # The auto id grammar of the two brick doors. A runtime child is minted
 # under the ticket that called it -- `<parent>.<n>` -- and a parentless one
@@ -283,7 +278,6 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if not sections.get('context', '').strip():
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
-    defects.extend(loop_defects(data.get('loop'), _executor_of(data), data.get('done')))
     defects.extend(frame_defects(data.get('frame'), data.get('executor'), data.get('pack')))
     defects.extend(done_defects(data.get('done')))
     return defects
@@ -314,21 +308,12 @@ def lease_of(data):
     if not isinstance(attempt, dict):
         return '', ''
     return str(attempt.get('owner') or ''), str(attempt.get('opened_at') or '')
-def is_loop_stub(data) -> bool:
-    """Whether this ticket's ``loop`` marker makes it a loop stub.
-
-    ``loop`` is a marker, not an object. It says one thing -- read this
-    ticket's own ``done`` predicate once per iteration instead of once at
-    landing -- so it is spelled the one way a marker can be spelled.
-    """
-    return dequote(data.get('loop')) == LOOP_MARKER
-def iteration_of(ticket_id):
+def round_of(ticket_id):
     """`(parent_id, number)` when an id names one bounded round, else None.
 
     The round itself, never the `.done` judge minted beside one: a judge is
     read *against* a round and is not one, and what counts rounds -- the
-    stall rule of `rules/loops.md` Section 3 -- would count each round twice
-    if it were.
+    stall rule -- would count each round twice if it were.
     """
     match = ROUND_ID_RE.fullmatch(str(ticket_id or ''))
     if match is None:
@@ -346,7 +331,7 @@ def round_parent(ticket_id):
     text = str(ticket_id or '')
     if text.endswith(DONE_TICKET_SUFFIX):
         text = text[:-len(DONE_TICKET_SUFFIX)]
-    parsed = iteration_of(text)
+    parsed = round_of(text)
     return None if parsed is None else parsed[0]
 def brick_ordinal(ticket_id, parent=None):
     """The ordinal an auto-minted brick id carries under ``parent``, or None.
@@ -438,9 +423,8 @@ def unjudged_reason(journal) -> str:
 def parse_done(data):
     """The parsed frontmatter ``done`` predicate of one ticket, or None.
 
-    One home and one grammar for both readings: `tickets.py land` runs it
-    over the integrated tree, and a loop stub's `loop-evaluate` runs the
-    same binding after each iteration.
+    One home and one grammar: `tickets.py land` runs it over the integrated
+    tree, and nothing else reads it.
     """
     raw = str(data.get('done') or '').strip()
     if not raw:
@@ -454,9 +438,9 @@ def done_binding_defects(done, subject: str) -> list:
     """Shape defects for one ``{form, value}`` done binding, or [].
 
     contracts/work-item.md's done_binding shape, and the sole owner of that
-    grammar. One field, two readings -- `tickets.py land` over the
-    integrated tree, `loop-evaluate` after an iteration -- and one owner: a
-    second copy is how the two spellings of a closed form drift.
+    grammar. One field, one reading -- `tickets.py land` over the integrated
+    tree -- and one owner: a second copy is how the two spellings of a
+    closed form drift.
     """
     if not isinstance(done, dict):
         return [f'{subject} must be one JSON object']
@@ -485,33 +469,6 @@ def done_defects(value) -> list:
     except ValueError:
         return ['done is not canonical JSON']
     return done_binding_defects(done, 'done')
-def loop_defects(value, executor, done) -> list:
-    """Shape defects for one frontmatter ``loop`` marker, or [].
-
-    The marker takes exactly one value. What it marks is which reader
-    evaluates this ticket's own ``done`` predicate, so a stub without one
-    marks nothing, and the stub's ``executor`` is the iteration body's verb.
-    """
-    raw = dequote(value)
-    if not raw:
-        return []
-    defects = []
-    if raw != LOOP_MARKER:
-        defects.append(
-            f"loop is the marker `{LOOP_MARKER}` and takes no other value: got '{raw}'"
-        )
-    if not str(done or '').strip():
-        defects.append(
-            'a loop stub carries the `done` predicate its iterations are read '
-            'against'
-        )
-    verb = dequote(executor)
-    if not defects and not executor_registered(verb):
-        defects.append(
-            f"loop stub executor '{verb}' is not a registered callable; "
-            "the stub's executor is the iteration body's verb"
-        )
-    return defects
 def _parse_iso(value):
     if not isinstance(value, str) or not value.strip():
         return None

@@ -140,7 +140,7 @@ graph_findings = _tickets_admission_module.graph_findings
 grade_admission = _tickets_admission_module.grade_admission
 is_receipt = _tickets_admission_module.is_receipt
 _GENERATION_EXPORTS = frozenset({
-    "assignment_digest", "assignment_payload", "composite_gate_findings", "correction_decision", "draft_snapshot",
+    "assignment_digest", "assignment_payload", "correction_decision", "draft_snapshot",
     "generation_identity", "generation_ordinal", "seal_assignments",
     "seal_findings", "validate_draft",
 })
@@ -205,7 +205,6 @@ ISOLATION_VALUES = _tickets_issue_module.ISOLATION_VALUES
 NEW_DEFAULT_BOUND = _tickets_issue_module.NEW_DEFAULT_BOUND
 NEW_USAGE = _tickets_issue_module.NEW_USAGE
 _cmd_new = _tickets_issue_module._cmd_new
-_distinct_gate_lenses = _tickets_issue_module._distinct_gate_lenses
 _frontmatter_list = _tickets_issue_module._frontmatter_list
 _issue_ticket = _tickets_issue_module._issue_ticket
 _place_ticket = _tickets_issue_module._place_ticket
@@ -233,9 +232,6 @@ _cmd_show = _tickets_lifecycle_module._cmd_show
 _join_noop_repair_under_run_lock = _tickets_lifecycle_module._join_noop_repair_under_run_lock
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
 ASSIGNMENT_SECTIONS = _tickets_assignment_module.ASSIGNMENT_SECTIONS
-GATE_CRITIQUE_ID = _tickets_assignment_module.GATE_CRITIQUE_ID
-GATE_EXECUTOR_SECTIONS = _tickets_assignment_module.GATE_EXECUTOR_SECTIONS
-GATE_REPAIR_ID = _tickets_assignment_module.GATE_REPAIR_ID
 dispatch_assignment = _tickets_assignment_module.dispatch_assignment
 COVERAGE_RECORD_NAME = _tickets_result_module.COVERAGE_RECORD_NAME
 IMPROVEMENT_USAGE = _tickets_result_module.IMPROVEMENT_USAGE
@@ -266,7 +262,6 @@ _template_order = _tickets_worklog_module._template_order
 _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
 template_defects = _tickets_worklog_module.template_defects
-GATE_USAGE = _tickets_commands_module.GATE_USAGE
 GRADE_USAGE = _tickets_commands_module.GRADE_USAGE
 DISPATCH_USAGE = _tickets_commands_module.DISPATCH_USAGE
 HELP_COMMANDS = _tickets_commands_module.HELP_COMMANDS
@@ -281,20 +276,13 @@ LINT_USAGE = _tickets_lint_module.LINT_USAGE
 apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
-_cmd_gate = _tickets_dispatch_module._cmd_gate
 _cmd_grade = _tickets_dispatch_module._cmd_grade
 _cmd_dispatch = _tickets_dispatch_module._cmd_dispatch
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
 _cmd_instantiate = _tickets_dispatch_module._cmd_instantiate
 _dispatch = _tickets_dispatch_module._dispatch
-_gate_body = _tickets_dispatch_module._gate_body
-_gate_sections = _tickets_dispatch_module._gate_sections
-_gate_stub = _tickets_dispatch_module._gate_stub
-_gate_under_run_lock = _tickets_dispatch_module._gate_under_run_lock
 _help_requested = _tickets_dispatch_module._help_requested
-_listed_items = _tickets_dispatch_module._listed_items
-_pack_domain = _tickets_dispatch_module._pack_domain
 _template_stubs = _tickets_dispatch_module._template_stubs
 main = _tickets_dispatch_module.main
 console = _tickets_dispatch_module.console

@@ -17,16 +17,16 @@ except ImportError:
 # Keep this order stable: it is the user-facing registry artifact and is
 # rendered in refusal messages and help/test projections.
 #
-# `orch-slice` stays registered through this wave on the driver's own
-# ruling (2026-08-31, wave-2 arbiter): admission refuses it the moment it
-# retires, but the decomposed-root machinery ROOT_EXECUTOR discriminates
-# (scripts/tickets_format.py, fenced from this ticket) is still live and
-# consumes it across ~12 script modules -- retiring the verb without first
-# deleting that machinery is a hole, not a tombstone. `orch-slice`'s
-# registration dies together with the decomposed-root concept in W3a; that
-# unit removes this entry, moves it into SUPERSEDED_EXECUTORS pointing at
-# `_PLANNING_DO_REMEDY` below, and updates `orch-decompose`'s successor to
-# match. Until then, treat this comment as the marker.
+# `orch-slice` stays registered on the driver's own ruling (2026-08-31,
+# wave-2 arbiter, re-affirmed at W3a): admission refuses it the moment it
+# retires, but the decomposed-root discriminator ROOT_EXECUTOR names
+# (scripts/tickets_format.py) is still live and still reached from the
+# instantiate layer -- retiring the verb without first deleting that layer
+# is a hole, not a tombstone. `orch-slice`'s registration dies together with
+# `instantiate` in W4a; that unit removes this entry, moves it into
+# SUPERSEDED_EXECUTORS pointing at `_PLANNING_DO_REMEDY` below, and updates
+# `orch-decompose`'s successor to match. Until then, treat this comment as
+# the marker.
 CALLABLE_EXECUTORS = (
     "orch-do",
     "orch-judge",
@@ -49,7 +49,7 @@ EXECUTOR_REGISTRY = {
 # intake verb (`orch-spec`) points at the same remedy rather than at the
 # retired name that once stood between them, so no refusal chains through
 # a name that itself refuses. `orch-slice`'s own Slicing section stays
-# `orch-slice`'s until W3a folds it in alongside the verb's retirement.
+# `orch-slice`'s until W4a folds it in alongside the verb's retirement.
 _PLANNING_DO_REMEDY = (
     "a planning `do` reading the pack craft's Outline and Spec fields "
     "sections"
@@ -67,7 +67,10 @@ SUPERSEDED_EXECUTORS = {
     "orch-outline": _PLANNING_DO_REMEDY,
     "orch-spec": _PLANNING_DO_REMEDY,
     "orch-decompose": "orch-slice",
-    "orch-loop": "the ticket `loop` field, driven by tickets.py loop-arm | loop-evaluate | loop-advance",
+    "orch-loop": (
+        "a prose loop in the calling workflow over repeated `do` bricks, with "
+        "the ticket `done` predicate evaluated by tickets.py land"
+    ),
     "orch-frontier": (
         "the driver loop is mechanical: `tickets.py dispatch` emits the launch, "
         "`tickets.py land` evaluates done, integrates, and prints the ready frontier"

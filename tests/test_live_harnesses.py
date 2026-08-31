@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Compatibility discovery seam for the five live probe harnesses.
+"""Compatibility discovery seam for the four live probe harnesses.
 
 Behavioral cases are partitioned by harness seam below this module. Importing
 them here preserves the complete tests.test_live_harnesses collection.
@@ -9,11 +9,6 @@ them here preserves the complete tests.test_live_harnesses collection.
 import unittest
 
 from tests.test_live_harnesses_cases.grok_profile_cases import TestGrokRoleProfiles
-from tests.test_live_harnesses_cases.loop_cases import (
-    TestBuiltCommand,
-    TestLoopAnalyzeRun,
-    TestRunScenario,
-)
 from tests.test_live_harnesses_cases.profile_cases import (
     TestClaudeLiveProfiles,
     TestCodexLiveProfiles,

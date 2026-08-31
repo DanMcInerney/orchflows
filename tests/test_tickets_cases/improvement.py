@@ -298,12 +298,17 @@ class ExitConventionTest(unittest.TestCase):
             self.assertNotIn("error", payload)
             self.assertEqual(0, result.returncode)
 
-    def test_success_exits_0_ready(self):
-        """A success path exits with code 0: ready subcommand."""
+    def test_success_exits_0_bound_check(self):
+        """A success path exits with code 0: bound-check subcommand.
+
+        It was `ready` until W3a folded promotion into `dispatch`; what the
+        case grades is the exit convention, so it moved to the other
+        run-scoped read rather than to a route that no longer exists.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_repo(tmp, {"T1": ("ready", "[]")})
-            result = run_full(tmp, "ready")
+            result = run_full(tmp, "bound-check", "testrun")
             payload = json.loads(result.stdout)
             self.assertNotIn("error", payload)
             self.assertEqual(0, result.returncode)

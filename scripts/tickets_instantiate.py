@@ -35,7 +35,7 @@ if __package__:
         generation_identity, seal_assignments, validate_draft,
     )
     from .tickets_transitions import pending_admission, stamp
-    from .tickets_commands import INSTANTIATE_USAGE, STAMP_GENERATION_USAGE
+    from .tickets_commands import INSTANTIATE_USAGE
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import (
         GATE_ID_MARKER, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE,
@@ -61,7 +61,13 @@ else:  # pragma: no cover - direct/installed flat script path
     seal_assignments = _generations.seal_assignments
     validate_draft = _generations.validate_draft
     from tickets_transitions import pending_admission, stamp
-    from tickets_commands import INSTANTIATE_USAGE, STAMP_GENERATION_USAGE
+    from tickets_commands import INSTANTIATE_USAGE
+
+
+# The argument shape of the generation stamp. It is no longer a public
+# subcommand -- the brick doors fold it, and `instantiate` runs it inline --
+# so it is spelled beside its one caller instead of in the help table.
+STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
 
 
 def git_head():
@@ -265,7 +271,7 @@ def _cmd_instantiate(rest):
             text = _set_frontmatter_field(text, field, '')
         path = run_dir / f'{stub_id}.md'
         if GATE_ID_MARKER in stub_id:
-            return {'error': f"template stub id '{stub_id}' is reserved for `tickets.py gate`; a template cannot assemble a partial or alternate gate family. Nothing was written"}
+            return {'error': f"template stub id '{stub_id}' uses the reserved `.gate.` review-stage grammar; a critique is a `tickets.py judge` brick and the repair answering it a `tickets.py do` brick. Nothing was written"}
         rendered.append((path, text))
     try:
         rendered, generation_documents, generation_stamp = _sealed_template_snapshot(run, ordered, rendered)

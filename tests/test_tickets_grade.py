@@ -66,16 +66,22 @@ class GradeSnapshotTest(unittest.TestCase):
         with self.assertRaisesRegex(GradeError, "over-decomposition"):
             grade_snapshot("R", snapshot)
 
-    def test_direct_and_loop_shapes_have_one_result_width(self):
+    def test_a_direct_root_has_one_result_width(self):
+        """`loop` was the third shape; there is no loop lane to grade.
+
+        A ticket carrying a `done` predicate is graded `single` like any
+        other direct root -- the predicate says what `land` evaluates, not
+        what shape the graph is.
+        """
+
         direct = {"R": ticket("R", "orch-tdd")}
-        loop = {"R": ticket(
-            "R", "orch-do",
-            loop="true", done='{"form":"command","value":"exit 0"}',
+        with_done = {"R": ticket(
+            "R", "orch-do", done='{"form":"command","value":"exit 0"}',
         )}
         self.assertEqual("single", grade_snapshot("R", direct)["shape"])
         self.assertEqual(1, grade_snapshot("R", direct)["width"])
-        self.assertEqual("loop", grade_snapshot("R", loop)["shape"])
-        self.assertEqual(1, grade_snapshot("R", loop)["width"])
+        self.assertEqual("single", grade_snapshot("R", with_done)["shape"])
+        self.assertEqual(1, grade_snapshot("R", with_done)["width"])
 
     def test_the_ledger_ends_at_the_repair_and_admits_no_verification_record(self):
         """The chain's last link is `RepairOutcome`.
