@@ -331,11 +331,12 @@ class InnerTubeDescriptorTest(unittest.TestCase):
         declared = youtube_innertube.DESCRIPTOR.volatile_identifiers
 
         # Two clients rotate on this route since 2026-08-17: the web one every
-        # operation but `player` presents, and the Android one `player` and the
-        # transcript operation present because it is the one served caption
-        # tracks. Each is a separate identifier with a separate procedure —
-        # they rotate on separate schedules and are recovered from separate
-        # places.
+        # metadata operation presents — `player` included since 2026-08-31,
+        # when the app clients' answers dropped the publish date — and the
+        # Android one the transcript operation's player read presents because
+        # it is the one served caption tracks. Each is a separate identifier
+        # with a separate procedure — they rotate on separate schedules and
+        # are recovered from separate places.
         self.assertEqual(len(declared), 2)
         self.assertIn(youtube_innertube.CLIENT_VERSION, declared[0].name)
         self.assertIn(youtube_innertube.CLIENT_NAME, declared[0].name)
@@ -349,21 +350,31 @@ class InnerTubeDescriptorTest(unittest.TestCase):
         self.assertIn("_INNERTUBE_CLIENTS", declared[1].recovery)
 
     def test_the_client_version_goes_out_in_the_body_the_route_shapes(self):
-        # `player` presents the Android client, which is the one served caption
-        # tracks; `search` presents the web client whose key the route carries.
-        # Both go out in the body the route shapes, and neither is anywhere a
-        # caller could set.
+        # `player` and `search` present the web client — since 2026-08-31 the
+        # app clients' player answers carry no date at all, so the metadata
+        # operations share one client. The transcript operation's player read
+        # alone presents the Android client, which is the one served caption
+        # tracks. All go out in the body the route shapes, and none is
+        # anywhere a caller could set.
         _, player_opener = youtube_page("player_metadata.json")
         played = json.loads(player_opener.opened[0].body)["context"]["client"]
         _, search_opener = youtube_page(
             "search_results.json", target_id=YOUTUBE_SEARCH_TARGET
         )
         searched = json.loads(search_opener.opened[0].body)["context"]["client"]
+        _, transcript_opener = youtube_page(
+            "player_android_captions.json", target_id="transcript:ggdyD2Un5zo"
+        )
+        transcribed = json.loads(transcript_opener.opened[0].body)["context"]["client"]
 
-        self.assertEqual(played["clientName"], youtube_innertube.PLAYER_CLIENT_NAME)
-        self.assertEqual(played["clientVersion"], youtube_innertube.PLAYER_CLIENT_VERSION)
+        self.assertEqual(played["clientName"], youtube_innertube.CLIENT_NAME)
+        self.assertEqual(played["clientVersion"], youtube_innertube.CLIENT_VERSION)
         self.assertEqual(searched["clientName"], youtube_innertube.CLIENT_NAME)
         self.assertEqual(searched["clientVersion"], youtube_innertube.CLIENT_VERSION)
+        self.assertEqual(transcribed["clientName"], youtube_innertube.PLAYER_CLIENT_NAME)
+        self.assertEqual(
+            transcribed["clientVersion"], youtube_innertube.PLAYER_CLIENT_VERSION
+        )
 
     def test_it_declares_the_reply_metric_it_reports_and_no_comment_metric(self):
         # A comment carries a count of its replies; nothing in these three

@@ -1,6 +1,6 @@
 {
-  "source": "route measurements of 2026-08-10, (YouTube)",
-  "note": "The false-capability trap this whole half exists for. Across WEB, MWEB, TVHTML5, ANDROID and IOS on three videos, captionTracks came back empty every time, and playability degraded to UNPLAYABLE after the first metadata call. The evidence names the cause: PoToken/BotGuard attestation. An adapter that reported that as 'this video has no captions' would assert something false about the video, and one that reported the UNPLAYABLE as a credential problem would call a keyless route credentialed. `captions_withheld` is the column the caption oracle reads: true where the response listed no caption track, false where it listed some, and null where the case is not a player call at all. The row listing tracks is not a shape this package has ever measured - it exists so that 'empty means withheld' can be false, without which the claim would be satisfied by typing every player response the same way.",
+  "source": "route measurements of 2026-08-10, (YouTube), amended by the player metadata measurement of 2026-08-31",
+  "note": "The false-capability trap this whole half exists for. Across WEB, MWEB, TVHTML5, ANDROID and IOS on three videos, captionTracks came back empty every time, and playability degraded to UNPLAYABLE after the first metadata call. The evidence names the cause: PoToken/BotGuard attestation. An adapter that reported that as 'this video has no captions' would assert something false about the video, and one that reported the UNPLAYABLE as a credential problem would call a keyless route credentialed. Measured 2026-08-31: the WEB client answers UNPLAYABLE on a held video *with* the complete videoDetails and microformat beside it, and ERROR on an unheld id with neither, under a byte-identical reason string — so a refusal carrying the row is a served answer with its playback withheld, and only one carrying no videoDetails refuses the read. `captions_withheld` is the column the caption oracle reads: true where the response listed no caption track, false where it listed some, and null where the case is not a player call at all. The row listing tracks is not a shape this package has ever measured - it exists so that 'empty means withheld' can be false, without which the claim would be satisfied by typing every player response the same way.",
   "cases": [
     {
       "case_name": "search_results_200",
@@ -65,8 +65,30 @@
       "body_fixture": "player_unplayable.json",
       "captions_withheld": true,
       "expected_loss": "attestation_required",
+      "expected_outcome": "ok",
+      "evidence": "measured 2026-08-31: the WEB client answers UNPLAYABLE with the complete videoDetails beside it on every held video, keylessly — the origin serves the row and withholds the playback. The row is kept and the loss says what was withheld, so a degraded answer stays tellable apart from a healthy one by its loss rather than by throwing the served row away. The body's 'Sign in to confirm you're not a bot' is still not read: a keyless route is not called credentialed because a body used the word sign in"
+    },
+    {
+      "case_name": "player_web_metadata_unplayable_200",
+      "target_id": "player:dQw4w9WgXcQ",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "player_web_metadata_unplayable.json",
+      "captions_withheld": true,
+      "expected_loss": "attestation_required",
+      "expected_outcome": "ok",
+      "evidence": "measured 2026-08-31 on the WEB client against a held video: 200, UNPLAYABLE, reason 'Video unavailable', and the complete videoDetails and microformat beside it — publishDate now a full instant with an offset rather than a bare day. This is the shape the player metadata operation reads since the app clients' answers dropped microformat entirely (ANDROID at two versions, IOS and ANDROID_VR, a whole-body scan finding no date field in any of them)"
+    },
+    {
+      "case_name": "player_unheld_200",
+      "target_id": "player:aaaaaaaaaa1",
+      "cursor": "",
+      "status": 200,
+      "body_fixture": "player_unheld.json",
+      "captions_withheld": true,
+      "expected_loss": "attestation_required",
       "expected_outcome": "failed",
-      "evidence": "measured: later player calls answered 200 with UNPLAYABLE across five clients and three videos, and the evidence names the cause. The body carries a full videoDetails and the words 'Sign in to confirm you're not a bot'; neither is read — a degraded response is not mined for metadata, and a keyless route is not called credentialed because a body used the word sign in"
+      "evidence": "measured 2026-08-31 on the WEB client against an id the origin does not hold: 200, ERROR, reason 'Video unavailable' — byte-identical to the held video's — and no videoDetails at all. The absent details are what refuse this read; the reason string decides nothing"
     },
     {
       "case_name": "stale_client_version_400",

@@ -6,6 +6,16 @@ from .. import AdapterDescriptor, VolatileIdentifier
 
 CLIENT_NAME = "WEB"
 CLIENT_VERSION = "2.20260808.00.00"
+
+# The client the transcript operation's player read presents, and the only
+# read that presents it. Measured 2026-08-17: `ANDROID` at this version
+# answers playability `OK` with a populated caption track list, keyless,
+# where `WEB` is served none. Measured 2026-08-31: that same answer carries
+# no `microformat` — a whole-body scan found no date field anywhere in it,
+# on `IOS` and `ANDROID_VR` alike — while `WEB` still carries `publishDate`
+# beside a complete `videoDetails`. So the `player` metadata operation
+# presents the web client above, and this one exists for the caption listing
+# alone.
 PLAYER_CLIENT_NAME = "ANDROID"
 PLAYER_CLIENT_VERSION = "20.10.38"
 

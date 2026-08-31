@@ -161,3 +161,40 @@ What this sweep does not cover: no read touched TikTok or Instagram search
 (TikTok's `oembed` answered 400; Instagram's hashtag pages are login-walled),
 Mastodon's status search (empty without a credential), or Lemmy, and none of
 those ships. Every row is one host, one network, one moment.
+
+## The player metadata measurement of 2026-08-31
+
+One Windows 11 host, unauthenticated, through this package's own transport,
+after the `youtube_innertube` smoke reported its video row missing
+`published_at`. Bounded player reads of one held video (`dQw4w9WgXcQ`) across
+nine clients, and one read of an eleven-character id the origin does not hold.
+Two rows here supersede claims above.
+
+- **Every client answered `OK` with caption tracks has lost `microformat`.**
+  `ANDROID 20.10.38` (the pinned version), `ANDROID 20.34.42`, `IOS 20.10.4`
+  and `ANDROID_VR 1.62.27` all answered 200 `OK` with `videoDetails`, six
+  caption tracks, and no `microformat` key; a whole-body scan of the `ANDROID`
+  answer found no `publishDate`, no `uploadDate`, and no date value anywhere in
+  its 247 KB. The publish date is gone from the app-client player surface
+  entirely, not moved within it.
+- **`WEB` and `MWEB` still carry the date, and now as a full instant.**
+  Both answered 200 `UNPLAYABLE`, reason `Video unavailable`, **with** the
+  complete `videoDetails` (`title`, exact `viewCount`, `author`,
+  `shortDescription`) and `microformat.playerMicroformatRenderer` —
+  `publishDate: 2009-10-24T23:57:33-07:00`, an offset instant where the
+  2026-08-10 era wrote a bare day — and no caption track and no
+  `streamingData`. The origin serves the row and withholds the playback.
+  `WEB_REMIX` answered `UNPLAYABLE` without `microformat`; `TVHTML5`,
+  `WEB_EMBEDDED_PLAYER`, `TVHTML5_SIMPLY_EMBEDDED_PLAYER` and `WEB_CREATOR`
+  refused with no `videoDetails` at all. No client carries both halves: date
+  and captions now live on disjoint client families, which is why the `player`
+  metadata operation presents `WEB` and the transcript's player read presents
+  `ANDROID`.
+- **The unheld side of the 2026-08-12 axis is now measured.** The unheld id
+  answered 200 `ERROR` with no `videoDetails` and no `microformat`; the held
+  video's refusal carried both. The reason string was byte-identical on the
+  two sides, so the reason and the status still decide nothing — the served or
+  unserved row beside them is the discriminator, and it is the one
+  `_player_page` branches on.
+
+Every row is one host, one network, one moment.
