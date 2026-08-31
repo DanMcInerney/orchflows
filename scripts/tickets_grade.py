@@ -164,7 +164,7 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         raise GradeError(error.detail) from error
     sections = _sections(_ticket_text(root_value)) if _ticket_text(root_value) else {}
     semantic_text = "\n".join(
-        sections.get(name, "") for name in ("Goal", "Context", "Suggested files")
+        sections.get(name, "") for name in ("Goal", "Context", "Details")
     )
     unmentioned = [
         field for field in _required_spec_fields(pack)

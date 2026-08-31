@@ -43,7 +43,7 @@ and joins pass the fixed artifact with `--artifact`. Ordinary
 `<id>.check` uses that same seam through `check <run> <id> --stage <id>.check`;
 it accepts no findings and must succeed before `checked_by` is trusted.
 
-Never: treat Suggested files as authority, accept unresolved Git conflicts, or repair here.
+Never: treat Details as authority, accept unresolved Git conflicts, or repair here.
 
 Return: the disposition (accepted, rejected(blame), suspended, needs-check),
 invalidated evidence, and integrated state.

@@ -3,12 +3,13 @@ from __future__ import annotations
 
 EXECUTOR_SECTIONS = ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff')
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
-CUT_SECTIONS = ('Goal', 'Context', 'Suggested files')
+CUT_SECTIONS = ('Goal', 'Context', 'Details')
 CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
 SECTION_ORDER = CUT_SECTIONS + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
-# Suggested files are non-binding and Handoff exists only while suspended.
-OPTIONAL_SECTIONS = ('Handoff', 'Suggested files')
+# Details is the planner's own free-form guidance for this one child, so a
+# ticket may carry none; Handoff exists only while suspended.
+OPTIONAL_SECTIONS = ('Handoff', 'Details')
 REQUIRED_SECTIONS = tuple(name for name in CUT_SECTIONS + EXECUTOR_SECTIONS if name not in OPTIONAL_SECTIONS)
 SECTION_SENTINEL = '[]'
 """The empty collection a cut prefills an executor-owned section with.

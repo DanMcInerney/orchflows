@@ -36,8 +36,8 @@ def assignment_payload(ticket_id: str, text: str) -> dict:
     return {
         "semantic": {
             "context": sections.get("Context", ""),
+            "details": sections.get("Details", ""),
             "goal": sections.get("Goal", ""),
-            "suggested_files": sections.get("Suggested files", ""),
         },
         "dependencies": [str(value) for value in (data.get("depends_on") or [])],
         "executor": _executor_of(data),

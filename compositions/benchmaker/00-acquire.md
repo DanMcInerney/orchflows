@@ -23,7 +23,7 @@ charter names.
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"research-charter","type":"literal","value":"the research charter at compositions/references/benchmaker-research.md in the orchflows library"}
 
-## Suggested files
+## Details
 
 - {{package}}
 

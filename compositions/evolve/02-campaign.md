@@ -27,7 +27,7 @@ generation protocol.
 - input: {"name":"bound","type":"literal","value":"{{bound}}"}
 - input: {"name":"target","type":"literal","value":"{{target}}"}
 
-## Suggested files
+## Details
 
 - {{mutation_scope}}
 

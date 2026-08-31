@@ -73,7 +73,7 @@ class GoalEvidenceContractTest(unittest.TestCase):
         semantic = contract.split("## System-owned metadata", 1)[0]
         self.assertEqual(1, semantic.count("`## Goal`"))
         self.assertEqual(1, semantic.count("`## Context`"))
-        self.assertEqual(1, semantic.count("`## Suggested files`"))
+        self.assertEqual(1, semantic.count("`## Details`"))
         self.assertNotIn("## Done When", contract)
         self.assertNotIn("## Completion test", contract)
         self.assertNotIn("named oracle", contract)
@@ -81,7 +81,7 @@ class GoalEvidenceContractTest(unittest.TestCase):
     def test_execute_consumes_pack_craft_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-execute/SKILL.md")
         self.assertIn("whole craft document", execute)
-        self.assertRegex(execute, r"choose implementation,\s*tests, and verification")
+        self.assertRegex(execute, r"Details prescribes[\s\S]*deviate and\s+report")
         self.assertRegex(execute, r"Stream the\s+executor record")
         self.assertIn("reserved outcome", execute)
         result_contract = " ".join(read("contracts/result.md").split())

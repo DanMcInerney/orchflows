@@ -134,7 +134,7 @@ VERDICTS = {
     EXIT_WRONG_VANTAGE: "wrong-vantage",
     EXIT_SHARED_WORKSPACE: "shared-workspace",
 }
-# Candidate diffs are reported in full. Suggested files are not read here.
+# Candidate diffs are reported in full. The assignment is not read here.
 # One spelling of each subcommand's arguments, joined into ``USAGE`` for the
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {

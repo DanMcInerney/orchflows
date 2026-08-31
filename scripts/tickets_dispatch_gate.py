@@ -59,7 +59,7 @@ def _gate_body(kind: str, root_id: str, lens: str = "", units=None):
     if kind == "critique":
         return [
             ("Goal", f"Review `{root_id}` and its delivered members under the `{lens or 'default'}` lens; enumerate every evidence-backed material blocker to the root Goal, then synthesize the smallest architectural repair set covering the most blockers."),
-            ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Critique is read-only; Suggested files do not define review authority."])),
+            ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Critique is read-only."])),
         ]
     return [
         ("Goal", f"Resolve accepted blockers for `{root_id}`, mechanically detect actual overlapping candidate diffs and ordinary Git conflicts, resolve them, and regenerate shared derived artifacts once."),

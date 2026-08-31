@@ -181,8 +181,8 @@ def _cmd_loop_arm(rest):
         ("Goal", sections.get("Goal", "").strip()),
         ("Context", _iteration_context(data, text, number, prior)),
     ]
-    if sections.get("Suggested files", "").strip():
-        body.append(("Suggested files", sections["Suggested files"].strip()))
+    if sections.get("Details", "").strip():
+        body.append(("Details", sections["Details"].strip()))
     body += [("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")]
     rendered = _render_ticket(fields, body)
     cut_generation = str(data.get("cut_generation") or "").strip()

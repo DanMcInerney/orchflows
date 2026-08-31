@@ -21,7 +21,7 @@ that versions the benchmark and remains fixed for the campaign.
 
 - input: {"name":"skill","type":"literal","value":"{{skill}}"}
 
-## Suggested files
+## Details
 
 - benchmarks/{{skill}}/
 

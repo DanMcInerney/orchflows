@@ -459,10 +459,10 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
                 self.assertEqual(written, _write_section(ticket, "Result", read_back))
 
     def test_a_cut_section_is_left_exactly_as_authored(self):
-        """Goal, Context and Suggested files feed the assignment digest, so
+        """Goal, Context and Details feed the assignment digest, so
         nothing here may re-spell them."""
 
-        for heading in ("Goal", "Context", "Suggested files"):
+        for heading in ("Goal", "Context", "Details"):
             with self.subTest(heading=heading):
                 self.assertEqual("## a", quote_filed_body(heading, "## a"))
                 self.assertEqual("## a", unquote_filed_body(heading, "## a"))

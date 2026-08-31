@@ -23,7 +23,7 @@ whole delivery.
 - input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
 - input: {"name":"brief-bound","type":"literal","value":"{{brief_bound}}"}
 
-## Suggested files
+## Details
 
 - {{workspace}}
 

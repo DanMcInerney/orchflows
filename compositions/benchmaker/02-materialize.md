@@ -21,7 +21,7 @@ each at a preserved identity.
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"manifest-contract","type":"literal","value":"the manifest contract at compositions/references/benchmaker-manifest.md in the orchflows library"}
 
-## Suggested files
+## Details
 
 - {{package}}
 

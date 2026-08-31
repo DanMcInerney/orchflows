@@ -889,6 +889,7 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_join_normalizes_result_findings_and_accepted_json",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_decompose_builds_the_complete_gate_bearing_draft_before_validation",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_details_do_not_limit_candidate_paths",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
@@ -906,7 +907,6 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_refuses_unsafe_or_missing_coordinates_without_creating_state",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
    "test_tickets.AdapterRegistryTest.test_a_project_pack_selects_git_without_a_pack_name_registration",
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
@@ -1512,6 +1512,7 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_join_normalizes_result_findings_and_accepted_json",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decompose_builds_the_complete_gate_bearing_draft_before_validation",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_details_do_not_limit_candidate_paths",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_execute_owns_test_choice",
@@ -1529,7 +1530,6 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_refuses_unsafe_or_missing_coordinates_without_creating_state",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_suggested_files_do_not_limit_candidate_paths",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate",
    "tests.test_tickets_cases.cli_help.HelpTest.test_a_help_flag_taken_as_a_flag_value_is_not_a_help_request",
    "tests.test_tickets_cases.cli_help.HelpTest.test_bare_help_exits_0_with_usage_on_stdout",
@@ -1997,7 +1997,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "aa149c9f2bb3934d527974d1c071d55ab06001d5e4abb29b8a5f8016d788b491"
+  "sha256": "7ae92d1b637a39afeb2909982f9c437c7a258e14b2d162d76c3fa6d9c19becaf"
  },
  "mutation_owners": [
   {

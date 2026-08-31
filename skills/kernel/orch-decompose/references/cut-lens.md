@@ -2,8 +2,8 @@
 
 Cut only when multiple independently observable outcomes or real dependencies
 make one executor insufficient. Every member uses Goal, Context, and optional
-Suggested files. An edge exists only when a downstream member needs an
-upstream result. Suggested files may overlap; actual candidate diffs and Git
+Details. An edge exists only when a downstream member needs an
+upstream result. Details may overlap; actual candidate diffs and Git
 conflicts are integration facts.
 
 Reject a compound member whose Goal contains separable outcomes that can run

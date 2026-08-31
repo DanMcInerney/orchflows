@@ -22,7 +22,7 @@ cost each checked independently, with a verdict per required criterion.
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"pack","type":"literal","value":"{{pack}}"}
 
-## Suggested files
+## Details
 
 - {{package}}
 

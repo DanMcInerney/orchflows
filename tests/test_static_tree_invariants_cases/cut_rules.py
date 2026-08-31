@@ -9,7 +9,7 @@ CODE_CRAFT = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
 DESIGN_CRAFT = ROOT / "packs" / "orch-design-pack" / "references" / "craft.md"
 
 # Stable owner anchors for each rule, rather than whole prose sentences.
-OVERLAP_ANCHORS = ("Suggested files may overlap", "never grant authority")
+OVERLAP_ANCHORS = ("Details may overlap", "never grant authority")
 CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
 EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
@@ -19,7 +19,7 @@ PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 CURRENT_UNIT_ANCHORS = ("executor-owned",)
 RETIRED_SHAPE_RESTATEMENTS = (
     "one observable `Goal`",
-    "optional non-binding `Suggested files`",
+    "optional `Details`",
     "system metadata",
 )
 

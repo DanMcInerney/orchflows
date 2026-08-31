@@ -200,7 +200,7 @@
     {
       "name": "ticket_assignment_sections",
       "contract": "work-item.md",
-      "fields": ["Goal", "Context", "Suggested files"],
+      "fields": ["Goal", "Context", "Details"],
       "required": ["Goal", "Context"]
     },
     {

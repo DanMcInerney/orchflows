@@ -84,7 +84,7 @@ SUBCOMMAND_USAGE = {
     **{name: values[0] for name, values in GENERATION_SUBCOMMANDS.items()},
 }
 SUBCOMMAND_SUMMARY = {
-    "new": "Create one Goal/Context ticket; Suggested files are optional and non-binding.",
+    "new": "Create one Goal/Context ticket; Details is the planner's optional free-form guidance.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
     "gate": "Create a composite gate, or materialize repair and fresh verification after an ordinary checker accepts blockers.",
     "grade": "Report deterministic width, shape, pack coverage, adapter capability, and decomposition state.",
@@ -119,7 +119,7 @@ SUBCOMMAND_SUMMARY = {
 HELP_FLAGS = frozenset({"--help", "-h"})
 HELP_COMMANDS = HELP_FLAGS | {"help"}
 VALUE_FLAGS = frozenset({
-    "--run", "--by", "--executor", "--goal", "--context", "--suggested-file",
+    "--run", "--by", "--executor", "--goal", "--context", "--details",
     "--depends-on", "--lens", "--ordered-lens-bundle", "--bound", "--pack",
     "--profile", "--independence", "--isolation", "--set",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",

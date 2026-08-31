@@ -26,7 +26,7 @@ was scored against.
 - input: {"name":"skill","type":"literal","value":"{{skill}}"}
 - standards owner: docs/custom-workflow-authoring.md
 
-## Suggested files
+## Details
 
 - {{surface}}
 

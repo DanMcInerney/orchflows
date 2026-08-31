@@ -9,8 +9,8 @@
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
   items still run only when named. Route smallest-first: **answer** — context
   evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
-  carrying Goal, Context, and optional Suggested files goes to `orch-frontier`;
-  its executor chooses implementation and verification. **graph** — for one
+  carrying Goal, Context, and optional Details goes to `orch-frontier`.
+  **graph** — for one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
   [--host <host>] [--workspace <tree>]`, invoke the emitted `launch`

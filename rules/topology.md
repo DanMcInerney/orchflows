@@ -10,11 +10,11 @@ connects this law to the admission-owned state transition.
 2. Intake chooses the smallest shape that owns the request. A whole artifact
    with one lawful executor is a direct root. Decompose only genuinely distinct
    outcomes or dependencies.
-3. Every ticket uses Goal, Context, and optional Suggested files. A member is
+3. Every ticket uses Goal, Context, and optional Details. A member is
    an atom when its Goal is independently observable and fits its bound.
    Dependencies express result ordering, never preference.
 4. Parallel candidates are isolated. Predicted files need not be disjoint and
-   Suggested files grant no authority. Integration itself is
+   Details grants no authority. Integration itself is
    [work-item.md](../contracts/work-item.md)'s.
 5. A graph is the mechanically observable shape of two or more executor
    results, sequential or parallel. Its decomposed physical run has one root
@@ -37,7 +37,7 @@ connects this law to the admission-owned state transition.
    Within a physical run the `root_generation` ordinal is `1`; cut generations
    may advance only for deterministic correction before seal.
 9. Public generation references are `root_generation`, `cut_generation`, and
-   `assignment_seal`. Digests cover Goal, Context, optional Suggested files,
+   `assignment_seal`. Digests cover Goal, Context, optional Details,
    dependencies, exact executor binding, and necessary system identity; they
    exclude lifecycle bookkeeping and executor-owned result sections.
 10. Candidate overlap is an integration fact, never a cut rejection. Semantic

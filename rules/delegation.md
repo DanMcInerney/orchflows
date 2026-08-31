@@ -33,8 +33,8 @@ connect this law to each authorized dispatch event and predecessor record.
 5. Every child return crosses `orch-integrate` — the single join,
    strictness graded by dispatch type — before the caller trusts any of
    it; no caller states a parallel prose join. What that join grades --
-   candidate write authority, actual diffs and conflicts, the standing of
-   Suggested files -- is [work-item.md](../contracts/work-item.md)'s.
+   candidate write authority, actual diffs and conflicts, and what a path
+   named in Details is worth -- is [work-item.md](../contracts/work-item.md)'s.
 6. Every join applies the [result contract](../contracts/result.md).
 7. Fan out only independent breadth-first work; dependent work runs
    through `orch-frontier` or sequentially.
@@ -71,7 +71,7 @@ connect this law to each authorized dispatch event and predecessor record.
     child under-delivered at the join. How a caller watches a lane on a
     given host is
     [profiles.md](../skills/engines/orch-frontier/references/profiles.md)'s.
-12. The caller owns Goal, Context, and optional Suggested files. Before seal,
+12. The caller owns Goal, Context, and optional Details. Before seal,
     a decomposer may mechanically correct dependency edges, exact executor
     bindings, lifecycle receipts, generation references, and composite gate
     layout only while Goal and Context remain unchanged.
@@ -83,7 +83,7 @@ connect this law to each authorized dispatch event and predecessor record.
     concise Handoff and parks; it never edits a parent ticket.
 15. Before a worker becomes ready, is claimed, or is launched, the
     caller seals the exact validated assignment digest over Goal, Context,
-    optional Suggested files, dependencies, and executor. Those fields are
+    optional Details, dependencies, and executor. Those fields are
     immutable after seal. A semantic-root
     change cannot create an in-run amendment generation: a later cut may evolve
     members only under unchanged root semantics, and the one route out is a

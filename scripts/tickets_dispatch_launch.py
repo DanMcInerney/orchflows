@@ -291,10 +291,11 @@ def _lane_lines(assignment: dict) -> list:
             "stdout as Result and its exit status as Verification.",
         ]
     return [
-        "Goal, Context, and optional Suggested files are the sealed assignment. "
-        "Suggested files are non-binding: inspect and change or create any "
-        "repository files Goal needs. Choose the implementation, tests, and "
-        "verification yourself.",
+        "Goal, Context, and any Details are the sealed assignment: Goal is the "
+        "end result you answer for, Context is the evidence behind it, and "
+        "Details is the planner's guidance for this assignment. Where Details "
+        "prescribes, follow it and say so; where following it would break Goal, "
+        "deviate and report the deviation with its evidence.",
     ]
 
 

@@ -114,13 +114,12 @@ that needs a different meaning needs a different word.
   field, which engines thereafter read blind.
 - **domain** — the deliverable's kind (code, content, research,
   design, data); selects an item's pack and gate lens, per [topology](../rules/topology.md) §§5–6.
-- **work item / ticket** — a sealed Goal, Context, optional Suggested files,
+- **work item / ticket** — a sealed Goal, Context, optional Details,
   lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
   to. The two words name the same thing; ticket is the on-disk view.
-- **atom** — a work item at the finest lawful cut: one observable Goal,
-  dependency closure, and an instruction
-  inside the stub ceiling. Law, and what lies either side of it, in
+- **atom** — a work item at the finest lawful cut: one observable Goal and
+  dependency closure. Law, and what lies either side of it, in
   `rules/topology.md` §3.
 - **root ticket** — the ticket named by a `root_generation`, directly bound to
   any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
@@ -224,7 +223,7 @@ composition).
 ## Delegation
 
 - **dispatch** — starting one fresh child on one sealed ticket. The ticket is
-  the assignment it carries — Goal, Context, optional Suggested files,
+  the assignment it carries — Goal, Context, optional Details,
   operational bound, and exact executor binding, per
   `contracts/work-item.md` and `contracts/dispatch.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. Role-bearing dispatch is
@@ -242,8 +241,8 @@ composition).
   reserved as `outcome`; it carries the closing evidence and disposition for
   direct commit or unchanged relay before join.
 - **candidate authority** — repository/workspace write authority granted to
-  an isolated candidate. Suggested files do not attenuate it; actual changes
-  are adjudicated at the join.
+  an isolated candidate. A path named in Details does not attenuate it; actual
+  changes are adjudicated at the join.
 - **launch** — the one object `tickets.py dispatch` emits and commits: the
   host, verb, agent, model, effort, native fields, and generated prompt for
   the child, resolved from the host record. The caller invokes it verbatim

@@ -23,7 +23,7 @@ revision.
 - input: {"name":"improvement-law","type":"literal","value":"rules/improvement.md in the orchflows library, whose §4 states the qualification this delivery inherits"}
 - input: {"identity":{"kind":"ticket-section","run":"{{run}}","section":"Result","ticket":"00-mine"},"name":"ranked-proposals","type":"identity"}
 
-## Suggested files
+## Details
 
 - {{workspace}}
 

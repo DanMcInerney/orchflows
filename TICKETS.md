@@ -26,7 +26,7 @@ context in any checkout resumes a run mid-flight.
     │ ---                                                         │
     │ ## Goal              observable result             ┐        │
     │ ## Context           facts and constraints          │ seal   │
-    │ ## Suggested files  optional, non-binding          ┘        │
+    │ ## Details           optional planner guidance     ┘        │
     │ ## Result            ┐                                      │
     │ ## Verification      │ executor-written,                    │
     │ ## Feedback          │ streamed while the                   │

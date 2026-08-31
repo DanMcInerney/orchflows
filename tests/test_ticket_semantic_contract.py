@@ -352,7 +352,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         launched = self.committed_launch(
             "direct", "R1", opened["dispatch_id"], workspace="C:/candidate",
         )
-        self.assertIn("Suggested files are non-binding", launched["prompt"])
+        self.assertIn("Details is the planner's guidance", launched["prompt"])
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
         self.assertEqual({"Goal", "Context", "Result", "Verification", "Feedback", "Risks"}, set(_sections(text)))
 
@@ -433,17 +433,17 @@ class SemanticTicketContractTest(unittest.TestCase):
                 self.assertIn("error", refused)
         self.assertFalse((root / "tickets").exists())
 
-    def test_suggested_files_do_not_limit_candidate_paths(self):
+    def test_details_do_not_limit_candidate_paths(self):
         self.dispatch(
-            "new", "suggested", "R1", "--executor", "orch-execute",
+            "new", "details", "R1", "--executor", "orch-execute",
             "--goal", "Repair the behavior.", "--context", "The repository is authoritative.",
-            "--suggested-file", "src/start.py", "--pack", "orch-code-pack",
+            "--details", "- start at src/start.py", "--pack", "orch-code-pack",
             "--isolation", "required",
         )
-        self.seal("suggested", "R1")
-        ready = self.dispatch("ready", "--run", "suggested")
+        self.seal("details", "R1")
+        ready = self.dispatch("ready", "--run", "details")
         self.assertEqual(1, len(ready["ready"]))
-        packet_path = Path(self.temporary.name) / "tickets" / "suggested" / "R1.md"
+        packet_path = Path(self.temporary.name) / "tickets" / "details" / "R1.md"
         self.assertNotIn("write_scope", _parse_frontmatter(packet_path.read_text(encoding="utf-8")))
         actual = workspace._actual_mutations("M\0other/path.py\0A\0tests/new_guard.py\0")
         self.assertEqual([("change", "other/path.py"), ("create", "tests/new_guard.py")], actual)
@@ -1134,7 +1134,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         prompt = self.committed_launch(
             "tdd", "R", opened["dispatch_id"], workspace="C:/candidate",
         )["prompt"]
-        self.assertRegex(prompt.lower(), r"choose the implementation,\s*tests, and verification")
+        self.assertRegex(
+            prompt.lower(),
+            r"details is the planner's guidance[\s\S]*deviate and report the deviation",
+        )
         self.assertNotIn("oracle_class", prompt)
 
     def test_content_pack_preserves_whole_artifact_direct_route(self):

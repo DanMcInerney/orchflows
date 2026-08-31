@@ -8,7 +8,7 @@ if __package__:
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
+        ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -22,7 +22,7 @@ else:
     from tickets_emission import grade_run_emission
     from tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
+        ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -34,7 +34,7 @@ else:
 
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
-    "[--suggested-file PATH ...] [--depends-on a,b] "
+    "[--details TEXT] [--depends-on a,b] "
     "[--bound B] [--pack P] [--profile P] [--independence gate|checker] "
     "[--isolation required|none] | new <run> [<id>] --file <path>"
 )
@@ -78,7 +78,7 @@ def _cmd_new(rest):
     executor = _extract_flag(args, "--executor")
     goal = _extract_flag(args, "--goal")
     context = _extract_flag(args, "--context")
-    suggested = _extract_all(args, "--suggested-file")
+    details = _extract_flag(args, "--details")
     depends_on = _extract_flag(args, "--depends-on")
     bound = _extract_flag(args, "--bound")
     pack = _extract_flag(args, "--pack")
@@ -90,7 +90,7 @@ def _cmd_new(rest):
         return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
     supplied = (
         ("--executor", executor), ("--goal", goal),
-        ("--context", context), ("--suggested-file", suggested or None),
+        ("--context", context), ("--details", details),
         ("--depends-on", depends_on), ("--bound", bound), ("--pack", pack),
         ("--profile", profile), ("--independence", independence),
         ("--isolation", isolation),
@@ -129,8 +129,8 @@ def _cmd_new(rest):
         "profile": profile,
     }
     sections = [("Goal", goal), ("Context", context)]
-    if suggested:
-        sections.append(("Suggested files", "\n".join(f"- {path}" for path in suggested)))
+    if details:
+        sections.append(("Details", details))
     sections.extend((("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")))
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
