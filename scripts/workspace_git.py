@@ -90,6 +90,32 @@ def _git(cwd, *args: str):
     )
 
 
+def _git_out(cwd):
+    """A ``git`` reader aimed at one tree, refusing rather than returning.
+
+    Here rather than beside either caller: the establishment half and the
+    return half both read git out of a named tree, and a second copy of
+    this factory is a second answer to what a failed read means.
+    """
+
+    def read(*args: str) -> str:
+        code, out, err = _git(str(cwd), *args)
+        if code != 0:
+            raise Refused(f"git {' '.join(args)}: {err.strip()}")
+        return out.strip()
+
+    return read
+
+
+def _branch_tip(source, branch: str):
+    """The revision a branch names in this repository, or ``None``."""
+
+    code, out, _ = _git(
+        str(source), "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}^{{commit}}"
+    )
+    return out.strip() if code == 0 and out.strip() else None
+
+
 def actual_top_level(cwd=None, git=None):
     """Return the Git checkout top-level observed from ``cwd``.
 

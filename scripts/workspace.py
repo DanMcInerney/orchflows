@@ -94,6 +94,7 @@ import tickets  # noqa: E402  frontmatter and isolation, imported and never copi
 workspace_git = __import__("workspace_git")
 workspace_candidate = __import__("workspace_candidate")
 workspace_record = __import__("workspace_record")
+workspace_return = __import__("workspace_return")
 # Re-exported, never respelled: the names are declared beside the writes and
 # the refusals that use them, and this facade is where a reader looks them up.
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -267,7 +268,7 @@ def _cmd_retire(rest):
     run, ticket_id = _positional(
         [argument for argument in rest if argument != "--force"], 2, "retire"
     )
-    return workspace_candidate.retire(run, ticket_id, force=force)
+    return workspace_return.retire(run, ticket_id, force=force)
 
 def _extract_flag(args: list, flag: str):
     if flag in args:

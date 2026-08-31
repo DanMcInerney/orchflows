@@ -1,8 +1,10 @@
-"""Establish, replay and retire one work item's candidate workspace.
+"""Establish and replay one work item's candidate workspace.
 
 ``workspace.py`` is the CLI facade; this module owns what a candidate
 workspace *is* for one work item -- the tree it gets, the branch that tree
-stands on, and the observation its ticket is stamped from. It never imports
+stands on, and the observation its ticket is stamped from. What becomes of
+that tree afterwards -- the merge that carries its commits out and the
+removal that ends it -- is ``workspace_return``'s. It never imports
 that facade, nor ``tickets``: the owning modules are imported directly, the
 way ``workspace_git`` imports them.
 
@@ -62,18 +64,6 @@ GIT_STRATEGY = "git"
 # verbs, one body: the facade reads one field out of either.
 START_KEY = "start"
 ESTABLISH_KEY = "establish"
-
-
-def _git_out(cwd):
-    """A ``git`` reader aimed at one tree, refusing rather than returning."""
-
-    def read(*args: str) -> str:
-        code, out, err = workspace_git._git(str(cwd), *args)
-        if code != 0:
-            raise Refused(f"git {' '.join(args)}: {err.strip()}")
-        return out.strip()
-
-    return read
 
 
 def _validate_write_paths(entries, root: Path) -> None:
@@ -205,7 +195,7 @@ def _standing(source, target: Path):
     by the caller, which refuses it rather than asking git to overwrite it.
     """
 
-    for entry in workspace_git._worktrees(_git_out(source)):
+    for entry in workspace_git._worktrees(workspace_git._git_out(source)):
         recorded = entry.get("worktree")
         if not recorded:
             continue
@@ -220,15 +210,6 @@ def _standing(source, target: Path):
             return head[len("refs/heads/"):]
         return workspace_git.DETACHED_PREFIX + str(entry.get("HEAD") or "")
     return None
-
-
-def _branch_tip(source, branch: str):
-    """The revision a branch names in this repository, or ``None``."""
-
-    code, out, _ = workspace_git._git(
-        str(source), "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}^{{commit}}"
-    )
-    return out.strip() if code == 0 and out.strip() else None
 
 
 def _add(source, argv) -> None:
@@ -259,7 +240,7 @@ def _create(source, target: Path, branch: str, baseline: str, claimed: bool) -> 
             "worktree of this repository. Move or remove it, then establish again"
         )
     target.parent.mkdir(parents=True, exist_ok=True)
-    tip = _branch_tip(source, branch)
+    tip = workspace_git._branch_tip(source, branch)
     if tip is None:
         _add(source, ["-b", branch, str(target), baseline])
     elif claimed:
@@ -280,7 +261,7 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
     source = Path(source).expanduser()
     if not source.is_dir():
         raise Refused(f"--repo '{source}' is not a directory")
-    read_source = _git_out(source)
+    read_source = workspace_git._git_out(source)
     top = Path(read_source("rev-parse", "--show-toplevel")).resolve()
     _validate_write_paths(data.get("write_scope"), top)
     stamped = str(data.get(BASELINE_KEY) or "").strip()
@@ -300,7 +281,7 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
         )
     else:
         replayed = True
-    observed_branch, head = workspace_git._head_and_branch(_git_out(target))
+    observed_branch, head = workspace_git._head_and_branch(workspace_git._git_out(target))
     dirty = sorted(set(workspace_git.dirty_paths(str(target))))
     # never restamped: the baseline names the revision this item was cut
     # from, and a re-establishment that rewrote it would move the revision
@@ -401,109 +382,4 @@ def prepare(run: str, ticket_id: str):
     }, EXIT_OK
 
 
-def integrate(run: str, ticket_id: str, workspace, branch):
-    """Merge this item's candidate branch into the tree the run stands in.
-
-    The step `land` used to leave for hand git, which is how a run once
-    reported a landed item whose commits never reached the checkout anyone
-    read. One merge, in the main checkout the candidate was cut from, before
-    the worktree is retired: after retirement the branch survives but the
-    tree that named it does not, and the ordering is the whole reason this
-    lives beside `retire` rather than after it.
-
-    The tree and the branch are the establishment's own records, handed in
-    rather than re-derived here. `retire` may re-derive because a spent path
-    answers for an archived ticket; a merge may not, because the only branch
-    it is lawful to merge is the one this attempt actually stood on.
-
-    A conflict is refused, not resolved and not left half-applied: the merge
-    is aborted so the run's own checkout is never handed back mid-merge, and
-    the refusal names the conflicted paths and the one remedy -- resolve
-    them in the candidate, then land again. Replaying is free: git answers
-    an already-merged branch with an unchanged HEAD, which is reported as a
-    replay rather than as a second merge.
-
-    Anything the records do not resolve to a linked worktree of a readable
-    repository is `absent`, never an error: an item that ran in the caller's
-    own checkout has nothing to merge into it.
-    """
-
-    target = Path(str(workspace or "")).expanduser() if workspace else None
-    branch = str(branch or "").strip()
-    body = {
-        "run": run, "id": ticket_id,
-        PATH_KEY: None if target is None else str(target), BRANCH_KEY: branch or None,
-    }
-    main = (
-        state_root.main_checkout_root(target / ".git")
-        if branch and target is not None and (target / ".git").is_file() else None
-    )
-    if main is None or not Path(main).is_dir() or _branch_tip(main, branch) is None:
-        return {"integrate": dict(body, outcome="absent")}, EXIT_OK
-    read_main = _git_out(main)
-    before = read_main("rev-parse", "HEAD")
-    into = workspace_git._current_branch(read_main)
-    code, _, err = workspace_git._git(
-        str(main), "merge", "--no-ff", "--no-edit", branch
-    )
-    if code != 0:
-        _, conflicted, _ = workspace_git._git(
-            str(main), "diff", "--name-only", "--diff-filter=U"
-        )
-        workspace_git._git(str(main), "merge", "--abort")
-        paths = sorted(name for name in conflicted.splitlines() if name.strip())
-        raise Refused(
-            f"git merge {branch} into {into!r} at {main} refused: "
-            + (", ".join(paths) if paths else err.strip())
-            + f". Resolve them in the candidate at {target}, commit there, then "
-            f"land {run}/{ticket_id} again"
-        )
-    after = read_main("rev-parse", "HEAD")
-    return {"integrate": dict(
-        body, outcome="replayed" if after == before else "merged",
-        into=into, main_root=str(main), revision=after,
-    )}, EXIT_OK
-
-
-def retire(run: str, ticket_id: str, *, force: bool = False):
-    """Remove the derived tree, leaving every stamp that names it in place.
-
-    The ticket is not read and not written. Its ``workspace_branch`` and
-    ``workspace_baseline`` are what the join grades the item by, long after
-    the tree they were observed in is gone, and a retirement that cleared
-    them would grade the work as never isolated. The path is derived, so
-    this answers for an item whose ticket has already been archived.
-
-    A tree that was never created is not a failure, and a tree git cannot
-    remove is not quietly left behind: the refusal names the exact command
-    that removes it by hand.
-    """
-
-    candidate = state_root.candidate_paths(run, ticket_id)
-    target, branch = candidate["path"], candidate["branch"]
-    body = {"run": run, "id": ticket_id, PATH_KEY: str(target), BRANCH_KEY: branch}
-    if not target.exists():
-        return {"retire": dict(body, outcome="absent")}, EXIT_OK
-    main = state_root.main_checkout_root(target / ".git")
-    if main is None:
-        raise Refused(
-            f"{target} is not a linked worktree of any repository this can reach: "
-            f"remove it by hand, then run 'workspace.py retire {run} {ticket_id}'"
-        )
-    argv = ["worktree", "remove", *(["--force"] if force else []), str(target)]
-    code, _, err = workspace_git._git(str(main), *argv)
-    if code != 0:
-        raise Refused(
-            f"git {' '.join(argv)}: {err.strip()}. Retire it by hand with "
-            f"'git -C {main} worktree remove --force {target}'"
-        )
-    workspace_git._git(str(main), "worktree", "prune")
-    return {
-        "retire": dict(body, outcome="removed", main_root=str(main))
-    }, EXIT_OK
-
-
-__all__ = (
-    "ESTABLISH_KEY", "START_KEY", "establish", "integrate", "observe",
-    "prepare", "retire",
-)
+__all__ = ("ESTABLISH_KEY", "START_KEY", "establish", "observe", "prepare")
