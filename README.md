@@ -186,7 +186,7 @@ flowchart TD
     dec --> frontier["orch-frontier — dispatch ready units"]
     frontier --> exec["unit executor"]
     exec --> path{"independence path"}
-    path -->|unit-local| checker["durable &lt;id&gt;.check — packet, receipt, outcome, join"]
+    path -->|unit-local| checker["durable &lt;id&gt;.check — packet, outcome, join"]
     path -->|gate-deferred| join["orch-integrate — each return crosses once"]
     checker --> join
     join -->|named downstream gate| gate["composite gate"]

@@ -17,7 +17,7 @@ orchestrator; only children carry profiles.
 
 - Invoke the emitted `launch` verbatim. Never substitute a blocked model or
   profile, and never retype a field the launch already carries.
-- The granular `dispatch-open`, `dispatch-packet`, and `dispatch-receive`
+- The granular `dispatch-open` and `dispatch-packet`
   operations stay public for recovery; reach for them when a transaction has to
   be resumed, never to hand-assemble one that would have succeeded.
 - A native capability is established only through the adapter's native launch

@@ -7,16 +7,14 @@ from pathlib import Path
 if __package__:
     from .tickets_shapes import (
         DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
-        DISPATCH_INLINE_SNAPSHOT_FIELDS, DISPATCH_JOIN_CONTENT_FIELDS,
+        DISPATCH_JOIN_CONTENT_FIELDS,
         DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
-        DISPATCH_PACKET_RECORD_FIELDS,
-        DISPATCH_PACKET_REFERENCE_FIELDS, DISPATCH_RECEIPT_RECORD_FIELDS,
+        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_RECORD_FIELDS,
         DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
         DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
-        DISPATCH_RECEIPT_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
         DISPATCH_OUTCOME_VALUES,
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
@@ -25,7 +23,7 @@ if __package__:
     )
     from .tickets_dispatch_identity import (
         IDENTITY_RE, OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
-        RECEIPT_RECORD_ID, RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
+        RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
     )
@@ -36,16 +34,14 @@ if __package__:
 else:
     from tickets_shapes import (
         DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
-        DISPATCH_INLINE_SNAPSHOT_FIELDS, DISPATCH_JOIN_CONTENT_FIELDS,
+        DISPATCH_JOIN_CONTENT_FIELDS,
         DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
-        DISPATCH_PACKET_RECORD_FIELDS,
-        DISPATCH_PACKET_REFERENCE_FIELDS, DISPATCH_RECEIPT_RECORD_FIELDS,
+        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_RECORD_FIELDS,
         DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
         DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
-        DISPATCH_RECEIPT_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
         DISPATCH_OUTCOME_VALUES,
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
@@ -54,7 +50,7 @@ else:
     )
     from tickets_dispatch_identity import (
         IDENTITY_RE, OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
-        RECEIPT_RECORD_ID, RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
+        RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
     )
@@ -196,6 +192,12 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
         if not _closed(content, set(DISPATCH_PACKET_RECORD_FIELDS)) or not isinstance(content["packet"], dict):
             return _invalid("committed packet content has an invalid shape")
         packet = content["packet"]
+        # The closed wire, graded where the record is read. It used to be
+        # graded on arrival by the receiver instead; with the handshake gone
+        # the persisted record is the only packet there is, and the shape it
+        # must close is `contracts/dispatch.md`'s declared one.
+        if not _closed(packet, set(DISPATCH_PACKET_FIELDS)):
+            return _invalid("committed packet has unknown or missing fields")
         if (
             packet.get("protocol") != PROTOCOL
             or packet.get("dispatch_id") != attempt["dispatch_id"]
@@ -209,8 +211,6 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             record["success"], content, run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
-    if kind == "receipt":
-        return accepted_receipt_failure(attempt)
     if kind == "result":
         return _result_failure(record, content, run=run, ticket_id=ticket_id, attempt=attempt)
     if kind == "outcome":
@@ -319,61 +319,6 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             return _invalid(f"join record '{record_id}' differs from its outcome or retirement")
         return None
     return _invalid(f"record '{record_id}' has an unsupported kind")
-
-
-def accepted_receipt_failure(attempt: dict):
-    records = attempt.get("records") or []
-    receipt_record = next(
-        (item for item in records if item.get("record_id") == RECEIPT_RECORD_ID),
-        None,
-    )
-    if receipt_record is None:
-        return classification(
-            "receipt-required",
-            "receiver acceptance must be committed before execution records",
-        )
-    packet_record = next(
-        (item for item in records if item.get("record_id") == PACKET_RECORD_ID),
-        None,
-    )
-    try:
-        packet_content = parse_canonical_json(packet_record["content"])
-        receipt_content = parse_canonical_json(receipt_record["content"])
-    except (KeyError, TypeError, ValueError):
-        return classification(
-            "dispatch-record-invalid", "accepted receipt has no committed packet",
-        )
-    packet = packet_content.get("packet") if isinstance(packet_content, dict) else None
-    receipt = (
-        receipt_content.get("receipt")
-        if isinstance(receipt_content, dict) else None
-    )
-    required = set(DISPATCH_RECEIPT_FIELDS)
-    valid = (
-        isinstance(packet, dict)
-        and set(packet_content) == set(DISPATCH_PACKET_RECORD_FIELDS)
-        and set(receipt_content) == set(DISPATCH_RECEIPT_RECORD_FIELDS)
-        and receipt_content.get("packet") == packet
-        and isinstance(receipt, dict)
-        and set(receipt) == required
-        and receipt_record.get("kind") == "receipt"
-        and receipt_record.get("success") == {"receipt": receipt}
-        and receipt.get("protocol") == PROTOCOL
-        and receipt.get("outcome") == "accepted"
-        and receipt.get("durability") == "ticket"
-        and receipt.get("state_sink_checked") is True
-        and receipt.get("assignment_seal") == attempt.get("assignment_seal")
-        and receipt.get("dispatch_id") == attempt.get("dispatch_id")
-        and packet.get("assignment_seal") == attempt.get("assignment_seal")
-        and packet.get("dispatch_id") == attempt.get("dispatch_id")
-        and packet.get("assigned_name") == attempt.get("owner")
-    )
-    if not valid:
-        return classification(
-            "dispatch-record-invalid",
-            "accepted receipt does not bind the committed packet and attempt",
-        )
-    return None
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None):

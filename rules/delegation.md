@@ -97,7 +97,6 @@ connect this law to each authorized dispatch event and predecessor record.
    [dispatch contract](../contracts/dispatch.md). The ticket write is the
    fence; transport behavior never changes its attempt precedence or absolute
    lease.
-17. A committed packet is the only role-bearing delivery. Reference is normal;
-    inline is the same ticket-durable call when its receiver cannot read the
-    sink. Receipt precedes execution. The child commits or returns the packet's
+17. A committed packet is the only role-bearing delivery, and it names the
+    ticket rather than copying it. The child commits or returns the packet's
     one reserved outcome envelope; the caller relays it unchanged when needed.

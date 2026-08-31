@@ -7,8 +7,7 @@ from pathlib import Path
 
 from scripts import tickets
 from scripts import tickets_registry as registry
-from scripts.tickets_attempts import PROTOCOL
-from scripts.tickets_dispatch_packet_shape import packet_shape
+from scripts.tickets_shapes import DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_VALUES
 
 # One well-formed ticket with the executor left open, so a refusal case
 # differs from a passing one in the executor alone.
@@ -186,33 +185,21 @@ Deliver one result.
                 with self.subTest(pack=pack, marker=marker):
                     self.assertIn(marker, text)
 
-    def test_packet_shape_requires_typed_review_kind_field(self):
-        packet = {
-            "protocol": PROTOCOL,
-            "source": {"id": "T", "run": "r"},
-            "dispatch_id": "d-1",
-            "assignment_seal": "sha256:" + "a" * 64,
-            "outcome_record_id": "outcome",
-            "lease_expires_at": "2026-08-29T12:00:00Z",
-            "executor": "orch-check",
-            "role": "planner",
-            "profile": "orch-planner",
-            "assigned_name": "checker",
-            "reply_to": "root",
-            "workspace": None,
-            "pack": "orch-code-pack",
-            "independence": "checker",
-            "isolation": "none",
-            "admission": "sha256:" + "b" * 64,
-            "prompt": "check",
-            "review_kind": "critique",
-            "form": "reference",
-            "durability": "ticket",
-            "reference": {"id": "T", "run": "r"},
-        }
-        self.assertIsNone(packet_shape(packet))
-        packet.pop("review_kind")
-        self.assertIsNotNone(packet_shape(packet))
+    def test_the_declared_packet_shape_carries_one_typed_review_kind(self):
+        """The wire's own declaration, which the persisted-record validator
+        closes every committed packet against. `review_kind` is the field
+        that routes a typed review lane, so it is required and its values
+        are the closed four -- and the two selectors the inline form needed
+        are not fields at all any more."""
+
+        self.assertIn("review_kind", DISPATCH_PACKET_FIELDS)
+        self.assertEqual(
+            ("critique", "repair", "verify", "null"),
+            tuple(DISPATCH_PACKET_VALUES["review_kind"]),
+        )
+        for retired in ("form", "inline"):
+            with self.subTest(retired=retired):
+                self.assertNotIn(retired, DISPATCH_PACKET_FIELDS)
 
 
 if __name__ == "__main__":

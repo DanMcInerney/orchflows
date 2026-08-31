@@ -239,12 +239,12 @@ composition).
   its ticket record owns opening, committed-record replay, retirement,
   replacement, and expiry precedence.
 - **packet projection** — the immutable dispatch-v1 delivery record generated
-  from one sealed attempt: normally a ticket reference plus seal, or an inline
-  sealed snapshot. Its durable accepted receipt validates exact committed bytes
-  and actual child identity and authority before execution.
+  from one sealed attempt: a ticket reference plus seal. It is committed
+  before the child is launched, and the child's own first filed record is
+  what proves the child accepted it.
 - **dispatch outcome** — one attempt's distinguished durable return envelope,
   reserved as `outcome`; it carries the closing evidence and disposition for
-  direct commit or unchanged inline relay before join.
+  direct commit or unchanged relay before join.
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. Suggested files do not attenuate it; actual changes
   are adjudicated at the join.

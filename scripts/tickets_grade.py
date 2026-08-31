@@ -306,8 +306,8 @@ def _cover_current(cover, target_id: str, snapshot: dict):
                 # A `workspace_baseline` stamp is a revision and then what was
                 # uncommitted at the time; reading the revision out of it is
                 # `workspace_git.revision_of`'s, beside the `_baseline` that
-                # writes it. Loaded here, as `tickets_dispatch_receipt` loads
-                # it, so the flat ticket importer is initialized first.
+                # writes it. Loaded here rather than at module scope, so the
+                # flat ticket importer is initialized first.
                 resolved[name] = _revision_of(current or _UNRESOLVED_COVER)
             elif name in {"result", "result_identity"}:
                 current = _result_identity(target)

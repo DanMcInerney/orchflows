@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import git_checkout
 from scripts import tickets
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json,
@@ -84,16 +84,15 @@ class DispatchV1Test(unittest.TestCase):
     def _candidate_checkout(self) -> Path:
         return git_checkout(Path(self.temporary.name) / "candidate")
 
-    def authorize(self, dispatch_id="D1", by="worker"):
-        packet = tickets._dispatch([
+    def project_packet(self, dispatch_id="D1"):
+        """Commit the packet this attempt's execution records enter behind."""
+
+        projected = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", dispatch_id,
             "--reply-to", "root", "--workspace", str(self.candidate),
-            "--form", "reference",
-        ])["packet"]
-        path = Path(self.temporary.name) / f"packet-{dispatch_id}.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(self.candidate):
-            return tickets._dispatch(receive_argv(path, packet, by))
+        ])
+        self.assertNotIn("error", projected, projected)
+        return projected["packet"]
 
     def retire(self, dispatch_id="D1", record_id="lifecycle:retire-1", seal=None):
         return tickets._dispatch([
@@ -198,7 +197,7 @@ class DispatchV1Test(unittest.TestCase):
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         self.assertNotIn("error", self.outcome())
         # written after the outcome, so admission grades the sealed member
         # alone: from here the run has a root, and `T` is one of its items
@@ -362,7 +361,7 @@ class DispatchV1Test(unittest.TestCase):
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         before = self.ticket_text()
 
         undeclared = self.replace()
@@ -494,7 +493,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_write_and_receipt_are_one_replayable_operation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
 
         committed = self.result()
         self.assertEqual("orchflows.dispatch.v1", committed["result"]["protocol"])
@@ -521,7 +520,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         before = self.ticket_text()
 
         wrong_seal = self.result(seal="sha256:not-the-assignment")
@@ -560,7 +559,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_join_consumes_a_fixed_result_identity_and_replays_after_retirement(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         outcome = self.outcome()
         self.assertNotIn("error", outcome)
 
@@ -602,7 +601,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_outcome_materializes_only_unstreamed_evidence_once(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         self.result(body="delivered")
         streamed = self.ticket_text()
 
@@ -623,7 +622,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_suspended_join_retires_the_attempt_but_retains_claimant_observations(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         self.outcome(status="suspended")
 
         joined = tickets._dispatch([
@@ -718,7 +717,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_forged_outcome_success_cannot_drive_join(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
@@ -745,17 +744,17 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())
 
-    def test_persisted_execution_without_the_receipt_is_a_byte_preserving_refusal(self):
+    def test_persisted_execution_without_a_packet_is_a_byte_preserving_refusal(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
         state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
         records = state["attempts"][0]["records"]
         state["attempts"][0]["records"] = [
-            record for record in records if record["record_id"] != "dispatch-receipt"
+            record for record in records if record["record_id"] != "dispatch-packet"
         ]
         path.write_text(
             _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
@@ -763,31 +762,32 @@ class DispatchV1Test(unittest.TestCase):
         )
         before = path.read_bytes()
 
-        refusal = self.commit(record_id="probe-after-missing-receipt")
+        refusal = self.commit(record_id="probe-after-missing-packet")
 
-        self.assertEqual("receipt-required", refusal["code"])
+        self.assertEqual("dispatch-record-invalid", refusal["code"])
+        self.assertIn("committed packet", refusal["error"])
         self.assertEqual(before, path.read_bytes())
 
-    def test_persisted_receipt_after_outcome_is_a_byte_preserving_refusal(self):
+    def test_persisted_packet_after_outcome_is_a_byte_preserving_refusal(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.assertEqual("accepted", self.authorize()["receipt"]["outcome"])
+        self.project_packet()
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
         state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
         records = state["attempts"][0]["records"]
-        receipt = next(record for record in records if record["kind"] == "receipt")
+        packet = next(record for record in records if record["kind"] == "packet")
         state["attempts"][0]["records"] = [
-            record for record in records if record is not receipt
-        ] + [receipt]
+            record for record in records if record is not packet
+        ] + [packet]
         path.write_text(
             _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
             encoding="utf-8",
         )
         before = path.read_bytes()
 
-        refusal = self.commit(record_id="probe-after-reordered-receipt")
+        refusal = self.commit(record_id="probe-after-reordered-packet")
 
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())
@@ -872,7 +872,7 @@ class DispatchV1Test(unittest.TestCase):
         ], _lock_held=True)
         packet.assert_called_once_with([
             "run", "T", "--dispatch-id", "D1", "--reply-to", "root",
-            "--workspace", str(self.candidate), "--form", "reference",
+            "--workspace", str(self.candidate),
         ], _lock_held=True)
         retire.assert_called_once_with([
             "run", "T", "--assignment-seal", "seal", "--dispatch-id", "D1",

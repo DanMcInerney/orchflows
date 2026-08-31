@@ -14,9 +14,7 @@
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
   --reply-to <parent-name> [--host <host>] [--workspace <tree>]` and invoke its
-  emitted `launch` verbatim; require the accepted
-  `tickets.py dispatch-receive --file <path|->` receipt before exact
-  `orch-decompose`. A ticket path is not the complete packet. Then
+  emitted `launch` verbatim. Then
   `tickets.py land` its
   return through `orch-integrate` and start `orch-frontier`. **outline** — one planner
   runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed

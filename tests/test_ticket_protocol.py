@@ -64,29 +64,36 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("`lease_expires_at`", dispatch)
         self.assertNotIn("only this join calls `tickets.py set-status`", integrate)
 
-    def test_dispatch_v1_contract_owns_packet_projection_and_receipt(self):
+    def test_dispatch_v1_contract_owns_packet_projection(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
         for token in (
-            "`dispatch-packet`", "`dispatch-receive`", "`reference`",
-            "`inline`", "`state-inaccessible`", "`assignment-divergent`",
-            "`identity-mismatch`", "`authority-mismatch`",
-            "`role-mismatch`", "`profile-mismatch`", "`dispatch-receipt`",
-            "`receipt-required`", "`--file -`", "ASCII-escaped canonical JSON",
+            "`dispatch-packet`", "`reference`",
+            "`state-inaccessible`", "`stale-attempt`",
+            "`idempotency-conflict`", "`dispatch-mismatch`",
+            "ASCII-escaped canonical JSON",
         ):
             self.assertIn(token, dispatch)
+        # The handshake half rode out with its machinery: no survivor keeps
+        # its vocabulary alive in the contract that used to own it.
+        for retired in (
+            "`dispatch-receive`", "`dispatch-receipt`", "`receipt-required`",
+            "`authority-mismatch`", "`profile-mismatch`",
+            "`assignment-divergent`", "`packet-invalid`", "`inline`",
+        ):
+            self.assertNotIn(retired, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         frontier = (root / "skills" / "engines" / "orch-frontier" / "SKILL.md").read_text(encoding="utf-8")
         profiles = (root / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
         for surface in (host, frontier):
             self.assertIn("tickets.py dispatch", surface)
-            self.assertIn("dispatch-receive", surface)
+            self.assertNotIn("dispatch-receive", surface)
         for surface in (profiles, tickets):
-            for command in ("dispatch-open", "dispatch-packet", "dispatch-receive"):
+            for command in ("dispatch-open", "dispatch-packet"):
                 self.assertIn(command, surface)
         for routing in (host, frontier):
             self.assertNotIn("tickets.py claim", routing)
@@ -106,7 +113,7 @@ class TicketProtocolTest(unittest.TestCase):
         ):
             self.assertIn(current, tickets)
         self.assertIn("committed packet", delegation)
-        self.assertIn("receipt", roles.lower())
+        self.assertIn("dispatch contract", roles.lower())
         self.assertIn("**packet projection**", vocabulary)
 
     def test_public_documents_project_the_current_dispatch_and_gate_model(self):
@@ -126,7 +133,7 @@ class TicketProtocolTest(unittest.TestCase):
             self.assertIn(field, readme)
 
         for phrase in (
-            "response `.packet` value", "`--file -`", "durable accepted receipt",
+            "`.packet` value", "--packet-file <path>",
             "GatePlan", "CritiqueAdjudication", "RepairOutcome",
             "tickets.py checker-stage", "--stage <id>.check",
             "tickets.py show", "tickets.py lint <run> [<id>] --file",
@@ -146,10 +153,10 @@ class TicketProtocolTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         ui_model = (root / "reader" / "scripts" / "ui_model.py").read_text(encoding="utf-8")
 
-        self.assertIn("complete packet", host)
+        self.assertIn("emitted `launch` verbatim", host)
         self.assertIn("response `.packet`", frontier)
         for projection in (host, frontier):
-            self.assertIn("--file", projection)
+            self.assertIn("--file", projection.replace("--packet-file", "--file"))
             self.assertIn("workspace", projection.lower())
         self.assertIn("evidence-store", frontier.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)

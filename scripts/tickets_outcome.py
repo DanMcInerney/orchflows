@@ -13,7 +13,7 @@ import sys
 if __package__:
     from .tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
-        _identity_failure, accepted_receipt_failure,
+        _identity_failure,
     )
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_format import (
@@ -31,7 +31,7 @@ if __package__:
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
-        _identity_failure, accepted_receipt_failure,
+        _identity_failure,
     )
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_format import (
@@ -295,13 +295,6 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
     if failure is not None:
         return failure
     _path, _text, _data, _state, attempt = inferred
-    # A caller without an accepted receipt may not write an execution record
-    # at all, so it is told that before its evidence is graded: resolving
-    # closing files first answers a receipt-less caller with a complaint
-    # about content it was never entitled to commit.
-    failure = accepted_receipt_failure(attempt)
-    if failure is not None:
-        return failure
     if isinstance(carrier, dict) and "_files" in carrier:
         evidence = {}
         for section in OUTCOME_SECTIONS:

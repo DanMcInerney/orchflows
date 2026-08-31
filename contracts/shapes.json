@@ -4,7 +4,6 @@
     "dispatch_protocol": "orchflows.dispatch.v1",
     "outcome_record_id": "outcome",
     "packet_record_id": "dispatch-packet",
-    "receipt_record_id": "dispatch-receipt",
     "review_protocol": "orchflows.review.v1"
   },
   "shapes": [
@@ -37,7 +36,7 @@
       "contract": "dispatch.md",
       "fields": ["committed_at", "content", "kind", "record_id", "success"],
       "required": ["committed_at", "content", "kind", "record_id", "success"],
-      "values": {"kind": ["generic", "packet", "receipt", "result", "outcome", "join", "lifecycle"]}
+      "values": {"kind": ["generic", "packet", "result", "outcome", "join", "lifecycle"]}
     },
     {
       "name": "dispatch_stored_success",
@@ -56,12 +55,6 @@
       "contract": "dispatch.md",
       "fields": ["packet"],
       "required": ["packet"]
-    },
-    {
-      "name": "dispatch_receipt_record",
-      "contract": "dispatch.md",
-      "fields": ["packet", "receipt"],
-      "required": ["packet", "receipt"]
     },
     {
       "name": "dispatch_result_record",
@@ -108,12 +101,6 @@
       "required": ["id", "run"]
     },
     {
-      "name": "dispatch_inline_snapshot",
-      "contract": "dispatch.md",
-      "fields": ["assignment", "envelope_seal"],
-      "required": ["assignment", "envelope_seal"]
-    },
-    {
       "name": "dispatch_join_content",
       "contract": "dispatch.md",
       "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id", "review"],
@@ -143,39 +130,20 @@
       "name": "dispatch_packet",
       "contract": "dispatch.md",
       "fields": [
-        "protocol", "source", "dispatch_id", "assignment_seal",
+        "protocol", "source", "reference", "dispatch_id", "assignment_seal",
         "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
         "assigned_name", "reply_to", "workspace", "pack", "independence",
-        "isolation", "admission", "prompt", "review_kind", "form", "durability",
-        "reference", "inline"
+        "isolation", "admission", "prompt", "review_kind", "durability"
       ],
       "required": [
-        "protocol", "source", "dispatch_id", "assignment_seal",
+        "protocol", "source", "reference", "dispatch_id", "assignment_seal",
         "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
         "assigned_name", "reply_to", "workspace", "pack", "independence",
-        "isolation", "admission", "prompt", "review_kind", "form", "durability"
+        "isolation", "admission", "prompt", "review_kind", "durability"
       ],
       "values": {
-        "form": ["reference", "inline"],
-        "durability": ["ticket", "ephemeral"],
+        "durability": ["ticket"],
         "review_kind": ["critique", "repair", "verify", "null"]
-      }
-    },
-    {
-      "name": "dispatch_receipt",
-      "contract": "dispatch.md",
-      "fields": [
-        "protocol", "outcome", "dispatch_id", "assignment_seal",
-        "form", "durability", "state_sink_checked"
-      ],
-      "required": [
-        "protocol", "outcome", "dispatch_id", "assignment_seal",
-        "form", "durability", "state_sink_checked"
-      ],
-      "values": {
-        "protocol": ["orchflows.dispatch.v1"],
-        "outcome": ["accepted"],
-        "durability": ["ticket"]
       }
     },
     {

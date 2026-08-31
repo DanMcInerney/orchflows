@@ -20,10 +20,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import git_checkout
 from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
-from scripts.tickets_dispatch_inline import _inline_assignment_failure
 from scripts.tickets_format import (
     _parse_frontmatter, _section_body, _sections, _set_frontmatter_field,
     _write_section, canonical_json,
@@ -122,7 +121,6 @@ class SealedRunTest(SinkTest):
         return tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
             "--reply-to", "root", "--workspace", str(self.candidate),
-            "--form", "reference",
         ])
 
 
@@ -406,11 +404,9 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
         ])
 
     def accept(self):
-        packet = self.project()["packet"]
-        path = self.home / "packet.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(self.candidate):
-            return self.dispatch(*receive_argv(path, packet, "worker"))
+        """Commit the packet every record below enters behind."""
+
+        return self.project()
 
     def test_the_body_survives_the_round_trip(self):
         self.accept()
@@ -594,11 +590,7 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
             "dispatch_id": "D1", "outcome_record_id": "outcome",
             "by": "worker", "status": "complete", "evidence": evidence,
         }), encoding="utf-8")
-        packet = self.project()["packet"]
-        path = self.home / "packet.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(self.candidate):
-            self.dispatch(*receive_argv(path, packet, "worker"))
+        self.project()
         self.dispatch("dispatch-outcome", "run", "T", "--file", str(outcome))
         return outcome
 
@@ -660,11 +652,9 @@ class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
     carries the unstreamed delta instead, so the caller had to guess one."""
 
     def accept(self):
-        packet = self.project()["packet"]
-        path = self.home / "packet.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(self.candidate):
-            return self.dispatch(*receive_argv(path, packet, "worker"))
+        """Commit the packet every record below enters behind."""
+
+        return self.project()
 
     def stream_result(self, body="delivered"):
         path = self.home / "streamed.md"
@@ -750,99 +740,6 @@ class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
         refused = self.close(result="first")
         self.assertEqual("outcome-invalid", refused["code"])
         self.assertIn("--result-file", refused["error"])
-
-
-class TestInlineIsolationIsReadTheOneWay(unittest.TestCase):
-    """The seal stores the rare declared override verbatim and the packet
-    carries the derived value, so both sides read through the one
-    derivation: absent on a git pack derives `required`."""
-
-    def packet(self, **overrides) -> dict:
-        base = {
-            "assigned_name": "worker", "assignment_seal": "sha256:" + "0" * 64,
-            "dispatch_id": "D1", "durability": "ticket", "executor": "orch-execute",
-            "form": "inline", "independence": "checker", "isolation": "none",
-            "lease_expires_at": "2026-01-01T00:00:00Z", "outcome_record_id": "outcome",
-            "pack": "orch-code-pack", "profile": "orch-worker", "review_kind": None,
-            "reply_to": "root", "role": "worker",
-            "source": {"id": "T", "run": "run"}, "workspace": None,
-        }
-        base.update(overrides)
-        return base
-
-    def assignment(self, **system) -> dict:
-        return {
-            "semantic": {}, "dependencies": [], "executor": "orch-execute",
-            "system": dict({"pack": "orch-code-pack"}, **system), "ticket": "T",
-        }
-
-    def sealed(self, packet: dict, assignment: dict) -> dict:
-        from scripts.tickets_dispatch_inline import _semantic_digest
-
-        envelope = {
-            key: packet.get(key) for key in (
-                "assigned_name", "assignment_seal", "dispatch_id", "durability",
-                "lease_expires_at", "outcome_record_id", "reply_to", "role",
-                "profile", "review_kind", "source", "workspace",
-            )
-        }
-        envelope["assignment"] = assignment
-        return dict(packet, inline={
-            "assignment": assignment, "envelope_seal": _semantic_digest(envelope),
-        })
-
-    def test_an_absent_isolation_field_accepts_the_derived_packet(self):
-        assignment = self.assignment()
-        packet = self.sealed(self.packet(isolation="required"), assignment)
-        self.assertIsNone(_inline_assignment_failure(packet, assignment))
-
-    def test_a_backticked_isolation_value_still_accepts(self):
-        assignment = self.assignment(isolation="`required`")
-        packet = self.sealed(self.packet(isolation="required"), assignment)
-        self.assertIsNone(_inline_assignment_failure(packet, assignment))
-
-    def test_a_real_divergence_is_still_refused(self):
-        assignment = self.assignment(isolation="required")
-        packet = self.sealed(self.packet(isolation="none"), assignment)
-        failure = _inline_assignment_failure(packet, assignment)
-        self.assertEqual("assignment-divergent", failure["code"])
-
-    def test_a_project_scope_pack_resolves_under_the_packet_workspace_not_cwd(self):
-        """The inline form's isolation derivation must not read the
-        receiver's cwd either -- the second of the two pack readers on the
-        dispatch-receive path (`tests.test_tickets.AdapterRegistryTest`
-        covers the reference form's `_workspace_failure`).
-
-        Regression for state sink friction/2026-08.jsonl: a pack
-        project-scoped only inside the packet's own committed workspace
-        must resolve the same way for a receiver standing anywhere else.
-        Measured proof: a pack declaring adapter `document-tree` resolves
-        isolation `none` when rooted at the packet workspace; rooted at an
-        unrelated cwd it cannot resolve at all and fails closed to
-        `required`, so the two legs of this comparison diverge unless both
-        are rooted at the packet's `workspace`.
-        """
-        with tempfile.TemporaryDirectory() as raw:
-            workspace = Path(raw) / "workspace"
-            pack = workspace / "packs" / "widget-pack"
-            pack.mkdir(parents=True)
-            (pack / "SKILL.md").write_text(
-                "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
-                "| cell | binding |\n| --- | --- |\n"
-                "| adapter | document-tree |\n",
-                encoding="utf-8",
-            )
-            elsewhere = Path(raw) / "elsewhere-receiver"
-            elsewhere.mkdir()
-
-            assignment = self.assignment(pack="widget-pack")
-            packet = self.sealed(
-                self.packet(pack="widget-pack", isolation="none", workspace=str(workspace)),
-                assignment,
-            )
-            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
-                failure = _inline_assignment_failure(packet, assignment)
-            self.assertIsNone(failure)
 
 
 class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):

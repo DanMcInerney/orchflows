@@ -1,7 +1,7 @@
 # Result contract
 
 The generated [result lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
-names the receipt required before this contract's executor records may enter.
+names the committed packet these executor records may enter behind.
 
 The executor files work into its ticket's `## Result`, `## Verification`,
 `## Feedback`, `## Risks`, and optional `## Handoff` sections as it is
@@ -24,7 +24,7 @@ already entered these sections through result records. Repeating an attributed
 item is refused before mutation; outcome import therefore materializes every
 evidence item once rather than treating the close as a second snapshot.
 
-The ticket section mutation and its dispatch-v1 committed-record receipt are
+The ticket section mutation and its dispatch-v1 committed record are
 one atomic write. An exact retry of a committed `dispatch_id` plus `record_id`
 returns the stored success without adding content, even after retirement,
 replacement, or lease expiry. Changed operation content for that pair is an
@@ -33,8 +33,9 @@ refusal leaves the ticket byte-identical. A filed body may itself carry `## `
 headings without being read as a second ticket section, and survives the round
 trip byte for byte; how it is stored that way is
 [`scripts/tickets_markdown.py`](../scripts/tickets_markdown.py)'s.
-An unseen result requires the attempt's durable `dispatch-receipt`, proving the
-established receiver accepted the exact committed packet before execution.
+An unseen result requires the attempt's committed packet, and carries the
+`(dispatch_id, assignment_seal, --by)` the attempt was opened under: that
+triple is the writer's whole authority, on this write and on every other.
 
 A read-only critique never rewrites the reviewed executor's Result or
 Verification. A verifier records its independent verdict and evidence in

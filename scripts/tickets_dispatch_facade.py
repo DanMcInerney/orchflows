@@ -163,15 +163,11 @@ def _cmd_dispatch(rest):
     reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
     artifact = _extract_flag(args, "--artifact")
-    form = (_extract_flag(args, "--form") or "reference").strip()
     review_kind = _extract_flag(args, "--review-kind")
     host = selected_host(_extract_flag(args, "--host"))
     packet_file = _extract_flag(args, "--packet-file")
-    inline_limit = _extract_flag(args, "--inline-limit")
     if len(args) != 2 or not all((owner, dispatch_id, lease, reply_to)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
-    if form not in ("reference", "inline"):
-        return {"error": f"--form takes reference or inline, not '{form}'"}
     run, ticket_id = args
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
         invalid = _segment_error(kind, value)
@@ -194,8 +190,7 @@ def _cmd_dispatch(rest):
         dispatched = _dispatched_under_run_lock(
             run, ticket_id, host=host, owner=owner, dispatch_id=dispatch_id,
             lease=lease, reply_to=reply_to, workspace=workspace,
-            artifact=artifact, form=form, review_kind=review_kind,
-            packet_file=packet_file, inline_limit=inline_limit,
+            artifact=artifact, review_kind=review_kind, packet_file=packet_file,
         )
     if "error" in dispatched:
         return dispatched
@@ -208,8 +203,8 @@ def _cmd_dispatch(rest):
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
-                               lease, reply_to, workspace, artifact, form,
-                               review_kind, packet_file, inline_limit):
+                               lease, reply_to, workspace, artifact,
+                               review_kind, packet_file):
     """Everything the run lock has to hold, and nothing that does not."""
 
     # Before the first side effect: an attempt opened for a launch that
@@ -247,14 +242,12 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
         else:
             packet_args = [
                 run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
-                "--workspace", workspace_path, "--form", form,
+                "--workspace", workspace_path,
             ]
             if review_kind is not None:
                 packet_args.extend(("--review-kind", review_kind))
             if artifact is not None:
                 packet_args.extend(("--artifact", artifact))
-            if inline_limit is not None:
-                packet_args.extend(("--inline-limit", inline_limit))
             try:
                 projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
                 if not isinstance(projected, dict):

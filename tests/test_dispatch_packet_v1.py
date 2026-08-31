@@ -1,4 +1,4 @@
-"""Committed dispatch-v1 packet projection and receipt regressions."""
+"""Committed dispatch-v1 packet projection regressions."""
 
 from __future__ import annotations
 
@@ -12,10 +12,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tests._receiver_vantage import git_checkout, standing_in
 from scripts import tickets, tickets_review
 from scripts.tickets_packet import workspace_establishment_finding
-from scripts.tickets_dispatch_packet import DISPATCH_RECEIVE_USAGE, _projection_packet
+from scripts.tickets_dispatch_packet import _projection_packet
 from scripts.tickets_format import _parse_frontmatter, canonical_json, parse_canonical_json
 from scripts.tickets_outcome import DISPATCH_OUTCOME_USAGE
 
@@ -41,7 +40,8 @@ class DispatchPacketV1Test(unittest.TestCase):
             validated["draft_validation"]["cut_generation"],
         )
         self.dispatch("ready", "--run", "run")
-        self.candidate = self._candidate_checkout()
+        self.candidate = Path(self.temporary.name) / "candidate"
+        self.candidate.mkdir()
         self.ticket_path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         established = self.ticket_path.read_text(encoding="utf-8")
         for key, value in (
@@ -69,45 +69,12 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertNotIn("error", result, result)
         return result
 
-    def _candidate_checkout(self) -> Path:
-        """The receiver's workspace authority is where it actually stands.
-
-        `--workspace` was removed from `dispatch-receive` so a child cannot
-        name a tree other than the one it can write, which makes a real Git
-        top-level the only fixture that can reach an accepted receipt.
-        """
-
-        return git_checkout(Path(self.temporary.name) / "candidate")
-
-    def project(self, form="reference", workspace=None):
+    def project(self, workspace=None):
         return tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
             "--reply-to", "root",
             "--workspace", str(self.candidate) if workspace is None else workspace,
-            "--form", form,
         ])
-
-    def _receive_argv(self, carrier, **overrides):
-        actual = {
-            "role": "worker", "profile": "orch-worker", "by": "worker",
-            "reply_to": "root",
-        }
-        actual.update(overrides)
-        return [
-            "dispatch-receive", *carrier,
-            "--role", actual["role"], "--profile", actual["profile"],
-            "--by", actual["by"], "--reply-to", actual["reply_to"],
-        ]
-
-    def receive(self, packet, standing=None, **overrides):
-        path = Path(self.temporary.name) / "received-packet.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        return self.receive_file(path, standing=standing, **overrides)
-
-    def receive_file(self, path, standing=None, **overrides):
-        argv = self._receive_argv(["--file", str(path)], **overrides)
-        with standing_in(self.candidate if standing is None else standing):
-            return tickets._dispatch(argv)
 
     def ticket_state(self):
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
@@ -128,11 +95,11 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertNotIn("error", first, first)
         packet = first["packet"]
         self.assertEqual("orchflows.dispatch.v1", packet["protocol"])
-        self.assertEqual("reference", packet["form"])
         self.assertEqual("D1", packet["dispatch_id"])
         self.assertEqual("worker", packet["assigned_name"])
         self.assertEqual("worker", packet["role"])
         self.assertEqual({"run": "run", "id": "T"}, packet["reference"])
+        self.assertNotIn("form", packet)
         self.assertNotIn("inline", packet)
         self.assertIn(
             f"--assignment-seal {packet['assignment_seal']} --dispatch-id D1 "
@@ -140,14 +107,11 @@ class DispatchPacketV1Test(unittest.TestCase):
             packet["prompt"],
         )
         self.assertNotIn("workspace.py", packet["prompt"])
+        self.assertNotIn("dispatch-receive", packet["prompt"])
 
         self.assertEqual(first, self.project())
         records = self.ticket_state()["attempts"][0]["records"]
         self.assertEqual(["dispatch-packet"], [item["record_id"] for item in records])
-
-        receipt = self.receive(packet)
-        self.assertEqual("accepted", receipt["receipt"]["outcome"])
-        self.assertEqual("reference", receipt["receipt"]["form"])
 
         filing = [
             line.split()[2:]
@@ -173,6 +137,66 @@ class DispatchPacketV1Test(unittest.TestCase):
         body = self.ticket_path.read_text(encoding="utf-8")
         self.assertIn("first emitted text record", body)
         self.assertIn("second emitted text record", body)
+
+    def test_the_first_filed_record_is_the_acceptance(self):
+        """No accept step stands between the committed packet and the child.
+
+        The whole return runs off the committed packet alone: the identities
+        `result` already validates on every write are the child's authority,
+        and there is no receipt for any of the three to wait on.
+        """
+
+        self.project()
+
+        filed = self.dispatch(
+            "result", "run", "T", "--assignment-seal", self.assignment_seal,
+            "--dispatch-id", "D1", "--record-id", "result-1",
+            "--by", "worker", "--section", "Result", "--text", "delivered",
+        )
+        self.assertEqual("write", filed["result"]["mode"])
+        self.dispatch(
+            "result", "run", "T", "--assignment-seal", self.assignment_seal,
+            "--dispatch-id", "D1", "--record-id", "result-2",
+            "--by", "worker", "--section", "Verification", "--text", "checked",
+        )
+        delta = Path(self.temporary.name) / "closing-delta.txt"
+        delta.write_text("the unstreamed closing delta", encoding="utf-8")
+        self.dispatch(
+            "dispatch-outcome", "run", "T", "--status", "complete",
+            "--result-file", str(delta), "--verification-file", str(delta),
+        )
+        joined = self.dispatch(
+            "dispatch-join", "run", "T", "--assignment-seal", self.assignment_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome", "--by", "root",
+        )
+        self.assertEqual("complete", joined["join"]["status"])
+        self.assertEqual(
+            ["dispatch-packet", "result-1", "result-2", "outcome", "join:outcome"],
+            [item["record_id"] for item in self.ticket_state()["attempts"][0]["records"]],
+        )
+
+    def test_an_execution_record_without_a_committed_packet_refuses(self):
+        """The one ordering the grammar still keeps: a child that filed
+        anything was launched, and the committed packet is that launch."""
+
+        before = self.ticket_bytes()
+        refusal = tickets._dispatch([
+            "result", "run", "T", "--assignment-seal", self.assignment_seal,
+            "--dispatch-id", "D1", "--record-id", "result-1",
+            "--by", "worker", "--section", "Result", "--text", "delivered",
+        ])
+        self.assertEqual("dispatch-record-invalid", refusal["code"], refusal)
+        self.assertIn("committed packet", refusal["error"])
+        self.assertEqual(before, self.ticket_bytes())
+
+    def test_the_handshake_verbs_are_gone_from_the_public_surface(self):
+        for verb in ("dispatch-receive", "dispatch-receipt"):
+            with self.subTest(verb=verb):
+                refusal = tickets._dispatch([verb, "run", "T"])
+                self.assertEqual(
+                    f"unknown subcommand: {verb}", refusal["error"],
+                )
+        self.assertNotIn("dispatch-receive", tickets._cmd_help()["help"]["subcommands"])
 
     def test_uncommitted_projection_still_runs_current_review_validation(self):
         before = self.ticket_bytes()
@@ -280,8 +304,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         replayed = tickets._dispatch([
             "dispatch-packet", "run", legacy_id, "--dispatch-id", "D1",
             "--reply-to", "root", "--workspace", str(self.candidate),
-            "--artifact", f"git:{old_head}", "--form", "reference",
-            "--review-kind", "repair",
+            "--artifact", f"git:{old_head}", "--review-kind", "repair",
         ])
 
         self.assertEqual(stored, replayed)
@@ -318,189 +341,6 @@ class DispatchPacketV1Test(unittest.TestCase):
         finding = workspace_establishment_finding(data, store)
         self.assertEqual("workspace-unestablished", finding[0])
 
-    def test_inline_snapshot_requires_the_authoritative_state_sink(self):
-        packet = self.project(form="inline")["packet"]
-        self.assertEqual("inline", packet["form"])
-        self.assertEqual("ticket", packet["durability"])
-        self.assertIn("inline sealed assignment", packet["prompt"])
-        self.assertNotIn("tickets.py result", packet["prompt"])
-        self.assertTrue(packet["inline"]["envelope_seal"].startswith("sha256:"))
-        self.assertEqual("outcome", packet["outcome_record_id"])
-        self.assertIn("dispatch-outcome", packet["prompt"])
-
-        missing = str(Path(self.temporary.name) / "not-mounted")
-        before = self.ticket_state()
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            refusal = self.receive(packet)
-        self.assertEqual("state-inaccessible", refusal["code"])
-        self.assertEqual(before, self.ticket_state())
-
-    def test_accepted_receipt_is_a_durable_replayable_attempt_record(self):
-        packet = self.project()["packet"]
-
-        accepted = self.receive(packet)
-        self.assertEqual("accepted", accepted["receipt"]["outcome"])
-        self.assertTrue(accepted["receipt"]["state_sink_checked"])
-
-        records = self.ticket_state()["attempts"][0]["records"]
-        self.assertEqual(
-            ["dispatch-packet", "dispatch-receipt"],
-            [item["record_id"] for item in records],
-        )
-        receipt_record = records[-1]
-        self.assertEqual("receipt", receipt_record["kind"])
-        self.assertEqual(accepted, receipt_record["success"])
-        self.assertEqual(accepted, self.receive(packet))
-        self.assertEqual(2, len(self.ticket_state()["attempts"][0]["records"]))
-
-    def test_dispatch_receipt_inspection_projects_only_the_persisted_receipt(self):
-        packet = self.project()["packet"]
-        accepted = self.receive(packet)
-        before = self.ticket_bytes()
-
-        inspected = self.dispatch(
-            "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
-        )
-
-        self.assertEqual({"receipt": accepted["receipt"]}, inspected)
-        self.assertEqual(
-            {
-                "protocol": "orchflows.dispatch.v1",
-                "outcome": "accepted",
-                "dispatch_id": "D1",
-                "assignment_seal": self.assignment_seal,
-                "form": "reference",
-                "durability": "ticket",
-                "state_sink_checked": True,
-            },
-            inspected["receipt"],
-        )
-        self.assertEqual(before, self.ticket_bytes())
-
-    def test_dispatch_receipt_inspection_distinguishes_missing_attempt_and_receipt(self):
-        packet = self.project()["packet"]
-        before = self.ticket_bytes()
-        missing_receipt = tickets._dispatch([
-            "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
-        ])
-        self.assertEqual("receipt-required", missing_receipt["code"])
-        self.assertEqual(before, self.ticket_bytes())
-
-        self.receive(packet)
-        before = self.ticket_bytes()
-        missing_attempt = tickets._dispatch([
-            "dispatch-receipt", "run", "T", "--dispatch-id", "other",
-        ])
-        self.assertEqual("dispatch-mismatch", missing_attempt["code"])
-        self.assertEqual(before, self.ticket_bytes())
-
-    def test_dispatch_receipt_inspection_refuses_inaccessible_and_malformed_state(self):
-        packet = self.project()["packet"]
-        self.receive(packet)
-        before = self.ticket_bytes()
-        missing = str(Path(self.temporary.name) / "not-mounted")
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            inaccessible = tickets._dispatch([
-                "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
-            ])
-        self.assertEqual("state-inaccessible", inaccessible["code"])
-        self.assertEqual(before, self.ticket_bytes())
-
-        malformed = tickets._set_frontmatter_field(
-            self.ticket_path.read_text(encoding="utf-8"),
-            "dispatch_v1", '{"attempts":[],"protocol":"orchflows.dispatch.v1"}',
-        )
-        self.ticket_path.write_text(malformed, encoding="utf-8")
-        before = self.ticket_bytes()
-        refused = tickets._dispatch([
-            "dispatch-receipt", "run", "T", "--dispatch-id", "D1",
-        ])
-        self.assertEqual("dispatch-record-invalid", refused["code"])
-        self.assertEqual(before, self.ticket_bytes())
-
-    def test_result_outcome_and_join_require_the_accepted_receipt(self):
-        packet = self.project()["packet"]
-        outcome = {
-            "assignment_seal": self.assignment_seal,
-            "by": "worker",
-            "dispatch_id": "D1",
-            "evidence": {
-                "Result": "delivered",
-                "Verification": "verified",
-                "Feedback": "[]",
-                "Risks": "[]",
-                "Handoff": "",
-            },
-            "id": "T",
-            "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1",
-            "run": "run",
-            "status": "complete",
-        }
-        operations = (
-            [
-                "result", "run", "T", "--assignment-seal", self.assignment_seal,
-                "--dispatch-id", "D1", "--record-id", "result-1",
-                "--by", "worker", "--section", "Result", "--text", "delivered",
-            ],
-            ["dispatch-outcome", "run", "T", "--status", "complete"],
-            [
-                "dispatch-join", "run", "T", "--assignment-seal",
-                self.assignment_seal, "--dispatch-id", "D1",
-                "--outcome-record-id", "outcome", "--by", "root",
-            ],
-        )
-        before = self.ticket_bytes()
-        for operation in operations:
-            with self.subTest(operation=operation[0]):
-                refusal = tickets._dispatch(operation)
-                self.assertEqual("receipt-required", refusal["code"], refusal)
-                self.assertEqual(before, self.ticket_bytes())
-
-        self.assertEqual("accepted", self.receive(packet)["receipt"]["outcome"])
-        committed = tickets._dispatch(operations[0])
-        self.assertNotIn("error", committed, committed)
-
-    def test_file_and_standard_input_carry_the_packet_without_shell_reconstruction(self):
-        packet = self.project()["packet"]
-        path = Path(self.temporary.name) / "packet.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-
-        accepted = self.receive_file(path)
-        self.assertEqual("accepted", accepted["receipt"]["outcome"])
-
-        script = Path(__file__).resolve().parents[1] / "scripts" / "tickets.py"
-        completed = subprocess.run(
-            [
-                sys.executable, str(script), "dispatch-receive", "--file", "-",
-                "--role", "worker", "--profile", "orch-worker", "--by", "worker",
-                "--reply-to", "root",
-            ],
-            cwd=str(self.candidate),
-            input=canonical_json(packet).encode("utf-8"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-        self.assertEqual(0, completed.returncode, completed.stderr)
-        self.assertEqual(accepted, json.loads(completed.stdout.decode("ascii")))
-
-    def test_wrapper_and_malformed_file_refuse_without_ticket_mutation(self):
-        packet = self.project()["packet"]
-        path = Path(self.temporary.name) / "packet.json"
-        before = self.ticket_bytes()
-
-        path.write_text(canonical_json({"packet": packet}), encoding="utf-8")
-        wrapper = self.receive_file(path)
-        self.assertEqual("packet-invalid", wrapper["code"])
-        self.assertIn(".packet", wrapper["error"])
-        self.assertEqual(before, self.ticket_bytes())
-
-        path.write_bytes(b'{"protocol":"orchflows.dispatch.v1","prompt":"\x97"}')
-        malformed = self.receive_file(path)
-        self.assertEqual("packet-invalid", malformed["code"])
-        self.assertEqual(before, self.ticket_bytes())
-
     def test_packet_command_emits_codepage_independent_canonical_ascii(self):
         packet = self.project()["packet"]
         self.assertIn("—", packet["prompt"])
@@ -509,7 +349,7 @@ class DispatchPacketV1Test(unittest.TestCase):
             [
                 sys.executable, str(script), "dispatch-packet", "run", "T",
                 "--dispatch-id", "D1", "--reply-to", "root",
-                "--workspace", str(self.candidate), "--form", "reference",
+                "--workspace", str(self.candidate),
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -524,64 +364,11 @@ class DispatchPacketV1Test(unittest.TestCase):
         ) + "\n"
         self.assertEqual(expected, decoded)
 
-    def test_ticket_inline_cannot_be_downgraded_to_ephemeral(self):
-        packet = self.project(form="inline")["packet"]
-        packet["durability"] = "ephemeral"
-        missing = str(Path(self.temporary.name) / "not-mounted")
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            refusal = self.receive(packet)
-        self.assertEqual("assignment-divergent", refusal["code"])
+    def test_the_removed_outcome_content_form_still_refuses(self):
+        """The cutover removed the flag; it may not be silently tolerated."""
 
-    def test_reference_ticket_packet_cannot_be_downgraded_to_ephemeral(self):
-        packet = self.project()["packet"]
+        self.project()
         before = self.ticket_bytes()
-        packet["durability"] = "ephemeral"
-
-        refusal = self.receive(packet)
-
-        self.assertEqual("idempotency-conflict", refusal["code"])
-        self.assertIn("not the committed projection", refusal["error"])
-        self.assertEqual(before, self.ticket_bytes())
-
-    def test_reference_without_state_sink_is_a_structured_refusal(self):
-        packet = self.project()["packet"]
-        missing = str(Path(self.temporary.name) / "not-mounted")
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            refusal = self.receive(packet)
-        self.assertEqual("state-inaccessible", refusal["code"])
-
-    def test_receipt_refuses_identity_profile_and_authority_mismatches(self):
-        packet = self.project()["packet"]
-        cases = (
-            ({"by": "other"}, "identity-mismatch"),
-            ({"role": "planner"}, "role-mismatch"),
-            ({"profile": "orch-planner"}, "profile-mismatch"),
-            ({"reply_to": "other"}, "authority-mismatch"),
-        )
-        for overrides, code in cases:
-            with self.subTest(overrides=overrides):
-                refusal = self.receive(packet, **overrides)
-                self.assertEqual(code, refusal["code"], refusal)
-
-        elsewhere = git_checkout(Path(self.temporary.name) / "elsewhere")
-        standing_elsewhere = self.receive(packet, standing=elsewhere)
-        self.assertEqual("authority-mismatch", standing_elsewhere["code"])
-
-    def test_removed_receiver_workspace_and_outcome_content_forms_refuse(self):
-        """The cutover removed both flags; neither may be silently tolerated."""
-
-        packet = self.project()["packet"]
-        path = Path(self.temporary.name) / "removed-forms.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        before = self.ticket_bytes()
-
-        with standing_in(self.candidate):
-            supplied_workspace = tickets._dispatch(
-                self._receive_argv(["--file", str(path)])
-                + ["--workspace", str(self.candidate)]
-            )
-        self.assertIn("usage:", supplied_workspace["error"])
-        self.assertNotIn("--workspace", DISPATCH_RECEIVE_USAGE)
 
         relayed_content = tickets._dispatch([
             "dispatch-outcome", "run", "T", "--content",
@@ -603,40 +390,8 @@ class DispatchPacketV1Test(unittest.TestCase):
         changed = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
             "--reply-to", "other", "--workspace", str(self.candidate),
-            "--form", "reference",
         ])
         self.assertEqual("idempotency-conflict", changed["code"])
-
-    def test_inline_tampering_and_reference_divergence_refuse(self):
-        inline = self.project(form="inline")["packet"]
-        inline["inline"]["assignment"]["semantic"]["goal"] = "Changed."
-        self.assertEqual("assignment-divergent", self.receive(inline)["code"])
-
-        self.tearDown()
-        self.setUp()
-        routing = self.project(form="inline")["packet"]
-        routing["executor"] = "orch-decompose"
-        missing = str(Path(self.temporary.name) / "not-mounted")
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            refusal = self.receive(routing)
-        self.assertEqual("assignment-divergent", refusal["code"])
-
-        self.tearDown()
-        self.setUp()
-        origin = self.project(form="inline")["packet"]
-        origin["source"]["run"] = "missing"
-        missing = str(Path(self.temporary.name) / "not-mounted")
-        with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": missing}):
-            refusal = self.receive(origin)
-        self.assertEqual("assignment-divergent", refusal["code"])
-
-        self.tearDown()
-        self.setUp()
-        reference = self.project()["packet"]
-        path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
-        text = path.read_text(encoding="utf-8")
-        path.write_text(text.replace("Deliver the behavior.", "Changed."), encoding="utf-8")
-        self.assertEqual("assignment-divergent", self.receive(reference)["code"])
 
 
 class PacketIsolationIsNormalizedWhereItIsBuiltTest(unittest.TestCase):
@@ -668,7 +423,7 @@ class PacketIsolationIsNormalizedWhereItIsBuiltTest(unittest.TestCase):
                 "isolation": declared,
             }
             with self.subTest(declared=declared):
-                packet = _projection_packet(legacy, data, self.TEXT, self.ATTEMPT, "reference")
+                packet = _projection_packet(legacy, data, self.ATTEMPT)
                 self.assertEqual(expected, packet["isolation"])
 
 

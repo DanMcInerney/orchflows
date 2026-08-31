@@ -83,7 +83,7 @@ compare-and-swap sealing refuses a stale snapshot.
 
 The ticket's `dispatch_v1` frontmatter value binds the complete closed
 [dispatch contract](dispatch.md). That contract solely owns attempts, records,
-packets, receipts, outcomes, joins, precedence, and cutover. Ticket lifecycle
+packets, outcomes, joins, precedence, and cutover. Ticket lifecycle
 projects its accepted mutations: open creates `claimed`; once a dispatch record
 exists, only the outcome-fenced join creates `suspended` or a terminal state,
 and raw status writes are refused as `dispatch-join-required`. Before any
@@ -92,12 +92,11 @@ or a terminal state — it is the pre-dispatch surface, not a legacy one — and
 `ready` and `claimed` remain the admission boundary's alone. A suspended ticket retains claimant
 observations for its Handoff, but its joined dispatch attempt is retired.
 
-## Dispatch-v1 packet projection and receipt
+## Dispatch-v1 packet projection
 
-Packet projection and receipt are the [dispatch contract](dispatch.md)'s wire
-boundary. Reference is the normal projection. Inline seals the whole routing
-envelope for an offline receiver and returns the same reserved outcome envelope
-for atomic coordinator relay; it never creates a second ticket truth.
+Packet projection is the [dispatch contract](dispatch.md)'s wire boundary. The
+projection names this ticket and never copies it, so it creates no second
+ticket truth.
 
 ## Review-stage ledger
 

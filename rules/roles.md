@@ -1,7 +1,7 @@
 # Roles
 
 The generated [receiver lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
-names the worker-or-planner authority established at receipt.
+names the worker-or-planner authority a dispatched child files under.
 
 1. The starting agent is the orchestrator. It owns user questions, scope
    decisions, and undelegated irreversible effects; it never delegates
@@ -30,7 +30,7 @@ names the worker-or-planner authority established at receipt.
 7. A child needing a user-only decision returns a `kind: user-only`
    question and resume state. Root asks its text verbatim and returns
    the answer without deciding it.
-8. The [dispatch contract](../contracts/dispatch.md)'s receipt compares the
-   established child with the committed authority before clause 6 permits
-   execution. A disagreement is a structured refusal; the child never
-   substitutes or repairs the packet.
+8. The [dispatch contract](../contracts/dispatch.md) binds every record a
+   child files to the attempt it was dispatched under. A write naming another
+   authority is a structured refusal; the child never substitutes or repairs
+   the packet.

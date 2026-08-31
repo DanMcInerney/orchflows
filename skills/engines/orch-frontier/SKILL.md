@@ -14,9 +14,8 @@ One transaction admits the ticket, establishes the workspace or evidence-store
 ([workspaces](references/workspaces.md)), opens the attempt, commits the
 packet. Its result carries a
 `launch`; invoke it verbatim with its exact fields
-([profiles](references/profiles.md)). Send response `.packet` via
-`--file <path>` or `--file -`; the exact executor runs only behind an
-accepted `dispatch-receive`.
+([profiles](references/profiles.md)). Hand the response `.packet` to the child
+through `--packet-file <path>`; its first filed record is its acceptance.
 
 `tickets.py land <run> <id> --assignment-seal <seal> --dispatch-id <id>
 --outcome-record-id outcome --by <join-name> [--outcome-file <path|->]` imports

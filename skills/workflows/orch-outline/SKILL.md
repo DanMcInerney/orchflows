@@ -39,11 +39,9 @@ successors.md`; entries name kind, pack, run/root ids, and `planned` state.
 A drained `orch-frontier` trigger grants no authority. Caller opens a
 materialization run: ordinal-1 root, planner ticket bound
 to this exact skill. Seal it; invoke `tickets.py dispatch` for the root and
-launch the child from the `launch` object it returns; the child runs
-`tickets.py dispatch-receive`.
-Receiver identity, authority, and committed bytes must agree before its durable
-accepted receipt permits successor materialization. Never send a follow-up
-after the prior planner outcome closed.
+launch the child from the `launch` object it returns.
+That planner's joined outcome is what permits successor materialization.
+Never send a follow-up after the prior planner outcome closed.
 
 Resolve the accepted predecessor `## Result` identity; semantic-root change is
 unsupported without that accepted predecessor result identity. Once resolved,

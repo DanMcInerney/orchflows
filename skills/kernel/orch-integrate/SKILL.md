@@ -16,7 +16,7 @@ defers review; `checker` requires
 Goal claims yield needs-verify. Suspension resumes from `## Handoff`.
 
 The returning name and artifact identity must match the committed dispatch-v1
-packet and accepted receipt; reject mismatches and expired attempts.
+packet; reject mismatches and expired attempts.
 Integration owns actual candidate diffs and conflict adjudication: resolve
 overlap and ordinary Git conflicts, perform one shared-artifact finalization
 after all candidate joins, and record the fixed joined identity the terminal

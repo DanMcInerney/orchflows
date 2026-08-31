@@ -165,8 +165,6 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
             "materialization run",
             "planner ticket bound to this exact skill",
             "`tickets.py dispatch`",
-            "`tickets.py dispatch-receive`",
-            "durable accepted receipt",
             "accepted predecessor `## Result` identity",
             "fresh successor run",
             "`root_generation` ordinal `1`",

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import git_checkout
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 from tests.test_tickets_cases.cli_help import HelpTest  # noqa: F401
@@ -45,7 +45,6 @@ from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
 )
 
 import scripts.tickets as tickets_mod
-import scripts.tickets_dispatch_receipt as tickets_dispatch_receipt
 import scripts.tickets_packet as tickets_packet
 import scripts.tickets_review as tickets_review
 
@@ -148,39 +147,6 @@ class AdapterRegistryTest(unittest.TestCase):
                     )
             self.assertIn("git:<full-commit-id>", str(caught.exception))
 
-    def test_dispatch_receive_resolves_the_pack_under_the_packet_workspace(self):
-        """A receiver's cwd never decides which pack answers a packet.
-
-        Regression for state sink friction/2026-08.jsonl, entry ts
-        2026-08-30T20:48:12Z: `dispatch-receive` refused `authority-mismatch
-        (pack does not resolve: field-notes-pack)` for a project-scope pack
-        that lived only inside the packet's own committed workspace, solely
-        because the receiving process happened to be standing elsewhere.
-        Pack resolution must walk from the packet's `workspace`, not from
-        `Path.cwd()`.
-        """
-        with tempfile.TemporaryDirectory() as raw:
-            workspace = Path(raw) / "workspace"
-            workspace.mkdir()
-            self._pack(workspace, "evidence-store")
-            elsewhere = Path(raw) / "elsewhere-receiver"
-            elsewhere.mkdir()
-
-            packet = {"pack": "widget-pack", "workspace": str(workspace)}
-            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
-                accepted = tickets_dispatch_receipt._workspace_failure(packet)
-            self.assertIsNone(accepted)
-
-            # A pack that resolves in neither the established workspace nor
-            # installed/canonical scope still refuses closed, regardless of
-            # where the receiver stands.
-            bare = Path(raw) / "workspace-without-the-pack"
-            bare.mkdir()
-            unresolved = {"pack": "widget-pack", "workspace": str(bare)}
-            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
-                refused = tickets_dispatch_receipt._workspace_failure(unresolved)
-            self.assertEqual("authority-mismatch", refused["code"])
-
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
     # The lease is the dispatch attempt; the fixture writes the record the
@@ -218,7 +184,7 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
 
 
 def _v1_result_ticket(tmp: Path, *, by="agent-a"):
-    # A receipt derives its workspace from a real Git top-level, so the
+    # The establishment grade reads git from inside the candidate, so the
     # fixture needs an actual checkout rather than a bare `.git` directory.
     git_checkout(tmp)
     sink = use_sink(tmp)
@@ -251,14 +217,8 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     packet = tickets_mod._dispatch([
         "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
         "--reply-to", "root", "--workspace", str(tmp.resolve()),
-        "--form", "reference",
-    ])["packet"]
-    packet_path = tmp / "packet-D1.json"
-    packet_path.write_text(
-        json.dumps(packet, sort_keys=True, separators=(",", ":")), encoding="utf-8",
-    )
-    with standing_in(tmp):
-        tickets_mod._dispatch(receive_argv(packet_path, packet, by))
+    ])
+    assert "error" not in packet, packet
     return ticket, opened["assignment_seal"]
 
 

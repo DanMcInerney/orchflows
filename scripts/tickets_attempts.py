@@ -13,8 +13,8 @@ if __package__:
     from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS, accepted_receipt_failure,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -33,8 +33,8 @@ else:
     import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS, accepted_receipt_failure,
+        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -304,10 +304,6 @@ def _commit_record(
                 return _classification(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
-            if record_kind in ("result", "outcome", "join"):
-                failure = accepted_receipt_failure(attempt)
-                if failure is not None:
-                    return failure
             if mutate is None:
                 success = _record_response(run, ticket_id, dispatch_id, record_id, content)
                 updated = text

@@ -89,7 +89,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
             if record.get("kind") not in RECORD_KINDS:
                 return classification("dispatch-record-invalid", f"record '{record_id}' has an unknown kind")
             kind = record["kind"]
-            if kind in {"packet", "receipt", "result", "outcome", "join"}:
+            if kind in {"packet", "result", "outcome", "join"}:
                 causal_kinds.append(kind)
             if record_id_namespace_ok(kind, record_id) is False:
                 return classification("dispatch-record-invalid", f"record '{record_id}' does not belong to kind '{kind}'")
@@ -109,9 +109,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
                 )
                 if failure is not None:
                     return failure
-        causal_rank = {
-            "packet": 0, "receipt": 1, "result": 2, "outcome": 3, "join": 4,
-        }
+        causal_rank = {"packet": 0, "result": 1, "outcome": 2, "join": 3}
         if causal_kinds != sorted(causal_kinds, key=causal_rank.__getitem__):
             return classification(
                 "dispatch-record-invalid",
@@ -120,17 +118,13 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
         execution_present = any(
             kind in {"result", "outcome", "join"} for kind in causal_kinds
         )
-        if execution_present and causal_kinds[:2] != ["packet", "receipt"]:
-            return classification(
-                "receipt-required",
-                "one committed packet and its accepted receipt must precede execution records",
-            )
-        if "receipt" in causal_kinds and (
-            not causal_kinds or causal_kinds[0] != "packet"
-        ):
+        # The child's first filed record is its acceptance, so nothing here
+        # asks for a separate one -- but a child that filed anything was
+        # launched, and a launch is what the committed packet is.
+        if execution_present and causal_kinds[:1] != ["packet"]:
             return classification(
                 "dispatch-record-invalid",
-                "accepted receipt must follow its committed packet",
+                "one committed packet must precede execution records",
             )
         if "join" in causal_kinds and "outcome" not in causal_kinds:
             return classification(

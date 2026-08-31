@@ -230,9 +230,9 @@ def _role_description(name: str) -> str:
 # return into the durable artifact; deliver it by SendMessage). No rendered
 # role agent file names roles.md anywhere (D-2).
 ROLE_INSTRUCTIONS = (
-    "Stay within delegated scope. Validate the packet with `dispatch-receive` "
-    "against this child's identity and authority; only an accepted receipt "
-    "permits execution. Execute the exact primary skill, or each exact member of a "
+    "Stay within delegated scope. Every record names the packet's dispatch id, "
+    "seal, and assigned name; your first record is your acceptance. "
+    "Execute the exact primary skill, or each exact member of a "
     "packet-stated ordered sequence, directly; never redispatch. Refuse a missing "
     "or mismatched role."
 )

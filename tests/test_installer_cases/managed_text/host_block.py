@@ -147,7 +147,6 @@ _HOST_BLOCK_DEMANDS = {
         "`orch-decompose`",
         "`orch-outline`",
         "`tickets.py dispatch <run> <root>",
-        "`tickets.py dispatch-receive --file <path|->`",
         "{{ORCH_LIB}}/contracts/work-item.md",
         "`install.py doctor`",
         "`orch-integrate`",

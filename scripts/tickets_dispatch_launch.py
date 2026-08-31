@@ -21,20 +21,17 @@ from __future__ import annotations
 import json
 import os
 import re
-import sys
 from pathlib import Path
 
 if __package__:
     from . import state_root
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from .tickets_format import _executor_of, _parse_frontmatter, _read_utf8
-    from .tickets_packet import _command_text
     from .tickets_store import NO_SINK_ERROR, _tickets_root
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from tickets_format import _executor_of, _parse_frontmatter, _read_utf8
-    from tickets_packet import _command_text
     from tickets_store import NO_SINK_ERROR, _tickets_root
 
 HOST_ENV_VAR = "ORCHFLOWS_HOST"
@@ -243,35 +240,27 @@ def binding_failure(record, role):
     return None
 
 
-def _receive_command(packet, packet_file) -> str:
-    script = Path(__file__).with_name("tickets.py").resolve()
-    return _command_text(
-        sys.executable, script, "dispatch-receive",
-        "--file", str(packet_file) if packet_file is not None else "-",
-        "--role", packet.get("role"), "--profile", packet.get("profile"),
-        "--by", packet.get("assigned_name"), "--reply-to", packet.get("reply_to"),
-    )
-
-
 def launch_prompt(packet: dict, packet_file=None) -> str:
-    """Where the packet is, how to accept it, and what every record names.
+    """Where the packet is, and what every record the child files names.
 
     Deliberately short and deliberately not a second copy of the assignment:
     the packet carries its own prompt, and this points at it. What is
     repeated here are only `contracts/work-item.md`'s fixed executor-record
     identities, which the child needs before it has read anything.
+
+    There is no accept step. The child's first filed record is its
+    acceptance, and the identities below are what proves it: `result`
+    validates the same three on every write.
     """
 
     where = (
         f"Your dispatch packet is the JSON document at {packet_file}."
         if packet_file is not None
         else "Your dispatch packet is the `.packet` member of the dispatch "
-        "response this launch came from; pass that value on standard input."
+        "response this launch came from."
     )
     return "\n".join((
         where,
-        "Accept it before anything else runs; a refusal is your return:",
-        _receive_command(packet, packet_file),
         f"Every record you file names assignment_seal {packet.get('assignment_seal')}, "
         f"dispatch_id {packet.get('dispatch_id')}, writer {packet.get('assigned_name')}, "
         f"and a fresh record id of your own; the one reserved closing identity "

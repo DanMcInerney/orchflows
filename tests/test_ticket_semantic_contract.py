@@ -12,7 +12,7 @@ import subprocess
 from unittest import mock
 
 from scripts import cutcheck
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import git_checkout
 from scripts import tickets
 from scripts import tickets_generations
 from scripts import tickets_join
@@ -190,25 +190,16 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
         )["dispatch"]
 
-    def receive(self, packet, by, standing=None):
-        """Take one receipt from the established checkout, packet carried as
-        UTF-8 bytes: `--content` and `--workspace` are both gone."""
-
-        path = Path(self.temporary.name) / f"packet-{packet['dispatch_id']}.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(ROOT if standing is None else standing):
-            return self.dispatch(*receive_argv(path, packet, by))
-
     def accept_packet(self, run, ticket_id, by, dispatch_id, workspace=None):
+        """Commit the packet the named child's records enter behind."""
+
         packet_args = [
             "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
-            "--reply-to", "root", "--form", "reference",
+            "--reply-to", "root",
         ]
         if workspace is not None:
             packet_args.extend(("--workspace", workspace))
-        packet = self.dispatch(*packet_args)["packet"]
-        self.receive(packet, by, standing=workspace)
-        return packet
+        return self.dispatch(*packet_args)["packet"]
 
     def accepted_file(self, ticket_id, findings) -> list:
         """`dispatch-join --accepted` was removed; the subset crosses as a file."""
@@ -678,7 +669,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn('"kind":"GatePlan"', packet["prompt"])
-        self.receive(packet, "critic")
         self.commit_outcome("clean", critique_id, opened, "critic", "critic-D1")
         self.dispatch(
             "dispatch-join", "clean", critique_id,
@@ -745,7 +735,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             "`UNVERIFIED:` so the join can bind the verdict to the verified artifact.",
             verify_packet["prompt"],
         )
-        self.receive(verify_packet, "verifier")
         verify_outcome = {
             "assignment_seal": verify_opened["assignment_seal"],
             "by": "verifier", "dispatch_id": "verify-D1",
@@ -872,7 +861,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", "checker-D1", "--reply-to", "root",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
-        self.receive(packet, "checker-a")
         findings = json.dumps([{
             "blocking": True,
             "class": "correctness",
@@ -1001,7 +989,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn(review["records"][1]["identity"], repair_packet["prompt"])
-        self.receive(repair_packet, "repairer")
         repair_outcome = {
             "assignment_seal": repair_opened["assignment_seal"],
             "by": "repairer", "dispatch_id": "repair-D1",
@@ -1065,7 +1052,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", "verify-D1", "--reply-to", "root",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
-        self.receive(verify_packet, "verifier")
         verify_outcome = {
             "assignment_seal": verify_opened["assignment_seal"],
             "by": "verifier", "dispatch_id": "verify-D1",

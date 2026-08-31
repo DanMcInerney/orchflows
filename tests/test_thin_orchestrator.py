@@ -122,11 +122,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
             "--reply-to <parent-name> [--host <host>] [--workspace <tree>]",
-            "tickets.py dispatch-receive",
-            "accepted",
-            "exact `orch-decompose`",
             "invoke its emitted `launch` verbatim",
-            "ticket path is not the complete packet",
             "tickets.py land",
             "start `orch-frontier`",
         ):
@@ -140,6 +136,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "tickets.py dispatch-open",
             "tickets.py dispatch-packet",
             "tickets.py dispatch-join",
+            "tickets.py dispatch-receive",
             "workspace.py establish",
         ):
             with self.subTest(absent=absent):
@@ -167,7 +164,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                     # Establishment is inside the dispatch transaction now, so
                     # the engine states that rather than a separate step.
                     self.assertIn("establishes the workspace", text)
-                self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
+                self.assertLess(text.index("tickets.py dispatch"), text.index("tickets.py land"))
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:

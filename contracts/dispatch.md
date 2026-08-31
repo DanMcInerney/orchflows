@@ -18,13 +18,13 @@ and `records`, plus only the transition fields applicable to retirement or
 replacement. States are `live`, `retired`, and `replaced`; clock expiry never
 writes an implicit state transition. Each record has exactly `record_id`, `kind`, canonical-JSON
 `content`, absolute `committed_at`, and stored `success`. Record ids are unique
-within an attempt. Kinds are `generic`, `packet`, `receipt`, `result`, `outcome`,
-`join`, and `lifecycle`; `dispatch-packet`, `dispatch-receipt`, `outcome`,
+within an attempt. Kinds are `generic`, `packet`, `result`, `outcome`,
+`join`, and `lifecycle`; `dispatch-packet`, `outcome`,
 `join:*`, and `lifecycle:*` are reserved for their owning operations.
-Execution events are an ordered grammar, not a bag: one packet precedes its
-accepted receipt; only then may result records occur; the one outcome follows
-results; join follows outcome. Removing or reordering the receipt makes the
-whole persisted state invalid without mutation.
+Execution events are an ordered grammar, not a bag: the committed packet
+precedes every result record; the one outcome follows results; join follows
+outcome. Reordering them makes the whole persisted state invalid without
+mutation.
 
 Every read and mutation validates the whole closed state first. Record content
 and stored success are closed per kind and must agree with ticket origin,
@@ -58,44 +58,31 @@ failed step surfaces its own error plus any failed cleanup; every step
 replays idempotently. A composition over these operations therefore replays
 as a whole, and reports which of its steps it found already done.
 
-## Packet and receipt
+## Packet
 
-`dispatch-packet` commits the projection and `dispatch-receive` validates it
-against the actual established child before execution. The public command emits
-ASCII-escaped canonical JSON, preserving every packet character independently
-of the subprocess code page. Receipt accepts exactly one carrier:
-`--content <canonical-json>`, `--file <path>`, or UTF-8 standard input through
-`--file -`. The carried value is the response `.packet` member; the response
-wrapper is a structured `packet-invalid` refusal.
+`dispatch-packet` commits the projection, and that committed record is the
+whole packet: nothing validates a packet a caller carries back. The public
+command emits ASCII-escaped canonical JSON, preserving every packet character
+independently of the subprocess code page.
 
-A packet has exactly the common fields `protocol`, `source`, `dispatch_id`,
+A packet has exactly `protocol`, `source`, `reference`, `dispatch_id`,
 `assignment_seal`, `outcome_record_id`, `lease_expires_at`, `executor`, `role`,
 `profile`, `assigned_name`, `reply_to`, `workspace`, `pack`, `independence`,
-`isolation`, `admission`, `prompt`, `review_kind`, `form`, and `durability`,
-plus exactly one of `reference` or `inline`. `review_kind` is null for an
+`isolation`, `admission`, `prompt`, `review_kind`, and `durability`.
+`review_kind` is null for an
 ordinary execution packet or one of `critique`, `repair`, and `verify` for a
-typed review lane. Source and reference are exact `{run,id}` objects.
+typed review lane. Source and reference are exact `{run,id}` objects, and
+`durability` is `ticket`: work carrying no ticket is outside this protocol.
 
-Reference is the default and is checked against the committed packet record.
-Inline is a ticket-durable snapshot: `inline` has exactly `assignment` and
-`envelope_seal`; that seal binds assignment, source, dispatch, assignment,
-lease, outcome, owner, role, profile, review kind, reply target, workspace,
-and durability.
-A ticket packet cannot be downgraded to ephemeral. The authoritative ticket
-sink must be available for both reference and inline receipt; self-carried
-inline material cannot authenticate offline role-bearing execution. Packet-only
-ephemeral work is outside this ticket protocol.
+Projection refuses `state-inaccessible` when the sink holding the ticket
+cannot be read, `review-invalid` when the ticket's review ledger does not
+admit this lane, and `workspace-unestablished` or `workspace-mismatch` when
+the named tree is not the candidate the establishment recorded.
 
-Receipt success has exactly `protocol`, `outcome: accepted`, `dispatch_id`,
-`assignment_seal`, `form`, `durability`, and `state_sink_checked`. Refusal has
-`protocol`, `code`, and `error`. Unknown packet fields or shapes are
-`packet-invalid`; other codes are `state-inaccessible`, `assignment-divergent`,
-`stale-attempt`, `identity-mismatch`, `role-mismatch`, `profile-mismatch`, and
-`authority-mismatch`. Acceptance atomically commits the reserved
-`dispatch-receipt` record, binding the exact committed packet and receipt to the
-attempt. Result, outcome, and join records refuse with `receipt-required` until
-that durable acceptance exists; an exact committed operation still replays by
-the attempt-precedence rule.
+A dispatched child proves who it is the same way on its first write as on
+every later one, by naming `(dispatch_id, assignment_seal, --by)`; the first
+record it files is its acceptance, and there is no separate accept step to
+run, to run from the wrong directory, or to refuse.
 
 ## Outcome and join
 
@@ -107,10 +94,9 @@ exactly string bodies for `Result`, `Verification`, `Feedback`, `Risks`, and
 `suspended`. Evidence is the non-empty closing delta not already materialized
 through result records; repeated material is refused so each item is written
 once. `dispatch-outcome` validates the envelope, imports its attributed
-evidence atomically, and commits or replays the reserved outcome record after
-durable receiver acceptance. Thus a reference child may commit directly and an
-offline inline child may return the same envelope for its coordinator to relay
-without inventing another payload.
+evidence atomically, and commits or replays the reserved outcome record. A
+child commits it directly, and a coordinator relaying for one passes the same
+envelope through `--file` rather than inventing another payload.
 
 `dispatch-join` consumes only that distinguished record and derives disposition
 from it. Its id is `join:outcome`; exact replay returns stored success after
@@ -129,7 +115,7 @@ workspace; a code artifact is a full Git commit that resolves to that
 workspace's exact HEAD before packet commit and after repair.
 
 The ordinary checker is a derived `<id>.check` review-stage ticket. It uses
-the same committed packet, accepted receipt, outcome, and join as gate review.
+the same committed packet, outcome, and join as gate review.
 Only `check <run> <id> --stage <id>.check` attaches its authenticated receiver
 identity to the target's `checked_by`; direct caller-supplied findings are not
 a protocol operation.
@@ -206,7 +192,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | --- | --- | --- |
 | `committed_at` | yes | — |
 | `content` | yes | — |
-| `kind` | yes | `generic`, `packet`, `receipt`, `result`, `outcome`, `join`, `lifecycle` |
+| `kind` | yes | `generic`, `packet`, `result`, `outcome`, `join`, `lifecycle` |
 | `record_id` | yes | — |
 | `success` | yes | — |
 
@@ -232,13 +218,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | field | required | declared values |
 | --- | --- | --- |
 | `packet` | yes | — |
-
-### `dispatch_receipt_record`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `packet` | yes | — |
-| `receipt` | yes | — |
 
 ### `dispatch_result_record`
 
@@ -314,13 +293,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `id` | yes | — |
 | `run` | yes | — |
 
-### `dispatch_inline_snapshot`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `assignment` | yes | — |
-| `envelope_seal` | yes | — |
-
 ### `dispatch_join_content`
 
 | field | required | declared values |
@@ -372,6 +344,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | --- | --- | --- |
 | `protocol` | yes | — |
 | `source` | yes | — |
+| `reference` | yes | — |
 | `dispatch_id` | yes | — |
 | `assignment_seal` | yes | — |
 | `outcome_record_id` | yes | — |
@@ -388,22 +361,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `admission` | yes | — |
 | `prompt` | yes | — |
 | `review_kind` | yes | `critique`, `repair`, `verify`, `null` |
-| `form` | yes | `reference`, `inline` |
-| `durability` | yes | `ticket`, `ephemeral` |
-| `reference` | no | — |
-| `inline` | no | — |
-
-### `dispatch_receipt`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `protocol` | yes | `orchflows.dispatch.v1` |
-| `outcome` | yes | `accepted` |
-| `dispatch_id` | yes | — |
-| `assignment_seal` | yes | — |
-| `form` | yes | — |
 | `durability` | yes | `ticket` |
-| `state_sink_checked` | yes | — |
 
 ### `dispatch_outcome`
 

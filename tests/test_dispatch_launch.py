@@ -24,7 +24,7 @@ import threading
 import unittest
 from unittest import mock
 
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import git_checkout
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch
 from scripts.tickets_format import canonical_json, parse_canonical_json
@@ -235,8 +235,8 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(binding["model"], result["launch"]["model"])
         self.assertEqual(binding["effort"], result["launch"]["effort"])
         self.assertEqual("orch-worker", result["launch"]["agent"])
-        self.assertIn("dispatch-receive", result["launch"]["prompt"])
-        self.assertIn("--role worker", result["launch"]["prompt"])
+        self.assertNotIn("dispatch-receive", result["launch"]["prompt"])
+        self.assertIn(result["packet"]["assigned_name"], result["launch"]["prompt"])
         self.assertIn(result["packet"]["assignment_seal"], result["launch"]["prompt"])
         self.assertIn(result["packet"]["dispatch_id"], result["launch"]["prompt"])
 
@@ -330,7 +330,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertNotIn(b"\r\n", destination.read_bytes())
         self.assertIn(str(destination), result["launch"]["prompt"])
 
-    def test_the_prompts_receive_command_is_the_one_that_accepts_the_packet(self):
+    def test_the_prompt_names_the_identities_every_record_is_filed_under(self):
         """End to end on the hop this closes: the identities the prompt tells
         the child to use are exactly the ones the protocol accepts, so an
         orchestrator that passes the prompt through verbatim is correct."""
@@ -339,15 +339,20 @@ class DispatchLaunchTest(unittest.TestCase):
         result = self.dispatch("--packet-file", str(destination))
         packet = result["packet"]
         prompt = result["launch"]["prompt"]
-        for token in receive_argv(destination, packet, packet["assigned_name"]):
+        for token in (
+            str(destination), packet["assignment_seal"], packet["dispatch_id"],
+            packet["assigned_name"], "outcome",
+        ):
             self.assertIn(token, prompt)
 
-        with standing_in(self.candidate):
-            receipt = tickets._dispatch(
-                receive_argv(destination, packet, packet["assigned_name"])
-            )
+        filed = tickets._dispatch([
+            "result", "run", "T", "--assignment-seal", packet["assignment_seal"],
+            "--dispatch-id", packet["dispatch_id"], "--record-id", "R1",
+            "--by", packet["assigned_name"], "--section", "Result",
+            "--text", "the first filed record is the acceptance",
+        ])
 
-        self.assertEqual("accepted", receipt["receipt"]["outcome"])
+        self.assertNotIn("error", filed, filed)
 
     def test_an_unwritable_packet_file_names_the_replay_and_keeps_the_packet(self):
         with mock.patch.object(
@@ -359,37 +364,16 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual("packet-file-unwritable", result["code"])
         self.assertIn("packet", result)
 
-    def test_an_oversized_inline_packet_is_refused_and_commits_no_packet(self):
-        """Refused before the commit, so the attempt the facade opened is
-        retired and no packet record was ever written for it."""
+    def test_the_removed_inline_selectors_are_ordinary_unknown_arguments(self):
+        """The inline form went out with the handshake that policed it, and
+        so did the ceiling that existed only to bound its snapshot: neither
+        flag may be silently tolerated."""
 
-        result = self.dispatch("--form", "inline", "--inline-limit", "64")
-
-        self.assertEqual("packet-too-large", result["code"])
-        self.assertIn("--form reference", result["error"])
-        state = parse_canonical_json(tickets._parse_frontmatter(
-            self.ticket_path().read_text(encoding="utf-8")
-        )["dispatch_v1"])
-        attempt = state["attempts"][-1]
-        self.assertEqual("retired", attempt["state"])
-        self.assertNotIn(
-            "dispatch-packet",
-            [record["record_id"] for record in attempt["records"]],
-        )
-
-    def test_an_ordinary_inline_packet_is_under_the_default_ceiling(self):
-        result = self.dispatch("--form", "inline")
-
-        self.assertEqual("inline", result["packet"]["form"])
-        size = len(canonical_json(result["packet"]).encode("utf-8"))
-        self.assertLessEqual(
-            size, tickets._tickets_dispatch_packet_module.DEFAULT_INLINE_LIMIT
-        )
-
-    def test_a_non_numeric_inline_limit_refuses(self):
-        result = self.dispatch("--inline-limit", "lots")
-
-        self.assertIn("--inline-limit takes a positive byte count", result["error"])
+        for flag, value in (("--form", "inline"), ("--inline-limit", "64")):
+            with self.subTest(flag=flag):
+                result = self.dispatch(flag, value)
+                self.assertIn("usage: dispatch", result["error"])
+                self.assertNotIn(flag, result["error"])
 
 
 class LandTest(unittest.TestCase):
@@ -434,12 +418,9 @@ class LandTest(unittest.TestCase):
         packet = self.run_command(
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
             "--reply-to", "root", "--workspace", str(self.candidate),
-            "--form", "reference",
         )["packet"]
         carrier = Path(self.temporary.name) / "packet.json"
         carrier.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(self.candidate):
-            self.run_command(*receive_argv(carrier, packet, "worker"))
 
     def tearDown(self):
         self.environment.stop()

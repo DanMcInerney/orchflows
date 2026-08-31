@@ -17,8 +17,7 @@ if __package__:
     from .tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from .tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from .tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
-    from .tickets_dispatch_packet import _cmd_dispatch_packet, _cmd_dispatch_receive
-    from .tickets_dispatch_receipt import _cmd_dispatch_receipt
+    from .tickets_dispatch_packet import _cmd_dispatch_packet
     from .tickets_join import _cmd_dispatch_join
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_store import NO_SINK_ERROR, _cmd_repair_run_identity, _improvement_root, _segment_error, _write_identity
@@ -40,8 +39,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
-    from tickets_dispatch_packet import _cmd_dispatch_packet, _cmd_dispatch_receive
-    from tickets_dispatch_receipt import _cmd_dispatch_receipt
+    from tickets_dispatch_packet import _cmd_dispatch_packet
     from tickets_join import _cmd_dispatch_join
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_store import NO_SINK_ERROR, _cmd_repair_run_identity, _improvement_root, _segment_error, _write_identity
@@ -149,7 +147,7 @@ def _dispatch(argv):
     if _sync_seams is not None:
         _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | grade | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | land | loop-arm | loop-evaluate | loop-advance | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | dispatch-receive | dispatch-receipt | check | set-status | join-noop-repair | result | worklog | run-state | repair-run-identity | improvement'}
+        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | grade | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | land | loop-arm | loop-evaluate | loop-advance | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | dispatch-packet | check | set-status | join-noop-repair | result | worklog | run-state | repair-run-identity | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -196,10 +194,6 @@ def _dispatch(argv):
         return _cmd_dispatch_join(rest)
     if command == 'dispatch-packet':
         return _cmd_dispatch_packet(rest)
-    if command == 'dispatch-receive':
-        return _cmd_dispatch_receive(rest)
-    if command == 'dispatch-receipt':
-        return _cmd_dispatch_receipt(rest)
     if command == 'check':
         return _cmd_check(rest)
     if command == 'set-status':
