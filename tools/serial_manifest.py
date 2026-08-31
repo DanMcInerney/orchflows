@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Regenerate the committed serial-compatibility manifest from live facts.
 
-`tools/run_serial_compat.py` owns the contract this file writes; it is at the
-510-line source ceiling, so the generator lives here and the runner keeps only
-the flag that reaches it.
+`tools/run_serial_compat.py` owns the contract this file writes; it already
+fills one-read size on its own, so the generator lives here and the runner
+keeps only the flag that reaches it.
 
 Two facts in the manifest are derived and one is not. The discovery block
 (count, identities, sha256) and the mutation-owner inventory are what the

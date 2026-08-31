@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The runner's ``--scope`` branch, which lives here because
-``tools/run_tests.py`` stands at the 510-line source ceiling.
+``tools/run_tests.py`` already fills one-read size on its own.
 
 Nothing here is a second scheduler: it turns a comma-separated write scope
 into the subset of already-discovered modules that ``affected_tests`` says
@@ -49,13 +49,14 @@ def refuse_positional(scope, modules) -> None:
         "--scope %s" % (" ".join(modules), scope, ",".join([scope] + list(modules))))
 
 
-def admission_paths(scope, modules, default_tests_dir: bool):
-    """Return the paths the source-size admission covers, or None for none.
+def size_report_paths(scope, modules, default_tests_dir: bool):
+    """Return the paths the source-size report covers, or None for none.
 
-    An empty list is the whole tracked tree. A scoped run is graded over the
-    sources it named and no others: a sibling's over-cap file elsewhere on a
-    shared branch is not this run's red to carry, and was measured failing
-    every unit's scoped oracle regardless of what that unit had changed.
+    An empty list is the whole tracked tree. A scoped run is reported over
+    the sources it named and no others: while the report still blocked, a
+    sibling's over-cap file elsewhere on a shared branch was measured
+    failing every unit's scoped oracle regardless of what that unit had
+    changed; the same coverage keeps a warning about this run's sources.
     """
 
     if not default_tests_dir:

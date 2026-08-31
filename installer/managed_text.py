@@ -50,9 +50,9 @@ _SUBAGENTS_DOTTED_LIMIT_RE = re.compile(
 #
 # The text of `$GROK_HOME/skills/<name>/SKILL.md` and `agents/<role>.md`. It
 # sits here rather than beside its Claude and Codex siblings in
-# installer/packages.py because that file measured 483 of its 510
-# tracked-source lines before the Grok column arrived and cannot hold the
-# group. See the note there.
+# installer/packages.py because that file measured 483 tracked-source lines
+# before the Grok column arrived and cannot hold the group at one-read
+# size. See the note there.
 
 
 def render_grok_agent(name: str, profile: dict) -> str:

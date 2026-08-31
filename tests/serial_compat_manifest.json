@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2064,
+  "count": 2065,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -777,17 +777,18 @@
    "test_run_tests.TestSchedule.test_installer_cases_are_exactly_once_across_process_visible_shards",
    "test_run_tests.TestSchedule.test_shards_partition_the_schedule_exactly",
    "test_run_tests.TestSchedule.test_timing_record_carries_context_occupancy_modules_and_outcomes",
-   "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_an_empty_selection_still_admits_the_paths_it_named",
-   "test_run_tests_scope.TestNothingSelectedStillOwesItsAdmission.test_the_admission_precedes_the_selections_own_exit",
+   "test_run_tests_scope.TestNothingSelectedStillOwesItsSizeReport.test_a_warning_surfaces_without_failing_the_run",
+   "test_run_tests_scope.TestNothingSelectedStillOwesItsSizeReport.test_an_empty_selection_still_reports_the_paths_it_named",
+   "test_run_tests_scope.TestNothingSelectedStillOwesItsSizeReport.test_the_report_precedes_the_selections_own_exit",
    "test_run_tests_scope.TestScopeSpelling.test_a_scope_by_itself_is_accepted",
    "test_run_tests_scope.TestScopeSpelling.test_a_space_separated_scope_is_refused_and_names_what_it_dropped",
    "test_run_tests_scope.TestScopeSpelling.test_modules_by_themselves_are_accepted",
    "test_run_tests_scope.TestScopeSpelling.test_the_runner_refuses_the_spelling_before_it_reads_anything",
-   "test_run_tests_scope.TestScopedAdmission.test_a_custom_tests_directory_admits_nothing",
-   "test_run_tests_scope.TestScopedAdmission.test_a_scoped_run_admits_its_own_paths_only",
-   "test_run_tests_scope.TestScopedAdmission.test_a_whole_suite_run_admits_the_whole_tree",
-   "test_run_tests_scope.TestScopedAdmission.test_an_explicit_module_run_admits_nothing",
-   "test_run_tests_scope.TestScopedAdmission.test_the_scoped_admission_reads_the_scope_not_the_selected_modules",
+   "test_run_tests_scope.TestScopedSizeReport.test_a_custom_tests_directory_reports_nothing",
+   "test_run_tests_scope.TestScopedSizeReport.test_a_scoped_run_reports_its_own_paths_only",
+   "test_run_tests_scope.TestScopedSizeReport.test_a_whole_suite_run_reports_the_whole_tree",
+   "test_run_tests_scope.TestScopedSizeReport.test_an_explicit_module_run_reports_nothing",
+   "test_run_tests_scope.TestScopedSizeReport.test_the_scoped_report_reads_the_scope_not_the_selected_modules",
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_checkout_with_no_git_still_answers_from_the_working_tree",
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_path_git_cannot_be_asked_about_stays_a_note",
    "test_run_tests_scope.TestSelectionIsAnAnswerNotASample.test_a_revision_answer_is_accepted",
@@ -856,9 +857,9 @@
    "test_skill_fork_governance.TheInstallerIsTheClausesOneOwner.test_the_codex_gate_carries_it",
    "test_skill_fork_governance.TheSweptPopulationIsReal.test_the_population_is_derived_and_non_empty",
    "test_skill_fork_governance.TheSweptPopulationIsReal.test_the_population_spans_every_tier",
-   "test_source_sizes.SourceSizeCheckerTest.test_510_lines_pass_and_511_lines_fail",
+   "test_source_sizes.SourceSizeCheckerTest.test_500_lines_pass_silently_and_501_warn",
    "test_source_sizes.SourceSizeCheckerTest.test_all_six_executable_suffixes_are_owned",
-   "test_source_sizes.SourceSizeCheckerTest.test_an_oversized_test_warns_without_blocking",
+   "test_source_sizes.SourceSizeCheckerTest.test_an_oversized_source_warns_without_blocking",
    "test_source_sizes.SourceSizeCheckerTest.test_explicit_directory_covers_six_suffixes_and_hidden_files",
    "test_source_sizes.SourceSizeCheckerTest.test_git_reader_is_nul_safe_and_keeps_hidden_paths",
    "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_a_cut_section_is_left_exactly_as_authored",
@@ -2067,7 +2068,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "3478f96357e4f3bc0d388053dbeb155e4ba3335e5caea0a64c27e14e343e4daf"
+  "sha256": "8c2e9bcb6972d145b712d2beb7b87547d623afb4e07625f91c8dc7bb34cfab58"
  },
  "mutation_owners": [
   {
@@ -4082,7 +4083,7 @@
   },
   {
    "module": "tests.test_run_tests_scope",
-   "owner": "TestNothingSelectedStillOwesItsAdmission.main_over",
+   "owner": "TestNothingSelectedStillOwesItsSizeReport.main_over",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -4191,14 +4192,6 @@
   {
    "module": "tests.test_skill_fork_governance",
    "owner": "TheInstallerIsTheClausesOneOwner.test_the_built_plan_renders_it_on_every_role_bearing_surface",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_source_sizes",
-   "owner": "SourceSizeCheckerTest.test_an_oversized_test_warns_without_blocking",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

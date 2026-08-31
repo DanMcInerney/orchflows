@@ -1,8 +1,8 @@
-"""The scoped runner's own oracle: what ``--scope`` admits, selects, refuses.
+"""The scoped runner's own oracle: what ``--scope`` reports, selects, refuses.
 
 Every unit's completion decision flows through this branch, so its failure
-mode is a false green rather than a red: a scope the shell split, an
-admission over sources the run never named, a selection taken from a tree
+mode is a false green rather than a red: a scope the shell split, a size
+report over sources the run never named, a selection taken from a tree
 the run is not deciding. Each is graded here as a refusal, by name.
 """
 
@@ -66,38 +66,39 @@ class TestScopeSpelling(unittest.TestCase):
         self.assertIn("tools/b.py", str(raised.exception.code))
 
 
-class TestScopedAdmission(unittest.TestCase):
-    """The source-size admission covers what the invocation names.
+class TestScopedSizeReport(unittest.TestCase):
+    """The source-size report covers what the invocation names.
 
-    Measured: one sibling's over-cap committed file failed every unit's
-    scoped oracle on a shared branch, whatever that unit had changed. An
-    admission wider than the run is a red the run did not earn.
+    Measured while the report still blocked: one sibling's over-cap
+    committed file failed every unit's scoped oracle on a shared branch,
+    whatever that unit had changed. The same coverage keeps a warning
+    about this run's sources, never a sibling's.
     """
 
-    def test_a_scoped_run_admits_its_own_paths_only(self):
+    def test_a_scoped_run_reports_its_own_paths_only(self):
         self.assertEqual(
             ["tools/run_tests.py", "tests/test_run_tests.py"],
-            run_tests_scope.admission_paths(
+            run_tests_scope.size_report_paths(
                 "tools/run_tests.py,tests/test_run_tests.py",
                 ["tests.test_run_tests"], True))
 
-    def test_a_whole_suite_run_admits_the_whole_tree(self):
-        self.assertEqual([], run_tests_scope.admission_paths(None, [], True))
+    def test_a_whole_suite_run_reports_the_whole_tree(self):
+        self.assertEqual([], run_tests_scope.size_report_paths(None, [], True))
 
-    def test_an_explicit_module_run_admits_nothing(self):
+    def test_an_explicit_module_run_reports_nothing(self):
         self.assertIsNone(
-            run_tests_scope.admission_paths(None, ["tests.test_run_tests"], True))
+            run_tests_scope.size_report_paths(None, ["tests.test_run_tests"], True))
 
-    def test_a_custom_tests_directory_admits_nothing(self):
-        self.assertIsNone(run_tests_scope.admission_paths(None, [], False))
+    def test_a_custom_tests_directory_reports_nothing(self):
+        self.assertIsNone(run_tests_scope.size_report_paths(None, [], False))
 
-    def test_the_scoped_admission_reads_the_scope_not_the_selected_modules(self):
+    def test_the_scoped_report_reads_the_scope_not_the_selected_modules(self):
         """The modules a scope selected are not the sources it named: the
-        admission is owed over the paths, which is what --scope carries."""
+        report is owed over the paths, which is what --scope carries."""
 
         self.assertEqual(
             ["tools/run_tests_scope.py"],
-            run_tests_scope.admission_paths(
+            run_tests_scope.size_report_paths(
                 "tools/run_tests_scope.py",
                 ["tests.test_run_tests", "tests.test_affected_tests"], True))
 
@@ -208,24 +209,25 @@ class TestSelectionIsAnAnswerNotASample(unittest.TestCase):
         self.assertNotIn("running", stream.getvalue())
 
 
-class TestNothingSelectedStillOwesItsAdmission(unittest.TestCase):
-    """A scope that reaches no module still owes the admission it named.
+class TestNothingSelectedStillOwesItsSizeReport(unittest.TestCase):
+    """A scope that reaches no module still owes the report it named.
 
     Measured at 5f51e54: ``--scope`` over one committed 603-line source no
     test covers printed "no affected module" and exited 0, never reaching
-    the size check -- which the whole-tree admission this branch replaced
-    had run. An admission a run skips is this module's own defect class, a
+    the size check -- which the whole-tree pass this branch replaced had
+    run. A report a run skips is this module's own defect class, a
     narrower question than the caller asked wearing a success status.
     """
 
-    def main_over(self, status):
+    def main_over(self, status, report=b"boom\n"):
         """``main`` on a scope reaching nothing, its size check recorded."""
 
         self.calls = []
+        self.stream = io.StringIO()
 
         def size_check(command, **kwargs):
             self.calls.append(list(command))
-            return subprocess.CompletedProcess(list(command), status, b"over cap\n")
+            return subprocess.CompletedProcess(list(command), status, report)
 
         with mock.patch.object(
             run_tests_scope.affected_tests, "affected",
@@ -233,23 +235,32 @@ class TestNothingSelectedStillOwesItsAdmission(unittest.TestCase):
         ), mock.patch.object(
             run_tests_scope.affected_tests, "git", return_value="scripts/over_cap.py\n"
         ), mock.patch.object(run_tests.subprocess, "run", side_effect=size_check):
-            with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stdout(self.stream):
                 return run_tests.main(["--scope", "scripts/over_cap.py"])
 
-    def test_an_empty_selection_still_admits_the_paths_it_named(self):
+    def test_an_empty_selection_still_reports_the_paths_it_named(self):
+        """A checker that did not run is a red, never a silent green."""
+
         self.assertEqual(1, self.main_over(1))
         self.assertEqual(1, len(self.calls))
         self.assertIn("check_source_sizes.py", self.calls[0][1])
         self.assertIn("scripts/over_cap.py", self.calls[0])
 
-    def test_the_admission_precedes_the_selections_own_exit(self):
-        """``select`` exits 0 the moment a scope reaches no module, so an
-        admission sequenced after it does not run late -- it never runs."""
+    def test_the_report_precedes_the_selections_own_exit(self):
+        """``select`` exits 0 the moment a scope reaches no module, so a
+        report sequenced after it does not run late -- it never runs."""
 
         with self.assertRaises(SystemExit) as raised:
             self.main_over(0)
         self.assertEqual(0, raised.exception.code)
         self.assertEqual(1, len(self.calls))
+
+    def test_a_warning_surfaces_without_failing_the_run(self):
+        warning = b"WARN scripts/over_cap.py: 600 physical lines (presumption 500)\n"
+        with self.assertRaises(SystemExit) as raised:
+            self.main_over(0, report=warning)
+        self.assertEqual(0, raised.exception.code)
+        self.assertIn("WARN scripts/over_cap.py", self.stream.getvalue())
 
 
 if __name__ == "__main__":
