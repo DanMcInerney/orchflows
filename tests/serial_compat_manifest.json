@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2078,
+  "count": 2094,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -921,6 +921,22 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_route",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
+   "test_ticket_bricks.BrickAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
+   "test_ticket_bricks.BrickAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
+   "test_ticket_bricks.BrickAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
+   "test_ticket_bricks.BrickIdGrammarTest.test_a_child_is_minted_under_its_parent_and_sealed_through_it",
+   "test_ticket_bricks.BrickIdGrammarTest.test_a_child_of_an_unsealed_parent_is_refused_with_its_remedy",
+   "test_ticket_bricks.BrickIdGrammarTest.test_a_parentless_brick_roots_its_own_tree_and_seals_itself",
+   "test_ticket_bricks.BrickIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
+   "test_ticket_bricks.BrickLandingTest.test_a_document_brick_lands_on_the_drivers_grade",
+   "test_ticket_bricks.BrickLandingTest.test_a_git_brick_runs_its_done_predicate_at_the_landing",
+   "test_ticket_bricks.BrickLandingTest.test_a_judge_under_a_landed_brick_carries_both_machine_lines",
+   "test_ticket_bricks.BrickPromptTest.test_a_document_brick_is_told_to_print_a_doc_line",
+   "test_ticket_bricks.BrickPromptTest.test_a_git_brick_is_told_to_commit_and_to_print_a_git_line",
+   "test_ticket_bricks.BrickPromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
+   "test_ticket_bricks.BrickPromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
+   "test_ticket_bricks.TypedArtifactGrammarTest.test_a_non_git_join_refuses_an_untyped_identity",
+   "test_ticket_bricks.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_every_active_discrepancy_has_a_routine_canonical_witness",
    "test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_obsolete_gate_fossils_are_absent",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
@@ -2081,7 +2097,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b931f9cf9ed8b1f9c6ae33a8564ec952d7bb481d42ab0798ca4b63f5b23c900e"
+  "sha256": "012dc31a9cfcaee42c1133f1be3047e9f8ba2d617cceb301eb255450abab5840"
  },
  "mutation_owners": [
   {
@@ -4500,6 +4516,31 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_bricks",
+   "owner": "BrickIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_bricks",
+   "owner": "BrickSinkTest.brick",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_bricks",
+   "owner": "BrickSinkTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {

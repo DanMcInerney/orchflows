@@ -86,6 +86,16 @@ the child to invoke and no pack for it to resolve: it hands the paths. The
 public command emits ASCII-escaped canonical JSON, preserving every prompt
 character independently of the subprocess code page.
 
+Three of those lines exist so a parent can read a child's answer without
+paraphrasing it. The child is told to commit its work inside the candidate
+before closing and to name that commit in the closing note; it is told to
+print one verbatim artifact line, `artifact: <kind>:<identity>`, whose kind
+the stamped pack's adapter fixes — `git` a full commit id, `doc` a
+`<path>@sha256:<digest>` over the document bytes at close, `evidence` a store
+id; and a review lane is told to print `findings: <path>` as a second
+verbatim line. The digest a `doc` identity carries is declared, not verified:
+the child computes it, and no door yet recomputes it.
+
 Dispatch refuses `state-inaccessible` when the sink holding the ticket cannot
 be read, `review-invalid` when the ticket's review ledger does not admit this
 lane, and `workspace-unestablished` or `workspace-mismatch` when the named
@@ -131,6 +141,13 @@ itself is never copied. `GatePlan` seals the normalized
 workspace; a code artifact is a full Git commit that resolves to that
 workspace's exact HEAD before launch and after repair.
 
+Every fixed artifact identity a join binds is the typed line its adapter
+fixes, and the prefix is graded wherever the Git one was: a `git-commit`
+adapter still takes `git:<full-commit-id>` and still resolves it against the
+sealed workspace HEAD, a `document-revision` adapter takes `doc:` and an
+`evidence-packet` adapter takes `evidence:`, each non-empty after the colon.
+An untyped identity is refused rather than accepted as prose.
+
 The ordinary checker is a derived `<id>.check` review-stage ticket. It uses
 the same committed launch, outcome, and join as gate review.
 Only `check <run> <id> --stage <id>.check` attaches its authenticated receiver
@@ -144,6 +161,15 @@ dual reader. A claimed or suspended ticket without this record is
 `claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
 and the attempt's `owner` and `opened_at` are the lease — the ticket carries
 no projection of them. History is never inferred or rewritten.
+
+T0 supersession record sha256:e6fb8d96d9fb66051be6abd8a773369a4939b8a0ba896ac0c66604b446870b42:
+artifact identities become typed per adapter, and the prompt gains the three
+lines that make a parent's relay mechanical: commit inside the candidate
+before closing, one verbatim `artifact:` line whose kind the adapter fixes,
+and for a judging lane one verbatim `findings:` line. Every door that bound a
+Git identity now grades the adapter's own prefix instead of accepting any
+non-empty string outside the Git lane. A `doc` identity's digest is declared
+by the child and recomputed nowhere.
 
 T0 supersession record sha256:82cecc2a7e182409496a6ed451f9121bfb990ab0bf7ca9e69012073093f8be67:
 persisted dispatch semantics now close every record kind and stored success,

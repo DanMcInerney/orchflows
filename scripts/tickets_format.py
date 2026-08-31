@@ -107,6 +107,14 @@ DONE_TICKET_SUFFIX = '.done'
 ROUND_ID_RE = re.compile(
     f'^(?P<parent>.+)\\.(?:{ITERATION_MARKER}|{REPAIR_MARKER})\\.(?P<number>\\d+)$'
 )
+# The auto id grammar of the two brick doors. A runtime child is minted
+# under the ticket that called it -- `<parent>.<n>` -- and a parentless one
+# roots its own tree as `B<n>`, so the id alone says where in the call tree a
+# ticket hangs. Ordinals are per parent and never reused inside one run: the
+# door mints under the run lock, which is what makes two concurrent `do`
+# calls under one parent disagree about nothing.
+BRICK_ROOT_ID_RE = re.compile('^B(?P<number>\\d+)$')
+BRICK_CHILD_ID_RE = re.compile('^(?P<parent>.+)\\.(?P<number>\\d+)$')
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
 ESCAPED_NEWLINE_RE = re.compile('\\\\n')
@@ -328,6 +336,39 @@ def round_parent(ticket_id):
         text = text[:-len(DONE_TICKET_SUFFIX)]
     parsed = iteration_of(text)
     return None if parsed is None else parsed[0]
+def brick_ordinal(ticket_id, parent=None):
+    """The ordinal an auto-minted brick id carries under ``parent``, or None.
+
+    ``parent`` empty asks the root question instead: `B3` is ordinal 3 and
+    nothing else is a root brick. A round id (`X.iter.2`) answers None under
+    parent `X`, because its own parent group is `X.iter` -- the two grammars
+    share a suffix and never share an id.
+    """
+    text = str(ticket_id or '')
+    if not str(parent or ''):
+        match = BRICK_ROOT_ID_RE.fullmatch(text)
+        return None if match is None else int(match.group('number'))
+    match = BRICK_CHILD_ID_RE.fullmatch(text)
+    if match is None or match.group('parent') != str(parent):
+        return None
+    return int(match.group('number'))
+def next_brick_id(parent, ticket_ids) -> str:
+    """The next unused auto id under ``parent``, or the next root `B<n>`.
+
+    One past the highest ordinal already present rather than the first gap:
+    a retired or renamed id must never be handed to a second ticket, and the
+    run directory is the whole of what is consulted.
+    """
+    ordinals = [
+        number for number in (
+            brick_ordinal(ticket_id, parent) for ticket_id in ticket_ids or ()
+        ) if number is not None
+    ]
+    number = max(ordinals, default=0) + 1
+    return f'{parent}.{number}' if str(parent or '') else f'B{number}'
+def declared_parent(data) -> str:
+    """The ticket this one was minted under at runtime, or ''."""
+    return dequote(data.get('parent'))
 def parse_done(data):
     """The parsed frontmatter ``done`` predicate of one ticket, or None.
 

@@ -11,8 +11,8 @@ if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_digest
     from .tickets_format import (
         DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
-        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
-        is_loop_stub, is_review_stage_id, round_parent, _executor_of,
+        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
+        dequote, is_loop_stub, is_review_stage_id, round_parent, _executor_of,
         _parse_frontmatter, _set_frontmatter_field,
     )
 else:
@@ -20,8 +20,8 @@ else:
     from tickets_adapters import AdapterError, adapter_spec, pack_digest
     from tickets_format import (
         DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
-        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
-        is_loop_stub, is_review_stage_id, round_parent, _executor_of,
+        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, declared_parent,
+        dequote, is_loop_stub, is_review_stage_id, round_parent, _executor_of,
         _parse_frontmatter, _set_frontmatter_field,
     )
 
@@ -161,6 +161,22 @@ def loop_round_stub(ticket_id: str, siblings) -> str | None:
     return stub_id
 
 
+def post_seal_parent(ticket_id: str, data: dict, siblings) -> str | None:
+    """The sealed ticket whose machinery minted this one after the cut, or None.
+
+    Two spellings of one fact, because the second arrived first. A brick names
+    its caller outright in `parent`; a round names its parent through the id
+    grammar `round_parent` owns, and only where that parent is a loop stub or
+    a landing's own ticket. Both were minted after the cut that sealed the
+    parent, so neither can be a member of it, and both bind their admission
+    through the parent instead.
+    """
+    declared = declared_parent(data)
+    if declared and declared in dict(siblings or {}):
+        return declared
+    return loop_round_stub(ticket_id, siblings)
+
+
 def graph_closed(ticket_id: str, siblings, *evidence) -> bool:
     """Whether a decomposed root yet owes ``graph_findings`` a member count.
 
@@ -183,16 +199,20 @@ def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False
     member-count checks are deferred until a generation is being validated:
     the first root ticket is necessarily issued before its members exist.
 
-    A loop stub's own rounds are dropped before the count: an armed
-    `<stub>.iter.NN` is an id-descendant of its stub by construction, and
-    reading it as a member would refuse every armed loop stub for owning the
-    iterations the loop marker is the licence to arm.  An author-written
-    child of a loop stub matches no round grammar and is still refused.
+    Every post-seal child is dropped before the count: an armed
+    `<stub>.iter.NN` and a brick's `<parent>.<n>` are both id-descendants of
+    the ticket that minted them, and reading either as a member would refuse
+    the parent for owning what its own machinery is the licence to mint. An
+    author-written child that names no parent and matches no round grammar is
+    still refused.
     """
     executor = _executor_of(data)
+    siblings = dict(siblings or {})
     descendants = [
         identifier for identifier in graph_descendants(ticket_id, siblings)
-        if loop_round_stub(identifier, siblings) is None
+        if post_seal_parent(
+            identifier, _parse_frontmatter(siblings[identifier]), siblings,
+        ) is None
     ]
     findings = []
     if executor == ROOT_EXECUTOR:
@@ -256,30 +276,35 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
     return target_id, ordinary_stage_text(run, target_id, target, kind)
 
 
-def sealed_loop_target(ticket_id, text, data, siblings, digest):
-    """The loop stub one lawful post-seal round binds its admission through.
+def sealed_parent_target(ticket_id, text, data, siblings, digest):
+    """The sealed ticket one lawful post-seal child binds its admission through.
 
     The sealed cut names the assignments that existed when it was sealed, and
-    a round exists only afterwards, so a round can never be named there.  What
-    the seal did name is the stub, and a round is lawful exactly when it
-    descends from that stub unaltered: the stub's own `root_generation` and
-    `cut_generation`, and a self-seal that still matches the round's current
-    bytes.  A round whose bytes moved after it was armed fails that last
-    reading and falls through to the sealed-set door, which has never named it
-    and refuses it.
+    a runtime child exists only afterwards, so it can never be named there.
+    What the seal did name is the parent, and a child is lawful exactly when
+    it descends from that parent unaltered: the parent's own
+    `root_generation` and `cut_generation`, and a self-seal that still matches
+    the child's current bytes.  A child whose bytes moved after it was minted
+    fails that last reading and falls through to the sealed-set door, which
+    has never named it and refuses it.
+
+    Written for a loop's rounds and generalized to every runtime child by the
+    brick doors: `do` and `judge` mint under a sealed parent for the same
+    reason `loop-arm` did, and the parentage the id used to imply is now
+    declared.
     """
-    stub_id = loop_round_stub(ticket_id, siblings)
-    if stub_id is None:
+    parent_id = post_seal_parent(ticket_id, data, siblings)
+    if parent_id is None:
         return None
-    stub = _parse_frontmatter(siblings[stub_id])
+    parent = _parse_frontmatter(siblings[parent_id])
     if any(
-        str(data.get(field) or "") != str(stub.get(field) or "")
+        str(data.get(field) or "") != str(parent.get(field) or "")
         for field in ("cut_generation", "root_generation")
     ):
         return None
     if str(data.get("assignment_seal") or "") != digest(ticket_id, text):
         return None
-    return stub_id
+    return parent_id
 
 
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
@@ -345,7 +370,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             review_target = _ordinary_review_target(
                 ticket_id, data, dependencies, siblings,
             )
-            loop_stub = sealed_loop_target(
+            sealed_parent = sealed_parent_target(
                 ticket_id, text, data, siblings, assignment_digest,
             )
             if review_target is not None:
@@ -375,12 +400,12 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                         "ordinary repair or verification assignment differs from "
                         "the canonical checked-target continuation",
                     ))
-            elif loop_stub is not None:
-                stub = _parse_frontmatter(siblings[loop_stub])
-                if sealed_assignments.get(loop_stub) != stub.get("assignment_seal"):
+            elif sealed_parent is not None:
+                parent = _parse_frontmatter(siblings[sealed_parent])
+                if sealed_assignments.get(sealed_parent) != parent.get("assignment_seal"):
                     findings.append(finding(
-                        "sealed-loop-stub-mismatch", "assignment_seal",
-                        "sealed state does not bind the loop stub this round was armed from",
+                        "sealed-parent-mismatch", "assignment_seal",
+                        "sealed state does not bind the parent this child was minted under",
                     ))
             elif sealed_assignments.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed state does not bind this assignment"))
@@ -456,5 +481,6 @@ __all__ = (
     "ADMISSION_PENDING", "RESULT_BEARING_STATES", "adapter_id",
     "binding_findings", "dependency_order_findings", "finding",
     "graph_findings", "grade_admission", "is_receipt", "loop_round_stub",
-    "pinned_digest_finding", "refresh_admissions", "sealed_loop_target",
+    "pinned_digest_finding", "post_seal_parent", "refresh_admissions",
+    "sealed_parent_target",
 )

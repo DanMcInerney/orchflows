@@ -19,6 +19,13 @@ class Adapter:
 
     key: str
     identity_form: str
+    # The prefix of the one verbatim artifact line a child of this adapter's
+    # pack prints, and the prefix every door that binds a fixed identity
+    # grades: `git:<full-commit-id>`, `doc:<path>@sha256:<digest>`,
+    # `evidence:<store-id>`. `identity_form` names the *thing*; this names
+    # how the line spells it, and the two are not the same string because a
+    # prefix is typed for a reader and a form is named for a human.
+    artifact_kind: str
     establishes_isolation: bool
     deterministic_gate: bool
     conflict_semantics: str
@@ -29,6 +36,7 @@ ADAPTER_REGISTRY = {
     "document-tree": Adapter(
         key="document-tree",
         identity_form="document-revision",
+        artifact_kind="doc",
         establishes_isolation=False,
         deterministic_gate=False,
         conflict_semantics="section-overlap",
@@ -37,6 +45,7 @@ ADAPTER_REGISTRY = {
     "evidence-store": Adapter(
         key="evidence-store",
         identity_form="evidence-packet",
+        artifact_kind="evidence",
         establishes_isolation=True,
         deterministic_gate=False,
         conflict_semantics="append-only-lanes",
@@ -45,6 +54,7 @@ ADAPTER_REGISTRY = {
     "git": Adapter(
         key="git",
         identity_form="git-commit",
+        artifact_kind="git",
         establishes_isolation=True,
         deterministic_gate=True,
         conflict_semantics="git-overlap",
@@ -53,6 +63,7 @@ ADAPTER_REGISTRY = {
     "git-plus-render": Adapter(
         key="git-plus-render",
         identity_form="view-identity",
+        artifact_kind="git",
         establishes_isolation=True,
         deterministic_gate=True,
         conflict_semantics="view-overlap",

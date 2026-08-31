@@ -6,6 +6,7 @@ from pathlib import Path
 
 if __package__:
     from .tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
+    from .tickets_brick import DO_USAGE, JUDGE_USAGE
     from .tickets_issue import NEW_USAGE
     from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
@@ -19,6 +20,8 @@ if __package__:
     from .tickets_loop import LOOP_ADVANCE_USAGE, LOOP_ARM_USAGE, LOOP_EVALUATE_USAGE
 else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
+    _brick = __import__('tickets_brick')
+    DO_USAGE, JUDGE_USAGE = (_brick.DO_USAGE, _brick.JUDGE_USAGE)
     from tickets_issue import NEW_USAGE
     from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
@@ -52,6 +55,8 @@ BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
 STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
 SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
+    "do": DO_USAGE,
+    "judge": JUDGE_USAGE,
     "instantiate": INSTANTIATE_USAGE,
     "gate": GATE_USAGE,
     "grade": GRADE_USAGE,
@@ -85,6 +90,8 @@ SUBCOMMAND_USAGE = {
 }
 SUBCOMMAND_SUMMARY = {
     "new": "Create one Goal/Context ticket; Details is the planner's optional free-form guidance.",
+    "do": "Mint, seal, establish, and launch one artifact-making brick under its parent.",
+    "judge": "Mint, seal, establish, and launch one read-only brick over the typed artifacts it is handed.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
     "gate": "Create a composite gate, or materialize repair and fresh verification after an ordinary checker accepts blockers.",
     "grade": "Report deterministic width, shape, pack coverage, adapter capability, and decomposition state.",
@@ -128,6 +135,7 @@ VALUE_FLAGS = frozenset({
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
     "--outcome-record-id", "--status", "--stage",
+    "--goal-file", "--details-file", "--parent", "--done", "--artifacts",
     "--accepted-file", "--review-kind", "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
     "--host", "--outcome-file",

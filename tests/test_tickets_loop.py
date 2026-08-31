@@ -268,7 +268,7 @@ class LoopRoundAdmissionTest(LoopSinkTest):
             stub.read_text(encoding="utf-8"), "assignment_seal",
             "sha256:" + "0" * 64,
         ), encoding="utf-8")
-        self.assertIn("sealed-loop-stub-mismatch", self._codes("L1.iter.1"))
+        self.assertIn("sealed-parent-mismatch", self._codes("L1.iter.1"))
 
 
 class LoopCheckRoundAdmissionTest(LoopSinkTest):

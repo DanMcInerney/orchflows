@@ -157,6 +157,7 @@ class AdapterRegistryTest(unittest.TestCase):
         adapter = tickets_mod.Adapter(
             key="synthetic",
             identity_form="git-commit",
+            artifact_kind="git",
             establishes_isolation=True,
             deterministic_gate=True,
             conflict_semantics="synthetic-overlap",
