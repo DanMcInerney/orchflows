@@ -97,6 +97,7 @@ from ._support.reddit_shreddit_contract import (
     cursor_in,
     exact_count,
     fullname,
+    origin_time_bucket,
     post_locator,
     route_instant_to_utc_iso,
     subreddit_of,
@@ -244,10 +245,10 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     operation, argument = operation_for(request)
     try:
         if operation == LISTING_OPERATION:
-            return _fetch_listing(carrier, argument, request.cursor)
+            return _fetch_listing(carrier, argument, request)
         if operation == COMMENTS_OPERATION:
             return _fetch_comments(carrier, argument)
-        return _fetch_search(carrier, argument, request.cursor)
+        return _fetch_search(carrier, argument, request)
     except ShredditError as error:
         return build_native_page(
             DESCRIPTOR,
@@ -259,15 +260,33 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
         )
 
 
+def _origin_window(argument_window: str, request: AdapterRequest) -> str:
+    """The `t=` this call sends: the step's own window, or the query's.
+
+    A windowed discovery step's `window_start`/`window_end` (`AdapterRequest`'s
+    own fields, per its docstring "the step's own bounds") take the origin's
+    `t=` over anything the caller's target string names — `origin_time_bucket`
+    is the derivation, `_support/reddit_shreddit_contract.py`'s. Absent that
+    step-level window, the caller's own `:t=<window>`/embedded window keeps
+    deciding exactly as it always has: an unwindowed step is byte-for-byte the
+    request it always sent.
+    """
+
+    if request.window_start:
+        return origin_time_bucket(request.window_start, request.window_end)
+    return argument_window
+
+
 def _fetch_listing(
-    carrier: transport.Transport, argument: str, cursor: str
+    carrier: transport.Transport, argument: str, request: AdapterRequest
 ) -> NativePage:
     subreddit, sort, window = listing_target(argument)
     params: Dict[str, str] = {"sort": sort, "name": subreddit}
-    if window:
-        params["t"] = window
-    if cursor:
-        params[AFTER_PARAM] = cursor
+    origin_window = _origin_window(window, request)
+    if origin_window:
+        params["t"] = origin_window
+    if request.cursor:
+        params[AFTER_PARAM] = request.cursor
     return fetch_one_page(
         DESCRIPTOR,
         carrier,
@@ -277,16 +296,17 @@ def _fetch_listing(
     )
 
 
-def _fetch_search(carrier: transport.Transport, argument: str, cursor: str) -> NativePage:
+def _fetch_search(carrier: transport.Transport, argument: str, request: AdapterRequest) -> NativePage:
     subreddit, query, sort, window = search_target(argument)
     descriptor = SUBREDDIT_SEARCH_DESCRIPTOR if subreddit else SEARCH_DESCRIPTOR
     params: Dict[str, str] = {"q": query, "type": "posts", "sort": sort}
     if subreddit:
         params["subreddit"] = subreddit
-    if window:
-        params["t"] = window
-    if cursor:
-        params[CURSOR_PARAM] = cursor
+    origin_window = _origin_window(window, request)
+    if origin_window:
+        params["t"] = origin_window
+    if request.cursor:
+        params[CURSOR_PARAM] = request.cursor
 
     def parse(response: transport.TransportResponse) -> NativePage:
         return _search_page(descriptor, response)

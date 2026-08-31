@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-from typing import Any, Mapping, Tuple
+from datetime import datetime, timezone
+from typing import Any, Mapping, Optional, Tuple
 
 from .. import transport
 from . import AdapterRequest, NativePage, fetch_one_page
@@ -143,6 +144,70 @@ def transcript_target(argument: str) -> Tuple[str, str]:
     return (video_id.strip(), language.strip())
 
 
+def _instant_seconds(stamped: str) -> Optional[int]:
+    """One manifest instant as whole UTC seconds, or nothing unparseable.
+
+    A local parser rather than a shared one, matching another
+    origin-adjacent adapter module's own tiny parser of the same name: each
+    owns its own rather than reaching into `ordering`, which stays a
+    core-only import.
+    """
+
+    if not stamped:
+        return None
+    try:
+        moment = datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return int(moment.timestamp())
+
+
+# Upload-date filter values, measured live 2026-08-31 against `search` with a
+# query returning results old enough to show each boundary: every returned
+# `publishedTimeText` stayed inside the named span (hour: minutes-scale;
+# today: up to "1 day ago"; week: up to "7 days ago"; month: up to "1 month
+# ago"; year: up to "11 months ago"), against an unfiltered baseline whose
+# oldest result was nine years old. The value is base64 protobuf this
+# module never decodes or builds — it is the origin's own opaque term, spent
+# verbatim, the same way a cursor is.
+_UPLOAD_DATE_SPANS = (
+    ("EgIIAQ==", 3600),
+    ("EgIIAg==", 86400),
+    ("EgIIAw==", 7 * 86400),
+    ("EgIIBA==", 30 * 86400),
+    ("EgIIBQ==", 365 * 86400),
+)
+
+
+def origin_upload_date_filter(window_start: str, window_end: str) -> str:
+    """The `search` filter value that still reaches `window_start`, or nothing.
+
+    A pure function of the step's two instants, imitating the shape's
+    exemplar's three properties: it lives beside this adapter, it returns
+    the origin's own term, and it returns nothing when there is no bound to
+    state. Like a comparable adapter's own bucket, this filter is a span
+    measured back from *now* rather than from an explicit endpoint — there
+    is no origin term for "before a date" at all, only "within the last
+    span" — so `window_end` plays no part in the answer, and a window whose
+    oldest edge is more than a year back gets no filter at all: the ladder's
+    widest rung is "This year", and sending nothing already reaches further
+    than that.
+    """
+
+    del window_end  # Documented above: the filter is a span back from "now".
+    start_seconds = _instant_seconds(window_start)
+    if start_seconds is None:
+        return ""
+    now_seconds = _instant_seconds(transport.utc_now_iso())
+    if now_seconds is None:
+        return ""
+    age = now_seconds - start_seconds
+    for value, span in _UPLOAD_DATE_SPANS:
+        if age <= span:
+            return value
+    return ""
+
+
 def fetch_native_page(
     carrier: transport.Transport, request: AdapterRequest
 ) -> NativePage:
@@ -193,6 +258,9 @@ def fetch_native_page(
         params["continuation"] = request.cursor
     elif operation == SEARCH_OPERATION:
         params["query"] = argument
+        upload_date_filter = origin_upload_date_filter(request.window_start, request.window_end)
+        if upload_date_filter:
+            params["params"] = upload_date_filter
     else:
         params["video_id"] = argument
 

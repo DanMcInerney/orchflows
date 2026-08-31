@@ -278,6 +278,13 @@ K1_K4_ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
             ("query", ("query",)),
             ("video_id", ("videoId",)),
             ("continuation", ("continuation",)),
+            # `search`'s upload-date filter, measured live 2026-08-31 (R.02):
+            # an opaque origin-published value, spent verbatim like a cursor
+            # is, never decoded or built here. Added because a param outside
+            # this closed list is appended as a query string instead
+            # (`_support/transport_request.py`), which is not where this
+            # route reads a filter.
+            ("params", ("params",)),
         ),
     ),
     # The 2026-08-10 probes (Instagram): `api/v1/users/web_profile_info/?username=`
