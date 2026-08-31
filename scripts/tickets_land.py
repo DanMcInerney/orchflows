@@ -148,6 +148,16 @@ def _candidate(run: str, ticket_id: str):
     return workspace_candidate
 
 
+def _recorded_workspace(data: dict):
+    """The tree the establishment recorded on this attempt, or ``None``."""
+
+    if __package__:
+        from . import workspace_record
+    else:  # pragma: no cover - the flat installed layout
+        import workspace_record
+    return workspace_record.attempt_workspace(data)
+
+
 def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
     """Merge the candidate into the tree the run stands on, or say why not.
 
@@ -169,7 +179,10 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
     if not _derived_isolation(data):
         return {"step": "workspace-integrate", "outcome": SKIPPED, "reason": "not isolated"}
     try:
-        response, _code = _candidate(run, ticket_id).integrate(run, ticket_id)
+        candidate = _candidate(run, ticket_id)
+        response, _code = candidate.integrate(
+            run, ticket_id, _recorded_workspace(data), data.get("workspace_branch"),
+        )
     except Exception as error:  # `Refused`, and anything git surprised us with
         return {"step": "workspace-integrate", "outcome": "refused", "error": str(error)}
     body = response.get("integrate") if isinstance(response, dict) else None
@@ -211,6 +224,14 @@ def _retire_workspace(run: str, ticket_id: str, status: str, data: dict) -> dict
     return {"step": "workspace-retire", "outcome": "removed", "response": response}
 
 
+def _done_outcome(decision: dict) -> str:
+    """What the predicate step did, in the one word the step report carries."""
+
+    if decision.get("form") is None:
+        return "graded"
+    return decision.get("action") or "checked"
+
+
 def _land_transaction(run, ticket_id, identity, outcome_file, accepted_file,
                       artifact, driver_status):
     """The state acts, in order, under the caller's one run lock."""
@@ -244,8 +265,9 @@ def _land_transaction(run, ticket_id, identity, outcome_file, accepted_file,
     )
     if refusal is not None:
         return refusal
-    steps.append({"step": "done", **{
-        key: value for key, value in decision.items() if key != "reading"
+    steps.append({"step": "done", "outcome": _done_outcome(decision), **{
+        key: value for key, value in decision.items()
+        if key not in ("reading", "action")
     }})
     if decision["status"] is None:
         # Nothing to join: a minted check is still out, or a repair round was

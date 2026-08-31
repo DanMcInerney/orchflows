@@ -417,6 +417,11 @@ def advance_action(run_dir, parent_id: str, marker: str, done: bool) -> dict:
     numbered = iterations(run_dir, parent_id, marker)
     if done:
         return {"action": "close", "status": "complete"}
+    if numbered and str(numbered[-1][2].get("status")) not in TERMINAL_STATES:
+        # The standing round has not landed. Naming it again is the replay
+        # `loop-arm` already answers with, and counting past it would arm a
+        # second round against the same unanswered one.
+        return {"action": "arm", "next": numbered[-1][0]}
     delivered = [
         item for item in numbered if str(item[2].get("status")) in TERMINAL_STATES
     ]

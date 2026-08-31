@@ -387,14 +387,16 @@ def launch_prompt(assignment: dict) -> str:
                  "--section", "SECTION", "--file", "PATH", "--append"),
         _command(sys.executable, script, "result", run, ticket_id, *identity,
                  "--section", "SECTION", "--text", "TEXT", "--append"),
-        f"Close exactly once with the reserved `{OUTCOME_RECORD_ID}` envelope. "
+        f"Close exactly once with the reserved `{OUTCOME_RECORD_ID}` envelope, "
+        "the closing delta and nothing else: it names no status, because what "
+        "this ticket became is checked at the join and never claimed here. "
         f"Write it to a file with {CANONICAL_DUMP}, then:",
         _command(sys.executable, script, "dispatch-outcome", run, ticket_id,
                  "--file", "PATH"),
         f"The envelope names protocol {PROTOCOL}, run {run}, id {ticket_id}, "
         f"assignment_seal {assignment['assignment_seal']}, dispatch_id "
         f"{assignment['dispatch_id']}, outcome_record_id {OUTCOME_RECORD_ID}, by "
-        f"{assignment['assigned_name']}, status, and evidence with "
+        f"{assignment['assigned_name']}, and evidence with "
         f"{', '.join(EXECUTOR_SECTIONS)}.",
     ]
     return "\n".join(lines)

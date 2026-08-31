@@ -234,8 +234,12 @@ def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
     )
     if refusal is not None:
         return None, refusal
+    # `outcome_detail`, not `outcome`: the step report's own `outcome` says
+    # what the predicate did, and a second key spelled the same would take
+    # its place on the way out.
     return dict(
-        decision, status=None, action="arm", repair=repair_id, outcome=outcome,
+        decision, status=None, action="arm", repair=repair_id,
+        outcome_detail=outcome,
     ), None
 
 

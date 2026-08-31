@@ -395,7 +395,7 @@ def prepare(run: str, ticket_id: str):
     }, EXIT_OK
 
 
-def integrate(run: str, ticket_id: str):
+def integrate(run: str, ticket_id: str, workspace, branch):
     """Merge this item's candidate branch into the tree the run stands in.
 
     The step `land` used to leave for hand git, which is how a run once
@@ -405,19 +405,34 @@ def integrate(run: str, ticket_id: str):
     tree that named it does not, and the ordering is the whole reason this
     lives beside `retire` rather than after it.
 
+    The tree and the branch are the establishment's own records, handed in
+    rather than re-derived here. `retire` may re-derive because a spent path
+    answers for an archived ticket; a merge may not, because the only branch
+    it is lawful to merge is the one this attempt actually stood on.
+
     A conflict is refused, not resolved and not left half-applied: the merge
     is aborted so the run's own checkout is never handed back mid-merge, and
     the refusal names the conflicted paths and the one remedy -- resolve
     them in the candidate, then land again. Replaying is free: git answers
     an already-merged branch with an unchanged HEAD, which is reported as a
     replay rather than as a second merge.
+
+    Anything the records do not resolve to a linked worktree of a readable
+    repository is `absent`, never an error: an item that ran in the caller's
+    own checkout has nothing to merge into it.
     """
 
-    candidate = state_root.candidate_paths(run, ticket_id)
-    target, branch = candidate["path"], candidate["branch"]
-    body = {"run": run, "id": ticket_id, PATH_KEY: str(target), BRANCH_KEY: branch}
-    main = state_root.main_checkout_root(target / ".git") if target.exists() else None
-    if main is None or _branch_tip(main, branch) is None:
+    target = Path(str(workspace or "")).expanduser() if workspace else None
+    branch = str(branch or "").strip()
+    body = {
+        "run": run, "id": ticket_id,
+        PATH_KEY: None if target is None else str(target), BRANCH_KEY: branch or None,
+    }
+    main = (
+        state_root.main_checkout_root(target / ".git")
+        if branch and target is not None and (target / ".git").is_file() else None
+    )
+    if main is None or not Path(main).is_dir() or _branch_tip(main, branch) is None:
         return {"integrate": dict(body, outcome="absent")}, EXIT_OK
     read_main = _git_out(main)
     before = read_main("rev-parse", "HEAD")
