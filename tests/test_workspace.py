@@ -16,6 +16,11 @@ from tests.test_workspace_cases.cli_cases import (  # noqa: F401
     NoFormatCallsTest,
     TestHelpAndVantage,
 )
+from tests.test_workspace_cases.document_cases import (  # noqa: F401
+    TestTheDocumentLaneObservesTheTreeItStandsIn,
+    TestTheRefusalSurvivesForWhatCannotBeGiven,
+    TestTheTrunkDispatchesAndLandsADocumentItem,
+)
 from tests.test_workspace_cases.contract_cases import (  # noqa: F401
     TestContractKeySeam,
     TestScriptShape,
