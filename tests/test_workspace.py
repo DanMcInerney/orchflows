@@ -29,6 +29,11 @@ from tests.test_workspace_cases.emission_cases import (  # noqa: F401
     TestBaselineIsWrittenOnce,
     TestBytecodeIsEmissionNotBreach,
 )
+from tests.test_workspace_cases.integration_cases import (  # noqa: F401
+    TestARefusedRetirementNeverPrescribesForce,
+    TestAnUncommittedDeliveryIsNotAReplay,
+    TestTheRunOwnsWhereItsWorkIsIntegrated,
+)
 from tests.test_workspace_cases.grade_cases import (  # noqa: F401
     RuntimeInterpreterBoundaryTests,
     TestCheckGradesFromTheCallersGit,

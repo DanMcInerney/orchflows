@@ -94,6 +94,7 @@ import tickets  # noqa: E402  frontmatter and isolation, imported and never copi
 workspace_git = __import__("workspace_git")
 workspace_candidate = __import__("workspace_candidate")
 workspace_record = __import__("workspace_record")
+workspace_return = __import__("workspace_return")
 # Re-exported, never respelled: the names are declared beside the writes and
 # the refusals that use them, and this facade is where a reader looks them up.
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -267,7 +268,7 @@ def _cmd_retire(rest):
     run, ticket_id = _positional(
         [argument for argument in rest if argument != "--force"], 2, "retire"
     )
-    return workspace_candidate.retire(run, ticket_id, force=force)
+    return workspace_return.retire(run, ticket_id, force=force)
 
 def _extract_flag(args: list, flag: str):
     if flag in args:
@@ -389,15 +390,12 @@ def _cmd_check(rest):
                 f"recorded workspace_path {Path(recorded_workspace).resolve()}",
                 EXIT_ISOLATION_MISSING,
             )
-        dirty = workspace_git.dirty_paths(str(ticket_worktree))
-        # Emission, not the item's change: an acceptance oracle imports the
-        # tree it grades and CPython writes bytecode beside it, so counting
-        # those bytes fails the item for having been verified. By path shape,
-        # never by tracked status -- the verdict this replaced fired on
-        # bytecode a frozen baseline tracked. Reported, never dropped.
-        emitted = sorted(name for name in dirty
-                         if name.endswith((".pyc", ".pyo")) or "__pycache__" in name.split("/"))
-        dirty = sorted(set(dirty) - set(emitted))
+        # Emission is not the item's change, and the rule that says which is
+        # which belongs to one owner: the landing grades the same dirty set.
+        # Reported, never dropped.
+        dirty, emitted = workspace_git.emission_split(
+            workspace_git.dirty_paths(str(ticket_worktree))
+        )
         if emitted:
             reported["emission"] = emitted
         if dirty:

@@ -383,6 +383,71 @@ def _terminal_identity_update(run: str, ticket_id: str, status: str, now):
     updated = dict(existing)
     updated.update({'terminal_at': terminal_stamp, 'terminal_ticket_id': ticket_id, 'terminal_status': status, 'elapsed_ms': max(0, int((terminal_at - opened_at).total_seconds() * 1000))})
     return (run_dir, updated, None)
+INTEGRATION_KEY = 'integration'
+
+
+def integration_target(run: str):
+    """``{'root', 'branch', 'first_seen'}`` this run integrates into, or ``None``.
+
+    One owner for the question `land` used to answer by reading whatever
+    branch the repository happened to have checked out. It is a fact about
+    the run, so it lives on the run's own document beside ``project`` --
+    not on a ticket, where each item would carry its own answer.
+    """
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return None
+    existing, error = _read_identity(runs_root / run / RUN_IDENTITY_NAME)
+    if error is not None or not isinstance(existing, dict):
+        return None
+    recorded = existing.get(INTEGRATION_KEY)
+    if not isinstance(recorded, dict):
+        return None
+    root, branch = recorded.get('root'), recorded.get('branch')
+    if not isinstance(root, str) or not root.strip():
+        return None
+    if not isinstance(branch, str) or not branch.strip():
+        return None
+    return {'root': root, 'branch': branch, 'first_seen': recorded.get('first_seen')}
+
+
+def record_integration_target(run: str, root: str, branch: str, now=None):
+    """Write where this run's work belongs, once. Later callers only read.
+
+    First establishment wins, and nothing rewrites it: the target is the
+    checkout and branch the run is being driven from, and a run whose
+    driver later moves that checkout has not thereby moved where its work
+    belongs -- ``workspace_return.integrate`` refuses the divergence rather
+    than following it. The caller holds the run lock, the same one
+    ``workspace_git._record`` stamps a ticket under.
+    """
+
+    runs_root = _runs_root()
+    if runs_root is None:
+        return None
+    run_dir = runs_root / run
+    existing, error = _read_identity(run_dir / RUN_IDENTITY_NAME)
+    if error is not None:
+        return None
+    recorded = integration_target(run)
+    if recorded is not None:
+        return recorded
+    now = datetime.now(timezone.utc) if now is None else now
+    target = {'root': str(root), 'branch': str(branch),
+              'first_seen': now.strftime(UTC_STAMP)}
+    document = dict(existing or {})
+    document.setdefault('run', run)
+    document.setdefault('sink_convention', SINK_CONVENTION)
+    document[INTEGRATION_KEY] = target
+    try:
+        run_dir.mkdir(parents=True, exist_ok=True)
+        _write_identity(run_dir, document)
+    except OSError:
+        return None
+    return target
+
+
 REPAIR_RUN_IDENTITY_USAGE = 'repair-run-identity <run>'
 CORRUPT_IDENTITY_MARKER = '.corrupt-'
 QUARANTINE_STAMP = '%Y%m%dT%H%M%SZ'

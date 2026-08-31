@@ -49,9 +49,11 @@ else:
 if __package__:
     from .tickets_review import REVIEW_FIELD, ReviewError, launch_state, repair_outcome, review_records, state_from_text
     from .tickets_dispatch_schema import state as _dispatch_state
+    from .tickets_dispatch_schema import status_ownership_returned
 else:
     from tickets_review import REVIEW_FIELD, ReviewError, launch_state, repair_outcome, review_records, state_from_text
     from tickets_dispatch_schema import state as _dispatch_state
+    from tickets_dispatch_schema import status_ownership_returned
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --stage <id.check>'
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
@@ -393,7 +395,12 @@ def _set_status_under_run_lock(rest, *, ticket_path=None):
     if failure is not None:
         return failure
     data = _parse_frontmatter(text)
-    if data.get('dispatch_v1'):
+    # The one exception is a lifecycle that never started executing: a lone
+    # attempt opened and retired before any launch owns a status it has no
+    # way to release, and the ticket is wedged -- no join can exist without
+    # an outcome, and retirement refuses an already-ended attempt. Its
+    # width is `status_ownership_returned`'s, beside the records it reads.
+    if data.get('dispatch_v1') and not status_ownership_returned(data):
         return _classification(
             'dispatch-join-required',
             'dispatch-v1 lifecycle is owned by dispatch-open, dispatch-replace, dispatch-retire, and dispatch-join',

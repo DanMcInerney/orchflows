@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2065,
+  "count": 2078,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -150,7 +150,10 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
    "test_dispatch_v1.DispatchV1Test.test_a_claim_without_a_dispatch_record_is_refused",
    "test_dispatch_v1.DispatchV1Test.test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten",
+   "test_dispatch_v1.DispatchV1Test.test_a_second_attempt_keeps_its_status_with_the_join",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
+   "test_dispatch_v1.DispatchV1Test.test_an_attempt_that_launched_keeps_its_status_with_the_join",
+   "test_dispatch_v1.DispatchV1Test.test_an_attempt_that_never_launched_hands_its_status_back",
    "test_dispatch_v1.DispatchV1Test.test_an_exact_reopen_replays_before_the_assignment_seal_is_graded",
    "test_dispatch_v1.DispatchV1Test.test_committed_record_replay_precedes_conflict_retirement_and_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
@@ -1966,7 +1969,6 @@
    "tests.test_workspace_cases.candidate_cases.TestOwnershipOfTheEstablishmentLanes.test_only_state_root_derives_a_candidate_path_or_branch",
    "tests.test_workspace_cases.candidate_cases.TestOwnershipOfTheEstablishmentLanes.test_the_candidate_owner_never_imports_the_workspace_facade",
    "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_a_directory_that_is_no_worktree_is_refused_naming_the_manual_step",
-   "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_a_tree_with_uncommitted_bytes_is_kept_unless_force_is_given",
    "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_it_removes_the_tree_and_leaves_every_stamp_that_names_it",
    "tests.test_workspace_cases.candidate_cases.TestRetireRemovesTheDerivedCandidate.test_retiring_a_tree_that_was_never_created_is_a_no_op",
    "tests.test_workspace_cases.cli_cases.NoFormatCallsTest.test_workspace_py_contains_no_format_calls",
@@ -2008,6 +2010,17 @@
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_an_absolute_scope_entry_inside_the_repository_is_normalized",
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_check_passes_after_the_linked_tree_is_removed",
    "tests.test_workspace_cases.grade_cases.TestVerdictSurvivesCleanupAndScopeIsSegmentExact.test_the_same_scope_entry_takes_its_own_segment",
+   "tests.test_workspace_cases.integration_cases.TestARefusedRetirementNeverPrescribesForce.test_the_flag_a_caller_passes_deliberately_still_works",
+   "tests.test_workspace_cases.integration_cases.TestARefusedRetirementNeverPrescribesForce.test_uncommitted_work_is_named_with_the_act_that_preserves_it",
+   "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_clean_candidate_carrying_no_commits_still_replays",
+   "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_dirty_candidate_carrying_no_commits_is_refused",
+   "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_a_dirty_candidate_that_does_carry_commits_still_merges",
+   "tests.test_workspace_cases.integration_cases.TestAnUncommittedDeliveryIsNotAReplay.test_bytecode_beside_a_replay_is_emission_and_not_a_delivery",
+   "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_a_checkout_that_moved_off_the_recorded_branch_is_refused",
+   "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_a_later_establishment_never_moves_the_recorded_target",
+   "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_a_run_that_recorded_no_target_is_refused_with_the_establishment",
+   "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_the_first_establishment_records_the_target_on_the_run",
+   "tests.test_workspace_cases.integration_cases.TestTheRunOwnsWhereItsWorkIsIntegrated.test_the_recorded_branch_is_merged_and_reported_as_the_target",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_exact_create_change_and_delete_plan_passes",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_still_present_isolated_worktree_must_have_no_dirty_oracle_bytes",
    "tests.test_workspace_cases.operation_cases.TestJoinGradesActualOperations.test_write_prefix_covers_every_actual_operation_below_it",
@@ -2068,7 +2081,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "8c2e9bcb6972d145b712d2beb7b87547d623afb4e07625f91c8dc7bb34cfab58"
+  "sha256": "b931f9cf9ed8b1f9c6ae33a8564ec952d7bb481d42ab0798ca4b63f5b23c900e"
  },
  "mutation_owners": [
   {

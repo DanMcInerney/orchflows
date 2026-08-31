@@ -134,7 +134,7 @@ def _derived_isolation(data: dict) -> bool:
 
 
 def _candidate(run: str, ticket_id: str):
-    """`workspace_candidate`, imported at call time.
+    """`workspace_return`, imported at call time.
 
     The flat installed layout fixes no import order between the ticket and
     workspace families, and this is the one call `land` makes into the
@@ -142,10 +142,10 @@ def _candidate(run: str, ticket_id: str):
     """
 
     if __package__:
-        from . import workspace_candidate
+        from . import workspace_return
     else:  # pragma: no cover - the flat installed layout
-        import workspace_candidate
-    return workspace_candidate
+        import workspace_return
+    return workspace_return
 
 
 def _recorded_workspace(data: dict):

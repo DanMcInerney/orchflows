@@ -353,6 +353,36 @@ def state(data: dict):
     return parsed, None
 
 
+def status_ownership_returned(data: dict) -> bool:
+    """Whether this ticket's dispatch lifecycle ever took its status.
+
+    A ticket wedged on 2026-08-31 asked the question: its one attempt was
+    opened and self-retired before any launch, and after that nothing
+    could move it. `set-status` refused `dispatch-join-required`,
+    `dispatch-retire` refused `stale-attempt` on the ended attempt, and no
+    join could exist because there was no outcome for one to consume. The
+    lifecycle owns a status it never started executing.
+
+    The door is exactly as wide as that: one attempt, ended, carrying
+    nothing but its own lifecycle records. A launch record, a result, an
+    outcome or a join is real execution evidence, and a ticket holding any
+    of them keeps its status with the join that has to read them --
+    including a second attempt, whose existence says something was retried
+    rather than never begun.
+    """
+
+    parsed, failure = stored_state(data)
+    if failure is not None or not isinstance(parsed, dict):
+        return False
+    attempts = parsed.get("attempts") or []
+    if len(attempts) != 1 or attempts[0].get("state") == "live":
+        return False
+    return all(
+        record.get("kind") == "lifecycle"
+        for record in attempts[0].get("records") or []
+    )
+
+
 def attempt_window(data: dict):
     """Return the current attempt's immutable clock from validated state.
 
