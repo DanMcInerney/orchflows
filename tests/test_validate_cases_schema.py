@@ -135,6 +135,9 @@ from tests.test_validate_cases_schema_cases.coverage import (  # noqa: E402,F401
     CoverageTeethTest,
 )
 from tests.test_validate_cases_schema_cases.deseal import DesealToolTest  # noqa: E402,F401
+from tests.test_validate_cases_schema_cases.probe_load import (  # noqa: E402,F401
+    ProbeHostLoadTest,
+)
 from tests.test_validate_cases_schema_cases.retired_seal import (  # noqa: E402,F401
     RetiredSealTest,
 )

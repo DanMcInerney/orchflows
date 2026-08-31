@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1990,
+  "count": 1997,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -702,6 +702,8 @@
    "test_run_required.TestWhatIsNeverStored.test_a_tree_changed_by_the_checks_themselves_is_not_stored",
    "test_run_required.TestWhatIsNeverStored.test_an_unreadable_entry_is_never_served",
    "test_run_tests.TestCaseTreeReach.test_every_case_module_is_imported_by_the_chain_discovery_starts",
+   "test_run_tests.TestChildEnv.test_a_parallel_dispatch_declares_its_worker_count",
+   "test_run_tests.TestChildEnv.test_a_serial_dispatch_declares_nothing_beyond_stdio",
    "test_run_tests.TestChildEnv.test_every_other_variable_survives",
    "test_run_tests.TestChildEnv.test_the_childs_stdio_is_pinned_to_utf8",
    "test_run_tests.TestEmit.test_a_stdout_with_no_byte_buffer_still_receives_the_text",
@@ -719,6 +721,7 @@
    "test_run_tests.TestGuardedSeams.test_an_expired_scratch_path_matches_a_resolved_temp_alias",
    "test_run_tests.TestGuardedSeams.test_each_import_time_whole_interpreter_leak_is_rejected_and_named",
    "test_run_tests.TestGuardedSeams.test_each_whole_interpreter_leak_is_rejected_and_named",
+   "test_run_tests.TestParallelDispatchDeclaresLoad.test_children_of_a_two_worker_dispatch_see_two",
    "test_run_tests.TestSchedule.test_a_cold_custom_directory_remains_alphabetical",
    "test_run_tests.TestSchedule.test_a_cold_prior_covers_the_long_pole_of_every_matrix_leg",
    "test_run_tests.TestSchedule.test_a_cold_repository_starts_known_slow_modules_first",
@@ -1707,6 +1710,10 @@
    "tests.test_validate_cases_schema_cases.deseal.DesealToolTest.test_malformed_json_is_refused_not_skipped",
    "tests.test_validate_cases_schema_cases.deseal.DesealToolTest.test_retired_audit_prose_is_replaced_not_left",
    "tests.test_validate_cases_schema_cases.deseal.DesealToolTest.test_the_live_set_is_already_de_sealed",
+   "tests.test_validate_cases_schema_cases.probe_load.ProbeHostLoadTest.test_a_declared_parallel_dispatch_scales_the_kill_cap",
+   "tests.test_validate_cases_schema_cases.probe_load.ProbeHostLoadTest.test_a_scaled_kill_names_its_derivation",
+   "tests.test_validate_cases_schema_cases.probe_load.ProbeHostLoadTest.test_an_undeclared_host_keeps_the_exact_tier_bound",
+   "tests.test_validate_cases_schema_cases.probe_load.ProbeHostLoadTest.test_the_declaration_reads_as_an_integer_with_floor_one",
    "tests.test_validate_cases_schema_cases.retired_seal.RetiredSealTest.test_every_interchange_states_the_surviving_manifest_schema",
    "tests.test_validate_cases_schema_cases.retired_seal.RetiredSealTest.test_no_case_file_names_a_retired_seal_field",
    "tests.test_validate_cases_schema_cases.retired_seal.RetiredSealTest.test_no_component_reference_carries_a_digest_beside_its_locator",
@@ -1993,7 +2000,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "9aaa92a28e3def32634adff782b46b41d0f7e8d15921dafa4370cd34f40f0df9"
+  "sha256": "07700ab6ec53a35a7444be2591b0f0fcb84f28974b00e2e17204aede2d0b34c4"
  },
  "mutation_owners": [
   {
@@ -3838,6 +3845,22 @@
   },
   {
    "module": "tests.test_run_tests",
+   "owner": "TestParallelDispatchDeclaresLoad",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
+   "owner": "TestParallelDispatchDeclaresLoad.test_children_of_a_two_worker_dispatch_see_two",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_run_tests",
    "owner": "TestSchedule.test_installer_cases_are_exactly_once_across_process_visible_shards",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -4582,6 +4605,14 @@
    "seams": [
     "import-path",
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases_schema_cases.probe_load",
+   "owner": "declared_workers",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

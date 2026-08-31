@@ -9,6 +9,8 @@ from pathlib import Path
 
 SIZE_TIMEOUTS = {"small": 60, "medium": 300, "large": 900}
 DEFAULT_PROBE_TIMEOUT = 300
+# Set by tools/run_tests.py on the children of a parallel dispatch.
+HOST_PARALLELISM_ENV_VAR = "ORCHFLOWS_TEST_PARALLELISM"
 
 # Frozen by the run spec's angle matrix: angle -> case id.
 MATRIX = {
@@ -109,8 +111,23 @@ def render_probe(command, declared_target, impl_rel):
     return argv + [impl_rel]
 
 
+def host_parallelism():
+    """The dispatching runner's declared worker count; 1 when undeclared."""
+    try:
+        declared = int(os.environ.get(HOST_PARALLELISM_ENV_VAR, ""))
+    except ValueError:
+        return 1
+    return declared if declared > 1 else 1
+
+
 def run_probe_output(case_dir, command, declared_target, impl_dir, timeout):
-    """Return (returncode, output). returncode is None when it could not run."""
+    """Return (returncode, output). returncode is None when it could not run.
+
+    ``timeout`` bounds the probe's own work, but wall clock also counts every
+    sibling worker a parallel test dispatch declared; N workers can starve a
+    probe roughly N-fold, so the kill cap scales by the declared count while
+    an undeclared (quiet) host keeps the exact tier bound.
+    """
     impl_rel = impl_dir.relative_to(case_dir).as_posix()
     try:
         argv = render_probe(command, declared_target, impl_rel)
@@ -120,6 +137,7 @@ def run_probe_output(case_dir, command, declared_target, impl_dir, timeout):
     env["CASE_IMPL"] = str(impl_dir)
     env["CASE_DIR"] = str(case_dir)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    scale = host_parallelism()
     try:
         done = subprocess.run(
             argv,
@@ -127,13 +145,17 @@ def run_probe_output(case_dir, command, declared_target, impl_dir, timeout):
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=timeout,
+            timeout=timeout * scale,
         )
     except FileNotFoundError:
         return None, "probe command not found: {}".format(argv[0])
     except OSError as error:
         return None, "probe command failed to start: {}".format(error)
     except subprocess.TimeoutExpired:
+        if scale > 1:
+            return None, "probe exceeded {} s ({} s tier x {} declared workers)".format(
+                timeout * scale, timeout, scale
+            )
         return None, "probe exceeded {} s".format(timeout)
     return done.returncode, (done.stderr + done.stdout).decode("utf-8", "replace")
 
