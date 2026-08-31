@@ -31,11 +31,10 @@ choice. Details may overlap and never grant
 authority. Declared `isolation: required`, a cut takes no workspace.
 
 Write no gate family: a critique is one `tickets.py judge` brick over the
-delivered members and the repair answering it one `tickets.py do` brick, both
-sequenced by the caller's prose.
-Run `cutcheck.py` on the complete assignment draft; correct
+delivered members, its repair one `tickets.py do` brick.
+Run `cutcheck.py` on the complete draft; correct
 structural defects and re-run to 0. The [cut lens](references/cut-lens.md)
-judges advisories and undecidable matters. Follow
+judges advisories. Follow
 [topology](../../../rules/topology.md) §§8–§10 over that exact cut.
 
 Never: edit the root ticket's frozen statement.

@@ -509,3 +509,16 @@ A loop stub is a ticket carrying `loop: true` beside the `done` its
 iterations are read against; the marker with no `done` beside it marks
 nothing and is refused, and every reader that asked whether the object
 parsed now asks whether the marker is set.
+
+T0 supersession record sha256:60c5ee4de5db22535faee1c11d6857652dc857dd2cca9643aa5611795babf67b:
+the loop lane and the gate choreography leave together. `loop` is removed as
+a frontmatter field: nothing arms, evaluates, or advances a stub, and a
+bounded campaign is prose in the calling workflow over repeated bricks whose
+`done` predicate `land` reads once at landing. `review_order` is removed with
+the composite gate that sealed lens order -- no door emits a lensed critique
+family, so a critique is a `judge` brick and the repair answering it a `do`
+brick under the same parent. The distinct checker stage, its `GatePlan` and
+`CritiqueAdjudication` carrier, and the findings and accepted arrays that
+reach the join as files are unchanged. Admission's member-count rules go with
+the cut-membership law they guarded: a runtime child declares its `parent`
+and binds through that parent's seal, so parentage owns shape.
