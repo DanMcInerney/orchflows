@@ -3,22 +3,22 @@
 `do` makes an artifact and `judge` reads finished ones. Both fold what a
 caller used to sequence by hand -- `new`, `stamp-generation`,
 `draft-validate`, `seal`, `ready`, `dispatch` -- into one call, because every
-one of those steps is mechanical and none of them is a decision. The
-established public doors stay exactly where they are and remain the recovery
-seam; nothing here is a second protocol, and each step below is the same
-function the granular command calls.
+one of those steps is mechanical and none of them is a decision. Four of
+those six retired as doors once this fold was the only caller walking them;
+their functions are unchanged and each step below is the same one the
+granular command called, so this is one protocol rather than a second.
 
 Two facts make the fold safe. The id is minted under the run lock, so two
 concurrent callers under one parent cannot choose one id. And a child is
 sealed through its parent rather than named in a sealed cut: the cut that
 sealed the parent closed before the child existed, so the child inherits the
 parent's generations, self-seals its own assignment, and admission verifies
-the parent's seal in the sealed record -- the door `loop-arm` already used,
-generalized here to every runtime child.
+the parent's seal in the sealed record -- the reading a landing's repair
+round already needed, generalized here to every runtime child.
 
 A parentless brick is its own root and takes the full generation lifecycle:
-it is stamped, its draft validated, and its own one-member cut sealed, all
-through the public commands.
+it is stamped, its draft validated, and its own one-member cut sealed, here
+rather than by a caller.
 """
 
 from __future__ import annotations

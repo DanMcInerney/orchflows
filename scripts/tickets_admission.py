@@ -79,8 +79,8 @@ def pinned_digest_finding(pack: str, pinned: str):
         "pack-digest-mismatch", "pack_digest",
         f"pack '{pack}' resolves to {current}, but this sealed assignment "
         f"pinned {pinned}: the pack changed under the seal, or another ring "
-        "now shadows it. Restore the pinned pack, or open a new generation "
-        "(tickets.py stamp-generation) against the pack you mean to run.",
+        "now shadows it. Restore the pinned pack, or open a fresh brick "
+        "(tickets.py do | judge) against the pack you mean to run.",
     )
 
 
@@ -219,10 +219,10 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest):
     fails that last reading and falls through to the sealed-set door, which
     has never named it and refuses it.
 
-    Written for a loop's rounds and generalized to every runtime child by the
-    brick doors: `do` and `judge` mint under a sealed parent for the same
-    reason `loop-arm` did, and the parentage the id used to imply is now
-    declared.
+    Written for a landing's repair rounds and generalized to every runtime
+    child by the brick doors: `do` and `judge` mint under a sealed parent for
+    the same reason a round does, and the parentage the id used to imply is
+    now declared.
     """
     parent_id = post_seal_parent(ticket_id, data, siblings)
     if parent_id is None:
