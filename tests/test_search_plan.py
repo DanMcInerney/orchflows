@@ -20,11 +20,10 @@ sys.modules.setdefault("tests.test_search_plan", sys.modules[__name__])
 
 
 ROOT = Path(__file__).resolve().parents[1]
-# Since P4 both campaigns are ticket-set templates: a `template.md`
-# manifest plus the stubs `tickets.py instantiate` writes into a run. The
-# text graded below is the whole directory, stubs first, because the law
-# that used to be one composition body is now spread across the stubs
-# that carry it.
+# Both campaigns are workflow skills: one `SKILL.md` whose prose opens a
+# frame and writes the brick calls that used to be stubs. The text graded
+# below is that whole body, because the law that was spread across a
+# directory of stubs is back in one place.
 EVOLVE = ROOT / "example-workflows" / "evolve"
 EVOLVE_GENERATION = ROOT / "example-workflows" / "references" / "evolve-generation.md"
 TOURNAMENT = ROOT / "example-workflows" / "skill-tournament"
