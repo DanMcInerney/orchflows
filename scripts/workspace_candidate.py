@@ -117,23 +117,29 @@ def _adapter(data: dict):
         raise Refused(f"{error.code}: {error.detail}") from error
 
 
-def _evidence(run, ticket_id, path, prior_text, adapter, held, seams) -> dict:
-    """A research lane's workspace is the run-scoped evidence store."""
+def _unisolated(run, ticket_id, path, prior_text, adapter, held, seams, where) -> dict:
+    """Record the workspace of a lane that gives no item a tree of its own.
 
-    store = (state_root.state_root() / "research" / run).resolve()
-    store.mkdir(parents=True, exist_ok=True)
+    Two such lanes, one act: a research lane's workspace is the run-scoped
+    evidence store, created here because nothing else creates it, and a
+    document lane's is the tree its caller already stands in. Branch and
+    baseline go in as ``None`` -- a document revision is no commit, and a
+    stamped HEAD would hand the join a Git grade for work Git never carried.
+    """
+
+    if adapter.workspace_strategy == EVIDENCE_STRATEGY:
+        root = (state_root.state_root() / "research" / run).resolve()
+        root.mkdir(parents=True, exist_ok=True)
+    else:
+        root = Path(where or Path.cwd()).expanduser().resolve()
     outcome = seams["record"](
-        path, prior_text, None, None, str(store), run=run, lock_held=held
+        path, prior_text, None, None, str(root), run=run, lock_held=held
     )
     if "error" in outcome:
         raise Refused(outcome["error"])
     return {
-        "run": run,
-        "id": ticket_id,
-        "ticket": str(path),
-        "mechanism": adapter.key,
-        PATH_KEY: str(store),
-        "workspace_root": str(store),
+        "run": run, "id": ticket_id, "ticket": str(path), "mechanism": adapter.key,
+        PATH_KEY: str(root), "workspace_root": str(root), "isolated": False,
     }
 
 
@@ -326,15 +332,15 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
 def _establishment(run, ticket_id, key, held, seams, source, where):
     path, data, prior_text = _loaded(run, ticket_id)
     adapter = _adapter(data)
-    strategy = adapter.workspace_strategy
-    if strategy == EVIDENCE_STRATEGY:
-        return {key: _evidence(run, ticket_id, path, prior_text, adapter, held, seams)}, EXIT_OK
-    if strategy != GIT_STRATEGY:
-        raise Refused(
-            f"adapter-not-establishable: {adapter.key} does not establish a "
-            "candidate workspace"
-        )
+    # The item's isolation before the adapter's strategy, never after. Judged
+    # the other way round, a document lane refused at the dispatch trunk over
+    # a tree of its own -- which only an explicit override ever asks it for.
     isolation = tickets_adapters.derived_isolation(data.get(ISOLATION_KEY), data.get("pack"))
+    if isolation == REQUIRED and not adapter.establishes_isolation:
+        raise Refused(f"adapter-not-establishable: {adapter.key} does not "
+                      "establish a candidate workspace")
+    if adapter.workspace_strategy != GIT_STRATEGY:
+        return {key: _unisolated(run, ticket_id, path, prior_text, adapter, held, seams, where)}, EXIT_OK
     if source is None or isolation != REQUIRED:
         body, code = _observed(run, ticket_id, path, data, prior_text, held, seams, where)
         return {key: body}, code
