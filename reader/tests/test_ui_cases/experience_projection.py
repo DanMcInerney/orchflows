@@ -39,8 +39,11 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"schema (`web/src/api/schema.ts`)",
             b"[schema](../../web/src/api/schema.ts)",
         )
+        # Re-frozen 2026-08-31 over the merged tip's bytes: the accepted
+        # content evolved deliberately (orch-slice, example-workflows) after
+        # the earlier freeze, and the locator repairs above still hold.
         self.assertEqual(
-            "70F42B3945D3F1B2B99519BBCEA13FCDE774CA828E7E46F5A3538A56DBB62088",
+            "4B3FF726EE3EEB2B305152A6D199A971FAA3BE8CF7161D11AEFAA083A0499145",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
@@ -114,8 +117,15 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         )
         selected = projected["ticket"]
         self.assertEqual("G1", selected["id"])
-        self.assertEqual("rows", selected["verification"]["state"])
-        self.assertEqual(["PASS", "PASS", "FAIL"], [row["verdict"] for row in selected["verification"]["rows"]])
+        # The projection carries the one Report plus whatever section names
+        # the sink still holds, each as recorded prose; nothing re-parses a
+        # verdict table out of an earlier contract's section.
+        self.assertNotIn("verification", selected)
+        self.assertNotIn("judgment", selected)
+        self.assertEqual("", selected["report"])
+        self.assertTrue(
+            selected["sections"]["verification"].startswith("| # | verdict |")
+        )
         self.assertEqual(
             expected_readiness,
             {key: selected["readiness"][key] for key in expected_readiness},
@@ -134,7 +144,7 @@ class ExperienceFoundationContractTests(unittest.TestCase):
         states = {
             "now": ["mixed-live", "needs-attention", "no-active-runs", "unreadable-data", "live-paused", "empty"],
             "run-map": ["summary-active", "full-collapsed", "full-expanded", "blocked-causal", "completed", "malformed-topology"],
-            "ticket": ["running-overview", "proof-pass", "proof-fail", "friction-present", "history-unavailable", "raw-escaped"],
+            "ticket": ["running-overview", "report-recorded", "report-historical", "friction-present", "history-unavailable", "raw-escaped"],
             "sessions": ["populated", "empty", "diagnostic"],
             "session-graph": ["populated", "diagnostic"],
             "friction": ["populated", "empty"],
@@ -214,42 +224,35 @@ class ExperienceFoundationContractTests(unittest.TestCase):
 
 
 class ExperienceProjectionTest(unittest.TestCase):
-    def test_execution_provenance_requires_explicit_associations_and_mechanical_judgment(self):
+    def test_execution_provenance_requires_explicit_associations_and_recorded_report(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = make_sink(Path(tmp), runs=(), friction=False, events=False)
             associated = root / "tickets" / "run-associated"
             inferred = root / "tickets" / "evolve-by-name"
             ticket = write_ticket(
                 associated,
-                "01-judge",
+                "01-report",
                 status="complete",
-                executor="orch-critique",
+                executor="orch-execute",
                 depends_on="[]",
             )
             ticket.write_text(
                 ticket.read_text(encoding="utf-8")
-                + "\n## Result\n\naccepted revision deadbeef\n\n"
-                + "## Verification\n\n"
-                + "| # | Verdict | Oracle | Class | Evidence |\n"
-                + "| --- | --- | --- | --- | --- |\n"
-                + "| 1 | PASS | code craft lens | judged | review:42 |\n\n"
-                + "## Feedback\n\n[]\n\n"
-                + "## Risks\n\n[]\n",
+                + "\n## Report\n\naccepted revision deadbeef\n\n"
+                + "checked at C:/private/worktree before filing\n",
                 encoding="utf-8",
             )
-            rationale_id = "art_" + "a" * 43
-            rationale_ticket = write_ticket(
+            historical = write_ticket(
                 associated,
-                "02-rationale",
+                "02-historical",
                 status="complete",
-                executor="orch-critique",
-                depends_on="[01-judge]",
+                executor="orch-execute",
+                depends_on="[01-report]",
             )
-            rationale_ticket.write_text(
-                rationale_ticket.read_text(encoding="utf-8")
-                + "\n## Rationale\n\n"
-                + json.dumps({"kind": "artifact", "id": rationale_id})
-                + "\n",
+            historical.write_text(
+                historical.read_text(encoding="utf-8")
+                + "\n## Result\n\nrecorded under the earlier grammar\n\n"
+                + "## Handoff\n\nleft at C:/private/worktree\n",
                 encoding="utf-8",
             )
             write_ticket(
@@ -273,11 +276,11 @@ class ExperienceProjectionTest(unittest.TestCase):
 
             projected = experience.project_experience(
                 root,
-                query={"view": "ticket", "run": "run-associated", "ticket": "01-judge"},
+                query={"view": "ticket", "run": "run-associated", "ticket": "01-report"},
             )
-            with_rationale = experience.project_experience(
+            with_history = experience.project_experience(
                 root,
-                query={"view": "ticket", "run": "run-associated", "ticket": "02-rationale"},
+                query={"view": "ticket", "run": "run-associated", "ticket": "02-historical"},
             )
 
         runs = {run["id"]: run for run in projected["runs"]}
@@ -289,31 +292,35 @@ class ExperienceProjectionTest(unittest.TestCase):
             {"state": "unavailable", "id": ""},
             runs["evolve-by-name"]["workflow"],
         )
-        judgment = projected["ticket"]["judgment"]
+        selected = projected["ticket"]
         self.assertEqual(
-            [{
-                "criterion": "1",
-                "verdict": "PASS",
-                "oracle": "code craft lens",
-                "oracle_class": "judged",
-                "evidence": "review:42",
-            }],
-            judgment["criteria"],
+            "accepted revision deadbeef\n\n"
+            "checked at [redacted-host-path] before filing",
+            selected["report"],
         )
-        self.assertEqual("accepted revision deadbeef", judgment["result"])
-        self.assertEqual("[]", judgment["feedback"])
-        self.assertEqual("[]", judgment["risks"])
+        self.assertEqual(selected["report"], selected["sections"]["report"])
+        self.assertNotIn("verification", selected)
+        self.assertNotIn("judgment", selected)
+
+        # A ticket the sink holds from the earlier contract keeps its
+        # sections as recorded -- history is never rewritten -- and its
+        # absent Report stays absent rather than being assembled for it.
+        historical_ticket = with_history["ticket"]
+        self.assertEqual("", historical_ticket["report"])
         self.assertEqual(
-            {"state": "unavailable", "identity": None},
-            judgment["rationale"],
+            "recorded under the earlier grammar",
+            historical_ticket["sections"]["result"],
         )
         self.assertEqual(
-            {"state": "available", "identity": {"kind": "artifact", "id": rationale_id}},
-            with_rationale["ticket"]["judgment"]["rationale"],
+            "left at [redacted-host-path]",
+            historical_ticket["sections"]["handoff"],
         )
-        encoded = json.dumps(projected, sort_keys=True)
-        self.assertNotIn("C:/private/project", encoded)
-        self.assertNotIn("C:/private/worktree", encoded)
+        for encoded in (
+            json.dumps(projected, sort_keys=True),
+            json.dumps(with_history, sort_keys=True),
+        ):
+            self.assertNotIn("C:/private/project", encoded)
+            self.assertNotIn("C:/private/worktree", encoded)
 
 
 if __name__ == "__main__":

@@ -10,17 +10,19 @@ The tabs keep their claims deliberately narrow:
 
 - **Overview** answers what the ticket is, what is happening, and what the
   canonical readiness facts say happens next.
-- **Details** shows routing, dependencies, Goal, Context, the ticket's own
-  Details, bound, claim, and pack. It links the exact executor to a contained skill or
+- **Details** shows routing, dependencies, the planner's Context and
+  Details prose as recorded, bound, claim, and pack. It links the exact
+  executor to a contained skill or
   script source only when the projection carries an explicit canonical
   workflow and source association. Otherwise it says `Executor source
   unavailable`; it never infers a definition from the run slug or executor.
-- **Proof** preserves every projected criterion, verdict, oracle, oracle
-  class, evidence identity, and unknown state. Its judgment explanation is a
-  mechanical companion containing only the projected Result, Feedback, Risks,
-  and rationale identity. Missing fields remain `Unavailable`, and an absent
-  rationale is labeled `Rationale unavailable`; the browser authors no
-  rationale.
+- **Report** renders the ticket's one executor-owned `## Report` exactly as
+  recorded; the browser parses nothing out of it. A ticket the sink holds
+  from the earlier five-section contract has no Report, so its recorded
+  `Result`, `Verification`, `Feedback`, `Risks`, and `Handoff` sections are
+  shown as written under an earlier-grammar note — displayed, never
+  re-parsed into verdicts. When neither exists the tab says `Report
+  unavailable`; absence is preserved, not presented as an empty success.
 - **Artifacts** lists only projected structured artifact identities. A
   resolvable opaque ID becomes a contained link under
   `/api/v1/runs/{run}/tickets/{ticket}/artifacts/{artifact_id}`. Prose-only,
@@ -51,7 +53,7 @@ conversation contents remain outside every inspector field.
 The `tab` query parameter is the durable tab identity. Pointer activation,
 arrow-key tab selection, browser history, and a direct URL all resolve the
 same tab. When `tab` is absent, deterministic capture fixtures select their
-named state: `running-overview`, `proof-pass`, `proof-fail`,
+named state: `running-overview`, `report-recorded`, `report-historical`,
 `friction-present`, `history-unavailable`, or `raw-escaped`.
 
 The view uses the frozen platform tokens, the 4px spacing scale, 44–52px row

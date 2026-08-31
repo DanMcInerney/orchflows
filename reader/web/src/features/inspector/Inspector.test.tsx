@@ -17,16 +17,8 @@ function model(overrides: Partial<TicketDetail> = {}): InspectorModel {
     depends_on: ["G0"],
     unreadable: false,
     readiness: { state: "complete", dependencies: [], explanation: "G1 is complete", cause: "none", causal_chain: [] },
-    sections: { objective: "Prove the inspector without exposing private activity.", result: "The safe result." },
-    verification: {
-      state: "rows",
-      rows: [
-        { "#": "1", verdict: "PASS", oracle: "tools/validate.py", class: "deterministic", evidence: "exit 0" },
-        { "#": "2", verdict: "FAIL", oracle: "install.py --dry-run", class: "deterministic", evidence: "3 scripts, 4 expected" }
-      ]
-    },
-    inputs: ["accepted schema"],
-    write_scope: ["web/src/features/inspector"],
+    sections: { goal: "Prove the inspector without exposing private activity." },
+    report: "The safe recorded report.",
     pack: "orch-design-pack",
     history: [],
     raw: "",
@@ -64,12 +56,12 @@ describe("TicketInspector", () => {
   });
 
   it("opens a direct-linked tab and keeps pointer selection in the URL", async () => {
-    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=running-overview&tab=proof");
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=running-overview&tab=report");
     const { container } = render(<TicketInspector state={ready(model())} route={route("running-overview")} />);
 
     expect(container.querySelector(".foundation-view.ticket-inspector")).not.toBeNull();
-    expect(screen.getByRole("tab", { name: /Proof/ }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("heading", { name: "Criteria and verdicts" })).not.toBeNull();
+    expect(screen.getByRole("tab", { name: /Report/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("heading", { name: "Recorded report" })).not.toBeNull();
 
     await userEvent.click(screen.getByRole("tab", { name: "Details" }));
     expect(screen.getByRole("heading", { name: "Routing and limits" })).not.toBeNull();
@@ -86,24 +78,46 @@ describe("TicketInspector", () => {
     expect(new URLSearchParams(window.location.search).get("tab")).toBe("details");
   });
 
-  it("renders passing and failing proof identities without losing oracle evidence", () => {
-    const passing = model();
-    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-pass");
-    const { unmount } = render(<TicketInspector state={ready(passing)} route={route("proof-pass")} />);
-    expect(screen.getAllByText("PASS")).toHaveLength(3);
-    expect(screen.queryByText("FAIL")).toBeNull();
-    expect(screen.getByText("install.py --dry-run")).not.toBeNull();
-    expect(screen.getByText("plan named 4 scripts, 4 expected")).not.toBeNull();
-    unmount();
+  it("renders a recorded report as one inert body without parsing anything out of it", () => {
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=report-recorded");
+    const { container } = render(<TicketInspector state={ready(model())} route={route("report-recorded")} />);
+    const body = screen.getByLabelText("Recorded report");
+    expect(body.textContent).toContain("Gate replayed at the tip");
+    expect(body.textContent).toContain("the one executor filing");
+    expect(container.querySelector(".report-section")).toBeNull();
+    expect(screen.getByLabelText("Ticket state: complete")).not.toBeNull();
+  });
 
-    const failing = model();
-    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=proof-fail");
-    render(<TicketInspector state={ready(failing)} route={route("proof-fail")} />);
-    expect(screen.getByText("FAIL")).not.toBeNull();
+  it("shows an earlier-grammar ticket's recorded sections as written instead of reviving their parsing", () => {
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?fixture=report-historical");
+    const { container } = render(<TicketInspector state={ready(model())} route={route("report-historical")} />);
     expect(screen.getByLabelText("Ticket state: failed")).not.toBeNull();
-    expect(screen.getByText("Criterion 3 failed")).not.toBeNull();
-    expect(screen.getByText(/install.py --dry-run: plan named 3 scripts/)).not.toBeNull();
-    expect(screen.getAllByText("deterministic", { selector: "span" })).toHaveLength(3);
+    expect(screen.getByText(/earlier five-section grammar/)).not.toBeNull();
+    const names = Array.from(container.querySelectorAll(".report-section h3")).map((node) => node.textContent);
+    expect(names).toEqual(["Result", "Verification", "Feedback", "Risks"]);
+    const verification = container.querySelectorAll(".report-section__body")[1];
+    expect(verification?.textContent).toContain("| 2 | FAIL | install.py --dry-run | deterministic | plan named 3 scripts, 4 expected |");
+    expect(container.querySelector(".report-body")).toBeNull();
+  });
+
+  it("renders live historical sections from the projection when the report is absent", () => {
+    const value = model({
+      report: "",
+      sections: {
+        goal: "Keep the recorded sections exact.",
+        result: "Candidate revision recorded.",
+        feedback: "[]",
+        risks: "[\"compact viewport\"]"
+      }
+    });
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=report");
+    const { container } = render(<TicketInspector state={ready(value)} route={route("")} />);
+
+    const names = Array.from(container.querySelectorAll(".report-section h3")).map((node) => node.textContent);
+    expect(names).toEqual(["Result", "Feedback", "Risks"]);
+    expect(screen.getByText("Candidate revision recorded.")).not.toBeNull();
+    expect(screen.getByText("[]")).not.toBeNull();
+    expect(screen.getByText("[\"compact viewport\"]")).not.toBeNull();
   });
 
   it("shows only friction linked by both run and ticket", () => {
@@ -130,7 +144,7 @@ describe("TicketInspector", () => {
   });
 
   it("renders raw markdown as inert text and redacts host paths", () => {
-    const raw = "## Objective\n<script>alert('unsafe')</script>\nC:\\Users\\danhm\\secret.txt";
+    const raw = "## Goal\n<script>alert('unsafe')</script>\nC:\\Users\\danhm\\secret.txt";
     window.history.replaceState({}, "", "/runs/run-alpha/tickets/A2?fixture=raw-escaped");
     const { container } = render(<TicketInspector state={ready(model({ id: "A2", raw }))} route={{ ...route("raw-escaped", "A2"), run: "run-alpha" }} />);
     const code = screen.getByLabelText("Raw ticket markdown").querySelector("code");
@@ -140,12 +154,28 @@ describe("TicketInspector", () => {
     expect(container.querySelector("script")).toBeNull();
   });
 
-  it("preserves unknown proof rather than treating missing rows as success", () => {
-    const value = model({ verification: { state: "unknown", rows: [] } });
-    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=proof");
+  it("preserves an absent report rather than presenting it as an empty success", () => {
+    const value = model({ report: "", sections: { goal: "No filing yet." } });
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=report");
     render(<TicketInspector state={ready(value)} route={route("")} />);
-    expect(screen.getByRole("heading", { name: "Proof unavailable" })).not.toBeNull();
-    expect(screen.getByText(/Unknown is preserved/)).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Report unavailable" })).not.toBeNull();
+    expect(screen.getByText(/Absence is preserved/)).not.toBeNull();
+  });
+
+  it("shows the planner's Context and Details prose on the details tab as written", () => {
+    const value = model({
+      sections: {
+        goal: "Keep the brief visible.",
+        context: "- the accepted projection is the only input",
+        details: "- scratch/g1.txt"
+      }
+    });
+    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=details");
+    const { container } = render(<TicketInspector state={ready(value)} route={route("")} />);
+    const names = Array.from(container.querySelectorAll(".report-section h3")).map((node) => node.textContent);
+    expect(names).toEqual(["Context", "Details"]);
+    expect(screen.getByText("- the accepted projection is the only input")).not.toBeNull();
+    expect(screen.getByText("- scratch/g1.txt")).not.toBeNull();
   });
 
   it("links the executor source only from an explicit canonical association", () => {
@@ -197,31 +227,6 @@ describe("TicketInspector", () => {
     expect(screen.getByText("Artifact identity unavailable", { selector: "strong" })).not.toBeNull();
     expect(screen.getByText("No canonical structured result identity resolved inside the state sink.")).not.toBeNull();
     expect(screen.queryByRole("link", { name: /Untrusted path/ })).toBeNull();
-  });
-
-  it("assembles judgment explanation mechanically and labels absent rationale unavailable", () => {
-    const value = model({
-      sections: {
-        objective: "Keep projected judgment facts exact.",
-        result: "Candidate revision recorded.",
-        feedback: "[]",
-        risks: "[\"compact viewport\"]"
-      },
-      judgment: {
-        rationale: { state: "unavailable", identity: null }
-      }
-    });
-    window.history.replaceState({}, "", "/runs/run-gamma/tickets/G1?tab=proof");
-    render(<TicketInspector state={ready(value)} route={route("")} />);
-
-    expect(screen.getByRole("heading", { name: "Judgment explanation" })).not.toBeNull();
-    expect(screen.getByText("Candidate revision recorded.")).not.toBeNull();
-    expect(screen.getByText("[]")).not.toBeNull();
-    expect(screen.getByText("[\"compact viewport\"]")).not.toBeNull();
-    expect(screen.getByText("Rationale unavailable")).not.toBeNull();
-    expect(screen.getByText("No canonical rationale identity was recorded.")).not.toBeNull();
-    expect(screen.getByText("tools/validate.py")).not.toBeNull();
-    expect(screen.getAllByText("deterministic", { selector: "span" })).toHaveLength(2);
   });
 
   it("makes absent artifact inventory explicit", () => {

@@ -152,7 +152,7 @@ class WorkflowCatalogTests(unittest.TestCase):
         self.assertEqual(
             [
                 "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
-                "self-improve", "skill-tournament",
+                "self-improve", "skill-tournament", "super-research",
                 "orch-check", "orch-execute", "orch-outline", "orch-slice",
             ],
             [workflow["id"] for workflow in projected],

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 
@@ -12,7 +11,7 @@ from reader.scripts.ui_discovery import (
     read_friction, read_run_identity, read_sessions, run_tickets,
 )
 from reader.scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-from reader.scripts.ui_model import _scalar, parse_verification
+from reader.scripts.ui_model import _scalar
 from reader.scripts.ui_readiness import explain_run
 from reader.scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
@@ -51,7 +50,6 @@ POSIX_HOST_PATH_RE = re.compile(
     r"(?<![:A-Za-z0-9_])/(?:Users|home|tmp|private|var|opt|srv|mnt|Volumes)(?:/[^\s`\"'<>]+)+"
 )
 REDACTED_HOST_PATH = "[redacted-host-path]"
-OPAQUE_ARTIFACT_RE = re.compile(r"^art_[A-Za-z0-9_-]{43}$")
 CANONICAL_WORKFLOW_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,126}$")
 VIEW_SLICES = {
     "now": ("orchflows.now.v1", ("runs",)),
@@ -82,24 +80,6 @@ def browser_navigation(path: str, headers) -> bool:
 
 def _text(value) -> str:
     return value if isinstance(value, str) else "" if value is None else str(value)
-
-
-def _rationale_identity(value) -> dict:
-    try:
-        identity = json.loads(_text(value))
-    except (TypeError, ValueError):
-        identity = None
-    available = (
-        isinstance(identity, dict)
-        and set(identity) == {"kind", "id"}
-        and identity.get("kind") == "artifact"
-        and isinstance(identity.get("id"), str)
-        and OPAQUE_ARTIFACT_RE.fullmatch(identity["id"]) is not None
-    )
-    return {
-        "state": "available" if available else "unavailable",
-        "identity": identity if available else None,
-    }
 
 
 def _run_identity(root: Path, run: str):
@@ -197,29 +177,18 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
     record = next(item for item in run_record["tickets"] if item["id"] == ticket["id"])
     record = dict(record)
     sections = ticket.get("sections") or {}
+    # Every projected prose body crosses the host-path redaction boundary:
+    # the executor writes on the host, the browser must not learn where.
     record["sections"] = {
-        name.lower(): _text(sections[name])
+        name.lower(): _redact_host_paths(_text(sections[name]), root, ticket)
         for name in VISIBLE_SECTIONS
         if name in sections
     }
-    record["verification"] = parse_verification(_text(sections.get("Verification")))
-    record["judgment"] = {
-        "criteria": [
-            {
-                "criterion": _text(row.get("#")),
-                "verdict": _text(row.get("verdict")),
-                "oracle": _text(row.get("oracle")),
-                "oracle_class": _text(row.get("class")),
-                "evidence": _text(row.get("evidence")),
-            }
-            for row in record["verification"]["rows"]
-        ],
-        "result": _text(sections.get(REPORT_SECTION)) or _text(sections.get("Result")),
-        "feedback": _text(sections.get("Feedback")),
-        "risks": _text(sections.get("Risks")),
-        "rationale": _rationale_identity(sections.get("Rationale")),
-    }
-    record["context"] = _redact_host_paths(_text(sections.get("Context")), root, ticket)
+    # The one executor filing under the current grammar. A ticket the sink
+    # holds from an earlier contract has no Report; its historical sections
+    # stay in ``sections`` and the browser shows them as recorded.
+    record["report"] = record["sections"].get(REPORT_SECTION.lower(), "")
+    record["context"] = record["sections"].get("context", "")
     record["details"] = _redact_host_paths(_text(ticket.get("details")), root, ticket)
     record["pack"] = _text(ticket.get("pack"))
     events = read_events(root, run)

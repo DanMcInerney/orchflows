@@ -57,7 +57,7 @@ class WorkflowIdentityTests(unittest.TestCase):
             hashlib.sha256(path.encode("utf-8")).digest()
         ).decode("ascii").rstrip("=")
 
-        source_id = identity.source_id(r"lib\compositions\evolve\02-campaign.md")
+        source_id = identity.source_id(r"lib\example-workflows\evolve\02-campaign.md")
 
         self.assertEqual("src_" + expected, source_id)
         self.assertIsNotNone(re.fullmatch(r"src_[A-Za-z0-9_-]{43}", source_id))

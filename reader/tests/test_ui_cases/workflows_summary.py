@@ -24,6 +24,7 @@ EXPECTED_WORKFLOWS = {
     "renovate",
     "self-improve",
     "skill-tournament",
+    "super-research",
 }
 
 

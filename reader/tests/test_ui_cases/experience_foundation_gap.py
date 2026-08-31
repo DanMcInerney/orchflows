@@ -197,13 +197,17 @@ class TestExperienceFoundationGap(unittest.TestCase):
         for private_path in private_paths:
             self.assertNotIn(private_path, ticket["raw"])
         self.assertIn("[redacted-host-path]", ticket["raw"])
-        proof_rows = ticket["verification"]["rows"]
-        self.assertTrue(proof_rows)
+        # Every projected section body shares the raw ticket's host-path
+        # boundary: the Handoff appended above carries three private paths
+        # and each one must cross as the redaction marker.
+        self.assertNotIn("verification", ticket)
+        self.assertNotIn("judgment", ticket)
+        self.assertIsInstance(ticket["report"], str)
+        for private_path in private_paths:
+            self.assertNotIn(private_path, ticket["sections"]["handoff"])
+        self.assertIn("[redacted-host-path]", ticket["sections"]["handoff"])
         self.assertTrue(
-            all(
-                set(row) == {"#", "verdict", "oracle", "class", "evidence"}
-                for row in proof_rows
-            )
+            ticket["sections"]["verification"].startswith("| # | verdict |")
         )
 
         self.assertEqual(

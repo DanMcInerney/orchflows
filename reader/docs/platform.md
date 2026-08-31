@@ -105,13 +105,13 @@ exposes no creation or mutation route.
 All projections use closed field sets. Run graphs contain ticket identifiers,
 dependency edges, lifecycle statuses, aggregate diagnostics, and event
 counts. The selected-ticket experience projection contains routing and claim
-metadata, canonical readiness facts, parsed verification rows, and the
-Goal, Context, Details, Result, Feedback, and Risks sections as inert strings. A run is
+metadata, canonical readiness facts, the executor's one Report body, and the
+section names the sink still holds — Goal, Context, Details, and the earlier
+contract's Result, Verification, Feedback, Risks, and Handoff — as inert,
+host-path-redacted strings. Nothing re-parses a verdict table or assembles a
+judgment out of recorded prose. A run is
 associated with a workflow definition only through an explicit canonical
-association; the reader never infers one from a run slug or executor. Judgment
-detail mechanically presents criterion, verdict, oracle, class, evidence,
-Result, Feedback, Risks, and an explicit rationale identity when one exists;
-it authors no rationale and labels an absent identity unavailable. Artifact
+association; the reader never infers one from a run slug or executor. Artifact
 inventory accepts only canonical structured result identities that resolve
 inside the state sink. Prose-only or unresolved artifacts remain unavailable,
 and caller-supplied project or workspace paths are never followed. Artifact

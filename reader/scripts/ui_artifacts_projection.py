@@ -28,7 +28,7 @@ ARTIFACT_SCHEMA = "orchflows.ticket-artifact.v1"
 NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 ARTIFACT_ID_RE = re.compile(r"art_[A-Za-z0-9_-]{43}\Z")
-RESULT_HEADING_RE = re.compile(r"^## Report[ \t]*\r?$", re.MULTILINE)
+REPORT_HEADING_RE = re.compile(r"^## Report[ \t]*\r?$", re.MULTILINE)
 NEXT_HEADING_RE = re.compile(r"^## [^\r\n]+", re.MULTILINE)
 WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^`\"'<>\r\n]+"
@@ -45,7 +45,7 @@ UNAVAILABLE = {
 
 
 class ArtifactIdentityError(ValueError):
-    """A Result section does not carry one canonical artifact identity."""
+    """A Report section does not carry one canonical artifact identity."""
 
 
 def _name(value: object) -> str:
@@ -66,33 +66,33 @@ def _ticket_text(root: Path, run: object, ticket: object) -> str | None:
         return None
 
 
-def _result_section(text: str) -> str:
-    headings = list(RESULT_HEADING_RE.finditer(text))
+def _report_section(text: str) -> str:
+    headings = list(REPORT_HEADING_RE.finditer(text))
     if len(headings) != 1:
-        raise ArtifactIdentityError("ticket does not have one Result section")
+        raise ArtifactIdentityError("ticket does not have one Report section")
     start = headings[0].end()
     following = NEXT_HEADING_RE.search(text, start)
     return text[start : following.start() if following else len(text)]
 
 
 def _identity(text: str) -> dict:
-    section = _result_section(text)
+    section = _report_section(text)
     candidates = [line for line in section.splitlines() if line.startswith("result:")]
     if len(candidates) != 1 or not candidates[0].startswith("result: "):
-        raise ArtifactIdentityError("Result does not carry one structured identity")
+        raise ArtifactIdentityError("Report does not carry one structured identity")
     encoded = candidates[0][len("result: ") :]
     try:
         value = json.loads(encoded)
     except (TypeError, ValueError, json.JSONDecodeError) as error:
-        raise ArtifactIdentityError("Result identity is not JSON") from error
+        raise ArtifactIdentityError("Report identity is not JSON") from error
     if not isinstance(value, dict) or set(value) != {"kind", "locator", "sha256"}:
-        raise ArtifactIdentityError("Result identity has the wrong shape")
+        raise ArtifactIdentityError("Report identity has the wrong shape")
     if value["kind"] != "artifact":
-        raise ArtifactIdentityError("Result identity is not an artifact")
+        raise ArtifactIdentityError("Report identity is not an artifact")
     if json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) != encoded:
-        raise ArtifactIdentityError("Result identity is not canonical JSON")
+        raise ArtifactIdentityError("Report identity is not canonical JSON")
     if not isinstance(value["sha256"], str) or SHA256_RE.fullmatch(value["sha256"]) is None:
-        raise ArtifactIdentityError("Result identity digest is not canonical")
+        raise ArtifactIdentityError("Report identity digest is not canonical")
     _artifact_path(value["locator"])
     return value
 
@@ -151,7 +151,7 @@ def project_artifact_inventory(
     run: str = "",
     ticket: str = "",
 ) -> tuple[int, dict]:
-    """Expose only a contained structured Result identity through an opaque ID."""
+    """Expose only a contained structured Report identity through an opaque ID."""
 
     root = Path(root)
     try:
