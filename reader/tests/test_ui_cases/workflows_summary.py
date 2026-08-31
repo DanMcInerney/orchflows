@@ -20,8 +20,6 @@ EXPECTED_WORKFLOWS = {
     "orch-check",
     "orch-slice",
     "orch-execute",
-    "orch-frontier",
-    "orch-integrate",
     "orch-outline",
     "renovate",
     "self-improve",
