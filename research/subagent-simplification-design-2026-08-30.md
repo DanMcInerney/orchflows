@@ -5,10 +5,10 @@
 Synthesis over seven parallel investigations (A performance audit, B
 pre-refactor baseline, C envelope/packet drift, D external-tool survey,
 E reviewer context, F final-verify redundancy, G mechanization sweep).
-Primary evidence: the three dogfood runs of 2026-08-30 in
-`~/.orchflows/state/tickets/` (`20260830T231500Z-u6-proof`,
+Primary evidence: the three dogfood runs of 2026-08-30 under the state
+sink's `tickets/` (`20260830T231500Z-u6-proof`,
 `20260830T234500Z-workspace-derivation`, `20260831T001500Z-friction-fixes`),
-the friction ledger `~/.orchflows/state/friction/2026-08.jsonl` lines
+the sink's friction ledger `friction/2026-08.jsonl` lines
 7243–7255, the session transcript
 (`~/.claude/projects/...-1a96c3/6073e83d-....jsonl`), git history back to
 `7b1ba5d1` (pre-PR-#116), and source reads of twelve external
