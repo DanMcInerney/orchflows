@@ -1,6 +1,6 @@
 ---
 id: 02-materialize
-executor: orch-execute
+executor: orch-do
 pack: {{pack}}
 depends_on: [01-design]
 bound: <= 120 tool calls

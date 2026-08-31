@@ -1,6 +1,6 @@
 ---
 id: 00-record
-executor: orch-execute
+executor: orch-do
 pack: orch-content-pack
 depends_on: []
 bound: <= 80 tool calls

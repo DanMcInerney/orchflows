@@ -1,6 +1,6 @@
 ---
 id: 00-research
-executor: orch-execute
+executor: orch-do
 pack: orch-research-pack
 depends_on: []
 bound: <= 100 tool calls

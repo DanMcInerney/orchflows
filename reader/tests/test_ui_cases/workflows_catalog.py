@@ -153,7 +153,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             [
                 "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament", "super-research",
-                "orch-check", "orch-execute", "orch-outline", "orch-slice",
+                "orch-do", "orch-judge", "orch-slice",
             ],
             [workflow["id"] for workflow in projected],
         )
@@ -168,8 +168,8 @@ class WorkflowCatalogTests(unittest.TestCase):
             "Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.",
             by_id["browser-game"]["description"],
         )
-        self.assertEqual("workflow-skill", by_id["orch-outline"]["type"])
-        self.assertEqual("callable", by_id["orch-outline"]["entry"])
+        self.assertEqual("workflow-skill", by_id["orch-do"]["type"])
+        self.assertEqual("callable", by_id["orch-do"]["entry"])
 
     def test_validated_summary_is_joined_by_canonical_id(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)

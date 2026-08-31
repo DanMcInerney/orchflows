@@ -42,7 +42,7 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, re
         "pack": "orch-code-pack",
         "independence": "gate",
         "depends_on": list(dependencies),
-        "isolation": "required" if executor == "orch-execute" else "none",
+        "isolation": "required" if executor == "orch-do" else "none",
         "bound": "30m",
         "root_generation": root_generation,
     }
@@ -226,7 +226,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         """No length refuses a ticket: the planner owns what its child needs."""
 
         goal = " ".join(["word"] * 400)
-        for executor in ("orch-execute", tickets.ROOT_EXECUTOR):
+        for executor in ("orch-do", tickets.ROOT_EXECUTOR):
             run = "root-" + executor.removeprefix("orch-")
             with self.subTest(executor):
                 created = tickets._dispatch([
@@ -258,7 +258,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_a_long_ordinary_member_is_issued_like_any_other(self):
         self.dispatch(
-            "new", "unit-length", "R", "--executor", "orch-execute",
+            "new", "unit-length", "R", "--executor", "orch-do",
             "--goal", "Deliver the run.", "--context", "[]",
             "--pack", "orch-code-pack", "--isolation", "required",
         )
@@ -272,14 +272,14 @@ class SemanticTicketContractTest(unittest.TestCase):
     def test_a_malformed_first_attempt_writes_no_run_directory(self):
         goal = " ".join(["word"] * 400)
         malformed = tickets._dispatch([
-            "new", "malformed-root", "R", "--executor", "orch-execute",
+            "new", "malformed-root", "R", "--executor", "orch-do",
             "--goal", goal,
         ])
         self.assertIn("error", malformed)
         run_dir = Path(self.temporary.name) / "tickets" / "malformed-root"
         self.assertFalse(run_dir.exists())
         accepted = tickets._dispatch([
-            "new", "malformed-root", "R", "--executor", "orch-execute",
+            "new", "malformed-root", "R", "--executor", "orch-do",
             "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
             "--isolation", "required",
         ])
@@ -287,7 +287,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_goal_context_only_direct_root_lifecycle(self):
         self.dispatch(
-            "new", "direct", "R1", "--executor", "orch-execute",
+            "new", "direct", "R1", "--executor", "orch-do",
             "--goal", "Create the observable artifact.",
             "--context", "No exceptional constraints.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -313,7 +313,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_preissue_lint_and_new_grade_the_same_projected_file_candidate(self):
         source = Path(self.temporary.name) / "R1.md"
-        draft = assignment("R1", "orch-execute")
+        draft = assignment("R1", "orch-do")
         draft = _remove_frontmatter_field(draft, "admission")
         draft = _remove_frontmatter_field(draft, "run")
         draft = tickets._set_frontmatter_field(draft, "status", "complete")
@@ -340,7 +340,7 @@ class SemanticTicketContractTest(unittest.TestCase):
     def test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch(self):
         source = Path(self.temporary.name) / "R1.md"
         draft = _remove_frontmatter_field(
-            assignment("R1", "orch-execute"), "admission"
+            assignment("R1", "orch-do"), "admission"
         )
         source.write_text(draft, encoding="utf-8")
         before = source.read_bytes()
@@ -357,7 +357,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_show_inspects_one_ticket_without_mutating_the_sink(self):
         self.dispatch(
-            "new", "inspect-run", "R1", "--executor", "orch-execute",
+            "new", "inspect-run", "R1", "--executor", "orch-do",
             "--goal", "Expose this ticket.",
             "--context", "Inspection is read-only.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -390,7 +390,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_details_do_not_limit_candidate_paths(self):
         self.dispatch(
-            "new", "details", "R1", "--executor", "orch-execute",
+            "new", "details", "R1", "--executor", "orch-do",
             "--goal", "Repair the behavior.", "--context", "The repository is authoritative.",
             "--details", "- start at src/start.py", "--pack", "orch-code-pack",
             "--isolation", "required",
@@ -405,7 +405,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_prompt_filing_command_carries_claimant_and_writes_the_ticket(self):
         self.dispatch(
-            "new", "packet", "R1", "--executor", "orch-execute",
+            "new", "packet", "R1", "--executor", "orch-do",
             "--goal", "Create the artifact.", "--context", "Use repository facts.",
             "--pack", "orch-code-pack", "--isolation", "required",
         )
@@ -450,7 +450,7 @@ class SemanticTicketContractTest(unittest.TestCase):
     def test_decomposed_root_uses_same_semantic_shape(self):
         self.dispatch("new", "cut", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
         for suffix in ("01", "02"):
-            self.dispatch("new", "cut", f"R.{suffix}", "--executor", "orch-execute", "--goal", f"Produce component {suffix}.", "--context", "It feeds the root result.", "--pack", "orch-code-pack", "--isolation", "required")
+            self.dispatch("new", "cut", f"R.{suffix}", "--executor", "orch-do", "--goal", f"Produce component {suffix}.", "--context", "It feeds the root result.", "--pack", "orch-code-pack", "--isolation", "required")
         self.dispatch("stamp-generation", "cut", "R")
         self.dispatch("gate", "cut", "R")
         validated = self.dispatch("draft-validate", "cut", "R")
@@ -472,14 +472,14 @@ class SemanticTicketContractTest(unittest.TestCase):
 
         complete = {
             **rooted,
-            "R.01": assignment("R.01", "orch-execute", root_generation=inherited),
-            "R.02": assignment("R.02", "orch-execute", root_generation=inherited),
+            "R.01": assignment("R.01", "orch-do", root_generation=inherited),
+            "R.02": assignment("R.02", "orch-do", root_generation=inherited),
             "R.gate.critique.code": assignment(
-                "R.gate.critique.code", "orch-check", ("R.01", "R.02"),
+                "R.gate.critique.code", "orch-judge", ("R.01", "R.02"),
                 root_generation=inherited, review_kind="critique",
             ),
             "R.gate.repair": assignment(
-                "R.gate.repair", "orch-execute", ("R.gate.critique.code",),
+                "R.gate.repair", "orch-do", ("R.gate.critique.code",),
                 root_generation=inherited, review_kind="repair",
             ),
         }
@@ -528,8 +528,8 @@ class SemanticTicketContractTest(unittest.TestCase):
     def test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate(self):
         snapshot = {
             "R": assignment("R", "orch-slice"),
-            "R.01": assignment("R.01", "orch-execute"),
-            "R.02": assignment("R.02", "orch-execute"),
+            "R.01": assignment("R.01", "orch-do"),
+            "R.02": assignment("R.02", "orch-do"),
         }
         draft = tickets_generations.draft_snapshot("R", snapshot)
         with self.assertRaisesRegex(tickets_generations.GenerationError, "composite gate"):
@@ -553,7 +553,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         for suffix in ("01", "02"):
             self.dispatch(
-                "new", "clean", f"R.{suffix}", "--executor", "orch-execute",
+                "new", "clean", f"R.{suffix}", "--executor", "orch-do",
                 "--goal", f"Deliver member {suffix}.", "--context", "Feed the root.",
                 "--pack", "orch-code-pack", "--independence", "gate",
                 "--isolation", "required",
@@ -684,7 +684,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         for suffix in ("01", "02"):
             self.dispatch(
-                "new", "ordered", f"R.{suffix}", "--executor", "orch-execute",
+                "new", "ordered", f"R.{suffix}", "--executor", "orch-do",
                 "--goal", f"Deliver member {suffix}.", "--context", "Feed the root.",
                 "--pack", "orch-code-pack", "--independence", "gate",
                 "--isolation", "required",
@@ -711,7 +711,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_distinct_checker_records_the_same_immutable_adjudication_carrier(self):
         self.dispatch(
-            "new", "checker", "R", "--executor", "orch-execute",
+            "new", "checker", "R", "--executor", "orch-do",
             "--goal", "Deliver the checked result.",
             "--context", "The artifact and evidence are authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -930,7 +930,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_checker_stage_refuses_a_packless_target_without_state_mutation(self):
         self.dispatch(
-            "new", "packless-checker", "R", "--executor", "orch-check",
+            "new", "packless-checker", "R", "--executor", "orch-judge",
             "--goal", "Deliver the checked result.",
             "--context", "The artifact and evidence are authoritative.",
             "--pack", "orch-code-pack",
@@ -1055,7 +1055,7 @@ class SemanticTicketContractTest(unittest.TestCase):
     def test_gate_routes_actual_overlap_to_integration(self):
         self.dispatch("new", "gate", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
         for suffix in ("01", "02"):
-            self.dispatch("new", "gate", f"R.{suffix}", "--executor", "orch-execute", "--goal", f"Deliver candidate {suffix}.", "--context", "The candidate feeds the integrated result.", "--pack", "orch-code-pack", "--independence", "gate", "--isolation", "required")
+            self.dispatch("new", "gate", f"R.{suffix}", "--executor", "orch-do", "--goal", f"Deliver candidate {suffix}.", "--context", "The candidate feeds the integrated result.", "--pack", "orch-code-pack", "--independence", "gate", "--isolation", "required")
         self.dispatch("stamp-generation", "gate", "R")
         self.dispatch("gate", "gate", "R")
         repair = "\n".join(path.read_text(encoding="utf-8") for path in (Path(self.temporary.name) / "tickets" / "gate").glob("R.gate.*.md"))
@@ -1064,7 +1064,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_execute_owns_test_choice(self):
         self.dispatch(
-            "new", "tdd", "R", "--executor", "orch-execute",
+            "new", "tdd", "R", "--executor", "orch-do",
             "--goal", "Correct the observable behavior.",
             "--context", "The repository supplies the implementation facts.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -1119,10 +1119,6 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "semantic-root change", "successor run",
                 "accepted predecessor result identity",
             ),
-            ROOT / "skills" / "workflows" / "orch-outline" / "SKILL.md": (
-                "semantic-root change", "successor run",
-                "accepted predecessor result identity", "unsupported",
-            ),
             ROOT / "docs" / "vocabulary.md": (
                 "run-local root identity", "successor run",
                 "accepted predecessor result identity",
@@ -1133,14 +1129,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             for phrase in required:
                 with self.subTest(path=path.relative_to(ROOT), phrase=phrase):
                     self.assertIn(phrase, text)
-        self.assertNotIn(
-            "post-seal assignment change is a new generation",
-            " ".join(
-                (ROOT / "skills" / "workflows" / "orch-outline" / "SKILL.md")
-                .read_text(encoding="utf-8")
-                .split()
-            ),
-        )
         self.assertNotIn(
             "changing sealed assignment fields creates a new assignment generation",
             " ".join(

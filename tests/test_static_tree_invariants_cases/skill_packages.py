@@ -8,10 +8,9 @@ SKILL_TIERS = ("kernel", "workflows")
 # The frozen role census. The census is deliberately explicit: adding,
 # removing, or renaming a skill requires a role decision here.
 ROLE_TABLE = {
+    "orch-judge": "planner",
     "orch-slice": "planner",
-    "orch-check": "planner",
-    "orch-outline": "planner",
-    "orch-execute": "worker",
+    "orch-do": "worker",
 }
 
 

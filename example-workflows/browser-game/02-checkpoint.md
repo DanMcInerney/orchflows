@@ -1,6 +1,6 @@
 ---
 id: 02-checkpoint
-executor: orch-outline
+executor: orch-do
 depends_on: [00-record, 01-evidence]
 bound: <= 60 tool calls
 independence: checker

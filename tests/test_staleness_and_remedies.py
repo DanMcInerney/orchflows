@@ -77,7 +77,7 @@ class SealedRunTest(SinkTest):
     def setUp(self):
         super().setUp()
         self.dispatch(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -354,7 +354,7 @@ class TestRepairingAnUnreadableRunIdentity(SinkTest):
     def setUp(self):
         super().setUp()
         self.dispatch(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -477,7 +477,7 @@ class TestDependsOnIsCanonicallyOrdered(SinkTest):
 
     def issue(self, ticket_id, depends_on=None):
         arguments = [
-            "new", "run", ticket_id, "--executor", "orch-execute",
+            "new", "run", ticket_id, "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -529,7 +529,7 @@ class TestPendingNamesItsPromotion(SinkTest):
     def setUp(self):
         super().setUp()
         self.dispatch(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",

@@ -130,10 +130,10 @@ class RingOrderTests(unittest.TestCase):
 class ReservationAndShadowTests(unittest.TestCase):
     def test_a_reserved_ring_name_refuses_loudly_rather_than_never_running(self):
         with _world() as world:
-            path = _item(world["home"] / "skills", "skill", "orch-execute")
+            path = _item(world["home"] / "skills", "skill", "orch-do")
 
             with self.assertRaises(rings.RingError) as raised:
-                rings.resolve("skill", "orch-execute", project=world["project"], lib=world["lib"])
+                rings.resolve("skill", "orch-do", project=world["project"], lib=world["lib"])
 
             self.assertEqual("reserved-name", raised.exception.code)
             self.assertIn(str(path), raised.exception.detail)

@@ -104,7 +104,7 @@ def make_ticket(
         f"id: {tid}",
         "run: testrun",
         "status: claimed",
-        "executor: orch-execute",
+        "executor: orch-do",
         f"pack: {pack}",
         "depends_on: []",
         "write_scope:",

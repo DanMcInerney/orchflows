@@ -1,6 +1,6 @@
 ---
 id: 01-campaign
-executor: orch-execute
+executor: orch-do
 pack: {{pack}}
 depends_on: [00-benchmark]
 bound: {{bound}}
@@ -14,7 +14,7 @@ profile: orch-worker
 The terminal nested run formed by this ticket's `run` plus `.01-campaign`
 is an instantiation of `example-workflows/evolve` with `target={{skill}}`, the
 skill's current fixed result/evidence as `incumbent`, 00-benchmark's qualified
-revision plus {{policy}} as `evaluation`, `writer=orch-execute`,
+revision plus {{policy}} as `evaluation`, `writer=orch-do`,
 `mutation_scope={{surface}}`, and `bound={{bound}}`. Its final score card
 names the final incumbent and the one benchmark revision every candidate
 was scored against.

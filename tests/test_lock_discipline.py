@@ -47,7 +47,7 @@ UTC_STAMP = "%Y-%m-%dT%H:%M:%SZ"
 WAIT = 2.0
 
 
-def ticket_at(run_dir: Path, tid: str, *, executor="orch-execute", deps="[]",
+def ticket_at(run_dir: Path, tid: str, *, executor="orch-do", deps="[]",
               status="ready", extra=()) -> Path:
     """One fixture work item, written straight into the sink's run."""
 
@@ -368,7 +368,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         self.assertTrue(tickets_join._closes_the_run("testrun", "T1"))
 
     def test_a_loop_runs_single_ticket_is_its_own_root(self):
-        ticket_at(self.run_dir, "L", executor="orch-execute")
+        ticket_at(self.run_dir, "L", executor="orch-do")
         self.assertTrue(tickets_join._closes_the_run("testrun", "L"))
 
     def test_an_unreadable_or_absent_run_closes_nothing(self):

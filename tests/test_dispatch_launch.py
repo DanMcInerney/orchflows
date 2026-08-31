@@ -47,7 +47,7 @@ class LaunchResolutionTest(unittest.TestCase):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "craft": None, "craft_scope": None, "dependencies": [],
-            "dispatch_id": "D1", "executor": "orch-execute",
+            "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "id": "T", "lease_expires_at": "2099-01-01T00:00:00Z",
             "pack": None, "review_kind": None, "review_tip": None, "role": role,
             "root_path": None, "run": "run", "ticket_path": "/sink/run/T.md",
@@ -144,15 +144,15 @@ class LaunchResolutionTest(unittest.TestCase):
 
         self.assertEqual(
             ("worker", "orch-worker"),
-            launch.resolved_role_profile("orch-execute", None),
+            launch.resolved_role_profile("orch-do", None),
         )
         self.assertEqual(
             ("planner", "orch-planner"),
-            launch.resolved_role_profile("orch-execute", "orch-planner"),
+            launch.resolved_role_profile("orch-do", "orch-planner"),
         )
         self.assertEqual(
             ("worker", "house-profile"),
-            launch.resolved_role_profile("orch-execute", "house-profile"),
+            launch.resolved_role_profile("orch-do", "house-profile"),
         )
 
 
@@ -187,7 +187,7 @@ class DispatchLaunchTest(unittest.TestCase):
         """
 
         self.run_command(
-            "new", run, "T", "--executor", "orch-execute",
+            "new", run, "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required", *extra,
@@ -319,7 +319,7 @@ class DispatchLaunchTest(unittest.TestCase):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "craft": None, "craft_scope": None, "dependencies": [],
-            "dispatch_id": "D1", "executor": "orch-check",
+            "dispatch_id": "D1", "executor": "orch-judge",
             "executor_script": None, "id": "R1.gate.critique.code",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": "orch-code-pack",
             "review_kind": None, "review_tip": None, "role": "worker",
@@ -455,7 +455,7 @@ class LandTest(unittest.TestCase):
         )
         self.environment.start()
         self.run_command(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",

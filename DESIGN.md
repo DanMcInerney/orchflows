@@ -158,8 +158,8 @@ Why this shape:
 
 - **A cell, not a loose reference.** Generic skills reference domain
   facts only through the stamped pack's cells
-  ([rules/composition.md](rules/composition.md) §9). `orch-outline` is
-  generic and needs the nouns; reaching them any other way is a
+  ([rules/composition.md](rules/composition.md) §9). A planning `orch-do`
+  is generic and needs the nouns; reaching them any other way is a
   signature leak.
 - **One file, not vocabulary and design separately.** A good craft
   term is a compressed principle — "skim layer" names a thing and
@@ -498,7 +498,7 @@ one the join will grade. That is the test for what belongs in code.
   composition contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
-  admitted because `orch-outline`'s noun source had no owner — not
+  admitted because orch-outline's noun source had no owner — not
   because more reference material seemed nice. The next cell must
   clear the same bar.
 - **A generated Claude Code plugin.** Audited 2026-07-16 against a

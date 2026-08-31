@@ -1,6 +1,6 @@
 ---
 id: 01-eligibility
-executor: orch-check
+executor: orch-judge
 pack: orch-code-pack
 depends_on: [00-eval]
 bound: <= 30 tool calls

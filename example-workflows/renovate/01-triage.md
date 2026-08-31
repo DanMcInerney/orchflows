@@ -1,6 +1,6 @@
 ---
 id: 01-triage
-executor: orch-check
+executor: orch-judge
 pack: {{pack}}
 depends_on: [00-audit]
 bound: <= 30 tool calls

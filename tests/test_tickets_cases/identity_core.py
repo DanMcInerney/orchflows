@@ -84,7 +84,7 @@ class TestRunIdentity(unittest.TestCase):
                 identity_doc("from-state")["orchflows"],
             )
             run_cmd(
-                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-execute",
+                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-do",
                 "--pack", "orch-code-pack", "--isolation", "required",
                 "--goal", "one", "--context", "the sealed run snapshot",
             )

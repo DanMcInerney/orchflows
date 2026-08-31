@@ -61,10 +61,10 @@ class WorkflowCompositionTests(unittest.TestCase):
         self.assertEqual("evolve", detail["id"])
         self.assertEqual("composition", detail["type"])
         # Nothing unresolved any more: the cutover bound both stubs to
-        # skills that exist -- `orch-outline` freezes the evaluation design
-        # and `orch-check` returns the two verdicts -- so an unresolved
-        # reference here would be a real regression rather than the shipped
-        # state this case once had to tolerate.
+        # skills that exist -- a planning `orch-do` freezes the evaluation
+        # design and `orch-judge` returns the two verdicts -- so an
+        # unresolved reference here would be a real regression rather than
+        # the shipped state this case once had to tolerate.
         self.assertEqual(
             set(),
             {(item["code"], item["subject_id"]) for item in detail["diagnostics"]},
@@ -78,9 +78,8 @@ class WorkflowCompositionTests(unittest.TestCase):
                 "work:evolve/01-eligibility",
                 "work:evolve/02-campaign",
                 "work:evolve/03-result",
-                "skill:orch-check",
-                "skill:orch-execute",
-                "skill:orch-outline",
+                "skill:orch-judge",
+                "skill:orch-do",
             },
             node_ids,
         )
@@ -93,10 +92,10 @@ class WorkflowCompositionTests(unittest.TestCase):
                 ("dependency", "work:evolve/00-eval", "work:evolve/01-eligibility"),
                 ("dependency", "work:evolve/01-eligibility", "work:evolve/02-campaign"),
                 ("dependency", "work:evolve/02-campaign", "work:evolve/03-result"),
-                ("executor", "work:evolve/00-eval", "skill:orch-outline"),
-                ("executor", "work:evolve/01-eligibility", "skill:orch-check"),
-                ("executor", "work:evolve/02-campaign", "skill:orch-execute"),
-                ("executor", "work:evolve/03-result", "skill:orch-check"),
+                ("executor", "work:evolve/00-eval", "skill:orch-do"),
+                ("executor", "work:evolve/01-eligibility", "skill:orch-judge"),
+                ("executor", "work:evolve/02-campaign", "skill:orch-do"),
+                ("executor", "work:evolve/03-result", "skill:orch-judge"),
                 ("loop", "work:evolve/02-campaign", "work:evolve/02-campaign"),
             },
             edge_tuples,
@@ -118,8 +117,8 @@ class WorkflowCompositionTests(unittest.TestCase):
             by_id["work:evolve/02-campaign"]["source_id"],
         )
         self.assertEqual(
-            identity.source_id("lib/skills/kernel/orch-execute/SKILL.md"),
-            by_id["skill:orch-execute"]["source_id"],
+            identity.source_id("lib/skills/kernel/orch-do/SKILL.md"),
+            by_id["skill:orch-do"]["source_id"],
         )
         self.assertEqual(
             sorted(detail["edges"], key=lambda edge: (

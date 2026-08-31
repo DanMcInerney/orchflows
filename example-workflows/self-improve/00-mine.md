@@ -1,6 +1,6 @@
 ---
 id: 00-mine
-executor: orch-execute
+executor: orch-do
 pack: orch-content-pack
 loop: true
 done: {"form":"check","value":"Ranked qualifying proposals are written to the state sink's improvement/ and the top-ranked proposal, or the finding that nothing qualified, is named in Result."}

@@ -62,7 +62,7 @@ GROK_LIMITS_START = marker("grok", "subagent_limits", _HOST_ADAPTERS)["start"]
 GROK_LIMITS_END = marker("grok", "subagent_limits", _HOST_ADAPTERS)["end"]
 # The routed names exposed by Claude's bounded adapter-set benchmark. Named
 # skills outside this set remain explicit by-name invocations.
-SHARED_ADAPTER_NAMES = ("orch-outline", "orch-slice")
+SHARED_ADAPTER_NAMES = ("orch-do", "orch-judge")
 CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is

@@ -152,7 +152,7 @@ class CatalogCompletenessTests(unittest.TestCase):
         expected = registered_names()
         # Graded before anything is compared: an expectation that came back
         # empty would make every containment below vacuously true.
-        self.assertIn("orch-outline", expected)
+        self.assertIn("orch-do", expected)
         self.assertIn("orch-code-pack", expected)
         self.assertGreaterEqual(len(expected), 11)
 
@@ -176,9 +176,9 @@ class CatalogCompletenessTests(unittest.TestCase):
         for label in sorted(found):
             with self.subTest(catalog=label):
                 planted = dict(found)
-                planted[label] = found[label] - {"orch-outline"}
+                planted[label] = found[label] - {"orch-do"}
                 self.assertEqual(
-                    {label: ["orch-outline"]}, omissions(expected, planted)
+                    {label: ["orch-do"]}, omissions(expected, planted)
                 )
 
     def test_curated_name_tuples_name_only_shipped_packages(self):
@@ -204,8 +204,8 @@ class CatalogCompletenessTests(unittest.TestCase):
             ("codex", "skill"), ("grok", "skill"),
         ):
             with self.subTest(host=host, item=item):
-                path = host_item_path(host, item, Path("root"), adapters, name="orch-outline")
-                self.assertEqual("orch-outline", name_reader(host, item, adapters)(path))
+                path = host_item_path(host, item, Path("root"), adapters, name="orch-do")
+                self.assertEqual("orch-do", name_reader(host, item, adapters)(path))
 
 
 if __name__ == "__main__":

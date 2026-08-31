@@ -120,7 +120,7 @@ class TestTheTrunkDispatchesAndLandsADocumentItem(unittest.TestCase):
 
     def test_a_content_pack_ticket_dispatches_and_lands_unisolated(self):
         self.command(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the document.",
             "--context", "The brief is authoritative.",
             "--pack", CONTENT_PACK,

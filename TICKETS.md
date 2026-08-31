@@ -19,7 +19,7 @@ context in any checkout resumes a run mid-flight.
     ┌─ 00-root.02.md ─────────────────────────────────────────────┐
     │ ---                                                         │
     │ id, run, status, admission, dispatch_v1                    │
-    │ executor: orch-execute    pack: orch-code-pack              │
+    │ executor: orch-do        pack: orch-code-pack              │
     │ depends_on: [00-root.01]  <- graph edge                     │
     │ bound: 45m                <- time budget                    │
     │ checked_by (the lease lives in dispatch_v1)                 │
@@ -81,7 +81,7 @@ whose owner and opened time are the lease. The normative shapes and precedence l
 
 A delivery run holds one **root ticket** for the whole request. A direct
 root binds its complete work to one executor. A genuinely decomposed root is
-frozen by `orch-outline`, cut by `orch-slice`, and joined by pre-issued
+frozen by a planning `orch-do`, cut by `orch-slice`, and joined by pre-issued
 **gate stubs** for the end-of-run review:
 
     <state sink>/tickets/<run>/
@@ -153,7 +153,7 @@ Three moments use readers who did not produce the fixed artifact
    Once a unit dispatch opens, cut correction is refused.
 2. **Ticket independence** — each result takes one outside-independence path:
    either the ordinary durable evaluator/adjudication carrier or the downstream
-   composite gate. Both use fresh read-only `orch-check`; neither repairs
+   composite gate. Both use fresh read-only `orch-judge`; neither repairs
    its own target. `tickets.py checker-stage <run> <id>` derives one explicit
    `<id>.check` review ticket from the sealed target. That stage uses the same
    `dispatch` → `land` carrier as every

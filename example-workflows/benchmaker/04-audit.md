@@ -1,6 +1,6 @@
 ---
 id: 04-audit
-executor: orch-check
+executor: orch-judge
 pack: {{pack}}
 depends_on: [03-qualify]
 bound: <= 80 tool calls

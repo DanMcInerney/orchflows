@@ -28,15 +28,19 @@ that needs a different meaning needs a different word.
   skill calls no skill.
 - **workflow skill** — an assembled T1 skill calling primitives or other
   skills; always domain-blind. It lives under `skills/workflows/`.
-- **checker** — `orch-check`: the planner-role callable rendering findings
-  or verdicts over a fixed artifact and never a deliverable; it is exempt
-  from the envelope per `rules/composition.md`.
-- **outline** — `orch-outline`: the planner-role callable that freezes and
-  seals a semantic root at intake, reading the stamped pack craft's
-  `## Outline` and `## Spec fields` sections to do it. It supersedes the
-  earlier intake-verb name, which no
-  dispatch revives; the noun **spec** (below) is unrenamed. As a routing shape it is
-  the shape (below) that reaches this verb.
+- **brick** — one of the two T1 callables under `skills/kernel/`, `orch-do`
+  and `orch-judge`, that do all real work; every workflow skill is prose
+  calling bricks or other skills down to them.
+- **checker** — `orch-judge` (formerly orch-check): the planner-role
+  callable rendering findings or verdicts over a fixed artifact and never
+  a deliverable; it is exempt from the envelope per `rules/composition.md`.
+- **outline** — a retired planner-role verb name, successor to the earlier
+  orch-spec intake verb. Both are superseded by a planning `orch-do`,
+  which freezes and seals a semantic root at intake, reading the stamped
+  pack craft's `## Outline` and `## Spec fields` sections to do it. No
+  dispatch revives either retired name; the noun **spec** (below) is
+  unrenamed. As a routing shape it is still the shape (below) that reaches
+  a planning `orch-do`.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature: `adapter`, `stages`, and
@@ -93,11 +97,11 @@ that needs a different meaning needs a different word.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
-  `contracts/work-item.md`; input to decomposition; `orch-outline` is its
-  only editor, at intake — every other reader, `orch-slice`
-  included while cutting, treats it as frozen. The noun keeps this name
-  after the intake verb was renamed; so does the craft's `## Spec fields`
-  section.
+  `contracts/work-item.md`; input to decomposition; a planning `orch-do` is
+  its only editor, at intake — every other reader, `orch-slice` cutting
+  included, treats it as frozen. The noun keeps this name after the intake
+  verb was renamed and after orch-outline retired; so does the craft's
+  `## Spec fields` section.
 - **semantic root** — the executable delivery contract owned by the caller,
   not the spec's general vision. `rules/delegation.md` owns which facts the
   caller freezes and which deterministic corrections a decomposer may make;
@@ -128,8 +132,8 @@ that needs a different meaning needs a different word.
   `land` reads its `done` predicate as met. A successor root lives in a successor run
   opened after the accepted predecessor result identity resolves and cites
   that identity in its Context; the predecessor run's durable `successors.md`
-  names the planned root until `orch-outline` materializes it once the run's
-  frontier drains.
+  names the planned root until a planning `orch-do` materializes it once the
+  run's frontier drains.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
   instantiate` and drained by the driver two commands at a time; the one
@@ -188,7 +192,7 @@ that needs a different meaning needs a different word.
   §9. Research craft narrows the term for sources: no shared upstream.
 - **checker** — the durable adjudication carrier for the ordinary
   outside-independence path: an explicit derived review-stage ticket whose
-  fresh read-only `orch-check` accepts the exact assignment, challenges one
+  fresh read-only `orch-judge` accepts the exact assignment, challenges one
   fixed artifact and its evidence, and joins its accepted set before the
   target can record `checked_by`.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
@@ -210,8 +214,10 @@ that needs a different meaning needs a different word.
   established workspace, and normalized isolation `none`; authoring admission
   and benchmark qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
-  other candidates: an `orch-check` ticket whose criteria carry a score scale,
-  blindness being a property of the assignment's `inputs`, not of a skill.
+  other candidates: an `orch-judge` ticket whose criteria carry a score
+  scale, blindness being a property of the assignment's `inputs`, not of a
+  skill. Distinct from the callable `orch-judge` itself, which this noun
+  predates; the collision is a naming debt for the full vocabulary sweep.
 
 The benchmark pipeline's artifacts are named here and defined by their
 producers, never restated: **evaluation design** (the execute lane's

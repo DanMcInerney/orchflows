@@ -233,7 +233,7 @@ class ExperienceProjectionTest(unittest.TestCase):
                 associated,
                 "01-report",
                 status="complete",
-                executor="orch-execute",
+                executor="orch-do",
                 depends_on="[]",
             )
             ticket.write_text(
@@ -246,7 +246,7 @@ class ExperienceProjectionTest(unittest.TestCase):
                 associated,
                 "02-historical",
                 status="complete",
-                executor="orch-execute",
+                executor="orch-do",
                 depends_on="[01-report]",
             )
             historical.write_text(

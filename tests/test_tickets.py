@@ -141,7 +141,7 @@ class AdapterRegistryTest(unittest.TestCase):
             self._pack(root, "no-such-adapter")
             ticket = (
                 "---\nid: T1\nrun: testrun\nstatus: pending\n"
-                "executor: orch-execute\ndepends_on: []\nbound: 30m\n"
+                "executor: orch-do\ndepends_on: []\nbound: 30m\n"
                 "pack: widget-pack\nisolation: required\n---\n\n"
                 "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
             )
@@ -220,7 +220,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     git_checkout(tmp)
     sink = use_sink(tmp)
     tickets_mod._dispatch([
-        "new", "testrun", "T1", "--executor", "orch-execute",
+        "new", "testrun", "T1", "--executor", "orch-do",
         "--goal", "Test result attribution.", "--context", "[]",
         "--pack", "orch-code-pack", "--isolation", "required",
     ])
@@ -354,7 +354,7 @@ class PackPinTest(unittest.TestCase):
     def test_new_pins_the_stamped_packs_digest_at_issue_time(self):
         with self._pinned_world() as (tmp, pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
@@ -367,7 +367,7 @@ class PackPinTest(unittest.TestCase):
     def test_a_pack_edited_under_the_pin_refuses_at_admission(self):
         with self._pinned_world() as (tmp, pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
@@ -392,7 +392,7 @@ class PackPinTest(unittest.TestCase):
     def test_an_unchanged_pack_grades_clean(self):
         with self._pinned_world() as (tmp, _pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
@@ -407,7 +407,7 @@ class PackPinTest(unittest.TestCase):
     def test_a_pack_that_cannot_be_pinned_refuses_at_issue(self):
         with self._pinned_world() as (tmp, _pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T2", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T2", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "no-such-pack",
             )
@@ -420,7 +420,7 @@ class PackPinTest(unittest.TestCase):
 
         with self._pinned_world() as (tmp, _pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
