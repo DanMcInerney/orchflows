@@ -60,6 +60,7 @@ from .packages import (
     frontmatter_field,
     host_legal_frontmatter,
     load_role_profiles,
+    manual_only_frontmatter,
     render_claude_agent,
     render_codex_agent,
     split_frontmatter,
@@ -246,13 +247,11 @@ def _build_user_plan(
                 )
             )
 
-    # Compositions are invocable by name, so they get the same name surfaces
-    # as skills: a by-name pointer, a Claude adapter stub, a Codex prompt,
-    # and — for curated entry points — a Codex redirect stub. Uniform across
-    # entry values: routed and named alike. What differs from a skill is only
-    # what a stub can point at: a template is a directory, so the pointer
-    # names the directory and the adapter carries the two commands that run
-    # it instead of an ``@``-include of a body that does not exist.
+    # Workflows are invocable by name, so they get the same name surfaces as
+    # skills: a by-name pointer, a Claude adapter stub, a Codex prompt, and
+    # — for curated entry points — a Codex redirect stub. What differs from a
+    # skill is one thing: every workflow surface is manual-invocation-only,
+    # so the Claude adapter's frontmatter is forced rather than inherited.
     for template_dir, frontmatter, body in discover_templates():
         name = template_dir.name
         description = frontmatter_field(frontmatter, "description") or ""
@@ -260,15 +259,15 @@ def _build_user_plan(
         pointer = (
             frontmatter
             + f"\nRead {lib_template_dir / TEMPLATE_MANIFEST} and follow it "
-            f"exactly. It is the manifest of the ticket-set template at "
-            f"{lib_template_dir}.\n"
+            f"exactly. It is the workflow skill at {lib_template_dir}, and it "
+            "is invoked by name only.\n"
         )
         by_name.append((lib_home / "by-name" / name / "SKILL.md", pointer))
         if claude_enabled and _mints_claude_adapter(name, claude_adapter_set):
             claude_adapters.append(
                 (
                     item_path("claude", "skill", claude_scope_home, name=name),
-                    host_legal_frontmatter(frontmatter)
+                    manual_only_frontmatter(frontmatter)
                     + template_adapter_body(name, lib_template_dir, frontmatter),
                 )
             )

@@ -8,15 +8,13 @@ CRAFT_BUDGET = __dep_common.CRAFT_BUDGET
 DESCRIPTION_BUDGET = __dep_common.DESCRIPTION_BUDGET
 ENVELOPE_UNITS = __dep_common.ENVELOPE_UNITS
 ENVELOPE_VOCAB_RES = __dep_common.ENVELOPE_VOCAB_RES
-MANIFEST_BUDGET = __dep_common.MANIFEST_BUDGET
+BODY_BUDGET = __dep_common.BODY_BUDGET
 MD_LINK_RE = __dep_common.MD_LINK_RE
 Path = __dep_common.Path
 RETURN_TEXT_RE = __dep_common.RETURN_TEXT_RE
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
 ROOT = __dep_common.ROOT
-SKILL_TIERS = __dep_common.SKILL_TIERS
 SKIPPED = __dep_common.SKIPPED
-TEMPLATE_ENTRY_VALUES = __dep_common.TEMPLATE_ENTRY_VALUES
 TICKET_FILING_RE = __dep_common.TICKET_FILING_RE
 sys = __dep_common.sys
 re = __dep_common.re
@@ -327,152 +325,64 @@ def _ticket_law():
     return tickets
 
 
-def _validate_template_manifest(path: Path, diag: Diagnostics):
-    """Check one template.md; return its declared placeholder names, or
-    None when it declares no usable list -- with the declaration
-    unreadable, an undeclared placeholder is the manifest's defect and
-    not each stub's."""
-    file_label = rel(path)
-    fm, _ = parse_frontmatter(_read_source(path), file_label, diag)
-    if fm is None:
-        return None
-    name = fm.get("name")
-    directory = path.parent.name
-    if not name:
-        diag.error(file_label, "template frontmatter missing required key 'name'")
-    elif name != directory:
-        diag.error(
-            file_label,
-            f"template name '{name}' does not match directory name '{directory}'",
-        )
-    description = fm.get("description")
-    if not description:
-        diag.error(file_label, "template frontmatter missing required key 'description'")
-    elif len(description) > DESCRIPTION_BUDGET:
-        diag.error(
-            file_label,
-            f"description is {len(description)} chars, exceeds {DESCRIPTION_BUDGET}-char budget",
-        )
-    entry = fm.get("entry")
-    if not entry:
-        diag.error(file_label, "template frontmatter missing required key 'entry'")
-    elif entry not in TEMPLATE_ENTRY_VALUES:
-        diag.error(
-            file_label,
-            f"entry '{entry}' is not one of {sorted(TEMPLATE_ENTRY_VALUES)} "
-            "per contracts/work-item.md",
-        )
-    if "placeholders" not in fm:
-        diag.error(file_label, "template frontmatter missing required key 'placeholders'")
-        return None
-    declared = fm["placeholders"].strip()
-    if not (declared.startswith("[") and declared.endswith("]")):
-        diag.error(
-            file_label,
-            "'placeholders' is not a list; write [] when the template declares none",
-        )
-        return None
-    return {item.strip() for item in declared[1:-1].split(",") if item.strip()}
-
-
-def _validate_stub_executor(
-    executor: str, file_label: str, skill_names: set, diag: Diagnostics, tickets
-) -> None:
-    """The executor names a skill in the tree or a script that exists --
-    the half of executor law that needs the tree, and so cannot live with
-    the rest of it in scripts/tickets.py. What shape an executor may take
-    at all is that script's, and it reports on that itself.
-
-    A placeholder is left to instantiation, which refuses an unfilled one
-    and so checks the filled value.
-    """
-    if tickets.PLACEHOLDER_RE.search(executor):
-        return
-    if executor.startswith(tickets.SCRIPT_EXECUTOR_PREFIX):
-        target = executor[len(tickets.SCRIPT_EXECUTOR_PREFIX):].strip()
-        if not (ROOT / target).exists():
-            diag.error(
-                file_label,
-                f"executor names script '{target}', which does not exist in the tree",
-            )
-        return
-    if executor not in skill_names:
-        diag.error(
-            file_label,
-            f"executor '{executor}' names no skill under skills/ and is not a "
-            "'script:<path>'",
-        )
-def _tree_skill_names() -> set:
-    """Every skill package name across the five tiers -- the set a stub's
-    executor resolves against."""
-    names = set()
-    for tier in SKILL_TIERS:
-        tier_dir = ROOT / "skills" / tier
-        if not tier_dir.is_dir():
-            continue
-        names |= {d.name for d in tier_dir.iterdir() if (d / "SKILL.md").is_file()}
-    return names
-
-
 def validate_templates(diag: Diagnostics) -> None:
-    """contracts/work-item.md, Template and stub: every `example-workflows/<name>/` template is a
-    manifest plus ticket stubs a run can be instantiated from.
+    """Every `example-workflows/<name>/` entry is one workflow skill.
 
-    Ticket shape and the depends_on graph are read from
-    `scripts/tickets.py`, which grades every issued ticket and every
-    instantiated stub: the validator admits into the tree exactly what that
-    script will accept, in that script's own words. What stays here is what
-    needs the tree the script has no access to -- the manifest, the
-    placeholder balance between manifest and stubs, and whether an executor
-    names a skill or a script that exists.
+    A workflow is a skill whose prose calls bricks, so the checks are a
+    skill's: the name matches its directory, the description is present and
+    inside the shared budget, the body is inside the workflow tier's word
+    budget, and the manual-invocation flag is declared. The last is the one
+    check with no skill analogue -- a workflow's prose runs as orchestrator
+    reasoning rather than inside a sealed child prompt, so a host firing one
+    on its own reading of a description opens that surface uninvited.
+
+    What a brick call is, and whether one is well formed, is `scripts/
+    tickets.py`'s and is reported there; nothing in a body is graded here.
     """
-    if not (ROOT / "example-workflows").is_dir():
-        diag.warn("example-workflows", SKIPPED)  # no tree, so no template
+    comps_dir = ROOT / "example-workflows"
+    if not comps_dir.is_dir():
+        diag.warn("example-workflows", SKIPPED)  # no tree, so no workflow
         return
-    tickets = _ticket_law()
-    manifest_name = tickets.TEMPLATE_FILE
-    directories = discover_templates(manifest_name)
-    if not directories:
-        diag.warn("example-workflows", "holds no {0}; check skipped".format(manifest_name))
-        return
-    skill_names = _tree_skill_names()
-    for directory in directories:
-        manifest_label = rel(directory / manifest_name)
-        declared = _validate_template_manifest(directory / manifest_name, diag)
-        for path, message in tickets.template_defects(directory):
-            label = rel(Path(path))
-            executor = tickets._parse_frontmatter(_read_source(Path(path))).get("executor")
-            diag.error(label, message)
-
-        manifest_text = _read_source(directory / manifest_name)
-        n = body_words(_split_frontmatter(manifest_text)[1])
-        if n > MANIFEST_BUDGET:
-            diag.error(manifest_label, f"manifest has {n} words, exceeds the budget of {MANIFEST_BUDGET}")
-        used = set()
-        for path in sorted(directory.glob("*.md")):
-            if path.name == manifest_name:
-                continue
-            text = _read_source(path)
-            stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
-            used |= stub_used
-            executor = tickets._parse_frontmatter(text).get("executor")
-            if isinstance(executor, str) and executor.strip():
-                _validate_stub_executor(
-                    executor.strip(), rel(path), skill_names, diag, tickets
-                )
-            if declared is not None:
-                for name in sorted(stub_used - declared):
-                    diag.error(
-                        rel(path),
-                        f"placeholder '{{{{{name}}}}}' is declared by no "
-                        f"'placeholders' entry in {manifest_label}",
-                    )
-        if declared is not None:
-            for name in sorted(declared - used):
-                diag.warn(
-                    manifest_label,
-                    f"declared placeholder '{{{{{name}}}}}' is used by no stub",
-                )
+    budget = BODY_BUDGET["workflows"]
+    for directory in sorted(d for d in comps_dir.iterdir() if d.is_dir()):
+        manifest = directory / "SKILL.md"
+        if not manifest.is_file():
+            continue  # shared references, not a name surface
+        label = rel(manifest)
+        fm, body = parse_frontmatter(_read_source(manifest), label, diag)
+        if fm is None:
+            continue
+        name = fm.get("name")
+        if not name:
+            diag.error(label, "workflow frontmatter missing required key 'name'")
+        elif name != directory.name:
+            diag.error(
+                label,
+                f"workflow name '{name}' does not match directory name "
+                f"'{directory.name}'",
+            )
+        description = fm.get("description")
+        if not description:
+            diag.error(label, "workflow frontmatter missing required key 'description'")
+        elif len(description) > DESCRIPTION_BUDGET:
+            diag.error(
+                label,
+                f"description is {len(description)} chars, exceeds "
+                f"{DESCRIPTION_BUDGET}-char budget",
+            )
+        if fm.get("disable-model-invocation") != "true":
+            diag.error(
+                label,
+                "workflow frontmatter must declare 'disable-model-invocation: "
+                "true'; a workflow is invoked by name only",
+            )
+        n = body_words(body)
+        if n > budget:
+            diag.error(
+                label,
+                f"workflow body has {n} words, exceeds the workflow-tier "
+                f"budget of {budget}",
+            )
 
 
 # LOOP_TRIGGER_RE matches iteration verbs, not the referential nouns "loop" or
@@ -484,6 +394,5 @@ __all__ = (
     'validate_envelope', 'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
     'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE', 'discover_templates',
     '_composition_artifact_kind', '_reference_owner', '_script_owner', 'validate_composition_admission',
-    '_doclint', '_ticket_law', '_validate_template_manifest', '_validate_stub_executor',
-    '_tree_skill_names', 'validate_templates',
+    '_doclint', '_ticket_law', 'validate_templates',
 )
