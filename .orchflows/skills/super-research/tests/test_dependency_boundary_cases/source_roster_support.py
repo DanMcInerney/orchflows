@@ -178,7 +178,10 @@ TENS_WORDS = ("Ten", "Twenty", "Thirty", "Forty", "Fifty")
 
 ITEM_DIR = TESTS_DIR.parent
 OWNER_SKILL = ITEM_DIR / "SKILL.md"
-HOST_MIRROR = ITEM_DIR.parent.parent.parent / ".claude" / "skills" / "super-research" / "SKILL.md"
+# The checkout root a generated adapter's pointer is relative to
+# (`orchflows_adapters.pointer_for`), not the stub's own directory.
+PROJECT_ROOT = ITEM_DIR.parent.parent.parent
+HOST_MIRROR = PROJECT_ROOT / ".claude" / "skills" / "super-research" / "SKILL.md"
 
 # `rules/composition.md` §5. Restated rather than imported because
 # `tools/validate.py`, which enforces it for every library skill, does not read
