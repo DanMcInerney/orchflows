@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2053,
+  "count": 2054,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -907,6 +907,7 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_discovers_tests_from_project_scope_directory",
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
+   "test_super_research_suite.SuperResearchSuiteTest.test_the_skill_suite_exits_zero",
    "test_templates.TemplateTest.test_all_routed_compositions_have_current_ticket_shape",
    "test_templates.TemplateTest.test_every_routed_composition_instantiates",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
@@ -2056,7 +2057,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f6cb69f51aeb8827a003939a5ecfc0f40ede9a56b39db1a00b1dff39675daec1"
+  "sha256": "11f4ff8b0041aa651f514a22287da01980123f87fc34a60479018fc9fc77feff"
  },
  "mutation_owners": [
   {
