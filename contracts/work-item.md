@@ -432,3 +432,29 @@ predicate's reading or the driver's grade at the join, never the executor's
 claim. `review_kind` loses `verify`, the review ledger ends at
 `RepairOutcome`, and the `Verification` record and its shape are removed
 with the standing verification lane they served.
+
+T0 supersession record sha256:ae7a127d5d67fb0eb6cdbfde042427e17dba588a4c80cdd67baedf98f532f291:
+the semantic ticket diet. `## Suggested files` becomes `## Details`, and what
+it may hold stops being a non-binding path list: it is the planner's free-form
+guidance for this one child -- read-lists, anchors, prescribed steps, do-nots,
+definition-of-done commands, and what the closing report should carry. The
+clauses that forbade all of it go with the section they qualified: the
+assignment may now carry authored file paths, prescribed actions, named checks
+and prescribed tests, and the executor no longer "chooses implementation, tests,
+and verification" by law. What replaces the prohibition is the escape hatch --
+follow Details and say so, or deviate where following it would miss Goal and
+report the deviation -- because a planner that investigated should prescribe
+and a planner that did not should leave the choice.
+
+The five executor sections become one `## Report`. `Result`, `Verification`,
+`Feedback`, `Risks` and `Handoff` are gone, with the `[]` prefill, the
+`--section`, `--append` and `--replace` flags, and the `mode` and `section`
+fields of the result record: there is one section, one mode, and no consumer
+that reads which heading a fact arrived under. Outcome evidence is one closing
+note appended there like any other filing, and the delta law is gone with the
+five keys it policed. A critique's findings, the one thing a machine does read,
+cross to the join as a file -- `--findings-file <path|->`, beside
+`--accepted-file` -- and live in the `CritiqueAdjudication` that was always
+their durable home. `land` appends its predicate reading to `Report`. No
+instruction ceiling bounds any of it: `tickets.py new` and `lint` grade a
+ticket's shape, never its length.

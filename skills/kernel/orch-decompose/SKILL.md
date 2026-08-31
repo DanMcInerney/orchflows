@@ -19,12 +19,19 @@ one terminal assembly item at that stage; when it says none, emit no
 assembly item. The completed cut gets one new validated cut generation and
 assignment seal while retaining its one root generation.
 
-Give every member an observable Goal, relevant Context, optional Details,
-isolation, bound, and dependency edges. Details may overlap and never grant
+Write each member as the brief a fresh child needs, with isolation, bound,
+edges. Open on its role and authority boundary. Goal: one observable end
+result with the evidence behind it. Context: pointers by identity, the root
+ticket path required reading, never a dump. Details: prescribe as hard as your
+investigation earned and no harder — read-lists, anchors, steps, non-scope,
+done commands whose exit codes it captures, and what its report must cover.
+Every prescription carries its evidence and an escape hatch: deviate where it
+would miss Goal, reporting that. Where you did not investigate, leave the
+choice. Details may overlap and never grant
 authority. Declared `isolation: required`, a cut takes no workspace.
 
 Write the sole composite gate through `tickets.py gate`: one critique per
-unique lens, feeding one repair and one verification over the integrated result.
+unique lens feeding one repair.
 Then run `cutcheck.py` on that complete gate-bearing assignment draft; correct
 structural defects and re-run to 0. The [cut lens](references/cut-lens.md)
 judges advisories and undecidable matters. Follow

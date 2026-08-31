@@ -104,7 +104,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             re.compile(r"Skill/composition/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
         decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("relevant Context", decompose)
+        self.assertIn("Context: pointers by identity", decompose)
         self.assertNotIn("**errand**", collapsed_host)
         self.assertNotIn("sequence: [orch-outline, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)

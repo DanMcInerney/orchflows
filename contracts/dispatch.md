@@ -219,6 +219,19 @@ child's prose are all removed, and the prompt teaches no token in their
 place. The fresh outside check is the landed ticket's own `done` predicate,
 run by `land` in the tree it has just merged the candidate into.
 
+T0 supersession record sha256:83bebaf00635c6cb8e2b6f6681024c6ea7f8ca35196b5e3efcfff69dc006ff15:
+the return has one channel. `dispatch_outcome_evidence` is gone: `evidence` is
+one non-empty string, the child's closing note, and the five typed close flags
+become `--note` and `--note-file` while `--file` keeps relaying a whole
+canonical envelope. Nothing parses that note, so the delta rule that refused a
+repeat of already-streamed evidence is gone with the sections it compared.
+`dispatch_result_record` and `dispatch_result_projection` lose `section` and
+`mode` for the same reason -- one section, one mode, both constants restated on
+the wire. A critique's complete findings reach `dispatch-join` through
+`--findings-file <path|->` beside the accepted subset's `--accepted-file`,
+rather than being read back out of the records the child streamed. The prompt
+names what a report is expected to carry and teaches no filing taxonomy.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 

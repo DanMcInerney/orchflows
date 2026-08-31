@@ -358,6 +358,25 @@ one the join will grade. That is the test for what belongs in code.
   load-bearing as what it says — it names no skill for the child to invoke
   and no pack for it to resolve, because a fork arriving without a prompt
   can obey neither.
+- **Structure only where a machine reads it.** The ticket used to
+  over-prescribe in both directions at once. On the way out it forbade the
+  planner from naming a file, a check, or a step — a law written against a
+  planner that guesses, which also bound the planner that had just spent an
+  hour reading the code. On the way back it required a child to sort its work
+  into five headings no consumer read. The evidence that broke both is the
+  same evidence: the freehand briefs that built stages A through C violated
+  the first wholesale — evidence-anchored prescribed deletions, named checks,
+  definition-of-done commands, 1,300 words — and their unstructured returns
+  beat the sectioned ones, because honest exit codes and deferrals-with-
+  reasons are what a reader needs and no taxonomy produces them. So `Details`
+  is free-form and unbounded, and `Report` is one channel. The rule that
+  replaces both is narrow: prescribe as hard as investigation earned, carry
+  the evidence and the escape hatch with every prescription, and keep
+  structure only where something mechanical reads it — which, on the return
+  side, is one JSON findings file the join binds into the review ledger, and
+  nothing else. The test is the amnesia test again: a perfect model still
+  cannot guess the file you already read, and still gains nothing from being
+  told which heading to file a fact under.
 
 ## Roads not taken
 

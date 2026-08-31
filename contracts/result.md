@@ -112,6 +112,19 @@ the record an unseen executor result enters behind is the attempt's
 committed launch. The packet it used to name is gone, and the identities
 this contract requires of every write are unchanged.
 
+T0 supersession record sha256:f80f8c31a1a37649ee72f808d6fcec7a032eada1e542520ab208437f280f298b:
+one filing channel. The executor's five sections collapse to `## Report`, and
+`executor_result` loses `section` and `mode` with the flags that chose them --
+`--section`, `--append`, `--replace` -- because one section admits one mode and
+nothing downstream reads which heading a fact arrived under. Every write
+appends. The closing outcome is one non-empty note appended here too, and the
+delta law that refused a repeat is gone: no consumer parses this prose, so a
+repeated sentence is a reader's problem rather than a refusal that loses the
+close. Critique findings stop riding in `Result` or `Feedback`: the complete
+array crosses the join as `--findings-file <path|->`, exactly as the accepted
+subset crosses as `--accepted-file <path|->`, and both are bound in the review
+ledger. The identities every write carries are unchanged.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 
