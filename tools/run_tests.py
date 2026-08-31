@@ -437,20 +437,23 @@ def main(argv=None) -> int:
         raise SystemExit("run_tests: no test_*.py under " + str(tests_dir))
     # Over the sources this run named rather than the whole tree, and ahead of
     # the selection: a scope reaching no module exits 0 in there, which would
-    # carry the admission the run still owes away with it.
-    admitted = run_tests_scope.admission_paths(
+    # carry the report the run still owes away with it.
+    reported = run_tests_scope.size_report_paths(
         args.scope, args.modules, tests_dir == DEFAULT_TESTS_DIR.resolve())
-    if admitted is not None:
+    if reported is not None:
         size_check = subprocess.run(
-            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")] + admitted,
+            [sys.executable, str(ROOT / "tools" / "check_source_sizes.py")] + reported,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=child_env(),
         )
+        size_report = size_check.stdout.decode("utf-8", "replace")
         if size_check.returncode:
-            emit(size_check.stdout.decode("utf-8", "replace"))
-            print("FAILED: tracked source-size admission")
+            emit(size_report)
+            print("FAILED: the source-size report did not run")
             return 1
+        if "WARN " in size_report:
+            emit(size_report)
     if args.scope:
         args.modules = run_tests_scope.select(args.scope, tests_dir, discovered)
     selected = (

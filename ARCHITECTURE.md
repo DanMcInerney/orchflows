@@ -62,7 +62,7 @@ family's five owner modules.
   (generated inert host adapters).
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
-  executable-source line ceilings.
+  the warn-only executable-source size report.
   [`tools/regen.py`](tools/regen.py) owns every derived artifact's generator and
   the drift check validate calls.
   [`tools/run_required.py`](tools/run_required.py) owns the local
