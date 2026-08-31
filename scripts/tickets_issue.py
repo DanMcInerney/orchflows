@@ -1,6 +1,7 @@
 """Ticket creation for the sealed semantic assignment."""
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import datetime, timezone
 
 if __package__:
@@ -235,7 +236,15 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
     return defects
 
 
-def _issue_ticket(run: str, ticket_id: str, text: str):
+def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = False):
+    """Write one ticket into the run, graded, under the run lock.
+
+    ``_lock_held`` is the idiom `dispatch-open` and `_commit_record` already
+    use: a caller that minted this id under its own hold of the run lock
+    cannot take it again -- the lock is one process byte, not a counter --
+    and releasing it to issue would let a second minter choose the same id.
+    """
+
     defects = _issue_defects(text)
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
@@ -246,7 +255,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         return {"error": NO_SINK_ERROR}
     path = root / run / f"{ticket_id}.md"
     try:
-        with _run_lock(run):
+        with (nullcontext() if _lock_held else _run_lock(run)):
             if path.exists():
                 return {"error": f"ticket id '{ticket_id}' is already issued in run '{run}': {path}"}
             if (held := grade_run_emission("new", run, path.parent, {ticket_id: text})) is not None:

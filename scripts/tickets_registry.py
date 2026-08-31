@@ -23,9 +23,13 @@ CALLABLE_EXECUTORS = (
     "orch-outline",
 )
 
+# ``files_findings`` marks the verb whose product is a findings file rather
+# than an artifact: it is what the launch prompt reads to ask for the second
+# verbatim machine line, so the judging verb is named once here instead of
+# in the prompt composer.
 EXECUTOR_REGISTRY = {
     "orch-execute": {"role": "worker", "requires_pack": True},
-    "orch-check": {"role": "planner", "requires_pack": True},
+    "orch-check": {"role": "planner", "requires_pack": True, "files_findings": True},
     "orch-slice": {"role": "planner"},
     "orch-outline": {"role": "planner"},
 }

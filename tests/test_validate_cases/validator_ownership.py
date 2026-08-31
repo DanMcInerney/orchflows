@@ -104,6 +104,7 @@ class TestPackWorkspaceTableAgainstPacks(unittest.TestCase):
         for key, adapter in sorted(tickets_mod.ADAPTER_REGISTRY.items()):
             self.assertEqual(key, adapter.key)
             self.assertTrue(adapter.identity_form)
+            self.assertIn(adapter.artifact_kind, {"git", "doc", "evidence"})
             self.assertIsInstance(adapter.establishes_isolation, bool)
             self.assertIsInstance(adapter.deterministic_gate, bool)
             self.assertTrue(adapter.conflict_semantics)

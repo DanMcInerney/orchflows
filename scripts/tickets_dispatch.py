@@ -25,6 +25,7 @@ if __package__:
     from .tickets_lint import _cmd_lint
     from .tickets_bound import _cmd_bound_check
     from .tickets_grade import _cmd_gate, _cmd_grade
+    from .tickets_brick import _cmd_do, _cmd_judge
     from .tickets_dispatch_facade import _cmd_dispatch
     from .tickets_land import _cmd_land
     from .tickets_loop import _cmd_loop_advance, _cmd_loop_arm, _cmd_loop_evaluate
@@ -46,6 +47,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_lint import _cmd_lint
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check
     _grade_module = __import__('tickets_grade'); _cmd_gate = _grade_module._cmd_gate; _cmd_grade = _grade_module._cmd_grade
+    _brick = __import__('tickets_brick'); _cmd_do = _brick._cmd_do; _cmd_judge = _brick._cmd_judge
     from tickets_dispatch_facade import _cmd_dispatch
     _cmd_land = __import__('tickets_land')._cmd_land
     _loop = __import__('tickets_loop')
@@ -145,7 +147,7 @@ def _dispatch(argv):
     if _sync_seams is not None:
         _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | grade | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | land | loop-arm | loop-evaluate | loop-advance | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | join-noop-repair | result | worklog | run-state | repair-run-identity | improvement'}
+        return {'error': 'missing subcommand: new | do | judge | lint | bound-check | instantiate | grade | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | land | loop-arm | loop-evaluate | loop-advance | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | join-noop-repair | result | worklog | run-state | repair-run-identity | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -182,6 +184,8 @@ def _dispatch(argv):
         return _cmd_dispatch_replace(rest)
     if command == 'dispatch':
         return _cmd_dispatch(rest)
+    if command == 'do': return _cmd_do(rest)
+    if command == 'judge': return _cmd_judge(rest)
     if command == 'land': return _cmd_land(rest)
     if command == 'loop-arm': return _cmd_loop_arm(rest)
     if command == 'loop-evaluate': return _cmd_loop_evaluate(rest)

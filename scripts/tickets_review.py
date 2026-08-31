@@ -15,7 +15,7 @@ if __package__:
     from .tickets_store import _load_ticket
     from .tickets_review_schema import (
         SchemaError, digest as _digest, finding_values as _finding_values,
-        nonempty as _nonempty, validate_records,
+        validate_records,
     )
 else:
     from tickets_adapters import AdapterError, adapter_spec, derived_isolation
@@ -26,7 +26,7 @@ else:
     from tickets_store import _load_ticket
     from tickets_review_schema import (
         SchemaError, digest as _digest, finding_values as _finding_values,
-        nonempty as _nonempty, validate_records,
+        validate_records,
     )
 
 
@@ -89,10 +89,19 @@ def validate_fixed_artifact(pack, artifact: str, workspace) -> tuple[str, str]:
         adapter = adapter_spec(pack)
     except AdapterError as error:
         raise ReviewError(error.detail) from error
-    if adapter.identity_form != "git-commit":
-        if not _nonempty(artifact):
-            raise ReviewError("review requires --artifact <fixed-identity>")
-        return artifact.strip(), normalized_workspace
+    if adapter.artifact_kind != "git":
+        # The same typed line the launch prompt asked the child to print, and
+        # the same grading the Git lane always got: an untyped identity is a
+        # string nothing downstream can read as an artifact, and accepting it
+        # is what let a non-Git join bind whatever prose arrived.
+        prefix = adapter.artifact_kind + ":"
+        stripped = str(artifact or "").strip()
+        if not stripped.startswith(prefix) or not stripped[len(prefix):].strip():
+            raise ReviewError(
+                f"review artifact for the {adapter.key} adapter must be "
+                f"{prefix}<fixed-identity>"
+            )
+        return stripped, normalized_workspace
     match = GIT_ARTIFACT_RE.fullmatch(str(artifact or "").strip())
     if match is None:
         raise ReviewError("git review artifact must be git:<full-commit-id>")
