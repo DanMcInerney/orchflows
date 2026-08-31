@@ -157,6 +157,33 @@ def _sealed_template_snapshot(run: str, ordered: list, rendered: list):
     )
 
 
+def _template_directory(target):
+    """``(directory, refusal)`` for one template: a path, or a workflow name.
+
+    A bare filesystem path still works, and is tried first, so nothing that
+    ran before stops running. A bare name -- no separator, no drive -- goes
+    through the one ring resolver, which is what makes a project or home
+    workflow invocable by name and what the generated host adapters point
+    at.
+    """
+
+    directory = Path(target)
+    if directory.is_dir():
+        return directory, None
+    text = str(target)
+    if directory.is_absolute() or "/" in text or "\\" in text:
+        return None, {'error': f'template directory not found: {directory}'}
+    if __package__:
+        from . import rings
+    else:  # pragma: no cover - direct/installed flat script path
+        import rings
+    try:
+        record = rings.resolve('workflow', text)
+    except rings.RingError as error:
+        return None, {'error': f'workflow does not resolve: {error.detail}'}
+    return Path(str(record['dir'])), None
+
+
 def _cmd_instantiate(rest):
     """Instantiate one template into one run's tickets.
     A template is a directory: ``template.md`` and one file per stub. What
@@ -178,9 +205,9 @@ def _cmd_instantiate(rest):
     invalid = _segment_error('run id', run)
     if invalid is not None:
         return invalid
-    directory = Path(args[0])
-    if not directory.is_dir():
-        return {'error': f'template directory not found: {directory}'}
+    directory, unresolved = _template_directory(args[0])
+    if unresolved is not None:
+        return unresolved
     template_path = directory / TEMPLATE_FILE
     if not template_path.is_file():
         return {'error': f"template directory {directory} has no {TEMPLATE_FILE}: it declares the template's name, entry and placeholders"}
@@ -350,5 +377,5 @@ def _cmd_stamp_generation(rest):
 
 __all__ = (
     "_cmd_instantiate", "_cmd_stamp_generation", "_sealed_template_snapshot",
-    "_template_stubs", "git_head", "render_stub",
+    "_template_directory", "_template_stubs", "git_head", "render_stub",
 )

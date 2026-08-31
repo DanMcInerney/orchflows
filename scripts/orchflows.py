@@ -3,7 +3,7 @@
 
 Six verbs over ``scripts/rings.py``'s one resolution order:
 
-    orchflows sync                     make the home ring whole again
+    orchflows sync [--project]         make a ring whole and render its adapters
     orchflows add <git-url>@<pin>      pin one external bundle
     orchflows new {skill|pack|workflow} <name>
     orchflows list [--kind K]          every item resolvable from here
@@ -23,9 +23,13 @@ import sys
 from pathlib import Path
 
 if __package__:
-    from . import console, orchflows_home, orchflows_scaffold, rings, rings_trust, state_root
+    from . import (
+        console, orchflows_adapters, orchflows_home, orchflows_scaffold,
+        rings, rings_trust, state_root,
+    )
 else:  # pragma: no cover - direct/installed flat script path
     import console
+    import orchflows_adapters
     import orchflows_home
     import orchflows_scaffold
     import rings
@@ -77,7 +81,8 @@ def cmd_list(args) -> int:
 
 
 def cmd_sync(args) -> int:
-    del args
+    if args.project:
+        return _sync_project()
     layout = orchflows_home.ensure()
     print(f"home ring: {layout['home']}")
     for path in layout["created"]:
@@ -87,7 +92,33 @@ def cmd_sync(args) -> int:
     for record in orchflows_home.restore():
         detail = f" ({record['detail']})" if record.get("detail") else ""
         print(f"import {record['name']} @ {record['pin']}: {record['action']}{detail}")
+    _report(orchflows_adapters.write("home"))
     return 0
+
+
+def _sync_project() -> int:
+    """Render the project ring's committed adapters into the project.
+
+    A separate flag rather than a second guess: the home ring is what
+    ``sync`` is for, and writing into somebody's repository is a thing they
+    ask for by name.
+    """
+
+    bundle = rings.project_ring()
+    if bundle is None:
+        print("error: no project ring here; run orchflows new first", file=sys.stderr)
+        return 1
+    project = bundle.parent
+    print(f"project ring: {bundle}")
+    _report(orchflows_adapters.write("project", project=project, start=project))
+    return 0
+
+
+def _report(result: dict) -> None:
+    for path in result["written"]:
+        print(f"adapter {path}")
+    for path in result["removed"]:
+        print(f"removed {path}")
 
 
 def cmd_add(args) -> int:
@@ -170,6 +201,10 @@ def _parser() -> argparse.ArgumentParser:
     listed.add_argument("--kind", choices=rings.KINDS)
     listed.set_defaults(handler=cmd_list)
     synced = subparsers.add_parser("sync", help="make the home ring whole", allow_abbrev=False)
+    synced.add_argument(
+        "--project", action="store_true",
+        help="render this project ring's committed adapters instead",
+    )
     synced.set_defaults(handler=cmd_sync)
     added = subparsers.add_parser("add", help="pin one external bundle", allow_abbrev=False)
     added.add_argument("reference", metavar="<git-url>@<pin>")

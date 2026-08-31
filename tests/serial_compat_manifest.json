@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2035,
+  "count": 2049,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -669,6 +669,20 @@
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
+   "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
+   "test_ring_adapters.BodyTests.test_a_workflow_adapter_carries_the_instantiate_route",
+   "test_ring_adapters.BodyTests.test_an_orchflows_only_field_never_reaches_a_host",
+   "test_ring_adapters.BodyTests.test_the_manual_invocation_flag_survives_into_a_claude_adapter",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_agents_shim_is_what_the_machinery_renders",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_claude_shim_is_what_the_machinery_renders",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_shim_holds_no_machine_specific_path",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_shim_keeps_its_manual_invocation_flag",
+   "test_ring_adapters.InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
+   "test_ring_adapters.ScopeTests.test_a_hand_written_neighbour_is_never_removed",
+   "test_ring_adapters.ScopeTests.test_a_pack_gets_no_adapter",
+   "test_ring_adapters.ScopeTests.test_a_reserved_ring_item_gets_no_adapter",
+   "test_ring_adapters.ScopeTests.test_project_adapters_point_repository_relative",
+   "test_ring_adapters.ScopeTests.test_sync_removes_the_adapter_of_a_deleted_ring_item",
    "test_rings.InventoryTests.test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it",
    "test_rings.InventoryTests.test_inventory_reports_ring_shadows_and_trust_for_every_kind",
    "test_rings.ReservationAndShadowTests.test_a_non_reserved_collision_wins_nearest_and_names_both_paths",
@@ -2038,7 +2052,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2553d07bf1f31fc1f7d2989e21637ede17ae5e05a88ab2fca7f8a04ec7320269"
+  "sha256": "c47c0e28ed8ff760c4d35fb2ebfc658efff2f4464826e6c11fbb051db2783c43"
  },
  "mutation_owners": [
   {
@@ -3862,6 +3876,22 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_ring_adapters",
+   "owner": "InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ring_adapters",
+   "owner": "_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

@@ -37,7 +37,7 @@ else:
     LOOP_ARM_USAGE, LOOP_EVALUATE_USAGE, LOOP_ADVANCE_USAGE = (_loop.LOOP_ARM_USAGE, _loop.LOOP_EVALUATE_USAGE, _loop.LOOP_ADVANCE_USAGE)
 
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
-INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
+INSTANTIATE_USAGE = "instantiate <workflow-name|template-dir> --run <run> [--set k=v ...]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> "
