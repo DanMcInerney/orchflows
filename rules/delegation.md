@@ -16,9 +16,10 @@ connect this law to each authorized dispatch event and predecessor record.
    authors or changes a deliverable. Every such skill runs in a child
    at the role [roles.md](roles.md) §4 resolves; inline execution is
    forbidden. Those mechanics are one command each way and the root
-   improvises neither: `tickets.py dispatch` emits the concrete `launch`
-   to invoke verbatim — never a retyped model, agent, or effort — and
-   `tickets.py land` is the return. Both are
+   improvises neither: a dispatching door — `tickets.py do` and `judge` for
+   a brick, `dispatch` for a hand-written ticket — emits the concrete
+   `launch` to invoke verbatim, never a retyped model, agent, or effort; and
+   `tickets.py land` is the return. Both halves are
    [dispatch.md](../contracts/dispatch.md)'s transactions.
 3. Star topology: children never communicate peer to peer; every result
    crosses exactly one join owned by the dispatching caller. There is no
@@ -37,8 +38,8 @@ connect this law to each authorized dispatch event and predecessor record.
    declares no predicate, and never the child's own word for it. Grading
    it: read Goal and Context at the fixed artifact identity; a `checker`
    item is accepted only over [work-item.md](../contracts/work-item.md)'s
-   `checked_by`, `independence: gate` defers that reading to the composite
-   gate, and a Goal claim no evidence covers is needs-check rather than
+   `checked_by`, `independence: gate` defers that reading to this join
+   itself, and a Goal claim no evidence covers is needs-check rather than
    accepted. Suspension parks the attempt and resumes from the ticket's
    `## Report`. What the join grades --
    candidate write authority, actual diffs and conflicts, and what a path
@@ -48,7 +49,7 @@ connect this law to each authorized dispatch event and predecessor record.
    behind its `depends_on` edges, which `tickets.py land` reports as it
    clears them.
 8. Dispatch names carry behavioral weight through the closed callable
-   registry [work-item.md](../contracts/work-item.md#template-and-executor-form)
+   registry [work-item.md](../contracts/work-item.md)
    lists; what a stage name is instead is
    [pack-signature.md](../contracts/pack-signature.md)'s. A superseded name is
    never revived or aliased: the dispatch refuses, naming its successor. No verb
@@ -82,8 +83,8 @@ connect this law to each authorized dispatch event and predecessor record.
     [profiles.md](../hosts/profiles.md)'s.
 12. The caller owns Goal, Context, and optional Details. Before seal,
     a decomposer may mechanically correct dependency edges, exact executor
-    bindings, lifecycle receipts, generation references, and composite gate
-    layout only while Goal and Context remain unchanged.
+    bindings, lifecycle receipts, and generation references
+    only while Goal and Context remain unchanged.
 13. The default mechanical correction is one generation. A caller or policy
     may instead set another finite positive bound. Recurrence of the same
     normalized validation-failure identity suspends immediately rather than

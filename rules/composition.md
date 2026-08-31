@@ -3,9 +3,10 @@
 1. A skill is one directory owning one `SKILL.md` contract. Kind by
    out-edges: a primitive calls no skill; a composite calls one or
    more. Kernel skills are always primitives (validator-enforced);
-   workflows may be either. Invocation policy for templates lives in
-   their manifest's `entry` field per
-   [contracts/work-item.md](../contracts/work-item.md#template-and-executor-form).
+   workflows may be either. A workflow declares
+   `disable-model-invocation: true` in its own frontmatter: its prose runs
+   as orchestrator reasoning rather than inside a sealed child prompt, so it
+   is invoked by name and never on a host's reading of a description.
 2. Every resolved backticked skill name in a body is a call edge. Name
    each call once, at its prose call site, with the exact backticked
    name; mention a skill without calling it in plain text, never

@@ -52,8 +52,8 @@
     `AGENTS.md` 230, a role agent file 80; every-dispatch units next —
     kernel bodies 300, pack `SKILL.md` 150, a pack's craft as
     [contracts/pack-signature.md](../contracts/pack-signature.md)
-    mandates; every-run units widest — engine and workflow bodies 450,
-    a template manifest 250. Counted in words with link targets
+    mandates; every-run units widest — workflow bodies 450.
+    Counted in words with link targets
     stripped by tools/validate.py. A ticket carries no such ceiling: it
     is written for one child and read by one child, so its length is
     the planner's judgment about that child rather than a standing cost
@@ -61,8 +61,8 @@
     blind recuts instead of shorter assignments. What degrades adherence is the count of
     standing demands and tension between them, not length at a fixed
     count — so a surface earns each demand by §1 and carries no two in
-    tension, and complexity buys structure, never width: more stubs and
-    edges, each one launch, each re-paying the every-turn floor, which
+    tension, and complexity buys structure, never width: more bricks and
+    frames, each one launch, each re-paying the every-turn floor, which
     is why that floor is the tightest ceiling. A ceiling only falls, and
     falls on evidence — a tournament in which the shorter candidate
     holds its benchmark within margin, or a review whose deletions land
