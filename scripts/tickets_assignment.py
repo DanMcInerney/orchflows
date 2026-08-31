@@ -24,7 +24,7 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_format import (
-        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of, parse_loop,
+        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, is_loop_stub, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
     from .tickets_registry import REVIEW_KINDS
@@ -39,7 +39,7 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_format import (
-        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of, parse_loop,
+        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, is_loop_stub, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
     from tickets_registry import REVIEW_KINDS
@@ -247,7 +247,7 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
         return {"error": f"ticket has no current admission receipt: stored {stored or '<missing>'}, current {grade['receipt']}"}
     sections = _sections(text)
     executor = _executor_of(loaded)
-    if parse_loop(loaded) is not None:
+    if is_loop_stub(loaded):
         return {"error": (
             f"ticket {run}/{ticket_id} is a loop stub and is never dispatched: "
             "the driver arms, evaluates, and advances it through "

@@ -14,12 +14,13 @@ from scripts.tickets_grade import grade_snapshot, GradeError
 from scripts import tickets_review
 
 
-def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", context: str = "The repository is fixed.", loop: str = "") -> str:
+def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", context: str = "The repository is fixed.", loop: str = "", done: str = "") -> str:
     return "\n".join((
         "---",
         f"id: {ticket_id}",
         f"executor: {executor}",
         *((f"loop: {loop}",) if loop else ()),
+        *((f"done: {done}",) if done else ()),
         "pack: orch-code-pack",
         "---",
         "",
@@ -69,7 +70,7 @@ class GradeSnapshotTest(unittest.TestCase):
         direct = {"R": ticket("R", "orch-tdd")}
         loop = {"R": ticket(
             "R", "orch-execute",
-            loop='{"done":{"form":"command","value":"exit 0"}}',
+            loop="true", done='{"form":"command","value":"exit 0"}',
         )}
         self.assertEqual("single", grade_snapshot("R", direct)["shape"])
         self.assertEqual(1, grade_snapshot("R", direct)["width"])

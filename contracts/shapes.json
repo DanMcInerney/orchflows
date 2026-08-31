@@ -211,14 +211,9 @@
       "required": ["id", "run", "status", "executor", "depends_on", "bound"],
       "values": {
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
+        "loop": ["true"],
         "review_kind": ["critique", "repair", "null"]
       }
-    },
-    {
-      "name": "loop_stub",
-      "contract": "work-item.md",
-      "fields": ["done"],
-      "required": ["done"]
     },
     {
       "name": "done_binding",

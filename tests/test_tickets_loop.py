@@ -26,7 +26,8 @@ One loop stub whose done-check is a deterministic command.
 LOOP_STUB = """---
 id: L1
 executor: orch-execute
-loop: {"done":{"form":"command","value":"{{probe}}"}}
+loop: true
+done: {"form":"command","value":"{{probe}}"}
 pack: orch-code-pack
 depends_on: []
 bound: 30m

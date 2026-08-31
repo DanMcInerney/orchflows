@@ -112,7 +112,6 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                      'fields': ('assignment_seal', 'body', 'operation', 'writer'),
                      'required': ('assignment_seal', 'body', 'operation', 'writer'),
                      'values': {'operation': ('result',)}},
- 'loop_stub': {'contract': 'work-item.md', 'fields': ('done',), 'required': ('done',), 'values': {}},
  'pack_cells': {'contract': 'pack-signature.md',
                 'fields': ('adapter', 'stages', 'assembly', 'craft'),
                 'required': ('adapter', 'stages', 'assembly', 'craft'),
@@ -176,7 +175,8 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                    'review_stage',
                                    'review_kind'),
                         'required': ('id', 'run', 'status', 'executor', 'depends_on', 'bound'),
-                        'values': {'review_kind': ('critique', 'repair', 'null'),
+                        'values': {'loop': ('true',),
+                                   'review_kind': ('critique', 'repair', 'null'),
                                    'status': ('pending', 'ready', 'claimed', 'suspended', 'complete', 'blocked', 'stalled', 'failed', 'limited')}},
  'verdict_criterion': {'contract': 'verdict.md',
                        'fields': ('verdict', 'oracle', 'oracle_class', 'evidence', 'covers'),
@@ -303,10 +303,6 @@ TICKET_ASSIGNMENT_SECTIONS_VALUES = SHAPES['ticket_assignment_sections']['values
 TICKET_FRONTMATTER_FIELDS = tuple(SHAPES['ticket_frontmatter']['fields'])
 TICKET_FRONTMATTER_REQUIRED = frozenset(SHAPES['ticket_frontmatter']['required'])
 TICKET_FRONTMATTER_VALUES = SHAPES['ticket_frontmatter']['values']
-
-LOOP_STUB_FIELDS = tuple(SHAPES['loop_stub']['fields'])
-LOOP_STUB_REQUIRED = frozenset(SHAPES['loop_stub']['required'])
-LOOP_STUB_VALUES = SHAPES['loop_stub']['values']
 
 DONE_BINDING_FIELDS = tuple(SHAPES['done_binding']['fields'])
 DONE_BINDING_REQUIRED = frozenset(SHAPES['done_binding']['required'])

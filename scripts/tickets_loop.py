@@ -1,16 +1,17 @@
 """Arm, evaluate, and advance one loop stub without an engine.
 
-A loop is a ticket whose frontmatter carries a canonical-JSON ``loop``
-object (contracts/work-item.md). No LLM holds loop state: the ticket set
-is the state, the worklog its rendered view. The driver treats a ready
-loop stub as arm -> run the iteration to terminal -> evaluate -> advance,
-and every command here replays after a kill.
+A loop is a ticket carrying the ``loop: true`` marker beside its own
+``done`` predicate (contracts/work-item.md). No LLM holds loop state: the
+ticket set is the state, the worklog its rendered view. The driver treats
+a ready loop stub as arm -> run the iteration to terminal -> evaluate ->
+advance, and every command here replays after a kill.
 
-The iteration's verb is the stub's own ``executor`` — the loop object
-does not restate it. The ``done`` binding takes exactly one of two closed
-forms: a deterministic command whose exit 0 is the done reading (that run
-is the one outside execution closing the loop), or a frozen criterion
-judged by a fresh ``orch-check`` ticket minted per iteration.
+The iteration's verb is the stub's own ``executor``, and the predicate its
+own ``done`` -- the marker restates neither. That binding takes exactly one
+of two closed forms: a deterministic command whose exit 0 is the done
+reading (that run is the one outside execution closing the loop), or a
+frozen criterion judged by a fresh ``orch-check`` ticket minted per
+iteration.
 """
 
 from __future__ import annotations
@@ -24,8 +25,8 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
         DELIVERED_STATE, REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
-        _executor_of, _sections, _set_frontmatter_field, dequote, loop_defects,
-        parse_loop, ticket_defects,
+        _executor_of, _sections, _set_frontmatter_field, dequote, is_loop_stub,
+        loop_defects, parse_done, ticket_defects,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
@@ -37,8 +38,8 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
         DELIVERED_STATE, REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
-        _executor_of, _sections, _set_frontmatter_field, dequote, loop_defects,
-        parse_loop, ticket_defects,
+        _executor_of, _sections, _set_frontmatter_field, dequote, is_loop_stub,
+        loop_defects, parse_done, ticket_defects,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
@@ -93,7 +94,7 @@ def _iterations(run_dir, loop_id):
 
 
 def _loop_parent(run, loop_id):
-    """(run_dir, data, text, loop, error) for one loop stub."""
+    """(run_dir, data, text, done, error) for one loop stub."""
 
     for kind, value in (("run id", run), ("ticket id", loop_id)):
         invalid = _segment_error(kind, value)
@@ -113,15 +114,19 @@ def _loop_parent(run, loop_id):
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:
         return None, None, None, None, {"error": f"unreadable loop stub: {error}"}
-    loop = parse_loop(data)
-    if loop is None:
+    if not is_loop_stub(data):
         return None, None, None, None, {
-            "error": f"{run}/{loop_id} carries no loop object; only a loop stub is armed, evaluated, or advanced"
+            "error": f"{run}/{loop_id} carries no loop marker; only a loop stub is armed, evaluated, or advanced"
         }
-    defects = loop_defects(data.get("loop"), _executor_of(data))
+    defects = loop_defects(data.get("loop"), _executor_of(data), data.get("done"))
     if defects:
         return None, None, None, None, {"error": f"loop stub is off contract: " + "; ".join(defects)}
-    return run_dir, data, text, loop, None
+    done = parse_done(data)
+    if done is None:
+        return None, None, None, None, {
+            "error": f"loop stub {run}/{loop_id} carries no readable done predicate"
+        }
+    return run_dir, data, text, done, None
 
 
 def _iteration_context(data, text, number, prior):
@@ -131,7 +136,7 @@ def _iteration_context(data, text, number, prior):
     sections = _sections(text)
     lines = [sections.get("Context", "").strip()] if sections.get("Context", "").strip() else []
     lines.append(f"- loop: iteration {number} of a bounded loop; the worklog is the state")
-    done = parse_loop(data).get("done", {})
+    done = parse_done(data) or {}
     lines.append(
         f"- done-check ({done.get('form')}): {done.get('value')}"
     )
@@ -150,7 +155,7 @@ def _cmd_loop_arm(rest):
     if len(rest) != 2:
         return {"error": f"usage: {LOOP_ARM_USAGE}"}
     run, loop_id = rest
-    run_dir, data, text, loop, error = _loop_parent(run, loop_id)
+    run_dir, data, text, done, error = _loop_parent(run, loop_id)
     if error is not None:
         return error
     if str(data.get("status")) in TERMINAL_STATES:
@@ -209,7 +214,7 @@ def _cmd_loop_arm(rest):
                          "ticket": ticket_id, "outcome": "created"}}
 
 
-def _evaluate(run, loop_id, run_dir, data, text, loop):
+def _evaluate(run, loop_id, run_dir, data, text, done):
     """The done reading for the latest terminal iteration.
 
     Deterministic form: run the frozen command; exit 0 is done. Check
@@ -224,7 +229,6 @@ def _evaluate(run, loop_id, run_dir, data, text, loop):
     number, iteration_id, iteration = iterations[-1]
     if str(iteration.get("status")) not in TERMINAL_STATES:
         return {"error": f"iteration {iteration_id} is not terminal; evaluate follows the landed iteration"}
-    done = loop["done"]
     if done["form"] == "command":
         argv = shlex.split(str(done["value"]))
         if not argv:
@@ -351,10 +355,10 @@ def _cmd_loop_evaluate(rest):
     if len(rest) != 2:
         return {"error": f"usage: {LOOP_EVALUATE_USAGE}"}
     run, loop_id = rest
-    run_dir, data, text, loop, error = _loop_parent(run, loop_id)
+    run_dir, data, text, done, error = _loop_parent(run, loop_id)
     if error is not None:
         return error
-    return _evaluate(run, loop_id, run_dir, data, text, loop)
+    return _evaluate(run, loop_id, run_dir, data, text, done)
 
 
 def _result_reading(run_dir, iteration_id):
@@ -383,13 +387,13 @@ def _cmd_loop_advance(rest):
     if len(rest) != 2:
         return {"error": f"usage: {LOOP_ADVANCE_USAGE}"}
     run, loop_id = rest
-    run_dir, data, text, loop, error = _loop_parent(run, loop_id)
+    run_dir, data, text, done, error = _loop_parent(run, loop_id)
     if error is not None:
         return error
     if str(data.get("status")) in TERMINAL_STATES:
         return {"loop_advance": {"run": run, "id": loop_id, "action": "closed",
                                  "status": str(data.get("status")), "outcome": "replayed"}}
-    evaluation = _evaluate(run, loop_id, run_dir, data, text, loop)
+    evaluation = _evaluate(run, loop_id, run_dir, data, text, done)
     if "error" in evaluation:
         return evaluation
     reading = evaluation["loop_evaluate"]

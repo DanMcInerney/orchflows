@@ -2,8 +2,9 @@
 
 The generated [terminal lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
 connect bounded loop outcomes to their run-visible states. A loop is a
-ticket carrying the `loop` object of
-[work-item.md](../contracts/work-item.md); `scripts/tickets_loop.py` owns
+ticket carrying the `loop` marker of
+[work-item.md](../contracts/work-item.md) beside its own `done` predicate;
+`scripts/tickets_loop.py` owns
 arm, evaluate, and advance, and the worklog is the state.
 
 1. A loop carries a frozen goal, an external done-check, and a bound.

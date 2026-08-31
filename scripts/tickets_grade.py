@@ -12,13 +12,13 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import ROOT_EXECUTOR, is_review_stage_id, parse_loop
+    from .tickets_format import ROOT_EXECUTOR, is_loop_stub, is_review_stage_id
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import ROOT_EXECUTOR, is_review_stage_id, parse_loop
+    from tickets_format import ROOT_EXECUTOR, is_loop_stub, is_review_stage_id
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -132,7 +132,7 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         if not members:
             raise GradeError(f"root {root_id} has no executor result members")
         shape, width = "graph", len(members)
-    elif parse_loop(root_data) is not None:
+    elif is_loop_stub(root_data):
         shape, width = "loop", 1
     else:
         if members:

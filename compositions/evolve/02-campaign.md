@@ -2,7 +2,8 @@
 id: 02-campaign
 executor: orch-execute
 pack: orch-code-pack
-loop: {"done":{"form":"check","value":"The frozen promotion rule and margin are met over the final incumbent's score card, per the campaign's frozen evaluation."}}
+loop: true
+done: {"form":"check","value":"The frozen promotion rule and margin are met over the final incumbent's score card, per the campaign's frozen evaluation."}
 depends_on: [01-eligibility]
 bound: {{bound}}
 independence: checker

@@ -62,11 +62,18 @@ class DonePredicateGrammarTest(unittest.TestCase):
                 self.assertEqual(len(expected), len(defects), defects)
                 for fragment, defect in zip(expected, defects):
                     self.assertIn(fragment, defect)
-        # the same grammar, reached through the loop's own home
-        loop = tickets_format.loop_defects(
-            '{"done": {"form": "guess", "value": "x"}}', "orch-execute",
+        # The loop has no second home for it: the marker moves who reads the
+        # one `done`, and a marker with nothing to read is refused.
+        self.assertEqual(
+            [], tickets_format.loop_defects("true", "orch-execute", _done("command", "ok")),
         )
-        self.assertTrue(any("loop done form must be one of" in item for item in loop))
+        marked = tickets_format.loop_defects("true", "orch-execute", "")
+        self.assertTrue(any("carries the `done` predicate" in item for item in marked))
+        valued = tickets_format.loop_defects(
+            '{"done": {"form": "command", "value": "ok"}}', "orch-execute",
+            _done("command", "ok"),
+        )
+        self.assertTrue(any("takes no other value" in item for item in valued))
 
     def test_the_predicate_is_part_of_the_sealed_assignment(self):
         """`done` says what completion means, so a changed one is a changed
