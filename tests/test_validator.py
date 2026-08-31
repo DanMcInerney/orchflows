@@ -256,6 +256,20 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
 
     def test_pin_rewrite_requires_a_discriminating_supersession_record(self):
         subprocess.run(["git", "init"], cwd=self.tmp_path, check=True, capture_output=True)
+        # Auto-gc detaches and keeps writing .git/objects after the commit
+        # returns; the tempdir teardown then races it to ENOTEMPTY.
+        subprocess.run(
+            ["git", "config", "gc.auto", "0"],
+            cwd=self.tmp_path,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "gc.autoDetach", "false"],
+            cwd=self.tmp_path,
+            check=True,
+            capture_output=True,
+        )
         subprocess.run(
             ["git", "config", "user.email", "validator@example.invalid"],
             cwd=self.tmp_path,
