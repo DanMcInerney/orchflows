@@ -25,7 +25,11 @@ within an attempt. Kinds are `generic`, `launch`, `result`, `outcome`,
 Execution events are an ordered grammar, not a bag: the committed launch
 precedes every result record; the one outcome follows results; join follows
 outcome. Reordering them makes the whole persisted state invalid without
-mutation.
+mutation. A frame's attempt ([work-item.md](work-item.md)'s `frame` marker)
+is the one attempt that opens with no launch, because nothing is dispatched
+for it: the driver is the session that opened the frame, and its journal,
+outcome, and join begin the grammar. The rest of the ordering is unchanged
+and is enforced for a frame exactly as for a launched attempt.
 
 A record's content is stored once, as that canonical string. Stored success
 carries the record's identity and never a second copy of what it committed;

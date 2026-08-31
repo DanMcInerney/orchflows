@@ -29,7 +29,7 @@ if __package__:
     )
     from .tickets_format import (
         TERMINAL_STATES, _parse_iso, canonical_json,
-        is_review_stage_id, parse_canonical_json,
+        is_frame, is_review_stage_id, parse_canonical_json,
     )
 else:
     from tickets_shapes import (
@@ -56,7 +56,7 @@ else:
     )
     from tickets_format import (
         TERMINAL_STATES, _parse_iso, canonical_json,
-        is_review_stage_id, parse_canonical_json,
+        is_frame, is_review_stage_id, parse_canonical_json,
     )
 
 ATTEMPT_STATES = frozenset(DISPATCH_ATTEMPT_VALUES["state"])
@@ -277,12 +277,12 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     return _invalid(f"record '{record_id}' has an unsupported kind")
 
 
-def validate_state(state: dict, *, run=None, ticket_id=None):
+def validate_state(state: dict, *, run=None, ticket_id=None, frame=False):
     if __package__:
         from .tickets_dispatch_validate import validate_state as validate
     else:
         from tickets_dispatch_validate import validate_state as validate
-    return validate(state, run=run, ticket_id=ticket_id)
+    return validate(state, run=run, ticket_id=ticket_id, frame=frame)
 
 
 def stored_state(data: dict):
@@ -299,7 +299,9 @@ def stored_state(data: dict):
         return None, classification("dispatch-record-invalid", "dispatch_v1 is not canonical JSON")
     run = str(data.get("run") or "").strip()
     ticket_id = str(data.get("id") or "").strip()
-    failure = validate_state(parsed, run=run, ticket_id=ticket_id)
+    failure = validate_state(
+        parsed, run=run, ticket_id=ticket_id, frame=is_frame(data),
+    )
     if failure is not None:
         return None, failure
     return parsed, None

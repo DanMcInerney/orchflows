@@ -62,6 +62,11 @@ VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
 # The one value the `loop` marker takes, read off the declared shape rather
 # than spelled twice.
 LOOP_MARKER = TICKET_FRONTMATTER_VALUES['loop'][0]
+# The one value the `frame` marker takes, read the same way. A frame is the
+# durable record of one workflow invocation; the marker is what tells every
+# reader that the ticket in front of it binds no executor because nothing
+# dispatches it.
+FRAME_MARKER = TICKET_FRONTMATTER_VALUES['frame'][0]
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
 REQUIRED_TICKET_KEYS = tuple(
@@ -234,6 +239,12 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         return ["no frontmatter: a ticket opens with a '---' block (contracts/work-item.md)"]
     defects = []
     required = REQUIRED_TICKET_KEYS if stub else REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
+    # `executor` is required of every ticket a door may dispatch, and a frame
+    # is the one kind no door may: its driver is the session that opened it.
+    # Exempted here rather than dropped from the declared shape, because
+    # every other ticket still owes the field.
+    if is_frame(data):
+        required = tuple(key for key in required if key != 'executor')
     for key in ('id', 'run', 'status', 'executor', 'depends_on', 'bound'):
         if key in required and key not in data:
             defects.append(f"frontmatter has no '{key}'")
@@ -273,6 +284,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
     defects.extend(loop_defects(data.get('loop'), _executor_of(data), data.get('done')))
+    defects.extend(frame_defects(data.get('frame'), data.get('executor'), data.get('pack')))
     defects.extend(done_defects(data.get('done')))
     return defects
 def lease_of(data):
@@ -369,6 +381,60 @@ def next_brick_id(parent, ticket_ids) -> str:
 def declared_parent(data) -> str:
     """The ticket this one was minted under at runtime, or ''."""
     return dequote(data.get('parent'))
+def is_frame(data) -> bool:
+    """Whether this ticket is one call-stack frame rather than dispatched work.
+
+    Read off the marker alone. A frame is also pack-less and executor-less,
+    but those are consequences the marker licenses rather than a second way
+    of recognising one: an ordinary ticket that merely lost its `executor`
+    is a defect, and reading it as a frame is how a defect becomes a
+    feature.
+    """
+    return dequote(data.get('frame')) == FRAME_MARKER
+def frame_defects(value, executor, pack) -> list:
+    """Shape defects for one frontmatter ``frame`` marker, or [].
+
+    The marker takes exactly one value, and what it marks is a ticket that
+    nothing executes: the orchestrator session drives its own frame, and the
+    frame is a journal rather than craft-governed work. So a frame binds no
+    executor and stamps no pack, and either one present is the marker
+    claiming a child and a craft the frame does not have.
+    """
+    raw = dequote(value)
+    if not raw:
+        return []
+    if raw != FRAME_MARKER:
+        return [
+            f'frame is the marker `{FRAME_MARKER}` and takes no other value: '
+            f"got '{raw}'"
+        ]
+    return [
+        f'a frame binds no {field}: {reason}'
+        for field, present, reason in (
+            ('executor', dequote(executor),
+             'the orchestrator session drives it, and nothing dispatches it'),
+            ('pack', str(pack or '').strip(),
+             'a frame is a journal, not craft-governed work'),
+        ) if present
+    ]
+# The one line a driver writes into a frame's journal to close over
+# unjudged work (the 2026-08-31 design's amendment A2). One prefix, owned
+# here beside the id grammar, because the close reads it and the contract
+# names it and two spellings would let a stated reason go unread.
+UNJUDGED_PREFIX = 'unjudged:'
+def unjudged_reason(journal) -> str:
+    """The stated reason a frame's journal closes over unjudged work, or ''.
+
+    A prefix match on one line, and the reason is the rest of it: an
+    `unjudged:` with nothing after it states no reason, so it buys nothing.
+    """
+    for line in str(journal or '').splitlines():
+        text = line.strip()
+        if text.startswith(UNJUDGED_PREFIX):
+            reason = text[len(UNJUDGED_PREFIX):].strip()
+            if reason:
+                return reason
+    return ''
 def parse_done(data):
     """The parsed frontmatter ``done`` predicate of one ticket, or None.
 

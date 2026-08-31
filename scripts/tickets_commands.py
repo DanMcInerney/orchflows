@@ -7,6 +7,7 @@ from pathlib import Path
 if __package__:
     from .tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     from .tickets_brick import DO_USAGE, JUDGE_USAGE
+    from .tickets_frame import FRAME_CLOSE_USAGE, FRAME_OPEN_USAGE
     from .tickets_issue import NEW_USAGE
     from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
@@ -22,6 +23,8 @@ else:
     from tickets_format import EXECUTOR_SECTIONS, TERMINAL_STATES, VALID_STATUSES, _read_utf8
     _brick = __import__('tickets_brick')
     DO_USAGE, JUDGE_USAGE = (_brick.DO_USAGE, _brick.JUDGE_USAGE)
+    _frame = __import__('tickets_frame')
+    FRAME_CLOSE_USAGE, FRAME_OPEN_USAGE = (_frame.FRAME_CLOSE_USAGE, _frame.FRAME_OPEN_USAGE)
     from tickets_issue import NEW_USAGE
     from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
@@ -57,6 +60,8 @@ SUBCOMMAND_USAGE = {
     "new": NEW_USAGE,
     "do": DO_USAGE,
     "judge": JUDGE_USAGE,
+    "frame-open": FRAME_OPEN_USAGE,
+    "frame-close": FRAME_CLOSE_USAGE,
     "instantiate": INSTANTIATE_USAGE,
     "gate": GATE_USAGE,
     "grade": GRADE_USAGE,
@@ -92,6 +97,8 @@ SUBCOMMAND_SUMMARY = {
     "new": "Create one Goal/Context ticket; Details is the planner's optional free-form guidance.",
     "do": "Mint, seal, establish, and launch one artifact-making brick under its parent.",
     "judge": "Mint, seal, establish, and launch one read-only brick over the typed artifacts it is handed.",
+    "frame-open": "Open one call-stack frame for a workflow invocation: sealed goal, parent link, and the journal its driver appends to.",
+    "frame-close": "Record what one frame's invocation became, refusing a close over two or more do-children nobody judged.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
     "gate": "Create a composite gate, or materialize repair and fresh verification after an ordinary checker accepts blockers.",
     "grade": "Report deterministic width, shape, pack coverage, adapter capability, and decomposition state.",

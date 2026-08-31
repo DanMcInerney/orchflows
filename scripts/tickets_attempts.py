@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 if __package__:
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
-        _set_frontmatter_field, canonical_json, parse_canonical_json,
+        _set_frontmatter_field, canonical_json, is_frame, parse_canonical_json,
     )
     from .tickets_generations import seal_findings
     from . import tickets_dispatch_guards as dispatch_guards
@@ -27,7 +27,7 @@ if __package__:
 else:
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
-        _set_frontmatter_field, canonical_json, parse_canonical_json,
+        _set_frontmatter_field, canonical_json, is_frame, parse_canonical_json,
     )
     from tickets_generations import seal_findings
     import tickets_dispatch_guards as dispatch_guards
@@ -290,7 +290,12 @@ def _commit_record(
             now = datetime.now(timezone.utc)
             expiry = _parse_iso(attempt.get("lease_expires_at"))
             ended = attempt.get("state") != "live" or expiry is None
-            if require_live_lease:
+            # A frame holds no lease to arbitrate (contracts/work-item.md):
+            # its driver is the session that opened it, singular by
+            # construction, so nothing contends for the write and an expiry
+            # could only end a journal somebody is still writing. What ends a
+            # frame's attempt is its close, and `state` still says so.
+            if require_live_lease and not is_frame(data):
                 ended = ended or now >= expiry
             if ended:
                 return _classification(
@@ -324,7 +329,9 @@ def _commit_record(
                 "record_id": record_id,
                 "success": success,
             })
-            failure = _validate_state(state, run=run, ticket_id=ticket_id)
+            failure = _validate_state(
+                state, run=run, ticket_id=ticket_id, frame=is_frame(data),
+            )
             if failure is not None:
                 return failure
             updated = _set_frontmatter_field(updated, "dispatch_v1", canonical_json(state))

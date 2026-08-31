@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""The ring commands: what you can author, where it lives, what it trusts.
+"""The ring commands, and the one question a returning driver asks.
 
-Six verbs over ``scripts/rings.py``'s one resolution order:
+Six ring verbs over ``scripts/rings.py``'s one resolution order, plus
+``resume``:
 
     orchflows sync [--project]         make a ring whole and render its adapters
     orchflows add <git-url>@<pin>      pin one external bundle
@@ -9,11 +10,15 @@ Six verbs over ``scripts/rings.py``'s one resolution order:
     orchflows list [--kind K]          every item resolvable from here
     orchflows trust [--once] <bundle>  allow one project ring's content
     orchflows untrust <bundle>         withdraw both halves of that grant
+    orchflows resume [--now <iso>]     this project's open workflow frames
 
 ``list`` reports through the same resolver runtime resolution uses, so an
 item that appears here is an item that runs, and one shadowed here is one
-shadowed at dispatch. Output is plain text: this command is read by a
-person, and orchflows has no interactive surface of its own.
+shadowed at dispatch. ``resume`` reads the state sink and nothing else: it
+is pull-based, resident in nothing, and it shows a stale frame's age rather
+than deciding for the reader that the driver is gone. Output is plain text:
+this command is read by a person, and orchflows has no interactive surface
+of its own.
 """
 
 from __future__ import annotations
@@ -38,15 +43,16 @@ else:  # pragma: no cover - direct/installed flat script path
 
 
 COLUMNS = ("kind", "name", "ring", "trust", "path")
+RESUME_COLUMNS = ("frame", "run", "age", "journal", "children", "leases", "goal")
 
 
-def _table(rows) -> str:
+def _table(columns, rows) -> str:
     widths = [
-        max(len(str(row[index])) for row in ([COLUMNS] + list(rows)))
-        for index in range(len(COLUMNS))
+        max(len(str(row[index])) for row in ([columns] + list(rows)))
+        for index in range(len(columns))
     ]
     lines = []
-    for row in [COLUMNS] + list(rows):
+    for row in [columns] + list(rows):
         cells = [str(value).ljust(widths[index]) for index, value in enumerate(row)]
         lines.append("  ".join(cells).rstrip())
     return "\n".join(lines)
@@ -68,7 +74,7 @@ def cmd_list(args) -> int:
         )
         for record in records
     ]
-    print(_table(rows))
+    print(_table(COLUMNS, rows))
     notices = [
         notice
         for record in records
@@ -77,6 +83,45 @@ def cmd_list(args) -> int:
     ]
     for notice in notices:
         print(notice)
+    return 0
+
+
+def cmd_resume(args) -> int:
+    """Every open frame of this project, newest first, as one table.
+
+    The one question a driver asks on coming back -- its own, after a crash
+    or a compaction, or somebody else's the next morning. The row is
+    deliberately not a verdict: age says how long the frame has been open
+    and the reader decides whether that means abandoned, because a driver
+    that is merely slow and a driver that died look identical from here.
+
+    Nothing here writes, and the tickets family is reached at call time --
+    ``orchflows`` binds rings, and this one read of the sink should not put
+    the whole ticket trunk into its import graph.
+    """
+
+    if __package__:
+        from . import tickets_frame
+    else:  # pragma: no cover - direct/installed flat script path
+        import tickets_frame
+
+    now = tickets_frame.resume_now(args.now)
+    if now is None and args.now is not None:
+        print(f"error: unreadable --now: {args.now}", file=sys.stderr)
+        return 1
+    frames = tickets_frame.open_frames(now)
+    if not frames:
+        print("no open frames for this project")
+        return 0
+    rows = [
+        (
+            frame["id"], frame["run"], frame["age"],
+            "yes" if frame["journal"] else "no",
+            frame["children"], frame["leases"], frame["goal"],
+        )
+        for frame in frames
+    ]
+    print(_table(RESUME_COLUMNS, rows))
     return 0
 
 
@@ -220,6 +265,14 @@ def _parser() -> argparse.ArgumentParser:
     untrusted = subparsers.add_parser("untrust", help="withdraw a grant", allow_abbrev=False)
     untrusted.add_argument("bundle")
     untrusted.set_defaults(handler=cmd_untrust)
+    resumed = subparsers.add_parser(
+        "resume", help="this project's open workflow frames", allow_abbrev=False,
+    )
+    resumed.add_argument(
+        "--now", metavar="<absolute-iso>",
+        help="read ages against this instant instead of the clock",
+    )
+    resumed.set_defaults(handler=cmd_resume)
     return parser
 
 
