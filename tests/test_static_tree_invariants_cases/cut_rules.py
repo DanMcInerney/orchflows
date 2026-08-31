@@ -17,8 +17,12 @@ EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 # The member assignment shape has one owner, contracts/work-item.md; a
 # pack slicing section restating it was the drift surface this guard once
-# policed, so the guard now polices the restatement itself.
-CURRENT_UNIT_ANCHORS = ("executor-owned",)
+# policed, so the guard now polices the restatement itself. The positive
+# anchor is the one clause the code cut still owns about what a member's
+# assignment carries -- a command it can run, never a number relayed from
+# a reading nobody can retake. It replaced "executor-owned", which stopped
+# being true when the anti-prescription law was deleted.
+CURRENT_UNIT_ANCHORS = ("a measurement command in Context",)
 RETIRED_SHAPE_RESTATEMENTS = (
     "one observable `Goal`",
     "optional `Details`",

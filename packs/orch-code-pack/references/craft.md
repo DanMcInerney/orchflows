@@ -51,7 +51,8 @@ target repository; standards owner by pointer; observable result
 - Observable behavior at a seam, never the modules that will carry it.
 - The failure paths the result must survive: an executor's checks answer
   to Goal alone, so an unstated path is an unchecked one.
-- A pointer to the standards owner, and no test oracle at all.
+- A pointer to the standards owner. The only oracle a root may freeze is its
+  own `done` command; every other check is the executor's.
 
 ### Worth asking at intake
 
@@ -74,9 +75,6 @@ tracer — one thin end-to-end crossing, taken first and widened after — only
 for the riskiest seam the Goal leaves unproven.
 
 - Dependency edges exist only where one unit's seam is another's input.
-- Test selection and verification method remain executor-owned. A
-  standards-owner pointer is a Context fact when relevant, never a prescribed
-  check.
 - A Goal ordering growth into a named file prices that file against the
   standards owner's bounds at cut time — a measurement command in Context,
   never a relayed count — test modules included.
