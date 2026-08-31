@@ -1,6 +1,6 @@
 ---
 id: 02-campaign
-executor: orch-execute
+executor: orch-do
 pack: orch-code-pack
 loop: true
 done: {"form":"check","value":"The frozen promotion rule and margin are met over the final incumbent's score card, per the campaign's frozen evaluation."}
@@ -18,7 +18,7 @@ until the frozen promotion rule and margin are met over the final
 incumbent's score card or {{bound}} is spent.
 
 Each generation consumes 01-eligibility's `## Report` and scores blind through
-orch-check; `search_plan.py advance` selects search-policy/v1 cases under the
+orch-judge; `search_plan.py advance` selects search-policy/v1 cases under the
 generation protocol.
 
 ## Context

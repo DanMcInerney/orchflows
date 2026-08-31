@@ -1,6 +1,6 @@
 ---
 id: 01-deliver
-executor: orch-execute
+executor: orch-do
 pack: orch-code-pack
 depends_on: [00-mine]
 bound: <= 120 tool calls

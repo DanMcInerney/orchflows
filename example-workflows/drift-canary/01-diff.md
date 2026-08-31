@@ -1,6 +1,6 @@
 ---
 id: 01-diff
-executor: orch-execute
+executor: orch-do
 pack: orch-content-pack
 loop: true
 done: {"form":"check","value":"Every canary item carries a verdict against its golden result, and every divergence carries one friction entry in the improvement evidence sink."}

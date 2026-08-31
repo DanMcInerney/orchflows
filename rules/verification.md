@@ -11,7 +11,7 @@ place this evidence law in the ticket lifecycle.
    owns the domain-specific forms.
 3. Verification and critique are read-only. A checker that changes the
    target has become a repair executor and cannot judge that changed identity.
-4. `orch-check` owns blocker enumeration and root-cause synthesis. Its
+4. `orch-judge` owns blocker enumeration and root-cause synthesis. Its
    exclusions and ranking are the shared review model, not a pack variation.
 5. Accepted blockers enter one distinct repair pass. That change invalidates
    prior critique verdicts, and no second critique follows.
@@ -22,14 +22,14 @@ place this evidence law in the ticket lifecycle.
    them: the ticket's `done` predicate, in the tree land has just merged that
    candidate into, is the one outside execution. Done is a checked condition,
    never a disposition an executor recorded for itself.
-7. Each ticket takes one independence path: a blocker-only `orch-check`
+7. Each ticket takes one independence path: a blocker-only `orch-judge`
    checker recorded by `checked_by`, or its downstream composite gate. A
    gate-deferred ticket does not use `checked_by`. Additional review is a
    uniquely named lens feeding the same one repair. Independence comes from
    that checker or from the predicate, never from a standing verification
    child. Walking either path is mechanical, and the driver walks it: the
    checker path creates `<id>.check` with `checker-stage`, spends one
-   distinct read-only `orch-check` dispatch on it, lands that return, then
+   distinct read-only `orch-judge` dispatch on it, lands that return, then
    anchors the joined stage through `check <run> <id> --stage <id>.check`.
    An accepted checked target takes `gate <run> <id>` for one separate
    repair ticket; a clean one closes with no repair at all; a gate-deferred

@@ -19,10 +19,9 @@ Each catalog row uses its canonical owner `name` as stable ID, labels its vocabu
 ### T1 workflow skills
 
 Custom-item authoring follows ordinary code routing and is not a callable workflow.
-- [orch-execute](../../skills/kernel/orch-execute/SKILL.md) — execute one stamped pack assignment.
-- [orch-check](../../skills/kernel/orch-check/SKILL.md) — challenge a fixed artifact or verify a repair.
-- [orch-slice](../../skills/kernel/orch-slice/SKILL.md) — cut a stamped root into independent items.
-- [orch-outline](../../skills/workflows/orch-outline/SKILL.md) — seal one semantic root before delivery.
+- [orch-do](../../skills/kernel/orch-do/SKILL.md) — produce one artifact through the stamped pack's craft, or plan through its Outline and Spec fields sections.
+- [orch-judge](../../skills/kernel/orch-judge/SKILL.md) — judge a fixed artifact or verify a repair.
+- [orch-slice](../../skills/kernel/orch-slice/SKILL.md) — cut a stamped root into independent items; retires with the decomposed-root concept.
 
 ## Catalog projection and semantic summaries
 

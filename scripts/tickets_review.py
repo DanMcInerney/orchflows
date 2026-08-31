@@ -204,7 +204,7 @@ def checker_plan(
         raise ReviewError("ordinary check target is not sealed")
     criterion = {
         "identity": _digest({
-            "executor": "orch-check",
+            "executor": "orch-judge",
             "lens": "checker",
             "pack": data.get("pack"),
             "target_assignment": seal,

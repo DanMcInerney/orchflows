@@ -171,9 +171,8 @@ class WorkflowSourceTests(unittest.TestCase):
             "lib/example-workflows/evolve/01-eligibility.md",
             "lib/example-workflows/evolve/02-campaign.md",
             "lib/example-workflows/evolve/03-result.md",
-            "lib/skills/kernel/orch-execute/SKILL.md",
-            "lib/skills/kernel/orch-check/SKILL.md",
-            "lib/skills/workflows/orch-outline/SKILL.md",
+            "lib/skills/kernel/orch-do/SKILL.md",
+            "lib/skills/kernel/orch-judge/SKILL.md",
         }
         self.assertEqual(
             {identity.source_id(path) for path in expected_evolve_paths},

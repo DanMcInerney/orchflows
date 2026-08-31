@@ -28,7 +28,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
     def test_new_refuses_the_exact_collapsed_bullet_shape(self):
         """The friction repro, verbatim: three bullets joined by `\\n`."""
         refused = self.dispatch(
-            "new", "testrun", "T1", "--executor", "orch-execute",
+            "new", "testrun", "T1", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "- one\\n- two\\n- three",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -42,7 +42,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         """An actual line break is invisible to the check -- it is one byte,
         not the two-character escape."""
         accepted = self.dispatch(
-            "new", "testrun", "T2", "--executor", "orch-execute",
+            "new", "testrun", "T2", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "line one\nline two\nline three",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -52,7 +52,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
     def test_new_accepts_a_windows_path_segment_beginning_with_n(self):
         """A rooted Windows path is read as the path it is, not the escape."""
         accepted = self.dispatch(
-            "new", "testrun", "T3", "--executor", "orch-execute",
+            "new", "testrun", "T3", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context",
             "Evidence: C:\\Users\\danhm\\.orchflows\\state\\notes\\thing.md.",
@@ -66,7 +66,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
             "Deliver the parser.\n\n```\nassert body.split('\\n') == parts\n```"
         )
         accepted = self.dispatch(
-            "new", "testrun", "T4", "--executor", "orch-execute",
+            "new", "testrun", "T4", "--executor", "orch-do",
             "--goal", fenced_goal, "--context", "[]",
             "--pack", "orch-code-pack", "--isolation", "required",
         )
@@ -84,7 +84,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         named the escape inside an inline backtick span like this one.
         """
         accepted = self.dispatch(
-            "new", "testrun", "T4b", "--executor", "orch-execute",
+            "new", "testrun", "T4b", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "Pass `newline=\\n` to open() and rstrip a newline.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -96,7 +96,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         collapsed bullet elsewhere on the same line still refuses, so the
         exemption cannot be used to smuggle the defect past the check."""
         refused = self.dispatch(
-            "new", "testrun", "T4c", "--executor", "orch-execute",
+            "new", "testrun", "T4c", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "See `newline=\\n` for context. - one\\n- two\\n- three",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -111,7 +111,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         here simulated by a direct write past the CLI, since a fixed `new`
         can no longer produce this ticket itself."""
         accepted = self.dispatch(
-            "new", "testrun", "T5", "--executor", "orch-execute",
+            "new", "testrun", "T5", "--executor", "orch-do",
             "--goal", "Deliver the artifact.", "--context", "[]",
             "--pack", "orch-code-pack", "--isolation", "required",
         )
@@ -139,7 +139,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
 
         fields = {
             "id": "T6", "run": "testrun", "status": "pending",
-            "admission": "pending", "executor": "orch-execute",
+            "admission": "pending", "executor": "orch-do",
             "pack": "orch-code-pack", "independence": "gate",
             "depends_on": [], "isolation": "required", "bound": "30m",
         }
@@ -154,7 +154,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         self.assertEqual(1, len(matches), defects)
 
         refused = self.dispatch(
-            "new", "testrun", "T7", "--executor", "orch-execute",
+            "new", "testrun", "T7", "--executor", "orch-do",
             "--goal", "Deliver the artifact.",
             "--context", "note one\\nnote two",
             "--pack", "orch-code-pack", "--isolation", "required",

@@ -73,8 +73,8 @@ JUDGE_USAGE = (
     "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
 )
-DO_EXECUTOR = "orch-execute"
-JUDGE_EXECUTOR = "orch-check"
+DO_EXECUTOR = "orch-do"
+JUDGE_EXECUTOR = "orch-judge"
 # A brick carries no standing checker lane: what checks it is the caller's
 # own `judge` brick or its `done` predicate, both of which are outside work
 # rather than a dependent's `checked_by` anchor.

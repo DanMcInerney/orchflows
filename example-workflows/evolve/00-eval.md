@@ -1,6 +1,7 @@
 ---
 id: 00-eval
-executor: orch-outline
+executor: orch-do
+pack: orch-code-pack
 depends_on: []
 bound: <= 40 tool calls
 independence: checker

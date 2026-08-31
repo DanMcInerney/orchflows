@@ -18,7 +18,7 @@
   return: it reads the ticket's `done`, integrates, and prints the frontier it
   freed. Declaring none, grade it yourself with `land --status`. Repeat until
   that frontier is empty. **outline** — one planner
-  runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
+  runs a planning `orch-do`; it seals a direct root for one lawful executor, or a sealed
   `orch-slice` root for distinct results/dependencies. The planner never
   drives the run. Skill/workflow/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known

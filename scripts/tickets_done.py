@@ -4,7 +4,7 @@ Done is a checked condition, not a recorded claim. A ticket may carry the
 same closed `{form, value}` binding a loop stub carries for its iterations
 (contracts/work-item.md), and `tickets.py land` is the one caller that
 evaluates it: a deterministic command whose exit 0 is the verdict, or a
-frozen criterion no oracle covers, judged by one minted `orch-check`
+frozen criterion no oracle covers, judged by one minted `orch-judge`
 ticket. A ticket that carries neither is graded the way it always was, by
 the driver, through `land --status`.
 
@@ -151,7 +151,7 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
         return repair_id, "replayed", None
     rendered = _render_ticket({
         "id": repair_id, "run": run, "status": "pending",
-        "admission": ADMISSION_PENDING, "executor": "orch-execute",
+        "admission": ADMISSION_PENDING, "executor": "orch-do",
         "pack": dequote(source.get("pack")) or None,
         "independence": "gate", "depends_on": [],
         "isolation": "none", "bound": source.get("bound"),

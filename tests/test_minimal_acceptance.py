@@ -22,7 +22,7 @@ def _gaps(verification: str, profiles: str) -> list[str]:
     verification = " ".join(verification.split())
     profiles = " ".join(profiles.split())
     required = {
-        "read-only checker": "distinct read-only `orch-check` dispatch",
+        "read-only checker": "distinct read-only `orch-judge` dispatch",
         "separate repair": "one separate\nrepair ticket",
         "clean closes unrepaired": "closes with no repair at all",
         # the fresh outside check, which is no longer a child: `land` runs
@@ -70,8 +70,8 @@ class MinimalAcceptanceTests(unittest.TestCase):
         mutants = {
             "checker mutates": (
                 verification.replace(
-                    "distinct read-only `orch-check` dispatch",
-                    "correcting `orch-check` dispatch",
+                    "distinct read-only `orch-judge` dispatch",
+                    "correcting `orch-judge` dispatch",
                     1,
                 ),
                 profiles,

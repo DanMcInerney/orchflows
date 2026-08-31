@@ -1,6 +1,6 @@
 ---
 id: 00-audit
-executor: orch-check
+executor: orch-judge
 pack: {{pack}}
 depends_on: []
 bound: {{audit_bound}}

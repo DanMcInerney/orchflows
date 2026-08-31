@@ -37,16 +37,14 @@ def _frontmatter(path: str) -> dict[str, str]:
 
 
 def _skill_path(name: str) -> str:
-    tier = "workflows" if name == "orch-outline" else "kernel"
-    return f"skills/{tier}/{name}/SKILL.md"
+    return f"skills/kernel/{name}/SKILL.md"
 
 
 class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
-        "orch-outline": "planner",
-        "orch-check": "planner",
+        "orch-judge": "planner",
         "orch-slice": "planner",
-        "orch-execute": "worker",
+        "orch-do": "worker",
     }
 
     def test_canonical_role_map_and_glue_only_contract(self):
@@ -249,7 +247,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-outline", "orch-check", "orch-execute"}:
+        for name in {"orch-judge", "orch-slice", "orch-do"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]

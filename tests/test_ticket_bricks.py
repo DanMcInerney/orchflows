@@ -7,6 +7,14 @@ before it existed; and the launch carries the three lines a parent needs to
 relay a child's answer without paraphrasing it -- the commit instruction two
 of four workers skipped on 2026-08-31, the typed artifact line, and the
 judge's findings line.
+
+This module's `do`/`judge` cases assert against `orch-do`/`orch-judge`,
+the registry names W2b (verbs-rename) minted from `orch-execute` and
+`orch-check`. They stay red on the `lego-W2b` branch alone: brick's own
+`DO_EXECUTOR`/`JUDGE_EXECUTOR` in `scripts/tickets_brick.py` (W2a's file,
+fenced from this ticket) still name the pre-rename verbs, so every mint
+here is refused as `executor-unregistered` until the two branches merge
+and that one-site constant flip lands with them.
 """
 
 from __future__ import annotations
@@ -108,7 +116,7 @@ class BrickIdGrammarTest(BrickSinkTest):
         self.assertTrue(data["root_generation"].startswith("root:B1:1:sha256:"))
         self.assertTrue(data["cut_generation"].startswith("cut:B1:1:sha256:"))
         self.assertTrue(data["assignment_seal"].startswith("sha256:"))
-        self.assertEqual("orch-execute", data["executor"])
+        self.assertEqual("orch-do", data["executor"])
         self.assertNotIn("parent", data)
         # prose order replaces edges: a brick declares no dependencies at all
         self.assertNotIn("depends_on", data)
@@ -170,7 +178,7 @@ class BrickIdGrammarTest(BrickSinkTest):
     def test_a_child_of_an_unsealed_parent_is_refused_with_its_remedy(self):
         self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
         tickets._dispatch([
-            "new", self.RUN, "L", "--executor", "orch-execute",
+            "new", self.RUN, "L", "--executor", "orch-do",
             "--goal", "Unsealed.", "--context", "[]", "--pack", CODE_PACK,
         ])
 
@@ -263,7 +271,7 @@ class BrickPromptTest(BrickSinkTest):
             "--artifacts", "git:" + "b" * 40, "--isolation", "none",
         )
 
-        self.assertEqual("orch-check", _parse_frontmatter(
+        self.assertEqual("orch-judge", _parse_frontmatter(
             self.ticket_text("B1.1")
         )["executor"])
         prompt = self.prompt(answer)

@@ -35,14 +35,14 @@ class WorkflowSkillTests(unittest.TestCase):
         self.assertEqual([], detail["diagnostics"])
 
     def test_repository_skill_derives_only_backticked_calls_and_invoked_scripts(self):
-        detail = skills.project_workflow_skill(ROOT, "orch-outline")
+        detail = skills.project_workflow_skill(ROOT, "orch-do")
 
         self.assertEqual(
             {"schema", "id", "type", "nodes", "edges", "relations", "diagnostics"},
             set(detail),
         )
         self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])
-        self.assertEqual("orch-outline", detail["id"])
+        self.assertEqual("orch-do", detail["id"])
         self.assertEqual("workflow-skill", detail["type"])
 
         edge_tuples = {
@@ -50,15 +50,13 @@ class WorkflowSkillTests(unittest.TestCase):
             for edge in detail["edges"]
         }
         self.assertIn(
-            ("skill-call", "workflow:orch-outline", "skill:orch-slice"),
+            ("script-call", "workflow:orch-do", "script:bin/packs.py"),
             edge_tuples,
         )
-        self.assertIn(
-            ("script-call", "workflow:orch-outline", "script:bin/tickets.py"),
-            edge_tuples,
-        )
-        self.assertNotIn("skill:objective", {node["id"] for node in detail["nodes"]})
-        self.assertNotIn("skill:inputs", {node["id"] for node in detail["nodes"]})
+        # A kernel skill calls no skill (rules/composition.md 1): orch-do's
+        # body names no other skill by backticked call.
+        self.assertFalse(any(kind == "skill-call" for kind, _from, _to in edge_tuples))
+        self.assertEqual([], detail["diagnostics"])
         self.assertEqual(len(detail["edges"]), len({edge["id"] for edge in detail["edges"]}))
         self.assertEqual(
             sorted(

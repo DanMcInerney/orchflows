@@ -34,7 +34,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         )
         self.environment.start()
         self.run_command(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--profile", "orch-worker",
@@ -383,7 +383,7 @@ class DispatchCarriageTest(unittest.TestCase):
         )
         self.environment.start()
         for arguments in (
-            ("new", "run", "T", "--executor", "orch-execute",
+            ("new", "run", "T", "--executor", "orch-do",
              "--goal", "Deliver the behavior.",
              "--context", "The repository is authoritative.",
              "--pack", "orch-code-pack", "--isolation", "none"),

@@ -1,6 +1,6 @@
 ---
 id: 05-measure
-executor: orch-check
+executor: orch-judge
 pack: {{pack}}
 depends_on: [04-audit]
 bound: <= 40 tool calls

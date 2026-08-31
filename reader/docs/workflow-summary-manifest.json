@@ -101,7 +101,7 @@
         {"source": "acquire", "target": "report", "kind": "sequence"}
       ]
     },
-    "orch-check": {
+    "orch-judge": {
       "nodes": [
         {"id": "ledger", "label": "Read the fixed review ledger"},
         {"id": "challenge", "label": "Challenge artifact evidence"},
@@ -110,6 +110,17 @@
       "edges": [
         {"source": "ledger", "target": "challenge", "kind": "sequence"},
         {"source": "challenge", "target": "verdict", "kind": "sequence"}
+      ]
+    },
+    "orch-do": {
+      "nodes": [
+        {"id": "resolve", "label": "Resolve the stamped pack"},
+        {"id": "apply", "label": "Apply execute cells"},
+        {"id": "evidence", "label": "Record artifact evidence"}
+      ],
+      "edges": [
+        {"source": "resolve", "target": "apply", "kind": "sequence"},
+        {"source": "apply", "target": "evidence", "kind": "sequence"}
       ]
     },
     "orch-slice": {
@@ -121,33 +132,6 @@
       "edges": [
         {"source": "root", "target": "slice", "kind": "sequence"},
         {"source": "slice", "target": "seal", "kind": "sequence"}
-      ]
-    },
-    "orch-execute": {
-      "nodes": [
-        {"id": "resolve", "label": "Resolve the stamped pack"},
-        {"id": "apply", "label": "Apply execute cells"},
-        {"id": "evidence", "label": "Record artifact evidence"}
-      ],
-      "edges": [
-        {"source": "resolve", "target": "apply", "kind": "sequence"},
-        {"source": "apply", "target": "evidence", "kind": "sequence"}
-      ]
-    },
-    "orch-outline": {
-      "nodes": [
-        {"id": "investigate", "label": "Investigate the fixed facts"},
-        {"id": "decide", "label": "Settle user decisions"},
-        {"id": "count", "label": "Count deliverable kinds"},
-        {"id": "successors", "label": "Persist successor work"},
-        {"id": "ticket", "label": "Write the root ticket"}
-      ],
-      "edges": [
-        {"source": "investigate", "target": "decide", "kind": "sequence"},
-        {"source": "decide", "target": "count", "kind": "sequence"},
-        {"source": "count", "target": "successors", "kind": "branch"},
-        {"source": "count", "target": "ticket", "kind": "sequence"},
-        {"source": "successors", "target": "ticket", "kind": "sequence"}
       ]
     }
   }

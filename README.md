@@ -77,8 +77,8 @@ Nothing marks "done" except an external check passing.
 
 Routing projects four shapes: `answer` when evidence already decides,
 `single` for one ordinary ticket, `graph` for a frozen root that needs
-decomposition, and `outline` when that root must first be settled — the
-`orch-outline` planner freezes and seals it. Known-cause
+decomposition, and `outline` when that root must first be settled — a
+planning `orch-do` freezes and seals it. Known-cause
 work enters the smallest of those shapes; an unknown-cause failure uses fix,
 which is a disambiguation between two of them rather than a fifth shape.
 Everything else runs only when you name it, so the routing table never
@@ -90,7 +90,7 @@ the way, the router's off flag stands it down for the session.
 Name the bricks yourself when you want a specific shape:
 
     > loop the build until `pytest -q` exits 0
-    > orch-check this cache design — rank what it gets wrong
+    > orch-judge this cache design — rank what it gets wrong
     > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
 
@@ -118,8 +118,8 @@ skills and workflows are ordinary repository work under
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
-package and template, `four` mints only `orch-outline` and
-`orch-slice` and leaves every other name to resolve at
+package and template, `four` mints only `orch-do` and
+`orch-judge` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
 [profiles.md](hosts/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
@@ -169,18 +169,18 @@ the same loop to the library's own skills.
 
 ### Visualize anything
 
-`orch-execute` renders a supplied subject as a verified visual page when
+`orch-do` renders a supplied subject as a verified visual page when
 the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
-[`orch-outline`](skills/workflows/orch-outline/SKILL.md) and
-[`orch-slice`](skills/kernel/orch-slice/SKILL.md);
+[`orch-do`](skills/kernel/orch-do/SKILL.md) planning the root and
+[`orch-slice`](skills/kernel/orch-slice/SKILL.md) cutting it;
 [verification](rules/verification.md) owns acceptance. This view shows
 only the checker-or-gate choice; that rule owns the other ordinary paths and
 their details:
 
 ```mermaid
 flowchart TD
-    outline["orch-outline — freeze one root ticket"] --> pack{"stamp a domain pack"}
+    outline["orch-do (planning) — freeze one root ticket"] --> pack{"stamp a domain pack"}
     pack --> dec["orch-slice — cut ordered units"]
     dec --> frontier["tickets.py dispatch — one launch per ready unit"]
     frontier --> exec["unit executor"]
@@ -216,11 +216,13 @@ self-improvement wired into every run.
 
 ### Legos
 
-- **One brick, one job.** `orch-outline` freezes the root, `orch-slice`
-  cuts it, `orch-execute` builds each unit,
-  `orch-check` challenges Goal and evidence, a ticket's `done` predicate
-  decides Goal at `land`, and its loop field iterates it. The graph itself
-  is not a brick: two commands run it.
+- **Two bricks, every job.** `orch-do` produces each unit and, in its
+  planning mode, freezes the root; `orch-judge` challenges Goal and
+  evidence. (`orch-slice` still cuts a decomposed root — retiring with
+  the decomposed-root concept itself, not with this rename.) A ticket's
+  `done` predicate decides Goal at `land`, and its loop field iterates
+  it. The graph itself is not a brick: two
+  commands run it.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
@@ -274,15 +276,15 @@ this README does not keep a second copy of it.
 ### Packs
 
     packs/
-    ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-execute
+    ├── orch-code-pack     — delivers code        · tests and checks       · executor orch-do
     │                        workspace: git, one worktree per work item
-    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-execute, assembly stage
+    ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-do, assembly stage
     │                        workspace: document tree with outline slots
-    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-execute, assembly stage
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-do, assembly stage
     │                        workspace: git, datasets pinned by digest manifest
-    ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-execute
+    ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-do
     │                        workspace: git plus render (view × breakpoint × state)
-    └── orch-research-pack — delivers answers     · source evidence       · executor orch-execute, assembly stage
+    └── orch-research-pack — delivers answers     · source evidence       · executor orch-do, assembly stage
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's

@@ -158,8 +158,8 @@ def composite_gate_findings(root_id: str, snapshot: dict, member_ids=None) -> li
     for ticket_id in sorted(actual_gate_ids - expected_gate_ids):
         findings.append({"code": "composite-gate-extra", "field": "members", "ticket": ticket_id})
     expected = {
-        **{ticket_id: ("orch-check", "critique", units) for ticket_id in critiques},
-        repair_id: ("orch-execute", "repair", critiques),
+        **{ticket_id: ("orch-judge", "critique", units) for ticket_id in critiques},
+        repair_id: ("orch-do", "repair", critiques),
     }
     for ticket_id in sorted(expected_gate_ids & actual_gate_ids):
         data = _parse_frontmatter(snapshot[ticket_id])

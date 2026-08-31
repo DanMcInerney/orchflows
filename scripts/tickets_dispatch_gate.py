@@ -156,7 +156,7 @@ def _checker_stage_under_run_lock(rest, *, target_path=None):
         if (
             "error" not in loaded
             and list(loaded.get("depends_on") or []) == [target_id]
-            and _executor_of(loaded) == "orch-check"
+            and _executor_of(loaded) == "orch-judge"
             and str(loaded.get("review_kind") or "") == "critique"
             and str(loaded.get("root_generation") or "") == root_generation
             and not seal_findings(stage_id, stage_text)
@@ -165,7 +165,7 @@ def _checker_stage_under_run_lock(rest, *, target_path=None):
         return {"error": f"checker stage already exists with different content: {stage_id}"}
     sections = _gate_sections("critique", target_id, "checker", units=[target_id])
     text = _gate_stub(
-        run, stage_id, "orch-check", [target_id],
+        run, stage_id, "orch-judge", [target_id],
         sections=sections, root_generation=root_generation,
         pack=target.get("pack"), pack_digest=target.get("pack_digest"),
         isolation="none", review_order=0,
@@ -333,7 +333,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
         critique_ids.append(critique_id)
         sections = _gate_sections("critique", root_id, lens, units=units)
         rendered.append((critique_id, _gate_stub(
-            run, critique_id, "orch-check", units,
+            run, critique_id, "orch-judge", units,
             sections=sections, root_generation=root_generation, pack=gate_pack,
             pack_digest=gate_pack_digest,
             isolation="none", review_order=review_order, review_kind="critique",
@@ -341,7 +341,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
     repaired_by = GATE_REPAIR_ID.format(root=root_id)
     sections = _gate_sections("repair", root_id, units=critique_ids)
     rendered.append((repaired_by, _gate_stub(
-        run, repaired_by, "orch-execute", critique_ids,
+        run, repaired_by, "orch-do", critique_ids,
         sections=sections, root_generation=root_generation, pack=gate_pack,
         pack_digest=gate_pack_digest, isolation="none", review_kind="repair",
     )))

@@ -1,5 +1,5 @@
 ---
-name: orch-execute
+name: orch-do
 description: Produce one artifact through the stamped pack's craft and return its durable ticket envelope.
 role: worker
 ---
@@ -14,6 +14,9 @@ do-not, follow it and say so; where following it would miss Goal, deviate and
 report the deviation with the observation that forced it. Where Details is
 silent, that craft and repository law decide. Stream the executor record as
 work is produced, then commit the reserved outcome.
+
+A planning `do` — goal a frozen root or a call plan — instead reads the pack
+craft's Outline and Spec fields sections.
 
 Never: substitute a skill name for a pack cell; invent a domain rule outside
 the resolved pack or shared rules; edit sealed semantics; integrate another

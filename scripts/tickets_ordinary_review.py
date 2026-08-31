@@ -60,7 +60,7 @@ def ordinary_stage_text(run: str, target_id: str, target: dict, kind: str) -> st
     dependencies = [f"{target_id}.check"]
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
-        "admission": "pending", "executor": "orch-execute",
+        "admission": "pending", "executor": "orch-do",
         "pack": target.get("pack"),
         "independence": "gate", "depends_on": dependencies,
         "isolation": "none", "bound": f"{DEFAULT_BOUND_MINUTES}m",

@@ -65,12 +65,12 @@ class DonePredicateGrammarTest(unittest.TestCase):
         # The loop has no second home for it: the marker moves who reads the
         # one `done`, and a marker with nothing to read is refused.
         self.assertEqual(
-            [], tickets_format.loop_defects("true", "orch-execute", _done("command", "ok")),
+            [], tickets_format.loop_defects("true", "orch-do", _done("command", "ok")),
         )
-        marked = tickets_format.loop_defects("true", "orch-execute", "")
+        marked = tickets_format.loop_defects("true", "orch-do", "")
         self.assertTrue(any("carries the `done` predicate" in item for item in marked))
         valued = tickets_format.loop_defects(
-            '{"done": {"form": "command", "value": "ok"}}', "orch-execute",
+            '{"done": {"form": "command", "value": "ok"}}', "orch-do",
             _done("command", "ok"),
         )
         self.assertTrue(any("takes no other value" in item for item in valued))
@@ -111,7 +111,7 @@ class LandDonePredicateTest(unittest.TestCase):
         """A sealed, dispatched, closed item ready for one `land`."""
 
         self.run_command(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "none",
@@ -203,7 +203,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertEqual("arm", step["outcome"])
         self.assertEqual("T.repair.1", step["repair"])
         armed = self.ticket_path("T.repair.1").read_text(encoding="utf-8")
-        self.assertIn("executor: orch-execute", armed)
+        self.assertIn("executor: orch-do", armed)
         self.assertIn("exits 3 there now", armed)
         # the ticket is not closed: nothing joined, so nothing is terminal
         self.assertIn(
@@ -236,7 +236,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertIsNone(landed["land"]["status"])
         self.assertEqual("await-done-check", self.steps(landed)["done"]["outcome"])
         minted = self.ticket_path("T.done").read_text(encoding="utf-8")
-        self.assertIn("executor: orch-check", minted)
+        self.assertIn("executor: orch-judge", minted)
         self.assertIn("the Goal clause no oracle covers", minted)
         # no lane, no verdict token: the check files findings and the
         # authority that joins it records the disposition
@@ -309,7 +309,7 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
 
     def stand_up(self, done=None):
         result = tickets._dispatch([
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",

@@ -29,42 +29,42 @@ class TestCompositionTemplates(unittest.TestCase):
     TEMPLATES = {
         "benchmaker": (
             {
-                "00-acquire": "orch-execute",
-                "01-design": "orch-outline",
-                "02-materialize": "orch-execute",
-                "03-qualify": "orch-check",
-                "04-audit": "orch-check",
-                "05-measure": "orch-check",
+                "00-acquire": "orch-do",
+                "01-design": "orch-do",
+                "02-materialize": "orch-do",
+                "03-qualify": "orch-judge",
+                "04-audit": "orch-judge",
+                "05-measure": "orch-judge",
             },
             "05-measure",
         ),
         "drift-canary": (
-            {"00-run": "orch-execute", "01-diff": "orch-execute"},
+            {"00-run": "orch-do", "01-diff": "orch-do"},
             "01-diff",
         ),
         "evolve": (
             {
-                "00-eval": "orch-outline",
-                "01-eligibility": "orch-check",
-                "02-campaign": "orch-execute",
-                "03-result": "orch-check",
+                "00-eval": "orch-do",
+                "01-eligibility": "orch-judge",
+                "02-campaign": "orch-do",
+                "03-result": "orch-judge",
             },
             "03-result",
         ),
         "renovate": (
             {
-                "00-audit": "orch-check",
-                "01-triage": "orch-check",
-                "02-deliver": "orch-execute",
+                "00-audit": "orch-judge",
+                "01-triage": "orch-judge",
+                "02-deliver": "orch-do",
             },
             "02-deliver",
         ),
         "self-improve": (
-            {"00-mine": "orch-execute", "01-deliver": "orch-execute"},
+            {"00-mine": "orch-do", "01-deliver": "orch-do"},
             "01-deliver",
         ),
         "skill-tournament": (
-            {"00-benchmark": "orch-execute", "01-campaign": "orch-execute"},
+            {"00-benchmark": "orch-do", "01-campaign": "orch-do"},
             "01-campaign",
         ),
     }

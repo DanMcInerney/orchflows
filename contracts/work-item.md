@@ -36,8 +36,8 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
 - `executor`, optional `profile`, and `pack` — exact dispatch and
-  role binding. Callable executors are the four registered verbs
-  `orch-execute`, `orch-check`, `orch-slice`, and `orch-outline`;
+  role binding. Callable executors are the three registered verbs
+  `orch-do`, `orch-judge`, and `orch-slice`;
   `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
@@ -49,7 +49,7 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - optional `done` — the canonical JSON done predicate, `{"form", "value"}`:
   form `command`, a deterministic command whose exit 0 is the verdict, or
   form `check`, a criterion no oracle covers, judged by one minted
-  `orch-check` ticket. On an ordinary ticket `tickets.py land` is the only
+  `orch-judge` ticket. On an ordinary ticket `tickets.py land` is the only
   evaluator: it runs the
   command in the integrated tree, and that run is the one outside execution
   ([verification.md](../rules/verification.md) §6). A refused command arms
@@ -209,8 +209,8 @@ the exact snapshot, and writes all tickets or none.
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
 A multi-stage pack runs its declared `stages` in order through that one
-child and one role ([roles.md](../rules/roles.md) §4); `orch-execute` and
-`orch-check` read the stamped pack's craft and may not import a superseded
+child and one role ([roles.md](../rules/roles.md) §4); `orch-do` and
+`orch-judge` read the stamped pack's craft and may not import a superseded
 skill body or invent a second pack parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to
 Context but do not replace the semantic sections.

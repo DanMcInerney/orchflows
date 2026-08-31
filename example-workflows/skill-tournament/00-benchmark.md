@@ -1,6 +1,6 @@
 ---
 id: 00-benchmark
-executor: orch-execute
+executor: orch-do
 pack: {{pack}}
 depends_on: []
 bound: <= 200 tool calls

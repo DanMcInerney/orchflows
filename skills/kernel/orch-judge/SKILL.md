@@ -1,6 +1,6 @@
 ---
-name: orch-check
-description: Check one fixed artifact through the stamped pack's craft and return its durable review envelope.
+name: orch-judge
+description: Judge one fixed artifact through the stamped pack's craft and return its durable review envelope.
 role: planner
 ---
 

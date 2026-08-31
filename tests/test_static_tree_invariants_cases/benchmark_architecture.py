@@ -38,17 +38,22 @@ class TestBenchmarkArchitecture(unittest.TestCase):
     )
 
     EVOLVE_GRAPH = {
-        "00-eval": ("orch-outline", []),
-        "01-eligibility": ("orch-check", ["00-eval"]),
-        "02-campaign": ("orch-execute", ["01-eligibility"]),
-        "03-result": ("orch-check", ["02-campaign"]),
+        "00-eval": ("orch-do", []),
+        "01-eligibility": ("orch-judge", ["00-eval"]),
+        "02-campaign": ("orch-do", ["01-eligibility"]),
+        "03-result": ("orch-judge", ["02-campaign"]),
     }
     TOURNAMENT_GRAPH = {
-        "00-benchmark": ("orch-execute", []),
-        "01-campaign": ("orch-execute", ["00-benchmark"]),
+        "00-benchmark": ("orch-do", []),
+        "01-campaign": ("orch-do", ["00-benchmark"]),
     }
+    # `orch-judge` was demoted here at U12 (a68eeabe): one of several rejected
+    # candidate names from the seven-verb convergence, not the callable this
+    # rename (W2b, verbs-rename) later minted from `orch-check`. That verb is
+    # exactly what these templates now bind, so it is dropped from this list;
+    # the remaining five stay dead.
     DEMOTED = (
-        "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",
+        "orch-bench", "orch-benchmaker", "orch-delegate",
         "orch-worklog", "orch-panel",
     )
 
@@ -67,9 +72,9 @@ class TestBenchmarkArchitecture(unittest.TestCase):
 
     def test_evolve_verifies_before_it_ranks_and_before_it_closes(self):
         graph = stub_graph(EVOLVE)
-        self.assertEqual("orch-check", graph["01-eligibility"][0])
+        self.assertEqual("orch-judge", graph["01-eligibility"][0])
         self.assertEqual(["01-eligibility"], graph["02-campaign"][1])
-        self.assertEqual("orch-check", graph["03-result"][0])
+        self.assertEqual("orch-judge", graph["03-result"][0])
         self.assertEqual(["02-campaign"], graph["03-result"][1])
         terminal = [
             stub for stub in graph

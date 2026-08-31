@@ -84,7 +84,7 @@ _WORKFLOW_STUB = """---
 id: 00-root
 run: {{{{run}}}}
 status: pending
-executor: orch-slice
+executor: orch-do
 depends_on: []
 bound: 60m
 ---

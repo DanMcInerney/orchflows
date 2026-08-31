@@ -10,7 +10,7 @@ The iteration's verb is the stub's own ``executor``, and the predicate its
 own ``done`` -- the marker restates neither. That binding takes exactly one
 of two closed forms: a deterministic command whose exit 0 is the done
 reading (that run is the one outside execution closing the loop), or a
-frozen criterion judged by a fresh ``orch-check`` ticket minted per
+frozen criterion judged by a fresh ``orch-judge`` ticket minted per
 iteration.
 """
 
@@ -214,7 +214,7 @@ def _evaluate(run, loop_id, run_dir, data, text, done):
     """The done reading for the latest terminal iteration.
 
     Deterministic form: run the frozen command; exit 0 is done. Check
-    form: mint one fresh `orch-check` ticket judging the frozen
+    form: mint one fresh `orch-judge` ticket judging the frozen
     criterion; a live one reports pending, a terminal one reports its
     verdict.
     """
@@ -261,7 +261,7 @@ def _evaluate(run, loop_id, run_dir, data, text, done):
 
 def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
                context, *, depends_on: str, lock_held: bool = False):
-    """Create -- or replay -- the one `orch-check` ticket judging a criterion.
+    """Create -- or replay -- the one `orch-judge` ticket judging a criterion.
 
     The single minter for both homes of the `check` done form: a loop's
     per-iteration done-check and a landing whose predicate names a criterion
@@ -277,7 +277,7 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
     path = run_dir / f"{check_id}.md"
     fields = {
         "id": check_id, "run": run, "status": "pending",
-        "admission": ADMISSION_PENDING, "executor": "orch-check",
+        "admission": ADMISSION_PENDING, "executor": "orch-judge",
         "pack": dequote(source.get("pack")) or None,
         "independence": "gate", "depends_on": [depends_on],
         "isolation": "none", "bound": source.get("bound"),

@@ -69,7 +69,7 @@ class GradeSnapshotTest(unittest.TestCase):
     def test_direct_and_loop_shapes_have_one_result_width(self):
         direct = {"R": ticket("R", "orch-tdd")}
         loop = {"R": ticket(
-            "R", "orch-execute",
+            "R", "orch-do",
             loop="true", done='{"form":"command","value":"exit 0"}',
         )}
         self.assertEqual("single", grade_snapshot("R", direct)["shape"])

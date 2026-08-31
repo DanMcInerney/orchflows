@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2113,
+  "count": 2110,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -665,12 +665,13 @@
    "test_regen.TestValidateGate.test_a_reconciled_tree_draws_no_error_from_the_same_gate",
    "test_regen.TestValidateGate.test_a_stale_serial_manifest_fails_validate_and_names_the_command",
    "test_registry_census.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
-   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_four_enforced_verbs",
-   "test_registry_census.CallableRegistryTests.test_execute_and_check_require_pack_authority",
+   "test_registry_census.CallableRegistryTests.test_callable_registry_is_the_two_bricks_plus_the_temporary_decomposer",
+   "test_registry_census.CallableRegistryTests.test_do_and_judge_require_pack_authority",
    "test_registry_census.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
    "test_registry_census.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
+   "test_registry_census.CallableRegistryTests.test_the_outline_doorway_and_its_predecessor_collapse_to_one_remedy",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
    "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
    "test_ring_adapters.BodyTests.test_a_workflow_adapter_carries_the_instantiate_route",
@@ -849,7 +850,6 @@
    "test_shapes_render.ShapeRenderTest.test_declarations_have_generated_validator_and_contract_consumers",
    "test_shapes_render.ShapeRenderTest.test_invalid_value_declaration_fails_closed",
    "test_shapes_render.ShapeRenderTest.test_render_check_detects_a_hand_edit",
-   "test_skill_fork_governance.SpecStatesItsDirectTicketLane.test_the_direct_lane_names_its_condition_and_its_mechanics",
    "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_leaves_the_reserved_wordings_to_their_owners",
    "test_skill_fork_governance.TheClauseStillSaysWhatItWasWrittenToSay.test_the_clause_states_every_property_the_firings_paid_for",
    "test_skill_fork_governance.TheInstallerIsTheClausesOneOwner.test_no_skill_contract_body_carries_a_copy",
@@ -1115,13 +1115,10 @@
    "test_verification_model.CritiqueContractTest.test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model",
    "test_verification_model.GoalEvidenceContractTest.test_execute_consumes_pack_craft_and_records_post_work_evidence",
    "test_verification_model.GoalEvidenceContractTest.test_non_code_packs_define_artifact_evidence_without_code_tests",
-   "test_verification_model.GoalEvidenceContractTest.test_spec_distills_evidence_into_one_executable_semantic_root",
    "test_verification_model.GoalEvidenceContractTest.test_ticket_has_no_extra_success_schema",
    "test_verification_model.SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
    "test_verification_model.SeparateRepairGateTest.test_a_single_executor_result_does_not_trigger_a_composite_gate",
    "test_verification_model.SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_and_repair_tickets",
-   "test_verification_model.SpecSuccessorLifecycleTest.test_successor_trigger_has_a_fresh_authorized_materialization_path",
-   "test_verification_model.SpecSuccessorLifecycleTest.test_topology_references_resolve_to_current_numbered_clauses",
    "test_verify_at.CallerEnvironmentTest.test_no_git_seam_a_caller_set_reaches_the_command",
    "test_verify_at.CleanupReportHonestyTest.test_a_checkout_that_went_away_is_reported_as_observed_gone",
    "test_verify_at.CleanupReportHonestyTest.test_a_kept_checkout_says_kept_and_claims_no_removal",
@@ -2116,7 +2113,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "efef1d653c937856f50938020ce481cac88f48c40f25e548c50e90ebb9d6f48f"
+  "sha256": "df84f72590f376c507377fa497c3019fd659c78a9abbee724ba1763df8901d56"
  },
  "mutation_owners": [
   {

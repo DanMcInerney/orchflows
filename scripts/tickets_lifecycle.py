@@ -248,7 +248,7 @@ def _check_under_run_lock(rest, *, ticket_path=None):
         return failure
     stage = _parse_frontmatter(stage_text)
     if (str(stage.get('status') or '') != 'complete'
-            or _executor_of(stage) != 'orch-check'
+            or _executor_of(stage) != 'orch-judge'
             or str(stage.get('review_kind') or '') != 'critique'
             or list(stage.get('depends_on') or []) != [ticket_id]):
         return {'error': f'checker stage is not a completed review of {ticket_id}: {stage_id}'}
@@ -336,8 +336,8 @@ def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
     data = _parse_frontmatter(text)
     if str(data.get('status') or '') != 'ready':
         return {'error': f'join-noop-repair requires a ready ticket: {run}/{ticket_id}'}
-    if _executor_of(data) != 'orch-execute' or str(data.get('review_kind') or '') != 'repair':
-        return {'error': 'join-noop-repair requires review_kind repair on an orch-execute ticket'}
+    if _executor_of(data) != 'orch-do' or str(data.get('review_kind') or '') != 'repair':
+        return {'error': 'join-noop-repair requires review_kind repair on an orch-do ticket'}
     dependencies = [str(value) for value in (data.get('depends_on') or [])]
     if not dependencies:
         return {'error': 'join-noop-repair requires completed critique dependencies'}
@@ -345,7 +345,7 @@ def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
     for dependency in dependencies:
         loaded = _load_ticket(ticket_path.with_name(f'{dependency}.md'))
         if ('error' in loaded or not dependency.startswith(critique_prefix)
-                or _executor_of(loaded) != 'orch-check'
+                or _executor_of(loaded) != 'orch-judge'
                 or str(loaded.get('review_kind') or '') != 'critique'
                 or str(loaded.get('status') or '') != 'complete'):
             return {'error': f'join-noop-repair dependency is not a completed gate critique: {dependency}'}

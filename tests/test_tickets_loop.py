@@ -39,7 +39,7 @@ CHECK_DONE = '{"form":"check","value":"The probe artifact converged."}'
 
 LOOP_STUB = """---
 id: L1
-executor: orch-execute
+executor: orch-do
 loop: true
 done: DONE_BINDING
 pack: orch-code-pack
@@ -72,7 +72,7 @@ AUTHORED_CHILD = """---
 id: L1.extra
 run: looprun
 status: pending
-executor: orch-execute
+executor: orch-do
 pack: orch-code-pack
 depends_on: []
 bound: 30m

@@ -428,15 +428,19 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     errors = []
     combined_evolve = evolve + generation
     # Who runs each step is the stubs' `executor`, not a backticked name in
-    # prose. `orch-check` twice: eligibility opens the campaign, the final
-    # score card closes it. Since P3 it is also the one scorer -- `orch-judge`
-    # merged into it (a score scale in the criteria), `orch-delegate` into
-    # rules/delegation.md, `orch-worklog` into the `tickets.py` view -- and
-    # since P4 `orch-panel` too, judging being N blind verify lanes plus the
-    # loop body's reduce. None of the four may reappear.
+    # prose. `orch-judge` (the callable W2b, verbs-rename, minted from
+    # `orch-check`) twice: eligibility opens the campaign, the final score
+    # card closes it. Since P3 the *scorer* was also a candidate standalone
+    # skill named `orch-judge` -- unrelated to the callable of that name
+    # today -- merged into `orch-check` instead (a score scale in the
+    # criteria); `orch-delegate` merged into rules/delegation.md,
+    # `orch-worklog` into the `tickets.py` view -- and since P4 `orch-panel`
+    # too, judging being N blind verify lanes plus the loop body's reduce.
+    # None of those three demoted names may reappear; today's `orch-judge`
+    # callable is exactly what these frontmatters now bind.
     executors = Counter(EXECUTOR_RE.findall(evolve))
     required = Counter(
-        {"orch-outline": 1, "orch-execute": 1, "orch-check": 2}
+        {"orch-do": 2, "orch-judge": 2}
     )
     if executors != required:
         errors.append("evolve-call-graph")
@@ -444,7 +448,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         evolve.index("id: 01-eligibility") : evolve.index("id: 02-campaign")
     ]
     campaign = evolve[evolve.index("id: 02-campaign") : evolve.index("id: 03-result")]
-    if "executor: orch-check" not in eligibility:
+    if "executor: orch-judge" not in eligibility:
         errors.append("eligibility-unit")
     # The campaign reuses the eligibility verdicts rather than re-taking
     # them: it cites that stub's report as its own fixed input.
@@ -452,7 +456,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         errors.append("generation-verify-binding")
     if re.search(r"^id:\s*04-", evolve, re.MULTILINE):
         errors.append("closing-wrapper")
-    for demoted in ("orch-panel", "orch-judge", "orch-delegate", "orch-worklog"):
+    for demoted in ("orch-panel", "orch-delegate", "orch-worklog"):
         if demoted in combined_evolve:
             errors.append("judge-owner")
             break
@@ -464,7 +468,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     tournament_calls = set(CALL_EDGE_RE.findall(tournament))
     if tournament_calls:
         errors.append("tournament-internal-call")
-    if "writer=orch-execute" not in normalized(tournament):
+    if "writer=orch-do" not in normalized(tournament):
         errors.append("tournament-writer-binding")
     # The campaign's promotion judgment is evolve's, and the tournament may
     # not restate it. Since 2026-08-16 (thread T27) the tournament does name
