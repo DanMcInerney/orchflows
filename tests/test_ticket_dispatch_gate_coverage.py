@@ -1,4 +1,4 @@
-"""Canonical witnesses for the accepted ticket/packet/gate discrepancy register."""
+"""Canonical witnesses for the accepted ticket/dispatch/gate discrepancy register."""
 
 import importlib
 import io
@@ -21,7 +21,7 @@ def witness(carrier, identity):
 # dissolved four: the ephemeral downgrade an inline packet could attempt,
 # the inline snapshot's sink authority, the accepted-receipt fence before
 # execution records, and the receiver identity/profile/authority family.
-# What replaced the fence -- one committed packet before any execution
+# What replaced the fence -- one committed launch before any execution
 # record, and the writer identity every record carries -- keeps its row.
 COVERAGE = {
     "A1": (
@@ -42,12 +42,12 @@ COVERAGE = {
     ),
     "A6": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_outcome_materializes_only_unstreamed_evidence_once"),),
     "A7": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal"),),
-    "B1": (witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_command_emits_codepage_independent_canonical_ascii"),),
+    "B1": (witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii"),),
     "B2": (
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_the_first_filed_record_is_the_acceptance"),
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_an_execution_record_without_a_committed_packet_refuses"),
-        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_a_packet_is_a_byte_preserving_refusal"),
-        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_packet_after_outcome_is_a_byte_preserving_refusal"),
+        witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_first_filed_record_is_the_acceptance"),
+        witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchLaunchRecordTest.test_an_execution_record_without_a_committed_launch_refuses"),
+        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_a_launch_is_a_byte_preserving_refusal"),
+        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_launch_after_outcome_is_a_byte_preserving_refusal"),
     ),
     "B3": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation"),),
     "C1": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
@@ -67,7 +67,7 @@ COVERAGE = {
     "D5": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order"),),
     "D6": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
     "D7": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
-    "D8": (witness("tests.test_ticket_packet_gate_coverage", "tests.test_ticket_packet_gate_coverage.TicketPacketGateCoverageTest.test_obsolete_gate_fossils_are_absent"),),
+    "D8": (witness("tests.test_ticket_dispatch_gate_coverage", "tests.test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_obsolete_gate_fossils_are_absent"),),
     "D9": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order"),),
     "E1": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier"),),
     "E2": (
@@ -81,7 +81,7 @@ COVERAGE = {
 FAMILIES = {"A": 7, "B": 3, "C": 4, "D": 9, "E": 3}
 
 
-class TicketPacketGateCoverageTest(unittest.TestCase):
+class TicketDispatchGateCoverageTest(unittest.TestCase):
     def test_obsolete_gate_fossils_are_absent(self):
         fossils = (
             TESTS / "test_tickets_cases" / "gate_blocking.py",

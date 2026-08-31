@@ -47,7 +47,8 @@ from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
 )
 
 import scripts.tickets as tickets_mod
-import scripts.tickets_packet as tickets_packet
+import scripts.tickets_assignment as tickets_assignment
+import scripts.tickets_dispatch_launch as launch_module
 import scripts.tickets_review as tickets_review
 
 __all__ = (
@@ -136,8 +137,8 @@ class AdapterRegistryTest(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
-            with mock.patch.object(tickets_packet, "adapter_spec", return_value=adapter):
-                finding = tickets_packet.workspace_establishment_finding(
+            with mock.patch.object(tickets_assignment, "adapter_spec", return_value=adapter):
+                finding = tickets_assignment.workspace_establishment_finding(
                     {"pack": "widget-pack", "isolation": "required"}, None,
                 )
             self.assertEqual("workspace-unestablished", finding[0])
@@ -216,11 +217,15 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]
     record_established_workspace(ticket, tmp.resolve())
-    packet = tickets_mod._dispatch([
-        "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
- "--workspace", str(tmp.resolve()),
-    ])
-    assert "error" not in packet, packet
+    # the committed launch every execution record enters behind, at the
+    # facade seam that owns it -- there is no verb for the launch alone
+    host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
+    assert failure is None, failure
+    launched = tickets_mod._tickets_dispatch_facade_module._launched_under_run_lock(
+        "testrun", "T1", host, dispatch_id="D1",
+        workspace=str(tmp.resolve()), artifact=None, review_kind=None,
+    )
+    assert "error" not in launched, launched
     return ticket, opened["assignment_seal"]
 
 

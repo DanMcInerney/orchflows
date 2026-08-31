@@ -64,14 +64,14 @@ class TicketProtocolTest(unittest.TestCase):
         self.assertIn("`lease_expires_at`", dispatch)
         self.assertNotIn("only this join calls `tickets.py set-status`", integrate)
 
-    def test_dispatch_v1_contract_owns_packet_projection(self):
+    def test_dispatch_v1_contract_owns_the_launch(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
         for token in (
-            "`dispatch-packet`", "`source`",
+            "`launch`", "`prompt`",
             "`state-inaccessible`", "`stale-attempt`",
             "`idempotency-conflict`", "`dispatch-mismatch`",
             "ASCII-escaped canonical JSON",
@@ -87,6 +87,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`authority-mismatch`", "`profile-mismatch`",
             "`assignment-divergent`", "`packet-invalid`", "`inline`",
             "`reply_to`", "`reference`", "`admission`", "`independence`",
+            "`dispatch-packet`", "`durability`", "`review_kind`",
         ):
             self.assertNotIn(retired, normative)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
@@ -97,8 +98,9 @@ class TicketProtocolTest(unittest.TestCase):
             self.assertIn("tickets.py dispatch", surface)
             self.assertNotIn("dispatch-receive", surface)
         for surface in (profiles, tickets):
-            for command in ("dispatch-open", "dispatch-packet"):
+            for command in ("dispatch-open", "dispatch-retire"):
                 self.assertIn(command, surface)
+            self.assertNotIn("dispatch-packet", surface)
         for routing in (host, frontier):
             self.assertNotIn("tickets.py claim", routing)
             self.assertNotIn("tickets.py packet", routing)
@@ -116,9 +118,10 @@ class TicketProtocolTest(unittest.TestCase):
             "absolute lease", "`dispatch-join`", "outside-independence path",
         ):
             self.assertIn(current, tickets)
-        self.assertIn("committed packet", delegation)
+        self.assertIn("committed launch", delegation)
         self.assertIn("dispatch contract", roles.lower())
-        self.assertIn("**packet projection**", vocabulary)
+        self.assertIn("- **launch** —", vocabulary)
+        self.assertNotIn("**packet projection**", vocabulary)
 
     def test_public_documents_project_the_current_dispatch_and_gate_model(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
@@ -137,7 +140,7 @@ class TicketProtocolTest(unittest.TestCase):
             self.assertIn(field, readme)
 
         for phrase in (
-            "`.packet` value", "--packet-file <path>",
+            "launch prompt", "replaying the same `dispatch` call",
             "GatePlan", "CritiqueAdjudication", "RepairOutcome",
             "tickets.py checker-stage", "--stage <id>.check",
             "tickets.py show", "tickets.py lint <run> [<id>] --file",
@@ -157,10 +160,11 @@ class TicketProtocolTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         ui_model = (root / "reader" / "scripts" / "ui_model.py").read_text(encoding="utf-8")
 
-        self.assertIn("emitted `launch` verbatim", host)
-        self.assertIn("response `.packet`", frontier)
+        self.assertIn("emitted `launch`", host)
+        self.assertIn("add nothing to its prompt", frontier)
+        self.assertIn("--outcome-file <path|->", frontier)
         for projection in (host, frontier):
-            self.assertIn("--file", projection.replace("--packet-file", "--file"))
+            self.assertIn("tickets.py land", projection)
             self.assertIn("workspace", projection.lower())
         self.assertIn("evidence-store", frontier.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)

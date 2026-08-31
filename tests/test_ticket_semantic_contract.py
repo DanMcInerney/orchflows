@@ -16,6 +16,7 @@ from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
 from scripts import tickets
+from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
 from scripts import tickets_join
 from scripts import tickets_review
@@ -192,25 +193,32 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
         )["dispatch"]
 
-    def accept_packet(self, run, ticket_id, by, dispatch_id, workspace=None):
-        """Establish, then commit the packet this child's records enter behind.
+    def launch(self, run, ticket_id, dispatch_id, workspace=None,
+               artifact=None, review_kind=None, record=True):
+        """Establish, then commit the launch this child's records enter behind.
 
-        The establishment records the tree on the open attempt, which is
-        where the projection reads it from and the order the dispatch
-        facade runs the two steps in.
+        Reached at the facade seam that owns it: `dispatch` composes the
+        launch under the run lock and there is no verb for it alone. The
+        establishment records the tree on the open attempt first, which is
+        the order the facade runs those two steps in.
         """
 
-        if workspace is not None:
+        if workspace is not None and record:
             record_established_workspace(
                 Path(self.temporary.name) / "tickets" / run / f"{ticket_id}.md",
                 workspace,
             )
-        packet_args = [
-            "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
-        ]
-        if workspace is not None:
-            packet_args.extend(("--workspace", workspace))
-        return self.dispatch(*packet_args)["packet"]
+        host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
+        self.assertIsNone(failure, failure)
+        return tickets._tickets_dispatch_facade_module._launched_under_run_lock(
+            run, ticket_id, host, dispatch_id=dispatch_id,
+            workspace=workspace, artifact=artifact, review_kind=review_kind,
+        )
+
+    def committed_launch(self, *arguments, **facts) -> dict:
+        committed = self.launch(*arguments, **facts)
+        self.assertNotIn("error", committed, committed)
+        return committed["launch"]
 
     def accepted_file(self, ticket_id, findings) -> list:
         """`dispatch-join --accepted` was removed; the subset crosses as a file."""
@@ -361,12 +369,10 @@ class SemanticTicketContractTest(unittest.TestCase):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket_path.write_text(established, encoding="utf-8")
         opened = self.open_attempt("direct", "R1", "worker", "direct-D1")
-        record_established_workspace(ticket_path, "C:/candidate")
-        packet = self.dispatch(
-            "dispatch-packet", "direct", "R1", "--dispatch-id", opened["dispatch_id"],
- "--workspace", "C:/candidate",
-        )["packet"]
-        self.assertIn("Suggested files are non-binding", packet["prompt"])
+        launched = self.committed_launch(
+            "direct", "R1", opened["dispatch_id"], workspace="C:/candidate",
+        )
+        self.assertIn("Suggested files are non-binding", launched["prompt"])
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
         self.assertEqual({"Goal", "Context", "Result", "Verification", "Feedback", "Risks"}, set(_sections(text)))
 
@@ -462,7 +468,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         actual = workspace._actual_mutations("M\0other/path.py\0A\0tests/new_guard.py\0")
         self.assertEqual([("change", "other/path.py"), ("create", "tests/new_guard.py")], actual)
 
-    def test_packet_filing_command_carries_claimant_and_writes_the_ticket(self):
+    def test_prompt_filing_command_carries_claimant_and_writes_the_ticket(self):
         self.dispatch(
             "new", "packet", "R1", "--executor", "orch-execute",
             "--goal", "Create the artifact.", "--context", "Use repository facts.",
@@ -480,8 +486,8 @@ class SemanticTicketContractTest(unittest.TestCase):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket_path.write_text(established, encoding="utf-8")
         opened = self.open_attempt("packet", "R1", "worker", "packet-D1")
-        prompt = self.accept_packet(
-            "packet", "R1", "worker", "packet-D1", workspace=str(candidate)
+        prompt = self.committed_launch(
+            "packet", "R1", "packet-D1", workspace=str(candidate)
         )["prompt"]
         command = next(
             line for line in prompt.splitlines()
@@ -497,13 +503,15 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(["--by", "worker"], argv[9:11])
         argv[argv.index("RECORD_ID")] = "result-1"
         argv[argv.index("SECTION")] = "Result"
-        argv[argv.index("TEXT")] = "filed from emitted packet"
+        argv[argv.index("TEXT")] = "filed from the emitted prompt"
         filed = self.dispatch(*argv)
         self.assertEqual("worker", filed["result"]["by"])
         ticket = (
             Path(self.temporary.name) / "tickets" / "packet" / "R1.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("### Written by `worker`\n\nfiled from emitted packet", ticket)
+        self.assertIn(
+            "### Written by `worker`\n\nfiled from the emitted prompt", ticket,
+        )
 
     def test_decomposed_root_uses_same_semantic_shape(self):
         self.dispatch("new", "cut", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
@@ -644,9 +652,8 @@ class SemanticTicketContractTest(unittest.TestCase):
             opened = self.open_attempt(
                 "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
             )
-            self.accept_packet(
-                "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}",
-                workspace=candidate,
+            self.committed_launch(
+                "clean", ticket_id, f"member-D{suffix}", workspace=candidate,
             )
             self.dispatch(
                 "result", "clean", ticket_id,
@@ -672,15 +679,17 @@ class SemanticTicketContractTest(unittest.TestCase):
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
             capture_output=True, check=True,
         ).stdout.strip()
-        packet = self.dispatch(
-            "dispatch-packet", "clean", critique_id,
-            "--dispatch-id", "critic-D1",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
+        launched = self.committed_launch(
+            "clean", critique_id, "critic-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
         # by path and tip identity, never a second copy of the ledger
-        self.assertIn("Immutable review ledger: read", packet["prompt"])
-        self.assertIn("tip is GatePlan", packet["prompt"])
-        self.assertNotIn('"kind":"GatePlan"', packet["prompt"])
+        self.assertIn("Immutable review ledger: read", launched["prompt"])
+        self.assertIn("tip is GatePlan", launched["prompt"])
+        self.assertNotIn('"kind":"GatePlan"', launched["prompt"])
+        # the root Goal three proven verdicts turned on, named by path
+        self.assertIn(str(Path(self.temporary.name) / "tickets" / "clean" / "R.md"),
+                      launched["prompt"])
         self.commit_outcome("clean", critique_id, opened, "critic", "critic-D1")
         self.dispatch(
             "dispatch-join", "clean", critique_id,
@@ -730,22 +739,19 @@ class SemanticTicketContractTest(unittest.TestCase):
         verify_opened = self.open_attempt(
             "clean", verify_id, "verifier", "verify-D1"
         )
-        mismatch = tickets._dispatch([
-            "dispatch-packet", "clean", verify_id,
-            "--dispatch-id", "verify-D1",
-            "--artifact", "git:" + "f" * 40, "--workspace", str(ROOT),
-        ])
+        mismatch = self.launch(
+            "clean", verify_id, "verify-D1", workspace=str(ROOT),
+            artifact="git:" + "f" * 40, record=False,
+        )
         self.assertEqual("review-invalid", mismatch["code"])
-        verify_packet = self.dispatch(
-            "dispatch-packet", "clean", verify_id,
-            "--dispatch-id", "verify-D1",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.assertIn("tip is RepairOutcome", verify_packet["prompt"])
+        verify_launch = self.committed_launch(
+            "clean", verify_id, "verify-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
+        self.assertIn("tip is RepairOutcome", verify_launch["prompt"])
         self.assertIn(
             "Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or "
-            "`UNVERIFIED:` so the join can bind the verdict to the verified artifact.",
-            verify_packet["prompt"],
+            "`UNVERIFIED:`", verify_launch["prompt"],
         )
         verify_outcome = {
             "assignment_seal": verify_opened["assignment_seal"],
@@ -838,9 +844,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket.write_text(established, encoding="utf-8")
         opened = self.open_attempt("checker", "R", "worker", "worker-D1")
-        self.accept_packet(
-            "checker", "R", "worker", "worker-D1", workspace=str(ROOT),
-        )
+        self.committed_launch("checker", "R", "worker-D1", workspace=str(ROOT))
         self.commit_outcome("checker", "R", opened, "worker", "worker-D1")
         self.dispatch(
             "dispatch-join", "checker", "R",
@@ -867,11 +871,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         stage_opened = self.open_attempt(
             "checker", "R.check", "checker-a", "checker-D1"
         )
-        packet = self.dispatch(
-            "dispatch-packet", "checker", "R.check",
-            "--dispatch-id", "checker-D1",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
+        self.committed_launch(
+            "checker", "R.check", "checker-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
         findings = json.dumps([{
             "blocking": True,
             "class": "correctness",
@@ -994,12 +997,11 @@ class SemanticTicketContractTest(unittest.TestCase):
         repair_opened = self.open_attempt(
             "checker", "R.gate.repair", "repairer", "repair-D1"
         )
-        repair_packet = self.dispatch(
-            "dispatch-packet", "checker", "R.gate.repair",
-            "--dispatch-id", "repair-D1",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.assertIn(review["records"][1]["identity"], repair_packet["prompt"])
+        repair_launch = self.committed_launch(
+            "checker", "R.gate.repair", "repair-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
+        self.assertIn(review["records"][1]["identity"], repair_launch["prompt"])
         repair_outcome = {
             "assignment_seal": repair_opened["assignment_seal"],
             "by": "repairer", "dispatch_id": "repair-D1",
@@ -1058,11 +1060,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         verify_opened = self.open_attempt(
             "checker", "R.gate.verify", "verifier", "verify-D1"
         )
-        verify_packet = self.dispatch(
-            "dispatch-packet", "checker", "R.gate.verify",
-            "--dispatch-id", "verify-D1",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
+        self.committed_launch(
+            "checker", "R.gate.verify", "verify-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
         verify_outcome = {
             "assignment_seal": verify_opened["assignment_seal"],
             "by": "verifier", "dispatch_id": "verify-D1",
@@ -1264,11 +1265,9 @@ class SemanticTicketContractTest(unittest.TestCase):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket.write_text(established, encoding="utf-8")
         opened = self.open_attempt("tdd", "R", "worker", "tdd-D1")
-        record_established_workspace(ticket, "C:/candidate")
-        prompt = self.dispatch(
-            "dispatch-packet", "tdd", "R", "--dispatch-id", opened["dispatch_id"],
- "--workspace", "C:/candidate",
-        )["packet"]["prompt"]
+        prompt = self.committed_launch(
+            "tdd", "R", opened["dispatch_id"], workspace="C:/candidate",
+        )["prompt"]
         self.assertRegex(prompt.lower(), r"choose the implementation,\s*tests, and verification")
         self.assertNotIn("oracle_class", prompt)
 

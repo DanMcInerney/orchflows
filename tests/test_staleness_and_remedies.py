@@ -25,6 +25,7 @@ from tests._candidate_checkout import (
 )
 from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
+from scripts import tickets_dispatch_launch as launch_module
 from scripts.tickets_format import (
     _parse_frontmatter, _section_body, _sections, _set_frontmatter_field,
     _write_section, canonical_json,
@@ -121,11 +122,21 @@ class SealedRunTest(SinkTest):
         self.dispatch("checker-stage", "run", "T")
         return self.dispatch("draft-validate", "run", "T")
 
-    def project(self):
-        return tickets._dispatch([
-            "dispatch-packet", "run", "T", "--dispatch-id", "D1",
- "--workspace", str(self.candidate),
-        ])
+    def launch(self):
+        """Commit the launch, at the facade seam that owns it.
+
+        There is no public verb for the launch alone: `dispatch` composes it
+        under the run lock, and this reaches that one step directly rather
+        than standing a whole workspace establishment up per case.
+        """
+
+        facade = tickets._tickets_dispatch_facade_module
+        host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
+        self.assertIsNone(failure, failure)
+        return facade._launched_under_run_lock(
+            "run", "T", host, dispatch_id="D1",
+            workspace=str(self.candidate), artifact=None, review_kind=None,
+        )
 
 
 class TestARecutRepairsTheReceiptsItInvalidated(SealedRunTest):
@@ -133,7 +144,7 @@ class TestARecutRepairsTheReceiptsItInvalidated(SealedRunTest):
 
     The claimed root's receipt names generation 1's sealed record. Sealing
     generation 2 leaves it naming a record no grader will consult again, and
-    the mandatory next packet is refused for a staleness the seal itself
+    the next dispatch is refused for a staleness the seal itself
     introduced -- five times in the friction record before this was written.
     """
 
@@ -144,26 +155,26 @@ class TestARecutRepairsTheReceiptsItInvalidated(SealedRunTest):
         self.assertEqual(["T"], sealed["refreshed_admissions"])
         self.assertNotEqual(before, after)
 
-    def test_the_next_packet_emission_needs_no_manual_repair(self):
+    def test_the_next_dispatch_needs_no_manual_repair(self):
         self.seal(self.recut())
-        projected = self.project()
-        self.assertNotIn("error", projected, projected)
-        # The admission the reseal refreshed is what the projection graded
-        # against; it is no longer restated on the wire, so the seal the
-        # packet does carry is the evidence that the grade passed.
-        self.assertEqual(
+        launched = self.launch()
+        self.assertNotIn("error", launched, launched)
+        # The admission the reseal refreshed is what the launch graded
+        # against; the seal the prompt tells the child to file under is the
+        # evidence that grade passed.
+        self.assertIn(
             self.frontmatter("T")["assignment_seal"],
-            projected["packet"]["assignment_seal"],
+            launched["launch"]["prompt"],
         )
 
-    def test_without_the_repair_that_same_packet_is_refused(self):
-        """The can-fail direction: the seal is what the packet depends on."""
+    def test_without_the_repair_that_same_dispatch_is_refused(self):
+        """The can-fail direction: the seal is what the launch depends on."""
 
         with mock.patch.object(
             tickets_seal, "refresh_admissions", return_value=[]
         ):
             self.seal(self.recut())
-        refused = self.project()
+        refused = self.launch()
         self.assertIn("error", refused)
         self.assertIn("admission receipt", refused["error"])
 
@@ -412,9 +423,9 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
         ])
 
     def accept(self):
-        """Commit the packet every record below enters behind."""
+        """Commit the launch every record below enters behind."""
 
-        return self.project()
+        return self.launch()
 
     def test_the_body_survives_the_round_trip(self):
         self.accept()
@@ -598,7 +609,7 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
             "dispatch_id": "D1", "outcome_record_id": "outcome",
             "by": "worker", "status": "complete", "evidence": evidence,
         }), encoding="utf-8")
-        self.project()
+        self.launch()
         self.dispatch("dispatch-outcome", "run", "T", "--file", str(outcome))
         return outcome
 
@@ -660,9 +671,9 @@ class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
     carries the unstreamed delta instead, so the caller had to guess one."""
 
     def accept(self):
-        """Commit the packet every record below enters behind."""
+        """Commit the launch every record below enters behind."""
 
-        return self.project()
+        return self.launch()
 
     def stream_result(self, body="delivered"):
         path = self.home / "streamed.md"

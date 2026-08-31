@@ -13,8 +13,8 @@ Outbound: `tickets.py dispatch <run> <id> --by <name> --dispatch-id <id>
 One transaction admits the ticket, establishes the workspace or evidence-store
 ([workspaces](references/workspaces.md)), opens the attempt, and emits one
 `launch`; invoke it verbatim with its exact fields
-([profiles](references/profiles.md)). Its prompt is everything the child is
-told; add nothing to it. The child's first filed record is its acceptance.
+([profiles](references/profiles.md)); add nothing to its prompt. The child's
+first filed record is its acceptance.
 
 `tickets.py land <run> <id> --assignment-seal <seal> --dispatch-id <id>
 --outcome-record-id outcome --by <join-name> [--outcome-file <path|->]` imports

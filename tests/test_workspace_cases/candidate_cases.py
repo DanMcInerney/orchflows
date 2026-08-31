@@ -539,9 +539,9 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             }
             projected = []
 
-            def packet(args, *, _lock_held=False):
-                projected.append(args[args.index("--workspace") + 1])
-                return {"packet": {"workspace": projected[-1]}}
+            def launched(_run, _ticket, _host, *, workspace, **_facts):
+                projected.append(workspace)
+                return {"launch": {"verb": "Agent"}}
 
             def opened(_args, *, _lock_held=False):
                 return {"dispatch": {"outcome": "opened", "assignment_seal": "s",
@@ -551,15 +551,14 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             with (
                 mock.patch.object(facade, "_cmd_ready", return_value={"ready": []}),
                 mock.patch.object(facade, "_cmd_dispatch_open", side_effect=opened),
-                mock.patch.object(facade, "_cmd_dispatch_packet", side_effect=packet),
+                mock.patch.object(
+                    facade, "_launched_under_run_lock", side_effect=launched,
+                ),
                 # the launch is one more neighbour of the hop under test: the
                 # fixture ticket binds no role, and resolving one is what the
                 # dispatch-launch suite is for
                 mock.patch.object(
                     facade, "precheck", return_value=({"id": "claude"}, None)
-                ),
-                mock.patch.object(
-                    facade, "launch_spec", return_value=({"verb": "Agent"}, None)
                 ),
             ):
                 for ticket_id in ("T1", "T2"):
@@ -574,7 +573,7 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             self.assertEqual(2, len(set(projected)), projected)
             for ticket_id, workspace_path in zip(("T1", "T2"), projected):
                 derived = state_root.candidate_paths("testrun", ticket_id)
-                # the packet's value is the derived tree, not the --workspace
+                # the launch's value is the derived tree, not the --workspace
                 # the caller named, and it is the value the ticket now stamps
                 self.assertEqual(str(derived["path"]), workspace_path)
                 self.assertNotEqual(str(main.resolve()), workspace_path)
@@ -603,7 +602,7 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             with (
                 mock.patch.object(facade, "_cmd_ready", return_value={"ready": []}),
                 mock.patch.object(facade, "_cmd_dispatch_open", side_effect=opened),
-                mock.patch.object(facade, "_cmd_dispatch_packet") as packet,
+                mock.patch.object(facade, "_launched_under_run_lock") as launched,
                 mock.patch.object(
                     facade, "_cmd_dispatch_retire",
                     side_effect=lambda args, **kw: retired.append(args) or {"dispatch": {}},
@@ -616,7 +615,7 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                 ])
 
             self.assertIn("error", result)
-            packet.assert_not_called()
+            launched.assert_not_called()
             self.assertEqual(1, len(retired), retired)
             self.assertEqual(before, ticket.read_bytes())
 

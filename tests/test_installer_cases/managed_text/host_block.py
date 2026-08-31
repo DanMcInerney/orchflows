@@ -126,10 +126,10 @@ _HOST_BLOCK_DEMANDS = {
     "terms mean what the vocabulary owns": (
         "{{ORCH_DOCS}}/vocabulary.md",
     ),
-    "role-bearing work requires the packet and profile": (
+    "role-bearing work requires the launch prompt and profile": (
         "kind: user-only",
         "role-bearing payload",
-        "Packet-less or wrong-profile",
+        "Prompt-less or wrong-profile",
         "role: none",
     ),
     "automatic routing can be suspended and named items stay explicit": (

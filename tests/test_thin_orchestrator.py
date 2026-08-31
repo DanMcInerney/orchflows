@@ -109,7 +109,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("sequence: [orch-outline, orch-decompose]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
-    def test_graph_lane_emits_the_complete_decompose_packet(self):
+    def test_graph_lane_emits_the_complete_decompose_route(self):
         host = re.sub(
             r"\s+",
             " ",
@@ -122,7 +122,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
             "[--host <host>] [--workspace <tree>]",
-            "invoke its emitted `launch` verbatim",
+            "invoke the emitted `launch` verbatim adding nothing to its prompt",
             "tickets.py land",
             "start `orch-frontier`",
         ):
@@ -203,7 +203,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "directly",
             "never redispatch",
         ):
@@ -248,7 +248,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                     f"agent_type `orch_{role}`",
                     "fork_turns `none`",
                     f"`{name}`",
-                    "complete packet",
+                    "emitted launch prompt",
                     "matching role",
                     "directly",
                     "refuse",
@@ -273,7 +273,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "directly",
             "never redispatch",
             "mismatched",

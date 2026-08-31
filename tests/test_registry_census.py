@@ -7,7 +7,9 @@ from pathlib import Path
 
 from scripts import tickets
 from scripts import tickets_registry as registry
-from scripts.tickets_shapes import DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_VALUES
+from scripts.tickets_shapes import (
+    DISPATCH_LAUNCH_FIELDS, DISPATCH_RECORD_VALUES, LAUNCH_RECORD_ID,
+)
 
 # One well-formed ticket with the executor left open, so a refusal case
 # differs from a passing one in the executor alone.
@@ -185,21 +187,26 @@ Deliver one result.
                 with self.subTest(pack=pack, marker=marker):
                     self.assertIn(marker, text)
 
-    def test_the_declared_packet_shape_carries_one_typed_review_kind(self):
-        """The wire's own declaration, which the persisted-record validator
-        closes every committed packet against. `review_kind` is the field
-        that routes a typed review lane, so it is required and its values
-        are the closed four -- and the two selectors the inline form needed
-        are not fields at all any more."""
+    def test_the_declared_launch_shape_is_the_invocation_and_nothing_else(self):
+        """The one object a dispatch emits, which the persisted-record
+        validator closes every committed launch against. It carries the host
+        binding and the prompt; the wire's twenty-one fields, and every
+        identity it restated from the attempt, are not fields at all any
+        more."""
 
-        self.assertIn("review_kind", DISPATCH_PACKET_FIELDS)
         self.assertEqual(
-            ("critique", "repair", "verify", "null"),
-            tuple(DISPATCH_PACKET_VALUES["review_kind"]),
+            ("host", "verb", "agent", "model", "effort", "fields", "prompt"),
+            DISPATCH_LAUNCH_FIELDS,
         )
-        for retired in ("form", "inline"):
+        for retired in (
+            "form", "inline", "review_kind", "durability", "source",
+            "assignment_seal", "dispatch_id", "assigned_name", "workspace",
+        ):
             with self.subTest(retired=retired):
-                self.assertNotIn(retired, DISPATCH_PACKET_FIELDS)
+                self.assertNotIn(retired, DISPATCH_LAUNCH_FIELDS)
+        self.assertIn("launch", DISPATCH_RECORD_VALUES["kind"])
+        self.assertNotIn("packet", DISPATCH_RECORD_VALUES["kind"])
+        self.assertEqual("launch", LAUNCH_RECORD_ID)
 
 
 if __name__ == "__main__":

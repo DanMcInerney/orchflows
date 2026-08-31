@@ -71,7 +71,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "dispatch id, seal, and assigned name",
             "first record is your acceptance",
             "directly",
@@ -212,7 +212,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
 
         self.assertIn("spawn_subagent", body)
         self.assertIn(f"subagent_type `{binding['subagent_type']}`", body)
-        self.assertIn("complete packet and exact named skill", body)
+        self.assertIn("emitted launch prompt and exact named skill", body)
         self.assertIn("missing or mismatched", body)
         self.assertIn("no inline fallback", body)
         self.assertTrue(body.rstrip().endswith(install.FORK_ARRIVAL_CLAUSE))

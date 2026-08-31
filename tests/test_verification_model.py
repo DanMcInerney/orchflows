@@ -205,7 +205,7 @@ class CritiqueContractTest(unittest.TestCase):
             "skills/kernel/orch-check/SKILL.md",
             "skills/engines/orch-frontier/SKILL.md",
             "scripts/tickets_dispatch_gate.py",
-            "scripts/tickets_packet.py",
+            "scripts/tickets_assignment.py",
             "contracts/pack-signature.md",
         )
         forbidden = (

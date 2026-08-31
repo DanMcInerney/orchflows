@@ -21,7 +21,7 @@ SCRIPTS = ROOT / "scripts"
 
 from scripts import tickets_bound  # noqa: F401
 from scripts import isolate, tickets_dispatch_identity, tickets_format  # noqa: E402
-from scripts import tickets_markdown, tickets_packet  # noqa: E402
+from scripts import tickets_assignment, tickets_markdown  # noqa: E402
 from scripts import tickets_transitions, workspace_git  # noqa: E402
 from tools.validate_support import duplication, packages  # noqa: E402
 
@@ -111,7 +111,8 @@ class TestOneOwnerPerEnumAndMapping(unittest.TestCase):
 
     def test_checkable_statuses_is_defined_once_and_imported(self):
         self.assertIs(
-            tickets_packet.CHECKABLE_STATUSES, tickets_transitions.CHECKABLE_STATUSES
+            tickets_assignment.CHECKABLE_STATUSES,
+            tickets_transitions.CHECKABLE_STATUSES,
         )
         # A facade re-export binds the owner's object; a second literal is
         # what a second owner looks like, so only those are counted.
@@ -129,8 +130,8 @@ class TestOneOwnerPerEnumAndMapping(unittest.TestCase):
         self.assertIs(owner, tickets_attempts._namespace_ok)
         self.assertIs(owner, tickets_dispatch_validate.record_id_namespace_ok)
         for kind, record_id, expected in (
-            ("packet", tickets_dispatch_identity.PACKET_RECORD_ID, True),
-            ("packet", "anything-else", False),
+            ("launch", tickets_dispatch_identity.LAUNCH_RECORD_ID, True),
+            ("launch", "anything-else", False),
             ("join", "join:1", True),
             ("generic", tickets_dispatch_identity.OUTCOME_RECORD_ID, False),
             ("generic", "r-1", True),
@@ -213,9 +214,11 @@ class TestTheUnreachableIsGone(unittest.TestCase):
                                "CLAIM_USAGE", "_project_at", "_root_ticket_text"),
         # `_cmd_packet` joined them: `packet` stopped being routed at the
         # dispatch-v1 cutover and the handler stayed reachable as an
-        # import, which is the same shape the claim path had.
-        "tickets_packet.py": ("_cut_lens_path", "_cut_subtree",
-                              "CUT_LENS_PARTS", "_cmd_packet"),
+        # import, which is the same shape the claim path had. The wire it
+        # built went next, and `_packet_under_run_lock` with it.
+        "tickets_assignment.py": ("_cut_lens_path", "_cut_subtree",
+                                  "CUT_LENS_PARTS", "_cmd_packet",
+                                  "_packet_under_run_lock"),
         "workspace_git.py": ("_checkouts",),
     }
 

@@ -1,11 +1,11 @@
 """The fork-arrival clause: its wording, its owner, and every surface it reaches.
 
 Eighteen times in one run, an executor invoking an orchflows skill by
-name spawned a fork that arrived with the contract loaded and no packet,
-no ticket, no assigned name -- at every tier: workers, checkers, the
-gate critique's own pass. The dispatch packet already carries a refusal
-sentence and it structurally cannot reach these agents: a packet-less
-fork never reads a packet.
+name spawned a fork that arrived with the contract loaded and no launch
+prompt, no ticket, no assigned name -- at every tier: workers, checkers,
+the gate critique's own pass. The launch prompt already carries a refusal
+sentence and it structurally cannot reach these agents: a fork that
+arrives without one never reads one.
 
 The clause first aimed at the 22 skill contracts and was blocked twice
 over: rules/token-economy.md 11 left four contracts with no headroom
@@ -31,7 +31,7 @@ doclint saturation the relocation closed.
 What the firings proved, and what the clause therefore says:
 
 * The refusal needs no address. The seventeenth firing refused, then
-  reasoned that the missing packet also carried the address the refusal
+  reasoned that the missing prompt also carried the address the refusal
   was owed to, and concluded the coordinator must be a permitted
   fallback. It is not. A fork's final output *is* its return: it reaches
   whoever invoked the skill through the invocation channel itself, the
@@ -41,12 +41,12 @@ What the firings proved, and what the clause therefore says:
   and said so itself: that it stopped before acting "is not a property
   of the procedure, it's luck. The right stopping point was the absent
   packet, before .orch was ever listed." Safety one judgment call deep
-  is not safety, so the clause refuses at the packet boundary.
+  is not safety, so the clause refuses at the arrival boundary.
 * The fork never scopes itself, for that firing's own reason: deriving
   its own objective would make the check it writes unfalsifiable against
   a spec nobody stamped.
 * A name is never invented, and a by-name invocation from inside a
-  governed execution forwards the invoker's packet or refuses at spawn.
+  governed execution forwards the invoker's prompt or refuses at spawn.
 """
 
 import tempfile
@@ -70,8 +70,8 @@ ROOT = Path(__file__).resolve().parents[1]
 #: future editor shortening the clause has to drop one of these to do it,
 #: and this is the case that says which firing paid for the sentence.
 CLAUSE_PROPERTIES = {
-    "without a packet": "names the arrival the clause governs",
-    "before reading anything": "refusal at the packet boundary, not after a look around",
+    "without a launch prompt": "names the arrival the clause governs",
+    "before reading anything": "refusal at the arrival boundary, not after a look around",
     "your refusal is your return": "the return channel is the refusal channel",
     "reaching your invoker through the invocation itself": (
         "names the channel, which is the half the seventeenth firing got "
@@ -83,7 +83,7 @@ CLAUSE_PROPERTIES = {
     "Acquire nothing": "the scavenging half, structural rather than one judgment deep",
     "claim no name": "no invented identity",
     "derive no objective": "a self-scoped fork writes an unfalsifiable check",
-    "forward your packet or refuse": "the by-name invocation boundary",
+    "forward your prompt or refuse": "the by-name invocation boundary",
 }
 
 #: Wordings the clause must NOT use, and the owner each belongs to.
@@ -97,8 +97,9 @@ RESERVED_WORDINGS = {
         "pins it to exactly one carrier across contracts, rules and skills"
     ),
     "self-invented": (
-        "scripts/tickets_packet.py owns it, and tests/test_verification_owners.py "
-        "forbids a kernel skill from restating that dispatch part"
+        "scripts/tickets_assignment.py owns it, and "
+        "tests/test_verification_owners.py forbids a kernel skill from "
+        "restating that dispatch part"
     ),
 }
 
@@ -205,7 +206,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
                 self.assertEqual(
                     "", fork_arrival_preamble(role),
                     "a role: none surface runs in the invoking context and "
-                    "never produces the packet-less arrival the clause governs",
+                    "never produces the prompt-less arrival the clause governs",
                 )
 
     def test_the_claude_adapter_reads_the_clause_before_the_include(self):
