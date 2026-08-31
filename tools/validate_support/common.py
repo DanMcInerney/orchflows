@@ -124,10 +124,10 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
 # named-T0-carrier form.
 # It named orch-frontier until the driver loop stopped being a skill.
-# `orch-execute` is the unit left whose Return leads with the whole envelope,
+# `orch-do` is the unit left whose Return leads with the whole envelope,
 # and this keeps that clause from being reworded into prose no join reads.
 ENVELOPE_UNITS = (
-    "orch-execute",
+    "orch-do",
 )
 ENVELOPE_VOCAB_RES = (
     ("status", re.compile(
