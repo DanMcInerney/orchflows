@@ -71,7 +71,7 @@ class TicketProtocolTest(unittest.TestCase):
         roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
         for token in (
-            "`dispatch-packet`", "`reference`",
+            "`dispatch-packet`", "`source`",
             "`state-inaccessible`", "`stale-attempt`",
             "`idempotency-conflict`", "`dispatch-mismatch`",
             "ASCII-escaped canonical JSON",
@@ -83,6 +83,7 @@ class TicketProtocolTest(unittest.TestCase):
             "`dispatch-receive`", "`dispatch-receipt`", "`receipt-required`",
             "`authority-mismatch`", "`profile-mismatch`",
             "`assignment-divergent`", "`packet-invalid`", "`inline`",
+            "`reply_to`", "`reference`", "`admission`", "`independence`",
         ):
             self.assertNotIn(retired, dispatch)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")

@@ -348,12 +348,12 @@ class TestHostBlockDispatchFlags(unittest.TestCase):
         example_required, _ = _flags_by_bracket_depth(example)
         self.assertEqual(usage_required, example_required)  # green on arrival
 
-        omitted = example.replace("--reply-to <parent-name>", "")
+        omitted = example.replace("--dispatch-id <dispatch-id>", "")
         omitted_required, _ = _flags_by_bracket_depth(omitted)
         self.assertNotEqual(usage_required, omitted_required)
 
         grown_usage = DISPATCH_USAGE.replace(
-            "--reply-to <name> ", "--reply-to <name> --new-required <x> "
+            "--dispatch-id <id> ", "--dispatch-id <id> --new-required <x> "
         )
         grown_required, _ = _flags_by_bracket_depth(grown_usage)
         self.assertNotEqual(grown_required, example_required)

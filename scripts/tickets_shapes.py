@@ -53,47 +53,30 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
  'dispatch_packet': {'contract': 'dispatch.md',
                      'fields': ('protocol',
                                 'source',
-                                'reference',
                                 'dispatch_id',
                                 'assignment_seal',
-                                'outcome_record_id',
                                 'lease_expires_at',
-                                'executor',
                                 'role',
-                                'profile',
                                 'assigned_name',
-                                'reply_to',
                                 'workspace',
                                 'pack',
-                                'independence',
-                                'isolation',
-                                'admission',
                                 'prompt',
                                 'review_kind',
                                 'durability'),
                      'required': ('protocol',
                                   'source',
-                                  'reference',
                                   'dispatch_id',
                                   'assignment_seal',
-                                  'outcome_record_id',
                                   'lease_expires_at',
-                                  'executor',
                                   'role',
-                                  'profile',
                                   'assigned_name',
-                                  'reply_to',
                                   'workspace',
                                   'pack',
-                                  'independence',
-                                  'isolation',
-                                  'admission',
                                   'prompt',
                                   'review_kind',
                                   'durability'),
                      'values': {'durability': ('ticket',), 'review_kind': ('critique', 'repair', 'verify', 'null')}},
  'dispatch_packet_record': {'contract': 'dispatch.md', 'fields': ('packet',), 'required': ('packet',), 'values': {}},
- 'dispatch_packet_reference': {'contract': 'dispatch.md', 'fields': ('id', 'run'), 'required': ('id', 'run'), 'values': {}},
  'dispatch_record': {'contract': 'dispatch.md',
                      'fields': ('committed_at', 'content', 'kind', 'record_id', 'success'),
                      'required': ('committed_at', 'content', 'kind', 'record_id', 'success'),
@@ -285,10 +268,6 @@ DISPATCH_RETIREMENT_DISPATCH_VALUES = SHAPES['dispatch_retirement_dispatch']['va
 DISPATCH_REPLACEMENT_DISPATCH_FIELDS = tuple(SHAPES['dispatch_replacement_dispatch']['fields'])
 DISPATCH_REPLACEMENT_DISPATCH_REQUIRED = frozenset(SHAPES['dispatch_replacement_dispatch']['required'])
 DISPATCH_REPLACEMENT_DISPATCH_VALUES = SHAPES['dispatch_replacement_dispatch']['values']
-
-DISPATCH_PACKET_REFERENCE_FIELDS = tuple(SHAPES['dispatch_packet_reference']['fields'])
-DISPATCH_PACKET_REFERENCE_REQUIRED = frozenset(SHAPES['dispatch_packet_reference']['required'])
-DISPATCH_PACKET_REFERENCE_VALUES = SHAPES['dispatch_packet_reference']['values']
 
 DISPATCH_JOIN_CONTENT_FIELDS = tuple(SHAPES['dispatch_join_content']['fields'])
 DISPATCH_JOIN_CONTENT_REQUIRED = frozenset(SHAPES['dispatch_join_content']['required'])

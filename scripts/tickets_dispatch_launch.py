@@ -265,8 +265,7 @@ def launch_prompt(packet: dict, packet_file=None) -> str:
         f"dispatch_id {packet.get('dispatch_id')}, writer {packet.get('assigned_name')}, "
         f"and a fresh record id of your own; the one reserved closing identity "
         f"is {OUTCOME_RECORD_ID}.",
-        "The packet's own prompt is the assignment: follow it exactly, and "
-        f"address your closing message to {packet.get('reply_to')}.",
+        "The packet's own prompt is the assignment: follow it exactly.",
     ))
 
 

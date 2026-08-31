@@ -565,7 +565,7 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                         "testrun", ticket_id, "--by", f"worker-{ticket_id}",
                         "--dispatch-id", f"D-{ticket_id}",
                         "--lease-expires-at", "2099-01-01T00:00:00Z",
-                        "--reply-to", "root", "--workspace", str(main),
+                        "--workspace", str(main),
                     ])
                     self.assertNotIn("error", result, result)
 
@@ -610,7 +610,7 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                 result = facade._cmd_dispatch([
                     "testrun", "T1", "--by", "worker", "--dispatch-id", "D-T1",
                     "--lease-expires-at", "2099-01-01T00:00:00Z",
-                    "--reply-to", "root", "--workspace", str(main),
+                    "--workspace", str(main),
                 ])
 
             self.assertIn("error", result)

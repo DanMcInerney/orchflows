@@ -42,7 +42,7 @@ class LaunchResolutionTest(unittest.TestCase):
     def packet(self, role: str) -> dict:
         return {
             "role": role, "profile": f"orch-{role}", "assigned_name": "child-1",
-            "reply_to": "root", "assignment_seal": "sha256:seal",
+            "assignment_seal": "sha256:seal",
             "dispatch_id": "D1",
         }
 
@@ -220,7 +220,7 @@ class DispatchLaunchTest(unittest.TestCase):
         arguments = [
             "dispatch", run, "T", "--by", "worker",
             "--dispatch-id", dispatch_id, "--lease-expires-at", self.lease,
-            "--reply-to", "root", "--workspace", str(self.candidate), *extra,
+ "--workspace", str(self.candidate), *extra,
         ]
         with self.established():
             return tickets._dispatch(arguments)
@@ -417,7 +417,7 @@ class LandTest(unittest.TestCase):
         self.seal = opened["dispatch"]["assignment_seal"]
         packet = self.run_command(
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
         )["packet"]
         carrier = Path(self.temporary.name) / "packet.json"
         carrier.write_text(canonical_json(packet), encoding="utf-8")

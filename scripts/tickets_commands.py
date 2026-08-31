@@ -42,7 +42,7 @@ LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
-    "--lease-expires-at <absolute-iso> --reply-to <name> "
+    "--lease-expires-at <absolute-iso> "
     "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
     "[--review-kind critique|repair|verify] "
     "[--host <name>] [--packet-file <path>]"
@@ -127,7 +127,7 @@ VALUE_FLAGS = frozenset({
     "--depends-on", "--lens", "--ordered-lens-bundle", "--bound", "--pack",
     "--profile", "--independence", "--isolation", "--set",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
-    "--tree", "--reply-to", "--workspace", "--proposal", "--covered",
+    "--tree", "--workspace", "--proposal", "--covered",
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",

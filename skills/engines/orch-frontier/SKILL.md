@@ -9,7 +9,7 @@ Require: acyclic `tickets.py` run graph and caller bound.
 Choose assigned-name/dispatch-id/lease; two commands per ticket:
 
 Outbound: `tickets.py dispatch <run> <id> --by <name> --dispatch-id <id>
---lease-expires-at <absolute-iso> --reply-to <name> --host <host>`.
+--lease-expires-at <absolute-iso> --host <host>`.
 One transaction admits the ticket, establishes the workspace or evidence-store
 ([workspaces](references/workspaces.md)), opens the attempt, commits the
 packet. Its result carries a

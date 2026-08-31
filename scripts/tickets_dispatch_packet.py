@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 if __package__:
     from .tickets_attempts import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
-        _classification, _commit_record, _identity_failure, _state,
+        _classification, _commit_record, _state,
     )
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -19,11 +19,11 @@ if __package__:
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_dispatch_schema import stored_state
     from .tickets_review import packet_mutation, packet_state_result
-    from .tickets_store import _run_lock, _tickets_root, normalized_isolation, segment_refusal
+    from .tickets_store import _run_lock, _tickets_root, segment_refusal
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
-        _classification, _commit_record, _identity_failure, _state,
+        _classification, _commit_record, _state,
     )
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
@@ -34,10 +34,10 @@ else:
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_dispatch_schema import stored_state
     from tickets_review import packet_mutation, packet_state_result
-    from tickets_store import _run_lock, _tickets_root, normalized_isolation, segment_refusal
+    from tickets_store import _run_lock, _tickets_root, segment_refusal
 
 DISPATCH_PACKET_USAGE = (
-    "dispatch-packet <run> <id> --dispatch-id <id> --reply-to <name> "
+    "dispatch-packet <run> <id> --dispatch-id <id> "
     "[--workspace <path>] [--artifact <fixed-identity>]"
     " [--review-kind critique|repair|verify]"
 )
@@ -83,32 +83,34 @@ def _live_attempt(attempt: dict):
 
 
 def _projection_packet(legacy: dict, data: dict, attempt: dict) -> dict:
-    """The one committed projection: the ticket, named rather than copied."""
+    """The one committed projection: the ticket, named rather than copied.
 
-    executor = str(legacy["executor"])
-    role, profile = resolved_role_profile(executor, legacy.get("profile"))
+    Every field here has a reader. `role` selects the host launch binding;
+    the rest are the identities a child cannot derive from the ticket it is
+    pointed at. What left the wire left because nothing read it: `admission`
+    nowhere at all, `independence` and `isolation` only in the inline
+    self-comparison, `executor` and `profile` only in the receive-side
+    mismatch checks, `reference` as a forced copy of `source`, and
+    `outcome_record_id` as a constant checked against itself.
+    """
+
+    role, _profile = resolved_role_profile(
+        str(legacy["executor"]), legacy.get("profile")
+    )
     source = {
         "id": str(data.get("id") or legacy.get("id")),
         "run": str(data.get("run") or legacy.get("run")),
     }
     packet = {
-        "admission": legacy.get("admission"),
         "assigned_name": attempt.get("owner"),
         "assignment_seal": attempt.get("assignment_seal"),
         "dispatch_id": attempt.get("dispatch_id"),
         "durability": "ticket",
-        "executor": executor,
-        "independence": legacy.get("independence"),
-        "isolation": normalized_isolation(legacy.get("isolation")),
         "lease_expires_at": attempt.get("lease_expires_at"),
-        "outcome_record_id": attempt.get("outcome_record_id"),
         "pack": legacy.get("pack"),
-        "profile": profile,
         "prompt": legacy.get("prompt"),
         "protocol": PROTOCOL,
-        "reference": dict(source),
         "review_kind": legacy.get("review_kind"),
-        "reply_to": legacy.get("reply_to"),
         "role": role,
         "source": source,
         "workspace": legacy.get("workspace"),
@@ -121,7 +123,7 @@ def _projection_packet(legacy: dict, data: dict, attempt: dict) -> dict:
     return packet
 
 
-def _replay_projection(attempt: dict, run, ticket_id, reply_to, workspace, review_kind):
+def _replay_projection(attempt: dict, run, ticket_id, workspace, review_kind):
     record = next(
         (
             item for item in attempt.get("records") or []
@@ -142,7 +144,6 @@ def _replay_projection(attempt: dict, run, ticket_id, reply_to, workspace, revie
         )
     request = {
         "dispatch_id": attempt.get("dispatch_id"),
-        "reply_to": reply_to,
         "source": {"id": ticket_id, "run": run},
         "workspace": workspace,
         "review_kind": review_kind,
@@ -167,11 +168,10 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
 
     args = list(rest)
     dispatch_id = _extract_flag(args, "--dispatch-id")
-    reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
     artifact = _extract_flag(args, "--artifact")
     review_kind = _extract_flag(args, "--review-kind")
-    if len(args) != 2 or not dispatch_id or not reply_to:
+    if len(args) != 2 or not dispatch_id:
         return {"error": f"usage: {DISPATCH_PACKET_USAGE}"}
     run, ticket_id = args
     invalid = segment_refusal(run, ticket_id)
@@ -180,15 +180,14 @@ def _cmd_dispatch_packet(rest, *, _lock_held=False):
     try:
         with nullcontext() if _lock_held else _run_lock(run):
             return _packet_transaction(
-                run, ticket_id, dispatch_id, reply_to, workspace, artifact,
-                review_kind,
+                run, ticket_id, dispatch_id, workspace, artifact, review_kind,
             )
     except OSError as error:
         return _classification("state-inaccessible", f"unable to lock run '{run}': {error}")
 
 
 def _packet_transaction(
-    run, ticket_id, dispatch_id, reply_to, workspace, artifact, review_kind,
+    run, ticket_id, dispatch_id, workspace, artifact, review_kind,
 ):
     """The whole projection, under the run lock its caller holds."""
 
@@ -204,13 +203,10 @@ def _packet_transaction(
     if failure is not None:
         return failure
     replay = _replay_projection(
-        attempt, run, ticket_id, reply_to, workspace, review_kind
+        attempt, run, ticket_id, workspace, review_kind
     )
     if replay is not None:
         return replay
-    failure = _identity_failure("reply-to", reply_to)
-    if failure is not None:
-        return failure
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure
@@ -234,7 +230,7 @@ def _packet_transaction(
             "assignment-mismatch",
             "ticket no longer matches the attempt's sealed assignment",
         )
-    legacy_args = [run, ticket_id, "--reply-to", reply_to, "--by", attempt["owner"]]
+    legacy_args = [run, ticket_id, "--by", attempt["owner"]]
     if workspace is not None:
         legacy_args.extend(("--workspace", workspace))
     if review_kind is not None:

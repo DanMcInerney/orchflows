@@ -160,13 +160,12 @@ def _cmd_dispatch(rest):
     owner = _extract_flag(args, "--by")
     dispatch_id = _extract_flag(args, "--dispatch-id")
     lease = _extract_flag(args, "--lease-expires-at")
-    reply_to = _extract_flag(args, "--reply-to")
     workspace = _extract_flag(args, "--workspace")
     artifact = _extract_flag(args, "--artifact")
     review_kind = _extract_flag(args, "--review-kind")
     host = selected_host(_extract_flag(args, "--host"))
     packet_file = _extract_flag(args, "--packet-file")
-    if len(args) != 2 or not all((owner, dispatch_id, lease, reply_to)):
+    if len(args) != 2 or not all((owner, dispatch_id, lease)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
     run, ticket_id = args
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
@@ -189,8 +188,8 @@ def _cmd_dispatch(rest):
     with _run_lock(run):
         dispatched = _dispatched_under_run_lock(
             run, ticket_id, host=host, owner=owner, dispatch_id=dispatch_id,
-            lease=lease, reply_to=reply_to, workspace=workspace,
-            artifact=artifact, review_kind=review_kind, packet_file=packet_file,
+            lease=lease, workspace=workspace, artifact=artifact,
+            review_kind=review_kind, packet_file=packet_file,
         )
     if "error" in dispatched:
         return dispatched
@@ -203,7 +202,7 @@ def _cmd_dispatch(rest):
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
-                               lease, reply_to, workspace, artifact,
+                               lease, workspace, artifact,
                                review_kind, packet_file):
     """Everything the run lock has to hold, and nothing that does not."""
 
@@ -241,7 +240,7 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
             projected = {"error": "workspace establish did not record workspace_path"}
         else:
             packet_args = [
-                run, ticket_id, "--dispatch-id", dispatch_id, "--reply-to", reply_to,
+                run, ticket_id, "--dispatch-id", dispatch_id,
                 "--workspace", workspace_path,
             ]
             if review_kind is not None:

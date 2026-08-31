@@ -95,12 +95,6 @@
       "values": {"outcome": ["replaced"], "state": ["live"]}
     },
     {
-      "name": "dispatch_packet_reference",
-      "contract": "dispatch.md",
-      "fields": ["id", "run"],
-      "required": ["id", "run"]
-    },
-    {
       "name": "dispatch_join_content",
       "contract": "dispatch.md",
       "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id", "review"],
@@ -130,16 +124,14 @@
       "name": "dispatch_packet",
       "contract": "dispatch.md",
       "fields": [
-        "protocol", "source", "reference", "dispatch_id", "assignment_seal",
-        "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
-        "assigned_name", "reply_to", "workspace", "pack", "independence",
-        "isolation", "admission", "prompt", "review_kind", "durability"
+        "protocol", "source", "dispatch_id", "assignment_seal",
+        "lease_expires_at", "role", "assigned_name", "workspace", "pack",
+        "prompt", "review_kind", "durability"
       ],
       "required": [
-        "protocol", "source", "reference", "dispatch_id", "assignment_seal",
-        "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
-        "assigned_name", "reply_to", "workspace", "pack", "independence",
-        "isolation", "admission", "prompt", "review_kind", "durability"
+        "protocol", "source", "dispatch_id", "assignment_seal",
+        "lease_expires_at", "role", "assigned_name", "workspace", "pack",
+        "prompt", "review_kind", "durability"
       ],
       "values": {
         "durability": ["ticket"],

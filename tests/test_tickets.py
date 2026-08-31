@@ -216,7 +216,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     ])["dispatch"]
     packet = tickets_mod._dispatch([
         "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
-        "--reply-to", "root", "--workspace", str(tmp.resolve()),
+ "--workspace", str(tmp.resolve()),
     ])
     assert "error" not in packet, packet
     return ticket, opened["assignment_seal"]

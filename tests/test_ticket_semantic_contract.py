@@ -195,7 +195,6 @@ class SemanticTicketContractTest(unittest.TestCase):
 
         packet_args = [
             "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
-            "--reply-to", "root",
         ]
         if workspace is not None:
             packet_args.extend(("--workspace", workspace))
@@ -353,7 +352,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         opened = self.open_attempt("direct", "R1", "worker", "direct-D1")
         packet = self.dispatch(
             "dispatch-packet", "direct", "R1", "--dispatch-id", opened["dispatch_id"],
-            "--reply-to", "root", "--workspace", "C:/candidate",
+ "--workspace", "C:/candidate",
         )["packet"]
         self.assertIn("Suggested files are non-binding", packet["prompt"])
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
@@ -665,7 +664,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         ).stdout.strip()
         packet = self.dispatch(
             "dispatch-packet", "clean", critique_id,
-            "--dispatch-id", "critic-D1", "--reply-to", "root",
+            "--dispatch-id", "critic-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn('"kind":"GatePlan"', packet["prompt"])
@@ -720,13 +719,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         mismatch = tickets._dispatch([
             "dispatch-packet", "clean", verify_id,
-            "--dispatch-id", "verify-D1", "--reply-to", "root",
+            "--dispatch-id", "verify-D1",
             "--artifact", "git:" + "f" * 40, "--workspace", str(ROOT),
         ])
         self.assertEqual("review-invalid", mismatch["code"])
         verify_packet = self.dispatch(
             "dispatch-packet", "clean", verify_id,
-            "--dispatch-id", "verify-D1", "--reply-to", "root",
+            "--dispatch-id", "verify-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn('"kind":"RepairOutcome"', verify_packet["prompt"])
@@ -858,7 +857,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         packet = self.dispatch(
             "dispatch-packet", "checker", "R.check",
-            "--dispatch-id", "checker-D1", "--reply-to", "root",
+            "--dispatch-id", "checker-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         findings = json.dumps([{
@@ -985,7 +984,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         repair_packet = self.dispatch(
             "dispatch-packet", "checker", "R.gate.repair",
-            "--dispatch-id", "repair-D1", "--reply-to", "root",
+            "--dispatch-id", "repair-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         self.assertIn(review["records"][1]["identity"], repair_packet["prompt"])
@@ -1049,7 +1048,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         verify_packet = self.dispatch(
             "dispatch-packet", "checker", "R.gate.verify",
-            "--dispatch-id", "verify-D1", "--reply-to", "root",
+            "--dispatch-id", "verify-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
         verify_outcome = {
@@ -1256,7 +1255,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         opened = self.open_attempt("tdd", "R", "worker", "tdd-D1")
         prompt = self.dispatch(
             "dispatch-packet", "tdd", "R", "--dispatch-id", opened["dispatch_id"],
-            "--reply-to", "root", "--workspace", "C:/candidate",
+ "--workspace", "C:/candidate",
         )["packet"]["prompt"]
         self.assertRegex(prompt.lower(), r"choose the implementation,\s*tests, and verification")
         self.assertNotIn("oracle_class", prompt)

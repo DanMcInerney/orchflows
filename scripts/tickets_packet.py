@@ -44,7 +44,7 @@ PACKET_SECTIONS = (("goal", "Goal"), ("context", "Context"))
 # an invitation to run a subcommand that answers `unknown subcommand`.
 # The one door is `dispatch-packet`, whose own usage `tickets_commands`
 # publishes.
-PACKET_USAGE = "packet projection reads <run> <id> --reply-to <name> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
+PACKET_USAGE = "packet projection reads <run> <id> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
 GATE_VERIFY_ID = "{root}.gate.verify"
@@ -131,7 +131,6 @@ def _dependency_prompt(loaded: dict, ticket_path: Path) -> list:
 
 def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     args = list(rest)
-    reply_to = _extract_flag(args, "--reply-to")
     dispatched_name = _extract_flag(args, "--by")
     workspace = _extract_flag(args, "--workspace")
     requested_review_kind = _extract_flag(args, "--review-kind")
@@ -176,8 +175,6 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
             "iterations are what dispatch"
         )}
     missing = []
-    if not reply_to:
-        missing.append("reply_to (--reply-to)")
     if not executor:
         missing.append("executor (frontmatter)")
     if not loaded.get("bound"):
@@ -259,16 +256,13 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT", "--append"))
     if assigned_name is not None:
         prompt.append(f"Your assigned name is `{assigned_name}`; use exactly it wherever a command takes --by.")
-    if executor in DISPATCHING_EXECUTORS and assigned_name is not None:
-        prompt.append(f"Every packet you dispatch carries `{assigned_name}` as reply_to.")
-    prompt.append(f"reply_to: {reply_to} — address your closing message to `{reply_to}`.")
     return {"packet": {
         "run": run_id, "id": loaded["id"], "path": str(ticket_path),
         "executor": executor, "script": executor_script, "pack": loaded.get("pack"),
         "profile": loaded.get("profile"),
         "independence": loaded.get("independence") or "checker",
         "isolation": isolation, "admission": stored, "assigned_name": assigned_name,
-        "reply_to": reply_to, "workspace": workspace, "prompt": "\n".join(prompt),
+        "workspace": workspace, "prompt": "\n".join(prompt),
         "review_kind": review_kind,
     }}
 

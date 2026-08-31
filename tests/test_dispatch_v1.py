@@ -89,7 +89,7 @@ class DispatchV1Test(unittest.TestCase):
 
         projected = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", dispatch_id,
-            "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
         ])
         self.assertNotIn("error", projected, projected)
         return projected["packet"]
@@ -861,7 +861,7 @@ class DispatchV1Test(unittest.TestCase):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
-                "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
             ])
 
         self.assertEqual(refusal, result)
@@ -871,7 +871,7 @@ class DispatchV1Test(unittest.TestCase):
             "--lease-expires-at", self.lease,
         ], _lock_held=True)
         packet.assert_called_once_with([
-            "run", "T", "--dispatch-id", "D1", "--reply-to", "root",
+            "run", "T", "--dispatch-id", "D1",
             "--workspace", str(self.candidate),
         ], _lock_held=True)
         retire.assert_called_once_with([
@@ -888,7 +888,7 @@ class DispatchV1Test(unittest.TestCase):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
-                "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
             ])
 
         self.assertIn("packet", result, result)
@@ -911,7 +911,6 @@ class DispatchV1Test(unittest.TestCase):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
-                "--reply-to", "root",
             ])
 
         self.assertEqual(refusal, result)
@@ -937,7 +936,7 @@ class DispatchV1Test(unittest.TestCase):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
-                "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
             ])
 
         self.assertEqual(refusal, result)
@@ -977,7 +976,7 @@ class DispatchV1Test(unittest.TestCase):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
-                "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
             ])
 
         self.assertEqual("dispatch-retirement-failed", result["code"])
@@ -1045,7 +1044,7 @@ class DispatchV1Test(unittest.TestCase):
         ):
             result = tickets._tickets_dispatch_facade_module._cmd_dispatch([
                 "run", "T", "--by", "worker", "--dispatch-id", "D1",
-                "--lease-expires-at", self.lease, "--reply-to", "root",
+                "--lease-expires-at", self.lease,
                 "--workspace", str(self.candidate),
             ])
 
@@ -1093,7 +1092,7 @@ class DispatchV1Test(unittest.TestCase):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
-                "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
             ])
 
         self.assertEqual(

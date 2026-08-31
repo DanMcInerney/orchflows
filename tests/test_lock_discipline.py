@@ -100,8 +100,7 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
             ("check", run, tid, "--stage", f"{tid}.check"),
             ("set-status", run, tid, "complete"),
             ("join-noop-repair", run, tid, "--by", "gate-join"),
-            ("dispatch-packet", run, tid, "--dispatch-id", "D1",
-             "--reply-to", "root"),
+            ("dispatch-packet", run, tid, "--dispatch-id", "D1"),
             ("gate", run, tid),
             ("checker-stage", run, tid),
         )
@@ -303,7 +302,7 @@ class TestStandaloneDispatchPacketIsLocked(unittest.TestCase):
     def test_the_whole_projection_waits_for_the_run_lock(self):
         command = [
             sys.executable, str(TICKETS_PY), "dispatch-packet", "testrun", "T1",
-            "--dispatch-id", "D1", "--reply-to", "root",
+            "--dispatch-id", "D1",
         ]
         with tickets_store._run_lock("testrun"):
             child = subprocess.Popen(

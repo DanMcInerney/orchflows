@@ -14,8 +14,7 @@ from unittest import mock
 
 from scripts import tickets, tickets_review
 from scripts.tickets_packet import workspace_establishment_finding
-from scripts.tickets_dispatch_packet import _projection_packet
-from scripts.tickets_format import _parse_frontmatter, canonical_json, parse_canonical_json
+from scripts.tickets_format import canonical_json, parse_canonical_json
 from scripts.tickets_outcome import DISPATCH_OUTCOME_USAGE
 
 
@@ -40,7 +39,10 @@ class DispatchPacketV1Test(unittest.TestCase):
             validated["draft_validation"]["cut_generation"],
         )
         self.dispatch("ready", "--run", "run")
-        self.candidate = Path(self.temporary.name) / "candidate"
+        # non-ASCII on purpose: the packet command must emit ASCII-escaped
+        # canonical JSON whatever the subprocess code page is, and the
+        # workspace path is the prompt value this fixture owns.
+        self.candidate = Path(self.temporary.name) / "candidate-—"
         self.candidate.mkdir()
         self.ticket_path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         established = self.ticket_path.read_text(encoding="utf-8")
@@ -72,7 +74,6 @@ class DispatchPacketV1Test(unittest.TestCase):
     def project(self, workspace=None):
         return tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "root",
             "--workspace", str(self.candidate) if workspace is None else workspace,
         ])
 
@@ -98,9 +99,11 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("D1", packet["dispatch_id"])
         self.assertEqual("worker", packet["assigned_name"])
         self.assertEqual("worker", packet["role"])
-        self.assertEqual({"run": "run", "id": "T"}, packet["reference"])
-        self.assertNotIn("form", packet)
-        self.assertNotIn("inline", packet)
+        self.assertEqual({"run": "run", "id": "T"}, packet["source"])
+        for retired in ("form", "inline", "reference", "reply_to", "admission",
+                        "executor", "profile", "independence", "isolation",
+                        "outcome_record_id"):
+            self.assertNotIn(retired, packet)
         self.assertIn(
             f"--assignment-seal {packet['assignment_seal']} --dispatch-id D1 "
             "--record-id RECORD_ID --by worker",
@@ -210,19 +213,27 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_bytes())
         self.assertEqual([], self.ticket_state()["attempts"][0]["records"])
 
-    def test_projection_refuses_noncanonical_reply_to_before_commit(self):
+    def test_the_return_address_is_no_longer_a_flag_or_a_field(self):
+        """Ten of ten returning children resolved it to nothing: the channel
+        is the ticket's records plus the harness notification, so no in-band
+        routing fact survives to be validated, carried, or mistyped."""
+
         before = self.ticket_bytes()
 
-        refusal = tickets._dispatch([
+        refused = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "/root", "--workspace", str(self.candidate),
+            "--reply-to", "root", "--workspace", str(self.candidate),
         ])
 
-        self.assertEqual("reply-to-invalid", refusal["code"], refusal)
+        self.assertIn("usage: dispatch-packet", refused["error"])
+        self.assertNotIn("--reply-to", refused["error"])
         self.assertEqual(before, self.ticket_bytes())
-        self.assertEqual([], self.ticket_state()["attempts"][0]["records"])
+        self.assertNotIn("reply_to", self.project()["packet"])
 
-    def test_committed_historical_reply_to_replays_before_current_validation(self):
+    def test_a_committed_packet_replays_before_current_validation(self):
+        """A durable record is never re-graded: a stored projection whose
+        delivery content today's validation would refuse still replays."""
+
         self.project()
         text = self.ticket_path.read_text(encoding="utf-8")
         state = parse_canonical_json(
@@ -230,7 +241,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         )
         packet_record = state["attempts"][0]["records"][0]
         stored = parse_canonical_json(packet_record["content"])
-        stored["packet"]["reply_to"] = "/root"
+        stored["packet"]["review_kind"] = "no-such-lane"
         packet_record["content"] = canonical_json(stored)
         packet_record["success"]["committed_record"]["content"] = stored
         self.ticket_path.write_text(
@@ -242,11 +253,12 @@ class DispatchPacketV1Test(unittest.TestCase):
 
         replayed = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "/root", "--workspace", str(self.candidate),
+            "--workspace", str(self.candidate),
+            "--review-kind", "no-such-lane",
         ])
 
         self.assertEqual(stored, replayed)
-        self.assertEqual("/root", replayed["packet"]["reply_to"])
+        self.assertEqual("no-such-lane", replayed["packet"]["review_kind"])
 
     def test_legacy_gate_repair_replays_stored_packet_across_head_change(self):
         committed = self.project()
@@ -263,8 +275,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         legacy_id = "T.gate.repair"
         stored_packet = dict(committed["packet"])
         stored_packet.update({
-            "executor": "orch-execute", "review_kind": "repair",
-            "reference": {"id": legacy_id, "run": "run"},
+            "review_kind": "repair",
             "source": {"id": legacy_id, "run": "run"},
         })
         stored = {"packet": stored_packet}
@@ -303,7 +314,7 @@ class DispatchPacketV1Test(unittest.TestCase):
 
         replayed = tickets._dispatch([
             "dispatch-packet", "run", legacy_id, "--dispatch-id", "D1",
-            "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
             "--artifact", f"git:{old_head}", "--review-kind", "repair",
         ])
 
@@ -343,12 +354,13 @@ class DispatchPacketV1Test(unittest.TestCase):
 
     def test_packet_command_emits_codepage_independent_canonical_ascii(self):
         packet = self.project()["packet"]
+        self.assertIn("—", packet["workspace"])
         self.assertIn("—", packet["prompt"])
         script = Path(__file__).resolve().parents[1] / "scripts" / "tickets.py"
         completed = subprocess.run(
             [
                 sys.executable, str(script), "dispatch-packet", "run", "T",
-                "--dispatch-id", "D1", "--reply-to", "root",
+                "--dispatch-id", "D1",
                 "--workspace", str(self.candidate),
             ],
             stdout=subprocess.PIPE,
@@ -389,42 +401,9 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual(committed, self.project())
         changed = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "other", "--workspace", str(self.candidate),
+            "--workspace", str(self.candidate) + "-elsewhere",
         ])
         self.assertEqual("idempotency-conflict", changed["code"])
-
-
-class PacketIsolationIsNormalizedWhereItIsBuiltTest(unittest.TestCase):
-    """`isolation` is the value the establishment gate reads and the value
-    `workspace.py` grades, so the packet normalizes it where the packet is
-    built rather than trusting whichever projector filled the dict. Today
-    the legacy projection already normalizes; a projector that stopped would
-    otherwise hand the grader a backticked scalar it reads as some third
-    value, and the grade would be skipped at exit 0 behind a green suite."""
-
-    TEXT = (
-        "---\nid: T\nrun: run\nisolation: required\n---\n\n"
-        "## Goal\n\nDeliver.\n\n## Context\n\nThe repository is authoritative.\n"
-    )
-    ATTEMPT = {
-        "owner": "worker", "assignment_seal": "sha256:0", "dispatch_id": "D1",
-        "lease_expires_at": "2099-01-01T00:00:00Z",
-        "outcome_record_id": "lifecycle:outcome",
-    }
-
-    def test_every_raw_declaration_reaches_the_packet_normalized(self):
-        data = _parse_frontmatter(self.TEXT)
-        for declared, expected in (
-            ("`required`", "required"), ("  required ", "required"),
-            (None, "none"), ("", "none"), ("none", "none"),
-        ):
-            legacy = {
-                "executor": "orch-execute", "id": "T", "run": "run",
-                "isolation": declared,
-            }
-            with self.subTest(declared=declared):
-                packet = _projection_packet(legacy, data, self.ATTEMPT)
-                self.assertEqual(expected, packet["isolation"])
 
 
 if __name__ == "__main__":

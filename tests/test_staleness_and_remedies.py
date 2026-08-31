@@ -120,7 +120,7 @@ class SealedRunTest(SinkTest):
     def project(self):
         return tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
-            "--reply-to", "root", "--workspace", str(self.candidate),
+ "--workspace", str(self.candidate),
         ])
 
 
@@ -144,8 +144,12 @@ class TestARecutRepairsTheReceiptsItInvalidated(SealedRunTest):
         self.seal(self.recut())
         projected = self.project()
         self.assertNotIn("error", projected, projected)
+        # The admission the reseal refreshed is what the projection graded
+        # against; it is no longer restated on the wire, so the seal the
+        # packet does carry is the evidence that the grade passed.
         self.assertEqual(
-            self.frontmatter("T")["admission"], projected["packet"]["admission"]
+            self.frontmatter("T")["assignment_seal"],
+            projected["packet"]["assignment_seal"],
         )
 
     def test_without_the_repair_that_same_packet_is_refused(self):

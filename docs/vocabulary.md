@@ -225,7 +225,7 @@ composition).
 
 - **dispatch / delegation packet** — sending one packet to one fresh
   child, and the packet itself: Goal, Context, optional Suggested files,
-  operational bound, exact executor binding, and reply_to, per
+  operational bound, and exact executor binding, per
   `contracts/work-item.md` and `contracts/dispatch.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. Role-bearing dispatch is
   ticket-durable.

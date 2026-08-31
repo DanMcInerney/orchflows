@@ -121,7 +121,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "stamped root",
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "--reply-to <parent-name> [--host <host>] [--workspace <tree>]",
+            "[--host <host>] [--workspace <tree>]",
             "invoke its emitted `launch` verbatim",
             "tickets.py land",
             "start `orch-frontier`",
