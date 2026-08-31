@@ -287,10 +287,10 @@ def cross_tier_documents(packages):
     # written against a reference it was told to link -- restatement the
     # check could not see because the corpus stopped at the tiers that
     # existed when it was written.
-    compositions = ROOT / "compositions"
+    compositions = ROOT / "example-workflows"
     if compositions.is_dir():
         for path in sorted(compositions.rglob("*.md")):
-            documents.append(("compositions", rel(path), _read_source(path)))
+            documents.append(("example-workflows", rel(path), _read_source(path)))
     host_block = ROOT / "templates" / "host-block.md"
     if host_block.is_file():
         documents.append(("templates", rel(host_block), _read_source(host_block)))

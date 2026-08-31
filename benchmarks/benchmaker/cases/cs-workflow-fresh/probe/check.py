@@ -73,7 +73,7 @@ SUBPROC_TIMEOUT = 240
 
 
 # ---- P0.e: the post-qualification manifest fields -------------------
-# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# `example-workflows/references/benchmaker-manifest.md` owns the eight. None is
 # re-derivable after the fact, so a package that omits one cannot be repaired
 # by a consumer. This case covers `retirement_trigger`:
 # this case is about records landing in the right place in the right order,

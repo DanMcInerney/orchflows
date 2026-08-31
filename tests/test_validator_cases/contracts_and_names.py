@@ -146,7 +146,7 @@ class TestNameResolution(_IsolatedTree):
         """One case per directory the check reads, because the list was a
         tuple of four names with one synthetic rules/ file behind it: dropping
         "docs", "contracts" or "templates" from it failed nothing, and
-        compositions/ — where every template stub lives, each one naming its
+        example-workflows/ — where every template stub lives, each one naming its
         executor — was never in it at all. A stub calling a deleted skill is
         the exact failure this check exists for, and it was outside the
         surface."""
@@ -161,8 +161,8 @@ class TestNameResolution(_IsolatedTree):
             # recursive, all three: a stub, a nested reference, a pack
             # reference and a skill reference are each a file the old
             # non-recursive glob over four top-level directories never saw
-            "compositions/demo/00-step.md",
-            "compositions/references/protocol.md",
+            "example-workflows/demo/00-step.md",
+            "example-workflows/references/protocol.md",
             "packs/orch-synth-pack/references/craft.md",
             "skills/kernel/orch-real/references/notes.md",
         )

@@ -57,7 +57,7 @@ def _owner(root: Path, path: Path, workflow_type: str) -> dict:
 
 def _canonical_owners(root: Path) -> list[dict]:
     compositions = sorted(
-        (root / "compositions").glob("*/template.md"),
+        (root / "example-workflows").glob("*/template.md"),
         key=lambda path: path.parent.name,
     )
     skill_paths = set((root / "skills" / "workflows").glob("*/SKILL.md"))

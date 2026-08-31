@@ -16,7 +16,7 @@ re = __dep_common.re
 
 # Every shipped prose tree is recursive; depth does not change a call edge.
 NAME_CHECKED_TREES = (
-    "rules", "docs", "contracts", "templates", "compositions", "packs", "skills"
+    "rules", "docs", "contracts", "templates", "example-workflows", "packs", "skills"
 )
 NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md", "TICKETS.md")
 # Host routing owns this control directive; it is not a package in the

@@ -2,7 +2,7 @@
 
 Field evidence distilled to what changes a builder's behavior. These
 are findings, not law:
-[the protocol](../../compositions/references/benchmaker-protocol.md) owns
+[the protocol](../../example-workflows/references/benchmaker-protocol.md) owns
 what BenchMaker enforces.
 
 Two evidence sets, and every figure below belongs to one of them. Most
@@ -24,7 +24,7 @@ difficulty and publish the figure.
 
 Where that measurement runs, what it may touch, and what the record it
 lands in must name are
-[the measurement pass](../../compositions/references/benchmaker-protocol.md#measurement-pass)'s.
+[the measurement pass](../../example-workflows/references/benchmaker-protocol.md#measurement-pass)'s.
 What is left to a builder is whether to gate on a band, and the answer
 is no: at a 32-case resolution a 5-9% band admits one attainable score,
 and a gate forces one verdict on the two readings below, which demand
@@ -41,11 +41,11 @@ item–total correlation — plus a flag for items where weaker systems
 outperform stronger ones. All three come free from a run made for
 another reason. How much of that instrument a two-rung panel can
 actually carry is fixed in
-[the measurement pass](../../compositions/references/benchmaker-protocol.md#measurement-pass).
+[the measurement pass](../../example-workflows/references/benchmaker-protocol.md#measurement-pass).
 
 **A score has three readings, not two.** Every status is ambiguous by
 construction, and
-[the measurement pass](../../compositions/references/benchmaker-protocol.md#measurement-pass)
+[the measurement pass](../../example-workflows/references/benchmaker-protocol.md#measurement-pass)
 states the pair each one carries and which pass decides between them.
 The same work measures invalidity and discrimination as negatively
 associated (Pearson r ≈ −0.62) and states the rule that follows: treat
@@ -94,7 +94,7 @@ binary fatal-flaw call. Its union fatal-flaw rate was 3.4% — the
 measured good end of the 10-46% band, and what a disciplined pipeline
 achieves rather than what authoring achieves unaided. What to record
 from an audit that size, and why not a rate, is
-[the reference audit](../../compositions/references/benchmaker-protocol.md#reference-audit)'s.
+[the reference audit](../../example-workflows/references/benchmaker-protocol.md#reference-audit)'s.
 
 ## Oracles
 
@@ -129,7 +129,7 @@ was passable at near-perfect scores without solving a task (219 flaws).
 One round of patching cannot tell a fixable benchmark from a structurally
 broken one — only re-running the attacker can. What that attempt may
 draw on, and how to read each of its three outcomes, is
-[the attack pass](../../compositions/references/benchmaker-protocol.md#attack-pass)'s.
+[the attack pass](../../example-workflows/references/benchmaker-protocol.md#attack-pass)'s.
 
 ## A score is a property of its configuration
 
@@ -146,7 +146,7 @@ Two consequences. Report at the configuration level — artifact × model ×
 harness × benchmark — and bind all four into the result identity. And
 the same study finds stronger models vary *less* across harnesses,
 which is the measurement under
-[the protocol](../../compositions/references/benchmaker-protocol.md#scoring)'s
+[the protocol](../../example-workflows/references/benchmaker-protocol.md#scoring)'s
 refusal to subtract an offset.
 
 ## Benchmarks that are generated, not written
@@ -185,7 +185,7 @@ redundancy is the maximally diverse configuration and therefore the
 least stable one. The repair is not a better aggregate — at one item per
 angle a geometric or harmonic mean is dominated by a single item. It is
 the vector rule
-[the protocol](../../compositions/references/benchmaker-protocol.md#scoring)
+[the protocol](../../example-workflows/references/benchmaker-protocol.md#scoring)
 states.
 
 Clustered standard errors run up to 3.05× naive on grouped items.
@@ -194,7 +194,7 @@ items — which collides with the ≤500-item size guidance. Unresolved;
 record the collision rather than picking a side. Sampling power also
 presumes a super-population, and a purposive census of declared coverage
 has none — which is why
-[the measurement pass](../../compositions/references/benchmaker-protocol.md#measurement-pass)
+[the measurement pass](../../example-workflows/references/benchmaker-protocol.md#measurement-pass)
 declares an instrument resolution rather than an interval.
 
 Partial credit and binary scoring produce different rankings on the same

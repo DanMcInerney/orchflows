@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from scripts import state_root
+    from scripts import rings
     from scripts.tickets_markdown import dequote
 except ImportError:
-    import state_root
+    import rings
     from tickets_markdown import dequote
 
 
@@ -70,34 +70,35 @@ class AdapterError(ValueError):
         self.detail = detail
 
 
-def _candidate_roots(root=None):
-    start = Path(root or Path.cwd()).resolve()
-    for directory in (start, *start.parents):
-        yield directory / "packs"
-        yield directory / ".orchflows" / "packs"
-    try:
-        yield state_root.state_root().parent / "lib" / "packs"
-    except OSError:
-        pass
-    source = Path(__file__).resolve().parent.parent / "packs"
-    yield source
+# One code per ring refusal. The bare ``<dir>/packs`` ancestor root this
+# module used to check before ``<dir>/.orchflows/packs`` is gone: it gave
+# admission and execution two different first hits for one name, which is
+# the divergence ``scripts/rings.py`` exists to close.
+_RING_CODES = {
+    "unresolved": "pack-unresolved",
+    "reserved-name": "pack-reserved",
+    "bundle-untrusted": "pack-untrusted",
+    "trust-unavailable": "pack-untrusted",
+    "name-invalid": "pack-unresolved",
+}
 
 
 def pack_path(pack, *, root=None) -> Path:
-    """Resolve the stamped pack in project, installed, then source scope."""
+    """Resolve the stamped pack through the one ring resolver.
+
+    ``root`` is where to stand while looking, never a root to search: the
+    order is project ring, home ring, pinned imports, then lib, and
+    ``scripts/rings.py`` owns it for every caller.
+    """
 
     name = dequote(pack)
     if not name:
         raise AdapterError("pack-unresolved", "ticket names no pack")
-    seen = set()
-    for packs_root in _candidate_roots(root):
-        candidate = (packs_root / name / "SKILL.md").resolve()
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        if candidate.is_file():
-            return candidate
-    raise AdapterError("pack-unresolved", f"pack does not resolve: {name}")
+    try:
+        record = rings.resolve("pack", name, start=root)
+    except rings.RingError as error:
+        raise AdapterError(_RING_CODES.get(error.code, "pack-unresolved"), error.detail) from error
+    return Path(str(record["path"]))
 
 
 def craft_path(pack, *, root=None) -> Path:
@@ -133,6 +134,32 @@ def craft_path(pack, *, root=None) -> Path:
             "craft-declaration-invalid", f"pack craft does not resolve: {resolved}",
         )
     return resolved
+
+
+def pack_digest(pack, *, root=None) -> str:
+    """The resolved pack's content digest, through the one pack resolver.
+
+    A ticket pins this at issue time and every later door compares against
+    it, which is what makes "the stamped pack digest" a verification rather
+    than a lookup: `cells_for` re-derives digests to *find* a pack, and a
+    search can never notice that the pack changed under a sealed
+    assignment.
+    """
+
+    name = dequote(pack)
+    if not name:
+        raise AdapterError("pack-unresolved", "ticket names no pack")
+    try:
+        if __package__:
+            from . import packs_support
+        else:  # pragma: no cover - direct/installed script path
+            import packs_support
+        resolved = packs_support.resolve_pack(name, start=root)
+    except ImportError as error:  # pragma: no cover - broken installation
+        raise AdapterError("pack-resolver-unavailable", str(error)) from error
+    except packs_support.PackError as error:
+        raise AdapterError(error.code, error.detail) from error
+    return str(resolved["digest"])
 
 
 def declared_adapter(pack, *, root=None) -> str:
@@ -206,5 +233,5 @@ def adapter_id(pack, *, root=None) -> str:
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
     "adapter_id", "adapter_spec", "craft_path", "declared_adapter",
-    "derived_isolation", "pack_path",
+    "derived_isolation", "pack_digest", "pack_path",
 )

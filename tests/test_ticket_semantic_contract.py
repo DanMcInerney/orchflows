@@ -1045,12 +1045,12 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_removed_fix_composition_has_no_instantiation_alias(self):
         result = tickets._dispatch([
-            "instantiate", str(ROOT / "compositions" / "fix"), "--run", "fix",
+            "instantiate", str(ROOT / "example-workflows" / "fix"), "--run", "fix",
             "--set", "failure=boom", "--set", "workspace=.",
         ])
         self.assertIn("template directory not found", result["error"])
         self.assertNotIn("executor-unregistered", result["error"])
-        self.assertFalse((ROOT / "compositions" / "fix").exists())
+        self.assertFalse((ROOT / "example-workflows" / "fix").exists())
 
     def test_gate_routes_actual_overlap_to_integration(self):
         self.dispatch("new", "gate", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
@@ -1099,7 +1099,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_live_protocol_surfaces_exclude_removed_schema(self):
         forbidden = ("write_scope", "excluded_actions", "## Objective", "## Fixed inputs", "## Completion test", "## Return fields")
-        paths = [ROOT / "contracts" / "work-item.md", *sorted((ROOT / "scripts").glob("tickets*.py")), *sorted((ROOT / "compositions").glob("**/*.md"))]
+        paths = [ROOT / "contracts" / "work-item.md", *sorted((ROOT / "scripts").glob("tickets*.py")), *sorted((ROOT / "example-workflows").glob("**/*.md"))]
         findings = []
         for path in paths:
             text = path.read_text(encoding="utf-8")

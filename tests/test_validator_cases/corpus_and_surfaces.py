@@ -9,7 +9,7 @@ class TestDuplicationCorpus(_IsolatedTree):
     """validate_cross_tier_duplication's corpus and its one licensed pair.
 
     The check read packs, skills, rules, contracts and the host block —
-    compositions/ and docs/ were outside it, which is why seven templates
+    example-workflows/ and docs/ were outside it, which is why seven templates
     could copy a reference they were told to link, and two skills could
     carry a byte-identical clause with the linter flagging each of them
     against an innocent third file instead of against each other.
@@ -41,10 +41,10 @@ class TestDuplicationCorpus(_IsolatedTree):
     def test_a_template_stub_restating_a_rule_is_reported(self):
         self._write_skill("orch-real")
         self._write("rules/synthetic.md", "# Rule\n" + self.CLAUSE)
-        self._write("compositions/demo/00-step.md", "# Stub\n" + self.CLAUSE)
+        self._write("example-workflows/demo/00-step.md", "# Stub\n" + self.CLAUSE)
         result = self._run()
         self.assertTrue(
-            self.duplicates(result.stdout, "compositions/demo/00-step.md",
+            self.duplicates(result.stdout, "example-workflows/demo/00-step.md",
                             "rules/synthetic.md"),
             result.stdout,
         )

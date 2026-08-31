@@ -109,7 +109,7 @@ request. The replacement:
   branches — answer, single, graph, and the intake verb since renamed
   outline — and one closed rule: everything else
   runs only when named. Recurring shapes accumulate as templates under
-  `compositions/`, never in the dispatch prose (diluted attention: the
+  `example-workflows/`, never in the dispatch prose (diluted attention: the
   always-paid cost never grows).
 - **A template is tickets, not a second grammar.** A demoted pattern's
   law rides its stubs' Goal and Context; the combinators are the ticket graph's own — a `depends_on` edge,
@@ -277,6 +277,66 @@ skill, because instrumentation is machinery every body would carry
 forever while a parser can decay gracefully — `schema_confidence` and
 `parse_errors` price host drift instead of failing the run silently
 (cheap generation; diluted attention).
+
+## Why custom items live in rings
+
+Designed 2026-08-31 from an audit of this library's own scoping plus a
+fifteen-system survey (Claude Code, the cross-vendor agent-skills layer,
+GitHub Actions, pre-commit, VS Code, direnv/mise/nix, dbt, npm, cargo,
+krew, Homebrew, Terraform, oh-my-zsh, Obsidian, Emacs dir-locals). The
+audit's surprise was that this was greenfield rather than
+reorganization: project scope existed for packs alone, project skills
+had no reader at all, project workflows were documented in three places
+and read by nothing, and `/super-research` ran entirely outside the
+library through a hand-written host shim.
+
+- **Three rings, one bundle shape, one resolver.** Every surveyed system
+  that got scoping right uses one fixed, short, root-relative path per
+  kind and no configurable search path; GitHub Actions goes furthest and
+  forbids subdirectories. Two resolvers disagreeing about which file is
+  "the pack" was a live divergence here, so the order is stated once in
+  code and the bare `<dir>/packs` root that caused it is gone. The same
+  `.orchflows` directory is a project ring, the home ring's custom half,
+  and a publishable bundle, so nothing has to be reshaped to move
+  between them.
+- **The home ring is a git repository, not a config directory.** The
+  sync question — "how do I get my workflow onto the next machine" —
+  has a boring answer once the committed and regenerable halves are
+  separated by one `.gitignore`: clone, install, sync. Friction history
+  and run ledgers travel with the items, which is what makes the clone
+  worth having.
+- **Reference plus pin, never promotion.** GitHub spent four years on
+  "make this action work everywhere" and shipped better reference syntax
+  rather than a copy-it-globally command; npm's global tier is the
+  survey's cautionary tale, one version for all projects and outside
+  every lockfile. So `orchflows add url@pin` records a pin and
+  `imports/` is regenerable from it, and there is no `promote`.
+- **Trust is granted by digest, kept outside the artifact, and never
+  syncs.** Every surveyed system puts the approval record in user-local
+  state precisely because config directories are dotfile-synced; mise
+  says it in one line, that a repository may request trust and may never
+  grant it. Nix's two-step prompt — use once, or remember — is what
+  makes "yes, just this once" cheap and persistence deliberate. The
+  failure this closes is not hypothetical: a config file that trusted
+  its own path was a real CVE, and this library's pack digest read the
+  signature contract from beside the pack, so a ring could supply the
+  document its own identity was taken against.
+- **The seal is the lockfile.** Skill bodies said "the stamped pack
+  digest" while no field carried one, so the ticket named a pack and a
+  name resolves to whatever bytes are nearest. Pinning at issue and
+  verifying at every later door makes the trust grant and the seal cite
+  one digest: what was approved is what runs.
+- **Generated adapters are inert on purpose.** Orchflows can gate what
+  enters its own prompts and tickets. It cannot gate a host's native
+  loading of a repository's committed `.claude/skills/`, where a skill
+  body's preprocessing runs before the model sees anything. So the
+  generated bodies carry a pointer or a command and nothing executable,
+  and the host-side gap is left to the host rather than papered over.
+
+Deliberately not built: a registry or marketplace (reference plus pin is
+enough; curation is a badge, not a gate), sandboxing (no surveyed system
+has one), and signing (the digest is krew-style checksumming already;
+real signing needs artifact hosting this library does not do).
 
 ## Why the trunk is mechanical
 

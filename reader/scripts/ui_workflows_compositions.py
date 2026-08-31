@@ -72,7 +72,7 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
         not isinstance(bound, str) or not bound or bound != bound.strip()
     ):
         raise WorkflowCompositionError("loop work must declare its bound")
-    installed_path = f"lib/compositions/{workflow}/{path.name}"
+    installed_path = f"lib/example-workflows/{workflow}/{path.name}"
     return {
         "id": stub_id,
         "executors": executors,
@@ -130,7 +130,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
 
     root = Path(root)
     workflow_id = _canonical_name(workflow_id, "workflow")
-    directory = root / "compositions" / workflow_id
+    directory = root / "example-workflows" / workflow_id
     template = directory / "template.md"
     template_fields = _fields(root, template)
     if template_fields.get("name") != workflow_id:
@@ -147,7 +147,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
 
     nodes = {}
     workflow_node = identity.workflow_node_id(workflow_id)
-    template_source = f"lib/compositions/{workflow_id}/template.md"
+    template_source = f"lib/example-workflows/{workflow_id}/template.md"
     nodes[workflow_node] = {
         "id": workflow_node,
         "kind": "workflow",

@@ -12,7 +12,7 @@ profile: orch-worker
 ## Goal
 
 The terminal nested run formed by this ticket's `run` plus `.00-benchmark`
-is an instantiation of `compositions/benchmaker` for `target={{skill}}`, the
+is an instantiation of `example-workflows/benchmaker` for `target={{skill}}`, the
 skill's declared observable outcome, `sources={{sources}}`, `rigor={{rigor}}`,
 `pack={{pack}}`, and this ticket's benchmark starting location as `package`. Its
 qualified result is recorded in the package manifest at the one Git revision

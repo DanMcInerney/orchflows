@@ -17,10 +17,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-# Every entrypoint, plus the two dependency-free modules every entrypoint
-# imports: ``state_root.py`` (where a record goes) and ``console.py`` (how
-# a script prints one). Both are imported by bare name from the flat
-# installed layout, so both have to land in it.
+# Every entrypoint, plus the modules every entrypoint imports by bare name
+# from the flat installed layout and no facade owns: ``state_root.py``
+# (where a record goes), ``console.py`` (how a script prints one), and
+# ``rings.py`` (which ring an item resolves from). All three have to land
+# in the flat layout or the import fails there and nowhere else.
 SCRIPT_NAMES = (
     "browser_game_validate.py",
     "console.py",
@@ -28,7 +29,9 @@ SCRIPT_NAMES = (
     "doclint.py",
     "friction.py",
     "migrate_state.py",
+    "orchflows.py",
     "packs.py",
+    "rings.py",
     "search_plan.py",
     "state_root.py",
     "tickets.py",
@@ -40,7 +43,9 @@ SCRIPT_SUPPORT_PREFIXES = (
     "tickets",
     "ui",
     "cutcheck",
+    "orchflows",
     "packs",
+    "rings",
     "search_plan",
     "trace",
     "workspace",

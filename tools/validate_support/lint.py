@@ -162,7 +162,7 @@ def validate_pin_supersessions(diag: Diagnostics) -> None:
 # Every relative markdown link in every .md the library ships resolves to
 # a file and, when present, a heading in that file. External URLs and
 # templated paths are skipped. REVIEW-*.md are dated evidence and exempt.
-LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates", "benchmarks")
+LINKED_MD_ROOTS = ("rules", "contracts", "docs", "skills", "packs", "example-workflows", "templates", "benchmarks")
 # Sites whose heading carries a parenthetical suffix; none currently.
 MARKDOWN_ANCHOR_EXEMPT_SITES = frozenset()
 

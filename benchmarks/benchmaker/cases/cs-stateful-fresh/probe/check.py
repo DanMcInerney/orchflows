@@ -60,7 +60,7 @@ RUN_TIMEOUT = 90
 
 
 # ---- P0.e: the post-qualification manifest fields -------------------
-# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# `example-workflows/references/benchmaker-manifest.md` owns the eight. None is
 # re-derivable after the fact, so a package that omits one cannot be repaired
 # by a consumer. This case covers `resolution`:
 # a two-run oracle is where a rerun spread would show up first.

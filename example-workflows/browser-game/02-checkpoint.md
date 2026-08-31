@@ -26,10 +26,10 @@ and `planned` or `opened` status.
 ## Context
 
 - input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
-- input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this composition instance"}
-- input: {"name":"empirical-evidence","type":"literal","value":"the accepted 01-evidence Result identity in this composition instance"}
+- input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this workflow instance"}
+- input: {"name":"empirical-evidence","type":"literal","value":"the accepted 01-evidence Result identity in this workflow instance"}
 - checkpoint-contract: `../references/browser-game-checkpoint.schema.json`
-- input: {"name":"successor-plan-contract","type":"literal","value":"the definition at compositions/references/browser-game-program-record.schema.json#/$defs/successorPlanRevision in the orchflows library"}
+- input: {"name":"successor-plan-contract","type":"literal","value":"the definition at example-workflows/references/browser-game-program-record.schema.json#/$defs/successorPlanRevision in the orchflows library"}
 - input: {"name":"instance-validator","type":"literal","value":"browser_game_validate.py; run it against the bound program record and emitted checkpoint before filing Result"}
 
 Exceptional constraints:

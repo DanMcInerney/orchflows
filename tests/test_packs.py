@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -11,11 +13,35 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import packs
+from scripts import packs, rings, rings_trust
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS = ROOT / "packs"
+
+
+@contextlib.contextmanager
+def _home():
+    """A temporary orchflows home, so no test writes the real trust ledger."""
+
+    with tempfile.TemporaryDirectory(prefix="orchflows-home-") as tmp:
+        home = Path(tmp).resolve()
+        with patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(home / "state")}):
+            yield home
+
+
+def _trust(bundle: Path) -> None:
+    rings_trust.grant(bundle)
+
+
+def _named_pack(pack_dir: Path, name: str) -> None:
+    """Rename a copied pack so it carries a name outside the reserved floor."""
+
+    skill = pack_dir / "SKILL.md"
+    skill.write_text(
+        skill.read_text(encoding="utf-8").replace("name: orch-code-pack", f"name: {name}"),
+        encoding="utf-8",
+    )
 
 
 def _copy_pack(source: Path, target: Path) -> None:
@@ -78,7 +104,7 @@ class PackResolutionTests(unittest.TestCase):
         result = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
 
         self.assertEqual("orch-code-pack", result["pack"])
-        self.assertEqual("canonical", result["scope"])
+        self.assertEqual("lib", result["scope"])
         self.assertEqual(
             {"adapter", "assembly", "craft", "stages"},
             set(result["cells"]),
@@ -106,61 +132,158 @@ class PackResolutionTests(unittest.TestCase):
 
             self.assertNotEqual(before["digest"], after["digest"])
 
-    def test_signature_contract_byte_changes_the_digest(self):
+    def test_the_library_signature_contract_byte_changes_the_digest(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             pack_root = root / "packs"
-            _copy_pack_with_contract(PACKS / "orch-code-pack", pack_root / "sample-pack", root)
-            skill = pack_root / "sample-pack" / "SKILL.md"
-            skill.write_text(
-                skill.read_text(encoding="utf-8").replace("name: orch-code-pack", "name: sample-pack"),
-                encoding="utf-8",
-            )
-            before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
-            contract = root / "contracts" / "pack-signature.md"
-            contract.write_bytes(contract.read_bytes() + b"\ncontract change\n")
-            after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+            _copy_pack(PACKS / "orch-code-pack", pack_root / "sample-pack")
+            _named_pack(pack_root / "sample-pack", "sample-pack")
+            library = root / "lib"
+            (library / "contracts").mkdir(parents=True)
+            contract = library / "contracts" / "pack-signature.md"
+            shutil.copyfile(ROOT / "contracts" / "pack-signature.md", contract)
+
+            with patch.object(rings, "lib_root", return_value=library):
+                before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+                contract.write_bytes(contract.read_bytes() + b"\ncontract change\n")
+                after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
 
             self.assertNotEqual(before["digest"], after["digest"])
 
-    def test_project_scope_with_identical_bytes_has_the_same_digest(self):
+    def test_a_pack_relative_signature_contract_feeds_no_digest(self):
+        """FM-2: the document that decides whether a pack is well formed is
+        never readable from the pack. A ring shipping its own copy of the
+        signature contract used to feed its own pack's identity."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            pack_root = root / "packs"
+            _copy_pack_with_contract(PACKS / "orch-code-pack", pack_root / "sample-pack", root)
+            _named_pack(pack_root / "sample-pack", "sample-pack")
+            before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+
+            contract = root / "contracts" / "pack-signature.md"
+            contract.write_bytes(contract.read_bytes() + b"\nself-supplied\n")
+            after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+
+            self.assertEqual(before["digest"], after["digest"])
+
+    def test_project_ring_with_identical_bytes_has_the_same_digest(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             canonical = root / "canonical" / "packs"
             project = root / "project"
-            _copy_pack_with_contract(PACKS / "orch-code-pack", canonical / "orch-code-pack", root)
-            _copy_pack(PACKS / "orch-code-pack", project / ".orchflows" / "packs" / "orch-code-pack")
-            (project / ".orchflows" / "contracts").mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(
-                ROOT / "contracts" / "pack-signature.md",
-                project / ".orchflows" / "contracts" / "pack-signature.md",
-            )
-
-            resolved = packs.resolve_pack(
-                "orch-code-pack",
-                canonical_root=canonical,
-                project_root=project,
-            )
-            expected = packs.resolve_pack("orch-code-pack", canonical_root=canonical)
+            _copy_pack_with_contract(PACKS / "orch-code-pack", canonical / "sample-pack", root)
+            _named_pack(canonical / "sample-pack", "sample-pack")
+            _copy_pack(PACKS / "orch-code-pack", project / ".orchflows" / "packs" / "sample-pack")
+            _named_pack(project / ".orchflows" / "packs" / "sample-pack", "sample-pack")
+            with _home():
+                _trust(project / ".orchflows")
+                resolved = packs.resolve_pack(
+                    "sample-pack",
+                    canonical_root=canonical,
+                    project_root=project,
+                )
+            expected = packs.resolve_pack("sample-pack", canonical_root=canonical)
 
             self.assertEqual("project", resolved["scope"])
             self.assertEqual(expected["digest"], resolved["digest"])
+            self.assertEqual(
+                [
+                    "shadow: pack 'sample-pack' resolves from the project ring "
+                    f"at {resolved['path']} and shadows lib "
+                    # The resolver canonicalizes roots (containment guards need
+                    # real paths); /var vs /private/var and 8.3 short names on
+                    # the CI runners diverge from the raw tempdir spelling.
+                    f"{(canonical / 'sample-pack' / 'SKILL.md').resolve()}"
+                ],
+                resolved["notices"],
+            )
 
-    def test_project_scope_is_discovered_from_the_current_directory(self):
+    def test_project_ring_is_discovered_from_the_current_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
-            project = Path(tmp)
-            project_pack = project / ".orchflows" / "packs" / "orch-code-pack"
+            project = Path(tmp).resolve()
+            project_pack = project / ".orchflows" / "packs" / "sample-pack"
             _copy_pack(PACKS / "orch-code-pack", project_pack)
-            contracts = project / ".orchflows" / "contracts"
-            contracts.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(ROOT / "contracts" / "pack-signature.md", contracts / "pack-signature.md")
+            _named_pack(project_pack, "sample-pack")
 
-            with patch.object(packs.Path, "cwd", return_value=project):
-                # The resolver's default scope is intentionally cwd-based so
-                # the CLI works without a project-root flag.
-                resolved = packs.resolve_pack("orch-code-pack", canonical_root=PACKS)
+            with _home():
+                _trust(project / ".orchflows")
+                with patch.object(rings.Path, "cwd", return_value=project):
+                    # The resolver's default ring is intentionally cwd-based
+                    # so the CLI works without a project-root flag.
+                    resolved = packs.resolve_pack("sample-pack", canonical_root=PACKS)
 
             self.assertEqual("project", resolved["scope"])
+
+    def test_a_reserved_name_in_a_ring_is_refused_loudly(self):
+        """`orch-*` is the mechanical floor: a ring copy neither shadows the
+        library name nor silently never runs -- it refuses, naming itself."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            _copy_pack(PACKS / "orch-code-pack", project / ".orchflows" / "packs" / "orch-code-pack")
+
+            with self.assertRaises(packs.PackError) as raised:
+                packs.resolve_pack(
+                    "orch-code-pack", canonical_root=PACKS, project_root=project,
+                )
+
+            self.assertEqual("pack-reserved", raised.exception.code)
+            self.assertIn("reserved 'orch-' prefix", raised.exception.detail)
+
+    def test_an_untrusted_project_bundle_refuses_with_the_two_step_remedy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            project_pack = project / ".orchflows" / "packs" / "sample-pack"
+            _copy_pack(PACKS / "orch-code-pack", project_pack)
+            _named_pack(project_pack, "sample-pack")
+
+            with _home(), self.assertRaises(packs.PackError) as raised:
+                packs.resolve_pack(
+                    "sample-pack", canonical_root=PACKS, project_root=project,
+                )
+
+            self.assertEqual("pack-untrusted", raised.exception.code)
+            self.assertIn(f"orchflows trust --once {project / '.orchflows'}", raised.exception.detail)
+            self.assertIn(f"orchflows trust {project / '.orchflows'}", raised.exception.detail)
+
+    def test_a_use_once_grant_is_spent_by_the_resolution_it_allows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            project_pack = project / ".orchflows" / "packs" / "sample-pack"
+            _copy_pack(PACKS / "orch-code-pack", project_pack)
+            _named_pack(project_pack, "sample-pack")
+            with _home() as home:
+                rings_trust.grant(project / ".orchflows", once=True, home=home)
+
+                first = packs.resolve_pack(
+                    "sample-pack", canonical_root=PACKS, project_root=project,
+                )
+                self.assertEqual("project", first["scope"])
+                with self.assertRaises(packs.PackError):
+                    packs.resolve_pack(
+                        "sample-pack", canonical_root=PACKS, project_root=project,
+                    )
+
+    def test_a_bundle_edit_invalidates_the_remembered_grant(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            project_pack = project / ".orchflows" / "packs" / "sample-pack"
+            _copy_pack(PACKS / "orch-code-pack", project_pack)
+            _named_pack(project_pack, "sample-pack")
+            with _home():
+                _trust(project / ".orchflows")
+                packs.resolve_pack(
+                    "sample-pack", canonical_root=PACKS, project_root=project,
+                )
+                craft = project_pack / "references" / "craft.md"
+                craft.write_bytes(craft.read_bytes() + b"\nchanged\n")
+                with self.assertRaises(packs.PackError) as raised:
+                    packs.resolve_pack(
+                        "sample-pack", canonical_root=PACKS, project_root=project,
+                    )
+            self.assertEqual("pack-untrusted", raised.exception.code)
 
     def test_text_reference_line_endings_do_not_change_pack_identity(self):
         with tempfile.TemporaryDirectory() as tmp:

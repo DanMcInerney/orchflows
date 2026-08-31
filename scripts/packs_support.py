@@ -11,9 +11,11 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 try:
+    from scripts import rings
     from scripts.tickets_adapters import ADAPTER_REGISTRY
     from scripts.tickets_markdown import dequote
 except ImportError:
+    import rings
     from tickets_adapters import ADAPTER_REGISTRY
     from tickets_markdown import dequote
 
@@ -85,87 +87,27 @@ def _pack_name(value: object) -> str:
     return name
 
 
-def _root_is_packs(path: Path) -> bool:
-    return path.name.lower() == "packs"
-
-
-def _canonical_default() -> Path:
-    here = Path(__file__).resolve()
-    checkout = here.parent.parent
-    source = checkout / "packs"
-    if source.is_dir():
-        return source
-    installed = checkout / "lib" / "packs"
-    return installed
-
-
-def _project_default() -> Optional[Path]:
-    current = Path.cwd().resolve()
-    for directory in (current, *current.parents):
-        candidate = directory / ".orchflows" / "packs"
-        if candidate.is_dir():
-            return candidate
-    return None
-
-
-def _scope_root(value: Optional[Path], *, project: bool) -> Optional[Path]:
-    if value is None:
-        return None
-    resolved = Path(value).expanduser().resolve()
-    if _root_is_packs(resolved):
-        return resolved
-    return resolved / ".orchflows" / "packs" if project else resolved / "packs"
-
-
 def _roots(
     *,
     canonical_root: Optional[Path],
     project_root: Optional[Path],
     user_root: Optional[Path],
 ) -> List[Tuple[str, Path]]:
-    """Return roots in shadowing order: project, user, canonical."""
+    """Return the ring roots for packs, nearest first.
 
-    if project_root is None:
-        project_root = _project_default()
-    project = _scope_root(project_root, project=True)
-    canonical = (
-        Path(canonical_root).expanduser().resolve()
-        if canonical_root is not None
-        else _canonical_default()
+    The order and the paths are ``scripts/rings.py``'s, not this module's:
+    a pack resolver that spelled its own roots is one half of the two-
+    resolver divergence that let admission and execution read different
+    files as "the pack". The three keyword roots stay as overrides for the
+    CLI and the tests, and are handed to the one resolver as such.
+    """
+
+    return rings.item_roots(
+        "pack",
+        project=project_root,
+        home=user_root,
+        lib_dir=canonical_root,
     )
-    user = _scope_root(user_root, project=False)
-    if user is None:
-        home = Path.home() / ".orchflows"
-        user = home / "packs"
-    candidates: List[Tuple[str, Path]] = []
-    if project is not None:
-        candidates.append(("project", project))
-    candidates.append(("user", user))
-    candidates.append(("canonical", canonical))
-    # An installed user pack lives under lib/packs. Keep this as a second
-    # user root only when the ordinary user root did not point there itself.
-    if user.name.lower() != "packs" or user.parent.name.lower() != "lib":
-        candidates.append(("user", user.parent / "lib" / "packs"))
-    seen = set()
-    result = []
-    for scope, candidate in candidates:
-        marker = str(candidate).casefold()
-        if marker in seen:
-            continue
-        seen.add(marker)
-        result.append((scope, candidate))
-    return result
-
-
-def _candidate_path(name: str, packs_root: Path) -> Path:
-    # Name validation makes this join safe, while resolve catches unusual
-    # filesystem aliases before a caller can escape the selected scope.
-    candidate = (packs_root / name / "SKILL.md").resolve()
-    try:
-        candidate.relative_to(packs_root.resolve())
-    except ValueError as error:
-        raise PackError("pack-invalid", f"pack path escapes scope: {name}") from error
-    return candidate
 
 
 def _frontmatter_name(text: str, path: Path) -> Optional[str]:
@@ -337,18 +279,20 @@ def _read_references(rows: Dict[str, str], pack_dir: Path) -> List[Dict[str, obj
     return sorted(result, key=lambda item: str(item["path"]))
 
 
-def _signature_digest(pack_dir: Path) -> Optional[str]:
-    """Hash the signature contract governing this pack's authored scope."""
+def _signature_digest() -> Optional[str]:
+    """Hash the library's signature contract -- never the pack's own copy.
 
-    here = Path(__file__).resolve()
-    candidates = (
-        pack_dir.parent.parent / "contracts" / "pack-signature.md",
-        here.parent.parent / "contracts" / "pack-signature.md",
-        here.parent.parent / "lib" / "contracts" / "pack-signature.md",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return _sha256(_read_bytes(candidate, "pack signature"))
+    The bytes come from lib and only lib. The pack-relative lookup this
+    used to try first (``<pack>/../../contracts/pack-signature.md``) was the
+    self-supply hole: a project ring shipping its own signature contract
+    fed its own pack's identity, so the document that decides whether a
+    pack is well-formed was readable from the pack (FM-2, mise
+    CVE-2026-35533's class). A ring that ships one now changes nothing.
+    """
+
+    candidate = rings.lib_root() / "contracts" / "pack-signature.md"
+    if candidate.is_file():
+        return _sha256(_read_bytes(candidate, "pack signature"))
     return None
 
 
@@ -371,7 +315,7 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
         "pack": name,
         "cells": cells,
         "references": references,
-        "signature_sha256": _signature_digest(path.parent),
+        "signature_sha256": _signature_digest(),
     }
     digest = "sha256:" + _sha256(_canonical_json(identity))
     return {
@@ -384,31 +328,46 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
     }
 
 
+# One code per ring refusal, so a caller reading `PackError.code` learns the
+# same distinction the resolver drew: unresolved, reserved-floor, untrusted.
+_RING_CODES = {
+    "unresolved": "pack-unresolved",
+    "reserved-name": "pack-reserved",
+    "bundle-untrusted": "pack-untrusted",
+    "trust-unavailable": "pack-untrusted",
+    "name-invalid": "pack-invalid",
+    "kind-invalid": "pack-invalid",
+}
+
+
 def resolve_pack(
     pack: str,
     *,
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
+    start: Optional[Path] = None,
 ) -> Dict[str, object]:
-    """Resolve one pack using the project, user, then canonical scope."""
+    """Resolve one pack through the one ring resolver: project, home,
+    imports, then lib. Scope and filesystem paths are observations; the
+    digest is not derived from them, so identical bytes in two rings
+    resolve to one identity. ``start`` is where to stand while looking."""
 
     name = _pack_name(pack)
-    roots = _roots(
-        canonical_root=canonical_root,
-        project_root=project_root,
-        user_root=user_root,
-    )
-    seen = set()
-    for scope, packs_root in roots:
-        candidate = _candidate_path(name, packs_root)
-        marker = str(candidate).casefold()
-        if marker in seen:
-            continue
-        seen.add(marker)
-        if candidate.is_file():
-            return _resolved(candidate, scope, name)
-    raise PackError("pack-unresolved", f"pack does not resolve: {name}")
+    try:
+        record = rings.resolve(
+            "pack",
+            name,
+            project=project_root,
+            home=user_root,
+            lib_dir=canonical_root,
+            start=start,
+        )
+    except rings.RingError as error:
+        raise PackError(_RING_CODES.get(error.code, "pack-unresolved"), error.detail) from error
+    resolved = _resolved(Path(str(record["path"])), str(record["ring"]), name)
+    resolved["notices"] = list(record.get("notices") or [])
+    return resolved
 
 
 def _available_names(roots: Sequence[Tuple[str, Path]]) -> Iterable[str]:

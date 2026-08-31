@@ -48,6 +48,29 @@ def _pending_admission(data=None):
     return ADMISSION_PENDING
 
 
+def pinned_pack_digest(pack):
+    """``(digest, refusal)`` for one stamped pack name at issue time.
+
+    Issue time is where the pin is taken, because that is the last moment
+    the assignment is still a draft: from the seal onward the digest is
+    what every later door compares against, so taking it later would be
+    pinning whatever the pack had already become. A ticket with no pack
+    pins nothing.
+    """
+
+    name = dequote(pack)
+    if not name:
+        return None, None
+    if __package__:
+        from .tickets_adapters import AdapterError, pack_digest
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_adapters import AdapterError, pack_digest
+    try:
+        return pack_digest(name), None
+    except AdapterError as error:
+        return None, {"error": f"pack '{name}' cannot be pinned: {error.detail}"}
+
+
 def _invalidate_assignment(text):
     data = _parse_frontmatter(text)
     root_generation = str(data.get("root_generation") or "")
@@ -119,10 +142,13 @@ def _cmd_new(rest):
     # orderings of one edge set are two assignment digests, and the digest
     # cannot absorb the difference without invalidating every historical
     # seal, so the canonical order is established where the list is written.
+    pinned, refusal = pinned_pack_digest(pack)
+    if refusal is not None:
+        return refusal
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
-        "pack": pack,
+        "pack": pack, "pack_digest": pinned,
         "independence": independence,
         "depends_on": sorted(_split_commas(depends_on)),
         "isolation": isolation, "bound": bound or NEW_DEFAULT_BOUND,
@@ -165,6 +191,17 @@ def _project_file_ticket(
     text = _set_frontmatter_field(text, "run", run)
     text = _set_frontmatter_field(text, "status", "pending")
     text = _invalidate_assignment(text)
+    # Issue time takes the pin, whatever the file said: a placed ticket that
+    # carried its own digest would be pinning the author's claim about the
+    # pack rather than the pack.
+    pinned, refusal = pinned_pack_digest(data.get("pack"))
+    if refusal is not None:
+        return None, refusal
+    text = (
+        _set_frontmatter_field(text, "pack_digest", pinned)
+        if pinned
+        else _remove_frontmatter_field(text, "pack_digest")
+    )
     return (ticket_id, text), None
 
 
@@ -234,4 +271,5 @@ __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
     "_cmd_new", "_distinct_gate_lenses", "_frontmatter_list", "_issue_defects",
     "_issue_ticket", "_place_ticket", "_project_file_ticket", "_render_ticket",
+    "pinned_pack_digest",
 )

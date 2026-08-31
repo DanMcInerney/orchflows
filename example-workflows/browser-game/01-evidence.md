@@ -24,8 +24,8 @@ trigger identity remain `inactive`.
 
 ## Context
 
-- input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this composition instance"}
-- input: {"name":"intake-authority-policy","type":"literal","value":"compositions/references/browser-game-intake-policy.json"}
+- input: {"name":"program-record","type":"literal","value":"the accepted 00-record Result identity in this workflow instance"}
+- input: {"name":"intake-authority-policy","type":"literal","value":"example-workflows/references/browser-game-intake-policy.json"}
 - input: {"name":"evidence-store-root","type":"literal","value":"the run-scoped evidence store recorded by workspace_path"}
 - input: {"name":"question","type":"literal","value":"Which independently schedulable empirical gaps in the current program record need evidence before its next transition?"}
 - input: {"name":"source-policy","type":"literal","value":"current primary specifications, vendor terms, release records, repositories, and inspectable measurements; secondary sources only for discovery"}

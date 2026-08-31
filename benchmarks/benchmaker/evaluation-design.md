@@ -17,9 +17,9 @@ case-package file, or campaign artifact was read):
   benchmarks/benchmaker/tools/validate_cases.py (fourteen frozen keys; probe
   inversion; deviation: line law; near-miss marks; QUALIFICATIONS set;
   size tiers 60/300/900 s)
-- qualification law: compositions/references/benchmaker-protocol.md §Qualification
+- qualification law: example-workflows/references/benchmaker-protocol.md §Qualification
 - verdict contract: ~/.orchflows/lib/contracts/verdict.md
-- manifest schema: compositions/references/benchmaker-manifest.md
+- manifest schema: example-workflows/references/benchmaker-manifest.md
 
 Frozen caller decisions designed within: qualification trials on matched builder
 model; median-of-3 only on noisy/judged cases, single-trial deterministic; successor

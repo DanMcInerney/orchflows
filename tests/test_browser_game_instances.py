@@ -11,7 +11,7 @@ from scripts import browser_game_validate
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REFERENCES = ROOT / "compositions" / "references"
+REFERENCES = ROOT / "example-workflows" / "references"
 
 # BGW-TRACE[test:instance-validation|PJ-05,PJ-06,PJ-09,PJ-10,PJ-22,PJ-24,PJ-25,PJ-28]
 

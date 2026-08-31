@@ -7,9 +7,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = (
-    ROOT / "compositions" / "references" / "browser-game-checkpoint.schema.json"
+    ROOT / "example-workflows" / "references" / "browser-game-checkpoint.schema.json"
 )
-CHECKPOINT_PATH = ROOT / "compositions" / "browser-game" / "02-checkpoint.md"
+CHECKPOINT_PATH = ROOT / "example-workflows" / "browser-game" / "02-checkpoint.md"
 
 DISPOSITIONS = {
     "advance",

@@ -9,7 +9,7 @@ class TestASkippedCheckSaysSo(_IsolatedTree):
     """A check that finds nothing to check has not passed.
 
     The isolated tree is contracts/, tools/ and tests/ -- so the checks
-    keyed to skills/, packs/, compositions/, docs/, templates/ and
+    keyed to skills/, packs/, example-workflows/, docs/, templates/ and
     scripts/ find no owner and return. Returning is right: a fixture tree
     is not the library. Returning *silently* is the fallback -- the report
     then reads exactly like a run that graded all of it, and the one
@@ -29,7 +29,7 @@ class TestASkippedCheckSaysSo(_IsolatedTree):
             "scripts/state_root.py",      # the friction-location copies
             "AGENTS.md",                  # a surface budget
             "templates/host-block.md",    # the other surface budget
-            "compositions",               # the template contract
+            "example-workflows",               # the template contract
             "ARCHITECTURE.md",            # the backticked-name check
             "docs",                       # markdown link resolution
             "benchmarks",                 # ditto: one absent root silences it

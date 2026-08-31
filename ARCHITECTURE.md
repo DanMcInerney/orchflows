@@ -1,7 +1,8 @@
 # Architecture
 
-Ceiling: 850 whitespace-delimited words. Terms are
-[the vocabulary](docs/vocabulary.md)'s.
+Ceiling: 925 whitespace-delimited words. Terms are
+[the vocabulary](docs/vocabulary.md)'s. Raised from 850 for the ring
+family's five owner modules.
 
 ## Four tiers
 
@@ -18,7 +19,7 @@ Ceiling: 850 whitespace-delimited words. Terms are
   Cells bind generic workflows to the domain concerns the signature
   lists; the signature owns term-placement constraints, `craft` domain
   vocabulary and domain-only shape.
-- **T3 — [`compositions/`](compositions/):** named workflow templates.
+- **T3 — [`example-workflows/`](example-workflows/):** named workflow templates.
   Their ticket stubs follow the
   [work-item contract](contracts/work-item.md); their authoring standard is
   [custom workflow authoring](docs/custom-workflow-authoring.md).
@@ -51,6 +52,14 @@ Ceiling: 850 whitespace-delimited words. Terms are
   whole life: `establish` creates and records it, `prepare` installs what it
   declares, `retire` removes it. [`scripts/state_root.py`](scripts/state_root.py)
   alone derives that path and branch; nothing else computes either.
+- [`scripts/rings.py`](scripts/rings.py) owns the one ring resolution order —
+  project, home, pinned imports, lib — with its reserved-prefix floor and
+  shadow notices; `packs_support.py` and `tickets_adapters.py` route through
+  it and spell no root of their own. `rings_trust.py` owns the never-portable
+  trust ledger. `orchflows.py` is the ring command surface over
+  `orchflows_home.py` (home layout, the committed/regenerable line, pins),
+  `orchflows_scaffold.py` (`new` skeletons) and `orchflows_adapters.py`
+  (generated inert host adapters).
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   executable-source line ceilings.
@@ -130,8 +139,8 @@ Arrows point from reader or binder to dependency:
 `AGENTS.md` → `rules/` → `contracts/` → `skills/` → package `scripts/`.
 
 Packs depend on contracts and may name callable skills. Generic skills
-never name a pack or domain. Composition stubs bind skills or scripts as
-executors; no skill depends on a composition template. A lower layer
+never name a pack or domain. Workflow stubs bind skills or scripts as
+executors; no skill depends on a workflow template. A lower layer
 may link the law or contract binding it; a rule never depends on
 package internals for its meaning. Shared packages never name project packages;
 project packages may name visible ones.

@@ -8,7 +8,7 @@ from pathlib import Path
 
 if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from .tickets_adapters import AdapterError, adapter_spec
+    from .tickets_adapters import AdapterError, adapter_spec, pack_digest
     from .tickets_format import (
         DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
@@ -17,7 +17,7 @@ if __package__:
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from tickets_adapters import AdapterError, adapter_spec
+    from tickets_adapters import AdapterError, adapter_spec, pack_digest
     from tickets_format import (
         DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
@@ -59,6 +59,31 @@ def adapter_resolution(pack):
         return None, finding(error.code, "pack", error.detail)
 
 
+def pinned_digest_finding(pack: str, pinned: str):
+    """Refuse a stamped pack whose content is no longer what was sealed.
+
+    The seal is the lockfile: it records the pack's digest at slice time,
+    and every later door compares the resolved pack against it. Without
+    this the ticket carried the pack's *name*, and a name resolves to
+    whatever bytes happen to be nearest -- which is how a project ring
+    would have shadowed the pack a run was admitted under.
+    """
+
+    try:
+        current = pack_digest(pack)
+    except AdapterError as error:
+        return finding(error.code, "pack_digest", error.detail)
+    if current == pinned:
+        return None
+    return finding(
+        "pack-digest-mismatch", "pack_digest",
+        f"pack '{pack}' resolves to {current}, but this sealed assignment "
+        f"pinned {pinned}: the pack changed under the seal, or another ring "
+        "now shadows it. Restore the pinned pack, or open a new generation "
+        "(tickets.py stamp-generation) against the pack you mean to run.",
+    )
+
+
 def binding_findings(ticket_id: str, data: dict) -> list:
     """Grade script resolution and adapter-owned operational isolation."""
     findings = []
@@ -91,6 +116,16 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         adapter, adapter_failure = adapter_resolution(pack)
         if adapter_failure is not None:
             findings.append(adapter_failure)
+    pinned = str(data.get("pack_digest") or "").strip()
+    if pack and pinned:
+        mismatch = pinned_digest_finding(pack, pinned)
+        if mismatch is not None:
+            findings.append(mismatch)
+    elif pinned:
+        findings.append(finding(
+            "pack-digest-unbound", "pack_digest",
+            "a pinned pack digest without a stamped pack names nothing",
+        ))
     return findings
 
 
@@ -352,5 +387,6 @@ def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
 __all__ = (
     "ADMISSION_PENDING", "RESULT_BEARING_STATES", "adapter_id",
     "binding_findings", "dependency_order_findings", "finding",
-    "graph_findings", "grade_admission", "is_receipt", "refresh_admissions",
+    "graph_findings", "grade_admission", "is_receipt", "pinned_digest_finding",
+    "refresh_admissions",
 )

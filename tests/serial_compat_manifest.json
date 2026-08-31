@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1988,
+  "count": 2049,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -592,19 +592,42 @@
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
+   "test_orchflows_cli.AddTests.test_a_branch_name_is_refused_with_the_pin_remedy",
+   "test_orchflows_cli.AddTests.test_a_full_commit_sha_is_a_pin_without_asking_the_remote",
+   "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
+   "test_orchflows_cli.AddTests.test_a_tag_is_a_pin_and_the_import_resolves_through_the_ring",
+   "test_orchflows_cli.AddTests.test_sync_restores_a_deleted_import_from_the_lock",
+   "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
+   "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
+   "test_orchflows_cli.NewTests.test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one",
+   "test_orchflows_cli.NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "test_orchflows_cli.NewTests.test_a_reserved_name_is_refused_before_anything_is_written",
+   "test_orchflows_cli.SyncTests.test_lib_version_guesses_nothing_when_no_receipt_is_readable",
+   "test_orchflows_cli.SyncTests.test_lib_version_records_the_installed_identity_or_nulls",
+   "test_orchflows_cli.SyncTests.test_sync_keeps_a_ring_owners_own_ignores",
+   "test_orchflows_cli.SyncTests.test_sync_makes_a_fresh_home_ring_whole",
+   "test_orchflows_cli.SyncTests.test_sync_never_touches_committed_ring_content",
+   "test_orchflows_cli.SyncTests.test_the_gitignore_covers_the_regenerable_half_and_keeps_the_history",
+   "test_orchflows_cli.TrustCommandTests.test_trust_and_untrust_move_the_ledger_and_nothing_else",
+   "test_orchflows_cli.TrustCommandTests.test_trust_once_is_spent_and_says_so",
+   "test_packs.PackResolutionTests.test_a_bundle_edit_invalidates_the_remembered_grant",
+   "test_packs.PackResolutionTests.test_a_pack_relative_signature_contract_feeds_no_digest",
    "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
+   "test_packs.PackResolutionTests.test_a_reserved_name_in_a_ring_is_refused_loudly",
+   "test_packs.PackResolutionTests.test_a_use_once_grant_is_spent_by_the_resolution_it_allows",
+   "test_packs.PackResolutionTests.test_an_untrusted_project_bundle_refuses_with_the_two_step_remedy",
    "test_packs.PackResolutionTests.test_cells_returns_every_cell_of_the_resolved_digest",
    "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
    "test_packs.PackResolutionTests.test_every_pack_resolves_a_distinct_outline_section",
-   "test_packs.PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
-   "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
+   "test_packs.PackResolutionTests.test_project_ring_is_discovered_from_the_current_directory",
+   "test_packs.PackResolutionTests.test_project_ring_with_identical_bytes_has_the_same_digest",
    "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
    "test_packs.PackResolutionTests.test_public_facade_uses_same_family_resolver_owner",
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
    "test_packs.PackResolutionTests.test_root_keyword_is_not_a_resolver_compatibility_alias",
    "test_packs.PackResolutionTests.test_scope_aliases_are_not_accepted_by_the_resolver_facade",
-   "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
+   "test_packs.PackResolutionTests.test_the_library_signature_contract_byte_changes_the_digest",
    "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
    "test_packs.PackShapeRefusalTests.test_unknown_digest_and_consumer_are_closed_refusals",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
@@ -646,6 +669,38 @@
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
+   "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
+   "test_ring_adapters.BodyTests.test_a_workflow_adapter_carries_the_instantiate_route",
+   "test_ring_adapters.BodyTests.test_an_orchflows_only_field_never_reaches_a_host",
+   "test_ring_adapters.BodyTests.test_the_manual_invocation_flag_survives_into_a_claude_adapter",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_agents_shim_is_what_the_machinery_renders",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_claude_shim_is_what_the_machinery_renders",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_shim_holds_no_machine_specific_path",
+   "test_ring_adapters.CommittedProofTests.test_the_committed_shim_keeps_its_manual_invocation_flag",
+   "test_ring_adapters.InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
+   "test_ring_adapters.ScopeTests.test_a_hand_written_neighbour_is_never_removed",
+   "test_ring_adapters.ScopeTests.test_a_pack_gets_no_adapter",
+   "test_ring_adapters.ScopeTests.test_a_reserved_ring_item_gets_no_adapter",
+   "test_ring_adapters.ScopeTests.test_project_adapters_point_repository_relative",
+   "test_ring_adapters.ScopeTests.test_sync_removes_the_adapter_of_a_deleted_ring_item",
+   "test_rings.InventoryTests.test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it",
+   "test_rings.InventoryTests.test_inventory_reports_ring_shadows_and_trust_for_every_kind",
+   "test_rings.ReservationAndShadowTests.test_a_non_reserved_collision_wins_nearest_and_names_both_paths",
+   "test_rings.ReservationAndShadowTests.test_a_reserved_name_refuses_even_when_the_library_also_holds_it",
+   "test_rings.ReservationAndShadowTests.test_a_reserved_ring_name_refuses_loudly_rather_than_never_running",
+   "test_rings.ReservationAndShadowTests.test_the_library_keeps_its_own_reserved_names",
+   "test_rings.RingOrderTests.test_a_bare_packs_ancestor_directory_is_not_a_root",
+   "test_rings.RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
+   "test_rings.RingOrderTests.test_lib_skills_expand_one_sublayer",
+   "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
+   "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
+   "test_rings.RingOrderTests.test_the_search_order_is_project_home_imports_then_lib",
+   "test_rings.TrustTests.test_a_project_ring_refuses_until_the_user_grants_trust",
+   "test_rings.TrustTests.test_a_repo_supplied_ledger_grants_nothing",
+   "test_rings.TrustTests.test_an_edit_outside_the_ring_directories_does_not_re_prompt",
+   "test_rings.TrustTests.test_line_endings_do_not_change_a_bundle_digest",
+   "test_rings.TrustTests.test_revoke_drops_both_halves_of_the_two_step",
+   "test_rings.TrustTests.test_the_ledger_never_lives_inside_a_repository",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
    "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
@@ -910,8 +965,14 @@
    "test_tickets.AdapterRegistryTest.test_a_project_pack_selects_git_without_a_pack_name_registration",
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
    "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
+   "test_tickets.AdapterRegistryTest.test_an_untrusted_project_pack_refuses_before_its_adapter_is_read",
    "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
    "test_tickets.AdapterRegistryTest.test_unknown_pack_cells_fail_through_the_shared_resolver_parser",
+   "test_tickets.PackPinTest.test_a_pack_edited_under_the_pin_refuses_at_admission",
+   "test_tickets.PackPinTest.test_a_pack_that_cannot_be_pinned_refuses_at_issue",
+   "test_tickets.PackPinTest.test_an_unchanged_pack_grades_clean",
+   "test_tickets.PackPinTest.test_new_pins_the_stamped_packs_digest_at_issue_time",
+   "test_tickets.PackPinTest.test_the_pinned_digest_is_inside_the_sealed_assignment",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
@@ -1991,7 +2052,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e269f7fc3829733317206d76fd0689231cd51af0e885f8e92f01cef7bc8ad7ea"
+  "sha256": "c47c0e28ed8ff760c4d35fb2ebfc658efff2f4464826e6c11fbb051db2783c43"
  },
  "mutation_owners": [
   {
@@ -3714,11 +3775,83 @@
    ]
   },
   {
-   "module": "tests.test_packs",
-   "owner": "PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
+   "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_reserved_name_is_refused_before_anything_is_written",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "_git",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "_home",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_packs",
+   "owner": "PackResolutionTests.test_project_ring_is_discovered_from_the_current_directory",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_packs",
+   "owner": "PackResolutionTests.test_the_library_signature_contract_byte_changes_the_digest",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_packs",
+   "owner": "_home",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -3743,6 +3876,30 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_ring_adapters",
+   "owner": "InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ring_adapters",
+   "owner": "_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_rings",
+   "owner": "_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -4345,10 +4502,26 @@
   },
   {
    "module": "tests.test_tickets",
+   "owner": "AdapterRegistryTest._project",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets",
    "owner": "AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets",
+   "owner": "PackPinTest._pinned_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {

@@ -10,11 +10,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = (
     ROOT
-    / "compositions"
+    / "example-workflows"
     / "references"
     / "browser-game-intake-policy.json"
 )
-COMPOSITION = ROOT / "compositions" / "browser-game"
+COMPOSITION = ROOT / "example-workflows" / "browser-game"
 
 USER_ONLY_CATEGORIES = {
     "product_intent",

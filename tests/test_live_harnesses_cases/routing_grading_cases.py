@@ -262,13 +262,13 @@ class TestRoutingGrading(unittest.TestCase):
 
     def test_the_removed_fix_name_is_only_a_named_invocation(self):
         self.assertEqual("named:fix", self._observed([_skill_use("fix")]))
-        posix = "tickets.py instantiate ~/.orchflows/lib/compositions/fix --run r"
+        posix = "tickets.py instantiate ~/.orchflows/lib/example-workflows/fix --run r"
         self.assertEqual("named:fix", self._observed([_bash_use(posix)]))
 
     def test_a_windows_rendered_removed_fix_path_stays_named(self):
         # The installed library path is what the host block hands the session,
         # and on Windows it arrives with backslashes.
-        windows = r"tickets.py instantiate C:\Users\x\.orchflows\lib\compositions\fix --run r"
+        windows = r"tickets.py instantiate C:\Users\x\.orchflows\lib\example-workflows\fix --run r"
         self.assertEqual("named:fix", self._observed([_bash_use(windows)]))
 
     def test_any_other_skill_grades_as_that_name(self):
@@ -319,7 +319,7 @@ class TestRoutingGrading(unittest.TestCase):
     def test_instantiating_a_template_grades_as_that_template(self):
         for name, expected in (("renovate", "named:renovate"), ("fix", "named:fix")):
             with self.subTest(name):
-                command = f"tickets.py instantiate ~/.orchflows/lib/compositions/{name} --run r"
+                command = f"tickets.py instantiate ~/.orchflows/lib/example-workflows/{name} --run r"
                 self.assertEqual(expected, self._observed([_bash_use(command)]))
 
     def test_a_transcript_with_nothing_route_bearing_is_unrouted(self):

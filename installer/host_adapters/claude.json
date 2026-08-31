@@ -16,7 +16,8 @@
         "name",
         "description",
         "context",
-        "agent"
+        "agent",
+        "disable-model-invocation"
       ],
       "role_fields": {
         "agent": "orch-{role}",
@@ -70,5 +71,5 @@
     "schema_version": 1
   },
   "source": "hosts/claude.json",
-  "source_sha256": "d48a0e8a572116e7ae389d8b17c3fc3a40bea7be97724e78e16df015ea5062f0"
+  "source_sha256": "f31741b17a0f11a95be07b5baed62b873b925a28c8d57073f39e77175f056b17"
 }

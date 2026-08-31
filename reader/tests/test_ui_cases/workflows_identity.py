@@ -52,7 +52,7 @@ class WorkflowIdentityTests(unittest.TestCase):
         ))
 
     def test_source_ids_are_unpadded_base64url_hashes_of_normalized_paths(self):
-        path = "lib/compositions/evolve/02-campaign.md"
+        path = "lib/example-workflows/evolve/02-campaign.md"
         expected = base64.urlsafe_b64encode(
             hashlib.sha256(path.encode("utf-8")).digest()
         ).decode("ascii").rstrip("=")

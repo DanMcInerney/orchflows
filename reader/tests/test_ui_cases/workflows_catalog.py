@@ -21,11 +21,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: {{executor}}\n"
                 "depends_on: []\nbound: {{bound}}\n---\n",
             )
@@ -47,11 +47,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-tdd\n"
                 "sequence: [orch-tdd, orch-verify]\n"
                 "depends_on: []\nbound: 30m\n---\n",
@@ -82,11 +82,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-draft\n"
                 "pack: orch-content-pack\nsequence: [draft, edit]\n"
                 "depends_on: []\nbound: 30m\n---\n",
@@ -108,11 +108,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-verify]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
@@ -131,7 +131,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                     "---\nname: demo\ndescription: EXTERNAL_SECRET\nentry: named\n---\n",
                     encoding="utf-8",
                 )
-                composition = root / "compositions" / "demo"
+                composition = root / "example-workflows" / "demo"
                 composition.parent.mkdir(parents=True)
                 try:
                     if link_kind == "directory":
@@ -212,7 +212,7 @@ class WorkflowCatalogTests(unittest.TestCase):
 
     @staticmethod
     def _write_owner(root: Path, *, name: str, entry: str = "named") -> None:
-        template = root / "compositions" / "demo" / "template.md"
+        template = root / "example-workflows" / "demo" / "template.md"
         template.parent.mkdir(parents=True)
         template.write_text(
             f"---\nname: {name}\ndescription: Demonstrate one flow.\nentry: {entry}\n---\n",

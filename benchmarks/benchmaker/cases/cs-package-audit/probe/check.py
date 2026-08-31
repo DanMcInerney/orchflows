@@ -65,7 +65,7 @@ PROV_EVID = re.compile(r"^evidence@sha256:[0-9a-f]{8,}")
 
 
 # ---- P0.e: the post-qualification manifest fields -------------------
-# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# `example-workflows/references/benchmaker-manifest.md` owns the eight. None is
 # re-derivable after the fact, so a package that omits one cannot be repaired
 # by a consumer. This case covers `reference_audit` and `builders`:
 # the audit case audits the audit: an independent auditing context and the

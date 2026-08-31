@@ -86,17 +86,17 @@ TEMPLATE_MANIFEST = "template.md"
 
 def discover_templates(root: Path = REPO_ROOT):
     """Every invocable composition: a template directory
-    ``compositions/<name>/`` whose ``template.md`` manifest carries an
+    ``example-workflows/<name>/`` whose ``template.md`` manifest carries an
     ``entry`` (per contracts/work-item.md's Template and stub section).
 
     Returns ``(directory, frontmatter, body)`` per template. A directory
     without a manifest, or a manifest without frontmatter or without
     ``entry``, is library data rather than a name surface and is skipped
-    -- it still reaches the installed lib copy. ``compositions/references/``
+    -- it still reaches the installed lib copy. ``example-workflows/references/``
     is exactly that."""
 
     templates = []
-    comps_root = root / "compositions"
+    comps_root = root / "example-workflows"
     if not comps_root.is_dir():
         return templates
     for directory in sorted(p for p in comps_root.iterdir() if p.is_dir()):

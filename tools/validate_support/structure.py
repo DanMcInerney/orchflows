@@ -188,8 +188,8 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
 
 
 def discover_templates(manifest_name: str):
-    """Every `compositions/<name>/` directory holding the manifest."""
-    comps_dir = ROOT / "compositions"
+    """Every `example-workflows/<name>/` directory holding the manifest."""
+    comps_dir = ROOT / "example-workflows"
     if not comps_dir.is_dir():
         return []
     return sorted(
@@ -238,12 +238,12 @@ def validate_composition_admission(
 ) -> None:
     """Reject protocol artifacts owned by composition templates.
 
-    Ownership is physical inside ``compositions/<name>/`` or explicit in the
-    bounded name of a shared ``compositions/references`` artifact.  The latter
+    Ownership is physical inside ``example-workflows/<name>/`` or explicit in the
+    bounded name of a shared ``example-workflows/references`` artifact.  The latter
     is how the pre-existing browser-game schemas and fixture format ship.
     """
 
-    compositions = ROOT / "compositions"
+    compositions = ROOT / "example-workflows"
     if not compositions.is_dir():
         return
     directories = sorted(
@@ -271,7 +271,7 @@ def validate_composition_admission(
                 continue
             owner = _script_owner(path, names)
             if owner:
-                findings.append((owner, path, "composition-named script machinery"))
+                findings.append((owner, path, "workflow-named script machinery"))
 
     excepted = {}
     for composition, path, kind in findings:
@@ -280,16 +280,16 @@ def validate_composition_admission(
             continue
         diag.error(
             rel(path),
-            f"composition '{composition}' carries forbidden {kind}; "
-            "compositions contain only their manifest, ticket stubs, and placeholders",
+            f"workflow '{composition}' carries forbidden {kind}; "
+            "a workflow contains only its manifest, ticket stubs, and placeholders",
         )
     for composition in sorted(excepted):
         date = allowlist[composition]
         kinds = ", ".join(sorted({kind for _, kind in excepted[composition]}))
         diag.warn(
-            f"compositions/{composition}",
-            f"dated {date} composition-protocol exception admits existing {kinds}; "
-            "the allowlist grants no exception to another composition",
+            f"example-workflows/{composition}",
+            f"dated {date} workflow-protocol exception admits existing {kinds}; "
+            "the allowlist grants no exception to another workflow",
         )
 
 
@@ -415,7 +415,7 @@ def _tree_skill_names() -> set:
 
 
 def validate_templates(diag: Diagnostics) -> None:
-    """contracts/work-item.md, Template and stub: every `compositions/<name>/` template is a
+    """contracts/work-item.md, Template and stub: every `example-workflows/<name>/` template is a
     manifest plus ticket stubs a run can be instantiated from.
 
     Ticket shape and the depends_on graph are read from
@@ -426,14 +426,14 @@ def validate_templates(diag: Diagnostics) -> None:
     placeholder balance between manifest and stubs, and whether an executor
     names a skill or a script that exists.
     """
-    if not (ROOT / "compositions").is_dir():
-        diag.warn("compositions", SKIPPED)  # no tree, so no template
+    if not (ROOT / "example-workflows").is_dir():
+        diag.warn("example-workflows", SKIPPED)  # no tree, so no template
         return
     tickets = _ticket_law()
     manifest_name = tickets.TEMPLATE_FILE
     directories = discover_templates(manifest_name)
     if not directories:
-        diag.warn("compositions", "holds no {0}; check skipped".format(manifest_name))
+        diag.warn("example-workflows", "holds no {0}; check skipped".format(manifest_name))
         return
     skill_names = _tree_skill_names()
     for directory in directories:

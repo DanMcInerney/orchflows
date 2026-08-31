@@ -20,7 +20,7 @@ intended coverage, and expected execution cost.
 - input: {"name":"target","type":"literal","value":"{{target}}"}
 - input: {"name":"outcome","type":"literal","value":"{{outcome}}"}
 - input: {"name":"sources","type":"literal","value":"{{sources}}"}
-- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
+- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at example-workflows/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Details
