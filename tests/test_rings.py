@@ -292,5 +292,45 @@ class InventoryTests(unittest.TestCase):
             self.assertIn("reserved", record["refusal"])
 
 
+class SuperResearchGoalTests(unittest.TestCase):
+    """R.03 Goal clauses 1 and 4, read from this checkout rather than a
+    synthetic world -- the ring item under test is this repository's own.
+    Home is pointed at an empty scratch directory so neither reading picks
+    up whatever a real machine's own home ring happens to hold."""
+
+    def test_the_workflow_resolves_from_the_lib_ring_by_bare_name(self):
+        """Clause 1, the actual build: at arrival this raised RingError
+        (R.03's Context); `example-workflows/super-research/` is what
+        makes it resolve."""
+
+        with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
+            home = Path(empty_home)
+            record = rings.resolve("workflow", "super-research", start=ROOT, home=home)
+            names = {
+                item["name"]
+                for item in rings.inventory(("workflow",), start=ROOT, home=home)
+            }
+
+        self.assertEqual("lib", record["ring"])
+        self.assertIn("super-research", names)
+
+    def test_the_skill_stays_resolvable_as_a_project_ring_skill(self):
+        """Clause 4: already true at arrival (measured in R.03's Context as
+        `rings.resolve('skill','super-research', trust=False)` -> ring
+        'project'). Pinned here as a can-fail reading taken without
+        mutating the tree under test, per the pack craft's Evidence
+        section, rather than left to have happened to keep working."""
+
+        with tempfile.TemporaryDirectory(prefix="orchflows-empty-home-") as empty_home:
+            record = rings.resolve(
+                "skill", "super-research", trust=False, start=ROOT, home=Path(empty_home),
+            )
+
+        self.assertEqual("project", record["ring"])
+        self.assertEqual(
+            str(ROOT / ".orchflows" / "skills" / "super-research"), record["dir"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

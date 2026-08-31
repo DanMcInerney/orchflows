@@ -92,6 +92,15 @@
         {"source": "campaign", "target": "promote", "kind": "sequence"}
       ]
     },
+    "super-research": {
+      "nodes": [
+        {"id": "acquire", "label": "Acquire public records"},
+        {"id": "report", "label": "Cite, date, and declare gaps"}
+      ],
+      "edges": [
+        {"source": "acquire", "target": "report", "kind": "sequence"}
+      ]
+    },
     "orch-check": {
       "nodes": [
         {"id": "ledger", "label": "Read the fixed review ledger"},
