@@ -23,6 +23,7 @@ from pathlib import Path
 from unittest import mock
 
 from scripts import orchflows, tickets
+from scripts.tickets_brick import DO_EXECUTOR
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, ticket_defects,
 )
@@ -150,7 +151,7 @@ class FrameShapeTest(FrameSinkTest):
 
     def test_a_frame_carrying_a_craft_binding_is_off_contract(self):
         for field, value, refusal in (
-            ("executor", "orch-execute", "a frame binds no executor"),
+            ("executor", DO_EXECUTOR, "a frame binds no executor"),
             ("pack", DOC_PACK, "a frame binds no pack"),
             ("frame", "yes", "frame is the marker `true`"),
         ):
