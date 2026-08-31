@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .foundation import (
     CANONICAL_DIRS,
+    HOST_ADAPTERS_DIR,
     CLAUDE_ADAPTER_SETS,
     CLAUDE_CLI_CANDIDATES,
     CODEX_CLI_CANDIDATES,
@@ -151,6 +152,8 @@ def _build_user_plan(
             if path.is_file() and not _is_build_artifact(path):
                 rel = path.relative_to(REPO_ROOT)
                 lib_copies.append((path, lib_home / rel))
+    for path in sorted(HOST_ADAPTERS_DIR.glob("*.json")):
+        lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
     notices = REPO_ROOT / "THIRD_PARTY_NOTICES.md"
     if notices.is_file():
         lib_copies.append((notices, lib_home / notices.name))
@@ -444,6 +447,7 @@ def _build_user_plan(
         claude_import=claude_import_plan,
         grok_rules=grok_rules_plan,
         receipt_path=scope_home / "receipt.json",
+        home_ring=scope_home,
         warnings=warnings,
         claude_enabled=claude_enabled,
         codex_enabled=codex_enabled,
@@ -496,6 +500,7 @@ def plan_entry_count(plan: Plan) -> int:
         + (1 if plan.host_block is not None else 0)
         + (1 if plan.claude_import is not None else 0)
         + (1 if plan.grok_rules is not None else 0)
+        + (1 if plan.home_ring is not None else 0)
         + (
             1
             if plan.scope == "user" and plan.runtime_action in ("create", "repair")

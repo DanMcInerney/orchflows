@@ -74,6 +74,10 @@ class Plan:
     # `blocks` entry, because Grok's instruction root is a directory the
     # installer owns a file in, not a file the user owns a block in.
     grok_rules: ConfigPlan | None = None                 # user scope only
+    # The user's own ring root, user scope only. Not installed content:
+    # `scripts/orchflows_home.py` owns what goes in it, the receipt records
+    # none of it, and an uninstall never reaches it.
+    home_ring: Path | None = None
     warnings: list = field(default_factory=list)         # preflight, informational only
     manage_host_surfaces: bool = True
     claude_enabled: bool = True                          # user scope: a Claude CLI was detected

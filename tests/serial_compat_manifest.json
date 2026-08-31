@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2017,
+  "count": 2035,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -592,6 +592,24 @@
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
+   "test_orchflows_cli.AddTests.test_a_branch_name_is_refused_with_the_pin_remedy",
+   "test_orchflows_cli.AddTests.test_a_full_commit_sha_is_a_pin_without_asking_the_remote",
+   "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
+   "test_orchflows_cli.AddTests.test_a_tag_is_a_pin_and_the_import_resolves_through_the_ring",
+   "test_orchflows_cli.AddTests.test_sync_restores_a_deleted_import_from_the_lock",
+   "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
+   "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
+   "test_orchflows_cli.NewTests.test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one",
+   "test_orchflows_cli.NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "test_orchflows_cli.NewTests.test_a_reserved_name_is_refused_before_anything_is_written",
+   "test_orchflows_cli.SyncTests.test_lib_version_guesses_nothing_when_no_receipt_is_readable",
+   "test_orchflows_cli.SyncTests.test_lib_version_records_the_installed_identity_or_nulls",
+   "test_orchflows_cli.SyncTests.test_sync_keeps_a_ring_owners_own_ignores",
+   "test_orchflows_cli.SyncTests.test_sync_makes_a_fresh_home_ring_whole",
+   "test_orchflows_cli.SyncTests.test_sync_never_touches_committed_ring_content",
+   "test_orchflows_cli.SyncTests.test_the_gitignore_covers_the_regenerable_half_and_keeps_the_history",
+   "test_orchflows_cli.TrustCommandTests.test_trust_and_untrust_move_the_ledger_and_nothing_else",
+   "test_orchflows_cli.TrustCommandTests.test_trust_once_is_spent_and_says_so",
    "test_packs.PackResolutionTests.test_a_bundle_edit_invalidates_the_remembered_grant",
    "test_packs.PackResolutionTests.test_a_pack_relative_signature_contract_feeds_no_digest",
    "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
@@ -2020,7 +2038,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "b718d85ccd32d0c4bc6dd0e79d47ae692e794c5037bdb6be69bd53de71546c12"
+  "sha256": "2553d07bf1f31fc1f7d2989e21637ede17ae5e05a88ab2fca7f8a04ec7320269"
  },
  "mutation_owners": [
   {
@@ -3738,6 +3756,62 @@
    "module": "tests.test_migrate_state_cases.plan",
    "owner": "TestMigrationPlan.test_a_source_that_merely_holds_the_sink_still_migrates",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_reserved_name_is_refused_before_anything_is_written",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "_git",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "_home",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]
