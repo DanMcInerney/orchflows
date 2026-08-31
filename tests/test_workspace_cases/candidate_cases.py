@@ -93,6 +93,39 @@ class TestDerivedCandidatePaths(unittest.TestCase):
                 os.environ[STATE_HOME_ENV_VAR] = prior
         self.assertLess(len(str(derived["path"])), 150, derived["path"])
 
+    def test_the_inverse_reads_back_the_identity_the_derivation_wrote(self):
+        """Round trip, in the module that owns both directions. A caller
+        standing in a derived tree asks which item's tree it is here, and
+        never by re-spelling the layout for itself."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            use_sink(Path(tmp))
+            os.environ.pop("ORCHFLOWS_WORKTREES_HOME", None)
+
+            derived = state_root.candidate_paths("run-1", "T1")
+
+            self.assertEqual(
+                {"run": "run-1", "id": "T1"},
+                state_root.candidate_identity(derived["path"]),
+            )
+            # a child works far below its own root, so ancestors count
+            self.assertEqual(
+                {"run": "run-1", "id": "T1"},
+                state_root.candidate_identity(derived["path"] / "scripts" / "deep"),
+            )
+
+    def test_a_path_outside_the_worktrees_root_names_no_item(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            os.environ.pop("ORCHFLOWS_WORKTREES_HOME", None)
+            root = state_root.worktrees_root()
+
+            for path in (Path(tmp), sink, root, root / "run-1"):
+                with self.subTest(path=path):
+                    # the root itself and a run directory are not a tree:
+                    # both halves of the identity have to be there
+                    self.assertIsNone(state_root.candidate_identity(path))
+
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):

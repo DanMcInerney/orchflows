@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1990,
+  "count": 1999,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1141,6 +1141,13 @@
    "tests.test_friction_cases.cli.TestMainWritesEntry.test_mixed_space_and_equals_flag_forms_parse_together",
    "tests.test_friction_cases.cli.TestMainWritesEntry.test_second_call_appends_a_second_line_not_a_rewrite",
    "tests.test_friction_cases.cli.TestMainWritesEntry.test_the_entry_records_the_directory_it_was_logged_from",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_a_broken_resolver_costs_the_field_and_never_the_entry",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_a_worktree_the_sink_holds_no_ticket_for_names_no_run",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_an_ordinary_repository_still_logs_an_unresolved_run",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_the_candidate_workspace_the_caller_stands_in_answers",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_the_environment_answers_when_the_caller_named_no_run",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_the_environment_outranks_the_workspace_the_caller_stands_in",
+   "tests.test_friction_cases.cli.TestRunIsResolvedWhenNoFlagNamesIt.test_the_flag_still_wins_over_every_mechanical_answer",
    "tests.test_friction_cases.refusal.TestFrictionNeverFails.test_a_project_resolver_that_raises_costs_the_fields_not_the_entry",
    "tests.test_friction_cases.refusal.TestFrictionNeverFails.test_a_run_identity_that_is_a_directory_costs_the_run_branch_only",
    "tests.test_friction_cases.refusal.TestFrictionNeverFails.test_a_sink_root_whose_parent_is_a_regular_file",
@@ -1872,10 +1879,12 @@
    "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_is_idempotent",
    "tests.test_validator_cases.repo_and_frontmatter.TestPinFlagRoundTrip.test_pin_matches_committed_pins_json",
    "tests.test_validator_cases.repo_and_frontmatter.TestValidatorAgainstRepo.test_repo_passes_clean",
+   "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_a_path_outside_the_worktrees_root_names_no_item",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_a_realistic_identity_stays_far_under_the_windows_path_ceiling",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_a_segment_that_is_not_one_segment_is_refused_not_joined",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_the_derived_tree_is_a_sibling_of_the_state_sink",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_the_environment_override_moves_every_derived_tree",
+   "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_the_inverse_reads_back_the_identity_the_derivation_wrote",
    "tests.test_workspace_cases.candidate_cases.TestDerivedCandidatePaths.test_two_siblings_of_one_run_derive_two_trees_and_two_branches",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_a_research_lane_establishes_its_run_scoped_evidence_store",
    "tests.test_workspace_cases.candidate_cases.TestEstablishCreatesTheDerivedCandidate.test_a_second_establishment_replays_without_moving_a_byte",
@@ -1993,7 +2002,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_three_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "9aaa92a28e3def32634adff782b46b41d0f7e8d15921dafa4370cd34f40f0df9"
+  "sha256": "d2f6c184b2e37640e192032b38016e27cce24636a9cadae66b025322949ad5f4"
  },
  "mutation_owners": [
   {
@@ -2354,6 +2363,46 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestRunIsResolvedWhenNoFlagNamesIt._candidate",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestRunIsResolvedWhenNoFlagNamesIt.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestRunIsResolvedWhenNoFlagNamesIt.test_the_environment_answers_when_the_caller_named_no_run",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestRunIsResolvedWhenNoFlagNamesIt.test_the_environment_outranks_the_workspace_the_caller_stands_in",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_friction_cases.cli",
+   "owner": "TestRunIsResolvedWhenNoFlagNamesIt.test_the_flag_still_wins_over_every_mechanical_answer",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -4780,6 +4829,14 @@
   },
   {
    "module": "tests.test_workspace_cases.candidate_cases",
+   "owner": "TestDerivedCandidatePaths.test_a_path_outside_the_worktrees_root_names_no_item",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.candidate_cases",
    "owner": "TestDerivedCandidatePaths.test_a_realistic_identity_stays_far_under_the_windows_path_ceiling",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -4797,6 +4854,14 @@
   {
    "module": "tests.test_workspace_cases.candidate_cases",
    "owner": "TestDerivedCandidatePaths.test_the_environment_override_moves_every_derived_tree",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.candidate_cases",
+   "owner": "TestDerivedCandidatePaths.test_the_inverse_reads_back_the_identity_the_derivation_wrote",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"

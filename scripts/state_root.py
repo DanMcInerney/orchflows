@@ -147,6 +147,42 @@ def candidate_paths(run: str, ticket_id: str) -> dict:
     }
 
 
+def candidate_identity(path) -> dict:
+    """The ``{run, id}`` whose candidate worktree ``path`` lies in, or ``None``.
+
+    The exact inverse of ``candidate_paths``, and here for the same reason
+    the forward derivation is: a caller standing in a derived tree that
+    spelled the answer for itself would be a second owner of the layout,
+    and the two would drift the first time the layout moved. Ancestors
+    count, because an item works far below its workspace root.
+
+    Path shape alone. Whether the named item exists is a different
+    question, asked of the sink by the caller that cares.
+
+    Containment is decided on the folded spelling and the identity is read
+    off the unfolded one -- so this is not ``_one_spelling``'s single
+    answer, it is that answer for the comparison only: a run id is a
+    timestamp carrying a capital ``T`` and ``Z``, and an identity that had
+    been through ``normcase`` would name no run in the sink on Windows.
+    """
+
+    try:
+        root = os.path.realpath(os.fspath(worktrees_root()))
+        standing = os.path.realpath(os.fspath(path))
+        if os.path.commonpath(
+            (os.path.normcase(root), os.path.normcase(standing))
+        ) != os.path.normcase(root):
+            return None
+        parts = Path(os.path.relpath(standing, root)).parts
+    except (OSError, TypeError, ValueError):
+        # ValueError is the ordinary Windows answer for two different
+        # drives, which is simply "not inside", not a failure to report.
+        return None
+    if len(parts) < 2:
+        return None
+    return {"run": parts[0], "id": parts[1]}
+
+
 def _one_spelling(path) -> str:
     """One spelling for one location, on a case-folding filesystem too."""
 
