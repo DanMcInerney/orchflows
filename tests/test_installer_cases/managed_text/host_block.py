@@ -142,7 +142,7 @@ _HOST_BLOCK_DEMANDS = {
         "**graph**",
         "**outline**",
         "**fix**",
-        "`orch-decompose`",
+        "`orch-slice`",
         "`orch-outline`",
         "`tickets.py dispatch <run> <root>",
         "`tickets.py land`",

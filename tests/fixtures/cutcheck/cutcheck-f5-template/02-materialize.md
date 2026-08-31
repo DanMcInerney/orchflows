@@ -2,7 +2,7 @@
 id: 02-materialize
 run: cutcheck-f5-template
 status: pending
-executor: orch-decompose
+executor: orch-slice
 pack: orch-code-pack
 depends_on: [01-design]
 bound: 20 tool calls

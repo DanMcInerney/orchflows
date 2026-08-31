@@ -91,7 +91,7 @@ that needs a different meaning needs a different word.
   `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
   `contracts/work-item.md`; input to decomposition; `orch-outline` is its
-  only editor, at intake — every other reader, `orch-decompose`
+  only editor, at intake — every other reader, `orch-slice`
   included while cutting, treats it as frozen. The noun keeps this name
   after the intake verb was renamed; so does the craft's `## Spec fields`
   section.
@@ -120,7 +120,7 @@ that needs a different meaning needs a different word.
   dependency closure. Law, and what lies either side of it, in
   `rules/topology.md` §3.
 - **root ticket** — the ticket named by a `root_generation`, directly bound to
-  any lawful executor. A decomposed root uses `orch-decompose`; its subtree is
+  any lawful executor. A decomposed root uses `orch-slice`; its subtree is
   any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
   `land` reads its `done` predicate as met. A successor root lives in a successor run
   opened after the accepted predecessor result identity resolves and cites

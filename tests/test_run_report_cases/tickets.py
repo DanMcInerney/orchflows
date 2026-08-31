@@ -46,7 +46,7 @@ class TicketDurationTest(unittest.TestCase):
         self.assertEqual(
             self.section["by_executor"],
             [
-                {"executor": "orch-decompose", "tickets": 2, "median_minutes": 5.0,
+                {"executor": "orch-slice", "tickets": 2, "median_minutes": 5.0,
                  "p90_minutes": 5.0, "max_minutes": 5.0},
                 {"executor": "orch-tdd", "tickets": 3, "median_minutes": 30.0,
                  "p90_minutes": 60.0, "max_minutes": 60.0},
@@ -69,4 +69,4 @@ class TicketDurationTest(unittest.TestCase):
         section = report_of(self.sink, top=2)["tickets"]
         self.assertEqual([row["id"] for row in section["longest"]], ["00-root.02", "00-root.01"])
         self.assertEqual([row["executor"] for row in section["by_executor"]],
-                         ["orch-decompose", "orch-tdd"])
+                         ["orch-slice", "orch-tdd"])

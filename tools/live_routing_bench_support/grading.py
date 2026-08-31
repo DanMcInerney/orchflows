@@ -24,7 +24,7 @@ ROLE_AGENT_TYPES = {"planner": "orch-planner", "worker": "orch-worker"}
 # `single` has no skill name any more: the driver issues and dispatches the
 # one ticket itself, so that route is only ever observed from Bash.
 ROUTING_SKILLS = {
-    "orch-decompose": "graph",
+    "orch-slice": "graph",
     "orch-outline": "spec",
 }
 # Export the exact routed callable set for the live harness facade. All other

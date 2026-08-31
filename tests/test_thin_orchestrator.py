@@ -45,7 +45,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
         "orch-outline": "planner",
         "orch-check": "planner",
-        "orch-decompose": "planner",
+        "orch-slice": "planner",
         "orch-execute": "worker",
     }
 
@@ -98,10 +98,10 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             collapsed_host,
             re.compile(r"Skill/composition/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
-        decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
+        decompose = (ROOT / "skills/kernel/orch-slice/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("Context: pointers by identity", decompose)
         self.assertNotIn("**errand**", collapsed_host)
-        self.assertNotIn("sequence: [orch-outline, orch-decompose]", host)
+        self.assertNotIn("sequence: [orch-outline, orch-slice]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
     def test_graph_lane_emits_the_complete_decompose_route(self):
@@ -211,14 +211,14 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "direct root",
             "lawful executor",
-            "`orch-decompose` root",
+            "`orch-slice` root",
             "distinct results/dependencies",
             "one planner",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
 
-        self.assertRegex(spec_route, r"one planner.*`orch-decompose` root")
+        self.assertRegex(spec_route, r"one planner.*`orch-slice` root")
         self.assertIn("planner never drives the run", spec_route)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):

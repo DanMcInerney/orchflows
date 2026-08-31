@@ -119,7 +119,7 @@ def graph_closed(ticket_id: str, siblings, *evidence) -> bool:
 def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False) -> list:
     """Grade the graph shape owned by one ticket without consulting prose.
 
-    ``orch-decompose`` is the only root executor that may own executor-result
+    ``orch-slice`` is the only root executor that may own executor-result
     members.  A root marked as an ordinary checker would leave the graph's
     authority with a caller, so it is refused at every admission door.  The
     member-count checks are deferred until a generation is being validated:

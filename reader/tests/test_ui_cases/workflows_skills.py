@@ -58,7 +58,7 @@ class WorkflowSkillTests(unittest.TestCase):
             edge_tuples,
         )
         self.assertIn(
-            ("skill-call", "workflow:orch-outline", "skill:orch-decompose"),
+            ("skill-call", "workflow:orch-outline", "skill:orch-slice"),
             edge_tuples,
         )
         self.assertIn(

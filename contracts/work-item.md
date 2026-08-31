@@ -37,7 +37,7 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
 - `executor`, optional `profile`, and `pack` — exact dispatch and
   role binding. Callable executors are the four registered verbs
-  `orch-execute`, `orch-check`, `orch-decompose`, and `orch-outline`;
+  `orch-execute`, `orch-check`, `orch-slice`, and `orch-outline`;
   `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
@@ -155,7 +155,7 @@ reading to the same section, attributed to the driver that ran it.
 
 A root is the ticket named by a `root_generation`. A direct root may bind any
 lawful registered executor and owns the whole artifact. A decomposed root binds
-`orch-decompose`; every member and gate ticket uses this same semantic shape.
+`orch-slice`; every member and gate ticket uses this same semantic shape.
 
 Each physical run has one root identity. Its `root_generation` uses ordinal
 `1`; only cut drafts can advance before seal. A semantic change after seal is

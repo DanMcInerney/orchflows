@@ -50,7 +50,7 @@ class CallableRegistryTests(unittest.TestCase):
             (
                 "orch-execute",
                 "orch-check",
-                "orch-decompose",
+                "orch-slice",
                 "orch-outline",
             ),
             tickets.CALLABLE_EXECUTORS,

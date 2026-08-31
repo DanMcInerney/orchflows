@@ -230,7 +230,7 @@ class DispatchV1Test(unittest.TestCase):
         # written after the outcome, so admission grades the sealed member
         # alone: from here the run has a root, and `T` is one of its items
         (Path(self.temporary.name) / "tickets" / "run" / "R.md").write_text(
-            "---\nid: R\nrun: run\nstatus: pending\nexecutor: orch-decompose\n"
+            "---\nid: R\nrun: run\nstatus: pending\nexecutor: orch-slice\n"
             "depends_on: []\n---\n\n## Objective\n\nThe run's root.\n",
             encoding="utf-8",
         )

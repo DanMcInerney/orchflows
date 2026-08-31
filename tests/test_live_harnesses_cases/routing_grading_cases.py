@@ -245,7 +245,7 @@ class TestRoutingGrading(unittest.TestCase):
 
     def test_routing_skills_grade_as_their_graph_shapes(self):
         expected = {
-            "orch-decompose": "graph",
+            "orch-slice": "graph",
             "orch-outline": "spec",
         }
         for skill, route in expected.items():
@@ -353,7 +353,7 @@ class TestRoutingGrading(unittest.TestCase):
     def test_reading_before_routing_does_not_change_the_route(self):
         events = [
             _tool_use("Read", {"file_path": "/repo/scripts/ui.py"}),
-            _skill_use("orch-decompose", tool_id="t2"),
+            _skill_use("orch-slice", tool_id="t2"),
         ]
         graded = routing_live.grade_transcript(_stream(events))
         self.assertEqual("graph", graded["observed"])

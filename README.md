@@ -119,7 +119,7 @@ skills and compositions are ordinary repository work under
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
 package and template, `four` mints only `orch-outline` and
-`orch-decompose` and leaves every other name to resolve at
+`orch-slice` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
 [profiles.md](hosts/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
@@ -173,7 +173,7 @@ the same loop to the library's own skills.
 the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
 [`orch-outline`](skills/workflows/orch-outline/SKILL.md) and
-[`orch-decompose`](skills/kernel/orch-decompose/SKILL.md);
+[`orch-slice`](skills/kernel/orch-slice/SKILL.md);
 [verification](rules/verification.md) owns acceptance. This view shows
 only the checker-or-gate choice; that rule owns the other ordinary paths and
 their details:
@@ -181,7 +181,7 @@ their details:
 ```mermaid
 flowchart TD
     outline["orch-outline — freeze one root ticket"] --> pack{"stamp a domain pack"}
-    pack --> dec["orch-decompose — cut ordered units"]
+    pack --> dec["orch-slice — cut ordered units"]
     dec --> frontier["tickets.py dispatch — one launch per ready unit"]
     frontier --> exec["unit executor"]
     exec --> path{"independence path"}
@@ -216,7 +216,7 @@ self-improvement wired into every run.
 
 ### Legos
 
-- **One brick, one job.** `orch-outline` freezes the root, `orch-decompose`
+- **One brick, one job.** `orch-outline` freezes the root, `orch-slice`
   cuts it, `orch-execute` builds each unit,
   `orch-check` challenges Goal and evidence, a ticket's `done` predicate
   decides Goal at `land`, and its loop field iterates it. The graph itself

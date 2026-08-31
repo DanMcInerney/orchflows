@@ -52,9 +52,9 @@ create a second root in the same run.
 Draft per [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration)
 in the craft's terms. Route per [topology](../../../rules/topology.md)
 §2: bind one executor directly rather than
-`orch-decompose`. Use it only for a [topology](../../../rules/topology.md) §5
+`orch-slice`. Use it only for a [topology](../../../rules/topology.md) §5
 graph, through `tickets.py new
-<run> <root-id> --executor orch-decompose --pack <stamp> --independence gate …`.
+<run> <root-id> --executor orch-slice --pack <stamp> --independence gate …`.
 
 Run `tickets.py stamp-generation`, `tickets.py draft-validate`, then
 `tickets.py seal` with the validated `--cut-generation`; `assignment_seal`

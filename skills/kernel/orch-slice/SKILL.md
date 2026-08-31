@@ -1,5 +1,5 @@
 ---
-name: orch-decompose
+name: orch-slice
 description: Cut a stamped root ticket into work-item tickets under the pack's slicing. The one decomposer for every domain.
 role: planner
 ---

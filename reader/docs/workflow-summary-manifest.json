@@ -103,7 +103,7 @@
         {"source": "challenge", "target": "verdict", "kind": "sequence"}
       ]
     },
-    "orch-decompose": {
+    "orch-slice": {
       "nodes": [
         {"id": "root", "label": "Read the stamped root"},
         {"id": "slice", "label": "Cut independent outcomes"},

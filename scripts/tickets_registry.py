@@ -19,14 +19,14 @@ except ImportError:
 CALLABLE_EXECUTORS = (
     "orch-execute",
     "orch-check",
-    "orch-decompose",
+    "orch-slice",
     "orch-outline",
 )
 
 EXECUTOR_REGISTRY = {
     "orch-execute": {"role": "worker", "requires_pack": True},
     "orch-check": {"role": "planner", "requires_pack": True},
-    "orch-decompose": {"role": "planner"},
+    "orch-slice": {"role": "planner"},
     "orch-outline": {"role": "planner"},
 }
 
@@ -38,6 +38,7 @@ EXECUTOR_REGISTRY = {
 # any other successor is a mechanism, named as the remedy it is.
 SUPERSEDED_EXECUTORS = {
     "orch-spec": "orch-outline",
+    "orch-decompose": "orch-slice",
     "orch-loop": "the ticket `loop` field, driven by tickets.py loop-arm | loop-evaluate | loop-advance",
     "orch-frontier": (
         "the driver loop is mechanical: `tickets.py dispatch` emits the launch, "

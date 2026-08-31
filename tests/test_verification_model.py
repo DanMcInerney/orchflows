@@ -252,7 +252,7 @@ class SeparateRepairGateTest(unittest.TestCase):
             run_dir = root / "run"
             run_dir.mkdir()
             (run_dir / "root.md").write_text(
-                self._ticket_text("root", "orch-decompose"), encoding="utf-8"
+                self._ticket_text("root", "orch-slice"), encoding="utf-8"
             )
             (run_dir / "root.01.md").write_text(
                 self._ticket_text("root.01", "orch-execute"), encoding="utf-8"
@@ -282,7 +282,7 @@ class SeparateRepairGateTest(unittest.TestCase):
             run_dir = root / "run"
             run_dir.mkdir()
             (run_dir / "root.md").write_text(
-                self._ticket_text("root", "orch-decompose"), encoding="utf-8"
+                self._ticket_text("root", "orch-slice"), encoding="utf-8"
             )
             (run_dir / "root.01.md").write_text(
                 self._ticket_text("root.01", "orch-execute"), encoding="utf-8"

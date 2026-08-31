@@ -174,7 +174,7 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
         "run: testrun\n"
         f"status: {status}\n"
         f"{claim}"
-        "executor: orch-decompose\n"
+        "executor: orch-slice\n"
         "depends_on: []\n"
         "assignment_seal: sha256:current\n"
         "---\n\n"

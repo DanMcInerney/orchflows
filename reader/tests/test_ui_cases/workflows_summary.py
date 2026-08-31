@@ -18,7 +18,7 @@ EXPECTED_WORKFLOWS = {
     "drift-canary",
     "evolve",
     "orch-check",
-    "orch-decompose",
+    "orch-slice",
     "orch-execute",
     "orch-frontier",
     "orch-integrate",

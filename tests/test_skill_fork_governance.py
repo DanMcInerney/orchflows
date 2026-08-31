@@ -284,7 +284,7 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
 
     Five consecutive runs went to landing one direct verifier ticket
     because the contract routed every stamped root through
-    orch-decompose. The lane has to be stated, and stated with its
+    orch-slice. The lane has to be stated, and stated with its
     mechanics: a lane a reader cannot execute is the gap it was written
     to close.
     """
@@ -301,7 +301,7 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
             # The bare name appears twice more in this body, so a bare-token
             # assertion passes with the whole lane deleted. Only the lane
             # says it this way, which is what makes the case able to fail.
-            ("rather than `orch-decompose`", "what the direct root is emitted instead of"),
+            ("rather than `orch-slice`", "what the direct root is emitted instead of"),
             (
                 "prescribe implementation or tests in Goal",
                 "the directly bound executor's implementation authority",

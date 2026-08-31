@@ -36,7 +36,7 @@ class GradeSnapshotTest(unittest.TestCase):
     def test_graph_grade_counts_executor_members_and_reports_pack_fields(self):
         snapshot = {
             "R": ticket(
-                "R", "orch-decompose",
+                "R", "orch-slice",
                 goal="Deliver an observable result for the target repository.",
                 context="The standards owner is documented by pointer.",
             ),
@@ -59,7 +59,7 @@ class GradeSnapshotTest(unittest.TestCase):
 
     def test_one_member_decomposition_is_refused(self):
         snapshot = {
-            "R": ticket("R", "orch-decompose"),
+            "R": ticket("R", "orch-slice"),
             "R.01": ticket("R.01", "orch-tdd"),
         }
         with self.assertRaisesRegex(GradeError, "over-decomposition"):
@@ -150,7 +150,7 @@ class GradeCommandTest(unittest.TestCase):
         run_dir = Path(self.temporary.name) / "tickets" / "run"
         run_dir.mkdir(parents=True)
         (run_dir / "R.md").write_text(ticket(
-            "R", "orch-decompose",
+            "R", "orch-slice",
             goal="Deliver an observable result for the target repository.",
             context="The standards owner is documented by pointer.",
         ), encoding="utf-8")

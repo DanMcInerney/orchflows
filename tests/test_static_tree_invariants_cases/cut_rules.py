@@ -3,7 +3,7 @@ import unittest
 
 from ._support import ROOT, read_flat
 
-DECOMPOSE = ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md"
+SLICE = ROOT / "skills" / "kernel" / "orch-slice" / "SKILL.md"
 # The join stopped being a skill; the law that owns what it skips is the
 # verification rule, and `tickets.py join-noop-repair` is what performs it.
 VERIFICATION = ROOT / "rules" / "verification.md"
@@ -30,18 +30,18 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
     """Predicted paths are hints; actual overlap belongs to integration."""
 
     def test_the_owner_does_not_turn_suggested_paths_into_cut_authority(self):
-        text = read_flat(DECOMPOSE)
+        text = read_flat(SLICE)
         for anchor in OVERLAP_ANCHORS:
             self.assertIn(
                 anchor, text,
-                f"orch-decompose, the rule's one owner, does not name "
+                f"orch-slice, the rule's one owner, does not name "
                 f"{anchor!r}, so predicted paths can still become cut-time "
                 "authority",
             )
 
     def test_no_cut_states_a_superseded_overlap_rule(self):
         for label, path in (
-            ("orch-decompose", DECOMPOSE),
+            ("orch-slice", SLICE),
             ("code pack craft", CODE_CRAFT),
             ("design pack craft", DESIGN_CRAFT),
         ):
@@ -92,11 +92,11 @@ class TestCutGoalAnchors(unittest.TestCase):
     """Pin each cut goal to stable anchors in its one prose owner."""
 
     def test_the_decomposer_states_the_goal_by_anchor(self):
-        text = read_flat(DECOMPOSE)
+        text = read_flat(SLICE)
         for anchor in CUT_GOAL_ANCHORS:
             self.assertIn(
                 anchor, text,
-                f"orch-decompose does not name {anchor!r}, so the cut is no "
+                f"orch-slice does not name {anchor!r}, so the cut is no "
                 "longer told to minimize the critical path subject to every "
                 "item an atom, or no longer returns the graph block whose "
                 "numbers that goal is measured by",

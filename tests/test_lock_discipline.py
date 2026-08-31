@@ -349,7 +349,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_a_cut_runs_root_closes_it_and_its_members_do_not(self):
-        ticket_at(self.run_dir, "R", executor="orch-decompose")
+        ticket_at(self.run_dir, "R", executor="orch-slice")
         ticket_at(self.run_dir, "R.01", deps="[R]")
         self.assertTrue(tickets_join._closes_the_run("testrun", "R"))
         self.assertFalse(tickets_join._closes_the_run("testrun", "R.01"))
@@ -358,7 +358,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         for label, member in (("root joins last", "complete"),
                               ("root joins first", "pending")):
             with self.subTest(label):
-                ticket_at(self.run_dir, "R", executor="orch-decompose")
+                ticket_at(self.run_dir, "R", executor="orch-slice")
                 ticket_at(self.run_dir, "R.01", deps="[R]", status=member)
                 self.assertTrue(tickets_join._closes_the_run("testrun", "R"))
                 self.assertFalse(tickets_join._closes_the_run("testrun", "R.01"))

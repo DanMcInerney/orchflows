@@ -448,7 +448,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
     def test_decomposed_root_uses_same_semantic_shape(self):
-        self.dispatch("new", "cut", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
+        self.dispatch("new", "cut", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
         for suffix in ("01", "02"):
             self.dispatch("new", "cut", f"R.{suffix}", "--executor", "orch-execute", "--goal", f"Produce component {suffix}.", "--context", "It feeds the root result.", "--pack", "orch-code-pack", "--isolation", "required")
         self.dispatch("stamp-generation", "cut", "R")
@@ -464,7 +464,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             self.assertIn("Context", sections)
 
     def test_complete_code_cut_keeps_one_root_generation_before_and_after_seal(self):
-        initial = {"R": assignment("R", "orch-decompose")}
+        initial = {"R": assignment("R", "orch-slice")}
         root_draft = tickets_generations.draft_snapshot("R", initial)
         root_receipt = tickets_generations.validate_draft("R", initial, root_draft)
         rooted = tickets_generations.seal_assignments("R", initial, root_draft, root_receipt)
@@ -496,7 +496,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual([], cutcheck.graph_findings(sealed))
 
         later_cut = tickets_generations.draft_snapshot(
-            "S", {"S": assignment("S", "orch-decompose")}, ordinal=2
+            "S", {"S": assignment("S", "orch-slice")}, ordinal=2
         )
         self.assertIn("root:S:1:", later_cut["root_generation"])
         self.assertIn("cut:S:2:", later_cut["cut_generation"])
@@ -527,7 +527,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate(self):
         snapshot = {
-            "R": assignment("R", "orch-decompose"),
+            "R": assignment("R", "orch-slice"),
             "R.01": assignment("R.01", "orch-execute"),
             "R.02": assignment("R.02", "orch-execute"),
         }
@@ -547,7 +547,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_clean_gate_uses_attributed_join_noop_and_opens_verification(self):
         self.dispatch(
-            "new", "clean", "R", "--executor", "orch-decompose",
+            "new", "clean", "R", "--executor", "orch-slice",
             "--goal", "Deliver the integrated result.", "--context", "Use two members.",
             "--pack", "orch-code-pack", "--independence", "gate",
         )
@@ -678,7 +678,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_gate_stubs_freeze_pack_isolation_and_lens_order(self):
         self.dispatch(
-            "new", "ordered", "R", "--executor", "orch-decompose",
+            "new", "ordered", "R", "--executor", "orch-slice",
             "--goal", "Deliver the integrated result.", "--context", "Use two members.",
             "--pack", "orch-code-pack", "--independence", "gate",
         )
@@ -1036,7 +1036,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
     def test_decompose_builds_the_complete_gate_bearing_draft_before_validation(self):
-        skill = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")
+        skill = (ROOT / "skills" / "kernel" / "orch-slice" / "SKILL.md").read_text(encoding="utf-8")
         commands = ("tickets.py gate", "cutcheck.py", "tickets.py draft-validate", "tickets.py seal")
         positions = [skill.index(command) for command in commands]
         self.assertEqual(sorted(positions), positions)
@@ -1053,7 +1053,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertFalse((ROOT / "compositions" / "fix").exists())
 
     def test_gate_routes_actual_overlap_to_integration(self):
-        self.dispatch("new", "gate", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
+        self.dispatch("new", "gate", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
         for suffix in ("01", "02"):
             self.dispatch("new", "gate", f"R.{suffix}", "--executor", "orch-execute", "--goal", f"Deliver candidate {suffix}.", "--context", "The candidate feeds the integrated result.", "--pack", "orch-code-pack", "--independence", "gate", "--isolation", "required")
         self.dispatch("stamp-generation", "gate", "R")
