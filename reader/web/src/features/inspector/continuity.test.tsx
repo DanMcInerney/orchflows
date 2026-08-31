@@ -40,20 +40,12 @@ function model(overrides: Partial<TicketDetail> = {}): InspectorModel {
     readiness: {
       state: "complete",
       dependencies: [],
-      explanation: "Every dependency and criterion is complete.",
+      explanation: "Every dependency is met and the report is recorded.",
       cause: "none",
       causal_chain: []
     },
-    sections: { objective: "Hold the drill level in one design language.", result: "The recorded result.", feedback: "[]", risks: "[]" },
-    verification: {
-      state: "rows",
-      rows: [
-        { "#": "1", verdict: "PASS", oracle: "tools/validate.py", class: "deterministic", evidence: "exit 0, zero output" },
-        { "#": "2", verdict: "FAIL", oracle: "install.py --dry-run", class: "deterministic", evidence: "plan named 3 scripts, 4 expected" }
-      ]
-    },
-    inputs: ["accepted reader projection"],
-    write_scope: ["web/src/features/inspector"],
+    sections: { goal: "Hold the drill level in one design language." },
+    report: "The recorded report.",
     pack: "orch-design-pack",
     history: [],
     raw: "",
@@ -94,7 +86,7 @@ describe("ticket detail continuity with the workflows exemplar", () => {
     expect(hero).not.toBeNull();
     expect(text(hero?.querySelector(".eyebrow"))).toBe("Inspector evidence");
     expect(text(hero?.querySelector("h1#ticket-title"))).toBe("G1");
-    expect(text(hero?.querySelector(".inspector-lede"))).toBe("Every dependency and criterion is complete.");
+    expect(text(hero?.querySelector(".inspector-lede"))).toBe("Every dependency is met and the report is recorded.");
     expect(Array.from(hero?.querySelectorAll(".inspector-identities span") ?? []).map(text))
       .toEqual(["orch-tdd", "orch-design-pack", "bound 90m"]);
 
@@ -102,15 +94,15 @@ describe("ticket detail continuity with the workflows exemplar", () => {
       text(cell.querySelector("dt")),
       text(cell.querySelector("dd"))
     ]);
-    expect(stats).toEqual([["Criteria", "2"], ["Depends", "2"], ["Friction", "0"], ["Events", "0"]]);
+    expect(stats).toEqual([["Sections", "1"], ["Depends", "2"], ["Friction", "0"], ["Events", "0"]]);
   });
 
   it("gives every manifest ticket state a hero lede that agrees with its own status", () => {
     const states: Array<[string, string, string, string]> = [
       ["running-overview", "G4", "running", "The assigned worker is executing this ticket within its bound."],
-      ["proof-pass", "G1", "complete", "Every dependency and criterion is complete."],
-      ["proof-fail", "G1", "failed", "One named criterion returned a failing verdict."],
-      ["friction-present", "G1", "complete", "Every dependency and criterion is complete."],
+      ["report-recorded", "G1", "complete", "Every dependency is met and the report is recorded."],
+      ["report-historical", "G1", "failed", "This ticket failed under the earlier section grammar; its recorded sections are shown as written."],
+      ["friction-present", "G1", "complete", "Every dependency is met and the report is recorded."],
       ["history-unavailable", "G7", "attention", "The ticket is suspended and has no durable event projection."],
       ["raw-escaped", "A2", "running", "The worker holds the claim; only the inert ticket source is projected."]
     ];
@@ -126,40 +118,35 @@ describe("ticket detail continuity with the workflows exemplar", () => {
     }
   });
 
-  it("keeps verdict, criterion, and oracle at the row surface and dense evidence behind disclosure", () => {
-    const container = open(model(), "proof-pass", "?fixture=proof-pass&tab=proof");
-    const rows = Array.from(container.querySelectorAll(".proof-row"));
-    expect(rows).toHaveLength(3);
-
-    for (const row of rows) {
-      const disclosure = row.querySelector("details.disclosure");
-      expect(disclosure, "every criterion holds its evidence behind a disclosure").not.toBeNull();
-      expect(row.querySelector(".proof-verdict")?.closest("details"), "the verdict stays at the surface").toBeNull();
-      expect(row.querySelector(".proof-oracle strong")?.closest("details"), "the oracle stays at the surface").toBeNull();
-      expect(text(disclosure?.querySelector("summary"))).toMatch(/^Criterion \d+ evidence$/);
-      expect(text(disclosure)).toContain("deterministic");
-      expect(disclosure?.hasAttribute("open"), "a passing criterion stays collapsed").toBe(false);
-    }
-    expect(text(rows[2]?.querySelector(".proof-oracle strong"))).toBe("install.py --dry-run");
+  it("renders a recorded report as one inert body with nothing parsed out of it", () => {
+    const container = open({ run: null, ticket: null }, "report-recorded", "?fixture=report-recorded&tab=report");
+    const body = container.querySelector(".report-body");
+    expect(body).not.toBeNull();
+    expect(text(body)).toContain("Gate replayed at the tip");
+    expect(container.querySelector(".report-section"), "no section rows accompany a current-grammar report").toBeNull();
+    expect(container.querySelector(".report-era"), "no earlier-grammar note accompanies a current-grammar report").toBeNull();
   });
 
-  it("opens the disclosure of the criterion that did not pass instead of dumping every row", () => {
-    const container = open(model(), "proof-fail", "?fixture=proof-fail&tab=proof");
-    const state = Array.from(container.querySelectorAll(".proof-row")).map((row) => [
-      row.getAttribute("data-verdict"),
-      row.querySelector("details.disclosure")?.hasAttribute("open")
-    ]);
-    expect(state).toEqual([["pass", false], ["pass", false], ["fail", true]]);
-    const failing = container.querySelector('.proof-row[data-verdict="fail"] details.disclosure');
-    expect(text(failing)).toContain("plan named 3 scripts, 4 expected");
+  it("keeps each historical section's name at the surface and its body verbatim beneath it", () => {
+    const container = open({ run: null, ticket: null }, "report-historical", "?fixture=report-historical&tab=report");
+    expect(text(container.querySelector(".report-era"))).toContain("earlier five-section grammar");
+    const sections = Array.from(container.querySelectorAll(".report-section"));
+    expect(sections.map((section) => text(section.querySelector("h3"))))
+      .toEqual(["Result", "Verification", "Feedback", "Risks"]);
+    const verification = sections[1]?.querySelector(".report-section__body");
+    expect(text(verification)).toContain("| # | verdict | oracle | class | evidence |");
+    expect(text(verification)).toContain("| 2 | FAIL | install.py --dry-run | deterministic | plan named 3 scripts, 4 expected |");
+    expect(container.querySelector("[data-verdict]"), "no verdict is parsed out of recorded prose").toBeNull();
   });
 
-  it("renders judgment and phase facts as label and value rows in the shared row grammar", () => {
-    const container = open(model(), "", "?tab=proof");
-    const judgment = Array.from(container.querySelectorAll(".judgment-summary .fact-rows > div"));
-    expect(judgment.map((row) => text(row.querySelector("dt")))).toEqual(["result", "feedback", "risks", "Rationale"]);
-    expect(text(judgment[0]?.querySelector("dd"))).toBe("The recorded result.");
-    expect(text(judgment[3]?.querySelector("dd"))).toContain("Rationale unavailable");
+  it("renders report section labels and phase facts in the shared row grammar", () => {
+    const historical = open(model({
+      report: "",
+      sections: { goal: "Hold the drill level.", result: "The recorded result.", feedback: "[]" }
+    }), "", "?tab=report");
+    const names = Array.from(historical.querySelectorAll(".report-section h3")).map(text);
+    expect(names).toEqual(["Result", "Feedback"]);
+    expect(text(historical.querySelectorAll(".report-section__body")[0])).toBe("The recorded result.");
     cleanup();
 
     const overview = open(model(), "", "?tab=overview");
@@ -232,7 +219,7 @@ describe("ticket detail continuity with the workflows exemplar", () => {
 
   it("reuses the exemplar's panel container and row hover surface rather than a parallel language", () => {
     expect(inspectorCss).toContain(".inspector-card { min-width: 0; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); background: var(--surface-1); }");
-    for (const row of [".proof-row", ".artifact-row", ".friction-row", ".history-row"]) {
+    for (const row of [".report-section", ".artifact-row", ".friction-row", ".history-row"]) {
       expect(inspectorCss, `${row} carries the catalog row hover surface`)
         .toContain(`${row}:hover { background: var(--surface-2); }`);
     }

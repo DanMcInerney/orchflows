@@ -8,7 +8,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { FeatureState } from "../../shared/transport/types";
 import {
   artifactRows, detailRows, durableHistory, executorSource, fixtureTicket, inspectorTabs,
-  linkedFriction, proofRows, rawTicket, selectedTab, statusState, tabPath,
+  linkedFriction, rawTicket, reportBlocks, selectedTab, statusState, tabPath,
   type InspectorModel, type InspectorTab
 } from "./model";
 import type { InspectorRoute } from "./route";
@@ -20,14 +20,14 @@ export interface TicketInspectorProps {
 }
 
 const tabLabels: Record<InspectorTab, string> = {
-  overview: "Overview", details: "Details", proof: "Proof",
+  overview: "Overview", details: "Details", report: "Report",
   artifacts: "Artifacts", friction: "Friction", history: "History", raw: "Raw"
 };
 
 const tabIcons: Record<InspectorTab, ReactNode> = {
   overview: <LayoutDashboard aria-hidden="true" />,
   details: <ListChecks aria-hidden="true" />,
-  proof: <FileCheck2 aria-hidden="true" />,
+  report: <FileCheck2 aria-hidden="true" />,
   artifacts: <PackageOpen aria-hidden="true" />,
   friction: <Flame aria-hidden="true" />,
   history: <History aria-hidden="true" />,
@@ -51,7 +51,7 @@ function StateGlyph({ state }: { state: string }) {
 export default function TicketInspector({ route, state: featureState }: TicketInspectorProps) {
   const [tab, setTab] = useState<InspectorTab>(() => selectedTab(route));
   const namedFixture = fixtureTicket(route);
-  const ticket = route.fixture.startsWith("proof-")
+  const ticket = route.fixture.startsWith("report-")
     ? namedFixture
     : featureState.model?.ticket ?? namedFixture;
   const viewModel: InspectorModel = ticket === featureState.model?.ticket
@@ -73,17 +73,17 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
   }
 
   const state = statusState(ticket);
-  const rows = proofRows(viewModel, route.fixture);
+  const blocks = reportBlocks(ticket);
   const source = executorSource(ticket);
   const artifacts = artifactRows(ticket, route);
   const friction = linkedFriction(viewModel, route);
   const history = durableHistory(viewModel, route);
-  const objective = ticket.sections.objective || "No objective was recorded.";
-  const result = ticket.sections.result;
+  const goal = ticket.sections.goal || "No goal was recorded.";
+  const reportNote = ticket.report.trim() || ticket.sections.result || "";
   const claim = ticket.claimed_by && ticket.claimed_at ? `${ticket.claimed_by} · ${ticket.claimed_at}` : "Unclaimed";
   const agents = Array.from(new Set(history.map((item) => item.agent).filter(Boolean)));
   const stats: Array<{ label: string; value: number }> = [
-    { label: "Criteria", value: rows.length },
+    { label: "Sections", value: blocks.length },
     { label: "Depends", value: ticket.depends_on.length },
     { label: "Friction", value: friction.length },
     { label: "Events", value: history.length }
@@ -131,7 +131,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
           {inspectorTabs.map((item) => (
             <Tabs.Trigger key={item} className="inspector-tab" value={item}>
               {tabIcons[item]}<span>{tabLabels[item]}</span>
-              {item === "proof" && <small aria-label={`${rows.length} criteria`}>{rows.length}</small>}
+              {item === "report" && blocks.length > 0 && <small aria-label={`${blocks.length} recorded sections`}>{blocks.length}</small>}
               {item === "friction" && friction.length > 0 && <small aria-label={`${friction.length} linked records`}>{friction.length}</small>}
             </Tabs.Trigger>
           ))}
@@ -140,8 +140,8 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
         <Tabs.Content className="inspector-panel" value="overview">
           <div className="overview-grid">
             <article className="inspector-card inspector-card--objective">
-              <p className="eyebrow">What this is</p><h2>Active objective</h2><p>{objective}</p>
-              {result && <div className="result-note"><CheckCircle2 aria-hidden="true" /><div><strong>Recorded result</strong><p>{result}</p></div></div>}
+              <p className="eyebrow">What this is</p><h2>Goal</h2><p>{goal}</p>
+              {reportNote && <div className="result-note"><CheckCircle2 aria-hidden="true" /><div><strong>Recorded report</strong><p>{reportNote}</p></div></div>}
             </article>
             <article className="inspector-card inspector-card--phase">
               <p className="eyebrow">What is happening</p><h2>Current phase</h2>
@@ -154,7 +154,7 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
             </article>
             <article className="inspector-card inspector-card--next">
               <p className="eyebrow">What happens next</p><h2>Next transition</h2>
-              <div className="next-step"><ArrowRight aria-hidden="true" /><p>{ticket.readiness.dependencies.length ? `Waiting on ${ticket.readiness.dependencies.join(", ")}.` : state === "complete" ? "Review the recorded proof and result." : "The assigned worker continues within the ticket limit."}</p></div>
+              <div className="next-step"><ArrowRight aria-hidden="true" /><p>{ticket.readiness.dependencies.length ? `Waiting on ${ticket.readiness.dependencies.join(", ")}.` : state === "complete" ? "Review the recorded report." : "The assigned worker continues within the ticket limit."}</p></div>
             </article>
           </div>
         </Tabs.Content>
@@ -162,6 +162,12 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
         <Tabs.Content className="inspector-panel" value="details">
           <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Canonical metadata</p><h2>Routing and limits</h2></div>
             <dl className="detail-list">{detailRows(ticket).map((row) => <div key={row.label}><dt>{row.label}</dt><dd className={row.mono ? "mono" : undefined}>{row.value}</dd></div>)}</dl>
+            {["context", "details"].filter((name) => (ticket.sections[name] ?? "").trim()).map((name) => (
+              <section className="report-section" key={name}>
+                <h3>{name.charAt(0).toUpperCase() + name.slice(1)}</h3>
+                <div className="report-section__body">{ticket.sections[name]}</div>
+              </section>
+            ))}
             <div className="source-disclosure">
               <div><p className="eyebrow">Canonical association</p><h3>Executor source</h3></div>
               {source.href
@@ -171,33 +177,21 @@ export default function TicketInspector({ route, state: featureState }: TicketIn
           </article>
         </Tabs.Content>
 
-        <Tabs.Content className="inspector-panel" value="proof">
-          <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Verification evidence</p><h2>Criteria and verdicts</h2><p>Every projected criterion keeps its oracle class and evidence identity.</p></div>
-            <section className="judgment-summary" aria-labelledby="judgment-title">
-              <div className="judgment-heading"><p className="eyebrow">Canonical fields only</p><h3 id="judgment-title">Judgment explanation</h3></div>
-              <dl className="fact-rows">
-                {["result", "feedback", "risks"].map((name) => <div key={name}><dt>{name}</dt><dd>{ticket.sections[name] || "Unavailable"}</dd></div>)}
-                <div><dt>Rationale</dt><dd>{ticket.judgment?.rationale.state === "available" && ticket.judgment.rationale.identity
-                  ? <code>{ticket.judgment.rationale.identity.id}</code>
-                  : <><strong>Rationale unavailable</strong><span>No canonical rationale identity was recorded.</span></>}</dd></div>
-              </dl>
-            </section>
-            {rows.some((row) => row.verdict.toLowerCase() === "fail") && <div className="proof-alert" role="status"><AlertTriangle aria-hidden="true" /><div><strong>Criterion {rows.find((row) => row.verdict.toLowerCase() === "fail")?.criterion} failed</strong><p>{rows.find((row) => row.verdict.toLowerCase() === "fail")?.oracle}: {rows.find((row) => row.verdict.toLowerCase() === "fail")?.evidence}</p></div></div>}
-            {rows.length ? <div className="proof-list" role="list" aria-label="Verification criteria">{rows.map((row) => {
-              const verdict = row.verdict.toLowerCase();
-              const Icon = verdict === "pass" ? CheckCircle2 : verdict === "fail" ? AlertTriangle : CircleHelp;
-              return <article className="proof-row" data-verdict={verdict} role="listitem" key={`${row.criterion}-${row.oracle}`}>
-                <div className="proof-verdict"><Icon aria-hidden="true" /><span>{row.verdict}</span><small>Criterion {row.criterion}</small></div>
-                <div className="proof-oracle"><span className="field-label">Oracle</span><strong className="mono">{row.oracle}</strong></div>
-                <details className="disclosure proof-evidence" open={verdict !== "pass"}>
-                  <summary>Criterion {row.criterion} evidence</summary>
-                  <dl>
-                    <div><dt>Class</dt><dd><span>{row.oracleClass}</span></dd></div>
-                    <div><dt>Identity</dt><dd><code>{row.evidence}</code></dd></div>
-                  </dl>
-                </details>
-              </article>;
-            })}</div> : <EmptyEvidence title="Proof unavailable">No verification rows were projected. Unknown is preserved; it is not treated as a pass.</EmptyEvidence>}
+        <Tabs.Content className="inspector-panel" value="report">
+          <article className="inspector-card"><div className="panel-heading"><p className="eyebrow">Executor filing</p><h2>Recorded report</h2><p>The report is shown exactly as recorded; the browser parses nothing out of it.</p></div>
+            {ticket.report.trim()
+              ? <div className="report-body" tabIndex={0} aria-label="Recorded report">{ticket.report}</div>
+              : blocks.length
+                ? <>
+                  <div className="report-era" role="note"><History aria-hidden="true" /><p>Filed under the earlier five-section grammar. History is never rewritten; each recorded section is shown as written.</p></div>
+                  <div className="report-sections" role="list" aria-label="Recorded sections">{blocks.map((block) => (
+                    <section className="report-section" role="listitem" key={block.name}>
+                      <h3>{block.name}</h3>
+                      <div className="report-section__body">{block.body}</div>
+                    </section>
+                  ))}</div>
+                </>
+                : <EmptyEvidence title="Report unavailable">No report has been recorded for this ticket. Absence is preserved; it is not presented as an empty success.</EmptyEvidence>}
           </article>
         </Tabs.Content>
 

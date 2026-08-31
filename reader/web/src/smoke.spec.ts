@@ -165,13 +165,13 @@ async function expectManifestIdentityTruth(
     });
     expect(sourceOrder, `${identity.identity}: focus source order follows visual order`).toBe(true);
   }
-  if (identity.identity.startsWith("ticket--proof-pass--")) {
-    await expect(page.locator('.proof-row[data-verdict="pass"]'), `${identity.identity}: passing rows`).toHaveCount(3);
-    await expect(page.locator('.proof-row[data-verdict="fail"]'), `${identity.identity}: no failing rows`).toHaveCount(0);
-    await expect(page.locator(".proof-row").filter({ hasText: "Criterion 3" }), `${identity.identity}: Criterion 3 passes`).toHaveAttribute("data-verdict", "pass");
+  if (identity.identity.startsWith("ticket--report-recorded--")) {
+    await expect(page.locator(".report-body"), `${identity.identity}: report shown as recorded`).toContainText("Gate replayed at the tip");
+    await expect(page.locator(".report-section"), `${identity.identity}: no historical section rows`).toHaveCount(0);
   }
-  if (identity.identity.startsWith("ticket--proof-fail--")) {
-    await expect(page.locator(".proof-row").filter({ hasText: "Criterion 3" }), `${identity.identity}: Criterion 3 fails`).toHaveAttribute("data-verdict", "fail");
+  if (identity.identity.startsWith("ticket--report-historical--")) {
+    await expect(page.locator(".report-era"), `${identity.identity}: earlier-grammar note`).toContainText("earlier five-section grammar");
+    await expect(page.locator(".report-section h3"), `${identity.identity}: recorded section names`).toHaveText(["Result", "Verification", "Feedback", "Risks"]);
   }
 }
 

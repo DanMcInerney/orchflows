@@ -58,7 +58,7 @@ describe("feature package boundaries", () => {
     const runLocation = { pathname: "/runs/run%20alpha", search: "?fixture=full-expanded", hash: "" };
     const ticketLocation = {
       pathname: "/runs/run%20alpha/tickets/T%2F1",
-      search: "?fixture=proof-pass",
+      search: "?fixture=report-recorded",
       hash: "",
     };
 
@@ -68,8 +68,8 @@ describe("feature package boundaries", () => {
       executionRunRoute.build({ run: "run alpha", fixture: "full-expanded" }),
     );
     expect(inspector.route.match(ticketLocation)).toEqual(executionTicketRoute.match(ticketLocation));
-    expect(inspector.route.build({ run: "run alpha", ticket: "T/1", fixture: "proof-pass" })).toBe(
-      executionTicketRoute.build({ run: "run alpha", ticket: "T/1", fixture: "proof-pass" }),
+    expect(inspector.route.build({ run: "run alpha", ticket: "T/1", fixture: "report-recorded" })).toBe(
+      executionTicketRoute.build({ run: "run alpha", ticket: "T/1", fixture: "report-recorded" }),
     );
 
     expect(runMapSources["./run-map/route.ts"]).toContain('../../shared/routes/executionRoutes');
@@ -139,13 +139,13 @@ describe("feature package boundaries", () => {
       "route", "schema", "request", "polling", "project", "data",
       "model", "fixtures", "styles", "loadView",
     ]));
-    const matched = inspector.route.match({ pathname: "/runs/run%20alpha/tickets/T%2F1", search: "?fixture=proof-pass", hash: "" });
-    expect(matched).toEqual({ run: "run alpha", ticket: "T/1", fixture: "proof-pass" });
-    expect(inspector.route.build(matched!)).toBe("/runs/run%20alpha/tickets/T%2F1?fixture=proof-pass");
+    const matched = inspector.route.match({ pathname: "/runs/run%20alpha/tickets/T%2F1", search: "?fixture=report-recorded", hash: "" });
+    expect(matched).toEqual({ run: "run alpha", ticket: "T/1", fixture: "report-recorded" });
+    expect(inspector.route.build(matched!)).toBe("/runs/run%20alpha/tickets/T%2F1?fixture=report-recorded");
     expect(inspector.request({ run: "run alpha", ticket: "T/1", fixture: "" })).toEqual({
       url: "/api/v1/views/inspector?run=run+alpha&ticket=T%2F1",
     });
-    expect(inspector.request({ run: "fixture-run", ticket: "fixture-ticket", fixture: "proof-pass" })).toEqual({
+    expect(inspector.request({ run: "fixture-run", ticket: "fixture-ticket", fixture: "report-recorded" })).toEqual({
       url: "/api/v1/views/inspector?run=fixture-run&ticket=fixture-ticket",
     });
     expect(() => inspector.schema({ schema: "orchflows.session-graph.v1", session: null })).toThrow();

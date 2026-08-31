@@ -40,18 +40,6 @@ function artifacts(value: unknown): boolean {
     && optionalText(value.reason));
 }
 
-function rationale(value: unknown): boolean {
-  return record(value)
-    && ["available", "unavailable"].includes(String(value.state))
-    && (value.identity === null || (record(value.identity)
-      && typeof value.identity.kind === "string"
-      && typeof value.identity.id === "string"));
-}
-
-function judgment(value: unknown): boolean {
-  return value === undefined || (record(value) && rationale(value.rationale));
-}
-
 function ticket(value: unknown): value is TicketDetail {
   return record(value)
     && record(value.readiness)
@@ -69,16 +57,12 @@ function ticket(value: unknown): value is TicketDetail {
     && typeof value.readiness.cause === "string"
     && strings(value.readiness.causal_chain)
     && record(value.sections)
-    && record(value.verification)
-    && Array.isArray(value.verification.rows)
-    && strings(value.inputs)
-    && strings(value.write_scope)
+    && typeof value.report === "string"
     && typeof value.pack === "string"
     && Array.isArray(value.history)
     && typeof value.raw === "string"
     && executorSource(value.executor_source)
-    && artifacts(value.artifacts)
-    && judgment(value.judgment);
+    && artifacts(value.artifacts);
 }
 
 export function schema(value: unknown): InspectorPayload {

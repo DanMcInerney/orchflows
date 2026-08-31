@@ -83,7 +83,7 @@
 .detail-list dt, .field-label { color: var(--text-faint); font-size: var(--type-xs); font-weight: 740; letter-spacing: .08em; text-transform: uppercase; }
 .detail-list dd { margin: 0; color: var(--text-strong); }
 .source-disclosure { min-height: var(--row-comfortable); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); background: var(--surface-2); }
-.source-disclosure h3, .judgment-heading h3 { margin: var(--space-1) 0 0; color: var(--text-strong); font-size: var(--type-title-sm); }
+.source-disclosure h3 { margin: var(--space-1) 0 0; color: var(--text-strong); font-size: var(--type-title-sm); }
 .source-disclosure p { margin: 0; }
 .source-disclosure > a, .artifact-row > a { min-height: var(--row-compact); display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 1px solid var(--accent-selected); border-radius: var(--radius-control); color: var(--text-strong); background: var(--surface-raised); font-weight: 680; text-decoration: none; }
 .source-disclosure > a:hover, .artifact-row > a:hover { border-color: var(--accent); }
@@ -91,9 +91,6 @@
 .unavailable-state { display: grid; gap: var(--space-1); }
 .unavailable-state strong { color: var(--text-strong); }
 .unavailable-state p { margin: 0; color: var(--text-muted); font-size: var(--type-sm); }
-
-.judgment-summary { padding: var(--space-5); border-bottom: 1px solid var(--border-subtle); background: var(--surface-2); }
-.judgment-heading { margin: 0 0 var(--space-3); }
 
 .disclosure > summary { padding: var(--space-2) 0; color: var(--text-muted); cursor: pointer; font-size: var(--type-xs); font-weight: 740; letter-spacing: .08em; text-transform: uppercase; }
 .disclosure > summary::marker { color: var(--accent); }
@@ -103,24 +100,16 @@
 .disclosure dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font-size: var(--type-sm); }
 .disclosure code { font: var(--type-sm)/1.45 var(--font-mono); }
 
-.proof-list, .artifact-list, .friction-list { display: grid; }
-.proof-alert { min-height: var(--row-comfortable); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); border-bottom: 1px solid var(--status-failed); color: var(--status-failed); background: var(--surface-2); }
-.proof-alert svg { flex: 0 0 auto; width: 18px; }
-.proof-alert strong { color: var(--status-failed); }
-.proof-alert p { margin: 0; color: var(--text); font: var(--type-sm)/1.45 var(--font-mono); }
-.proof-row { min-height: var(--row-comfortable); display: grid; grid-template-columns: 132px minmax(180px, 1fr) minmax(240px, 1.1fr); align-items: start; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); border-left: 3px solid var(--status-unknown); }
-.proof-row:last-child { border-bottom: 0; }
-.proof-row:hover { background: var(--surface-2); }
-.proof-oracle { min-width: 0; display: grid; gap: var(--space-1); }
-.proof-oracle strong { overflow-wrap: anywhere; color: var(--text-strong); }
-.proof-verdict { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 0 var(--space-2); color: var(--status-unknown); }
-.proof-verdict svg { width: 18px; grid-row: 1 / 3; }
-.proof-verdict span { font-weight: 780; }
-.proof-verdict small { color: var(--text-faint); }
-.proof-row[data-verdict="pass"] { border-left-color: var(--status-complete); }
-.proof-row[data-verdict="pass"] .proof-verdict { color: var(--status-complete); }
-.proof-row[data-verdict="fail"] { border-left-color: var(--status-failed); }
-.proof-row[data-verdict="fail"] .proof-verdict { color: var(--status-failed); }
+.artifact-list, .friction-list, .report-sections { display: grid; }
+.report-body { padding: var(--space-5); color: var(--text); font-size: var(--type-base); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-era { min-height: var(--row-compact); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); background: var(--surface-2); }
+.report-era svg { flex: 0 0 auto; width: 16px; color: var(--status-unknown); }
+.report-era p { margin: 0; font-size: var(--type-sm); }
+.report-section { min-height: var(--row-comfortable); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); }
+.report-section:last-child { border-bottom: 0; }
+.report-section:hover { background: var(--surface-2); }
+.report-section h3 { margin: 0 0 var(--space-2); color: var(--text-faint); font-size: var(--type-xs); font-weight: 740; letter-spacing: .08em; text-transform: uppercase; }
+.report-section__body { color: var(--text); font: var(--type-sm)/1.55 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .artifact-row { min-height: var(--row-comfortable); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--border-subtle); }
 .artifact-row:last-child { border-bottom: 0; }
@@ -172,7 +161,6 @@
   .inspector-tab { padding-inline: var(--space-2); }
   .inspector-tab svg { display: none; }
   .detail-list > div, .fact-rows > div, .disclosure dl > div { grid-template-columns: 1fr; align-content: center; gap: var(--space-1); }
-  .proof-row { grid-template-columns: 1fr; }
   .source-disclosure, .artifact-row { align-items: stretch; flex-direction: column; }
   .source-disclosure > a, .artifact-row > a { justify-content: center; }
   .friction-row__headline { grid-template-columns: 20px minmax(0, 1fr); }
@@ -183,6 +171,6 @@
 
 @media (forced-colors: active) {
   .inspector-status, .inspector-stats, .inspector-identities span, .inspector-tab[data-state="active"],
-  .proof-row, .friction-row, .history-row .history-row__agent, .source-disclosure > a, .artifact-row > a { border-color: CanvasText; }
+  .report-section, .friction-row, .history-row .history-row__agent, .source-disclosure > a, .artifact-row > a { border-color: CanvasText; }
   .inspector-tab[data-state="active"] { outline: 2px solid Highlight; }
 }
