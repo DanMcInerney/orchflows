@@ -16,11 +16,12 @@ per-user state sink, outside every repository
 ([rules/visibility.md](rules/visibility.md) §6), which is why a fresh
 context in any checkout resumes a run mid-flight.
 
-    ┌─ 00-root.02.md ─────────────────────────────────────────────┐
+    ┌─ B1.2.md ───────────────────────────────────────────────────┐
     │ ---                                                         │
     │ id, run, status, admission, dispatch_v1                    │
     │ executor: orch-do        pack: orch-code-pack              │
-    │ depends_on: [00-root.01]  <- graph edge                     │
+    │ parent: B1                <- the call edge                  │
+    │ depends_on: [B1.1]        <- optional graph edge            │
     │ bound: 45m                <- time budget                    │
     │ checked_by (the lease lives in dispatch_v1)                 │
     │ ---                                                         │
@@ -45,14 +46,19 @@ and sections without mutation.
 ## Dispatch protocol
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
-delivery. The caller invokes `tickets.py dispatch`, which promotes readiness,
-establishes the workspace, opens one attempt, and commits one immutable
-`launch` atomically — the agent, model, effort, and the whole prompt the child
-is given, so the caller invokes a `launch` object rather than
-transcribing a model, an agent, or a set of instructions by hand. The granular
+delivery. The caller invokes one door — `tickets.py do` or `judge` for a
+brick, `tickets.py dispatch` for a ticket written by hand — which promotes
+readiness, establishes the workspace, opens one attempt, and commits one
+immutable `launch` atomically — the agent, model, effort, and the whole
+prompt the child is given, so the caller invokes a `launch` object rather than
+transcribing a model, an agent, or a set of instructions by hand. That prompt
+also tells the child to commit inside its candidate before closing and to
+print one verbatim `artifact: <kind>:<identity>` line — `findings: <path>`
+too, from a judging lane — so the parent relays a machine line instead of a
+paraphrase. The granular
 `dispatch-open`, `dispatch-retire`, and `dispatch-replace` operations remain
-public for recovery, and replaying the same `dispatch` call hands back the same
-launch. There is no
+public for recovery, and replaying the same `dispatch` call — or the same
+`do` — hands back the same launch. There is no
 accept step: the child's first filed record is its acceptance, and every record
 it files carries the attempt's dispatch id, seal, and owner.
 
@@ -77,37 +83,44 @@ authority a child reads its assignment from. A claimed ticket without an attempt
 whose owner and opened time are the lease. The normative shapes and precedence live in
 [contracts/dispatch.md](contracts/dispatch.md).
 
-## A run is a directory of tickets
+## A run is a tree of tickets
 
 A delivery run holds one **root ticket** for the whole request. A direct
-root binds its complete work to one executor. A genuinely decomposed root is
-frozen by a planning `orch-do`, cut by `orch-slice`, and joined by pre-issued
-**gate stubs** for the end-of-run review:
+root binds its complete work to one executor. Anything larger opens a
+**frame** — one ticket per workflow invocation, holding the journal its
+driver writes and re-reads — and hangs its bricks underneath:
 
     <state sink>/tickets/<run>/
-    ├── 00-root.md                     the whole job
-    ├── 00-root.01.md   ┐
-    ├── 00-root.02.md   │ unit tickets, one bounded work item each
-    ├── 00-root.03.md   ┘
-    ├── 00-root.gate.critique.code.md  ┐ the composite gate, run last
-    └── 00-root.gate.repair.md         ┘
+    ├── 00-root.md          the whole job
+    ├── B1.md               a frame: goal, journal, no executor, no pack
+    ├── B1.1.md   ┐
+    ├── B1.2.md   │ bricks, one bounded work item each, minted under B1
+    └── B1.3.md   ┘
 
-Cut shape — what a unit may be, who owns what — is
+The `parent` field is what places each one, so the ticket tree is the call
+tree — and a fresh context reads the tree instead of reconstructing the
+call stack. Cut shape — what a unit may be, who owns what — is
 [rules/topology.md](rules/topology.md)'s.
 
 ## How tickets relate
 
-The frontmatter carries two related mechanisms:
+The frontmatter carries three related mechanisms:
 
-- **`depends_on`** is the dependency graph. A ticket is admitted only once
+- **`parent`** is the call edge. A brick minted at runtime hangs under the
+  frame or root that opened it, takes an auto-minted `<parent>.<n>` id, and
+  seals through that parent's own generation rather than through a cut that
+  closed before it existed.
+- **`depends_on`** is the dependency graph, for tickets issued together. A
+  ticket is admitted only once
   every dependency has landed a report — `complete`, or `limited` where the
   work stopped short but still delivered one; `blocked` and `failed` do not
   satisfy it. `tickets.py land` prints every
   ticket whose dependencies are done, and they go out in parallel — the
-  rolling frontier, no phase barriers.
+  rolling frontier, no phase barriers. A runtime child declares none: the
+  calling prose is what orders it.
 - **`root_generation`, `cut_generation`, and `assignment_seal`** bind every
-  member to one validated immutable snapshot. Direct and decomposed roots use
-  the same generation and seal commands. Deterministic cut correction happens
+  member to one validated immutable snapshot. Deterministic cut correction
+  happens
   before seal; a sealed semantic change uses a successor run. A stale or
   mismatched seal is never dispatched.
 
@@ -125,11 +138,12 @@ The frontmatter carries two related mechanisms:
                                         suspended       complete · blocked
                                                          stalled · limited · failed
 
-**Admission** is the gate into work: `tickets.py` grades the ticket
+**Admission** is the door into work: `tickets.py` grades the ticket
 against a snapshot of the whole run — dependencies complete, executor
-bound by the stamped pack, workspace policy, inputs resolvable — and
-stamps a hash **receipt** of the frozen cut. `dispatch-open` atomically records
-the claim and absolute lease, and `dispatch` commits the launch
+bound by the stamped pack, workspace policy, inputs resolvable, and for a
+runtime child its parent's own seal — and
+stamps a hash **receipt**. `dispatch-open` atomically records
+the claim and absolute lease, and the launch is committed
 against that same seal. After an
 attempt opens, the assignment is a fixed target
 ([rules/verification.md](rules/verification.md) §3).
@@ -141,13 +155,13 @@ claimant observations and its `## Report`, but it has no live attempt.
 Three moments use readers who did not produce the fixed artifact
 ([rules/verification.md](rules/verification.md) §7):
 
-    decompose ─▶ CUT CHECK ─▶ rolling frontier ─▶ GATE ─▶ LAND
-                 before units      one outside path    critique   runs the
-                                                      -> repair   done
-                                                                  predicate
+    plan ─▶ CUT CHECK ─▶ bricks under the frame ─▶ JUDGE ─▶ LAND
+            before units       one outside path     a brick,   runs the
+                                                    then a do  done
+                                                    to repair  predicate
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
-   issued ticket set as data and returns blockers to the decomposer before a
+   issued ticket set as data and returns blockers to the planner before a
    replacement generation is sealed. It is
    accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
    Once a unit dispatch opens, cut correction is refused.
@@ -155,19 +169,23 @@ Three moments use readers who did not produce the fixed artifact
    the ordinary durable evaluator/adjudication carrier, or none. It uses a
    fresh read-only `orch-judge`, and it never repairs its own target. The
    `<id>.check` review ticket is authored against the sealed target and
-   uses the same `dispatch` → `land` carrier as every
+   uses the same launch → `land` carrier as every
    role-bearing execution. Only
    `tickets.py check <run> <id> --stage <id>.check` may attach the joined,
    identity-anchored adjudication to `checked_by`; callers cannot write trusted
    findings directly.
-3. **Composite gate** — `GatePlan` fixes the resolvable integrated artifact,
-   normalized established workspace, root pack, isolation `none`, and stable ordered lens
-   identities. Independent critiques remain parallel. `CritiqueAdjudication`
+3. **Critique and repair** — a critique is a `judge` brick over the artifacts
+   it is handed and the repair answering it a `do` brick, sequenced by the
+   calling workflow's prose; no door emits a lensed family for either.
+   `GatePlan` fixes the resolvable artifact, normalized established
+   workspace, pack and isolation `none`. `CritiqueAdjudication`
    binds the full findings and accepted blocker set; `RepairOutcome` binds the
    repaired identity or proves that set empty, and the chain ends there — the
    fresh outside check is the root's own `done` predicate, run by `land`.
    Each append-only stage names the prior
    stage digest, forming one predecessor-linked `orchflows.review.v1` chain.
+   Closing a frame over two or more `do` children refuses unless the tree
+   holds a judging child or the journal says `unjudged: <reason>`.
 
 ## Errors and feedback
 
@@ -190,7 +208,7 @@ Three moments use readers who did not produce the fixed artifact
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a
   retired attempt, never a live predecessor.
-- **Findings fork by severity.** Blocking defects go to an execute repair lane;
+- **Findings fork by severity.** Blocking defects go to a `do` repair brick;
   non-blocking ones are recorded as candidate scope for a later pass —
   logged, never dropped.
 

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2069,
+  "count": 2068,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -365,12 +365,12 @@
    "test_installer.TestHostAutoDetection.test_state_directories_are_not_installation_signals",
    "test_installer.TestHostAutoDetection.test_the_managed_subagent_limit_markers_bracket_a_toml_comment_pair",
    "test_installer.TestHostAutoDetection.test_the_subagent_depth_limit_is_the_one_grok_enforces",
+   "test_installer.TestHostBlockBrickFlags.test_brick_example_flag_pin_can_fail",
+   "test_installer.TestHostBlockBrickFlags.test_brick_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockDemands.test_host_block_demands_and_read_by_tokens_are_all_stated",
    "test_installer.TestHostBlockDemands.test_host_block_demands_dropped_one_at_a_time_fail_the_check",
    "test_installer.TestHostBlockDemands.test_host_block_demands_fit_the_every_turn_budget",
    "test_installer.TestHostBlockDemands.test_host_block_demands_number_exactly_eight",
-   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_flag_pin_can_fail",
-   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockRendering.test_render_host_block_substitutes_resolved_interpreter",
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
@@ -918,7 +918,7 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_route",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_brick_route",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
    "test_ticket_bricks.BrickAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
@@ -1514,7 +1514,6 @@
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_directory_holds_exactly_one_body",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_opens_a_frame_calls_or_nests_and_closes",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_decomposer_states_the_goal_by_anchor",
-   "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_join_skips_the_repair_on_an_empty_accepted_set",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_sections_put_proven_seams_on_the_first_frontier",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_no_cut_states_a_superseded_overlap_rule",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_reserves_the_tracer_for_the_unproven_seam",
@@ -2072,7 +2071,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e26fcac0b9c4fad929f9d1a0a68a49fcca8672f5eb600ff3fa7fd696a6c135b0"
+  "sha256": "03e64ef33177c31967f5c3c8d000d40c5a87e8e765436bc214f07ee808019e2e"
  },
  "mutation_owners": [
   {
