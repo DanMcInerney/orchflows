@@ -16,18 +16,23 @@ access class. An adapter or operation nothing here names raises
 :class:`WindowReachError` rather than reading as either "can" or "cannot",
 because a silent default would be a claim this module never measured.
 
-Six adapters read more than one operation from the wire, and the table
+Seven adapters read more than one operation from the wire, and the table
 names each: `bluesky`, `hacker_news`, `web_search`, `reddit_shreddit`,
-`github_rest`, and `x_guest`. The rest declare once, either because every
-call they make is the same shape or because — for the adapters this
-package could not settle offline (`linkedin_jobs`, `x_fxtwitter`,
-`youtube_innertube`, and three of `github_rest`'s four and one of
-`x_guest`'s three) — the conservative reading is `False`: a false "cannot"
-costs a caller a typed statement it did not strictly need, while a false
-"can" would tell a windowed step's reader nothing where the origin was
-silently never bounded. `R.02` measures each of those live and corrects
-the row; this module does not carry a bound into any origin request, which
-is the whole reason the two tickets are split.
+`github_rest`, `x_guest`, and `youtube_innertube`. The rest declare once,
+either because every call they make is the same shape or because the
+origin accepts none, measured. This module does not carry a bound into
+any origin request — that is each adapter's own, which is the whole
+reason the two tickets are split.
+
+`R.02` settled every row `R.01` left conservatively `False` pending a live
+read, except two: `x_guest`'s `UserTweets` and `x_fxtwitter`'s search both
+have a measurement Details prescribes, and both were blocked before that
+measurement could run — a stale credential on the one, a search endpoint
+answering 404 to every live attempt on the other — recorded in R.02's own
+report rather than guessed here. Both stay the conservative `False` a
+caller reads honestly: a false "cannot" costs a caller a typed statement
+it did not strictly need, while a false "can" would tell a windowed
+step's reader nothing where the origin was silently never bounded.
 """
 
 from __future__ import annotations
@@ -35,7 +40,15 @@ from __future__ import annotations
 from typing import Dict, Tuple
 
 from ..adapters import AdapterRequest
-from ..adapters import bluesky, github_rest, hacker_news, reddit_shreddit, web_search, x_guest
+from ..adapters import (
+    bluesky,
+    github_rest,
+    hacker_news,
+    reddit_shreddit,
+    web_search,
+    x_guest,
+    youtube_innertube,
+)
 from .. import probes
 
 
@@ -73,18 +86,20 @@ WINDOW_REACH: Dict[str, Dict[str, bool]] = {
     # `when:Nd` only on the `gnews` branch; `ddg`, `bing` and `bingnews`
     # never build one.
     "web_search": {"gnews": True, "ddg": False, "bing": False, "bingnews": False},
-    # Measured: `_fetch_listing`/`_fetch_search`
-    # (`adapters/reddit_shreddit.py:262-300`) both send `t=<window>` when
-    # the argument grammar names one; `_fetch_comments` (:303-315) takes no
-    # window at all. The origin's `t=` is sourced from the query grammar
-    # today, not from `window_start`/`window_end` — carrying it is R.02's.
+    # Measured: `_fetch_listing`/`_fetch_search` (`adapters/reddit_shreddit.py`)
+    # both send `t=<window>`, derived from the step's own `window_start` when
+    # one is carried (`_origin_window`, `_support/reddit_shreddit_contract.
+    # origin_time_bucket`) or from the argument grammar otherwise;
+    # `_fetch_comments` takes no window at all.
     "reddit_shreddit": {"listing": True, "search": True, "comments": False},
-    # `repo` is a single repository hydration by name: no ordering, no
-    # bound. `issues`, `releases` and `search` are not settled offline —
-    # GitHub's issues list documents a `since=` and search takes date
-    # qualifiers, but nothing here has measured either live, so both read
-    # conservatively `False` until R.02 does.
-    "github_rest": {"repo": False, "issues": False, "releases": False, "search": False},
+    # `repo` is a single repository hydration by name: no ordering, no bound.
+    # `issues` and `search` measured live 2026-08-31: `since=` on an active
+    # repository's issue list and `created:` on search both genuinely filter
+    # (`adapters/github_rest.origin_since_param`, `.origin_created_qualifier`).
+    # `releases` measured the same way and does not: a `since=` set minutes in
+    # the future answered the identical unfiltered page, so it stays `False`
+    # as a measured fact rather than a conservative default.
+    "github_rest": {"repo": False, "issues": True, "releases": False, "search": True},
     # `TweetResultByRestId` and `UserByScreenName` are single-item
     # hydrations with no ordering. `UserTweets` is the one operation with
     # one (`x_guest.py:139-143`) and is not settled offline: R.02 measures
@@ -113,19 +128,29 @@ WINDOW_REACH: Dict[str, Dict[str, bool]] = {
     # Origin accepts none, measured in the adapter's own source
     # (`prediction_markets.py:410-413`).
     "prediction_markets": {"": False},
-    # Not settled offline: R.02 measures this one live.
-    "linkedin_jobs": {"": False},
+    # Measured live 2026-08-31: `keywords=python` bare vs. with a candidate
+    # `f_TPR=r<seconds>` moved the oldest posting's date forward, and on a
+    # rarer keyword (not already saturating the page) also dropped the row
+    # count 10 -> 6 (`adapters/linkedin_jobs.origin_recency_term`).
+    "linkedin_jobs": {"": True},
     # Not settled offline. `operation_params`'s own docstring
     # (`x_fxtwitter.py:447-448`) says this module states no term for a
     # bound it could send without inventing a query syntax — an absence of
     # documentation in this package, not a proven absence of capability.
     "x_fxtwitter": {"": False},
-    # Not settled offline: the POST body InnerTube's `search` operation
-    # sends is rendered from a closed list (routes.py's own contract), so
-    # adding a filter costs a routes.py change R.02 makes if it measures
-    # one live. `player`, `next` and `transcript` read one video and have
-    # no time concept regardless.
-    "youtube_innertube": {"": False},
+    # `search` measured live 2026-08-31: an origin-published upload-date
+    # filter value, added to the route's closed POST-body list
+    # (`_support/route_catalog_k1_k4.py`), moved every returned
+    # `publishedTimeText` inside the named span against a nine-year-old
+    # unfiltered baseline (`adapters/youtube_innertube.origin_upload_date_
+    # filter`). `player`, `next` and `transcript` read one video and have
+    # no time concept regardless — confidently `False`, not re-measured.
+    "youtube_innertube": {
+        "search": True,
+        "player": False,
+        "next": False,
+        "transcript": False,
+    },
     # The offline fixture reader: no origin exists for a bound to reach.
     "fake": {"": False},
 }
@@ -154,6 +179,8 @@ def operation_for(adapter_id: str, request: AdapterRequest) -> str:
     if adapter_id == "x_guest":
         target_id = request.target_ids[0] if request.target_ids else request.query
         return x_guest.operation_for(target_id)[0]
+    if adapter_id == "youtube_innertube":
+        return youtube_innertube.operation_for(request)[0]
     return ""
 
 

@@ -75,7 +75,12 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
   count can be zero at any window width or age. Adapters whose origin takes a
   date bound send it in the origin's own terms as well (HN Algolia
   `numericFilters`, Bluesky `since`/`until` on its search method, Google News
-  `when:`), so the budget is spent server-side where it can be.
+  `when:`, Reddit Shreddit's `t=` bucket on its listing and search methods,
+  LinkedIn Jobs' `f_TPR=r<seconds>`, GitHub's `created:` search qualifier and
+  `since=` on its issues list, YouTube's upload-date search filter — each
+  derived from the coarsest span that still reaches `window_start`, or, for
+  GitHub search alone, from either edge independently, since that grammar
+  supports one), so the budget is spent server-side where it can be.
 - Capability is per **operation**, not per adapter — Bluesky sends
   `since`/`until` on search and none on its author feed, and `x_guest` and
   `github_rest` split the same way — so `_support/window_reach.WINDOW_REACH`
