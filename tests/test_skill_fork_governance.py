@@ -105,7 +105,7 @@ RESERVED_WORDINGS = {
 
 #: The tiers the contract sweep must span; a glob that stopped matching
 #: one would leave its contracts unswept while this module stayed green.
-TIERS = {"kernel", "engines", "workflows"}
+TIERS = {"kernel", "workflows"}
 
 
 def contracts():
@@ -184,7 +184,10 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
 
     PLANNER = "skills/workflows/orch-outline/SKILL.md"
     WORKER = "skills/kernel/orch-execute/SKILL.md"
-    GLUE = "skills/engines/orch-frontier/SKILL.md"
+    # No skill declares `role: none` any more: the driver loop stopped being
+    # one. The role-less name surface left is a composition manifest, and the
+    # same composers render it.
+    GLUE = "compositions/self-improve/template.md"
 
     def test_no_skill_contract_body_carries_a_copy(self):
         """A body copy re-opens the doclint saturation the relocation closed."""
@@ -295,7 +298,6 @@ class SpecStatesItsDirectTicketLane(unittest.TestCase):
         text = self.spec_body()
         for token, why in (
             ("one executor", "the condition the lane turns on"),
-            ("orch-integrate", "the join that owns the outcome's other half"),
             # The bare name appears twice more in this body, so a bare-token
             # assertion passes with the whole lane deleted. Only the lane
             # says it this way, which is what makes the case able to fail.

@@ -3,7 +3,7 @@
 1. A skill is one directory owning one `SKILL.md` contract. Kind by
    out-edges: a primitive calls no skill; a composite calls one or
    more. Kernel skills are always primitives (validator-enforced);
-   engines are composites; workflows may be either. Invocation policy for templates lives in
+   workflows may be either. Invocation policy for templates lives in
    their manifest's `entry` field per
    [contracts/work-item.md](../contracts/work-item.md#template-and-executor-form).
 2. Every resolved backticked skill name in a body is a call edge. Name
@@ -29,7 +29,7 @@
    the join mechanically detects actual overlap and ordinary Git conflicts.
 8. Every failure path returns partial results plus the evidence
    gathered; work is never silently discarded.
-9. Generic skills (kernel, engines, workflows) never name a
+9. Generic skills (kernel, workflows) never name a
    domain; how they reach domain facts is
    [contracts/pack-signature.md](../contracts/pack-signature.md)'s. A
    generic body may name the skill the stamped pack's cell binds, only

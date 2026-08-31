@@ -915,16 +915,18 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertNotIn("R.gate.verify", {item["id"] for item in ready["ready"]})
 
     def test_frontier_guidance_distinguishes_all_three_review_states(self):
-        skill = (
-            ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
-        ).read_text(encoding="utf-8")
+        # The guidance moved with the driver: the engine is gone and
+        # rules/verification.md 7 owns the three states the driver reads.
+        law = " ".join(
+            (ROOT / "rules" / "verification.md").read_text(encoding="utf-8").split()
+        )
         for phrase in (
-            "accepted checked target",
-            "clean checked target",
-            "gate-deferred root",
+            "An accepted checked target",
+            "a clean one closes with no repair",
+            "a gate-deferred root",
         ):
-            self.assertIn(phrase, skill)
-        self.assertNotIn("Gate-deferred and checked tickets do not", skill)
+            self.assertIn(phrase, law)
+        self.assertNotIn("Gate-deferred and checked tickets do not", law)
 
     def test_checker_stage_refuses_a_packless_target_without_state_mutation(self):
         self.dispatch(

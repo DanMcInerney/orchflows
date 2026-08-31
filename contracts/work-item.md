@@ -36,9 +36,9 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
 - `executor`, optional `profile`, and `pack` — exact dispatch and
-  role binding. Callable executors are the six registered verbs
-  `orch-execute`, `orch-check`, `orch-decompose`, `orch-integrate`,
-  `orch-frontier`, and `orch-outline`; `script:<repo-relative path>`
+  role binding. Callable executors are the four registered verbs
+  `orch-execute`, `orch-check`, `orch-decompose`, and `orch-outline`;
+  `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
 - optional `done` — the canonical JSON done predicate, `{"form", "value"}`:

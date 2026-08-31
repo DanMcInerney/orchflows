@@ -19,8 +19,6 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "orch-check",
     "orch-decompose",
     "orch-execute",
-    "orch-frontier",
-    "orch-integrate",
     "orch-outline",
     "renovate",
     "self-improve",

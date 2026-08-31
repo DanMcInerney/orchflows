@@ -174,8 +174,8 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
             "`tickets.py seal`",
             "`planned` to `opened`",
             "next entry `planned`",
-            "`orch-integrate`",
-            "`orch-frontier`",
+            "`tickets.py land`",
+            "drained frontier",
         )
         for token in required:
             with self.subTest(token=token):
@@ -203,7 +203,6 @@ class CritiqueContractTest(unittest.TestCase):
         surfaces = (
             "rules/verification.md",
             "skills/kernel/orch-check/SKILL.md",
-            "skills/engines/orch-frontier/SKILL.md",
             "scripts/tickets_dispatch_gate.py",
             "scripts/tickets_assignment.py",
             "contracts/pack-signature.md",

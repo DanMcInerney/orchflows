@@ -23,7 +23,6 @@ PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
 RETURN_RE = __dep_common.RETURN_RE
-ROLE_NONE_TIERS = __dep_common.ROLE_NONE_TIERS
 ROLE_VALUES = __dep_common.ROLE_VALUES
 ROOT = __dep_common.ROOT
 SENTENCE_END_RE = __dep_common.SENTENCE_END_RE
@@ -88,8 +87,8 @@ def discover_packages():
     home a reference may keep, though: ``rules/visibility.md`` §4 makes a
     references file public only where its owner's body names the local
     path, and a directory with no body names nothing. ``profiles.md``
-    therefore lives under ``skills/engines/orch-frontier/``, whose body
-    names it.
+    therefore lives beside the host records it describes, in ``hosts/``,
+    rather than under a skill that no longer exists to name it.
     """
     packages = []
     for tier in SKILL_TIERS:
@@ -194,8 +193,6 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
     if role not in ROLE_VALUES:
         diag.error(file_label, f"role '{role}' is not one of {sorted(ROLE_VALUES)}")
         return
-    if pkg["kind"] in ROLE_NONE_TIERS and role != "none":
-        diag.error(file_label, f"{pkg['kind']} skill must declare role: none, got '{role}'")
     if pkg["kind"] == "workflows" and role == "none":
         diag.error(file_label, "workflows skill must declare planner or worker, got 'none'")
 

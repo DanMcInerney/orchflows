@@ -45,18 +45,32 @@ Deliver one result.
 
 
 class CallableRegistryTests(unittest.TestCase):
-    def test_callable_registry_is_exactly_the_six_enforced_verbs(self):
+    def test_callable_registry_is_exactly_the_four_enforced_verbs(self):
         self.assertEqual(
             (
                 "orch-execute",
                 "orch-check",
                 "orch-decompose",
-                "orch-integrate",
-                "orch-frontier",
                 "orch-outline",
             ),
             tickets.CALLABLE_EXECUTORS,
         )
+
+    def test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk(self):
+        """`orch-frontier` and `orch-integrate` were the driver and the join.
+        Neither is a skill any more: `tickets.py dispatch` and `tickets.py
+        land` are, so the refusal names the commands rather than a verb the
+        caller could bind instead."""
+
+        frontier = registry.executor_refusal("orch-frontier")
+        self.assertIn("superseded", frontier)
+        self.assertIn("tickets.py dispatch", frontier)
+        self.assertIn("tickets.py land", frontier)
+        self.assertNotIn("bind '", frontier)
+        integrate = registry.executor_refusal("orch-integrate")
+        self.assertIn("superseded", integrate)
+        self.assertIn("land --status", integrate)
+        self.assertNotIn("bind '", integrate)
 
     def test_superseded_executor_is_rejected_with_named_registry(self):
         text = """---

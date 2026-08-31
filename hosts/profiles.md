@@ -3,7 +3,7 @@
 What binds a role to a concrete model and effort on one host, and how that
 binding changes.
 
-The binding itself is data in the top-level [host records](../../../../hosts/) —
+The binding itself is data in the host records beside this file —
 one record per host, owning its launch verb and native fields, its role-to-profile
 mapping, the model and effort per role, its managed markers, installed-item
 locations, legal frontmatter, and its native-versus-requested capabilities. This
@@ -31,6 +31,6 @@ orchestrator; only children carry profiles.
 
 ## Running the terminal required checks
 
-Terminal required checks run once in the engine's own context against the
-accepted terminal identity, and their verdict records the accepted terminal
+Terminal required checks run once in the driving session's own context against
+the accepted terminal identity, and their verdict records the accepted terminal
 identity's revision.

@@ -204,8 +204,8 @@ class CatalogCompletenessTests(unittest.TestCase):
             ("codex", "skill"), ("grok", "skill"),
         ):
             with self.subTest(host=host, item=item):
-                path = host_item_path(host, item, Path("root"), adapters, name="orch-frontier")
-                self.assertEqual("orch-frontier", name_reader(host, item, adapters)(path))
+                path = host_item_path(host, item, Path("root"), adapters, name="orch-outline")
+                self.assertEqual("orch-outline", name_reader(host, item, adapters)(path))
 
 
 if __name__ == "__main__":

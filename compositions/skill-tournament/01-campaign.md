@@ -1,6 +1,7 @@
 ---
 id: 01-campaign
-executor: orch-frontier
+executor: orch-execute
+pack: {{pack}}
 depends_on: [00-benchmark]
 bound: {{bound}}
 independence: checker

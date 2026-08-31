@@ -61,7 +61,6 @@ else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
-DISPATCHING_EXECUTORS = ('orch-frontier',)
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
 REQUIRED_TICKET_KEYS = tuple(

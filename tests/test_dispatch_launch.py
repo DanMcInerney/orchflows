@@ -386,9 +386,12 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(before, self.ticket_path().read_text(encoding="utf-8"))
 
     def test_an_unresolved_role_refuses_before_the_attempt_is_opened(self):
+        # Every registered callable declares planner or worker now, so the
+        # one executor form left that resolves to neither is the `script:`
+        # escape hatch: it names no skill, so it declares no role.
         text = tickets._set_frontmatter_field(
             self.ticket_path().read_text(encoding="utf-8"),
-            "executor", "orch-frontier",
+            "executor", "script:scripts/cutcheck.py",
         )
         self.ticket_path().write_text(text, encoding="utf-8")
         before = self.ticket_path().read_text(encoding="utf-8")

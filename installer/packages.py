@@ -131,8 +131,10 @@ def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -
         "stub's objective, write scope and completion test beside it. Read the\n"
         "manifest first. Instantiate it into one run:\n\n"
         f"    tickets.py instantiate {lib_template_dir} --run <run>{sets}\n\n"
-        "then run `orch-frontier` over that run, which drains the stubs by\n"
-        "their `depends_on` edges. The terminal stub's completion test is this\n"
+        "then drain that run yourself, two commands per ready stub:\n"
+        "`tickets.py dispatch` emits one launch to invoke verbatim, and\n"
+        "`tickets.py land` joins the return and prints what its `depends_on`\n"
+        "edges just made ready. The terminal stub's completion test is this\n"
         "template's done check.\n"
     )
 
@@ -218,7 +220,7 @@ def _role_description(name: str) -> str:
     contract at <roles.md>": an imperative with no addressee, listed on
     every turn to every context holding the Agent tool -- children
     included -- while the dispatcher's law is already reached through
-    rules/roles.md section 4 (contracts/work-item.md, orch-frontier)."""
+    rules/roles.md section 4 (contracts/work-item.md, contracts/dispatch.md)."""
 
     return f"Orchflows child role {name}."
 

@@ -4,7 +4,9 @@ import unittest
 from ._support import ROOT, read_flat
 
 DECOMPOSE = ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md"
-INTEGRATE = ROOT / "skills" / "kernel" / "orch-integrate" / "SKILL.md"
+# The join stopped being a skill; the law that owns what it skips is the
+# verification rule, and `tickets.py join-noop-repair` is what performs it.
+VERIFICATION = ROOT / "rules" / "verification.md"
 CODE_CRAFT = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
 DESIGN_CRAFT = ROOT / "packs" / "orch-design-pack" / "references" / "craft.md"
 
@@ -101,12 +103,12 @@ class TestCutGoalAnchors(unittest.TestCase):
             )
 
     def test_the_join_skips_the_repair_on_an_empty_accepted_set(self):
-        text = read_flat(INTEGRATE)
+        text = read_flat(VERIFICATION)
         for anchor in EMPTY_SET_SKIP_ANCHORS:
             self.assertIn(
                 anchor, text,
-                f"orch-integrate does not name {anchor!r}, so the join no "
-                "longer completes the gate's repair itself on an empty "
+                f"rules/verification.md does not name {anchor!r}, so the join "
+                "no longer completes the gate's repair itself on an empty "
                 "accepted defect set and every clean run pays for a no-op "
                 "dispatch on its critical path",
             )

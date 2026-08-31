@@ -80,7 +80,6 @@ BOUND_CHECK_USAGE = _tickets_commands_module.BOUND_CHECK_USAGE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
 CUT_SECTIONS_BY_KEY = _tickets_format_module.CUT_SECTIONS_BY_KEY
 DEFAULT_BOUND_MINUTES = _tickets_format_module.DEFAULT_BOUND_MINUTES
-DISPATCHING_EXECUTORS = _tickets_format_module.DISPATCHING_EXECUTORS
 DURATION_RE = _tickets_format_module.DURATION_RE
 EXECUTOR_SECTIONS = _tickets_format_module.EXECUTOR_SECTIONS
 EXECUTOR_SECTIONS_BY_KEY = _tickets_format_module.EXECUTOR_SECTIONS_BY_KEY

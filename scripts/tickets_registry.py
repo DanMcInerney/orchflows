@@ -20,8 +20,6 @@ CALLABLE_EXECUTORS = (
     "orch-execute",
     "orch-check",
     "orch-decompose",
-    "orch-integrate",
-    "orch-frontier",
     "orch-outline",
 )
 
@@ -29,8 +27,6 @@ EXECUTOR_REGISTRY = {
     "orch-execute": {"role": "worker", "requires_pack": True},
     "orch-check": {"role": "planner", "requires_pack": True},
     "orch-decompose": {"role": "planner"},
-    "orch-integrate": {"role": "none"},
-    "orch-frontier": {"role": "none"},
     "orch-outline": {"role": "planner"},
 }
 
@@ -43,13 +39,21 @@ EXECUTOR_REGISTRY = {
 SUPERSEDED_EXECUTORS = {
     "orch-spec": "orch-outline",
     "orch-loop": "the ticket `loop` field, driven by tickets.py loop-arm | loop-evaluate | loop-advance",
+    "orch-frontier": (
+        "the driver loop is mechanical: `tickets.py dispatch` emits the launch, "
+        "`tickets.py land` evaluates done, integrates, and prints the ready frontier"
+    ),
+    "orch-integrate": (
+        "land evaluates the done predicate; a predicate-less ticket is accepted "
+        "by the driver with `land --status`"
+    ),
 }
 
 REVIEW_KINDS = ("critique", "repair")
 
 
 def executor_registered(executor: str) -> bool:
-    """Return whether ``executor`` is one of the six callable verbs."""
+    """Return whether ``executor`` is one of the four callable verbs."""
 
     return dequote(executor) in EXECUTOR_REGISTRY
 

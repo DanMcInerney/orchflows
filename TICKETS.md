@@ -102,9 +102,9 @@ The frontmatter carries two related mechanisms:
 - **`depends_on`** is the dependency graph. A ticket is admitted only once
   every dependency has landed a report — `complete`, or `limited` where the
   work stopped short but still delivered one; `blocked` and `failed` do not
-  satisfy it. `orch-frontier` dispatches every
-  ticket whose dependencies are done, all in parallel — the rolling
-  frontier, no phase barriers.
+  satisfy it. `tickets.py land` prints every
+  ticket whose dependencies are done, and they go out in parallel — the
+  rolling frontier, no phase barriers.
 - **`root_generation`, `cut_generation`, and `assignment_seal`** bind every
   member to one validated immutable snapshot. Direct and decomposed roots use
   the same generation and seal commands. Deterministic cut correction happens
@@ -179,7 +179,7 @@ Three moments use readers who did not produce the fixed artifact
   `idempotency-conflict`. Other command families expose their closed codes in
   `--help` and their owning contracts instead of doing something approximate.
 - **The join rules on everything.** No returned result is trusted until
-  `orch-integrate` adjudicates it. For v1, only the join sets suspended or terminal
+  `tickets.py land` adjudicates it. For v1, only the join sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
 - **Structure only where a machine reads it.** A critique's findings are a

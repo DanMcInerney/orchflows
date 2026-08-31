@@ -61,7 +61,7 @@ scope, or at a broader custom scope than requested.
    orchflows-only `role`. At every call site, resolve the declared role from
    the selected rendered adapter. At that call site, use the native binding that owner returns.
    Cross-host dispatch invariants remain in
-   [role profiles](../skills/engines/orch-frontier/references/profiles.md).
+   [role profiles](../hosts/profiles.md).
 6. Run the target repository's required checks. In this library that means
    tools/validate.py, affected tests, template instantiation when applicable,
    adapter/routing/role tests when host surfaces change, and the full required

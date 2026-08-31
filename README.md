@@ -103,7 +103,7 @@ Or build your own workflow in plain English:
 That gets admitted as a named workflow — a directory of ticket stubs
 with the edges between them written down and one end-to-end done check
 on the last one. It's project-local and callable by name from then on,
-like a `/site-work-and-merge` you own; `orch-frontier` runs it.
+like a `/site-work-and-merge` you own; two commands per ticket run it.
 
 Runs survive session death: every ticket is a file in one per-user
 state sink outside every repository, so a fresh context — in any
@@ -119,9 +119,9 @@ skills and compositions are ordinary repository work under
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
 package and template, `four` mints only `orch-outline` and
-`orch-frontier` and leaves every other name to resolve at
+`orch-decompose` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
-[profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
+[profiles.md](hosts/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
 
@@ -172,9 +172,8 @@ the same loop to the library's own skills.
 `orch-execute` renders a supplied subject as a verified visual page when
 the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
-[`orch-outline`](skills/workflows/orch-outline/SKILL.md),
-[`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
-[`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
+[`orch-outline`](skills/workflows/orch-outline/SKILL.md) and
+[`orch-decompose`](skills/kernel/orch-decompose/SKILL.md);
 [verification](rules/verification.md) owns acceptance. This view shows
 only the checker-or-gate choice; that rule owns the other ordinary paths and
 their details:
@@ -183,11 +182,11 @@ their details:
 flowchart TD
     outline["orch-outline — freeze one root ticket"] --> pack{"stamp a domain pack"}
     pack --> dec["orch-decompose — cut ordered units"]
-    dec --> frontier["orch-frontier — dispatch ready units"]
+    dec --> frontier["tickets.py dispatch — one launch per ready unit"]
     frontier --> exec["unit executor"]
     exec --> path{"independence path"}
     path -->|unit-local| checker["durable &lt;id&gt;.check — launch, outcome, join"]
-    path -->|gate-deferred| join["orch-integrate — each return crosses once"]
+    path -->|gate-deferred| join["tickets.py land — each return crosses once"]
     checker --> join
     join -->|named downstream gate| gate["composite gate"]
     join -->|otherwise| accepted["accepted result"]
@@ -218,10 +217,10 @@ self-improvement wired into every run.
 ### Legos
 
 - **One brick, one job.** `orch-outline` freezes the root, `orch-decompose`
-  cuts it, `orch-frontier` runs the graph,
+  cuts it, `orch-execute` builds each unit,
   `orch-check` challenges Goal and evidence, a ticket's `done` predicate
-  decides Goal at `land`, its loop field iterates it, and `orch-integrate`
-  adjudicates every return.
+  decides Goal at `land`, and its loop field iterates it. The graph itself
+  is not a brick: two commands run it.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
@@ -263,8 +262,7 @@ still there for recovery; nothing needs them on a healthy path.
     ├── Layer 0 · contracts/ — the narrow waist: hash-pinned data shapes, the only
     │                         interface between everything above them
     ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
-    │                         skill, engines/ that add control flow, workflows/
-    │                         assembled from both
+    │                         skill, workflows/ assembled from them
     ├── Layer 2 · packs/     — per-domain data (code, content, research, design, data),
     │                         never control flow
     └── Layer 3 · compositions/ — named workflows, callable like any skill

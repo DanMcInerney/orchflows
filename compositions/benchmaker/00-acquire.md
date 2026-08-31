@@ -1,6 +1,6 @@
 ---
 id: 00-acquire
-executor: orch-frontier
+executor: orch-execute
 pack: orch-research-pack
 depends_on: []
 bound: <= 120 tool calls

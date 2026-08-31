@@ -9,16 +9,18 @@
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
   items still run only when named. Route smallest-first: **answer** — context
   evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
-  carrying Goal, Context, and optional Details goes to `orch-frontier`.
-  **graph** — for one
+  carrying Goal, Context, and optional Details takes the same two commands.
+  **graph** — per ready ticket of one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
   [--host <host>] [--workspace <tree>]`, invoke the emitted `launch`
   verbatim adding nothing to its prompt, then `tickets.py land` its
-  return through `orch-integrate` and start `orch-frontier`. **outline** — one planner
+  return: it reads the ticket's `done`, integrates, and prints the frontier it
+  freed. Declaring none, grade it yourself with `land --status`. Repeat until
+  that frontier is empty. **outline** — one planner
   runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
   `orch-decompose` root for distinct results/dependencies. The planner never
-  starts the frontier. Skill/composition/pack/contract/router work carries
+  drives the run. Skill/composition/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
   cause enters single; an unknown or unverified cause enters outline. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.

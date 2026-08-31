@@ -639,12 +639,13 @@
    "test_regen.TestValidateGate.test_a_reconciled_tree_draws_no_error_from_the_same_gate",
    "test_regen.TestValidateGate.test_a_stale_serial_manifest_fails_validate_and_names_the_command",
    "test_registry_census.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
-   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_six_enforced_verbs",
+   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_four_enforced_verbs",
    "test_registry_census.CallableRegistryTests.test_execute_and_check_require_pack_authority",
    "test_registry_census.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
    "test_registry_census.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
+   "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
    "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
@@ -1827,7 +1828,6 @@
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_a_references_only_directory_is_no_package_and_no_finding",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_bom_prefixed_valid_skill_md_is_not_falsely_flagged",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_empty_skill_md_is_error_line_and_exit_1_no_traceback",
-   "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_engine_declaring_role_other_than_none_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_genuinely_boundless_loop_mention_still_warns",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_missing_closing_fence_is_error_line_and_exit_1_no_traceback",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_orch_triage_shaped_prose_does_not_warn_loop_lint",
@@ -1991,7 +1991,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "aaaa92ac45d76919aa80b502a57a07368b78d65a4f722a7608c5de85f9c7219b"
+  "sha256": "e269f7fc3829733317206d76fd0689231cd51af0e885f8e92f01cef7bc8ad7ea"
  },
  "mutation_owners": [
   {

@@ -1,6 +1,7 @@
 ---
 id: 01-deliver
-executor: orch-frontier
+executor: orch-execute
+pack: orch-code-pack
 depends_on: [00-mine]
 bound: <= 120 tool calls
 independence: gate

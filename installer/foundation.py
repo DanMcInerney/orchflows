@@ -54,7 +54,7 @@ CANONICAL_DIRS = (
 CLAUDE_CLI_CANDIDATES = tuple(_HOST_ADAPTERS["claude"]["cli_candidates"])
 CODEX_CLI_CANDIDATES = tuple(_HOST_ADAPTERS["codex"]["cli_candidates"])
 GROK_CLI_CANDIDATES = tuple(_HOST_ADAPTERS["grok"]["cli_candidates"])
-PROFILES_MD = REPO_ROOT / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md"
+PROFILES_MD = REPO_ROOT / "hosts" / "profiles.md"
 HOST_BLOCK_TEMPLATE = REPO_ROOT / "templates" / "host-block.md"
 CODEX_LIMITS_START = marker("codex", "agent_limits", _HOST_ADAPTERS)["start"]
 CODEX_LIMITS_END = marker("codex", "agent_limits", _HOST_ADAPTERS)["end"]
@@ -62,7 +62,7 @@ GROK_LIMITS_START = marker("grok", "subagent_limits", _HOST_ADAPTERS)["start"]
 GROK_LIMITS_END = marker("grok", "subagent_limits", _HOST_ADAPTERS)["end"]
 # The routed names exposed by Claude's bounded adapter-set benchmark. Named
 # skills outside this set remain explicit by-name invocations.
-SHARED_ADAPTER_NAMES = ("orch-outline", "orch-frontier")
+SHARED_ADAPTER_NAMES = ("orch-outline", "orch-decompose")
 CLAUDE_ADAPTER_SETS = ("all", "four")
 # Every Grok surface the installer writes, removable by receipt alone. Three
 # are whole installer-owned files under ``$GROK_HOME``; ``grok-config`` is

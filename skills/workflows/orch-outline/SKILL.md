@@ -36,7 +36,7 @@ One kind gets stamped root. For multiple, open; persist remainder
 through `tickets.py run-state <first-run> --artifact
 successors.md`; entries name kind, pack, run/root ids, and `planned` state.
 
-A drained `orch-frontier` trigger grants no authority. Caller opens a
+A drained frontier authorizes nothing by itself. Caller opens a
 materialization run: ordinal-1 root, planner ticket bound
 to this exact skill. Seal it; invoke `tickets.py dispatch` for the root and
 launch the child from the `launch` object it returns.
@@ -51,7 +51,7 @@ create a second root in the same run.
 
 Draft per [work-item.md](../../../contracts/work-item.md#roots-decomposition-and-integration)
 in the craft's terms. Route per [topology](../../../rules/topology.md)
-§2: bind one executor plus `orch-integrate` directly rather than
+§2: bind one executor directly rather than
 `orch-decompose`. Use it only for a [topology](../../../rules/topology.md) §5
 graph, through `tickets.py new
 <run> <root-id> --executor orch-decompose --pack <stamp> --independence gate …`.
@@ -62,8 +62,8 @@ fixes dispatch identity. After seal, replace `successors.md` through `tickets.py
 run-state --artifact successors.md --replace`, moving `planned` to `opened` and
 keeping the next entry `planned`; unmaterialized entries remain durable.
 
-After the fresh planner outcome crosses `orch-integrate`, the outer coordinator
-dispatches that sealed root by the chosen route and starts `orch-frontier`.
+Once `tickets.py land` joins the fresh planner outcome, the outer coordinator
+dispatches that sealed root by the chosen route and drains its frontier.
 
 Never: stamp incompatible packs; prescribe implementation or tests in Goal;
 restate owners or exemplar rationale.

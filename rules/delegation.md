@@ -30,14 +30,23 @@ connect this law to each authorized dispatch event and predecessor record.
    boundary and is never reused by another ticket. Critique and repair are
    distinct tickets because critique is read-only and repair invalidates its
    verdict context.
-5. Every child return crosses `orch-integrate` — the single join,
-   strictness graded by dispatch type — before the caller trusts any of
-   it; no caller states a parallel prose join. What that join grades --
+5. Every child return crosses one join — `tickets.py land`, run by the
+   dispatching caller — before the caller trusts any of it; no caller
+   states a parallel prose join. The disposition is the landed ticket's
+   `done` reading, or the caller's `land --status` grade where the ticket
+   declares no predicate, and never the child's own word for it. Grading
+   it: read Goal and Context at the fixed artifact identity; a `checker`
+   item is accepted only over [work-item.md](../contracts/work-item.md)'s
+   `checked_by`, `independence: gate` defers that reading to the composite
+   gate, and a Goal claim no evidence covers is needs-check rather than
+   accepted. Suspension parks the attempt and resumes from the ticket's
+   `## Report`. What the join grades --
    candidate write authority, actual diffs and conflicts, and what a path
    named in Details is worth -- is [work-item.md](../contracts/work-item.md)'s.
 6. Every join applies the [result contract](../contracts/result.md).
-7. Fan out only independent breadth-first work; dependent work runs
-   through `orch-frontier` or sequentially.
+7. Fan out only independent breadth-first work; dependent work waits
+   behind its `depends_on` edges, which `tickets.py land` reports as it
+   clears them.
 8. Dispatch names carry behavioral weight through the closed callable
    registry [work-item.md](../contracts/work-item.md#template-and-executor-form)
    lists; what a stage name is instead is
@@ -70,7 +79,7 @@ connect this law to each authorized dispatch event and predecessor record.
     recorded in the run's notes at launch; either recorded nowhere is
     child under-delivered at the join. How a caller watches a lane on a
     given host is
-    [profiles.md](../skills/engines/orch-frontier/references/profiles.md)'s.
+    [profiles.md](../hosts/profiles.md)'s.
 12. The caller owns Goal, Context, and optional Details. Before seal,
     a decomposer may mechanically correct dependency edges, exact executor
     bindings, lifecycle receipts, generation references, and composite gate

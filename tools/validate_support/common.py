@@ -16,13 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 # reader can grep the report for every check that did not run.
 SKIPPED = "absent; check skipped"
 
-SKILL_TIERS = ("kernel", "engines", "workflows")
+SKILL_TIERS = ("kernel", "workflows")
 # Words, not lines: a line count is met by widening lines, and was.
 # Markdown link targets are stripped first so a citation costs its label,
 # not its path.
 BODY_BUDGET = {
     "kernel": 300,
-    "engines": 450,
     "workflows": 450,
     "pack": 150,
 }
@@ -35,7 +34,6 @@ DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
-ROLE_NONE_TIERS = ("engines",)
 PACK_SIGNATURE_CELLS = (
     "adapter",
     "stages",
@@ -125,8 +123,11 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # instead names the work-item carrier (the ticket) passes, because the
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
 # named-T0-carrier form.
+# It named orch-frontier until the driver loop stopped being a skill.
+# `orch-execute` is the unit left whose Return leads with the whole envelope,
+# and this keeps that clause from being reworded into prose no join reads.
 ENVELOPE_UNITS = (
-    "orch-frontier",
+    "orch-execute",
 )
 ENVELOPE_VOCAB_RES = (
     ("status", re.compile(
@@ -233,7 +234,7 @@ __all__ = (
     'json', 're', 'sys', 'Path',
     'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
     'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
-    'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES', 'ROLE_NONE_TIERS',
+    'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
     'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',

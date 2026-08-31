@@ -21,8 +21,9 @@ ROLE_AGENT_TYPES = {"planner": "orch-planner", "worker": "orch-worker"}
 # `benchmarks/routing/cases.json`, and renaming it would rewrite a
 # benchmark whose results are already recorded against those labels. Only
 # the callable's own name moved.
+# `single` has no skill name any more: the driver issues and dispatches the
+# one ticket itself, so that route is only ever observed from Bash.
 ROUTING_SKILLS = {
-    "orch-frontier": "single",
     "orch-decompose": "graph",
     "orch-outline": "spec",
 }

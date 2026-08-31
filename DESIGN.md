@@ -114,7 +114,7 @@ request. The replacement:
 - **A template is tickets, not a second grammar.** A demoted pattern's
   law rides its stubs' Goal and Context; the combinators are the ticket graph's own — a `depends_on` edge,
   parallel stubs, a loop stub — so `tickets.py instantiate` writes a run
-  and `orch-frontier` drains it with no engine, contract or step file to
+  and the driver drains it with no engine, contract or step file to
   keep in step with the ticket contract (cheap generation: the gate is
   the same graded ticket shape every other item has).
 - **The envelope closes the algebra.** Every ticket attempt closes through
@@ -123,7 +123,7 @@ request. The replacement:
   identity becomes successor evidence with no per-pair glue (search is memory:
   one return shape, one name).
 
-Its open decisions closed as: ticket sets drained by `orch-frontier`,
+Its open decisions closed as: ticket sets drained by orch-frontier,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured
 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
 the delegation contract merged into `work-item.md`; orch-delegate (the
@@ -377,6 +377,21 @@ one the join will grade. That is the test for what belongs in code.
   nothing else. The test is the amnesia test again: a perfect model still
   cannot guess the file you already read, and still gains nothing from being
   told which heading to file a fact under.
+- **A verb is only a verb if a model has to judge something.** The library
+  shipped six callables; two of them were the driver and the join, and by
+  the time `dispatch` emitted a complete launch and `land` evaluated the
+  done predicate, integrated the candidate and printed the ready frontier,
+  neither had any judgment left to spend a whole child's context on. So the
+  engines tier dies with orch-frontier, orch-integrate dies with the
+  handshake it used to adjudicate, and what is callable is exactly the four
+  things a model still has to decide: freeze a root, cut it, build a unit,
+  challenge one. Everything they used to say that was mechanical is a
+  command; everything that was law moved to the rule that already owned the
+  question — `rules/delegation.md` §5 for how a driver grades a return,
+  `rules/verification.md` §§7, 9 for which independence path a ticket walks
+  and what a clean gate skips. The test is the amnesia test once more: a
+  perfect model cannot guess a run's ready set, and gains nothing from being
+  handed a skill body that tells it to ask `land` for one.
 
 ## Roads not taken
 
@@ -391,7 +406,8 @@ one the join will grade. That is the test for what belongs in code.
   outranks; restating it would create the library's first two-owner
   fact.
 - **A generic orch-unit executor.** The generic unit endpoint is
-  `orch-frontier` over one ticket; executors are the domain leaves a
+  `tickets.py dispatch` and `tickets.py land` over one ticket; executors
+  are the domain leaves a
   pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
   splitting a named executor into a generic shell plus a method file —

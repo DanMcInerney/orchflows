@@ -6,7 +6,7 @@ class TestEnvelopeCheck(_IsolatedTree):
     """validate_envelope against contracts/result.md's bound units, on
     the synthetic skills-tree idiom."""
 
-    def _write_skill(self, name: str, body: str, tier: str = "engines"):
+    def _write_skill(self, name: str, body: str, tier: str = "kernel"):
         skill_dir = self.tmp_path / "skills" / tier / name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
@@ -16,19 +16,19 @@ class TestEnvelopeCheck(_IsolatedTree):
 
     def test_bound_unit_return_without_envelope_is_error(self):
         self._write_skill(
-            "orch-frontier",
+            "orch-execute",
             "Require: a body and a bound.\nNever: exceed the bound.\n"
             "Return: assumptions and feedback.\n",
         )
         result = self._run()
         self.assertEqual(1, result.returncode)
-        self.assertIn("orch-frontier", result.stdout)
+        self.assertIn("orch-execute", result.stdout)
         self.assertIn("does not lead with the result envelope", result.stdout)
         self.assertIn("contracts/result.md", result.stdout)
 
     def test_bound_unit_leading_with_the_envelope_passes(self):
         self._write_skill(
-            "orch-frontier",
+            "orch-execute",
             "Require: a body and a bound.\nNever: exceed the bound.\n"
             "Return: status, results by identity, and final verification; "
             "then bounds spent. Terminal states are stalled or limited.\n",

@@ -75,7 +75,7 @@ def declared_role(executor: str):
 
     here = Path(__file__).resolve()
     roots = (here.parent.parent, here.parent.parent / "lib")
-    groups = ("kernel", "engines", "workflows")
+    groups = ("kernel", "workflows")
     for root in roots:
         for group in groups:
             path = root / "skills" / group / executor / "SKILL.md"

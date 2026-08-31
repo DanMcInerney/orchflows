@@ -27,7 +27,14 @@ place this evidence law in the ticket lifecycle.
    gate-deferred ticket does not use `checked_by`. Additional review is a
    uniquely named lens feeding the same one repair. Independence comes from
    that checker or from the predicate, never from a standing verification
-   child.
+   child. Walking either path is mechanical, and the driver walks it: the
+   checker path creates `<id>.check` with `checker-stage`, spends one
+   distinct read-only `orch-check` dispatch on it, lands that return, then
+   anchors the joined stage through `check <run> <id> --stage <id>.check`.
+   An accepted checked target takes `gate <run> <id>` for one separate
+   repair ticket; a clean one closes with no repair at all; a gate-deferred
+   root takes `gate <run> <root>` for its composite gate, never
+   `checker-stage`.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
@@ -37,5 +44,8 @@ place this evidence law in the ticket lifecycle.
    equality with that workspace's HEAD. `CritiqueAdjudication` carries all
    observations and only the chosen blockers. `RepairOutcome` repeats those
    blockers, identifies the successor artifact, and closes the chain; only an
-   empty set permits `no_op`. Ordinary checks are derived tickets crossing the
+   empty set permits `no_op`. An accepted defect set of `[]` from every
+   critique feeding `<root>.gate.repair` completes that repair through
+   `tickets.py join-noop-repair`, so a clean run pays no dispatch for it.
+   Ordinary checks are derived tickets crossing the
    dispatch lifecycle; callers cannot inject findings.

@@ -103,7 +103,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
         # The name is the routing fact. "follow the role contract at <path>"
         # was an imperative with no addressee in a field every context reads,
         # and the dispatcher's law already lives in rules/roles.md section 4
-        # by way of contracts/work-item.md and orch-frontier.
+        # by way of contracts/work-item.md and contracts/dispatch.md.
         self.assertEqual("Orchflows child role orch-worker.", install._role_description("orch-worker"))
 
     # --- The rendered ``$GROK_HOME/agents/<role>.md`` ---------------------

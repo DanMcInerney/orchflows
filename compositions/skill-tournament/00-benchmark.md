@@ -1,6 +1,7 @@
 ---
 id: 00-benchmark
-executor: orch-frontier
+executor: orch-execute
+pack: {{pack}}
 depends_on: []
 bound: <= 200 tool calls
 independence: checker
