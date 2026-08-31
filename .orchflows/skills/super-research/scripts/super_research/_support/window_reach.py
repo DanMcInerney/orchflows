@@ -29,16 +29,19 @@ read, except two: `x_guest`'s `UserTweets` and `x_fxtwitter`'s search both
 have a measurement Details prescribes, and both were blocked before that
 measurement could run — a stale credential on the one, a search endpoint
 answering 404 to every live attempt on the other — recorded in R.02's own
-report rather than guessed here. Both stay the conservative `False` a
-caller reads honestly: a false "cannot" costs a caller a typed statement
-it did not strictly need, while a false "can" would tell a windowed
-step's reader nothing where the origin was silently never bounded.
+report rather than guessed here. Both are declared `None`: unmeasured, a
+third reading distinct from either `True` or `False`, because a `False`
+here would be a limit nobody actually checked and would read at the seam
+exactly like `github_rest`'s `releases`, which R.02 did measure unable.
+`can_bound_at_origin`/`reach_for` return the reading as given; the loss code
+a windowed step carries for each is :func:`window_loss_code`'s.
 """
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
+from .. import schema
 from ..adapters import AdapterRequest
 from ..adapters import (
     bluesky,
@@ -63,11 +66,20 @@ class WindowReachError(ValueError):
 # sentence. `runner.run_step` is the one place that appends it.
 WINDOW_NOT_HONORED = "window_not_honored"
 
+# Loud and typed, beside it: a windowed step whose operation this table names
+# but has never measured carries this code instead — never both at once, and
+# never silently folded into `WINDOW_NOT_HONORED`, because a limit nobody
+# checked and a limit R.02 proved are two different readings for a caller to
+# act on differently. `window_loss_code` is the one place that chooses
+# between them.
+WINDOW_CAPABILITY_UNMEASURED = "window_capability_unmeasured"
+
 # adapter_id -> operation -> whether that operation's origin can be asked to
-# bound the read by time, in the origin's own terms. `""` is the operation
+# bound the read by time, in the origin's own terms — `True` or `False`, both
+# measured — or `None`, declared but never measured. `""` is the operation
 # key for an adapter whose calls are all one shape, matching the convention
 # `coverage.DEPTH_TARGETS` already uses for `reddit_archive`.
-WINDOW_REACH: Dict[str, Dict[str, bool]] = {
+WINDOW_REACH: Dict[str, Dict[str, Optional[bool]]] = {
     # Measured: `bluesky.py:478-481` sends `since`/`until` on search only;
     # `:463-465` states the author feed takes none.
     "bluesky": {"search": True, "author": False},
@@ -101,10 +113,13 @@ WINDOW_REACH: Dict[str, Dict[str, bool]] = {
     # as a measured fact rather than a conservative default.
     "github_rest": {"repo": False, "issues": True, "releases": False, "search": True},
     # `TweetResultByRestId` and `UserByScreenName` are single-item
-    # hydrations with no ordering. `UserTweets` is the one operation with
-    # one (`x_guest.py:139-143`) and is not settled offline: R.02 measures
-    # it live, gated on the guest query id being current.
-    "x_guest": {"TweetResultByRestId": False, "UserByScreenName": False, "UserTweets": False},
+    # hydrations with no ordering, measured `False`. `UserTweets` is the one
+    # operation with one (`x_guest.py:139-143`) and R.02's prescribed live
+    # measurement never ran: every attempt to mint a guest token answered
+    # HTTP 401 (a stale `X_GUEST_PUBLIC_BEARER`), reproduced three times
+    # across two origins. `None`, unmeasured, not the conservative `False`
+    # a caller would read as a checked limit.
+    "x_guest": {"TweetResultByRestId": False, "UserByScreenName": False, "UserTweets": None},
     # Origin accepts none, measured: neither selection carries a time
     # concept (`adapters/public_page.py`).
     "public_page": {"": False},
@@ -133,11 +148,15 @@ WINDOW_REACH: Dict[str, Dict[str, bool]] = {
     # rarer keyword (not already saturating the page) also dropped the row
     # count 10 -> 6 (`adapters/linkedin_jobs.origin_recency_term`).
     "linkedin_jobs": {"": True},
-    # Not settled offline. `operation_params`'s own docstring
-    # (`x_fxtwitter.py:447-448`) says this module states no term for a
-    # bound it could send without inventing a query syntax — an absence of
-    # documentation in this package, not a proven absence of capability.
-    "x_fxtwitter": {"": False},
+    # Not settled offline, and not settled live either: `operation_params`'s
+    # own docstring (`x_fxtwitter.py:447-448`) says this module states no
+    # term for a bound it could send without inventing a query syntax, and
+    # R.02's prescribed live measurement found the origin unreachable for
+    # it — six reads of `/2/search` across two arms and three query terms,
+    # all HTTP 404, in the same window a sibling read of `/2/profile/SpaceX`
+    # answered 200. `None`, unmeasured: an absence of a successful read, not
+    # a proven absence of capability.
+    "x_fxtwitter": {"": None},
     # `search` measured live 2026-08-31: an origin-published upload-date
     # filter value, added to the route's closed POST-body list
     # (`_support/route_catalog_k1_k4.py`), moved every returned
@@ -184,13 +203,17 @@ def operation_for(adapter_id: str, request: AdapterRequest) -> str:
     return ""
 
 
-def can_bound_at_origin(adapter_id: str, operation: str) -> bool:
+def can_bound_at_origin(adapter_id: str, operation: str) -> Optional[bool]:
     """Whether this exact (adapter, operation) pair can bound time at the origin.
 
-    Raises rather than guesses on either side: an adapter this table does
-    not name and an operation a named adapter does not name are both a
-    declaration nothing made, and reading either as `True` or as `False`
-    would be a capability this module never measured.
+    Three readings, not two. `True` and `False` are both measured facts;
+    `None` is a declaration this table carries with no measurement behind it
+    yet, for an operation a live read was blocked before it could settle.
+    Raises rather than guesses where the table names nothing at all: an
+    adapter this table does not name and an operation a named adapter does
+    not name are both a declaration nothing made, and reading either as
+    `True`, `False` or `None` would be a capability this module never
+    considered.
     """
 
     row = WINDOW_REACH.get(adapter_id)
@@ -209,16 +232,60 @@ def can_bound_at_origin(adapter_id: str, operation: str) -> bool:
     return row[operation]
 
 
-def reach_for(adapter_id: str, query: str = "", target_ids: Tuple[str, ...] = ()) -> bool:
+def reach_for(
+    adapter_id: str, query: str = "", target_ids: Tuple[str, ...] = ()
+) -> Optional[bool]:
     """Whether the operation this query or target names can bound time.
 
     The one entry point a caller needs: it resolves the operation the same
     way a real dispatch would and reads the declaration for it, without the
-    caller building an :class:`AdapterRequest` of its own.
+    caller building an :class:`AdapterRequest` of its own. `None` when that
+    operation is declared but unmeasured, same as :func:`can_bound_at_origin`.
     """
 
     request = AdapterRequest(step_id="", query=query, target_ids=target_ids)
     return can_bound_at_origin(adapter_id, operation_for(adapter_id, request))
+
+
+def window_loss_code(reach: Optional[bool]) -> Optional[str]:
+    """The loss code one windowed call's own reach reading contributes, or none.
+
+    Where :func:`reach_for`'s three readings become the two codes a caller
+    sees on `StepResult.loss`: `None` — unmeasured — becomes
+    :data:`WINDOW_CAPABILITY_UNMEASURED`; `False` — measured unable —
+    becomes :data:`WINDOW_NOT_HONORED`; `True` contributes nothing, because a
+    call that could bound the window needs no typed statement saying so.
+    `runner.run_step` is the one caller.
+    """
+
+    if reach is None:
+        return WINDOW_CAPABILITY_UNMEASURED
+    if not reach:
+        return WINDOW_NOT_HONORED
+    return None
+
+
+def step_window_loss(
+    step: schema.AcquisitionStep, request: AdapterRequest, found: Optional[str]
+) -> Optional[str]:
+    """One call's contribution to its step's running window-loss reading.
+
+    A declaration about the call's own shape, asked before the read rather
+    than the answer: whether this operation could have spent the window at
+    the origin does not depend on what came back. ``found`` is the step's
+    reading so far and is returned unchanged once it holds anything, because
+    a hydration step's calls address hits the caller named and are not
+    guaranteed to share an operation the way a discovery step's continuations
+    always do, and a caller wants to know a step's window went unspent at
+    least once, not how many times. `runner.run_step` folds this across every
+    call a step makes and appends the result to `StepResult.loss` once, at
+    the end, the same place every other reading below the read loop lands.
+    """
+
+    if found is not None or not (step.window_start or step.window_end):
+        return found
+    reach = can_bound_at_origin(step.adapter_id, operation_for(step.adapter_id, request))
+    return window_loss_code(reach)
 
 
 def _check_probe_completeness() -> None:

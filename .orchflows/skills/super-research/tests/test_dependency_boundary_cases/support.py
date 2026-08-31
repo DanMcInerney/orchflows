@@ -61,6 +61,7 @@ PRIVATE_SUPPORT_OWNERS = {
     ("core", "route_contracts"): "routes",
     ("core", "runner_plan"): "runner",
     ("core", "runner_schedule"): "runner",
+    ("core", "smoke_plan"): "smoke",
     ("core", "transport_protocol"): "transport",
     ("core", "transport_request"): "transport",
     ("core", "window_reach"): "runner",

@@ -38,12 +38,13 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import runner, schema, transport
+from ._support.smoke_plan import probe_window_start
 from .probes import ATTRIBUTE_PREFIX, ENGAGEMENT_PREFIX, SmokeProbe
 
 # What a kind's whole list is missing when the read returned no row of it at all.
@@ -136,21 +137,6 @@ class SmokeObservation:
     warnings: Tuple[str, ...] = ()
 
 
-def probe_window_start(probe: SmokeProbe, as_of: str) -> str:
-    """This probe's own window, :data:`SmokeProbe.window_days` back from ``as_of``.
-
-    Empty exactly when the probe declares none, which is what keeps every
-    probe that does not opt in building the same unwindowed step it always
-    has: the field defaults to zero, and zero days back is no window rather
-    than a window of length zero.
-    """
-
-    if not probe.window_days:
-        return ""
-    moment = datetime.strptime(as_of, schema.INSTANT_FORMAT).replace(tzinfo=timezone.utc)
-    return (moment - timedelta(days=probe.window_days)).strftime(schema.INSTANT_FORMAT)
-
-
 def probe_step(probe: SmokeProbe, as_of: str) -> schema.AcquisitionStep:
     """One ordinary manifest step, bounded to one page.
 
@@ -168,7 +154,7 @@ def probe_step(probe: SmokeProbe, as_of: str) -> schema.AcquisitionStep:
     unwindowed step has always carried.
     """
 
-    window_start = probe_window_start(probe, as_of)
+    window_start = probe_window_start(probe.window_days, as_of)
     if probe.kind == "discovery":
         return schema.AcquisitionStep(
             step_id="smoke",
