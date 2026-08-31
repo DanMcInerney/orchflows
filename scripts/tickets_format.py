@@ -92,6 +92,21 @@ CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
 GATE_CRITIQUE_MARKER = '.gate.critique.'
 CHECKER_STAGE_SUFFIX = '.check'
+# The ids the round machinery mints after a cut is already sealed, and the
+# one grammar that names them. `loop-arm` writes a loop stub's `<id>.iter.NN`
+# body, a landing whose `done` command refused arms its `<id>.repair.NN`
+# round, and the `check` done form mints a `<round>.done` judge beside
+# either. Three readers have to agree on which ids those are -- the arm, the
+# advance, and the sealed-admission door -- and while the grammar was spelled
+# only inside `tickets_loop`, that door answered by never asking: it read
+# every armed iteration as an assignment the seal did not name and refused
+# the whole loop lane at its first dispatch.
+ITERATION_MARKER = 'iter'
+REPAIR_MARKER = 'repair'
+DONE_TICKET_SUFFIX = '.done'
+ROUND_ID_RE = re.compile(
+    f'^(?P<parent>.+)\\.(?:{ITERATION_MARKER}|{REPAIR_MARKER})\\.(?P<number>\\d+)$'
+)
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
 ESCAPED_NEWLINE_RE = re.compile('\\\\n')
@@ -287,6 +302,32 @@ def is_loop_stub(data) -> bool:
     landing -- so it is spelled the one way a marker can be spelled.
     """
     return dequote(data.get('loop')) == LOOP_MARKER
+def iteration_of(ticket_id):
+    """`(parent_id, number)` when an id names one bounded round, else None.
+
+    The round itself, never the `.done` judge minted beside one: a judge is
+    read *against* a round and is not one, and what counts rounds -- the
+    stall rule of `rules/loops.md` Section 3 -- would count each round twice
+    if it were.
+    """
+    match = ROUND_ID_RE.fullmatch(str(ticket_id or ''))
+    if match is None:
+        return None
+    return match.group('parent'), int(match.group('number'))
+def round_parent(ticket_id):
+    """The ticket whose post-seal round machinery minted this id, or None.
+
+    A round names its parent, and the `.done` judge minted for a round names
+    the same parent that round does. Both are the machinery's ids rather
+    than an author's, so both bind through the one sealed ticket they
+    descend from; this answers *whose*, and the caller answers whether that
+    ticket is the kind whose machinery may mint them.
+    """
+    text = str(ticket_id or '')
+    if text.endswith(DONE_TICKET_SUFFIX):
+        text = text[:-len(DONE_TICKET_SUFFIX)]
+    parsed = iteration_of(text)
+    return None if parsed is None else parsed[0]
 def parse_done(data):
     """The parsed frontmatter ``done`` predicate of one ticket, or None.
 
