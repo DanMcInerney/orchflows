@@ -1,32 +1,24 @@
 from tests.test_adapters_cases.youtube_attestation import *  # noqa: F401,F403
 
-class TheUnheldVideoIsNotToldFromTheWithheldOneTest(unittest.TestCase):
-    """The measured negative, pinned: these two answers arrive as one answer.
+class TheUnheldVideoIsToldByItsAbsentDetailsTest(unittest.TestCase):
+    """The measured discriminator: absent details refuse the read, present ones do not.
 
-    Measured 2026-08-12, the only live player reads this package has ever made.
-    An id the origin does not hold answered 200 with playability ``ERROR``;
-    ``dQw4w9WgXcQ``, attested, answered 200 with ``UNPLAYABLE``. The reason
-    string was byte-identical on both sides. ``videoDetails`` was absent from
-    the unheld answer and its presence on the attested one was never observed —
-    :func:`_player_page` returns at the playability branch before it reads that
-    key — so that axis has one measured side and no comparison.
-
-    So this package does not tell a video the origin no longer holds from one it
-    withholds, and nothing here may imply that it does. ``ERROR`` is not a
-    signature of "gone": the 2026-08-10 probes recorded it across five clients and
-    three videos that existed. One observation of one id is not a law either,
-    which is why these rows pin the fusion and nothing beyond it — **no loss
-    code is named**, so a later, better-warranted typing that moves both
-    statuses together stays green here, and one that moves only one of them
-    reddens.
-
-    Reopening it takes one bounded read of a video the origin certainly holds,
-    capturing ``videoDetails`` presence beside ``playabilityStatus.status`` in
-    the raw payload. Until that read is made, this is the record of what is not
-    known.
+    The 2026-08-12 record left the ``videoDetails`` axis measured on one side
+    only, and this class used to pin that nothing branched on it. The reopen
+    condition it named — one bounded read of a video the origin certainly
+    holds, capturing ``videoDetails`` presence beside
+    ``playabilityStatus.status`` in the raw payload — was met 2026-08-31, on
+    the web client, on both sides: ``dQw4w9WgXcQ`` answered 200 ``UNPLAYABLE``
+    *with* its complete ``videoDetails`` and ``microformat``, and an
+    eleven-character id the origin does not hold answered 200 ``ERROR`` with
+    neither. The reason string was byte-identical on both sides — "Video
+    unavailable" — so the reason still decides nothing, and the statuses still
+    do not either: what tells a held video's degraded answer from an unheld
+    id's refusal is the row the origin served or did not serve beside it.
     """
 
-    # Both sides of the probe answered with this string, byte for byte.
+    # Both sides of the probe answered with this string, byte for byte —
+    # measured 2026-08-12 and again 2026-08-31.
     MEASURED_REASON = "Video unavailable"
 
     def refusal(self, status, details=None):
@@ -46,6 +38,10 @@ class TheUnheldVideoIsNotToldFromTheWithheldOneTest(unittest.TestCase):
         return page
 
     def test_the_two_measured_statuses_reach_a_caller_as_one_answer(self):
+        # Without details, `ERROR` and `UNPLAYABLE` are still one answer:
+        # neither carried anything to keep, and neither status alone is a
+        # signature of "gone" — the 2026-08-10 probes recorded both on videos
+        # that existed.
         unheld = self.refusal("ERROR")
         attested = self.refusal("UNPLAYABLE")
 
@@ -57,19 +53,24 @@ class TheUnheldVideoIsNotToldFromTheWithheldOneTest(unittest.TestCase):
         for page in (unheld, attested):
             self.assertIn("a video it no longer holds", " ".join(page.warnings))
 
-    def test_the_axis_measured_on_one_side_only_is_not_branched_on(self):
-        # A refused playability carrying `videoDetails` is a shape nobody has
-        # measured, constructed for the same reason
-        # `player_with_caption_tracks.json` is: so that "this package reads that
-        # key to decide which refusal this is" can be false. Presence is the
-        # candidate signal the probe could only see one side of, and reading it
-        # here would be the mirror of the inference this module refuses.
+    def test_a_refusal_carrying_the_row_is_a_served_answer_and_one_without_is_not(self):
+        # The 2026-08-31 measurement, replayed on the shapes it recorded: the
+        # held side keeps its record with the withholding named as loss, and
+        # the unheld side is the refusal of the whole read.
         absent = self.refusal("ERROR")
-        present = self.refusal("ERROR", details={youtube_innertube.VIDEO_ID_KEY: "x"})
+        present = self.refusal(
+            "UNPLAYABLE",
+            details={
+                youtube_innertube.VIDEO_ID_KEY: YOUTUBE_VIDEO_ID,
+                youtube_innertube.TITLE_KEY: "held",
+            },
+        )
 
-        self.assertEqual(tuple(present.loss), tuple(absent.loss))
-        self.assertEqual(present.outcome, absent.outcome)
-        self.assertEqual(present.records, ())
+        self.assertEqual(absent.outcome, "failed")
+        self.assertEqual(absent.records, ())
+        self.assertEqual(present.outcome, "ok")
+        self.assertEqual(len(present.records), 1)
+        self.assertIn(youtube_innertube.ATTESTATION_REQUIRED, present.loss)
 
 
 class AttestationOracleCanFailTest(unittest.TestCase):

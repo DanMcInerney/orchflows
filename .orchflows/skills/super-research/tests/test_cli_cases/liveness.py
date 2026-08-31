@@ -201,10 +201,18 @@ class TheRecoveryLineFitsTheLossTest(LedgerHoldingCase):
         self.assertIn(cli.READ_AND_ROW_UNMET, printed)
 
     def test_an_origin_withholding_from_an_unattested_client_is_not_one_either(self):
-        # Read 9 of the thirteen.
+        # Read 9 of the thirteen: 200, `UNPLAYABLE`, and no `videoDetails`
+        # beside it — the shape that read recorded. A held video's
+        # `UNPLAYABLE` now arrives *with* its row and is a served answer
+        # (measured 2026-08-31), so the row-less refusal is built here as the
+        # 2026-08-12 read saw it rather than seeded from a fixture that
+        # carries the row.
         seeds = probe_seeds()
         seeds["youtube_innertube"] = (
-            200, payload("youtube/player_unplayable.json"), "application/json"
+            200,
+            '{"playabilityStatus": {"status": "UNPLAYABLE",'
+            ' "reason": "Sign in to confirm you\'re not a bot"}}',
+            "application/json",
         )
 
         code, printed, _ = run_cli(

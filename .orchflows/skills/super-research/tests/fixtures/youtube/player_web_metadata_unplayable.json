@@ -1,0 +1,56 @@
+{
+  "responseContext": {
+    "visitorData": "CgtSaWNrQXN0bGV5EgQIARgA"
+  },
+  "playabilityStatus": {
+    "status": "UNPLAYABLE",
+    "reason": "Video unavailable",
+    "errorScreen": {
+      "playerErrorMessageRenderer": {
+        "subreason": {
+          "simpleText": "The page needs to be reloaded."
+        },
+        "reason": {
+          "runs": [
+            {
+              "text": "The page needs to be reloaded."
+            }
+          ]
+        }
+      }
+    }
+  },
+  "videoDetails": {
+    "videoId": "dQw4w9WgXcQ",
+    "title": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)",
+    "lengthSeconds": "213",
+    "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+    "author": "Rick Astley",
+    "viewCount": "1810202961",
+    "shortDescription": "The official video for “Never Gonna Give You Up” by Rick Astley.",
+    "isCrawlable": true,
+    "isPrivate": false,
+    "isLiveContent": false
+  },
+  "microformat": {
+    "playerMicroformatRenderer": {
+      "publishDate": "2009-10-24T23:57:33-07:00",
+      "uploadDate": "2009-10-24T23:57:33-07:00",
+      "ownerChannelName": "Rick Astley",
+      "externalChannelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+      "externalVideoId": "dQw4w9WgXcQ",
+      "viewCount": "1810202961",
+      "category": "Music",
+      "isFamilySafe": true,
+      "isUnlisted": false,
+      "lengthSeconds": "214",
+      "likeCount": "19364969",
+      "canonicalUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "embed": {
+        "iframeUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        "width": 1280,
+        "height": 720
+      }
+    }
+  }
+}

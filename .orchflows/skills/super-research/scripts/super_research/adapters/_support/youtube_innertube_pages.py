@@ -184,10 +184,11 @@ def _playability_warning(playability: Mapping[str, Any]) -> str:
     if status in ATTESTED_PLAYABILITY:
         return said + (
             " The 2026-08-10 probes recorded this status across five clients and three"
-            " videos and names the cause as PoToken/BotGuard attestation;"
-            " caption retrieval and attestation are deferred by the spec. The"
+            " videos and names the cause as PoToken/BotGuard attestation. The"
             " origin's own reason is quoted above: this status is also what it"
-            " answers for a video it no longer holds."
+            " answers for a video it no longer holds, and the 2026-08-31"
+            " measurement tells the two apart by the payload beside it — a held"
+            " video answers with its videoDetails, an unheld id without them."
         )
     if status in CREDENTIAL_PLAYABILITY:
         return said + (
@@ -207,28 +208,48 @@ def _player_page(response: transport.TransportResponse, payload: Any) -> NativeP
     if not isinstance(playability, Mapping):
         return _drifted(response, PLAYER_OPERATION, "stated no " + PLAYABILITY_KEY)
     status = _text(playability.get(PLAYABILITY_STATUS_KEY))
-    if status != PLAYABLE_STATUS:
-        return _failed(response, _playability_loss(status), _playability_warning(playability))
     details = payload.get(VIDEO_DETAILS_KEY)
     if not isinstance(details, Mapping):
+        # Measured 2026-08-31, both sides on the web client: a held video
+        # answers its non-`OK` playability *with* `videoDetails` beside it,
+        # and an id the origin does not hold answers without them, under a
+        # byte-identical reason string. The details are the one part of the
+        # answer that tells the two apart, so a refusal is only a refusal of
+        # the whole read when it carried none.
+        if status != PLAYABLE_STATUS:
+            return _failed(
+                response, _playability_loss(status), _playability_warning(playability)
+            )
         return _drifted(response, PLAYER_OPERATION, "stated no " + VIDEO_DETAILS_KEY)
     withheld = captions_withheld(payload)
-    return _answered(
-        response,
-        (_player_record(payload, withheld),),
-        "ok",
-        warnings=(
-            "{0} answered 200 listing no caption track at {1}. The 2026-08-10 probes"
-            " measured that on every client and every video probed and names"
-            " the cause as PoToken/BotGuard attestation: the tracks are"
-            " withheld from a client that cannot attest, and this is not a"
+    loss: Tuple[str, ...] = ()
+    warnings: Tuple[str, ...] = ()
+    if status != PLAYABLE_STATUS:
+        # The origin served the row and refused the playback beside it. That
+        # is the web client's standing keyless posture (measured 2026-08-31),
+        # and the loss is what keeps this answer tellable apart from a healthy
+        # one rather than the row being thrown away with the playback.
+        loss = (_playability_loss(status),)
+        warnings = (_playability_warning(playability),)
+    if withheld and ATTESTATION_REQUIRED not in loss:
+        loss = loss + (ATTESTATION_REQUIRED,)
+    if withheld:
+        warnings = warnings + (
+            "{0} answered 200 listing no caption track at {1}. Measured"
+            " 2026-08-31: the web-family clients are served no track on any"
+            " video — the tracks sit behind an attestation this package does"
+            " not perform — while the Android client the transcript operation"
+            " presents is served them where a video has them. This is not a"
             " statement that the video has none.".format(
                 PLAYER_OPERATION, ".".join(CAPTION_TRACKS_PATH)
             ),
         )
-        if withheld
-        else (),
-        loss=(ATTESTATION_REQUIRED,) if withheld else (),
+    return _answered(
+        response,
+        (_player_record(payload, withheld),),
+        "ok",
+        warnings=warnings,
+        loss=loss,
     )
 
 

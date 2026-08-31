@@ -247,12 +247,17 @@ def fetch_native_page(
             native_order=NATIVE_ORDER,
         )
 
+    # Every metadata operation presents the web client, `player` included.
+    # Measured 2026-08-31: the app clients' player answers — `ANDROID` at the
+    # pinned version and a newer one, `IOS`, `ANDROID_VR` — stopped carrying
+    # `microformat`, and a whole-body scan found no date field anywhere in
+    # them, while `WEB` still carries `publishDate` beside a complete
+    # `videoDetails`. What `WEB` is not served is captions, which is why the
+    # transcript branch above alone presents the Android client.
     params = {
         "endpoint": operation,
-        "client_name": PLAYER_CLIENT_NAME if operation == PLAYER_OPERATION else CLIENT_NAME,
-        "client_version": (
-            PLAYER_CLIENT_VERSION if operation == PLAYER_OPERATION else CLIENT_VERSION
-        ),
+        "client_name": CLIENT_NAME,
+        "client_version": CLIENT_VERSION,
     }
     if request.cursor:
         params["continuation"] = request.cursor

@@ -213,7 +213,7 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
         warning = " ".join(page.warnings)
 
         self.assertEqual(page.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
-        self.assertEqual(page.outcome, "failed")
+        self.assertEqual(page.outcome, "ok")
         self.assertNotIn(youtube_innertube.AUTH_REQUIRED, page.loss)
         self.assertIn("UNPLAYABLE", warning)
         self.assertIn("bot", warning)
@@ -257,16 +257,39 @@ class AttestationIsNotAnAbsenceTest(unittest.TestCase):
                     status in youtube_innertube.ATTESTED_PLAYABILITY,
                 )
 
-    def test_a_degraded_answer_is_not_mined_for_the_metadata_it_still_carries(self):
-        # That fixture carries a complete videoDetails. The origin said it was
-        # not serving this client, so reporting its contents as a successful
-        # read would make a degraded response indistinguishable from a healthy
-        # one at exactly the moment a caller needs to tell them apart.
+    def test_a_degraded_answer_keeps_the_row_the_origin_served(self):
+        # Measured 2026-08-31: `UNPLAYABLE` with `videoDetails` beside it is
+        # the web client's standing keyless posture on a held video — the
+        # origin serves the row and withholds the playback. The row is kept,
+        # and the loss is what keeps a degraded answer tellable apart from a
+        # healthy one at exactly the moment a caller needs to tell them apart
+        # — throwing the served row away told nothing apart and cost the date
+        # the roster row names.
         page, _ = youtube_page("player_unplayable.json")
+        record = page.records[0]
 
-        self.assertEqual(page.records, ())
-        self.assertIn(
-            "Running a 70B locally", read_youtube("player_unplayable.json")
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
+        self.assertEqual(record.title, "Running a 70B locally on two consumer GPUs")
+        self.assertIn(youtube_innertube.ATTESTATION_REQUIRED, record.loss)
+
+    def test_the_web_answer_of_2026_08_31_carries_the_row_with_a_full_instant(self):
+        # The shape the metadata operation reads now that the app clients'
+        # answers carry no date at all. The origin writes `publishDate` as an
+        # instant with an offset rather than a bare day, so the record
+        # converts it to UTC and claims no day-precision loss.
+        page, _ = youtube_page("player_web_metadata_unplayable.json")
+        record = page.records[0]
+
+        self.assertEqual(page.outcome, "ok")
+        self.assertEqual(page.loss, (youtube_innertube.ATTESTATION_REQUIRED,))
+        self.assertEqual(record.published_at, "2009-10-25T06:57:33Z")
+        self.assertNotIn(youtube_innertube.DATE_PRECISION_ONLY, record.loss)
+        self.assertEqual(
+            dict(record.engagement), {youtube_innertube.VIEW_COUNT_METRIC: 1810202961}
+        )
+        self.assertEqual(
+            record.canonical_locator, "https://www.youtube.com/embed/" + YOUTUBE_VIDEO_ID
         )
 
     def test_a_refused_request_names_the_rotating_part_and_the_way_back(self):
