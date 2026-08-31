@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests import _retired_doors as retired_doors
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
@@ -219,18 +220,18 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     # fixture needs an actual checkout rather than a bare `.git` directory.
     git_checkout(tmp)
     sink = use_sink(tmp)
-    tickets_mod._dispatch([
+    retired_doors.run([
         "new", "testrun", "T1", "--executor", "orch-do",
         "--goal", "Test result attribution.", "--context", "[]",
         "--pack", "orch-code-pack", "--isolation", "required",
     ])
-    tickets_mod._dispatch(["stamp-generation", "testrun", "T1"])
-    validated = tickets_mod._dispatch(["draft-validate", "testrun", "T1"])
-    tickets_mod._dispatch([
+    retired_doors.run(["stamp-generation", "testrun", "T1"])
+    validated = retired_doors.run(["draft-validate", "testrun", "T1"])
+    retired_doors.run([
         "seal", "testrun", "T1", "--cut-generation",
         validated["draft_validation"]["cut_generation"],
     ])
-    tickets_mod._dispatch(["ready", "--run", "testrun"])
+    retired_doors.run(["ready", "--run", "testrun"])
     ticket = sink / "tickets" / "testrun" / "T1.md"
     established = ticket.read_text(encoding="utf-8")
     for key, value in (
@@ -240,7 +241,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         established = tickets_mod._set_frontmatter_field(established, key, value)
     ticket.write_text(established, encoding="utf-8")
     lease = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    opened = tickets_mod._dispatch([
+    opened = retired_doors.run([
         "dispatch-open", "testrun", "T1", "--by", by,
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]

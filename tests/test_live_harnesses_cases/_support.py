@@ -16,11 +16,9 @@ from unittest import mock
 
 from tools import live_claude_profiles as claude_live
 from tools import live_codex_profiles as codex_live
-from tools import live_loop_e2e as loop_live
 from tools import live_routing_bench as routing_live
 from tools import live_sweep_e2e as sweep_live
 
-LOOP_AGENT = "orch-loop-body-e2e-42"
 SWEEP_AGENT = "orch-sweep-e2e-42"
 SWEEP_PY = Path(sweep_live.__file__).resolve()
 
@@ -120,10 +118,8 @@ __all__ = [
     "mock",
     "claude_live",
     "codex_live",
-    "loop_live",
     "routing_live",
     "sweep_live",
-    "LOOP_AGENT",
     "SWEEP_AGENT",
     "SWEEP_PY",
     "ROUTING_DIR",
