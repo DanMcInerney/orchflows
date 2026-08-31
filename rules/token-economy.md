@@ -41,8 +41,8 @@
     same cost in every domain; a copy per pack only adds a place to
     drift.
 11. Budgets bound what is loaded whether or not it is needed, and only
-    that: a router block, an agent file, a `SKILL.md` body, a stub's
-    instruction, a pack's cells. What a link makes available on demand
+    that: a router block, an agent file, a `SKILL.md` body, a pack's
+    cells. What a link makes available on demand
     is unbudgeted — it answers to §1 sentence by sentence and to any
     contract mandating its content. Ceilings order by load frequency,
     because a file loaded by every child on every turn costs its length
@@ -50,17 +50,15 @@
     tightest — the host block 400 words and at most eight standing
     demands, a project's routing block 400, this repository's
     `AGENTS.md` 230, a role agent file 80; every-dispatch units next —
-    kernel bodies 300, pack `SKILL.md` 150, a
-    stub's semantic instruction (Goal, Context, and optional Suggested files) 300, a pack's craft as
+    kernel bodies 300, pack `SKILL.md` 150, a pack's craft as
     [contracts/pack-signature.md](../contracts/pack-signature.md)
     mandates; every-run units widest — engine and workflow bodies 450,
     a template manifest 250. Counted in words with link targets
-    stripped: the stub's instruction by `scripts/tickets_ceiling.py`;
-    `tickets.py new` refuses an issued unit over the ceiling and
-    `tickets.py lint` reports the same violation on a current unit, a
-    root ticket and a `.gate.` stub exempt; and every other surface here
-    by tools/validate.py, template stubs included, through that same
-    counter. What degrades adherence is the count of
+    stripped by tools/validate.py. A ticket carries no such ceiling: it
+    is written for one child and read by one child, so its length is
+    the planner's judgment about that child rather than a standing cost
+    every turn pays, and a ceiling that forced a cut to guess bought
+    blind recuts instead of shorter assignments. What degrades adherence is the count of
     standing demands and tension between them, not length at a fixed
     count — so a surface earns each demand by §1 and carries no two in
     tension, and complexity buys structure, never width: more stubs and

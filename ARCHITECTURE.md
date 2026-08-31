@@ -40,8 +40,8 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `tickets_dispatch_schema.py` validates dispatch grammar; `tickets_attempts.py`
   mutates atomically;
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
-  `tickets_emission.py` emission grading; `tickets_ceiling.py` instruction
-  ceiling; `tickets_issue_render.py` issuance markdown; and
+  `tickets_emission.py` emission grading; `tickets_issue_render.py`
+  issuance markdown; and
   `tickets_dispatch_gate.py` integrated-result gates;
   `tickets_dispatch_launch.py` resolves the host launch binding. `cutcheck.py`
   owns structural graph validation.

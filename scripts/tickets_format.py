@@ -32,10 +32,6 @@ if __package__:
         _sections, _set_frontmatter_field, _write_section, dequote,
         quote_filed_body, unquote_filed_body,
     )
-    from .tickets_ceiling import (
-        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
-        instruction_breakdown, instruction_words,
-    )
 else:
     from tickets_adapters import adapter_id
     from tickets_shapes import (
@@ -53,10 +49,6 @@ else:
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section, dequote,
         quote_filed_body, unquote_filed_body,
-    )
-    from tickets_ceiling import (
-        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
-        instruction_breakdown, instruction_words,
     )
 # The bound grammar is `tickets_bound`'s, read here so every holder
 # gets the one spelling.
@@ -78,9 +70,6 @@ DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'
 SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
-# The instruction ceiling is `tickets_ceiling`'s: one counter, so the lint
-# twin and the issue refusal cannot drift apart. Re-exported here because
-# this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
 DELIVERED_STATE = 'complete'
 TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')

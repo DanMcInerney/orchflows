@@ -35,7 +35,6 @@ if __package__:
     )
     from .tickets_transitions import pending_admission, stamp
     from .tickets_commands import INSTANTIATE_USAGE, STAMP_GENERATION_USAGE
-    from .tickets_root_reservation import mismatch as _root_reservation_mismatch
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import (
         GATE_ID_MARKER, PLACEHOLDER_RE, ROOT_EXECUTOR, TEMPLATE_FILE,
@@ -61,7 +60,6 @@ else:  # pragma: no cover - direct/installed flat script path
     validate_draft = _generations.validate_draft
     from tickets_transitions import pending_admission, stamp
     from tickets_commands import INSTANTIATE_USAGE, STAMP_GENERATION_USAGE
-    _root_reservation_mismatch = __import__('tickets_root_reservation').mismatch
 
 
 def git_head():
@@ -303,14 +301,6 @@ def _cmd_stamp_generation(rest):
     run_dir = tickets_root / run
     try:
         with _run_lock(run):
-            runs_root = _runs_root()
-            if runs_root is None:
-                return {'error': NO_SINK_ERROR}
-            reservation_error = _root_reservation_mismatch(
-                runs_root, run, root_id,
-            )
-            if reservation_error is not None:
-                return {'error': reservation_error}
             snapshot, unreadable = run_snapshot(run_dir) if run_dir.is_dir() else ({}, [])
             if unreadable:
                 return {'error': f'unreadable ticket: {unreadable[0][0]}'}

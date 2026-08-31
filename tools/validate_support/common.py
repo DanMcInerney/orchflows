@@ -31,12 +31,6 @@ LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # units next, every-run units widest. Ceilings only fall.
 SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 230}
 MANIFEST_BUDGET = 250
-# A stub's instruction ceiling is not here: a stub is a ticket before it is
-# issued, and `scripts/tickets.py` refuses an issued one over the same
-# number. `_ticket_law()` reads `INSTRUCTION_BUDGET` and `instruction_words`
-# from there, so the compiler and the sink cannot put the boundary in two
-# places -- this file's own counter charged an excluded action a word for
-# its list marker, and did.
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}

@@ -19,7 +19,6 @@ SHARED_READER_MODULES = (
     "state_root.py",
     "tickets_adapters.py",
     "tickets_bound.py",
-    "tickets_ceiling.py",
     "tickets_format.py",
     "tickets_lifecycle.py",
     "tickets_markdown.py",
