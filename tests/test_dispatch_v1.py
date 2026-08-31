@@ -167,17 +167,27 @@ class DispatchV1Test(unittest.TestCase):
         path.write_text(body, encoding="utf-8")
         return str(path)
 
-    def outcome(self, *, status="complete", result="delivered"):
-        """Close through typed evidence files; `--content` was removed."""
+    def outcome(self, *, handoff=False, result="delivered"):
+        """Close through typed evidence files; the envelope names no status."""
 
         arguments = [
-            "dispatch-outcome", "run", "T", "--status", status,
+            "dispatch-outcome", "run", "T",
             "--result-file", self.evidence_file("result", result),
             "--verification-file", self.evidence_file("verification", "verified"),
         ]
-        if status == "suspended":
+        if handoff:
             arguments += ["--handoff-file", self.evidence_file("handoff", "resume here")]
         return tickets._dispatch(arguments)
+
+    def join(self, *, status="complete", seal=None, by="root-join"):
+        """The join, carrying the disposition the joining authority records."""
+
+        return tickets._dispatch([
+            "dispatch-join", "run", "T",
+            "--assignment-seal", seal or self.opened_seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", by, "--status", status,
+        ])
 
     def test_replace_help_states_lifecycle_record_id_namespace(self):
         payload = tickets._dispatch(["dispatch-replace", "--help"])
@@ -234,12 +244,7 @@ class DispatchV1Test(unittest.TestCase):
             encoding="utf-8",
         )
 
-        joined = tickets._dispatch([
-            "dispatch-join", "run", "T",
-            "--assignment-seal", self.opened_seal,
-            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-            "--by", "root-join",
-        ])
+        joined = self.join()
 
         self.assertEqual("complete", joined["join"]["status"])
         identity = json.loads(
@@ -596,7 +601,7 @@ class DispatchV1Test(unittest.TestCase):
             "--assignment-seal", self.opened_seal,
             "--dispatch-id", "D1",
             "--outcome-record-id", "outcome",
-            "--by", "root-join",
+            "--by", "root-join", "--status", "complete",
         ]
         joined = tickets._dispatch(arguments)
         self.assertEqual("complete", joined["join"]["status"])
@@ -617,7 +622,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(joined_text, self.ticket_text())
         self.assertEqual(outcome, self.outcome())
 
-        changed_outcome = self.outcome(status="blocked")
+        changed_outcome = self.outcome(result="a different closing note")
         conflict = changed_outcome
         self.assertEqual("idempotency-conflict", conflict["code"])
         unseen = list(arguments)
@@ -651,14 +656,9 @@ class DispatchV1Test(unittest.TestCase):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         self.commit_launch()
-        self.outcome(status="suspended")
+        self.outcome(handoff=True)
 
-        joined = tickets._dispatch([
-            "dispatch-join", "run", "T",
-            "--assignment-seal", self.opened_seal,
-            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-            "--by", "root-join",
-        ])
+        joined = self.join(status="suspended")
 
         self.assertEqual("suspended", joined["join"]["status"])
         data = _parse_frontmatter(self.ticket_text())
@@ -755,19 +755,14 @@ class DispatchV1Test(unittest.TestCase):
             item for item in state["attempts"][0]["records"]
             if item["record_id"] == "outcome"
         )
-        record["success"]["outcome"]["status"] = "ready"
+        record["success"]["outcome"]["by"] = "somebody-else"
         path.write_text(
             _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
             encoding="utf-8",
         )
         before = path.read_bytes()
 
-        refusal = tickets._dispatch([
-            "dispatch-join", "run", "T",
-            "--assignment-seal", self.opened_seal,
-            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-            "--by", "root-join",
-        ])
+        refusal = self.join()
 
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())

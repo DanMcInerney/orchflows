@@ -607,7 +607,7 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
             "protocol": "orchflows.dispatch.v1", "run": "run", "id": "T",
             "assignment_seal": self.frontmatter("T")["assignment_seal"],
             "dispatch_id": "D1", "outcome_record_id": "outcome",
-            "by": "worker", "status": "complete", "evidence": evidence,
+            "by": "worker", "evidence": evidence,
         }), encoding="utf-8")
         self.launch()
         self.dispatch("dispatch-outcome", "run", "T", "--file", str(outcome))
@@ -637,7 +637,7 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
                 "dispatch-join", "run", "T",
                 "--assignment-seal", self.frontmatter("T")["assignment_seal"],
                 "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-                "--by", "joiner",
+                "--by", "joiner", "--status", "complete",
             )
         for probe in probes:
             # Released now, so the probe finishes and closes its handle;
@@ -656,7 +656,7 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
             "dispatch-join", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-            "--by", "joiner",
+            "--by", "joiner", "--status", "complete",
         )
         identity = json.loads(
             (self.home / "runs" / "run" / "run.json").read_text(encoding="utf-8")
@@ -692,7 +692,7 @@ class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
 
     def close(self, *, result="delivered", verification="verified"):
         return tickets._dispatch([
-            "dispatch-outcome", "run", "T", "--status", "complete",
+            "dispatch-outcome", "run", "T",
             "--result-file", self.evidence_file("result", result),
             "--verification-file", self.evidence_file("verification", verification),
         ])

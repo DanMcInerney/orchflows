@@ -20,6 +20,7 @@ from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
 from scripts import tickets_join
 from scripts import tickets_review
+from scripts import tickets_shapes
 from scripts import tickets_lifecycle
 from scripts import tickets_readiness
 from scripts.tickets_format import (
@@ -242,7 +243,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             flags.extend((f"--{section.lower()}-file", str(path)))
         return flags
 
-    def commit_outcome(self, run, ticket_id, opened, by, dispatch_id, status="complete"):
+    def commit_outcome(self, run, ticket_id, opened, by, dispatch_id):
         review = ".gate.critique." in ticket_id or ticket_id.endswith(".check")
         content = {
             "assignment_seal": opened["assignment_seal"],
@@ -259,10 +260,10 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "Risks": "closing risk delta: []", "Handoff": "",
             },
             "id": ticket_id, "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": run, "status": status,
+            "protocol": "orchflows.dispatch.v1", "run": run,
         }
         return self.dispatch(
-            "dispatch-outcome", run, ticket_id, "--status", status,
+            "dispatch-outcome", run, ticket_id,
             *self.evidence_flags(ticket_id, dispatch_id, content["evidence"]),
         )
 
@@ -548,10 +549,6 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "R.gate.repair", "orch-execute", ("R.gate.critique.code",),
                 root_generation=inherited, review_kind="repair",
             ),
-            "R.gate.verify": assignment(
-                "R.gate.verify", "orch-check", ("R.gate.repair",),
-                root_generation=inherited, review_kind="verify",
-            ),
         }
 
         cut_draft = tickets_generations.draft_snapshot("R", complete, ordinal=2)
@@ -670,6 +667,7 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "--assignment-seal", opened["assignment_seal"],
                 "--dispatch-id", f"member-D{suffix}",
                 "--outcome-record-id", "outcome", "--by", "root-join",
+                "--status", "complete",
             )
         ready = self.dispatch("ready", "--run", "clean")
         critique_id = "R.gate.critique.code"
@@ -696,7 +694,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--assignment-seal", opened["assignment_seal"],
             "--dispatch-id", "critic-D1",
             "--outcome-record-id", "outcome", "--by", "root-join",
-            *self.accepted_file(critique_id, "[]"),
+            "--status", "complete", *self.accepted_file(critique_id, "[]"),
         )
         critique = (
             Path(self.temporary.name) / "tickets" / "clean" / f"{critique_id}.md"
@@ -720,8 +718,10 @@ class SemanticTicketContractTest(unittest.TestCase):
             "join-noop-repair", "clean", "R.gate.repair", "--by", "root-join"
         )
         self.assertEqual("root-join", closed["join_noop_repair"]["by"])
+        # The gate ends at repair: the fresh outside check is the root's own
+        # `done` predicate, run by land, and no verify stub is materialized.
         ready = self.dispatch("ready", "--run", "clean")
-        self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
+        self.assertNotIn("R.gate.verify", {item["id"] for item in ready["ready"]})
         repair = (
             Path(self.temporary.name) / "tickets" / "clean" / "R.gate.repair.md"
         ).read_text(encoding="utf-8")
@@ -734,63 +734,9 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.assertTrue(repair_review["records"][-1]["no_op"])
         self.assertEqual(artifact, repair_review["records"][-1]["artifact"])
-
-        verify_id = "R.gate.verify"
-        verify_opened = self.open_attempt(
-            "clean", verify_id, "verifier", "verify-D1"
-        )
-        mismatch = self.launch(
-            "clean", verify_id, "verify-D1", workspace=str(ROOT),
-            artifact="git:" + "f" * 40, record=False,
-        )
-        self.assertEqual("review-invalid", mismatch["code"])
-        verify_launch = self.committed_launch(
-            "clean", verify_id, "verify-D1", workspace=str(ROOT),
-            artifact=artifact, record=False,
-        )
-        self.assertIn("tip is RepairOutcome", verify_launch["prompt"])
-        self.assertIn(
-            "Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or "
-            "`UNVERIFIED:`", verify_launch["prompt"],
-        )
-        verify_outcome = {
-            "assignment_seal": verify_opened["assignment_seal"],
-            "by": "verifier", "dispatch_id": "verify-D1",
-            "evidence": {
-                "Result": "verified fixed artifact",
-                "Verification": "PASS: exact artifact checks are green",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
-            "id": verify_id, "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": "clean",
-            "status": "complete",
-        }
-        self.dispatch(
-            "dispatch-outcome", "clean", verify_id,
-            "--status", verify_outcome["status"],
-            *self.evidence_flags(
-                verify_outcome["id"], verify_outcome["dispatch_id"],
-                verify_outcome["evidence"],
-            ),
-        )
-        self.dispatch(
-            "dispatch-join", "clean", verify_id,
-            "--assignment-seal", verify_opened["assignment_seal"],
-            "--dispatch-id", "verify-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--artifact", artifact,
-        )
-        verify = (
-            Path(self.temporary.name) / "tickets" / "clean" / f"{verify_id}.md"
-        ).read_text(encoding="utf-8")
-        verify_review = json.loads(_parse_frontmatter(verify)["review_v1"])
-        verification = verify_review["records"][-1]
-        self.assertEqual("Verification", verification["kind"])
-        self.assertEqual("PASS", verification["verdict"])
-        self.assertEqual(artifact, verification["artifact"])
-        self.assertEqual(
-            verify_review["records"][-2]["identity"],
-            verification["predecessor"],
-        )
+        # The immutable ledger ends there too: `Verification` is not a record
+        # kind any more, so nothing can append one after the repair.
+        self.assertNotIn("Verification", tickets_shapes.REVIEW_RECORD_COMMON_VALUES["kind"])
 
     def test_gate_stubs_freeze_pack_isolation_and_lens_order(self):
         self.dispatch(
@@ -850,7 +796,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "dispatch-join", "checker", "R",
             "--assignment-seal", opened["assignment_seal"],
             "--dispatch-id", "worker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join",
+            "--by", "root-join", "--status", "complete",
         )
         artifact = "git:" + subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
@@ -897,14 +843,16 @@ class SemanticTicketContractTest(unittest.TestCase):
             "dispatch-join", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", *self.accepted_file("R.check", findings),
+            "--by", "root-join", "--status", "complete",
+            *self.accepted_file("R.check", findings),
         )
         equivalent = json.dumps(json.loads(findings), ensure_ascii=False, indent=2)
         replayed_join = self.dispatch(
             "dispatch-join", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", *self.accepted_file("R.check-equivalent", equivalent),
+            "--by", "root-join", "--status", "complete",
+            *self.accepted_file("R.check-equivalent", equivalent),
         )
         self.assertEqual(first_join, replayed_join)
         stage_path = (
@@ -952,10 +900,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
         continued = self.dispatch("gate", "checker", "R")
-        self.assertEqual(
-            ["R.gate.repair", "R.gate.verify"],
-            continued["gate"]["tickets"],
-        )
+        self.assertEqual(["R.gate.repair"], continued["gate"]["tickets"])
         self.assertEqual(
             "replayed",
             self.dispatch("gate", "checker", "R")["gate"]["outcome"],
@@ -1012,11 +957,9 @@ class SemanticTicketContractTest(unittest.TestCase):
             },
             "id": "R.gate.repair", "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1", "run": "checker",
-            "status": "complete",
         }
         self.dispatch(
             "dispatch-outcome", "checker", "R.gate.repair",
-            "--status", repair_outcome["status"],
             *self.evidence_flags(
                 repair_outcome["id"], repair_outcome["dispatch_id"],
                 repair_outcome["evidence"],
@@ -1026,7 +969,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "dispatch-join", "checker", "R.gate.repair",
             "--assignment-seal", repair_opened["assignment_seal"],
             "--dispatch-id", "repair-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--artifact", artifact,
+            "--by", "root-join", "--status", "complete", "--artifact", artifact,
         )
         repair_text = (
             stage_path.parent / "R.gate.repair.md"
@@ -1037,69 +980,13 @@ class SemanticTicketContractTest(unittest.TestCase):
             [record["identity"] for record in repair_review["records"][:2]],
         )
         self.assertEqual("RepairOutcome", repair_review["records"][-1]["kind"])
-
-        verify_path = stage_path.parent / "R.gate.verify.md"
-        canonical_verify = verify_path.read_bytes()
-        substituted_verify = canonical_verify.decode("utf-8").replace(
-            "Verify `R`'s Goal on the integrated tip",
-            "Perform an unrelated verification for `R`",
-        )
-        substituted_verify = tickets._set_frontmatter_field(
-            substituted_verify, "assignment_seal",
-            tickets.assignment_digest("R.gate.verify", substituted_verify),
-        )
-        verify_path.write_text(substituted_verify, encoding="utf-8")
-        verify_ready = self.dispatch("ready", "--run", "checker")
-        self.assertNotIn(
-            "R.gate.verify", {item["id"] for item in verify_ready["ready"]},
-        )
-        verify_path.write_bytes(canonical_verify)
-
+        # The continuation ends at the repair. The fresh outside check the
+        # checker's acceptance used to materialize is the target's own `done`
+        # predicate, run by land in the integrated tree, so no verify stage is
+        # derived and none can be made ready.
+        self.assertFalse((stage_path.parent / "R.gate.verify.md").exists())
         ready = self.dispatch("ready", "--run", "checker")
-        self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
-        verify_opened = self.open_attempt(
-            "checker", "R.gate.verify", "verifier", "verify-D1"
-        )
-        self.committed_launch(
-            "checker", "R.gate.verify", "verify-D1", workspace=str(ROOT),
-            artifact=artifact, record=False,
-        )
-        verify_outcome = {
-            "assignment_seal": verify_opened["assignment_seal"],
-            "by": "verifier", "dispatch_id": "verify-D1",
-            "evidence": {
-                "Result": "verified repaired artifact",
-                "Verification": "PASS: fresh checks cover the repaired artifact",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
-            "id": "R.gate.verify", "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": "checker",
-            "status": "complete",
-        }
-        self.dispatch(
-            "dispatch-outcome", "checker", "R.gate.verify",
-            "--status", verify_outcome["status"],
-            *self.evidence_flags(
-                verify_outcome["id"], verify_outcome["dispatch_id"],
-                verify_outcome["evidence"],
-            ),
-        )
-        joined = self.dispatch(
-            "dispatch-join", "checker", "R.gate.verify",
-            "--assignment-seal", verify_opened["assignment_seal"],
-            "--dispatch-id", "verify-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--artifact", artifact,
-        )
-        self.assertEqual("complete", joined["join"]["status"])
-        verify_text = (
-            stage_path.parent / "R.gate.verify.md"
-        ).read_text(encoding="utf-8")
-        terminal = json.loads(_parse_frontmatter(verify_text)["review_v1"])
-        self.assertEqual(
-            ["GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification"],
-            [record["kind"] for record in terminal["records"]],
-        )
-        self.assertEqual("PASS", terminal["records"][-1]["verdict"])
+        self.assertNotIn("R.gate.verify", {item["id"] for item in ready["ready"]})
 
     def test_frontier_guidance_distinguishes_all_three_review_states(self):
         skill = (

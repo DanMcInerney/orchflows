@@ -291,18 +291,28 @@ class DispatchLaunchTest(unittest.TestCase):
         assignment = tickets._tickets_assignment_module
         self.assertEqual("R1", assignment.review_root_id("R1.gate.critique.code"))
         self.assertEqual("R1", assignment.review_root_id("R1.gate.repair"))
-        self.assertEqual("R1", assignment.review_root_id("R1.gate.verify"))
         self.assertEqual("R1.02", assignment.review_root_id("R1.02.check"))
         self.assertIsNone(assignment.review_root_id("R1.02"))
 
         prompt = launch.launch_prompt(dict(
-            self.assignment_facts(), review_kind="verify",
+            self.assignment_facts(), review_kind="critique",
             root_path="/sink/run/R1.md",
-            review_tip={"kind": "RepairOutcome", "identity": "sha256:abc"},
+            review_tip={"kind": "GatePlan", "identity": "sha256:abc"},
         ))
         self.assertIn("/sink/run/R1.md", prompt)
-        self.assertIn("RepairOutcome sha256:abc", prompt)
-        self.assertIn("PASS:", prompt)
+        self.assertIn("GatePlan sha256:abc", prompt)
+
+    def test_no_lane_asks_a_child_for_a_verdict_token(self):
+        """A command verdict is an exit code and a check's verdict is its
+        findings, so no prompt teaches a prefix a join used to parse."""
+
+        for review_kind in (None, "critique", "repair"):
+            with self.subTest(review_kind=review_kind):
+                prompt = launch.launch_prompt(dict(
+                    self.assignment_facts(), review_kind=review_kind,
+                ))
+                for token in ("PASS:", "FAIL:", "UNVERIFIED:"):
+                    self.assertNotIn(token, prompt)
 
     @staticmethod
     def assignment_facts() -> dict:
@@ -310,11 +320,11 @@ class DispatchLaunchTest(unittest.TestCase):
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "craft": None, "craft_scope": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-check",
-            "executor_script": None, "id": "R1.gate.verify",
+            "executor_script": None, "id": "R1.gate.critique.code",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": "orch-code-pack",
             "review_kind": None, "review_tip": None, "role": "worker",
             "root_path": None, "run": "run",
-            "ticket_path": "/sink/run/R1.gate.verify.md", "workspace": "/tree",
+            "ticket_path": "/sink/run/R1.gate.critique.code.md", "workspace": "/tree",
         }
 
     def test_dispatching_a_sealed_pending_item_readies_it_without_hanging(self):
@@ -504,21 +514,22 @@ class LandTest(unittest.TestCase):
         path.write_text(body, encoding="utf-8")
         return str(path)
 
-    def commit_outcome(self, status="complete"):
+    def commit_outcome(self, handoff=False):
         arguments = [
-            "dispatch-outcome", "run", "T", "--status", status,
+            "dispatch-outcome", "run", "T",
             "--result-file", self.evidence("result", "delivered"),
             "--verification-file", self.evidence("verification", "verified"),
         ]
-        if status == "suspended":
+        if handoff:
             arguments += ["--handoff-file", self.evidence("handoff", "resume here")]
         return self.run_command(*arguments)
 
-    def land(self, *extra):
+    def land(self, *extra, status="complete"):
+        graded = ["--status", status] if status is not None else []
         return tickets._dispatch([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", *extra,
+            "--by", "root-join", *graded, *extra,
         ])
 
     def steps(self, landed) -> dict:
@@ -532,7 +543,8 @@ class LandTest(unittest.TestCase):
         self.assertNotIn("error", landed, landed)
         self.assertEqual("complete", landed["land"]["status"])
         self.assertEqual(
-            {"dispatch-outcome": "skipped", "dispatch-join": "committed",
+            {"dispatch-outcome": "skipped", "workspace-integrate": "absent",
+             "done": "graded", "dispatch-join": "committed",
              "workspace-retire": "removed"},
             self.steps(landed),
         )
@@ -567,7 +579,6 @@ class LandTest(unittest.TestCase):
             "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1",
             "run": "run",
-            "status": "complete",
         }
         path = Path(self.temporary.name) / "outcome.json"
         path.write_text(canonical_json(envelope), encoding="utf-8")
@@ -576,7 +587,8 @@ class LandTest(unittest.TestCase):
 
         self.assertNotIn("error", landed, landed)
         self.assertEqual(
-            {"dispatch-outcome": "committed", "dispatch-join": "committed",
+            {"dispatch-outcome": "committed", "workspace-integrate": "absent",
+             "done": "graded", "dispatch-join": "committed",
              "workspace-retire": "removed"},
             self.steps(landed),
         )
@@ -594,7 +606,6 @@ class LandTest(unittest.TestCase):
             },
             "id": "T", "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1", "run": "run",
-            "status": "complete",
         }
         carried = io.TextIOWrapper(
             io.BytesIO(canonical_json(envelope).encode("utf-8")), encoding="utf-8"
@@ -606,11 +617,9 @@ class LandTest(unittest.TestCase):
         self.assertEqual("committed", self.steps(landed)["dispatch-outcome"])
 
     def test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in(self):
-        self.commit_outcome("suspended")
-        text = self.ticket_path().read_text(encoding="utf-8")
-        self.assertIn("suspended", text)
+        self.commit_outcome(handoff=True)
 
-        landed = self.land()
+        landed = self.land(status="suspended")
 
         self.assertNotIn("error", landed, landed)
         self.assertEqual("suspended", landed["land"]["status"])
@@ -622,7 +631,7 @@ class LandTest(unittest.TestCase):
         refusal = tickets._dispatch([
             "land", "..", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
-            "--by", "root-join",
+            "--by", "root-join", "--status", "complete",
         ])
 
         self.assertIn("unsafe run id", refusal["error"])

@@ -102,40 +102,15 @@ class GradeSnapshotTest(unittest.TestCase):
         snapshot["R"]["assignment_seal"] = "sha256:changed"
         self.assertFalse(fixed_gate_snapshot("R", snapshot)["reusable"])
 
-    def test_review_verification_accepts_optional_closed_covers(self):
-        plan = tickets_review._record(
-            "GatePlan", None, artifact="artifact", criteria=[{
-                "identity": "sha256:criterion", "lens": "code",
-                "order": 0, "ticket": "R.gate.critique.code",
-            }], isolation="none", mode="gate", pack="orch-code-pack",
-            root="R", workspace=str(Path.cwd()),
-        )
-        finding = {
-            "blocking": False, "class": "correctness", "evidence": ["e"],
-            "goal_impact": "none", "id": "B1", "repair": "none",
-            "summary": "none",
-        }
-        adjudication = tickets_review._record(
-            "CritiqueAdjudication", plan["identity"], accepted=[],
-            adjudicated_by="agent", artifact="artifact", findings=[finding],
-            lens="code",
-        )
-        repair = tickets_review._record(
-            "RepairOutcome", adjudication["identity"], accepted=[],
-            artifact="artifact", by="agent", input_artifact="artifact",
-            no_op=True, result="none",
-        )
-        verification = tickets_review._record(
-            "Verification", repair["identity"], artifact="artifact", by="agent",
-            evidence="PASS: unchanged", verdict="PASS",
-            covers={"base": "sha256:base", "dependencies": []},
-        )
-        state = tickets_review._review_state(
-            [plan, adjudication, repair, verification]
-        )
-        self.assertEqual(verification, state["records"][-1])
+    def test_the_ledger_ends_at_the_repair_and_admits_no_verification_record(self):
+        """The chain's last link is `RepairOutcome`.
 
-    def test_review_verification_rejects_empty_closed_covers(self):
+        A `Verification` record carried a prose verdict a join parsed out of
+        a child's evidence. There is no such verdict: land runs the ticket's
+        `done` predicate and an exit code answers, so the record kind is not
+        one the schema knows and a ledger appending one is refused.
+        """
+
         plan = tickets_review._record(
             "GatePlan", None, artifact="artifact", criteria=[{
                 "identity": "sha256:criterion", "lens": "code",
@@ -158,13 +133,16 @@ class GradeSnapshotTest(unittest.TestCase):
             artifact="artifact", by="agent", input_artifact="artifact",
             no_op=True, result="none",
         )
+        closed = tickets_review._review_state([plan, adjudication, repair])
+        self.assertEqual(repair, closed["records"][-1])
+        self.assertFalse(hasattr(tickets_review, "verification_outcome"))
+
         with self.assertRaises(tickets_review.ReviewError):
             tickets_review._review_state([
                 plan, adjudication, repair,
                 tickets_review._record(
                     "Verification", repair["identity"], artifact="artifact",
                     by="agent", evidence="PASS: unchanged", verdict="PASS",
-                    covers={},
                 ),
             ])
 

@@ -183,12 +183,13 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         delta = Path(self.temporary.name) / "closing-delta.txt"
         delta.write_text("the unstreamed closing delta", encoding="utf-8")
         self.run_command(
-            "dispatch-outcome", "run", "T", "--status", "complete",
+            "dispatch-outcome", "run", "T",
             "--result-file", str(delta), "--verification-file", str(delta),
         )
         joined = self.run_command(
             "dispatch-join", "run", "T", "--assignment-seal", seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome", "--by", "root",
+            "--status", "complete",
         )
         self.assertEqual("complete", joined["join"]["status"])
         self.assertEqual(

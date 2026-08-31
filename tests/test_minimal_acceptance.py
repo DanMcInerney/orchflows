@@ -18,7 +18,9 @@ def _gaps(frontier: str, profiles: str) -> list[str]:
         "read-only checker": "one distinct read-only `orch-check` dispatch",
         "fixed evidence": "fixed artifact, Goal, Context, executor evidence",
         "separate repair": "one separate repair ticket",
-        "fresh verifier": "fresh verification",
+        # the fresh outside check, which is no longer a child: `land` runs
+        # the target's own predicate in the integrated tree
+        "checked done": "`land` runs the target's `done` predicate",
         "terminal suite": "required checks exactly once at the accepted terminal identity",
         "terminal profile": "Running the terminal required checks",
         "engine context": "engine's own context",

@@ -247,7 +247,7 @@ class SeparateRepairGateTest(unittest.TestCase):
             ("Risks", "[]"),
         ])
 
-    def test_single_lens_gate_emits_distinct_critique_repair_verify_tickets(self):
+    def test_single_lens_gate_emits_distinct_critique_and_repair_tickets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             run_dir = root / "run"
@@ -268,8 +268,8 @@ class SeparateRepairGateTest(unittest.TestCase):
             self.assertEqual([
                 "root.gate.critique.code",
                 "root.gate.repair",
-                "root.gate.verify",
             ], result["gate"]["tickets"])
+            self.assertFalse((run_dir / "root.gate.verify.md").exists())
             critique = (run_dir / "root.gate.critique.code.md").read_text(encoding="utf-8")
             repair = (run_dir / "root.gate.repair.md").read_text(encoding="utf-8")
             self.assertNotIn("sequence:", critique)

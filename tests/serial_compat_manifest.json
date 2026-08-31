@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1986,
+  "count": 1996,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -109,6 +109,7 @@
    "test_dispatch_launch.DispatchLaunchTest.test_an_unknown_host_refuses_before_the_attempt_is_opened",
    "test_dispatch_launch.DispatchLaunchTest.test_an_unresolved_role_refuses_before_the_attempt_is_opened",
    "test_dispatch_launch.DispatchLaunchTest.test_dispatching_a_sealed_pending_item_readies_it_without_hanging",
+   "test_dispatch_launch.DispatchLaunchTest.test_no_lane_asks_a_child_for_a_verdict_token",
    "test_dispatch_launch.DispatchLaunchTest.test_the_dispatch_carries_the_launch_its_host_record_declares",
    "test_dispatch_launch.DispatchLaunchTest.test_the_host_flag_selects_another_hosts_binding",
    "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_carries_every_fact_a_child_cannot_derive",
@@ -859,6 +860,16 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
    "test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_every_active_discrepancy_has_a_routine_canonical_witness",
    "test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_obsolete_gate_fossils_are_absent",
+   "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
+   "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_predicate_is_part_of_the_sealed_assignment",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_a_passing_command_is_the_verdict_and_land_files_its_evidence",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_a_refused_command_arms_a_repair_round_instead_of_wedging",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_a_ticket_with_no_predicate_still_takes_the_drivers_grade",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_the_check_form_mints_one_orch_check_and_reads_its_joined_status",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_the_two_grade_paths_refuse_to_be_used_together_or_neither",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_two_rounds_with_no_delta_close_the_ticket_stalled",
+   "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
+   "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_launch",
@@ -929,8 +940,7 @@
    "test_tickets_grade.GradeSnapshotTest.test_one_member_decomposition_is_refused",
    "test_tickets_grade.GradeSnapshotTest.test_prose_covers_can_use_workspace_baseline_and_result_tip",
    "test_tickets_grade.GradeSnapshotTest.test_prose_verification_covers_are_read_as_fixed_result_evidence",
-   "test_tickets_grade.GradeSnapshotTest.test_review_verification_accepts_optional_closed_covers",
-   "test_tickets_grade.GradeSnapshotTest.test_review_verification_rejects_empty_closed_covers",
+   "test_tickets_grade.GradeSnapshotTest.test_the_ledger_ends_at_the_repair_and_admits_no_verification_record",
    "test_tickets_loop.LoopStubProtocolTest.test_a_ticket_without_a_loop_object_is_refused",
    "test_tickets_loop.LoopStubProtocolTest.test_advance_rearms_then_closes_complete_on_the_done_reading",
    "test_tickets_loop.LoopStubProtocolTest.test_arm_creates_the_next_iteration_and_replays_while_it_is_live",
@@ -1005,7 +1015,7 @@
    "test_verification_model.GoalEvidenceContractTest.test_ticket_has_no_extra_success_schema",
    "test_verification_model.SeparateRepairGateTest.test_a_direct_single_root_does_not_take_the_graph_gate",
    "test_verification_model.SeparateRepairGateTest.test_a_single_executor_result_does_not_trigger_a_composite_gate",
-   "test_verification_model.SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_repair_verify_tickets",
+   "test_verification_model.SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_and_repair_tickets",
    "test_verification_model.SpecSuccessorLifecycleTest.test_successor_trigger_has_a_fresh_authorized_materialization_path",
    "test_verification_model.SpecSuccessorLifecycleTest.test_topology_references_resolve_to_current_numbered_clauses",
    "test_verify_at.CallerEnvironmentTest.test_no_git_seam_a_caller_set_reaches_the_command",
@@ -1989,7 +1999,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f5a58e165fb1e3073c370bad69bf7e09036261b39fe4f327008cf7cf47214d87"
+  "sha256": "b598bc093b0f072adb095f4931c3cff422eea7851594d80efac9a1105d5d378a"
  },
  "mutation_owners": [
   {
@@ -4307,6 +4317,32 @@
    ]
   },
   {
+   "module": "tests.test_ticket_done_predicate",
+   "owner": "LandDonePredicateTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_done_predicate",
+   "owner": "LandDonePredicateTest.stand_up",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_done_predicate",
+   "owner": "LandIntegratesTheCandidateTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
    "module": "tests.test_ticket_semantic_contract",
    "owner": "SemanticTicketContractTest.setUp",
    "restoration": "sharded-module-guard",
@@ -4665,7 +4701,7 @@
   },
   {
    "module": "tests.test_verification_model",
-   "owner": "SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_repair_verify_tickets",
+   "owner": "SeparateRepairGateTest.test_single_lens_gate_emits_distinct_critique_and_repair_tickets",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
