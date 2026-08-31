@@ -1,6 +1,7 @@
 ---
 id: 00-benchmark
-executor: orch-frontier
+executor: orch-execute
+pack: {{pack}}
 depends_on: []
 bound: <= 200 tool calls
 independence: checker
@@ -21,7 +22,7 @@ that versions the benchmark and remains fixed for the campaign.
 
 - input: {"name":"skill","type":"literal","value":"{{skill}}"}
 
-## Suggested files
+## Details
 
 - benchmarks/{{skill}}/
 
@@ -32,16 +33,4 @@ Exceptional constraints:
 - restate or call evolve's verification, search, or selection internals
 - letting a benchmaker run targeting benchmaker call evolve
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

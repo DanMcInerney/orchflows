@@ -13,8 +13,6 @@ if __package__:
     from .tickets_worklog import WORKLOG_USAGE
     from .tickets_seal import GENERATION_SUBCOMMANDS
     from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_REPLACE_USAGE, DISPATCH_RETIRE_USAGE
-    from .tickets_dispatch_packet import DISPATCH_PACKET_USAGE, DISPATCH_RECEIVE_USAGE
-    from .tickets_dispatch_receipt import DISPATCH_RECEIPT_USAGE
     from .tickets_join import DISPATCH_JOIN_USAGE
     from .tickets_outcome import DISPATCH_OUTCOME_USAGE
     from .tickets_land import LAND_USAGE
@@ -32,10 +30,6 @@ else:
     DISPATCH_OPEN_USAGE = _attempts.DISPATCH_OPEN_USAGE
     DISPATCH_REPLACE_USAGE = _attempts.DISPATCH_REPLACE_USAGE
     DISPATCH_RETIRE_USAGE = _attempts.DISPATCH_RETIRE_USAGE
-    _dispatch_packet = __import__("tickets_dispatch_packet")
-    DISPATCH_PACKET_USAGE = _dispatch_packet.DISPATCH_PACKET_USAGE
-    DISPATCH_RECEIVE_USAGE = _dispatch_packet.DISPATCH_RECEIVE_USAGE
-    DISPATCH_RECEIPT_USAGE = __import__("tickets_dispatch_receipt").DISPATCH_RECEIPT_USAGE
     DISPATCH_JOIN_USAGE = __import__("tickets_join").DISPATCH_JOIN_USAGE
     DISPATCH_OUTCOME_USAGE = __import__("tickets_outcome").DISPATCH_OUTCOME_USAGE
     LAND_USAGE = __import__('tickets_land').LAND_USAGE
@@ -46,10 +40,10 @@ LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 INSTANTIATE_USAGE = "instantiate <template-dir> --run <run> [--set k=v ...]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
-    "--lease-expires-at <absolute-iso> --reply-to <name> "
+    "--lease-expires-at <absolute-iso> "
     "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
-    "[--form reference | inline] [--review-kind critique|repair|verify] "
-    "[--host <name>] [--packet-file <path>] [--inline-limit <bytes>]"
+    "[--review-kind critique|repair|verify] "
+    "[--host <name>]"
 )
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 GRADE_USAGE = "grade <run> <root>"
@@ -77,9 +71,6 @@ SUBCOMMAND_USAGE = {
     "dispatch-replace": DISPATCH_REPLACE_USAGE,
     "dispatch-outcome": DISPATCH_OUTCOME_USAGE,
     "dispatch-join": DISPATCH_JOIN_USAGE,
-    "dispatch-packet": DISPATCH_PACKET_USAGE,
-    "dispatch-receive": DISPATCH_RECEIVE_USAGE,
-    "dispatch-receipt": DISPATCH_RECEIPT_USAGE,
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "join-noop-repair": JOIN_NOOP_REPAIR_USAGE,
@@ -93,7 +84,7 @@ SUBCOMMAND_USAGE = {
     **{name: values[0] for name, values in GENERATION_SUBCOMMANDS.items()},
 }
 SUBCOMMAND_SUMMARY = {
-    "new": "Create one Goal/Context ticket; Suggested files are optional and non-binding.",
+    "new": "Create one Goal/Context ticket; Details is the planner's optional free-form guidance.",
     "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
     "gate": "Create a composite gate, or materialize repair and fresh verification after an ordinary checker accepts blockers.",
     "grade": "Report deterministic width, shape, pack coverage, adapter capability, and decomposition state.",
@@ -102,7 +93,7 @@ SUBCOMMAND_SUMMARY = {
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
     "ready": "Promote sealed tickets whose dependencies are complete.",
-    "dispatch": "Atomically ready, establish, open, and project one dispatch packet, and resolve its host launch.",
+    "dispatch": "Atomically ready, establish, open, and emit the one launch that starts this ticket's child.",
     "land": "Atomically import the outcome, join it, retire the derived worktree, and report the frontier.",
     "loop-arm": "Create or replay the next iteration ticket of one loop stub from its frozen goal.",
     "loop-evaluate": "Read the done-check for the latest terminal iteration: run the command, or mint/read the fresh check.",
@@ -113,9 +104,6 @@ SUBCOMMAND_SUMMARY = {
     "dispatch-replace": "Atomically replace one live dispatch-v1 attempt with a unique successor.",
     "dispatch-outcome": "Commit or replay the attempt's one reserved executor outcome envelope.",
     "dispatch-join": "Commit or replay one outcome-fenced join and its lifecycle transition.",
-    "dispatch-packet": "Commit or replay one reference or inline dispatch-v1 packet projection.",
-    "dispatch-receive": "Validate one dispatch-v1 packet against its receipt identity and authority.",
-    "dispatch-receipt": "Read one durable accepted dispatch receipt without mutation.",
     "check": "Anchor one completed durable checker stage to its target's checked_by field.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
     "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
@@ -131,18 +119,18 @@ SUBCOMMAND_SUMMARY = {
 HELP_FLAGS = frozenset({"--help", "-h"})
 HELP_COMMANDS = HELP_FLAGS | {"help"}
 VALUE_FLAGS = frozenset({
-    "--run", "--by", "--executor", "--goal", "--context", "--suggested-file",
+    "--run", "--by", "--executor", "--goal", "--context", "--details",
     "--depends-on", "--lens", "--ordered-lens-bundle", "--bound", "--pack",
     "--profile", "--independence", "--isolation", "--set",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
-    "--tree", "--reply-to", "--workspace", "--proposal", "--covered",
+    "--tree", "--workspace", "--proposal", "--covered",
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
-    "--form", "--role", "--outcome-record-id", "--status", "--stage",
+    "--outcome-record-id", "--status", "--stage",
     "--accepted-file", "--review-kind", "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
-    "--host", "--packet-file", "--inline-limit", "--outcome-file",
+    "--host", "--outcome-file",
 })
 
 

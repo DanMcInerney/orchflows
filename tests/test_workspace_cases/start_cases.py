@@ -31,10 +31,7 @@ class TestStartEstablishesEvidenceStore(unittest.TestCase):
             body = payload_of(done)["start"]
             self.assertEqual("evidence-store", body["mechanism"])
             self.assertEqual(str(store), body["workspace_root"])
-            self.assertIn(
-                f"workspace_path: {store}\n",
-                ticket.read_text(encoding="utf-8"),
-            )
+            self.assertEqual(str(store), recorded_workspace(ticket))
             self.assertNotIn("workspace_branch", body)
             self.assertNotIn("workspace_baseline", body)
 
@@ -151,21 +148,22 @@ class TestStartRecordsWhatItObserved(unittest.TestCase):
             after = ticket.read_text(encoding="utf-8")
             self.assertIn("workspace_branch: wt-branch\n", after)
             self.assertIn(f"workspace_baseline: {head} clean\n", after)
-            self.assertIn(f"workspace_path: {worktree.resolve()}\n", after)
-            # the targeted write: three lines inserted before the closing ---,
-            # every other byte of the ticket left as it was found
-            self.assertEqual(
+            self.assertEqual(str(worktree.resolve()), recorded_workspace(ticket))
+            # the targeted write: two lines inserted before the closing ---
+            # and the attempt's own recorded tree, every other byte of the
+            # ticket left as it was found. The expected bytes are built
+            # through the recorder itself, so this pins the write's shape
+            # rather than re-spelling the attempt's encoding here.
+            expected, recorded = workspace_record.recorded_on_attempt(
                 before.replace(
                     "---\n\n## Objective",
                     f"workspace_branch: wt-branch\n"
                     f"workspace_baseline: {head} clean\n---\n\n## Objective",
-                ).replace(
-                    "workspace_baseline: " + head + " clean\n---",
-                    "workspace_baseline: " + head + " clean\n"
-                    f"workspace_path: {worktree.resolve()}\n---",
                 ),
-                after,
+                str(worktree.resolve()),
             )
+            self.assertTrue(recorded)
+            self.assertEqual(expected, after)
             self.assertFalse(
                 (worktree / ".orch").exists(),
                 "start created a private .orch/ in the workspace",
@@ -495,7 +493,10 @@ class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
         self.assertEqual(0, after.count(b"\r\n"), after)
         self.assertEqual(b"## Objective", after.splitlines()[-3])
 
-    def test_only_the_three_stamped_lines_differ_from_the_prior_bytes(self):
+    def test_only_the_two_stamped_lines_differ_from_the_prior_bytes(self):
+        """Two, not three: the established tree is the attempt's, and a
+        ticket carrying no attempt has nowhere to record it."""
+
         body = b"---\nid: T1\nrun: testrun\nstatus: claimed\n---\n\n## Objective\n\nx\n"
         before = body.split(b"\n")
         after = self._stamped(body).split(b"\n")
@@ -503,8 +504,6 @@ class TestTheStampPreservesTheTicketsByteDomain(unittest.TestCase):
         added = [line for line in after if line not in before]
         self.assertEqual(
             [b"workspace_branch: a-branch", b"workspace_baseline: abc123 clean"],
-            added[:2],
+            added,
         )
-        self.assertEqual(3, len(added), added)
-        self.assertTrue(added[2].startswith(b"workspace_path: "), added)
         self.assertEqual([], [line for line in before if line not in after])

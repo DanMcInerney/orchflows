@@ -13,8 +13,8 @@ if __package__:
     from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS, accepted_receipt_failure,
+        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -33,8 +33,8 @@ else:
     import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS, accepted_receipt_failure,
+        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
         record_id_namespace_ok as _namespace_ok, state as _state,
@@ -193,16 +193,22 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
     except OSError as error:
         return {"error": f"unable to open dispatch attempt: {error}"}
 
-def _record_response(
-    run: str, ticket_id: str, dispatch_id: str, record_id: str, content
-) -> dict:
+def _record_response(run: str, ticket_id: str, dispatch_id: str, record_id: str) -> dict:
+    """The stored success for one committed record: its identity alone.
+
+    Not the content. Every record already stores that once, as the
+    canonical string the `(dispatch_id, record_id)` idempotency
+    comparison is made against, and the second copy under this success
+    was ~73% of a gate ticket's bytes -- 275 KB on the largest one.
+    A caller that wants the content reads the record.
+    """
+
     return {"committed_record": {
         "protocol": PROTOCOL,
         "run": run,
         "id": ticket_id,
         "dispatch_id": dispatch_id,
         "record_id": record_id,
-        "content": content,
     }}
 
 def _commit_record(
@@ -304,12 +310,8 @@ def _commit_record(
                 return _classification(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
-            if record_kind in ("result", "outcome", "join"):
-                failure = accepted_receipt_failure(attempt)
-                if failure is not None:
-                    return failure
             if mutate is None:
-                success = _record_response(run, ticket_id, dispatch_id, record_id, content)
+                success = _record_response(run, ticket_id, dispatch_id, record_id)
                 updated = text
             else:
                 updated, success, failure = mutate(text, data, attempt, state)

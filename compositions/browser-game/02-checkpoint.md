@@ -41,16 +41,4 @@ Exceptional constraints:
 - hide research, prose, code, or rendered outcomes behind another artifact kind's identity
 - file a checkpoint or successor projection that the instance validator rejects
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

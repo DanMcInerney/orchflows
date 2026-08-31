@@ -309,7 +309,7 @@ class TestNoFallback(unittest.TestCase):
             for args in (
                 ("join-noop-repair", "testrun", "T1", "--by", "agent-a"),
                 ("set-status", "testrun", "T1", "complete"),
-                ("result", "testrun", "T1", "--section", "Result", "--file", str(body)),
+                ("result", "testrun", "T1", "--file", str(body)),
             ):
                 with self.subTest(args[0]):
                     completed = run_full(repo, *args)

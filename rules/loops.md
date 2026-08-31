@@ -2,8 +2,9 @@
 
 The generated [terminal lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
 connect bounded loop outcomes to their run-visible states. A loop is a
-ticket carrying the `loop` object of
-[work-item.md](../contracts/work-item.md); `scripts/tickets_loop.py` owns
+ticket carrying the `loop` marker of
+[work-item.md](../contracts/work-item.md) beside its own `done` predicate;
+`scripts/tickets_loop.py` owns
 arm, evaluate, and advance, and the worklog is the state.
 
 1. A loop carries a frozen goal, an external done-check, and a bound.
@@ -21,10 +22,11 @@ arm, evaluate, and advance, and the worklog is the state.
    newly verified increment or a newly killed approach exit `stalled`;
    exhausting the bound exits `limited`. Discovered scope is queued in
    the worklog, never merged into the live goal.
-4. A judged done-check's iteration-time PASS is provisional; `complete`
-   requires the fresh final judgment
+4. A judged done-check's iteration-time reading is provisional;
+   `complete` requires the fresh final judgment
    [verification.md](verification.md) §6 requires — the advance reads it
-   off a fresh check ticket, never off an iteration's own claim.
+   off a fresh check ticket's own joined disposition, never off an
+   iteration's claim.
 5. Work with no terminal done (queue health, upkeep) runs as scheduled
    bounded snapshots, never as an unconverging loop; a host scheduler
    chains bounded campaigns.

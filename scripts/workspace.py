@@ -12,14 +12,14 @@ back to the tree the caller happened to be standing in. ``retire`` removes
 it again, leaving every stamp that names it in place for the join.
 
 ``prepare`` installs what the recorded workspace's tree declares, against
-the ``workspace_path`` establishment already stamped. It is a verb of its
+the establishment the dispatch attempt already records. It is a verb of its
 own because it is the one act here that costs a package manager's minutes
 and writes no ticket: run inside a caller's critical section it made every
 sibling of the run wait for a tree that was not theirs, so it takes no lock
 and is called once the establishment's lock is let go.
 
 ``start`` is the observation that predates it and still answers for
-everything else: it records the durable ``workspace_path`` for every
+everything else: it records the durable tree on the open attempt for every
 supported adapter, adds ``workspace_branch`` and ``workspace_baseline`` for
 a Git tree the caller already stands in, and creates the canonical
 run-scoped store for an evidence-store lane. ``check`` grades the item's
@@ -93,6 +93,7 @@ import tickets  # noqa: E402  frontmatter and isolation, imported and never copi
 # ``bin`` layout after the directory above has joined ``sys.path``.
 workspace_git = __import__("workspace_git")
 workspace_candidate = __import__("workspace_candidate")
+workspace_record = __import__("workspace_record")
 # Re-exported, never respelled: the names are declared beside the writes and
 # the refusals that use them, and this facade is where a reader looks them up.
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -108,11 +109,10 @@ FRONTMATTER_KEYS = {
     ISOLATION_KEY: "read by check",
     BRANCH_KEY: "written by start, read by check",
     BASELINE_KEY: "written by start",
-    PATH_KEY: "written by start",
 }
 
 # The value and its normalization both come from ``tickets.py``, never a
-# second spelling here: packet projection gates the host establishment off
+# second spelling here: dispatch gates the host establishment off
 # this same declaration, and a grader reading it differently skips the grade
 # at exit 0 while the join reads success.
 REQUIRED = tickets.REQUIRED_ISOLATION
@@ -134,7 +134,7 @@ VERDICTS = {
     EXIT_WRONG_VANTAGE: "wrong-vantage",
     EXIT_SHARED_WORKSPACE: "shared-workspace",
 }
-# Candidate diffs are reported in full. Suggested files are not read here.
+# Candidate diffs are reported in full. The assignment is not read here.
 # One spelling of each subcommand's arguments, joined into ``USAGE`` for the
 # refusals and printed alone for ``<sub> --help``. Two spellings would drift.
 COMMAND_USAGE = {
@@ -382,7 +382,7 @@ def _cmd_check(rest):
 
     ticket_worktree = workspace_git._ticket_worktree(_git_out, branch, tip)
     if ticket_worktree is not None:
-        recorded_workspace = str(data.get(PATH_KEY) or "").strip()
+        recorded_workspace = workspace_record.attempt_workspace(data) or ""
         if recorded_workspace and Path(recorded_workspace).resolve() != ticket_worktree.resolve():
             raise Refused(
                 f"branch {branch!r} now stands in {ticket_worktree.resolve()}, not its "

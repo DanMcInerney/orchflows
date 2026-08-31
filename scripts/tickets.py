@@ -30,7 +30,7 @@ if __package__:
     from . import tickets_store_writes as _tickets_store_writes_module
     from . import tickets_issue as _tickets_issue_module
     from . import tickets_lifecycle as _tickets_lifecycle_module
-    from . import tickets_packet as _tickets_packet_module
+    from . import tickets_assignment as _tickets_assignment_module
     from . import tickets_result as _tickets_result_module
     from . import tickets_worklog as _tickets_worklog_module
     from . import tickets_commands as _tickets_commands_module
@@ -39,8 +39,6 @@ if __package__:
     from . import tickets_dispatch_facade as _tickets_dispatch_facade_module
     from . import tickets_admission as _tickets_admission_module
     from . import tickets_attempts as _tickets_attempts_module
-    from . import tickets_dispatch_packet as _tickets_dispatch_packet_module
-    from . import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     from . import tickets_join as _tickets_join_module
     from . import tickets_outcome as _tickets_outcome_module
     from . import tickets_land as _tickets_land_module
@@ -57,7 +55,7 @@ else:
     import tickets_store_writes as _tickets_store_writes_module
     import tickets_issue as _tickets_issue_module
     import tickets_lifecycle as _tickets_lifecycle_module
-    import tickets_packet as _tickets_packet_module
+    import tickets_assignment as _tickets_assignment_module
     import tickets_result as _tickets_result_module
     import tickets_worklog as _tickets_worklog_module
     import tickets_commands as _tickets_commands_module
@@ -66,8 +64,6 @@ else:
     import tickets_dispatch_facade as _tickets_dispatch_facade_module
     import tickets_admission as _tickets_admission_module
     import tickets_attempts as _tickets_attempts_module
-    import tickets_dispatch_packet as _tickets_dispatch_packet_module
-    import tickets_dispatch_receipt as _tickets_dispatch_receipt_module
     import tickets_join as _tickets_join_module
     import tickets_outcome as _tickets_outcome_module
     import tickets_land as _tickets_land_module
@@ -84,13 +80,9 @@ BOUND_CHECK_USAGE = _tickets_commands_module.BOUND_CHECK_USAGE
 CUT_SECTIONS = _tickets_format_module.CUT_SECTIONS
 CUT_SECTIONS_BY_KEY = _tickets_format_module.CUT_SECTIONS_BY_KEY
 DEFAULT_BOUND_MINUTES = _tickets_format_module.DEFAULT_BOUND_MINUTES
-DISPATCHING_EXECUTORS = _tickets_format_module.DISPATCHING_EXECUTORS
 DURATION_RE = _tickets_format_module.DURATION_RE
 EXECUTOR_SECTIONS = _tickets_format_module.EXECUTOR_SECTIONS
 EXECUTOR_SECTIONS_BY_KEY = _tickets_format_module.EXECUTOR_SECTIONS_BY_KEY
-INSTRUCTION_BUDGET = _tickets_format_module.INSTRUCTION_BUDGET
-INSTRUCTION_SECTIONS = _tickets_format_module.INSTRUCTION_SECTIONS
-LINK_TARGET_RE = _tickets_format_module.LINK_TARGET_RE
 OPTIONAL_SECTIONS = _tickets_format_module.OPTIONAL_SECTIONS
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX
@@ -135,7 +127,6 @@ _split_commas = _tickets_format_module._split_commas
 _unquote = _tickets_format_module._unquote
 dequote = _tickets_format_module.dequote
 _write_section = _tickets_format_module._write_section
-instruction_words = _tickets_format_module.instruction_words
 ticket_defects = _tickets_format_module.ticket_defects
 ADMISSION_PENDING = _tickets_admission_module.ADMISSION_PENDING
 ADAPTER_REGISTRY = _tickets_adapters_module.ADAPTER_REGISTRY
@@ -213,7 +204,6 @@ INDEPENDENCE_VALUES = _tickets_issue_module.INDEPENDENCE_VALUES
 ISOLATION_VALUES = _tickets_issue_module.ISOLATION_VALUES
 NEW_DEFAULT_BOUND = _tickets_issue_module.NEW_DEFAULT_BOUND
 NEW_USAGE = _tickets_issue_module.NEW_USAGE
-_ceiling_error = _tickets_issue_module._ceiling_error
 _cmd_new = _tickets_issue_module._cmd_new
 _distinct_gate_lenses = _tickets_issue_module._distinct_gate_lenses
 _frontmatter_list = _tickets_issue_module._frontmatter_list
@@ -225,15 +215,12 @@ CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE
 JOIN_NOOP_REPAIR_USAGE = _tickets_lifecycle_module.JOIN_NOOP_REPAIR_USAGE
 SET_STATUS_USAGE = _tickets_lifecycle_module.SET_STATUS_USAGE
 _check_under_run_lock = _tickets_lifecycle_module._check_under_run_lock
-_claim_is_stale = _tickets_packet_module._claim_is_stale
+_claim_is_stale = _tickets_assignment_module._claim_is_stale
 _cmd_check = _tickets_lifecycle_module._cmd_check
 _cmd_dispatch_open = _tickets_attempts_module._cmd_dispatch_open
 _cmd_dispatch_commit = _tickets_attempts_module._cmd_dispatch_commit
 _cmd_dispatch_retire = _tickets_attempts_module._cmd_dispatch_retire
 _cmd_dispatch_replace = _tickets_attempts_module._cmd_dispatch_replace
-_cmd_dispatch_packet = _tickets_dispatch_packet_module._cmd_dispatch_packet
-_cmd_dispatch_receive = _tickets_dispatch_packet_module._cmd_dispatch_receive
-_cmd_dispatch_receipt = _tickets_dispatch_receipt_module._cmd_dispatch_receipt
 _cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
 _cmd_dispatch_outcome = _tickets_outcome_module._cmd_dispatch_outcome
 LAND_USAGE = _tickets_land_module.LAND_USAGE
@@ -245,13 +232,11 @@ _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
 _cmd_show = _tickets_lifecycle_module._cmd_show
 _join_noop_repair_under_run_lock = _tickets_lifecycle_module._join_noop_repair_under_run_lock
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
-GATE_CRITIQUE_ID = _tickets_packet_module.GATE_CRITIQUE_ID
-GATE_EXECUTOR_SECTIONS = _tickets_packet_module.GATE_EXECUTOR_SECTIONS
-GATE_REPAIR_ID = _tickets_packet_module.GATE_REPAIR_ID
-GATE_VERIFY_ID = _tickets_packet_module.GATE_VERIFY_ID
-PACKET_SECTIONS = _tickets_packet_module.PACKET_SECTIONS
-PACKET_USAGE = _tickets_packet_module.PACKET_USAGE
-_packet_under_run_lock = _tickets_packet_module._packet_under_run_lock
+ASSIGNMENT_SECTIONS = _tickets_assignment_module.ASSIGNMENT_SECTIONS
+GATE_CRITIQUE_ID = _tickets_assignment_module.GATE_CRITIQUE_ID
+GATE_EXECUTOR_SECTIONS = _tickets_assignment_module.GATE_EXECUTOR_SECTIONS
+GATE_REPAIR_ID = _tickets_assignment_module.GATE_REPAIR_ID
+dispatch_assignment = _tickets_assignment_module.dispatch_assignment
 COVERAGE_RECORD_NAME = _tickets_result_module.COVERAGE_RECORD_NAME
 IMPROVEMENT_USAGE = _tickets_result_module.IMPROVEMENT_USAGE
 PROPOSALS_DIR = _tickets_result_module.PROPOSALS_DIR
@@ -265,7 +250,6 @@ _is_terminal_heading = _tickets_result_module._is_terminal_heading
 _notes_terminal = _tickets_result_module._notes_terminal
 _result_under_run_lock = _tickets_result_module._result_under_run_lock
 _run_state_under_run_lock = _tickets_result_module._run_state_under_run_lock
-GATE_VERIFY_SUFFIX = _tickets_worklog_module.GATE_VERIFY_SUFFIX
 ITERATION_ID_RE = _tickets_worklog_module.ITERATION_ID_RE
 WORKLOG_NAME = _tickets_worklog_module.WORKLOG_NAME
 WORKLOG_RENDER_MARKER = _tickets_worklog_module.WORKLOG_RENDER_MARKER
@@ -298,7 +282,6 @@ apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
 _cmd_gate = _tickets_dispatch_module._cmd_gate
-_cmd_fixed_gate = _tickets_grade_module._cmd_fixed_gate
 _cmd_grade = _tickets_dispatch_module._cmd_grade
 _cmd_dispatch = _tickets_dispatch_module._cmd_dispatch
 _cmd_help = _tickets_dispatch_module._cmd_help
@@ -357,15 +340,11 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_dispatch_commit = _cmd_dispatch_commit
     _tickets_dispatch_module._cmd_dispatch_retire = _cmd_dispatch_retire
     _tickets_dispatch_module._cmd_dispatch_replace = _cmd_dispatch_replace
-    _tickets_dispatch_module._cmd_dispatch_packet = _cmd_dispatch_packet
-    _tickets_dispatch_module._cmd_dispatch_receive = _cmd_dispatch_receive
-    _tickets_dispatch_module._cmd_dispatch_receipt = _cmd_dispatch_receipt
     _tickets_dispatch_module._cmd_dispatch_join = _cmd_dispatch_join
     _tickets_dispatch_module._cmd_dispatch_outcome = _cmd_dispatch_outcome
     _tickets_dispatch_module._cmd_land = _cmd_land
     _tickets_dispatch_facade_module._cmd_ready = _cmd_ready
     _tickets_dispatch_facade_module._cmd_dispatch_open = _cmd_dispatch_open
-    _tickets_dispatch_facade_module._cmd_dispatch_packet = _cmd_dispatch_packet
     _tickets_dispatch_facade_module._cmd_dispatch_retire = _cmd_dispatch_retire
     _tickets_attempts_module._write_text_atomically = _write_text_atomically
     _tickets_dispatch_module._cmd_ready = _cmd_ready

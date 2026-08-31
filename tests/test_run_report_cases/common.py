@@ -150,7 +150,7 @@ def build_sink(tmp: Path) -> Path:
         "terminal_at": "2026-08-16T10:30:00Z", "terminal_ticket_id": "00-root",
         "terminal_status": "complete", "elapsed_ms": 5400000,
     })
-    write_ticket(sink, COMPLETE_RUN, "00-root", status="complete", executor="orch-decompose",
+    write_ticket(sink, COMPLETE_RUN, "00-root", status="complete", executor="orch-slice",
                  claimed_at="2026-08-16T09:00:00Z", modified="2026-08-16T09:05:00Z")
     write_ticket(sink, COMPLETE_RUN, "00-root.01", status="complete", executor="orch-tdd",
                  claimed_at="2026-08-16T09:10:00Z", modified="2026-08-16T09:40:00Z",
@@ -163,7 +163,7 @@ def build_sink(tmp: Path) -> Path:
         "terminal_at": "2026-08-17T09:20:00Z", "terminal_ticket_id": "00-root",
         "terminal_status": "blocked", "elapsed_ms": 1200000,
     }, notes="`pnpm test` finished in 60s\n", notes_at="2026-08-17T09:20:00Z")
-    write_ticket(sink, BLOCKED_RUN, "00-root", status="complete", executor="orch-decompose",
+    write_ticket(sink, BLOCKED_RUN, "00-root", status="complete", executor="orch-slice",
                  claimed_at="2026-08-17T09:00:00Z", modified="2026-08-17T09:05:00Z")
     write_ticket(sink, BLOCKED_RUN, "00-root.01", status="pending", executor="orch-tdd",
                  modified="2026-08-17T09:20:00Z")

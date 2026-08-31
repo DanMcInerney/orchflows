@@ -284,7 +284,7 @@ class ExitConventionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_repo(tmp, {})
-            result = run_full(tmp, "result", "no-run", "no-id", "--section", "Result", "--text", "x")
+            result = run_full(tmp, "result", "no-run", "no-id", "--text", "x")
             self.assertIn("error", result.stdout)
             self.assertEqual(1, result.returncode)
 

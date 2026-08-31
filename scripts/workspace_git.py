@@ -10,11 +10,12 @@ from pathlib import Path
 # facade is what a facade exists to spare its callers, and the one here read
 # through seams the facade re-points at these same modules anyway.
 try:
-    from . import state_root, tickets_format, tickets_store
+    from . import state_root, tickets_format, tickets_store, workspace_record
 except ImportError:
     import state_root
     import tickets_format
     import tickets_store
+    import workspace_record
 
 
 # One verdict per exit code, spelled where the refusals that carry them are
@@ -33,14 +34,16 @@ EXIT_SHARED_WORKSPACE = 7
 # passes it is another process: the dispatch facade already holds this run's
 # lock and runs ``workspace.py`` as its child.
 LOCK_HELD = "--lock-held"
-# The frontmatter keys this family reads and writes, spelled where they are
-# written. ``workspace.py`` re-exports them and holds them against
+# The keys this family reads and writes, spelled where they are written.
+# ``workspace.py`` re-exports them and holds the frontmatter ones against
 # ``contracts/work-item.md``'s own bytes; ``_stamped`` below writes through
 # them, so the name a stamp lands under and the name a grade reads are one.
+# ``PATH_KEY`` is not among the frontmatter three and is re-exported from
+# its owner: the established tree is the dispatch attempt's.
 ISOLATION_KEY = "isolation"
 BRANCH_KEY = "workspace_branch"
 BASELINE_KEY = "workspace_baseline"
-PATH_KEY = "workspace_path"
+PATH_KEY = workspace_record.PATH_KEY
 # What ``start`` records for a workspace that is on no branch. ``rev-parse
 # --abbrev-ref HEAD`` answers the literal word ``HEAD`` there, which names no
 # ref at the join: the item graded isolation-missing however clean its work
@@ -348,8 +351,8 @@ def _stamped(ticket_path, prior_text: str, branch, baseline, workspace_path: str
         if baseline is not None:
             updated = tickets_format._set_frontmatter_field(updated, BASELINE_KEY, baseline)
             recorded[BASELINE_KEY] = baseline
-        updated = tickets_format._set_frontmatter_field(
-            updated, PATH_KEY, workspace_path
+        updated, _carried = workspace_record.recorded_on_attempt(
+            updated, workspace_path
         )
         # The sink's own writer, not ``write_text``: it pins ``newline='\n'``
         # so a two-scalar stamp stays a two-line diff instead of translating

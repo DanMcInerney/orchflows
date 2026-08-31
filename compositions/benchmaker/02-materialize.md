@@ -21,7 +21,7 @@ each at a preserved identity.
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"manifest-contract","type":"literal","value":"the manifest contract at compositions/references/benchmaker-manifest.md in the orchflows library"}
 
-## Suggested files
+## Details
 
 - {{package}}
 
@@ -32,16 +32,4 @@ Exceptional constraints:
 - select, add, remove, rank, rewrite or substitute a case
 - let a candidate or search context read, choose, rewrite, retire or receive item-level feedback from protected evidence
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

@@ -5,23 +5,22 @@
 
 - Root routes, launches what `dispatch` emits, and lands
   returns; relay a `kind: user-only` question verbatim. Never author a
-  role-bearing payload. Packet-less or wrong-profile role-bearing work refuses;
+  role-bearing payload. Prompt-less or wrong-profile role-bearing work refuses;
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
   items still run only when named. Route smallest-first: **answer** — context
   evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
-  carrying Goal, Context, and optional Suggested files goes to `orch-frontier`;
-  its executor chooses implementation and verification. **graph** — for one
+  carrying Goal, Context, and optional Details takes the same two commands.
+  **graph** — per ready ticket of one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
-  --reply-to <parent-name> [--host <host>] [--workspace <tree>]` and invoke its
-  emitted `launch` verbatim; require the accepted
-  `tickets.py dispatch-receive --file <path|->` receipt before exact
-  `orch-decompose`. A ticket path is not the complete packet. Then
-  `tickets.py land` its
-  return through `orch-integrate` and start `orch-frontier`. **outline** — one planner
+  [--host <host>] [--workspace <tree>]`, invoke the emitted `launch`
+  verbatim adding nothing to its prompt, then `tickets.py land` its
+  return: it reads the ticket's `done`, integrates, and prints the frontier it
+  freed. Declaring none, grade it yourself with `land --status`. Repeat until
+  that frontier is empty. **outline** — one planner
   runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
-  `orch-decompose` root for distinct results/dependencies. The planner never
-  starts the frontier. Skill/composition/pack/contract/router work carries
+  `orch-slice` root for distinct results/dependencies. The planner never
+  drives the run. Skill/composition/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
   cause enters single; an unknown or unverified cause enters outline. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.

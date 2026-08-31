@@ -453,9 +453,6 @@ def validate_templates(diag: Diagnostics) -> None:
             if path.name == manifest_name:
                 continue
             text = _read_source(path)
-            n = tickets.instruction_words(text)
-            if n > tickets.INSTRUCTION_BUDGET:
-                diag.error(rel(path), f"stub instruction has {n} words, exceeds the budget of {tickets.INSTRUCTION_BUDGET}")
             stub_used = set(tickets.PLACEHOLDER_RE.findall(text))
             used |= stub_used
             executor = tickets._parse_frontmatter(text).get("executor")

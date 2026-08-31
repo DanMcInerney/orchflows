@@ -69,6 +69,10 @@ class _IsolatedRepoTestCase(unittest.TestCase):
         patcher = mock.patch.dict(os.environ, {STATE_HOME_ENV_VAR: str(self.sink)})
         patcher.start()
         self.addCleanup(patcher.stop)
+        # A run this host declared for its own process would answer for
+        # every case below that asserts an unresolved run. Popped after the
+        # patch starts, so `patcher.stop` puts the caller's own back.
+        os.environ.pop(friction.RUN_ENV_VAR, None)
         before = os.getcwd()
         os.chdir(self.repo)
         self.addCleanup(os.chdir, before)

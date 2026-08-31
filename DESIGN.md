@@ -114,7 +114,7 @@ request. The replacement:
 - **A template is tickets, not a second grammar.** A demoted pattern's
   law rides its stubs' Goal and Context; the combinators are the ticket graph's own — a `depends_on` edge,
   parallel stubs, a loop stub — so `tickets.py instantiate` writes a run
-  and `orch-frontier` drains it with no engine, contract or step file to
+  and the driver drains it with no engine, contract or step file to
   keep in step with the ticket contract (cheap generation: the gate is
   the same graded ticket shape every other item has).
 - **The envelope closes the algebra.** Every ticket attempt closes through
@@ -123,7 +123,7 @@ request. The replacement:
   identity becomes successor evidence with no per-pair glue (search is memory:
   one return shape, one name).
 
-Its open decisions closed as: ticket sets drained by `orch-frontier`,
+Its open decisions closed as: ticket sets drained by orch-frontier,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured
 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
 the delegation contract merged into `work-item.md`; orch-delegate (the
@@ -329,6 +329,70 @@ perfect: a perfect model still cannot make a non-atomic sequence
 atomic, and still cannot know which of two spellings of a path is the
 one the join will grade. That is the test for what belongs in code.
 
+- **The receipt handshake, superseded 2026-08-30.** The accept step
+  (`dispatch-receive`, the `dispatch-receipt` record, the inline packet
+  form, and their refusal family) policed the packet-less-fork class, and
+  PR #89 had already closed that class structurally at the installer, at
+  the one point in a fork's load path a packet can never reach. What was
+  left cost the accept phase 29 s to 6 m 16 s per child, mostly
+  refusal-retry over the receiver's own directory, and stored 50–59 KB of
+  duplicated handshake per gate ticket. It fails the same test: a perfect
+  model still cannot make the accept atomic, but it also never needed to —
+  the child's first filed record already proves the same identity the
+  receipt echoed back, because `result` validates
+  `(dispatch_id, assignment_seal, --by)` on every write. The evidence and
+  the full disposition are `research/subagent-simplification-design-2026-08-30.md`;
+  the law is `contracts/dispatch.md`'s supersession record.
+
+- **The packet as a wire object, superseded 2026-08-31.** Of its
+  twenty-one fields, the two a child could not obtain any other way —
+  where its assignment is, and which tree to stand in — were the two the
+  wire did not carry, so twelve of twelve launches were composed by hand
+  against `rules/delegation.md`'s "improvises neither", and those hand
+  prompts were the dominant defect source of the runs that produced this
+  design. The wire is gone. `dispatch` emits one launch whose prompt is
+  the whole child-facing surface and whose every fact is machine-filled,
+  which is the same test again: a perfect model still cannot know which
+  spelling of an absolute path the establishment recorded, and it should
+  never have been asked to type one. What the prompt refuses to say is as
+  load-bearing as what it says — it names no skill for the child to invoke
+  and no pack for it to resolve, because a fork arriving without a prompt
+  can obey neither.
+- **Structure only where a machine reads it.** The ticket used to
+  over-prescribe in both directions at once. On the way out it forbade the
+  planner from naming a file, a check, or a step — a law written against a
+  planner that guesses, which also bound the planner that had just spent an
+  hour reading the code. On the way back it required a child to sort its work
+  into five headings no consumer read. The evidence that broke both is the
+  same evidence: the freehand briefs that built stages A through C violated
+  the first wholesale — evidence-anchored prescribed deletions, named checks,
+  definition-of-done commands, 1,300 words — and their unstructured returns
+  beat the sectioned ones, because honest exit codes and deferrals-with-
+  reasons are what a reader needs and no taxonomy produces them. So `Details`
+  is free-form and unbounded, and `Report` is one channel. The rule that
+  replaces both is narrow: prescribe as hard as investigation earned, carry
+  the evidence and the escape hatch with every prescription, and keep
+  structure only where something mechanical reads it — which, on the return
+  side, is one JSON findings file the join binds into the review ledger, and
+  nothing else. The test is the amnesia test again: a perfect model still
+  cannot guess the file you already read, and still gains nothing from being
+  told which heading to file a fact under.
+- **A verb is only a verb if a model has to judge something.** The library
+  shipped six callables; two of them were the driver and the join, and by
+  the time `dispatch` emitted a complete launch and `land` evaluated the
+  done predicate, integrated the candidate and printed the ready frontier,
+  neither had any judgment left to spend a whole child's context on. So the
+  engines tier dies with orch-frontier, orch-integrate dies with the
+  handshake it used to adjudicate, and what is callable is exactly the four
+  things a model still has to decide: freeze a root, cut it, build a unit,
+  challenge one. Everything they used to say that was mechanical is a
+  command; everything that was law moved to the rule that already owned the
+  question — `rules/delegation.md` §5 for how a driver grades a return,
+  `rules/verification.md` §§7, 9 for which independence path a ticket walks
+  and what a clean gate skips. The test is the amnesia test once more: a
+  perfect model cannot guess a run's ready set, and gains nothing from being
+  handed a skill body that tells it to ask `land` for one.
+
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an
@@ -342,7 +406,8 @@ one the join will grade. That is the test for what belongs in code.
   outranks; restating it would create the library's first two-owner
   fact.
 - **A generic orch-unit executor.** The generic unit endpoint is
-  `orch-frontier` over one ticket; executors are the domain leaves a
+  `tickets.py dispatch` and `tickets.py land` over one ticket; executors
+  are the domain leaves a
   pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
   splitting a named executor into a generic shell plus a method file —

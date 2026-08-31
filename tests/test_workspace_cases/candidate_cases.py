@@ -90,12 +90,45 @@ class TestDerivedCandidatePaths(unittest.TestCase):
         os.environ[STATE_HOME_ENV_VAR] = str(Path.home() / ".orchflows" / "state")
         try:
             derived = state_root.candidate_paths(
-                "20260830T120000Z", "01-workspace-owner.gate.verify"
+                "20260830T120000Z", "01-workspace-owner.gate.critique.code"
             )
         finally:
             if prior is not None:
                 os.environ[STATE_HOME_ENV_VAR] = prior
         self.assertLess(len(str(derived["path"])), 150, derived["path"])
+
+    def test_the_inverse_reads_back_the_identity_the_derivation_wrote(self):
+        """Round trip, in the module that owns both directions. A caller
+        standing in a derived tree asks which item's tree it is here, and
+        never by re-spelling the layout for itself."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            use_sink(Path(tmp))
+            os.environ.pop("ORCHFLOWS_WORKTREES_HOME", None)
+
+            derived = state_root.candidate_paths("run-1", "T1")
+
+            self.assertEqual(
+                {"run": "run-1", "id": "T1"},
+                state_root.candidate_identity(derived["path"]),
+            )
+            # a child works far below its own root, so ancestors count
+            self.assertEqual(
+                {"run": "run-1", "id": "T1"},
+                state_root.candidate_identity(derived["path"] / "scripts" / "deep"),
+            )
+
+    def test_a_path_outside_the_worktrees_root_names_no_item(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sink = use_sink(Path(tmp))
+            os.environ.pop("ORCHFLOWS_WORKTREES_HOME", None)
+            root = state_root.worktrees_root()
+
+            for path in (Path(tmp), sink, root, root / "run-1"):
+                with self.subTest(path=path):
+                    # the root itself and a run directory are not a tree:
+                    # both halves of the identity have to be there
+                    self.assertIsNone(state_root.candidate_identity(path))
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
@@ -125,7 +158,9 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
             self.assertTrue(body["isolated"])
             self.assertEqual([], body["shared_with"])
             after = ticket.read_text(encoding="utf-8")
-            self.assertIn(f"workspace_path: {derived['path']}\n", after)
+            # the tree is the attempt's; the Git-only observations stay
+            # in the frontmatter that has always owned them
+            self.assertEqual(str(derived["path"]), recorded_workspace(ticket))
             self.assertIn(f"workspace_branch: {derived['branch']}\n", after)
             self.assertIn(
                 str(derived["path"]).replace("\\", "/"),
@@ -512,9 +547,9 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             }
             projected = []
 
-            def packet(args, *, _lock_held=False):
-                projected.append(args[args.index("--workspace") + 1])
-                return {"packet": {"workspace": projected[-1]}}
+            def launched(_run, _ticket, _host, *, workspace, **_facts):
+                projected.append(workspace)
+                return {"launch": {"verb": "Agent"}}
 
             def opened(_args, *, _lock_held=False):
                 return {"dispatch": {"outcome": "opened", "assignment_seal": "s",
@@ -524,15 +559,14 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             with (
                 mock.patch.object(facade, "_cmd_ready", return_value={"ready": []}),
                 mock.patch.object(facade, "_cmd_dispatch_open", side_effect=opened),
-                mock.patch.object(facade, "_cmd_dispatch_packet", side_effect=packet),
+                mock.patch.object(
+                    facade, "_launched_under_run_lock", side_effect=launched,
+                ),
                 # the launch is one more neighbour of the hop under test: the
                 # fixture ticket binds no role, and resolving one is what the
                 # dispatch-launch suite is for
                 mock.patch.object(
                     facade, "precheck", return_value=({"id": "claude"}, None)
-                ),
-                mock.patch.object(
-                    facade, "launch_spec", return_value=({"verb": "Agent"}, None)
                 ),
             ):
                 for ticket_id in ("T1", "T2"):
@@ -540,21 +574,21 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                         "testrun", ticket_id, "--by", f"worker-{ticket_id}",
                         "--dispatch-id", f"D-{ticket_id}",
                         "--lease-expires-at", "2099-01-01T00:00:00Z",
-                        "--reply-to", "root", "--workspace", str(main),
+                        "--workspace", str(main),
                     ])
                     self.assertNotIn("error", result, result)
 
             self.assertEqual(2, len(set(projected)), projected)
             for ticket_id, workspace_path in zip(("T1", "T2"), projected):
                 derived = state_root.candidate_paths("testrun", ticket_id)
-                # the packet's value is the derived tree, not the --workspace
+                # the launch's value is the derived tree, not the --workspace
                 # the caller named, and it is the value the ticket now stamps
                 self.assertEqual(str(derived["path"]), workspace_path)
                 self.assertNotEqual(str(main.resolve()), workspace_path)
                 self.assertTrue(derived["path"].is_dir())
-                self.assertIn(
-                    f"workspace_path: {derived['path']}\n",
-                    tickets_by_id[ticket_id].read_text(encoding="utf-8"),
+                self.assertEqual(
+                    str(derived["path"]),
+                    recorded_workspace(tickets_by_id[ticket_id]),
                 )
 
     def test_a_failed_establishment_refuses_the_dispatch_as_one_transaction(self):
@@ -576,7 +610,7 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
             with (
                 mock.patch.object(facade, "_cmd_ready", return_value={"ready": []}),
                 mock.patch.object(facade, "_cmd_dispatch_open", side_effect=opened),
-                mock.patch.object(facade, "_cmd_dispatch_packet") as packet,
+                mock.patch.object(facade, "_launched_under_run_lock") as launched,
                 mock.patch.object(
                     facade, "_cmd_dispatch_retire",
                     side_effect=lambda args, **kw: retired.append(args) or {"dispatch": {}},
@@ -585,11 +619,11 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                 result = facade._cmd_dispatch([
                     "testrun", "T1", "--by", "worker", "--dispatch-id", "D-T1",
                     "--lease-expires-at", "2099-01-01T00:00:00Z",
-                    "--reply-to", "root", "--workspace", str(main),
+                    "--workspace", str(main),
                 ])
 
             self.assertIn("error", result)
-            packet.assert_not_called()
+            launched.assert_not_called()
             self.assertEqual(1, len(retired), retired)
             self.assertEqual(before, ticket.read_bytes())
 

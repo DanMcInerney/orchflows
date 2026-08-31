@@ -44,8 +44,8 @@ class TestBenchmarkArchitecture(unittest.TestCase):
         "03-result": ("orch-check", ["02-campaign"]),
     }
     TOURNAMENT_GRAPH = {
-        "00-benchmark": ("orch-frontier", []),
-        "01-campaign": ("orch-frontier", ["00-benchmark"]),
+        "00-benchmark": ("orch-execute", []),
+        "01-campaign": ("orch-execute", ["00-benchmark"]),
     }
     DEMOTED = (
         "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",

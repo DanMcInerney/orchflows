@@ -5,10 +5,10 @@ from scripts.tickets_format import _set_frontmatter_field
 from scripts.tickets_issue_render import _render_ticket
 
 
-def ticket(goal="done", suggested=None, result=""):
+def ticket(goal="done", details=None, result=""):
     sections = [("Goal", goal), ("Context", "fact")]
-    if suggested:
-        sections.append(("Suggested files", suggested))
+    if details:
+        sections.append(("Details", details))
     sections.extend((("Result", result), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")))
     return _render_ticket({"id": "R", "run": "r", "status": "pending", "executor": "orch-edit", "depends_on": [], "bound": "60m"}, sections)
 
@@ -16,7 +16,7 @@ def ticket(goal="done", suggested=None, result=""):
 class TicketProtocolTest(unittest.TestCase):
     def test_semantic_change_moves_assignment(self):
         self.assertNotEqual(assignment_digest("R", ticket()), assignment_digest("R", ticket(goal="other")))
-        self.assertNotEqual(assignment_digest("R", ticket()), assignment_digest("R", ticket(suggested="- x")))
+        self.assertNotEqual(assignment_digest("R", ticket()), assignment_digest("R", ticket(details="- x")))
 
     def test_result_does_not_move_assignment(self):
         self.assertEqual(assignment_digest("R", ticket()), assignment_digest("R", ticket(result="landed")))
@@ -55,46 +55,56 @@ class TicketProtocolTest(unittest.TestCase):
         work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
         result = (root / "contracts" / "result.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
-        integrate = (root / "skills" / "kernel" / "orch-integrate" / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("`dispatch-join`", dispatch)
         for projection in (work_item, result, delegation):
             self.assertIn("dispatch contract", projection.lower())
-        self.assertIn("tickets.py dispatch-join", integrate)
+        # The join is a command, not a skill: delegation names the command and
+        # the dispatch contract owns the transaction it commits.
+        self.assertIn("`tickets.py land`", delegation)
         self.assertIn("`outcome_record_id`", dispatch)
         self.assertIn("`lease_expires_at`", dispatch)
-        self.assertNotIn("only this join calls `tickets.py set-status`", integrate)
 
-    def test_dispatch_v1_contract_owns_packet_projection_and_receipt(self):
+    def test_dispatch_v1_contract_owns_the_launch(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
         dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
         delegation = (root / "rules" / "delegation.md").read_text(encoding="utf-8")
         roles = (root / "rules" / "roles.md").read_text(encoding="utf-8")
         vocabulary = (root / "docs" / "vocabulary.md").read_text(encoding="utf-8")
         for token in (
-            "`dispatch-packet`", "`dispatch-receive`", "`reference`",
-            "`inline`", "`state-inaccessible`", "`assignment-divergent`",
-            "`identity-mismatch`", "`authority-mismatch`",
-            "`role-mismatch`", "`profile-mismatch`", "`dispatch-receipt`",
-            "`receipt-required`", "`--file -`", "ASCII-escaped canonical JSON",
+            "`launch`", "`prompt`",
+            "`state-inaccessible`", "`stale-attempt`",
+            "`idempotency-conflict`", "`dispatch-mismatch`",
+            "ASCII-escaped canonical JSON",
         ):
             self.assertIn(token, dispatch)
+        # The handshake half rode out with its machinery: no survivor keeps
+        # its vocabulary alive in the contract that used to own it. Read
+        # against the normative prose alone -- a supersession record's whole
+        # job is to name what it retired, so it names these on purpose.
+        normative = dispatch.partition("T0 supersession record")[0]
+        for retired in (
+            "`dispatch-receive`", "`dispatch-receipt`", "`receipt-required`",
+            "`authority-mismatch`", "`profile-mismatch`",
+            "`assignment-divergent`", "`packet-invalid`", "`inline`",
+            "`reply_to`", "`reference`", "`admission`", "`independence`",
+            "`dispatch-packet`", "`durability`", "`review_kind`",
+        ):
+            self.assertNotIn(retired, normative)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
-        frontier = (root / "skills" / "engines" / "orch-frontier" / "SKILL.md").read_text(encoding="utf-8")
-        profiles = (root / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md").read_text(encoding="utf-8")
+        profiles = (root / "hosts" / "profiles.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
-        for surface in (host, frontier):
-            self.assertIn("tickets.py dispatch", surface)
-            self.assertIn("dispatch-receive", surface)
+        self.assertIn("tickets.py dispatch", host)
+        self.assertNotIn("dispatch-receive", host)
         for surface in (profiles, tickets):
-            for command in ("dispatch-open", "dispatch-packet", "dispatch-receive"):
+            for command in ("dispatch-open", "dispatch-retire"):
                 self.assertIn(command, surface)
-        for routing in (host, frontier):
-            self.assertNotIn("tickets.py claim", routing)
-            self.assertNotIn("tickets.py packet", routing)
-        collapsed_frontier = " ".join(frontier.split())
-        self.assertIn("transport silence", collapsed_frontier.lower())
-        self.assertIn("same recorded child", collapsed_frontier)
-        self.assertIn("`dispatch-replace`", frontier)
+            self.assertNotIn("dispatch-packet", surface)
+        self.assertNotIn("tickets.py claim", host)
+        self.assertNotIn("tickets.py packet", host)
+        collapsed_profiles = " ".join(profiles.split())
+        self.assertIn("replaying the same `dispatch` call", collapsed_profiles)
+        self.assertIn("`dispatch-replace`", profiles)
+        self.assertIn("transport silence", delegation.lower())
         self.assertIn("`claim-without-dispatch`", tickets)
         for obsolete in (
             "completion test", "same write scope", "stale claim sent back",
@@ -105,9 +115,10 @@ class TicketProtocolTest(unittest.TestCase):
             "absolute lease", "`dispatch-join`", "outside-independence path",
         ):
             self.assertIn(current, tickets)
-        self.assertIn("committed packet", delegation)
-        self.assertIn("receipt", roles.lower())
-        self.assertIn("**packet projection**", vocabulary)
+        self.assertIn("committed launch", delegation)
+        self.assertIn("dispatch contract", roles.lower())
+        self.assertIn("- **launch** —", vocabulary)
+        self.assertNotIn("**packet projection**", vocabulary)
 
     def test_public_documents_project_the_current_dispatch_and_gate_model(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
@@ -126,7 +137,7 @@ class TicketProtocolTest(unittest.TestCase):
             self.assertIn(field, readme)
 
         for phrase in (
-            "response `.packet` value", "`--file -`", "durable accepted receipt",
+            "launch prompt", "replaying the same `dispatch` call",
             "GatePlan", "CritiqueAdjudication", "RepairOutcome",
             "tickets.py checker-stage", "--stage <id>.check",
             "tickets.py show", "tickets.py lint <run> [<id>] --file",
@@ -141,17 +152,20 @@ class TicketProtocolTest(unittest.TestCase):
     def test_host_skill_and_ui_project_established_non_live_suspension(self):
         root = __import__("pathlib").Path(__file__).resolve().parents[1]
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
-        frontier = (
-            root / "skills" / "engines" / "orch-frontier" / "SKILL.md"
-        ).read_text(encoding="utf-8")
+        dispatch = (root / "contracts" / "dispatch.md").read_text(encoding="utf-8")
+        land_usage = __import__(
+            "scripts.tickets_land", fromlist=["LAND_USAGE"]
+        ).LAND_USAGE
         ui_model = (root / "reader" / "scripts" / "ui_model.py").read_text(encoding="utf-8")
 
-        self.assertIn("complete packet", host)
-        self.assertIn("response `.packet`", frontier)
-        for projection in (host, frontier):
-            self.assertIn("--file", projection)
+        self.assertIn("emitted `launch`", host)
+        self.assertIn("hand-adds nothing", dispatch)
+        self.assertIn("--outcome-file <path|->", land_usage)
+        for projection in (host, dispatch):
             self.assertIn("workspace", projection.lower())
-        self.assertIn("evidence-store", frontier.lower())
+        self.assertIn("tickets.py land", host)
+        work_item = (root / "contracts" / "work-item.md").read_text(encoding="utf-8")
+        self.assertIn("evidence store", work_item.lower())
         self.assertIn('LIVE_CLAIM_STATUSES = ("claimed",)', ui_model)
-        self.assertNotIn("Parked claims stay live", frontier)
+        self.assertNotIn("Parked claims stay live", dispatch)
         self.assertNotIn("holds the lease", ui_model)

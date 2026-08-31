@@ -1,6 +1,6 @@
 ---
 id: 02-deliver
-executor: orch-frontier
+executor: orch-execute
 pack: {{pack}}
 depends_on: [01-triage]
 bound: {{brief_bound}} per ready-for-agent brief
@@ -23,7 +23,7 @@ whole delivery.
 - input: {"name":"workspace","type":"literal","value":"{{workspace}}"}
 - input: {"name":"brief-bound","type":"literal","value":"{{brief_bound}}"}
 
-## Suggested files
+## Details
 
 - {{workspace}}
 
@@ -32,16 +32,4 @@ Exceptional constraints:
 - deliver a brief 01-triage did not disposition ready-for-agent
 - answer a ready-for-human brief on the maintainer's behalf
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

@@ -30,7 +30,6 @@ WORKLOG_NAME = "worklog.md"
 WORKLOG_RENDER_MARKER = "<!-- rendered by tickets.py worklog -->"
 WORKLOG_SECTIONS = ("goal", "iterations", "failed approaches", "queued scope", "terminal")
 ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
-GATE_VERIFY_SUFFIX = ".gate.verify"
 WORKLOG_USAGE = "worklog <run> [--write]"
 
 

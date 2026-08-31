@@ -48,7 +48,7 @@ ROOT_TICKET = """---
 id: 00-root
 run: {run}
 status: {status}
-executor: orch-decompose
+executor: orch-slice
 depends_on: []
 bound: 30m
 ---

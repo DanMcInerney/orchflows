@@ -103,7 +103,7 @@ def grok_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md) ->
         "the exact named skill directly; never redispatch it. Otherwise root "
         "must call spawn_subagent with subagent_type "
         f"`{profile['grok']['subagent_type']}`, passing the "
-        "complete packet and exact named skill; refuse execution when that "
+        "emitted launch prompt and exact named skill; refuse execution when that "
         "matching role child is missing or mismatched; there is no inline "
         f"fallback.\n\n{FORK_ARRIVAL_CLAUSE}\n"
     )

@@ -1,30 +1,33 @@
 """Private byte-preserving Markdown mechanics for the ticket format owner."""
 from __future__ import annotations
 
-EXECUTOR_SECTIONS = ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff')
+REPORT_SECTION = 'Report'
+"""The one channel an executor files into.
+
+Five sections asked a child to sort its own work into a protocol's filing
+cabinet before it could say anything, and what came back was accounting: 70
+to 250 words per section about which section a fact belonged in. The freehand
+returns that beat them were one dump each -- exit codes as observed, fields
+kept with reasons, deferrals with reasons -- because nothing machine-critical
+was ever read out of them. Nothing is read out of this one either, so its
+form is the child's.
+"""
+EXECUTOR_SECTIONS = (REPORT_SECTION,)
 EXECUTOR_SECTIONS_BY_KEY = {name.lower(): name for name in EXECUTOR_SECTIONS}
-CUT_SECTIONS = ('Goal', 'Context', 'Suggested files')
+CUT_SECTIONS = ('Goal', 'Context', 'Details')
 CUT_SECTIONS_BY_KEY = {name.lower(): name for name in CUT_SECTIONS}
 SECTION_ORDER = CUT_SECTIONS + EXECUTOR_SECTIONS
 SECTION_RANK = {name.lower(): i for i, name in enumerate(SECTION_ORDER)}
-# Suggested files are non-binding and Handoff exists only while suspended.
-OPTIONAL_SECTIONS = ('Handoff', 'Suggested files')
+# Details is the planner's own free-form guidance for this one child, so a
+# ticket may carry none.
+OPTIONAL_SECTIONS = ('Details',)
 REQUIRED_SECTIONS = tuple(name for name in CUT_SECTIONS + EXECUTOR_SECTIONS if name not in OPTIONAL_SECTIONS)
-SECTION_SENTINEL = '[]'
-"""The empty collection a cut prefills an executor-owned section with.
-
-Stated here, with the section grammar, because two readers have to agree on
-it byte for byte: the generators that write it into `## Feedback` and
-`## Risks`, and the filing law that decides whether a section holds a
-writer's work. While each spelled its own literal they disagreed, and the
-executor's first real write paid for the disagreement.
-"""
 
 
 HEADING_QUOTE = ' '
 """The one character that stands between a filed body and the section grammar.
 
-A worker files `## Findings` inside `## Result` because that is what a
+A worker files `## Findings` inside `## Report` because that is what a
 level-2 heading is for, and the section scanner reads any column-zero
 `## ` as the next *ticket* section -- so the filing was refused outright,
 about eighteen times, with an error telling the writer to use `###` for

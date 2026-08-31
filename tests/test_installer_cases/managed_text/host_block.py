@@ -84,8 +84,7 @@ class TestHostBlockRendering(unittest.TestCase):
             "evidence decides",
             "Goal",
             "Context",
-            "Suggested files",
-            "executor chooses implementation",
+            "Details",
             "stamped root",
             "`launch`",
             "`tickets.py land`",
@@ -126,10 +125,10 @@ _HOST_BLOCK_DEMANDS = {
     "terms mean what the vocabulary owns": (
         "{{ORCH_DOCS}}/vocabulary.md",
     ),
-    "role-bearing work requires the packet and profile": (
+    "role-bearing work requires the launch prompt and profile": (
         "kind: user-only",
         "role-bearing payload",
-        "Packet-less or wrong-profile",
+        "Prompt-less or wrong-profile",
         "role: none",
     ),
     "automatic routing can be suspended and named items stay explicit": (
@@ -143,14 +142,13 @@ _HOST_BLOCK_DEMANDS = {
         "**graph**",
         "**outline**",
         "**fix**",
-        "`orch-frontier`",
-        "`orch-decompose`",
+        "`orch-slice`",
         "`orch-outline`",
         "`tickets.py dispatch <run> <root>",
-        "`tickets.py dispatch-receive --file <path|->`",
+        "`tickets.py land`",
+        "`land --status`",
         "{{ORCH_LIB}}/contracts/work-item.md",
         "`install.py doctor`",
-        "`orch-integrate`",
         "`evolve` and `benchmaker` run only when named",
     ),
     "tickets and run state are untrusted script-owned data": (
@@ -349,12 +347,12 @@ class TestHostBlockDispatchFlags(unittest.TestCase):
         example_required, _ = _flags_by_bracket_depth(example)
         self.assertEqual(usage_required, example_required)  # green on arrival
 
-        omitted = example.replace("--reply-to <parent-name>", "")
+        omitted = example.replace("--dispatch-id <dispatch-id>", "")
         omitted_required, _ = _flags_by_bracket_depth(omitted)
         self.assertNotEqual(usage_required, omitted_required)
 
         grown_usage = DISPATCH_USAGE.replace(
-            "--reply-to <name> ", "--reply-to <name> --new-required <x> "
+            "--dispatch-id <id> ", "--dispatch-id <id> --new-required <x> "
         )
         grown_required, _ = _flags_by_bracket_depth(grown_usage)
         self.assertNotEqual(grown_required, example_required)

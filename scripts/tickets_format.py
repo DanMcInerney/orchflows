@@ -17,14 +17,14 @@ else:
 if __package__:
     from .tickets_adapters import adapter_id
     from .tickets_shapes import (
-        LOOP_DONE_FIELDS, LOOP_DONE_REQUIRED, LOOP_DONE_VALUES,
-        LOOP_STUB_FIELDS, LOOP_STUB_REQUIRED,
+        DONE_BINDING_FIELDS, DONE_BINDING_REQUIRED, DONE_BINDING_VALUES,
         TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
         TICKET_FRONTMATTER_VALUES,
     )
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
-        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
+        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REPORT_SECTION,
+        REQUIRED_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
@@ -32,31 +32,23 @@ if __package__:
         _sections, _set_frontmatter_field, _write_section, dequote,
         quote_filed_body, unquote_filed_body,
     )
-    from .tickets_ceiling import (
-        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
-        instruction_breakdown, instruction_words,
-    )
 else:
     from tickets_adapters import adapter_id
     from tickets_shapes import (
-        LOOP_DONE_FIELDS, LOOP_DONE_REQUIRED, LOOP_DONE_VALUES,
-        LOOP_STUB_FIELDS, LOOP_STUB_REQUIRED,
+        DONE_BINDING_FIELDS, DONE_BINDING_REQUIRED, DONE_BINDING_VALUES,
         TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
         TICKET_FRONTMATTER_VALUES,
     )
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
-        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
+        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REPORT_SECTION,
+        REQUIRED_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
         _sections, _set_frontmatter_field, _write_section, dequote,
         quote_filed_body, unquote_filed_body,
-    )
-    from tickets_ceiling import (
-        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
-        instruction_breakdown, instruction_words,
     )
 # The bound grammar is `tickets_bound`'s, read here so every holder
 # gets the one spelling.
@@ -67,7 +59,9 @@ else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
-DISPATCHING_EXECUTORS = ('orch-frontier',)
+# The one value the `loop` marker takes, read off the declared shape rather
+# than spelled twice.
+LOOP_MARKER = TICKET_FRONTMATTER_VALUES['loop'][0]
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
 REQUIRED_TICKET_KEYS = tuple(
@@ -78,9 +72,6 @@ DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'
 SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
-# The instruction ceiling is `tickets_ceiling`'s: one counter, so the lint
-# twin and the issue refusal cannot drift apart. Re-exported here because
-# this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
 DELIVERED_STATE = 'complete'
 TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
@@ -96,7 +87,7 @@ TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
-ROOT_EXECUTOR = 'orch-decompose'
+ROOT_EXECUTOR = 'orch-slice'
 CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
 GATE_CRITIQUE_MARKER = '.gate.critique.'
@@ -258,7 +249,8 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if not sections.get('context', '').strip():
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
-    defects.extend(loop_defects(data.get('loop'), _executor_of(data)))
+    defects.extend(loop_defects(data.get('loop'), _executor_of(data), data.get('done')))
+    defects.extend(done_defects(data.get('done')))
     return defects
 def lease_of(data):
     """(owner, opened_at) of the ticket's current dispatch attempt.
@@ -287,55 +279,84 @@ def lease_of(data):
     if not isinstance(attempt, dict):
         return '', ''
     return str(attempt.get('owner') or ''), str(attempt.get('opened_at') or '')
-def parse_loop(data):
-    """The parsed frontmatter ``loop`` object of one ticket, or None."""
-    raw = str(data.get('loop') or '').strip()
+def is_loop_stub(data) -> bool:
+    """Whether this ticket's ``loop`` marker makes it a loop stub.
+
+    ``loop`` is a marker, not an object. It says one thing -- read this
+    ticket's own ``done`` predicate once per iteration instead of once at
+    landing -- so it is spelled the one way a marker can be spelled.
+    """
+    return dequote(data.get('loop')) == LOOP_MARKER
+def parse_done(data):
+    """The parsed frontmatter ``done`` predicate of one ticket, or None.
+
+    One home and one grammar for both readings: `tickets.py land` runs it
+    over the integrated tree, and a loop stub's `loop-evaluate` runs the
+    same binding after each iteration.
+    """
+    raw = str(data.get('done') or '').strip()
     if not raw:
         return None
     try:
-        loop = json.loads(raw)
+        done = json.loads(raw)
     except ValueError:
         return None
-    return loop if isinstance(loop, dict) else None
-def loop_defects(value, executor) -> list:
-    """Shape defects for one frontmatter ``loop`` value, or [].
+    return done if isinstance(done, dict) else None
+def done_binding_defects(done, subject: str) -> list:
+    """Shape defects for one ``{form, value}`` done binding, or [].
 
-    contracts/work-item.md's loop_stub/loop_done shapes: a loop stub's
-    executor is the iteration body's verb, and ``done`` binds the external
-    done-check in exactly one closed form.
+    contracts/work-item.md's done_binding shape, and the sole owner of that
+    grammar. One field, two readings -- `tickets.py land` over the
+    integrated tree, `loop-evaluate` after an iteration -- and one owner: a
+    second copy is how the two spellings of a closed form drift.
     """
+    if not isinstance(done, dict):
+        return [f'{subject} must be one JSON object']
+    defects = []
+    for key in sorted(set(done) - set(DONE_BINDING_FIELDS)):
+        defects.append(f"{subject} carries unknown field '{key}'")
+    for key in sorted(DONE_BINDING_REQUIRED):
+        if key not in done:
+            defects.append(f"{subject} is missing required field '{key}'")
+    form = str(done.get('form') or '')
+    if 'form' in done and form not in DONE_BINDING_VALUES['form']:
+        defects.append(
+            f'{subject} form must be one of '
+            + ', '.join(DONE_BINDING_VALUES['form']) + f": got '{form}'"
+        )
+    if 'value' in done and not str(done.get('value') or '').strip():
+        defects.append(f'{subject} value is empty')
+    return defects
+def done_defects(value) -> list:
+    """Shape defects for one frontmatter ``done`` value, or []."""
     raw = str(value or '').strip()
     if not raw:
         return []
     try:
-        loop = json.loads(raw)
+        done = json.loads(raw)
     except ValueError:
-        return ['loop is not canonical JSON']
-    if not isinstance(loop, dict):
-        return ['loop must be one JSON object']
+        return ['done is not canonical JSON']
+    return done_binding_defects(done, 'done')
+def loop_defects(value, executor, done) -> list:
+    """Shape defects for one frontmatter ``loop`` marker, or [].
+
+    The marker takes exactly one value. What it marks is which reader
+    evaluates this ticket's own ``done`` predicate, so a stub without one
+    marks nothing, and the stub's ``executor`` is the iteration body's verb.
+    """
+    raw = dequote(value)
+    if not raw:
+        return []
     defects = []
-    for key in sorted(set(loop) - set(LOOP_STUB_FIELDS)):
-        defects.append(f"loop carries unknown field '{key}'")
-    for key in sorted(LOOP_STUB_REQUIRED):
-        if key not in loop:
-            defects.append(f"loop is missing required field '{key}'")
-    done = loop.get('done')
-    if isinstance(done, dict):
-        for key in sorted(set(done) - set(LOOP_DONE_FIELDS)):
-            defects.append(f"loop done carries unknown field '{key}'")
-        for key in sorted(LOOP_DONE_REQUIRED):
-            if key not in done:
-                defects.append(f"loop done is missing required field '{key}'")
-        form = str(done.get('form') or '')
-        if 'form' in done and form not in LOOP_DONE_VALUES['form']:
-            defects.append(
-                'loop done form must be one of '
-                + ', '.join(LOOP_DONE_VALUES['form']) + f": got '{form}'"
-            )
-        if 'value' in done and not str(done.get('value') or '').strip():
-            defects.append('loop done value is empty')
-    elif 'done' in loop:
-        defects.append('loop done must be one JSON object')
+    if raw != LOOP_MARKER:
+        defects.append(
+            f"loop is the marker `{LOOP_MARKER}` and takes no other value: got '{raw}'"
+        )
+    if not str(done or '').strip():
+        defects.append(
+            'a loop stub carries the `done` predicate its iterations are read '
+            'against'
+        )
     verb = dequote(executor)
     if not defects and not executor_registered(verb):
         defects.append(

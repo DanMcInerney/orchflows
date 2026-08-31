@@ -10,11 +10,11 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
-    from .tickets_shapes import DISPATCH_OUTCOME_VALUES
+    from .tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
     from .tickets_format import (
         GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
         _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
-        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
+        is_critique_stage_id, is_review_stage_id,
     )
     from .tickets_store import UTC_STAMP, _run_lock, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
@@ -22,18 +22,18 @@ if __package__:
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
     from .tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
-        state_from_text, verification_outcome,
+        state_from_text,
     )
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
-    from tickets_shapes import DISPATCH_OUTCOME_VALUES
+    from tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
     from tickets_format import (
         GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
         _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
-        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
+        is_critique_stage_id, is_review_stage_id,
     )
     from tickets_store import UTC_STAMP, _run_lock, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
@@ -41,93 +41,28 @@ else:
     from tickets_project import TERMINAL_REMEDY, binding_refusal
     from tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
-        state_from_text, verification_outcome,
+        state_from_text,
     )
 
-JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
+JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
-    "--outcome-record-id outcome --by <join-name> "
-    "[--accepted-file <path|->] [--artifact <fixed-identity>]"
+    "--outcome-record-id outcome --by <join-name> --status <disposition> "
+    "[--findings-file <path|->] [--accepted-file <path|->] "
+    "[--artifact <fixed-identity>]"
 )
 
 
-def _finding_array(body, subject: str):
-    if not isinstance(body, str) or not body.strip():
-        return None
-    # Result/Feedback may carry surrounding prose in historical records.  A
-    # JSON-looking body, however, is claiming to be the typed findings
-    # carrier and must be a JSON array; do not silently ignore malformed or
-    # object-shaped carriers when another record happens to contain `[]`.
-    if body.lstrip()[0] not in "[{\"-0123456789tfn":
-        return None
-    try:
-        value = parse_canonical_json(body)
-    except (TypeError, ValueError) as error:
-        raise ReviewError(f"{subject} is not a valid JSON array: {error}") from error
-    if not isinstance(value, list):
-        raise ReviewError(f"{subject} is not a valid JSON array")
-    return value
+def _review_file(source: str, subject: str):
+    """Read one review array from a file or standard input.
 
-
-def _critique_findings(attempt: dict, outcome_evidence: dict) -> str:
-    findings = []
-    found = False
-    for record in attempt.get("records", []):
-        if record.get("kind") != "result":
-            continue
-        try:
-            content = parse_canonical_json(record["content"])
-        except (KeyError, TypeError, ValueError) as error:
-            raise ReviewError(f"critique findings result is not canonical JSON: {error}") from error
-        if not isinstance(content, dict) or content.get("section") not in {
-            "Result", "Feedback",
-        }:
-            continue
-        values = _finding_array(
-            content.get("body"), f"critique {content.get('section')} result"
-        )
-        if values is not None:
-            found = True
-            findings.extend(values)
-    if isinstance(outcome_evidence, dict):
-        for section in ("Result", "Feedback"):
-            values = _finding_array(
-                outcome_evidence.get(section), f"critique outcome {section}"
-            )
-            if values is not None:
-                found = True
-                findings.extend(values)
-    if not found:
-        raise ReviewError(
-            "critique findings must be a JSON array in Result or Feedback"
-        )
-    # One authoritative finding is one finding however many of the
-    # protocol's own carriers it rode: an executor that streams it in a
-    # result record and repeats it in the reserved outcome's copy of that
-    # section recorded the same fact twice, not two findings.  Collapsing
-    # byte-identical values here leaves the id-uniqueness grade below to
-    # convict what it is for -- two distinct records claiming one id.
-    seen, authoritative = set(), []
-    for value in findings:
-        identity = canonical_json(value)
-        if identity in seen:
-            continue
-        seen.add(identity)
-        authoritative.append(value)
-    # Validate the flattened carrier before caller-supplied acceptance is
-    # considered.  This keeps malformed or duplicate executor findings out of
-    # the immutable adjudication boundary even when they arrived in several
-    # streamed Result/Feedback records.
-    return canonical_finding_array(canonical_json(authoritative), "critique findings")
-
-
-def _accepted_file(source: str):
-    """Read the protocol-owned accepted blocker subset from a file/stdin.
-
-    Review findings are executor evidence.  The only caller-facing review
-    input is the accepted subset, and it crosses this boundary as UTF-8 file
-    data so a shell argument cannot masquerade as a durable carrier.
+    Both review arrays cross this boundary the same way, as UTF-8 file data,
+    so a shell argument cannot masquerade as a durable carrier. The complete
+    findings used to be scraped out of the child's `Result` or `Feedback`
+    prose; there is one free-text `Report` now and nothing machine-critical
+    is read out of it, so the array a critique produces arrives here as the
+    file it always was on disk, and lands in the `review_v1` adjudication
+    that is its one durable home.
     """
     if source == "-":
         try:
@@ -137,8 +72,8 @@ def _accepted_file(source: str):
                 value = value.decode("utf-8")
             return value, None
         except (OSError, UnicodeDecodeError, AttributeError) as error:
-            return None, {"error": f"unreadable accepted blocker file: {error}"}
-    return _read_utf8(source, "accepted blocker file")
+            return None, {"error": f"unreadable {subject}: {error}"}
+    return _read_utf8(source, subject)
 
 
 def _closes_the_run(run: str, ticket_id: str) -> bool:
@@ -161,18 +96,22 @@ def _closes_the_run(run: str, ticket_id: str) -> bool:
 
 
 def _attempt_workspace(attempt: dict) -> str | None:
-    record = next((
-        item for item in attempt.get("records", [])
-        if item.get("kind") == "packet" and item.get("record_id") == "dispatch-packet"
-    ), None)
-    if record is None:
-        return None
+    """The tree this attempt was executed in, from that field's one owner.
+
+    Read off the attempt, not off any record it carries: the establishment
+    records the tree there, and a launch that restated it would be the second
+    home this field no longer has. Imported at call time because the flat
+    installed layout fixes no order between these two families.
+    """
+
     try:
-        content = parse_canonical_json(record["content"])
-    except (KeyError, TypeError, ValueError):
+        if __package__:
+            from . import workspace_record
+        else:  # pragma: no cover - the flat installed layout
+            import workspace_record
+    except ImportError:  # pragma: no cover - a partial install
         return None
-    packet = content.get("packet") if isinstance(content, dict) else None
-    return packet.get("workspace") if isinstance(packet, dict) else None
+    return workspace_record.recorded_workspace(attempt)
 
 
 def _cmd_dispatch_join(rest, *, _lock_held=False):
@@ -193,12 +132,20 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
     dispatch_id = _extract_flag(args, "--dispatch-id")
     outcome_record_id = _extract_flag(args, "--outcome-record-id")
     joined_by = _extract_flag(args, "--by")
+    disposition = _extract_flag(args, "--status")
+    findings_file = _extract_flag(args, "--findings-file")
     accepted_file = _extract_flag(args, "--accepted-file")
     artifact = _extract_flag(args, "--artifact")
     if len(args) != 2 or not all((
-        assignment_seal, dispatch_id, outcome_record_id, joined_by,
+        assignment_seal, dispatch_id, outcome_record_id, joined_by, disposition,
     )):
         return {"error": f"usage: {DISPATCH_JOIN_USAGE}"}
+    if disposition not in JOIN_STATUSES:
+        return _classification(
+            "join-invalid",
+            "the join records the disposition and it must be one of "
+            + ", ".join(sorted(JOIN_STATUSES)),
+        )
     run, ticket_id = args
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
         invalid = _segment_error(kind, value)
@@ -211,21 +158,33 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         if failure is not None:
             return failure
     review_stage = is_critique_stage_id(ticket_id)
-    if accepted_file is not None and not review_stage:
-        return _classification(
-            "review-invalid", "--accepted-file applies only to critique joins"
-        )
-    accepted = None
-    if accepted_file is not None:
-        accepted, failure = _accepted_file(accepted_file)
+    for flag, value in (("--findings-file", findings_file), ("--accepted-file", accepted_file)):
+        if value is not None and not review_stage:
+            return _classification(
+                "review-invalid", f"{flag} applies only to critique joins"
+            )
+    findings = accepted = None
+    for source, subject, target in (
+        (findings_file, "critique findings file", "findings"),
+        (accepted_file, "accepted blocker file", "accepted"),
+    ):
+        if source is None:
+            continue
+        body, failure = _review_file(source, subject)
         if failure is not None:
             return failure
+        if target == "findings":
+            findings = body
+        else:
+            accepted = body
     if review_stage:
-        if accepted is None:
-            return _classification(
-                "review-invalid", "critique join requires --accepted-file <path|->"
-            )
+        for flag, value in (("--findings-file", findings), ("--accepted-file", accepted)):
+            if value is None:
+                return _classification(
+                    "review-invalid", f"critique join requires {flag} <path|->"
+                )
         try:
+            findings = canonical_finding_array(findings, "critique findings")
             accepted = canonical_finding_array(accepted, "critique accepted")
         except ReviewError as error:
             return _classification("review-invalid", str(error))
@@ -265,7 +224,11 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             return text, None, _classification(
                 "outcome-record-mismatch", "committed outcome belongs to another dispatch"
             )
-        status = outcome["status"]
+        # The outcome's existence closes the attempt; it does not say what
+        # the ticket became. `land` supplies the disposition its `done`
+        # predicate read, and a ticket with no predicate gets the driver's
+        # grade -- neither is the child's word for itself.
+        status = disposition
         try:
             review = state_from_text(text, allow_legacy=True)
             if is_critique_stage_id(ticket_id):
@@ -274,24 +237,14 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
                     else ticket_id.split(GATE_CRITIQUE_MARKER, 1)[1]
                 )
                 review = adjudicate(
-                    review, _critique_findings(
-                        attempt, outcome["evidence"],
-                    ), accepted,
-                    outcome["by"], lens,
+                    review, findings, accepted, outcome["by"], lens,
                 )
             elif ticket_id.endswith(".gate.repair"):
                 if accepted is not None:
                     raise ReviewError("repair join does not accept --accepted-file")
                 review = repair_outcome(
-                    review, artifact or "", outcome["evidence"]["Result"],
+                    review, artifact or "", outcome["evidence"],
                     joined_by, workspace=_attempt_workspace(attempt),
-                )
-            elif ticket_id.endswith(".gate.verify"):
-                if accepted is not None:
-                    raise ReviewError("verification join does not accept --accepted-file")
-                review = verification_outcome(
-                    review, artifact, outcome["evidence"]["Verification"],
-                    joined_by,
                 )
             elif accepted is not None or artifact is not None:
                 raise ReviewError("review flags apply only to gate-stage joins")

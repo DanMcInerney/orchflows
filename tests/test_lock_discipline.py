@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 from scripts import tickets as tickets_mod  # noqa: E402
 from scripts import tickets_attempts  # noqa: E402
 from scripts import tickets_dispatch_facade  # noqa: E402
-from scripts import tickets_dispatch_packet  # noqa: E402
+from scripts import tickets_dispatch_facade  # noqa: E402
 from scripts import tickets_dispatch_gate  # noqa: E402
 from scripts import tickets_join  # noqa: E402
 from scripts import tickets_result  # noqa: E402
@@ -100,8 +100,8 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
             ("check", run, tid, "--stage", f"{tid}.check"),
             ("set-status", run, tid, "complete"),
             ("join-noop-repair", run, tid, "--by", "gate-join"),
-            ("dispatch-packet", run, tid, "--dispatch-id", "D1",
-             "--reply-to", "root"),
+            ("dispatch", run, tid, "--by", "worker", "--dispatch-id", "D1",
+             "--lease-expires-at", "2099-01-01T00:00:00Z"),
             ("gate", run, tid),
             ("checker-stage", run, tid),
         )
@@ -215,9 +215,25 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         tmp = Path(self.temporary.name)
         use_sink(tmp)
+        # A live attempt, because that is what the established tree is
+        # recorded on: `start` writes the path into `dispatch_v1`, and a
+        # claimed ticket without an attempt has nowhere to carry it.
+        attempt = json.dumps({
+            "protocol": "orchflows.dispatch.v1",
+            "attempts": [{
+                "assignment_seal": "sha256:" + "0" * 64,
+                "dispatch_id": "D1",
+                "lease_expires_at": "2099-01-01T00:00:00Z",
+                "opened_at": "2026-01-01T00:00:00Z",
+                "outcome_record_id": "outcome",
+                "owner": "worker",
+                "records": [],
+                "state": "live",
+            }],
+        }, separators=(",", ":"), sort_keys=True)
         self.ticket = ticket_at(
             sink_root() / "tickets" / "testrun", "T1", status="claimed",
-            extra=(("pack", "orch-research-pack"),),
+            extra=(("pack", "orch-research-pack"), ("dispatch_v1", attempt)),
         )
         self.here = tmp
 
@@ -286,39 +302,21 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         self.assertIn("workspace_path", self.ticket.read_text(encoding="utf-8"))
 
 
-class TestStandaloneDispatchPacketIsLocked(unittest.TestCase):
-    """`dispatch-packet` read the attempt, the review state and the seal
-    unlocked, then committed under a lock it opened at the end."""
+class TestTheLaunchStepInheritsTheFacadeLock(unittest.TestCase):
+    """Every read that decides the launch happens inside the caller's lock.
 
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory()
-        tmp = Path(self.temporary.name)
-        use_sink(tmp)
-        self.here = tmp
-        ticket_at(sink_root() / "tickets" / "testrun", "T1", status="claimed")
-
-    def tearDown(self):
-        self.temporary.cleanup()
-
-    def test_the_whole_projection_waits_for_the_run_lock(self):
-        command = [
-            sys.executable, str(TICKETS_PY), "dispatch-packet", "testrun", "T1",
-            "--dispatch-id", "D1", "--reply-to", "root",
-        ]
-        with tickets_store._run_lock("testrun"):
-            child = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True, encoding="utf-8", errors="replace", cwd=str(self.here),
-            )
-            time.sleep(WAIT)
-            early = child.poll()
-        out, err = child.communicate(timeout=60)
-        self.assertIsNone(early, f"dispatch-packet read outside the lock: {out or err}")
-        self.assertIn("error", json.loads(out))
+    The step is not a verb of its own: it is reached only from `_cmd_dispatch`,
+    which holds the run lock across the whole composition. So it must never
+    open a second lock on the same run -- that is this process waiting on
+    itself -- and the record commit has to be told the lock is already held.
+    """
 
     def test_the_commit_is_told_the_lock_is_already_held(self):
-        source = inspect.getsource(tickets_dispatch_packet._packet_transaction)
+        source = inspect.getsource(
+            tickets_dispatch_facade._launched_under_run_lock
+        )
         self.assertIn("_lock_held=True", source)
+        self.assertNotIn("with _run_lock", source)
 
 
 class TestOneOwnerForTheEndedAttemptRule(unittest.TestCase):
@@ -351,7 +349,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_a_cut_runs_root_closes_it_and_its_members_do_not(self):
-        ticket_at(self.run_dir, "R", executor="orch-decompose")
+        ticket_at(self.run_dir, "R", executor="orch-slice")
         ticket_at(self.run_dir, "R.01", deps="[R]")
         self.assertTrue(tickets_join._closes_the_run("testrun", "R"))
         self.assertFalse(tickets_join._closes_the_run("testrun", "R.01"))
@@ -360,7 +358,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         for label, member in (("root joins last", "complete"),
                               ("root joins first", "pending")):
             with self.subTest(label):
-                ticket_at(self.run_dir, "R", executor="orch-decompose")
+                ticket_at(self.run_dir, "R", executor="orch-slice")
                 ticket_at(self.run_dir, "R.01", deps="[R]", status=member)
                 self.assertTrue(tickets_join._closes_the_run("testrun", "R"))
                 self.assertFalse(tickets_join._closes_the_run("testrun", "R.01"))

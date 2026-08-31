@@ -2,7 +2,8 @@
 id: 01-diff
 executor: orch-execute
 pack: orch-content-pack
-loop: {"done":{"form":"check","value":"Every canary item carries a verdict against its golden result, and every divergence carries one friction entry in the improvement evidence sink."}}
+loop: true
+done: {"form":"check","value":"Every canary item carries a verdict against its golden result, and every divergence carries one friction entry in the improvement evidence sink."}
 depends_on: [00-run]
 bound: <= 40 tool calls
 independence: checker
@@ -24,16 +25,4 @@ Exceptional constraints:
 - edit a golden result inside a canary run
 - treat divergence as failure
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

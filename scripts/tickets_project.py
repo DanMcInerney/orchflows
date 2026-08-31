@@ -5,7 +5,7 @@ every project on the host.  That is the architecture the host block
 mandates, and its one exposure is that a run is reachable from checkouts
 that have nothing to do with it.  Nothing mechanical asserted the
 boundary, so three separable failures all arrived through it -- a
-packet-less fork scavenged the sink and matched another project's
+prompt-less fork scavenged the sink and matched another project's
 pending ticket, a claim was attempted from the sibling checkout of the
 project holding the run's baseline, and a run was attributed to whichever
 session wrote to the sink first while its tickets named a different

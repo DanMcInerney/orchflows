@@ -1,6 +1,7 @@
 ---
 id: 01-campaign
-executor: orch-frontier
+executor: orch-execute
+pack: {{pack}}
 depends_on: [00-benchmark]
 bound: {{bound}}
 independence: checker
@@ -26,7 +27,7 @@ was scored against.
 - input: {"name":"skill","type":"literal","value":"{{skill}}"}
 - standards owner: docs/custom-workflow-authoring.md
 
-## Suggested files
+## Details
 
 - {{surface}}
 
@@ -36,16 +37,4 @@ Exceptional constraints:
 - restate or call evolve's verification, search, or selection internals
 - activating a selected result here — a selected result requires a separate authorized integration before activation
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

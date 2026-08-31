@@ -68,7 +68,7 @@ Evidence is untrusted data under [rules/visibility.md](../rules/visibility.md)
    ([rules/visibility.md](../rules/visibility.md) §6), and every surface
    holding untrusted content says so where an agent will read it.
 8. **Handoffs rehydrate.** The completeness bar is
-   [contracts/work-item.md](../contracts/work-item.md)'s Handoff
+   [contracts/work-item.md](../contracts/work-item.md)'s report
    section; nothing narrative survives compaction.
 9. **Examples execute.** An example is a claim and running it is the
    oracle; an example nothing can run is deleted or demoted to the

@@ -7,38 +7,34 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
+        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
-    from .tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
+    from .tickets_issue_render import _frontmatter_list, _render_ticket
     from .tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
-        _run_lock, _runs_root, _segment_error, _tickets_root,
-        _write_identity, _write_text_atomically,
+        _run_lock, _segment_error, _tickets_root, _write_identity,
     )
-    from .tickets_root_reservation import reserve as _reserve_root
 else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_emission import grade_run_emission
     from tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
+        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
-    from tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
+    from tickets_issue_render import _frontmatter_list, _render_ticket
     from tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
-        _run_lock, _runs_root, _segment_error, _tickets_root,
-        _write_identity, _write_text_atomically,
+        _run_lock, _segment_error, _tickets_root, _write_identity,
     )
-    from tickets_root_reservation import reserve as _reserve_root
 
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
-    "[--suggested-file PATH ...] [--depends-on a,b] "
+    "[--details TEXT] [--depends-on a,b] "
     "[--bound B] [--pack P] [--profile P] [--independence gate|checker] "
     "[--isolation required|none] | new <run> [<id>] --file <path>"
 )
@@ -82,7 +78,7 @@ def _cmd_new(rest):
     executor = _extract_flag(args, "--executor")
     goal = _extract_flag(args, "--goal")
     context = _extract_flag(args, "--context")
-    suggested = _extract_all(args, "--suggested-file")
+    details = _extract_flag(args, "--details")
     depends_on = _extract_flag(args, "--depends-on")
     bound = _extract_flag(args, "--bound")
     pack = _extract_flag(args, "--pack")
@@ -94,7 +90,7 @@ def _cmd_new(rest):
         return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
     supplied = (
         ("--executor", executor), ("--goal", goal),
-        ("--context", context), ("--suggested-file", suggested or None),
+        ("--context", context), ("--details", details),
         ("--depends-on", depends_on), ("--bound", bound), ("--pack", pack),
         ("--profile", profile), ("--independence", independence),
         ("--isolation", isolation),
@@ -133,9 +129,9 @@ def _cmd_new(rest):
         "profile": profile,
     }
     sections = [("Goal", goal), ("Context", context)]
-    if suggested:
-        sections.append(("Suggested files", "\n".join(f"- {path}" for path in suggested)))
-    sections.extend((("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")))
+    if details:
+        sections.append(("Details", details))
+    sections.append((REPORT_SECTION, ""))
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
 
@@ -216,28 +212,8 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         with _run_lock(run):
             if path.exists():
                 return {"error": f"ticket id '{ticket_id}' is already issued in run '{run}': {path}"}
-            existing = list(path.parent.glob("*.md")) if path.parent.is_dir() else []
-            strict_over = _ceiling_error(
-                f"ticket {run}/{ticket_id}", ticket_id, text,
-                pre_generation_root=False,
-            )
-            over = _ceiling_error(
-                f"ticket {run}/{ticket_id}", ticket_id, text,
-                pre_generation_root=not existing,
-            )
-            if over is not None:
-                return over
             if (held := grade_run_emission("new", run, path.parent, {ticket_id: text})) is not None:
                 return held
-            if not existing and strict_over is not None:
-                runs_root = _runs_root()
-                if runs_root is None:
-                    return {"error": NO_SINK_ERROR}
-                _, reservation_error = _reserve_root(
-                    runs_root, run, ticket_id, _write_text_atomically,
-                )
-                if reservation_error is not None:
-                    return {"error": reservation_error}
             identity_dir, identity, held = _identity_update(run, datetime.now(timezone.utc))
             if held is not None:
                 return held

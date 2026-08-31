@@ -1,6 +1,6 @@
 """The grade every ticket-emitting door runs before it writes.
 
-`lint`, `ready`, `claim` and `packet` grade a ticket they are handed.
+`lint`, `ready`, `claim` and `dispatch` grade a ticket they are handed.
 `new`, `amend`, `recut`, `instantiate` and `gate` write one. Those two
 halves ran different grades, so a door could spend the run's time writing
 what the next door then refused: a template instantiated two stubs and

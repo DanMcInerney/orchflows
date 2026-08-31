@@ -119,7 +119,7 @@ def graph_closed(ticket_id: str, siblings, *evidence) -> bool:
 def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False) -> list:
     """Grade the graph shape owned by one ticket without consulting prose.
 
-    ``orch-decompose`` is the only root executor that may own executor-result
+    ``orch-slice`` is the only root executor that may own executor-result
     members.  A root marked as an ordinary checker would leave the graph's
     authority with a caller, so it is refused at every admission door.  The
     member-count checks are deferred until a generation is being validated:
@@ -162,16 +162,10 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
         ticket_id[:-len(".check")]
     ]:
         return dependencies[0], None
-    target_id = None
-    kind = None
-    if ticket_id.endswith(".gate.repair"):
-        target_id = ticket_id[:-len(".gate.repair")]
-        kind = "repair"
-    elif ticket_id.endswith(".gate.verify"):
-        target_id = ticket_id[:-len(".gate.verify")]
-        kind = "verify"
-    else:
+    if not ticket_id.endswith(".gate.repair"):
         return None
+    target_id = ticket_id[:-len(".gate.repair")]
+    kind = "repair"
     target_text = siblings.get(target_id)
     checker_text = siblings.get(f"{target_id}.check")
     if target_text is None or checker_text is None:
@@ -325,7 +319,7 @@ def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
     A receipt names the exact state it was taken over, so a member promoted
     under one generation holds a receipt only that generation recomputes.
     Re-generationing the run therefore leaves every promoted member stale --
-    a lawful recut, and then the root's next packet refused for a staleness
+    a lawful recut, and then the root's next dispatch refused for a staleness
     the recut itself introduced, five times before this was written.
 
     Only a member already carrying a real receipt is touched: a pending one

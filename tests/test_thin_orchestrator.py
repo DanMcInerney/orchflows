@@ -14,9 +14,7 @@ from tools import validate
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROFILE_OWNER_LINK = (
-    "[role profiles](../skills/engines/orch-frontier/references/profiles.md)"
-)
+PROFILE_OWNER_LINK = "[role profiles](../hosts/profiles.md)"
 
 
 def _custom_routing_uses_profile_owner(text: str) -> bool:
@@ -47,7 +45,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
         "orch-outline": "planner",
         "orch-check": "planner",
-        "orch-decompose": "planner",
+        "orch-slice": "planner",
         "orch-execute": "worker",
     }
 
@@ -59,19 +57,16 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                     _frontmatter(_skill_path(name))["role"],
                 )
 
-        glue = {
-            "skills/engines/orch-frontier/SKILL.md",
-            "skills/kernel/orch-integrate/SKILL.md",
-        }
-        for path in glue:
-            with self.subTest(glue=path):
-                self.assertEqual("none", _frontmatter(path)["role"])
+        # No skill is glue any more: the driver and the join are commands,
+        # so every callable declares planner or worker.
+        self.assertEqual(
+            set(self.WORKFLOW_ROLES),
+            {path.parent.name for path in (ROOT / "skills").rglob("SKILL.md")},
+        )
 
         delegation = (ROOT / "rules/delegation.md").read_text(encoding="utf-8")
         roles = (ROOT / "rules/roles.md").read_text(encoding="utf-8")
-        profiles = (
-            ROOT / "skills/engines/orch-frontier/references/profiles.md"
-        ).read_text(encoding="utf-8")
+        profiles = (ROOT / "hosts/profiles.md").read_text(encoding="utf-8")
         host = (ROOT / "templates/host-block.md").read_text(encoding="utf-8")
         collapsed_host = re.sub(r"\s+", " ", host)
         combined = "\n".join((delegation, roles, profiles, host))
@@ -103,13 +98,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             collapsed_host,
             re.compile(r"Skill/composition/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
-        decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("relevant Context", decompose)
+        decompose = (ROOT / "skills/kernel/orch-slice/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Context: pointers by identity", decompose)
         self.assertNotIn("**errand**", collapsed_host)
-        self.assertNotIn("sequence: [orch-outline, orch-decompose]", host)
+        self.assertNotIn("sequence: [orch-outline, orch-slice]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
-    def test_graph_lane_emits_the_complete_decompose_packet(self):
+    def test_graph_lane_emits_the_complete_decompose_route(self):
         host = re.sub(
             r"\s+",
             " ",
@@ -121,14 +116,11 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "stamped root",
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "--reply-to <parent-name> [--host <host>] [--workspace <tree>]",
-            "tickets.py dispatch-receive",
-            "accepted",
-            "exact `orch-decompose`",
-            "invoke its emitted `launch` verbatim",
-            "ticket path is not the complete packet",
+            "[--host <host>] [--workspace <tree>]",
+            "invoke the emitted `launch` verbatim adding nothing to its prompt",
             "tickets.py land",
-            "start `orch-frontier`",
+            "`land --status`",
+            "Repeat until that frontier is empty",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)
@@ -140,6 +132,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "tickets.py dispatch-open",
             "tickets.py dispatch-packet",
             "tickets.py dispatch-join",
+            "tickets.py dispatch-receive",
             "workspace.py establish",
         ):
             with self.subTest(absent=absent):
@@ -152,22 +145,17 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
         graph = host.partition("**graph**")[2].partition("**outline**")[0]
-        frontier = re.sub(
-            r"\s+",
-            " ",
-            (ROOT / "skills/engines/orch-frontier/SKILL.md").read_text(
-                encoding="utf-8"
-            ),
-        )
 
-        for text in (graph, frontier):
-            with self.subTest(owner="graph" if text is graph else "frontier"):
-                self.assertIn("tickets.py dispatch", text)
-                if text is frontier:
-                    # Establishment is inside the dispatch transaction now, so
-                    # the engine states that rather than a separate step.
-                    self.assertIn("establishes the workspace", text)
-                self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
+        self.assertIn("tickets.py dispatch", graph)
+        self.assertLess(
+            graph.index("tickets.py dispatch"), graph.index("tickets.py land")
+        )
+        # Establishment is inside the dispatch transaction, so the contract
+        # that owns the transaction states it and the route does not repeat
+        # it as a step of its own.
+        dispatch_contract = (ROOT / "contracts/dispatch.md").read_text(encoding="utf-8")
+        self.assertIn("the established workspace", dispatch_contract)
+        self.assertNotIn("workspace.py establish", graph)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -206,7 +194,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "directly",
             "never redispatch",
         ):
@@ -223,15 +211,15 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "direct root",
             "lawful executor",
-            "`orch-decompose` root",
+            "`orch-slice` root",
             "distinct results/dependencies",
             "one planner",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
 
-        self.assertRegex(spec_route, r"one planner.*`orch-decompose` root")
-        self.assertIn("planner never starts the frontier", spec_route)
+        self.assertRegex(spec_route, r"one planner.*`orch-slice` root")
+        self.assertIn("planner never drives the run", spec_route)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -251,7 +239,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                     f"agent_type `orch_{role}`",
                     "fork_turns `none`",
                     f"`{name}`",
-                    "complete packet",
+                    "emitted launch prompt",
                     "matching role",
                     "directly",
                     "refuse",
@@ -276,7 +264,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "directly",
             "never redispatch",
             "mismatched",

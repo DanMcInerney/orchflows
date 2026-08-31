@@ -21,16 +21,4 @@ An independent blocker report over {{workspace}} under {{priorities}}.
 
 - Apply the pack's check craft and report every evidence-backed blocker.
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

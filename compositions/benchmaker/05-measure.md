@@ -20,7 +20,7 @@ rungs, on [§Measurement pass](../references/benchmaker-protocol.md#measurement-
 - input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 
-## Suggested files
+## Details
 
 - {{package}}
 
@@ -29,16 +29,4 @@ Exceptional constraints:
 - rank candidates
 - promote or activate anything
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

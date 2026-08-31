@@ -1,7 +1,7 @@
 # Roles
 
 The generated [receiver lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
-names the worker-or-planner authority established at receipt.
+names the worker-or-planner authority a dispatched child files under.
 
 1. The starting agent is the orchestrator. It owns user questions, scope
    decisions, and undelegated irreversible effects; it never delegates
@@ -12,9 +12,9 @@ names the worker-or-planner authority established at receipt.
    - `orch-worker` — execution: implementation, repair, investigation,
      diagnosis, and shape-checked mechanics.
 3. Concrete model and effort bindings per host are owned solely by
-   [profiles.md](../skills/engines/orch-frontier/references/profiles.md).
+   [profiles.md](../hosts/profiles.md).
 4. Resolve role at each dispatch, against the active host's profile
-   bindings (clause 3), in order: an explicit packet profile wins; else
+   bindings (clause 3), in order: an explicit ticket profile wins; else
    the applied skill's declared role — a multi-stage pack's stages run
    in one child at the role resolved from the ticket's `executor`; a
    `none` declaration or a dispatch naming no applied skill takes only a
@@ -30,7 +30,7 @@ names the worker-or-planner authority established at receipt.
 7. A child needing a user-only decision returns a `kind: user-only`
    question and resume state. Root asks its text verbatim and returns
    the answer without deciding it.
-8. The [dispatch contract](../contracts/dispatch.md)'s receipt compares the
-   established child with the committed authority before clause 6 permits
-   execution. A disagreement is a structured refusal; the child never
-   substitutes or repairs the packet.
+8. The [dispatch contract](../contracts/dispatch.md) binds every record a
+   child files to the attempt it was dispatched under. A write naming another
+   authority is a structured refusal; the child never substitutes or repairs
+   that authority.

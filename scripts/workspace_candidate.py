@@ -10,7 +10,7 @@ Two lanes, and the ticket's own ``isolation`` decides which. An item that
 declares ``required`` gets a tree of its own, created here at the path
 ``state_root.candidate_paths`` derives from its run and its id -- never a
 tree a caller named, because a caller naming the tree is how two siblings
-came to be dispatched into one directory and how a packet came to carry
+came to be dispatched into one directory and how a launch came to carry
 another item's workspace. Everything else is observed rather than created:
 the caller stands somewhere, and what it is standing in is recorded.
 
@@ -23,7 +23,7 @@ read -- a write that landed in between is reported, never absorbed.
 
 ``prepare`` is the same argument taken to its end: installing what the
 tree declares costs a package manager's minutes and writes no ticket at
-all, so it is its own verb, run against the recorded ``workspace_path``
+all, so it is its own verb, run against the tree the attempt records
 after the establishment's lock has been let go.
 
 Nothing here records a success it did not achieve. A refused establishment
@@ -38,7 +38,7 @@ from pathlib import Path
 
 try:
     from . import state_root, tickets_adapters, tickets_format, tickets_store
-    from . import workspace_git, workspace_prepare
+    from . import workspace_git, workspace_prepare, workspace_record
 except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import state_root
     import tickets_adapters
@@ -46,6 +46,7 @@ except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import tickets_store
     import workspace_git
     import workspace_prepare
+    import workspace_record
 
 Refused = workspace_git.Refused
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -154,7 +155,7 @@ def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
     _validate_write_paths(data.get("write_scope"), top)
     branch, head = workspace_git._head_and_branch(git_out)
     dirty = sorted(set(seams["dirty_paths"]()))
-    # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
+    # Write-once: ``tickets_assignment.py`` feeds this stamp to ``cutcheck.py
     # --baseline``, so it goes on naming the revision the item was cut from,
     # never the moved tree a re-establishment stands in. The observation is
     # reported under its own key instead of recorded: a second stamp would
@@ -360,7 +361,7 @@ def prepare(run: str, ticket_id: str):
     ``pnpm install`` is minutes, and while it ran inside the dispatch
     facade's critical section every sibling of the run waited it out for a
     tree that was not theirs. Nothing here writes a ticket or a stamp, so
-    there is no lock to take -- it reads the ``workspace_path`` the
+    there is no lock to take -- it reads the established tree the
     establishment already recorded and works in that directory.
 
     The preparation's verdict is reported, never raised: a tree that cannot
@@ -371,7 +372,7 @@ def prepare(run: str, ticket_id: str):
     """
 
     path, data, _ = _loaded(run, ticket_id)
-    recorded = str(data.get(PATH_KEY) or "").strip()
+    recorded = str(workspace_record.attempt_workspace(data) or "").strip()
     if not recorded:
         raise Refused(
             f"{run}/{ticket_id} records no {PATH_KEY}: establish it first with "
@@ -392,6 +393,70 @@ def prepare(run: str, ticket_id: str):
             **workspace_prepare.prepare(top),
         }
     }, EXIT_OK
+
+
+def integrate(run: str, ticket_id: str, workspace, branch):
+    """Merge this item's candidate branch into the tree the run stands in.
+
+    The step `land` used to leave for hand git, which is how a run once
+    reported a landed item whose commits never reached the checkout anyone
+    read. One merge, in the main checkout the candidate was cut from, before
+    the worktree is retired: after retirement the branch survives but the
+    tree that named it does not, and the ordering is the whole reason this
+    lives beside `retire` rather than after it.
+
+    The tree and the branch are the establishment's own records, handed in
+    rather than re-derived here. `retire` may re-derive because a spent path
+    answers for an archived ticket; a merge may not, because the only branch
+    it is lawful to merge is the one this attempt actually stood on.
+
+    A conflict is refused, not resolved and not left half-applied: the merge
+    is aborted so the run's own checkout is never handed back mid-merge, and
+    the refusal names the conflicted paths and the one remedy -- resolve
+    them in the candidate, then land again. Replaying is free: git answers
+    an already-merged branch with an unchanged HEAD, which is reported as a
+    replay rather than as a second merge.
+
+    Anything the records do not resolve to a linked worktree of a readable
+    repository is `absent`, never an error: an item that ran in the caller's
+    own checkout has nothing to merge into it.
+    """
+
+    target = Path(str(workspace or "")).expanduser() if workspace else None
+    branch = str(branch or "").strip()
+    body = {
+        "run": run, "id": ticket_id,
+        PATH_KEY: None if target is None else str(target), BRANCH_KEY: branch or None,
+    }
+    main = (
+        state_root.main_checkout_root(target / ".git")
+        if branch and target is not None and (target / ".git").is_file() else None
+    )
+    if main is None or not Path(main).is_dir() or _branch_tip(main, branch) is None:
+        return {"integrate": dict(body, outcome="absent")}, EXIT_OK
+    read_main = _git_out(main)
+    before = read_main("rev-parse", "HEAD")
+    into = workspace_git._current_branch(read_main)
+    code, _, err = workspace_git._git(
+        str(main), "merge", "--no-ff", "--no-edit", branch
+    )
+    if code != 0:
+        _, conflicted, _ = workspace_git._git(
+            str(main), "diff", "--name-only", "--diff-filter=U"
+        )
+        workspace_git._git(str(main), "merge", "--abort")
+        paths = sorted(name for name in conflicted.splitlines() if name.strip())
+        raise Refused(
+            f"git merge {branch} into {into!r} at {main} refused: "
+            + (", ".join(paths) if paths else err.strip())
+            + f". Resolve them in the candidate at {target}, commit there, then "
+            f"land {run}/{ticket_id} again"
+        )
+    after = read_main("rev-parse", "HEAD")
+    return {"integrate": dict(
+        body, outcome="replayed" if after == before else "merged",
+        into=into, main_root=str(main), revision=after,
+    )}, EXIT_OK
 
 
 def retire(run: str, ticket_id: str, *, force: bool = False):
@@ -433,5 +498,6 @@ def retire(run: str, ticket_id: str, *, force: bool = False):
 
 
 __all__ = (
-    "ESTABLISH_KEY", "START_KEY", "establish", "observe", "prepare", "retire",
+    "ESTABLISH_KEY", "START_KEY", "establish", "integrate", "observe",
+    "prepare", "retire",
 )

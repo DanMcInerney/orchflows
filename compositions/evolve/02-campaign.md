@@ -2,7 +2,8 @@
 id: 02-campaign
 executor: orch-execute
 pack: orch-code-pack
-loop: {"done":{"form":"check","value":"The frozen promotion rule and margin are met over the final incumbent's score card, per the campaign's frozen evaluation."}}
+loop: true
+done: {"form":"check","value":"The frozen promotion rule and margin are met over the final incumbent's score card, per the campaign's frozen evaluation."}
 depends_on: [01-eligibility]
 bound: {{bound}}
 independence: checker
@@ -16,7 +17,7 @@ of candidates, each written and scored under the frozen evaluation,
 until the frozen promotion rule and margin are met over the final
 incumbent's score card or {{bound}} is spent.
 
-Each generation consumes 01-eligibility's `## Result` and scores blind through
+Each generation consumes 01-eligibility's `## Report` and scores blind through
 orch-check; `search_plan.py advance` selects search-policy/v1 cases under the
 generation protocol.
 
@@ -27,7 +28,7 @@ generation protocol.
 - input: {"name":"bound","type":"literal","value":"{{bound}}"}
 - input: {"name":"target","type":"literal","value":"{{target}}"}
 
-## Suggested files
+## Details
 
 - {{mutation_scope}}
 
@@ -43,16 +44,4 @@ Exceptional constraints:
 - keeping a candidate that lacks PASS on every required admission criterion — kill it, since a score never compensates
 - taking an archive member as anything but an exploration parent
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

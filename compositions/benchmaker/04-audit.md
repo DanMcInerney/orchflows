@@ -19,7 +19,7 @@ under the audit lens.
 - input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 
-## Suggested files
+## Details
 
 - {{package}}
 
@@ -27,16 +27,4 @@ Exceptional constraints:
 
 - Apply the pack's check craft and report every evidence-backed blocker.
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

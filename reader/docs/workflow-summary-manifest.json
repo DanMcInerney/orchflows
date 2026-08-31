@@ -103,7 +103,7 @@
         {"source": "challenge", "target": "verdict", "kind": "sequence"}
       ]
     },
-    "orch-decompose": {
+    "orch-slice": {
       "nodes": [
         {"id": "root", "label": "Read the stamped root"},
         {"id": "slice", "label": "Cut independent outcomes"},
@@ -123,28 +123,6 @@
       "edges": [
         {"source": "resolve", "target": "apply", "kind": "sequence"},
         {"source": "apply", "target": "evidence", "kind": "sequence"}
-      ]
-    },
-    "orch-frontier": {
-      "nodes": [
-        {"id": "ready", "label": "Read ready tickets"},
-        {"id": "dispatch", "label": "Dispatch one frontier wave"},
-        {"id": "join", "label": "Join returned outcomes"}
-      ],
-      "edges": [
-        {"source": "ready", "target": "dispatch", "kind": "sequence"},
-        {"source": "dispatch", "target": "join", "kind": "sequence"}
-      ]
-    },
-    "orch-integrate": {
-      "nodes": [
-        {"id": "inspect", "label": "Inspect returned evidence"},
-        {"id": "adjudicate", "label": "Adjudicate one child result"},
-        {"id": "record", "label": "Record the join"}
-      ],
-      "edges": [
-        {"source": "inspect", "target": "adjudicate", "kind": "sequence"},
-        {"source": "adjudicate", "target": "record", "kind": "sequence"}
       ]
     },
     "orch-outline": {

@@ -17,7 +17,7 @@ class WorkflowIdentityTests(unittest.TestCase):
             "work:evolve/02-campaign",
             identity.work_node_id("evolve", "02-campaign"),
         )
-        self.assertEqual("skill:orch-frontier", identity.skill_node_id("orch-frontier"))
+        self.assertEqual("skill:orch-slice", identity.skill_node_id("orch-slice"))
         self.assertEqual(
             "script:bin/tickets.py",
             identity.script_node_id(r"bin\tickets.py"),

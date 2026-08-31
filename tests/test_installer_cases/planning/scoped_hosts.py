@@ -112,7 +112,7 @@ class HostAdapterRenderingTest(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("../../../../hosts/", profiles)
+        self.assertIn("host records beside this file", profiles)
         self.assertNotIn("| Profile |", profiles)
         for binding in ("gpt-5.6-sol", "claude-opus-5", "grok-4.6"):
             self.assertNotIn(binding, profiles)
@@ -393,7 +393,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 if dest.parent.name in template_names:
                     self.assertNotIn("@", body)
                     self.assertIn("tickets.py instantiate", body)
-                    self.assertIn("orch-frontier", body)
+                    self.assertIn("tickets.py land", body)
                 elif dest.parent.name in role_bearing:
                     # A role-bearing adapter forks, so its body opens with the
                     # fork-arrival clause and then the `@`-include; the clause

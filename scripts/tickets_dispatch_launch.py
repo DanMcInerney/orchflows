@@ -1,19 +1,20 @@
-"""Resolve one dispatch's role, profile, and concrete host launch binding.
+"""Resolve one dispatch's launch: its host binding and its whole prompt.
 
-Three facts meet here and nowhere else. `rules/roles.md` clause 4 resolves a
+Two things meet here and nowhere else. `rules/roles.md` clause 4 resolves a
 child's role -- an explicit profile wins, else the applied skill's own
-declaration -- and that resolution is read by packet projection and by the
-launch below through this one function, never two. The host records under
-`hosts/` own the launch verb, the native launch fields, and the per-role
-model and effort; nothing here restates a model name, an effort value, or
-an agent identifier, and a host that adds a native field gets it carried
-without this module learning its name.
+declaration -- through this one function, never two; and the host records
+under `hosts/` own the launch verb, the native launch fields, and the
+per-role model and effort. Nothing here restates a model name, an effort
+value, or an agent identifier, and a host that adds a native field gets it
+carried without this module learning its name.
 
-What leaves here is CLI output. A launch object is never persisted and never
-crosses the dispatch wire, so it is not one of `contracts/dispatch.md`'s
-shapes: it is the hop the orchestrator used to transcribe by hand -- read
-the host file, pick the profile row, type a model into the launch verb --
-and typing the wrong model there has killed a dispatch.
+The prompt below is the only child-facing instruction surface there is. There
+is no packet, so nothing else reaches the child: twelve of twelve launches
+were composed by hand because the generated surfaces named neither the ticket
+nor the workspace, and those hand-written prompts were the dominant defect
+source. Every fact it carries is one a child cannot derive from the ticket it
+is handed, each rendered exactly once, and everything the ticket or the
+child's own harness already owns is left to them.
 """
 
 from __future__ import annotations
@@ -21,20 +22,25 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import sys
 from pathlib import Path
 
 if __package__:
     from . import state_root
-    from .tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
-    from .tickets_format import _executor_of, _parse_frontmatter, _read_utf8
-    from .tickets_packet import _command_text
+    from .tickets_dispatch_schema import (
+        OUTCOME_RECORD_ID, PROTOCOL, classification,
+    )
+    from .tickets_format import (
+        REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
+    )
     from .tickets_store import NO_SINK_ERROR, _tickets_root
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
-    from tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
-    from tickets_format import _executor_of, _parse_frontmatter, _read_utf8
-    from tickets_packet import _command_text
+    from tickets_dispatch_schema import OUTCOME_RECORD_ID, PROTOCOL, classification
+    from tickets_format import (
+        REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
+    )
     from tickets_store import NO_SINK_ERROR, _tickets_root
 
 HOST_ENV_VAR = "ORCHFLOWS_HOST"
@@ -49,6 +55,14 @@ ROLE_RE = re.compile(r"^role:\s*(worker|planner|none)\s*$", re.MULTILINE)
 AGENT_FIELD_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 EFFORT_SUFFIX = "_effort"
 EFFORT_KEY = "effort"
+SHELL_SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_./:\\=-]+$")
+# The canonical encoding `dispatch-outcome` admits, named as the call that
+# produces it: the refusal used to say "canonical JSON" and leave the child to
+# guess which of the four knobs it meant.
+CANONICAL_DUMP = (
+    'json.dump(envelope, handle, ensure_ascii=True, sort_keys=True, '
+    'separators=(",", ":"))'
+)
 
 
 def declared_role(executor: str):
@@ -61,7 +75,7 @@ def declared_role(executor: str):
 
     here = Path(__file__).resolve()
     roots = (here.parent.parent, here.parent.parent / "lib")
-    groups = ("kernel", "engines", "workflows")
+    groups = ("kernel", "workflows")
     for root in roots:
         for group in groups:
             path = root / "skills" / group / executor / "SKILL.md"
@@ -80,8 +94,8 @@ def resolved_role_profile(executor, profile):
     An explicit profile naming one of the two canonical roles wins; else the
     applied skill's own declaration decides. A profile that names neither is
     still the caller's answer for what to establish, so it is carried
-    through untouched and the role stays the skill's -- the packet and this
-    launch have to agree on both, and they agree by asking here.
+    through untouched and the role stays the skill's -- the pre-open check and
+    this launch have to agree on both, and they agree by asking here.
     """
 
     declared = declared_role(str(executor or ""))
@@ -243,48 +257,162 @@ def binding_failure(record, role):
     return None
 
 
-def _receive_command(packet, packet_file) -> str:
-    script = Path(__file__).with_name("tickets.py").resolve()
-    return _command_text(
-        sys.executable, script, "dispatch-receive",
-        "--file", str(packet_file) if packet_file is not None else "-",
-        "--role", packet.get("role"), "--profile", packet.get("profile"),
-        "--by", packet.get("assigned_name"), "--reply-to", packet.get("reply_to"),
+def _command(*arguments) -> str:
+    """One runnable command line, quoted for the shell the child is in."""
+
+    values = [str(argument) for argument in arguments]
+    if all(SHELL_SAFE_TOKEN.fullmatch(value) for value in values):
+        return " ".join(values)
+    if sys.platform == "win32":
+        return "& " + " ".join("'" + value.replace("'", "''") + "'" for value in values)
+    return shlex.join(values)
+
+
+def _lane_lines(assignment: dict) -> list:
+    """What this lane asks of the child, beyond reading its ticket."""
+
+    review_kind = assignment.get("review_kind")
+    script = assignment.get("executor_script")
+    if review_kind == "critique":
+        return [
+            "Remain read-only. Enumerate every evidence-backed material blocker, "
+            "then synthesize and rank the smallest architectural repair set. Write "
+            "the complete seven-field JSON findings array to a file in this "
+            "workspace and name that path in your report; the join reads the file "
+            "and binds it in the review ledger. Never rewrite another ticket.",
+        ]
+    if review_kind == "repair":
+        return [
+            "Resolve only the accepted blockers, preserving the fixed pack and "
+            "workspace authority, then report fresh evidence for the repaired artifact.",
+        ]
+    if script is not None:
+        return [
+            f"Run the script {script} with the ticket path above, and report its "
+            "stdout and its exit status.",
+        ]
+    return [
+        "Goal, Context, and any Details are the sealed assignment: Goal is the "
+        "end result you answer for, Context is the evidence behind it, and "
+        "Details is the planner's guidance for this assignment. Where Details "
+        "prescribes, follow it and say so; where following it would break Goal, "
+        "deviate and report the deviation with its evidence.",
+    ]
+
+
+def _reading_lines(assignment: dict) -> list:
+    """The documents beyond the ticket this child has to read to be right."""
+
+    lines = []
+    root_path = assignment.get("root_path")
+    if root_path is not None:
+        lines.append(
+            f"Required reading, the root ticket {root_path}: its Goal is what "
+            "your verdict answers to, and no other document carries those clauses."
+        )
+    tip = assignment.get("review_tip")
+    if tip is not None:
+        lines.append(
+            "Immutable review ledger: read `review_v1` in "
+            f"{assignment['ticket_path']}; consume that exact predecessor chain, "
+            f"whose tip is {tip.get('kind')} {tip.get('identity')}."
+        )
+    dependencies = assignment.get("dependencies") or []
+    if dependencies:
+        lines.append(
+            "Dependency results are system-owned inputs. Read these completed "
+            f"tickets' `## {REPORT_SECTION}`: " + ", ".join(dependencies)
+        )
+    return lines
+
+
+def _craft_lines(assignment: dict) -> list:
+    """The pack's craft, handed as a path, and how far its checks reach."""
+
+    lines = []
+    craft = assignment.get("craft")
+    if craft is not None:
+        lines.append(
+            f"Read your stamped pack's craft at {craft} and run its declared "
+            "stages in order through this one role."
+        )
+        scope = assignment.get("craft_scope")
+        if scope is not None:
+            lines.append(f'That craft sets your verification scope: "{scope}"')
+    lines.append(
+        "The full required suite is the gate's row, never a unit's: run it here "
+        "only if this ticket is the gate."
     )
+    return lines
 
 
-def launch_prompt(packet: dict, packet_file=None) -> str:
-    """Where the packet is, how to accept it, and what every record names.
+def launch_prompt(assignment: dict) -> str:
+    """The one child-facing surface, filled from the graded assignment.
 
-    Deliberately short and deliberately not a second copy of the assignment:
-    the packet carries its own prompt, and this points at it. What is
-    repeated here are only `contracts/work-item.md`'s fixed executor-record
-    identities, which the child needs before it has read anything.
+    Every line is a fact the child cannot derive from the ticket it is pointed
+    at, rendered once. Nothing here paraphrases a contract, restates the
+    ticket's own Goal and Context, or repeats what the child's harness already
+    gives it. There is no accept step: the child's first filed record is its
+    acceptance, and the identities below are what proves it, because `result`
+    validates the same three on every write.
     """
 
-    where = (
-        f"Your dispatch packet is the JSON document at {packet_file}."
-        if packet_file is not None
-        else "Your dispatch packet is the `.packet` member of the dispatch "
-        "response this launch came from; pass that value on standard input."
-    )
-    return "\n".join((
-        where,
-        "Accept it before anything else runs; a refusal is your return:",
-        _receive_command(packet, packet_file),
-        f"Every record you file names assignment_seal {packet.get('assignment_seal')}, "
-        f"dispatch_id {packet.get('dispatch_id')}, writer {packet.get('assigned_name')}, "
-        f"and a fresh record id of your own; the one reserved closing identity "
-        f"is {OUTCOME_RECORD_ID}.",
-        "The packet's own prompt is the assignment: follow it exactly, and "
-        f"address your closing message to {packet.get('reply_to')}.",
-    ))
+    script = Path(__file__).with_name("tickets.py").resolve()
+    run, ticket_id = assignment["run"], assignment["id"]
+    identity = [
+        "--assignment-seal", assignment["assignment_seal"],
+        "--dispatch-id", assignment["dispatch_id"],
+        "--record-id", "RECORD_ID",
+        "--by", assignment["assigned_name"],
+    ]
+    lines = [
+        f"Apply skill {assignment['executor']} to ticket "
+        f"{assignment['ticket_path']}. Read that ticket whole: it is your "
+        "assignment, and there is no other copy of it.",
+        *_lane_lines(assignment),
+        *_reading_lines(assignment),
+        f"Work in {assignment['workspace']}: change into that directory first "
+        "and run every command from inside it.",
+        f"Every Python command runs through this host's verified interpreter, "
+        f"{sys.executable}, never a bare `python`.",
+        *_craft_lines(assignment),
+        "Run every check to completion in the turn it starts; never background "
+        "a gate or a test run, and never report a check you did not watch finish.",
+        f"Your assigned name is `{assignment['assigned_name']}`; use exactly it "
+        "wherever a command takes --by.",
+        f"Your lease expires at {assignment['lease_expires_at']}; it is absolute "
+        "and is never extended.",
+        f"File as you go into `## {REPORT_SECTION}`, the one channel: every "
+        "write appends there, in whatever form you judge useful. RECORD_ID is a "
+        "fresh identity of your own for each record, and PATH is a file in this "
+        "workspace:",
+        _command(sys.executable, script, "result", run, ticket_id, *identity,
+                 "--file", "PATH"),
+        _command(sys.executable, script, "result", run, ticket_id, *identity,
+                 "--text", "TEXT"),
+        "Report what a reader would need and cannot re-derive: the exit code of "
+        "every command you ran as you observed it, what you changed and why, what "
+        "you deliberately did not do and why, and anything the assignment asked "
+        "you to cover. The join alone sets terminal status.",
+        f"Close exactly once with the reserved `{OUTCOME_RECORD_ID}` note, which "
+        "names no status because what this ticket became is checked at the join "
+        "and never claimed here:",
+        _command(sys.executable, script, "dispatch-outcome", run, ticket_id,
+                 "--note-file", "PATH"),
+        "A coordinator relaying a whole canonical envelope for you passes it "
+        f"through `--file` instead; that envelope names protocol {PROTOCOL}, run "
+        f"{run}, id {ticket_id}, assignment_seal {assignment['assignment_seal']}, "
+        f"dispatch_id {assignment['dispatch_id']}, outcome_record_id "
+        f"{OUTCOME_RECORD_ID}, by {assignment['assigned_name']}, and evidence as "
+        f"one string, written with {CANONICAL_DUMP}.",
+    ]
+    return "\n".join(lines)
 
 
-def launch_spec(record, packet: dict, *, packet_file=None):
-    """`(launch, failure)` -- the concrete invocation for one committed packet."""
+def launch_spec(record, assignment: dict):
+    """`(launch, failure)` -- the concrete invocation for one assignment."""
 
-    role = packet.get("role")
+    role = assignment.get("role")
     failure = binding_failure(record, role)
     if failure is not None:
         return None, failure
@@ -296,7 +424,7 @@ def launch_spec(record, packet: dict, *, packet_file=None):
         "model": binding.get("model"),
         "effort": _effort(binding),
         "fields": _native_fields(record, role, binding),
-        "prompt": launch_prompt(packet, packet_file),
+        "prompt": launch_prompt(assignment),
     }, None
 
 
@@ -304,7 +432,7 @@ def precheck(run: str, ticket_id: str, host):
     """`(record, failure)` before a dispatch takes any side effect.
 
     The ticket is read for its executor and profile alone, and the role that
-    comes back is the same function packet projection will call once the
+    comes back is the same function the assignment reading will call once the
     attempt is open -- under the caller's run lock, so the answer cannot
     move between the two.
     """
@@ -327,8 +455,8 @@ def precheck(run: str, ticket_id: str, host):
 
 
 __all__ = (
-    "DEFAULT_HOST", "HOST_ENV_VAR", "PROFILE_ROLES", "ROLE_PROFILES",
-    "binding_failure", "declared_role", "host_names", "hosts_dir",
-    "launch_prompt", "launch_spec", "precheck", "resolve_host",
+    "CANONICAL_DUMP", "DEFAULT_HOST", "HOST_ENV_VAR", "PROFILE_ROLES",
+    "ROLE_PROFILES", "binding_failure", "declared_role", "host_names",
+    "hosts_dir", "launch_prompt", "launch_spec", "precheck", "resolve_host",
     "resolved_role_profile", "selected_host",
 )

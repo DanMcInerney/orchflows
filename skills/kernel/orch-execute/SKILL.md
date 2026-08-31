@@ -9,9 +9,11 @@ assignment.
 
 Resolve the stamped digest through `packs.py cells <digest>` and read the
 whole craft document. Work in its `## Workspace` semantics through its
-`## Stages`; choose implementation, tests, and verification from that craft
-and repository law. Stream the executor record as work is produced, then
-commit the reserved outcome.
+`## Stages`. Where the ticket's Details prescribes a step, a check, or a
+do-not, follow it and say so; where following it would miss Goal, deviate and
+report the deviation with the observation that forced it. Where Details is
+silent, that craft and repository law decide. Stream the executor record as
+work is produced, then commit the reserved outcome.
 
 Never: substitute a skill name for a pack cell; invent a domain rule outside
 the resolved pack or shared rules; edit sealed semantics; integrate another

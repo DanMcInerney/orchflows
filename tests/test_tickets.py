@@ -6,7 +6,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 from tests.test_tickets_cases.cli_help import HelpTest  # noqa: F401
@@ -45,8 +47,8 @@ from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
 )
 
 import scripts.tickets as tickets_mod
-import scripts.tickets_dispatch_receipt as tickets_dispatch_receipt
-import scripts.tickets_packet as tickets_packet
+import scripts.tickets_assignment as tickets_assignment
+import scripts.tickets_dispatch_launch as launch_module
 import scripts.tickets_review as tickets_review
 
 __all__ = (
@@ -135,8 +137,8 @@ class AdapterRegistryTest(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
-            with mock.patch.object(tickets_packet, "adapter_spec", return_value=adapter):
-                finding = tickets_packet.workspace_establishment_finding(
+            with mock.patch.object(tickets_assignment, "adapter_spec", return_value=adapter):
+                finding = tickets_assignment.workspace_establishment_finding(
                     {"pack": "widget-pack", "isolation": "required"}, None,
                 )
             self.assertEqual("workspace-unestablished", finding[0])
@@ -147,39 +149,6 @@ class AdapterRegistryTest(unittest.TestCase):
                         "widget-pack", "not-a-git-identity", str(root),
                     )
             self.assertIn("git:<full-commit-id>", str(caught.exception))
-
-    def test_dispatch_receive_resolves_the_pack_under_the_packet_workspace(self):
-        """A receiver's cwd never decides which pack answers a packet.
-
-        Regression for state sink friction/2026-08.jsonl, entry ts
-        2026-08-30T20:48:12Z: `dispatch-receive` refused `authority-mismatch
-        (pack does not resolve: field-notes-pack)` for a project-scope pack
-        that lived only inside the packet's own committed workspace, solely
-        because the receiving process happened to be standing elsewhere.
-        Pack resolution must walk from the packet's `workspace`, not from
-        `Path.cwd()`.
-        """
-        with tempfile.TemporaryDirectory() as raw:
-            workspace = Path(raw) / "workspace"
-            workspace.mkdir()
-            self._pack(workspace, "evidence-store")
-            elsewhere = Path(raw) / "elsewhere-receiver"
-            elsewhere.mkdir()
-
-            packet = {"pack": "widget-pack", "workspace": str(workspace)}
-            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
-                accepted = tickets_dispatch_receipt._workspace_failure(packet)
-            self.assertIsNone(accepted)
-
-            # A pack that resolves in neither the established workspace nor
-            # installed/canonical scope still refuses closed, regardless of
-            # where the receiver stands.
-            bare = Path(raw) / "workspace-without-the-pack"
-            bare.mkdir()
-            unresolved = {"pack": "widget-pack", "workspace": str(bare)}
-            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=elsewhere):
-                refused = tickets_dispatch_receipt._workspace_failure(unresolved)
-            self.assertEqual("authority-mismatch", refused["code"])
 
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
@@ -205,20 +174,20 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
         "run: testrun\n"
         f"status: {status}\n"
         f"{claim}"
-        "executor: orch-decompose\n"
+        "executor: orch-slice\n"
         "depends_on: []\n"
         "assignment_seal: sha256:current\n"
         "---\n\n"
         "## Goal\n\nTest result attribution.\n\n"
         "## Context\n\n[]\n\n"
-        "## Result\n\n[]\n",
+        "## Report\n",
         encoding="utf-8",
     )
     return ticket
 
 
 def _v1_result_ticket(tmp: Path, *, by="agent-a"):
-    # A receipt derives its workspace from a real Git top-level, so the
+    # The establishment grade reads git from inside the candidate, so the
     # fixture needs an actual checkout rather than a bare `.git` directory.
     git_checkout(tmp)
     sink = use_sink(tmp)
@@ -237,7 +206,6 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     ticket = sink / "tickets" / "testrun" / "T1.md"
     established = ticket.read_text(encoding="utf-8")
     for key, value in (
-        ("workspace_path", str(tmp.resolve())),
         ("workspace_branch", "candidate-branch"),
         ("workspace_baseline", "0123456789abcdef clean"),
     ):
@@ -248,17 +216,16 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         "dispatch-open", "testrun", "T1", "--by", by,
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]
-    packet = tickets_mod._dispatch([
-        "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
-        "--reply-to", "root", "--workspace", str(tmp.resolve()),
-        "--form", "reference",
-    ])["packet"]
-    packet_path = tmp / "packet-D1.json"
-    packet_path.write_text(
-        json.dumps(packet, sort_keys=True, separators=(",", ":")), encoding="utf-8",
+    record_established_workspace(ticket, tmp.resolve())
+    # the committed launch every execution record enters behind, at the
+    # facade seam that owns it -- there is no verb for the launch alone
+    host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
+    assert failure is None, failure
+    launched = tickets_mod._tickets_dispatch_facade_module._launched_under_run_lock(
+        "testrun", "T1", host, dispatch_id="D1",
+        workspace=str(tmp.resolve()), artifact=None, review_kind=None,
     )
-    with standing_in(tmp):
-        tickets_mod._dispatch(receive_argv(packet_path, packet, by))
+    assert "error" not in launched, launched
     return ticket, opened["assignment_seal"]
 
 
@@ -270,18 +237,18 @@ class ResultAttributionTest(unittest.TestCase):
             first = run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R1", "--by", "agent-a",
-                "--section", "Result", "--text", "first record",
+                "--text", "first record",
             )
             second = run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R2", "--by", "agent-a",
-                "--section", "Result", "--text", "second record", "--append",
+                "--text", "second record",
             )
 
             self.assertEqual("agent-a", first["result"]["by"])
             self.assertEqual("agent-a", second["result"]["by"])
             text = ticket.read_text(encoding="utf-8")
-            body = tickets_mod._sections(text)["Result"]
+            body = tickets_mod._sections(text)["Report"]
             self.assertEqual(2, body.count("### Written by `agent-a`"), body)
             self.assertEqual(1, body.count("first record"), body)
             self.assertEqual(1, body.count("second record"), body)
@@ -304,7 +271,7 @@ class ResultAttributionTest(unittest.TestCase):
                     before = ticket.read_bytes()
                     payload = run_cmd(
                         tmp, "result", "testrun", "T1", *extra,
-                        "--section", "Result", "--text", body,
+                        "--text", body,
                     )
                     self.assertIn("error", payload)
                     self.assertEqual(before, ticket.read_bytes())
@@ -315,13 +282,13 @@ class ResultAttributionTest(unittest.TestCase):
             run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R1", "--by", "agent-a",
-                "--section", "Result", "--text", "first",
+                "--text", "first",
             )
             before = ticket.read_bytes()
             refused = run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R2", "--by", "agent-a",
-                "--section", "Result", "--text", "replacement", "--replace",
+                "--section", "Result", "--text", "replacement",
             )
-            self.assertIn("append-only", refused["error"])
+            self.assertIn("--section", refused["error"])
             self.assertEqual(before, ticket.read_bytes())

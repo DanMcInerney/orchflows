@@ -16,24 +16,19 @@ import re
 
 if __package__:
     from .tickets_shapes import (
-        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
+        DISPATCH_PROTOCOL, LAUNCH_RECORD_ID as SHAPE_LAUNCH_RECORD_ID,
+        OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
     )
 else:
     from tickets_shapes import (
-        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
+        DISPATCH_PROTOCOL, LAUNCH_RECORD_ID as SHAPE_LAUNCH_RECORD_ID,
+        OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
     )
 
 PROTOCOL = DISPATCH_PROTOCOL
+LAUNCH_RECORD_ID = SHAPE_LAUNCH_RECORD_ID
 OUTCOME_RECORD_ID = SHAPE_OUTCOME_RECORD_ID
-PACKET_RECORD_ID = SHAPE_PACKET_RECORD_ID
-RECEIPT_RECORD_ID = SHAPE_RECEIPT_RECORD_ID
-RESERVED_RECORD_IDS = frozenset({
-    OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID,
-})
+RESERVED_RECORD_IDS = frozenset({LAUNCH_RECORD_ID, OUTCOME_RECORD_ID})
 RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
@@ -66,10 +61,8 @@ def record_id_namespace_ok(kind: str, record_id: str):
     would have been admitted by one door and refused by the other.
     """
 
-    if kind == "packet":
-        return record_id == PACKET_RECORD_ID
-    if kind == "receipt":
-        return record_id == RECEIPT_RECORD_ID
+    if kind == "launch":
+        return record_id == LAUNCH_RECORD_ID
     if kind == "outcome":
         return record_id == OUTCOME_RECORD_ID
     if kind in ("join", "lifecycle"):
@@ -80,8 +73,8 @@ def record_id_namespace_ok(kind: str, record_id: str):
 
 
 __all__ = (
-    "IDENTITY_RE", "OUTCOME_RECORD_ID", "PACKET_RECORD_ID", "PROTOCOL",
-    "RECEIPT_RECORD_ID", "RESERVED_RECORD_IDS", "RESERVED_RECORD_PREFIXES",
+    "IDENTITY_RE", "LAUNCH_RECORD_ID", "OUTCOME_RECORD_ID", "PROTOCOL",
+    "RESERVED_RECORD_IDS", "RESERVED_RECORD_PREFIXES",
     "classification", "identity_failure", "record_id_is_reserved",
     "record_id_namespace_ok",
 )

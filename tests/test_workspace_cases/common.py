@@ -22,6 +22,7 @@ import scripts.tickets as tickets  # noqa: E402  the grant key's one owner
 import scripts.tickets_generations as generations  # noqa: E402
 import scripts.workspace as workspace  # noqa: E402
 import scripts.workspace_git as workspace_git  # noqa: E402  the ticket stamp's writer
+import scripts.workspace_record as workspace_record  # noqa: E402  the attempt record
 from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
@@ -139,9 +140,47 @@ def make_ticket(
     text = generations.seal_assignments(
         tid, {tid: text}, draft, receipt, member_ids=[],
     )[tid]
+    text = tickets._set_frontmatter_field(text, "dispatch_v1", _live_attempt())
     path = run_dir / f"{tid}.md"
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def recorded_workspace(ticket_path) -> str:
+    """The tree the ticket's attempt records, read through its owner."""
+
+    from scripts import workspace_record
+
+    return workspace_record.attempt_workspace(
+        tickets._parse_frontmatter(
+            Path(ticket_path).read_text(encoding="utf-8")
+        )
+    )
+
+
+def _live_attempt() -> str:
+    """One open attempt for the fixture to record its workspace on.
+
+    The established tree is the attempt's (`contracts/dispatch.md`), and the
+    dispatch facade opens before it establishes, so a fixture standing in for
+    an established item stands one up in that same order. It is operational
+    state, excluded from the assignment fingerprint, so it goes on after the
+    seal exactly as `dispatch-open` puts it there.
+    """
+
+    return json.dumps({
+        "protocol": "orchflows.dispatch.v1",
+        "attempts": [{
+            "assignment_seal": "sha256:" + "0" * 64,
+            "dispatch_id": "D1",
+            "lease_expires_at": "2099-01-01T00:00:00Z",
+            "opened_at": "2026-01-01T00:00:00Z",
+            "outcome_record_id": "outcome",
+            "owner": "worker",
+            "records": [],
+            "state": "live",
+        }],
+    }, separators=(",", ":"), sort_keys=True)
 
 
 def use_sink(tmp: Path) -> Path:

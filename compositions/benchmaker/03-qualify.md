@@ -22,7 +22,7 @@ cost each checked independently, with a verdict per required criterion.
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"pack","type":"literal","value":"{{pack}}"}
 
-## Suggested files
+## Details
 
 - {{package}}
 
@@ -30,16 +30,4 @@ Exceptional constraints:
 
 - return a self-qualified verdict set where the builder-disjoint context is unreachable
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

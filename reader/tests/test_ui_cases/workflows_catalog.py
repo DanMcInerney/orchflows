@@ -39,7 +39,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         self.assertEqual([], detail["edges"])
         self.assertEqual([], detail["diagnostics"])
 
-    def test_canonical_sequence_is_projected_in_declared_order(self):
+    def test_a_stub_projects_its_one_executor_and_no_retired_sequence(self):
+        """`sequence` was retired with the multi-stage chain: a stub runs its
+        one `executor`, and a pack's stages run inside that one child. A stub
+        still carrying the key gets no second executor edge from it."""
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
@@ -64,28 +68,15 @@ class WorkflowCatalogTests(unittest.TestCase):
             edge for edge in detail["edges"] if edge["kind"] == "executor"
         ]
         self.assertEqual(
-            ["skill:orch-tdd", "skill:orch-verify"],
+            ["skill:orch-tdd"],
             [edge["to"] for edge in executor_edges],
         )
         self.assertEqual(executor_edges, [
             edge for edge in detail["relations"] if edge["kind"] == "executor"
         ])
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "compositions" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: orch-tdd\n"
-                "sequence: [orch-verify, orch-tdd]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-
-            with self.assertRaises(compositions.WorkflowCompositionError):
-                compositions.project_composition(root, "demo")
+        self.assertNotIn(
+            "skill:orch-verify", {node["id"] for node in detail["nodes"]}
+        )
 
     def test_pack_cell_sequence_projects_only_its_bound_executor(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -162,8 +153,7 @@ class WorkflowCatalogTests(unittest.TestCase):
             [
                 "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament",
-                "orch-check", "orch-decompose", "orch-execute", "orch-frontier",
-                "orch-integrate", "orch-outline",
+                "orch-check", "orch-execute", "orch-outline", "orch-slice",
             ],
             [workflow["id"] for workflow in projected],
         )

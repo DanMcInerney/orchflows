@@ -75,11 +75,6 @@ def read_ticket(path: Path) -> dict:
         text, unreadable = "", True
     front = _parse_frontmatter(text)
     sections = split_sections(text)
-    suggested = [
-        line[2:].strip()
-        for line in sections.get("Suggested files", "").splitlines()
-        if line.strip().startswith("- ")
-    ]
     return {
         "id": _scalar(front.get("id")) or path.stem,
         "file_id": path.stem,
@@ -91,7 +86,9 @@ def read_ticket(path: Path) -> dict:
         "claimed_at": lease_of(front)[1],
         "claimed_by": lease_of(front)[0],
         "depends_on": _sequence(front.get("depends_on")),
-        "suggested_files": suggested,
+        # The planner's free-form guidance for this one child: prose, not a
+        # path list, so nothing here parses it into items.
+        "details": sections.get("Details", ""),
         "pack": _scalar(front.get("pack")),
         "goal": sections.get("Goal", ""),
         "sections": sections,

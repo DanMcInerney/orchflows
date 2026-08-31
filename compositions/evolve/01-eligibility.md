@@ -24,16 +24,4 @@ Exceptional constraints:
 - rank an ineligible candidate
 - generating or scoring a candidate — this stub grades the incumbent
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

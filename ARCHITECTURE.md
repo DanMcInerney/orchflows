@@ -10,9 +10,9 @@ Ceiling: 850 whitespace-delimited words. Terms are
   it even when the prose meaning holds.
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
-  skill-free primitives; `engines/` control flow; `workflows/`
-  domain-blind behavior. A package owns its `SKILL.md`,
-  `references/`, `scripts/`.
+  skill-free primitives; `workflows/` domain-blind behavior. Control
+  flow is not a tier: the driver runs `dispatch` and `land`. A package
+  owns its `SKILL.md`, `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.
   Cells bind generic workflows to the domain concerns the signature
@@ -40,8 +40,8 @@ Ceiling: 850 whitespace-delimited words. Terms are
   `tickets_dispatch_schema.py` validates dispatch grammar; `tickets_attempts.py`
   mutates atomically;
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
-  `tickets_emission.py` emission grading; `tickets_ceiling.py` instruction
-  ceiling; `tickets_issue_render.py` issuance markdown; and
+  `tickets_emission.py` emission grading; `tickets_issue_render.py`
+  issuance markdown; and
   `tickets_dispatch_gate.py` integrated-result gates;
   `tickets_dispatch_launch.py` resolves the host launch binding. `cutcheck.py`
   owns structural graph validation.

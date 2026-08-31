@@ -1,6 +1,6 @@
 ---
 id: 00-acquire
-executor: orch-frontier
+executor: orch-execute
 pack: orch-research-pack
 depends_on: []
 bound: <= 120 tool calls
@@ -23,7 +23,7 @@ charter names.
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"research-charter","type":"literal","value":"the research charter at compositions/references/benchmaker-research.md in the orchflows library"}
 
-## Suggested files
+## Details
 
 - {{package}}
 
@@ -31,16 +31,4 @@ Exceptional constraints:
 
 - let unsupported semantics become invented target truth
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

@@ -7,8 +7,9 @@ from pathlib import Path
 
 from scripts import tickets
 from scripts import tickets_registry as registry
-from scripts.tickets_attempts import PROTOCOL
-from scripts.tickets_dispatch_packet_shape import packet_shape
+from scripts.tickets_shapes import (
+    DISPATCH_LAUNCH_FIELDS, DISPATCH_RECORD_VALUES, LAUNCH_RECORD_ID,
+)
 
 # One well-formed ticket with the executor left open, so a refusal case
 # differs from a passing one in the executor alone.
@@ -44,18 +45,32 @@ Deliver one result.
 
 
 class CallableRegistryTests(unittest.TestCase):
-    def test_callable_registry_is_exactly_the_six_enforced_verbs(self):
+    def test_callable_registry_is_exactly_the_four_enforced_verbs(self):
         self.assertEqual(
             (
                 "orch-execute",
                 "orch-check",
-                "orch-decompose",
-                "orch-integrate",
-                "orch-frontier",
+                "orch-slice",
                 "orch-outline",
             ),
             tickets.CALLABLE_EXECUTORS,
         )
+
+    def test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk(self):
+        """`orch-frontier` and `orch-integrate` were the driver and the join.
+        Neither is a skill any more: `tickets.py dispatch` and `tickets.py
+        land` are, so the refusal names the commands rather than a verb the
+        caller could bind instead."""
+
+        frontier = registry.executor_refusal("orch-frontier")
+        self.assertIn("superseded", frontier)
+        self.assertIn("tickets.py dispatch", frontier)
+        self.assertIn("tickets.py land", frontier)
+        self.assertNotIn("bind '", frontier)
+        integrate = registry.executor_refusal("orch-integrate")
+        self.assertIn("superseded", integrate)
+        self.assertIn("land --status", integrate)
+        self.assertNotIn("bind '", integrate)
 
     def test_superseded_executor_is_rejected_with_named_registry(self):
         text = """---
@@ -186,33 +201,26 @@ Deliver one result.
                 with self.subTest(pack=pack, marker=marker):
                     self.assertIn(marker, text)
 
-    def test_packet_shape_requires_typed_review_kind_field(self):
-        packet = {
-            "protocol": PROTOCOL,
-            "source": {"id": "T", "run": "r"},
-            "dispatch_id": "d-1",
-            "assignment_seal": "sha256:" + "a" * 64,
-            "outcome_record_id": "outcome",
-            "lease_expires_at": "2026-08-29T12:00:00Z",
-            "executor": "orch-check",
-            "role": "planner",
-            "profile": "orch-planner",
-            "assigned_name": "checker",
-            "reply_to": "root",
-            "workspace": None,
-            "pack": "orch-code-pack",
-            "independence": "checker",
-            "isolation": "none",
-            "admission": "sha256:" + "b" * 64,
-            "prompt": "check",
-            "review_kind": "critique",
-            "form": "reference",
-            "durability": "ticket",
-            "reference": {"id": "T", "run": "r"},
-        }
-        self.assertIsNone(packet_shape(packet))
-        packet.pop("review_kind")
-        self.assertIsNotNone(packet_shape(packet))
+    def test_the_declared_launch_shape_is_the_invocation_and_nothing_else(self):
+        """The one object a dispatch emits, which the persisted-record
+        validator closes every committed launch against. It carries the host
+        binding and the prompt; the wire's twenty-one fields, and every
+        identity it restated from the attempt, are not fields at all any
+        more."""
+
+        self.assertEqual(
+            ("host", "verb", "agent", "model", "effort", "fields", "prompt"),
+            DISPATCH_LAUNCH_FIELDS,
+        )
+        for retired in (
+            "form", "inline", "review_kind", "durability", "source",
+            "assignment_seal", "dispatch_id", "assigned_name", "workspace",
+        ):
+            with self.subTest(retired=retired):
+                self.assertNotIn(retired, DISPATCH_LAUNCH_FIELDS)
+        self.assertIn("launch", DISPATCH_RECORD_VALUES["kind"])
+        self.assertNotIn("packet", DISPATCH_RECORD_VALUES["kind"])
+        self.assertEqual("launch", LAUNCH_RECORD_ID)
 
 
 if __name__ == "__main__":

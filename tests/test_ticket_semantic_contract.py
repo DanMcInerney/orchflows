@@ -12,11 +12,15 @@ import subprocess
 from unittest import mock
 
 from scripts import cutcheck
-from tests._receiver_vantage import git_checkout, receive_argv, standing_in
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from scripts import tickets
+from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
 from scripts import tickets_join
 from scripts import tickets_review
+from scripts import tickets_shapes
 from scripts import tickets_lifecycle
 from scripts import tickets_readiness
 from scripts.tickets_format import (
@@ -47,10 +51,7 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, re
     sections = [
         ("Goal", f"Deliver the observable result for {ticket_id}."),
         ("Context", "The root assignment and repository are authoritative."),
-        ("Result", ""),
-        ("Verification", ""),
-        ("Feedback", "[]"),
-        ("Risks", "[]"),
+        ("Report", ""),
     ]
     return _render_ticket(fields, sections)
 
@@ -80,12 +81,11 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "`id`", "`repair`", "`summary`",
             ):
                 self.assertIn(field, text)
-            self.assertIn("either `Result` or `Feedback`", " ".join(text.split()))
+            self.assertIn("--findings-file", " ".join(text.split()))
         self.assertIn("has exactly", result_contract)
-        self.assertIn("valid JSON encoding", result_contract)
-        self.assertNotIn("records findings in `## Feedback`", result_contract)
+        self.assertNotIn("either `Result` or `Feedback`", " ".join(result_contract.split()))
 
-    def test_critique_join_normalizes_result_findings_and_accepted_json(self):
+    def test_critique_join_normalizes_findings_and_accepted_json(self):
         findings = [{
             "blocking": True,
             "class": "correctness",
@@ -99,27 +99,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         accepted = json.dumps(
             findings, ensure_ascii=True, sort_keys=True, separators=(",", ":")
         )
-        attempt = {"records": [
-            {
-                "kind": "result",
-                "content": tickets_review.canonical_json({
-                    "body": streamed,
-                    "section": "Result",
-                }),
-            },
-            {
-                "kind": "result",
-                "content": tickets_review.canonical_json({
-                    "body": "Inspected the fixed render and transition trace.",
-                    "section": "Feedback",
-                }),
-            },
-        ]}
-        extracted = tickets_join._critique_findings(
-            attempt, {
-                "Result": "No unstreamed finding delta.",
-                "Feedback": "Inspected evidence already streamed.",
-            }
+        # Whatever encoding the file carries, the join normalizes it before
+        # it binds the array in the ledger. Nothing is scraped out of prose.
+        extracted = tickets_review.canonical_finding_array(
+            streamed, "critique findings",
         )
         self.assertEqual(tickets_review.canonical_json(findings), extracted)
 
@@ -143,10 +126,15 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(findings, adjudicated["records"][-1]["findings"])
         self.assertEqual(findings, adjudicated["records"][-1]["accepted"])
 
-    def test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses(self):
-        """A critique that streams a finding and repeats it in the reserved
-        outcome recorded one fact twice.  Two records claiming one id with
-        different content are two claims, and still refuse."""
+    def test_findings_have_one_carrier_and_a_repeated_id_refuses(self):
+        """One file, one array, and no reconstruction from several carriers.
+
+        The findings used to be flattened out of every streamed result record
+        and the outcome's copy of the same sections, and the flattening then
+        had to collapse the duplicate a child produced by filing the same
+        finding twice. There is one carrier now, so the only thing left to
+        grade is the array itself.
+        """
 
         finding = {
             "blocking": True,
@@ -157,24 +145,19 @@ class SemanticTicketContractTest(unittest.TestCase):
             "repair": "Repair test-x.",
             "summary": "test-x is red.",
         }
-        streamed = {"records": [{
-            "kind": "result",
-            "content": tickets_review.canonical_json(
-                {"body": json.dumps([finding], indent=2), "section": "Feedback"}
+        self.assertFalse(hasattr(tickets_join, "_critique_findings"))
+        self.assertEqual(
+            tickets_review.canonical_json([finding]),
+            tickets_review.canonical_finding_array(
+                json.dumps([finding], indent=2), "critique findings",
             ),
-        }]}
-
-        carried_twice = tickets_join._critique_findings(
-            streamed,
-            {"Result": tickets_review.canonical_json([finding]), "Feedback": ""},
         )
-        self.assertEqual(tickets_review.canonical_json([finding]), carried_twice)
 
         conflicting = dict(finding, summary="test-x is green.")
         with self.assertRaisesRegex(Exception, "repeats finding id B1"):
-            tickets_join._critique_findings(
-                streamed,
-                {"Result": tickets_review.canonical_json([conflicting]), "Feedback": ""},
+            tickets_review.canonical_finding_array(
+                tickets_review.canonical_json([finding, conflicting]),
+                "critique findings",
             )
 
     def seal(self, run, root):
@@ -190,25 +173,32 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
         )["dispatch"]
 
-    def receive(self, packet, by, standing=None):
-        """Take one receipt from the established checkout, packet carried as
-        UTF-8 bytes: `--content` and `--workspace` are both gone."""
+    def launch(self, run, ticket_id, dispatch_id, workspace=None,
+               artifact=None, review_kind=None, record=True):
+        """Establish, then commit the launch this child's records enter behind.
 
-        path = Path(self.temporary.name) / f"packet-{packet['dispatch_id']}.json"
-        path.write_text(canonical_json(packet), encoding="utf-8")
-        with standing_in(ROOT if standing is None else standing):
-            return self.dispatch(*receive_argv(path, packet, by))
+        Reached at the facade seam that owns it: `dispatch` composes the
+        launch under the run lock and there is no verb for it alone. The
+        establishment records the tree on the open attempt first, which is
+        the order the facade runs those two steps in.
+        """
 
-    def accept_packet(self, run, ticket_id, by, dispatch_id, workspace=None):
-        packet_args = [
-            "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
-            "--reply-to", "root", "--form", "reference",
-        ]
-        if workspace is not None:
-            packet_args.extend(("--workspace", workspace))
-        packet = self.dispatch(*packet_args)["packet"]
-        self.receive(packet, by, standing=workspace)
-        return packet
+        if workspace is not None and record:
+            record_established_workspace(
+                Path(self.temporary.name) / "tickets" / run / f"{ticket_id}.md",
+                workspace,
+            )
+        host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
+        self.assertIsNone(failure, failure)
+        return tickets._tickets_dispatch_facade_module._launched_under_run_lock(
+            run, ticket_id, host, dispatch_id=dispatch_id,
+            workspace=workspace, artifact=artifact, review_kind=review_kind,
+        )
+
+    def committed_launch(self, *arguments, **facts) -> dict:
+        committed = self.launch(*arguments, **facts)
+        self.assertNotIn("error", committed, committed)
+        return committed["launch"]
 
     def accepted_file(self, ticket_id, findings) -> list:
         """`dispatch-join --accepted` was removed; the subset crosses as a file."""
@@ -217,49 +207,25 @@ class SemanticTicketContractTest(unittest.TestCase):
         path.write_text(findings, encoding="utf-8")
         return ["--accepted-file", str(path)]
 
-    def evidence_flags(self, ticket_id, dispatch_id, evidence) -> list:
-        """Typed closing files, the only carrier `dispatch-outcome` still takes."""
+    def findings_flags(self, ticket_id, findings: str) -> list:
+        """The complete findings cross as a file, like the accepted subset."""
 
-        flags = []
-        for section, body in sorted(evidence.items()):
-            if not body:
-                continue
-            path = (
-                Path(self.temporary.name)
-                / f"outcome-{ticket_id}-{dispatch_id}-{section}.txt"
-            )
-            path.write_text(body, encoding="utf-8")
-            flags.extend((f"--{section.lower()}-file", str(path)))
-        return flags
+        path = Path(self.temporary.name) / f"findings-{ticket_id}.json"
+        path.write_text(findings, encoding="utf-8")
+        return ["--findings-file", str(path)]
 
-    def commit_outcome(self, run, ticket_id, opened, by, dispatch_id, status="complete"):
-        review = ".gate.critique." in ticket_id or ticket_id.endswith(".check")
-        content = {
-            "assignment_seal": opened["assignment_seal"],
-            "by": by,
-            "dispatch_id": dispatch_id,
-            "evidence": {
-                # A review stage's Result and Feedback are finding carriers,
-                # not prose: the same rule the join applies to the close.
-                "Result": "[]" if review else "closing result delta",
-                "Verification": "closing verification delta",
-                # These fixtures stream Feedback as a result record first, and
-                # the close carries only the delta that has not entered yet.
-                "Feedback": "" if review else "closing feedback delta: []",
-                "Risks": "closing risk delta: []", "Handoff": "",
-            },
-            "id": ticket_id, "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": run, "status": status,
-        }
+    def commit_outcome(self, run, ticket_id, opened, by, dispatch_id):
+        """One free-text closing note; the envelope carries nothing typed."""
+
         return self.dispatch(
-            "dispatch-outcome", run, ticket_id, "--status", status,
-            *self.evidence_flags(ticket_id, dispatch_id, content["evidence"]),
+            "dispatch-outcome", run, ticket_id,
+            "--note", f"closing note for {ticket_id}",
         )
 
-    def test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping(self):
-        """The first valid ticket is the physical run's pre-stamp root."""
+    def test_a_long_assignment_is_issued_and_reaches_generation_stamping(self):
+        """No length refuses a ticket: the planner owns what its child needs."""
 
-        goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
+        goal = " ".join(["word"] * 400)
         for executor in ("orch-execute", tickets.ROOT_EXECUTOR):
             run = "root-" + executor.removeprefix("orch-")
             with self.subTest(executor):
@@ -281,51 +247,30 @@ class SemanticTicketContractTest(unittest.TestCase):
                     r"^root:R:1:sha256:[0-9a-f]{64}$",
                 )
                 linted = tickets._dispatch(["lint", run, "R"])
-                self.assertNotIn(
-                    "instruction-ceiling",
+                self.assertEqual(
+                    {
+                        "assignment-unsealed", "generation-invalid",
+                        "seal-state-unavailable",
+                    },
                     {item["code"] for item in linted["lint"]["findings"]},
+                    linted,
                 )
 
-    def test_an_over_ceiling_ordinary_unit_is_refused_regardless_of_executor(self):
+    def test_a_long_ordinary_member_is_issued_like_any_other(self):
         self.dispatch(
-            "new", "unit-ceiling", "R", "--executor", "orch-execute",
+            "new", "unit-length", "R", "--executor", "orch-execute",
             "--goal", "Deliver the run.", "--context", "[]",
             "--pack", "orch-code-pack", "--isolation", "required",
         )
-        goal = " ".join(["word"] * tickets.INSTRUCTION_BUDGET)
-        refused = tickets._dispatch([
-            "new", "unit-ceiling", "R.01", "--executor", tickets.ROOT_EXECUTOR,
+        goal = " ".join(["word"] * 400)
+        created = tickets._dispatch([
+            "new", "unit-length", "R.01", "--executor", tickets.ROOT_EXECUTOR,
             "--goal", goal, "--context", "[]",
         ])
-        self.assertIn("error", refused)
-        self.assertIn(
-            f"{tickets.INSTRUCTION_BUDGET + 1}-word instruction",
-            refused["error"],
-        )
+        self.assertNotIn("error", created, created)
 
-    def test_the_over_ceiling_exemption_reserves_the_only_stampable_root(self):
-        goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
-        self.dispatch(
-            "new", "reserved-root", "X", "--executor", "orch-execute",
-            "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
-            "--isolation", "required",
-        )
-        self.dispatch(
-            "new", "reserved-root", "R", "--executor", "orch-execute",
-            "--goal", "Deliver the actual run.", "--context", "[]",
-            "--pack", "orch-code-pack", "--isolation", "required",
-        )
-
-        refused = tickets._dispatch([
-            "stamp-generation", "reserved-root", "R",
-        ])
-
-        self.assertIn("provisional root", refused["error"])
-        stamped = self.dispatch("stamp-generation", "reserved-root", "X")
-        self.assertEqual("X", stamped["stamp_generation"]["root_id"])
-
-    def test_a_malformed_first_attempt_cannot_consume_the_root_exemption(self):
-        goal = " ".join(["word"] * (tickets.INSTRUCTION_BUDGET + 100))
+    def test_a_malformed_first_attempt_writes_no_run_directory(self):
+        goal = " ".join(["word"] * 400)
         malformed = tickets._dispatch([
             "new", "malformed-root", "R", "--executor", "orch-execute",
             "--goal", goal,
@@ -353,20 +298,18 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket_path = Path(self.temporary.name) / "tickets" / "direct" / "R1.md"
         established = ticket_path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", "C:/candidate"),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket_path.write_text(established, encoding="utf-8")
         opened = self.open_attempt("direct", "R1", "worker", "direct-D1")
-        packet = self.dispatch(
-            "dispatch-packet", "direct", "R1", "--dispatch-id", opened["dispatch_id"],
-            "--reply-to", "root", "--workspace", "C:/candidate",
-        )["packet"]
-        self.assertIn("Suggested files are non-binding", packet["prompt"])
+        launched = self.committed_launch(
+            "direct", "R1", opened["dispatch_id"], workspace="C:/candidate",
+        )
+        self.assertIn("Details is the planner's guidance", launched["prompt"])
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
-        self.assertEqual({"Goal", "Context", "Result", "Verification", "Feedback", "Risks"}, set(_sections(text)))
+        self.assertEqual({"Goal", "Context", "Report"}, set(_sections(text)))
 
     def test_preissue_lint_and_new_grade_the_same_projected_file_candidate(self):
         source = Path(self.temporary.name) / "R1.md"
@@ -445,22 +388,22 @@ class SemanticTicketContractTest(unittest.TestCase):
                 self.assertIn("error", refused)
         self.assertFalse((root / "tickets").exists())
 
-    def test_suggested_files_do_not_limit_candidate_paths(self):
+    def test_details_do_not_limit_candidate_paths(self):
         self.dispatch(
-            "new", "suggested", "R1", "--executor", "orch-execute",
+            "new", "details", "R1", "--executor", "orch-execute",
             "--goal", "Repair the behavior.", "--context", "The repository is authoritative.",
-            "--suggested-file", "src/start.py", "--pack", "orch-code-pack",
+            "--details", "- start at src/start.py", "--pack", "orch-code-pack",
             "--isolation", "required",
         )
-        self.seal("suggested", "R1")
-        ready = self.dispatch("ready", "--run", "suggested")
+        self.seal("details", "R1")
+        ready = self.dispatch("ready", "--run", "details")
         self.assertEqual(1, len(ready["ready"]))
-        packet_path = Path(self.temporary.name) / "tickets" / "suggested" / "R1.md"
+        packet_path = Path(self.temporary.name) / "tickets" / "details" / "R1.md"
         self.assertNotIn("write_scope", _parse_frontmatter(packet_path.read_text(encoding="utf-8")))
         actual = workspace._actual_mutations("M\0other/path.py\0A\0tests/new_guard.py\0")
         self.assertEqual([("change", "other/path.py"), ("create", "tests/new_guard.py")], actual)
 
-    def test_packet_filing_command_carries_claimant_and_writes_the_ticket(self):
+    def test_prompt_filing_command_carries_claimant_and_writes_the_ticket(self):
         self.dispatch(
             "new", "packet", "R1", "--executor", "orch-execute",
             "--goal", "Create the artifact.", "--context", "Use repository facts.",
@@ -472,15 +415,14 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket_path = Path(self.temporary.name) / "tickets" / "packet" / "R1.md"
         established = ticket_path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket_path.write_text(established, encoding="utf-8")
         opened = self.open_attempt("packet", "R1", "worker", "packet-D1")
-        prompt = self.accept_packet(
-            "packet", "R1", "worker", "packet-D1", workspace=str(candidate)
+        prompt = self.committed_launch(
+            "packet", "R1", "packet-D1", workspace=str(candidate)
         )["prompt"]
         command = next(
             line for line in prompt.splitlines()
@@ -495,17 +437,18 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(["--record-id", "RECORD_ID"], argv[7:9])
         self.assertEqual(["--by", "worker"], argv[9:11])
         argv[argv.index("RECORD_ID")] = "result-1"
-        argv[argv.index("SECTION")] = "Result"
-        argv[argv.index("TEXT")] = "filed from emitted packet"
+        argv[argv.index("TEXT")] = "filed from the emitted prompt"
         filed = self.dispatch(*argv)
         self.assertEqual("worker", filed["result"]["by"])
         ticket = (
             Path(self.temporary.name) / "tickets" / "packet" / "R1.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("### Written by `worker`\n\nfiled from emitted packet", ticket)
+        self.assertIn(
+            "### Written by `worker`\n\nfiled from the emitted prompt", ticket,
+        )
 
     def test_decomposed_root_uses_same_semantic_shape(self):
-        self.dispatch("new", "cut", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
+        self.dispatch("new", "cut", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Use the repository facts.", "--pack", "orch-code-pack", "--independence", "gate")
         for suffix in ("01", "02"):
             self.dispatch("new", "cut", f"R.{suffix}", "--executor", "orch-execute", "--goal", f"Produce component {suffix}.", "--context", "It feeds the root result.", "--pack", "orch-code-pack", "--isolation", "required")
         self.dispatch("stamp-generation", "cut", "R")
@@ -521,7 +464,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             self.assertIn("Context", sections)
 
     def test_complete_code_cut_keeps_one_root_generation_before_and_after_seal(self):
-        initial = {"R": assignment("R", "orch-decompose")}
+        initial = {"R": assignment("R", "orch-slice")}
         root_draft = tickets_generations.draft_snapshot("R", initial)
         root_receipt = tickets_generations.validate_draft("R", initial, root_draft)
         rooted = tickets_generations.seal_assignments("R", initial, root_draft, root_receipt)
@@ -539,10 +482,6 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "R.gate.repair", "orch-execute", ("R.gate.critique.code",),
                 root_generation=inherited, review_kind="repair",
             ),
-            "R.gate.verify": assignment(
-                "R.gate.verify", "orch-check", ("R.gate.repair",),
-                root_generation=inherited, review_kind="verify",
-            ),
         }
 
         cut_draft = tickets_generations.draft_snapshot("R", complete, ordinal=2)
@@ -557,7 +496,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual([], cutcheck.graph_findings(sealed))
 
         later_cut = tickets_generations.draft_snapshot(
-            "S", {"S": assignment("S", "orch-decompose")}, ordinal=2
+            "S", {"S": assignment("S", "orch-slice")}, ordinal=2
         )
         self.assertIn("root:S:1:", later_cut["root_generation"])
         self.assertIn("cut:S:2:", later_cut["cut_generation"])
@@ -588,7 +527,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_two_executor_members_cannot_validate_or_seal_without_the_composite_gate(self):
         snapshot = {
-            "R": assignment("R", "orch-decompose"),
+            "R": assignment("R", "orch-slice"),
             "R.01": assignment("R.01", "orch-execute"),
             "R.02": assignment("R.02", "orch-execute"),
         }
@@ -608,7 +547,7 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_clean_gate_uses_attributed_join_noop_and_opens_verification(self):
         self.dispatch(
-            "new", "clean", "R", "--executor", "orch-decompose",
+            "new", "clean", "R", "--executor", "orch-slice",
             "--goal", "Deliver the integrated result.", "--context", "Use two members.",
             "--pack", "orch-code-pack", "--independence", "gate",
         )
@@ -635,7 +574,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             ticket = Path(self.temporary.name) / "tickets" / "clean" / f"{ticket_id}.md"
             established = ticket.read_text(encoding="utf-8")
             for key, value in (
-                ("workspace_path", candidate),
                 ("workspace_branch", f"candidate-{suffix}"),
                 ("workspace_baseline", "0123456789abcdef clean"),
             ):
@@ -644,16 +582,15 @@ class SemanticTicketContractTest(unittest.TestCase):
             opened = self.open_attempt(
                 "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}"
             )
-            self.accept_packet(
-                "clean", ticket_id, f"member-{suffix}", f"member-D{suffix}",
-                workspace=candidate,
+            self.committed_launch(
+                "clean", ticket_id, f"member-D{suffix}", workspace=candidate,
             )
             self.dispatch(
                 "result", "clean", ticket_id,
                 "--assignment-seal", opened["assignment_seal"],
                 "--dispatch-id", f"member-D{suffix}",
                 "--record-id", "result-1", "--by", f"member-{suffix}",
-                "--section", "Result", "--text", "done",
+                "--text", "done",
             )
             self.commit_outcome(
                 "clean", ticket_id, opened, f"member-{suffix}", f"member-D{suffix}"
@@ -663,6 +600,7 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "--assignment-seal", opened["assignment_seal"],
                 "--dispatch-id", f"member-D{suffix}",
                 "--outcome-record-id", "outcome", "--by", "root-join",
+                "--status", "complete",
             )
         ready = self.dispatch("ready", "--run", "clean")
         critique_id = "R.gate.critique.code"
@@ -672,19 +610,25 @@ class SemanticTicketContractTest(unittest.TestCase):
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
             capture_output=True, check=True,
         ).stdout.strip()
-        packet = self.dispatch(
-            "dispatch-packet", "clean", critique_id,
-            "--dispatch-id", "critic-D1", "--reply-to", "root",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.assertIn('"kind":"GatePlan"', packet["prompt"])
-        self.receive(packet, "critic")
+        launched = self.committed_launch(
+            "clean", critique_id, "critic-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
+        # by path and tip identity, never a second copy of the ledger
+        self.assertIn("Immutable review ledger: read", launched["prompt"])
+        self.assertIn("tip is GatePlan", launched["prompt"])
+        self.assertNotIn('"kind":"GatePlan"', launched["prompt"])
+        # the root Goal three proven verdicts turned on, named by path
+        self.assertIn(str(Path(self.temporary.name) / "tickets" / "clean" / "R.md"),
+                      launched["prompt"])
         self.commit_outcome("clean", critique_id, opened, "critic", "critic-D1")
         self.dispatch(
             "dispatch-join", "clean", critique_id,
             "--assignment-seal", opened["assignment_seal"],
             "--dispatch-id", "critic-D1",
             "--outcome-record-id", "outcome", "--by", "root-join",
+            "--status", "complete",
+            *self.findings_flags(critique_id, "[]"),
             *self.accepted_file(critique_id, "[]"),
         )
         critique = (
@@ -709,13 +653,18 @@ class SemanticTicketContractTest(unittest.TestCase):
             "join-noop-repair", "clean", "R.gate.repair", "--by", "root-join"
         )
         self.assertEqual("root-join", closed["join_noop_repair"]["by"])
+        # The gate ends at repair: the fresh outside check is the root's own
+        # `done` predicate, run by land, and no verify stub is materialized.
         ready = self.dispatch("ready", "--run", "clean")
-        self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
+        self.assertNotIn("R.gate.verify", {item["id"] for item in ready["ready"]})
         repair = (
             Path(self.temporary.name) / "tickets" / "clean" / "R.gate.repair.md"
         ).read_text(encoding="utf-8")
         self.assertIn("status: complete", repair)
-        self.assertIn("### Written by `root-join`\n\n[]", repair)
+        self.assertIn(
+            f"### Written by `root-join`\n\n{tickets_lifecycle.NOOP_REPAIR_NOTE}",
+            repair,
+        )
         repair_review = json.loads(_parse_frontmatter(repair)["review_v1"])
         self.assertEqual(
             ["GatePlan", "CritiqueAdjudication", "RepairOutcome"],
@@ -723,71 +672,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.assertTrue(repair_review["records"][-1]["no_op"])
         self.assertEqual(artifact, repair_review["records"][-1]["artifact"])
-
-        verify_id = "R.gate.verify"
-        verify_opened = self.open_attempt(
-            "clean", verify_id, "verifier", "verify-D1"
-        )
-        mismatch = tickets._dispatch([
-            "dispatch-packet", "clean", verify_id,
-            "--dispatch-id", "verify-D1", "--reply-to", "root",
-            "--artifact", "git:" + "f" * 40, "--workspace", str(ROOT),
-        ])
-        self.assertEqual("review-invalid", mismatch["code"])
-        verify_packet = self.dispatch(
-            "dispatch-packet", "clean", verify_id,
-            "--dispatch-id", "verify-D1", "--reply-to", "root",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.assertIn('"kind":"RepairOutcome"', verify_packet["prompt"])
-        self.assertIn(
-            "Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or "
-            "`UNVERIFIED:` so the join can bind the verdict to the verified artifact.",
-            verify_packet["prompt"],
-        )
-        self.receive(verify_packet, "verifier")
-        verify_outcome = {
-            "assignment_seal": verify_opened["assignment_seal"],
-            "by": "verifier", "dispatch_id": "verify-D1",
-            "evidence": {
-                "Result": "verified fixed artifact",
-                "Verification": "PASS: exact artifact checks are green",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
-            "id": verify_id, "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": "clean",
-            "status": "complete",
-        }
-        self.dispatch(
-            "dispatch-outcome", "clean", verify_id,
-            "--status", verify_outcome["status"],
-            *self.evidence_flags(
-                verify_outcome["id"], verify_outcome["dispatch_id"],
-                verify_outcome["evidence"],
-            ),
-        )
-        self.dispatch(
-            "dispatch-join", "clean", verify_id,
-            "--assignment-seal", verify_opened["assignment_seal"],
-            "--dispatch-id", "verify-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--artifact", artifact,
-        )
-        verify = (
-            Path(self.temporary.name) / "tickets" / "clean" / f"{verify_id}.md"
-        ).read_text(encoding="utf-8")
-        verify_review = json.loads(_parse_frontmatter(verify)["review_v1"])
-        verification = verify_review["records"][-1]
-        self.assertEqual("Verification", verification["kind"])
-        self.assertEqual("PASS", verification["verdict"])
-        self.assertEqual(artifact, verification["artifact"])
-        self.assertEqual(
-            verify_review["records"][-2]["identity"],
-            verification["predecessor"],
-        )
+        # The immutable ledger ends there too: `Verification` is not a record
+        # kind any more, so nothing can append one after the repair.
+        self.assertNotIn("Verification", tickets_shapes.REVIEW_RECORD_COMMON_VALUES["kind"])
 
     def test_gate_stubs_freeze_pack_isolation_and_lens_order(self):
         self.dispatch(
-            "new", "ordered", "R", "--executor", "orch-decompose",
+            "new", "ordered", "R", "--executor", "orch-slice",
             "--goal", "Deliver the integrated result.", "--context", "Use two members.",
             "--pack", "orch-code-pack", "--independence", "gate",
         )
@@ -831,22 +722,19 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket = Path(self.temporary.name) / "tickets" / "checker" / "R.md"
         established = ticket.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(ROOT)),
             ("workspace_branch", "integration"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket.write_text(established, encoding="utf-8")
         opened = self.open_attempt("checker", "R", "worker", "worker-D1")
-        self.accept_packet(
-            "checker", "R", "worker", "worker-D1", workspace=str(ROOT),
-        )
+        self.committed_launch("checker", "R", "worker-D1", workspace=str(ROOT))
         self.commit_outcome("checker", "R", opened, "worker", "worker-D1")
         self.dispatch(
             "dispatch-join", "checker", "R",
             "--assignment-seal", opened["assignment_seal"],
             "--dispatch-id", "worker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join",
+            "--by", "root-join", "--status", "complete",
         )
         artifact = "git:" + subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
@@ -867,12 +755,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         stage_opened = self.open_attempt(
             "checker", "R.check", "checker-a", "checker-D1"
         )
-        packet = self.dispatch(
-            "dispatch-packet", "checker", "R.check",
-            "--dispatch-id", "checker-D1", "--reply-to", "root",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.receive(packet, "checker-a")
+        self.committed_launch(
+            "checker", "R.check", "checker-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
         findings = json.dumps([{
             "blocking": True,
             "class": "correctness",
@@ -886,7 +772,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "result", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--record-id", "feedback-1",
-            "--by", "checker-a", "--section", "Feedback", "--text", findings,
+            "--by", "checker-a", "--text", "findings are in the file the join reads",
         )
         self.commit_outcome(
             "checker", "R.check", stage_opened, "checker-a", "checker-D1"
@@ -895,14 +781,18 @@ class SemanticTicketContractTest(unittest.TestCase):
             "dispatch-join", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", *self.accepted_file("R.check", findings),
+            "--by", "root-join", "--status", "complete",
+            *self.findings_flags("R.check", findings),
+            *self.accepted_file("R.check", findings),
         )
         equivalent = json.dumps(json.loads(findings), ensure_ascii=False, indent=2)
         replayed_join = self.dispatch(
             "dispatch-join", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", *self.accepted_file("R.check-equivalent", equivalent),
+            "--by", "root-join", "--status", "complete",
+            *self.findings_flags("R.check-equivalent", equivalent),
+            *self.accepted_file("R.check-equivalent", equivalent),
         )
         self.assertEqual(first_join, replayed_join)
         stage_path = (
@@ -950,10 +840,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
         continued = self.dispatch("gate", "checker", "R")
-        self.assertEqual(
-            ["R.gate.repair", "R.gate.verify"],
-            continued["gate"]["tickets"],
-        )
+        self.assertEqual(["R.gate.repair"], continued["gate"]["tickets"])
         self.assertEqual(
             "replayed",
             self.dispatch("gate", "checker", "R")["gate"]["outcome"],
@@ -995,38 +882,20 @@ class SemanticTicketContractTest(unittest.TestCase):
         repair_opened = self.open_attempt(
             "checker", "R.gate.repair", "repairer", "repair-D1"
         )
-        repair_packet = self.dispatch(
-            "dispatch-packet", "checker", "R.gate.repair",
-            "--dispatch-id", "repair-D1", "--reply-to", "root",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.assertIn(review["records"][1]["identity"], repair_packet["prompt"])
-        self.receive(repair_packet, "repairer")
-        repair_outcome = {
-            "assignment_seal": repair_opened["assignment_seal"],
-            "by": "repairer", "dispatch_id": "repair-D1",
-            "evidence": {
-                "Result": "Repaired every accepted checker blocker.",
-                "Verification": "Targeted repair checks are green.",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
-            "id": "R.gate.repair", "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": "checker",
-            "status": "complete",
-        }
+        repair_launch = self.committed_launch(
+            "checker", "R.gate.repair", "repair-D1", workspace=str(ROOT),
+            artifact=artifact, record=False,
+        )
+        self.assertIn(review["records"][1]["identity"], repair_launch["prompt"])
         self.dispatch(
             "dispatch-outcome", "checker", "R.gate.repair",
-            "--status", repair_outcome["status"],
-            *self.evidence_flags(
-                repair_outcome["id"], repair_outcome["dispatch_id"],
-                repair_outcome["evidence"],
-            ),
+            "--note", "Repaired every accepted checker blocker; checks are green.",
         )
         self.dispatch(
             "dispatch-join", "checker", "R.gate.repair",
             "--assignment-seal", repair_opened["assignment_seal"],
             "--dispatch-id", "repair-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--artifact", artifact,
+            "--by", "root-join", "--status", "complete", "--artifact", artifact,
         )
         repair_text = (
             stage_path.parent / "R.gate.repair.md"
@@ -1037,83 +906,27 @@ class SemanticTicketContractTest(unittest.TestCase):
             [record["identity"] for record in repair_review["records"][:2]],
         )
         self.assertEqual("RepairOutcome", repair_review["records"][-1]["kind"])
-
-        verify_path = stage_path.parent / "R.gate.verify.md"
-        canonical_verify = verify_path.read_bytes()
-        substituted_verify = canonical_verify.decode("utf-8").replace(
-            "Verify `R`'s Goal on the integrated tip",
-            "Perform an unrelated verification for `R`",
-        )
-        substituted_verify = tickets._set_frontmatter_field(
-            substituted_verify, "assignment_seal",
-            tickets.assignment_digest("R.gate.verify", substituted_verify),
-        )
-        verify_path.write_text(substituted_verify, encoding="utf-8")
-        verify_ready = self.dispatch("ready", "--run", "checker")
-        self.assertNotIn(
-            "R.gate.verify", {item["id"] for item in verify_ready["ready"]},
-        )
-        verify_path.write_bytes(canonical_verify)
-
+        # The continuation ends at the repair. The fresh outside check the
+        # checker's acceptance used to materialize is the target's own `done`
+        # predicate, run by land in the integrated tree, so no verify stage is
+        # derived and none can be made ready.
+        self.assertFalse((stage_path.parent / "R.gate.verify.md").exists())
         ready = self.dispatch("ready", "--run", "checker")
-        self.assertIn("R.gate.verify", {item["id"] for item in ready["ready"]})
-        verify_opened = self.open_attempt(
-            "checker", "R.gate.verify", "verifier", "verify-D1"
-        )
-        verify_packet = self.dispatch(
-            "dispatch-packet", "checker", "R.gate.verify",
-            "--dispatch-id", "verify-D1", "--reply-to", "root",
-            "--artifact", artifact, "--workspace", str(ROOT),
-        )["packet"]
-        self.receive(verify_packet, "verifier")
-        verify_outcome = {
-            "assignment_seal": verify_opened["assignment_seal"],
-            "by": "verifier", "dispatch_id": "verify-D1",
-            "evidence": {
-                "Result": "verified repaired artifact",
-                "Verification": "PASS: fresh checks cover the repaired artifact",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
-            "id": "R.gate.verify", "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": "checker",
-            "status": "complete",
-        }
-        self.dispatch(
-            "dispatch-outcome", "checker", "R.gate.verify",
-            "--status", verify_outcome["status"],
-            *self.evidence_flags(
-                verify_outcome["id"], verify_outcome["dispatch_id"],
-                verify_outcome["evidence"],
-            ),
-        )
-        joined = self.dispatch(
-            "dispatch-join", "checker", "R.gate.verify",
-            "--assignment-seal", verify_opened["assignment_seal"],
-            "--dispatch-id", "verify-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--artifact", artifact,
-        )
-        self.assertEqual("complete", joined["join"]["status"])
-        verify_text = (
-            stage_path.parent / "R.gate.verify.md"
-        ).read_text(encoding="utf-8")
-        terminal = json.loads(_parse_frontmatter(verify_text)["review_v1"])
-        self.assertEqual(
-            ["GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification"],
-            [record["kind"] for record in terminal["records"]],
-        )
-        self.assertEqual("PASS", terminal["records"][-1]["verdict"])
+        self.assertNotIn("R.gate.verify", {item["id"] for item in ready["ready"]})
 
     def test_frontier_guidance_distinguishes_all_three_review_states(self):
-        skill = (
-            ROOT / "skills" / "engines" / "orch-frontier" / "SKILL.md"
-        ).read_text(encoding="utf-8")
+        # The guidance moved with the driver: the engine is gone and
+        # rules/verification.md 7 owns the three states the driver reads.
+        law = " ".join(
+            (ROOT / "rules" / "verification.md").read_text(encoding="utf-8").split()
+        )
         for phrase in (
-            "accepted checked target",
-            "clean checked target",
-            "gate-deferred root",
+            "An accepted checked target",
+            "a clean one closes with no repair",
+            "a gate-deferred root",
         ):
-            self.assertIn(phrase, skill)
-        self.assertNotIn("Gate-deferred and checked tickets do not", skill)
+            self.assertIn(phrase, law)
+        self.assertNotIn("Gate-deferred and checked tickets do not", law)
 
     def test_checker_stage_refuses_a_packless_target_without_state_mutation(self):
         self.dispatch(
@@ -1223,7 +1036,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
     def test_decompose_builds_the_complete_gate_bearing_draft_before_validation(self):
-        skill = (ROOT / "skills" / "kernel" / "orch-decompose" / "SKILL.md").read_text(encoding="utf-8")
+        skill = (ROOT / "skills" / "kernel" / "orch-slice" / "SKILL.md").read_text(encoding="utf-8")
         commands = ("tickets.py gate", "cutcheck.py", "tickets.py draft-validate", "tickets.py seal")
         positions = [skill.index(command) for command in commands]
         self.assertEqual(sorted(positions), positions)
@@ -1240,7 +1053,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertFalse((ROOT / "compositions" / "fix").exists())
 
     def test_gate_routes_actual_overlap_to_integration(self):
-        self.dispatch("new", "gate", "R", "--executor", "orch-decompose", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
+        self.dispatch("new", "gate", "R", "--executor", "orch-slice", "--goal", "Deliver the result.", "--context", "Two candidates may touch one path.", "--pack", "orch-code-pack", "--independence", "gate")
         for suffix in ("01", "02"):
             self.dispatch("new", "gate", f"R.{suffix}", "--executor", "orch-execute", "--goal", f"Deliver candidate {suffix}.", "--context", "The candidate feeds the integrated result.", "--pack", "orch-code-pack", "--independence", "gate", "--isolation", "required")
         self.dispatch("stamp-generation", "gate", "R")
@@ -1261,18 +1074,19 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket = Path(self.temporary.name) / "tickets" / "tdd" / "R.md"
         established = ticket.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", "C:/candidate"),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket.write_text(established, encoding="utf-8")
         opened = self.open_attempt("tdd", "R", "worker", "tdd-D1")
-        prompt = self.dispatch(
-            "dispatch-packet", "tdd", "R", "--dispatch-id", opened["dispatch_id"],
-            "--reply-to", "root", "--workspace", "C:/candidate",
-        )["packet"]["prompt"]
-        self.assertRegex(prompt.lower(), r"choose the implementation,\s*tests, and verification")
+        prompt = self.committed_launch(
+            "tdd", "R", opened["dispatch_id"], workspace="C:/candidate",
+        )["prompt"]
+        self.assertRegex(
+            prompt.lower(),
+            r"details is the planner's guidance[\s\S]*deviate and report the deviation",
+        )
         self.assertNotIn("oracle_class", prompt)
 
     def test_content_pack_preserves_whole_artifact_direct_route(self):

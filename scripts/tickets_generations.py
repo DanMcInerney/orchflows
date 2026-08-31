@@ -18,7 +18,7 @@ else:
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
 ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "independence", "isolation", "loop", "pack", "profile",
+    "bound", "done", "independence", "isolation", "loop", "pack", "profile",
     "review_order", "review_kind",
 )
 
@@ -36,8 +36,8 @@ def assignment_payload(ticket_id: str, text: str) -> dict:
     return {
         "semantic": {
             "context": sections.get("Context", ""),
+            "details": sections.get("Details", ""),
             "goal": sections.get("Goal", ""),
-            "suggested_files": sections.get("Suggested files", ""),
         },
         "dependencies": [str(value) for value in (data.get("depends_on") or [])],
         "executor": _executor_of(data),
@@ -147,9 +147,8 @@ def composite_gate_findings(root_id: str, snapshot: dict, member_ids=None) -> li
         return []
     prefix = f"{root_id}.gate.critique."
     repair_id = f"{root_id}.gate.repair"
-    verify_id = f"{root_id}.gate.verify"
     critiques = sorted(ticket_id for ticket_id in members if ticket_id.startswith(prefix) and ticket_id != prefix)
-    expected_gate_ids = set(critiques) | {repair_id, verify_id}
+    expected_gate_ids = set(critiques) | {repair_id}
     actual_gate_ids = {ticket_id for ticket_id in members if ".gate." in ticket_id}
     findings = []
     if not critiques:
@@ -161,7 +160,6 @@ def composite_gate_findings(root_id: str, snapshot: dict, member_ids=None) -> li
     expected = {
         **{ticket_id: ("orch-check", "critique", units) for ticket_id in critiques},
         repair_id: ("orch-execute", "repair", critiques),
-        verify_id: ("orch-check", "verify", [repair_id]),
     }
     for ticket_id in sorted(expected_gate_ids & actual_gate_ids):
         data = _parse_frontmatter(snapshot[ticket_id])

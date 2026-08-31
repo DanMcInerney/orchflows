@@ -29,7 +29,7 @@ class TestCompositionTemplates(unittest.TestCase):
     TEMPLATES = {
         "benchmaker": (
             {
-                "00-acquire": "orch-frontier",
+                "00-acquire": "orch-execute",
                 "01-design": "orch-outline",
                 "02-materialize": "orch-execute",
                 "03-qualify": "orch-check",
@@ -39,7 +39,7 @@ class TestCompositionTemplates(unittest.TestCase):
             "05-measure",
         ),
         "drift-canary": (
-            {"00-run": "orch-frontier", "01-diff": "orch-execute"},
+            {"00-run": "orch-execute", "01-diff": "orch-execute"},
             "01-diff",
         ),
         "evolve": (
@@ -55,16 +55,16 @@ class TestCompositionTemplates(unittest.TestCase):
             {
                 "00-audit": "orch-check",
                 "01-triage": "orch-check",
-                "02-deliver": "orch-frontier",
+                "02-deliver": "orch-execute",
             },
             "02-deliver",
         ),
         "self-improve": (
-            {"00-mine": "orch-execute", "01-deliver": "orch-frontier"},
+            {"00-mine": "orch-execute", "01-deliver": "orch-execute"},
             "01-deliver",
         ),
         "skill-tournament": (
-            {"00-benchmark": "orch-frontier", "01-campaign": "orch-frontier"},
+            {"00-benchmark": "orch-execute", "01-campaign": "orch-execute"},
             "01-campaign",
         ),
     }

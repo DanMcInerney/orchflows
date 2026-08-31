@@ -1,30 +1,32 @@
 # Result contract
 
 The generated [result lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
-names the receipt required before this contract's executor records may enter.
+names the committed launch these executor records may enter behind.
 
-The executor files work into its ticket's `## Result`, `## Verification`,
-`## Feedback`, `## Risks`, and optional `## Handoff` sections as it is
-produced. `Result` identifies the delivered artifact. `Verification` records
-the methods the executor chose, their observations, the Goal portions they
-cover, contradictions, and gaps. Code tests are one possible method, not a
-ticket-authored criterion. Research, design, content, and specification work
-use the artifact-appropriate evidence in
+The executor files work into its ticket's one `## Report` section as it is
+produced. There is no second heading to choose and no order to file in: what
+belongs in a report is what a reader would need and cannot re-derive — the
+exit code of every command as it was observed, what changed and why, what was
+deliberately not done and why, and whatever the assignment asked to be
+covered. Code tests are one possible kind of evidence, not a ticket-authored
+criterion. Research, design, content, and specification work use the
+artifact-appropriate evidence in
 [verification.md](../rules/verification.md) §2. These records are append-only
 after seal and do not change the semantic assignment digest. A write names its
 `assignment_seal`, `dispatch_id`, and unique `record_id`. Every successful
-section write adds exactly one canonical writer attribution,
-`### Written by <writer>`, and returns that identity. The required `--by`
-value must match both the dispatch attempt's recorded owner and the currently
-claimed ticket; a reusable human-readable name alone grants no filing
-authority. The command never changes lifecycle state.
+write appends after what is already there and adds
+exactly one canonical writer attribution,
+`### Written by <writer>`, and returns that identity. The
+required `--by` value must match both the dispatch attempt's recorded owner
+and the currently claimed ticket; a reusable human-readable name alone grants
+no filing authority. The command never changes lifecycle state.
 
-The reserved outcome carries only the non-empty closing delta that has not
-already entered these sections through result records. Repeating an attributed
-item is refused before mutation; outcome import therefore materializes every
-evidence item once rather than treating the close as a second snapshot.
+The reserved outcome carries one non-empty closing note, appended to `Report`
+like any other filing. Nothing compares it against what was already streamed:
+no consumer parses this prose, so a repeated sentence is a reader's problem
+rather than a refusal that loses the close.
 
-The ticket section mutation and its dispatch-v1 committed-record receipt are
+The ticket section mutation and its dispatch-v1 committed record are
 one atomic write. An exact retry of a committed `dispatch_id` plus `record_id`
 returns the stored success without adding content, even after retirement,
 replacement, or lease expiry. Changed operation content for that pair is an
@@ -33,30 +35,30 @@ refusal leaves the ticket byte-identical. A filed body may itself carry `## `
 headings without being read as a second ticket section, and survives the round
 trip byte for byte; how it is stored that way is
 [`scripts/tickets_markdown.py`](../scripts/tickets_markdown.py)'s.
-An unseen result requires the attempt's durable `dispatch-receipt`, proving the
-established receiver accepted the exact committed packet before execution.
+An unseen result requires the attempt's committed launch, and carries the
+`(dispatch_id, assignment_seal, --by)` the attempt was opened under: that
+triple is the writer's whole authority, on this write and on every other.
 
-A read-only critique never rewrites the reviewed executor's Result or
-Verification. A verifier records its independent verdict and evidence in
-`## Verification`.
-Gate and ordinary-checker critique findings are streamed in either `Result` or
-`Feedback` as one JSON array. Each finding object has exactly `blocking`
+A read-only critique never rewrites the reviewed executor's Report. Its
+findings are structured, so they are not prose: a critique writes one JSON
+array to a file and the join reads that file through `--findings-file
+<path|->`, exactly as the accepted subset crosses through `--accepted-file
+<path|->`. Each finding object has exactly `blocking`
 (boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty
 strings), and `evidence` (a non-empty array of non-empty strings). Finding ids
-are unique in the array. The join accepts any valid JSON encoding of the
-findings and accepted arrays, normalizes both, and binds the complete findings
-and exact accepted subset in the review ledger. The accepted blocker array
-crosses the protocol boundary only through `--accepted-file <path|->`; inline
-accepted or caller-authored finding flags are not a form.
+are unique in the array. The join normalizes both arrays and binds the
+complete findings and exact accepted subset in the review ledger, which is
+their one durable home; inline arrays or caller-authored finding flags are not
+a form.
 
 The join reads the fixed candidate identity and its actual diff, checks the
 returning name against the claim, and adjudicates only material blockers
 against Goal and Context. The reserved durable return and its lifecycle
 consumption belong to the [dispatch contract](dispatch.md#outcome-and-join).
-Deterministic repository-global gates run on the integrated tip. Suggested
-files are never an acceptance boundary.
+Deterministic repository-global gates run on the integrated tip. A path named
+in Details is never an acceptance boundary.
 
-A generic `dispatch-commit` record is not an executor Result and does not
+A generic `dispatch-commit` record is not an executor report and does not
 replace this section's writer. The `result` operation uses the same committed
 record precedence while atomically writing the attributed section. Neither
 makes an exactly-once external-side-effect claim.
@@ -98,6 +100,31 @@ remaining a deterministic declaration-to-consumer gate.
 T0 supersession record sha256:cdc9c619f5843f308755e4ba841a4617957adca850afc2769f1a2017c6ef3301:
 the generated T0 section now uses declaration-specific wording.
 
+T0 supersession record sha256:36d63a5c339d9a7c987df1ad4725f6bc46d48490c57f664e59d9043a389b04a8:
+an unseen executor result is admitted behind the attempt's committed packet
+rather than behind a durable accepted receipt. The receipt is gone; the
+`(dispatch_id, assignment_seal, --by)` triple every result already carried
+is the writer's whole authority, and the first record a child files is its
+acceptance.
+
+T0 supersession record sha256:730ceeaa514de270f8094c987eccd06afa7244e99dc393774567a1eed6241cd2:
+the record an unseen executor result enters behind is the attempt's
+committed launch. The packet it used to name is gone, and the identities
+this contract requires of every write are unchanged.
+
+T0 supersession record sha256:f80f8c31a1a37649ee72f808d6fcec7a032eada1e542520ab208437f280f298b:
+one filing channel. The executor's five sections collapse to `## Report`, and
+`executor_result` loses `section` and `mode` with the flags that chose them --
+`--section`, `--append`, `--replace` -- because one section admits one mode and
+nothing downstream reads which heading a fact arrived under. Every write
+appends. The closing outcome is one non-empty note appended here too, and the
+delta law that refused a repeat is gone: no consumer parses this prose, so a
+repeated sentence is a reader's problem rather than a refusal that loses the
+close. Critique findings stop riding in `Result` or `Feedback`: the complete
+array crosses the join as `--findings-file <path|->`, exactly as the accepted
+subset crosses as `--accepted-file <path|->`, and both are bound in the review
+ledger. The identities every write carries are unchanged.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 
@@ -109,9 +136,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | --- | --- | --- |
 | `assignment_seal` | yes | — |
 | `body` | yes | — |
-| `mode` | yes | `write`, `append`, `replace` |
 | `operation` | yes | `result` |
-| `section` | yes | — |
 | `writer` | yes | — |
 
 <!-- END GENERATED T0 SHAPES -->

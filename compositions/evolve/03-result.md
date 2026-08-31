@@ -24,16 +24,4 @@ Exceptional constraints:
 - expose protected evidence
 - add a closing wrapper
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

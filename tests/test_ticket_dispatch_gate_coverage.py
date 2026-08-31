@@ -1,4 +1,4 @@
-"""Canonical witnesses for the accepted ticket/packet/gate discrepancy register."""
+"""Canonical witnesses for the accepted ticket/dispatch/gate discrepancy register."""
 
 import importlib
 import io
@@ -16,6 +16,13 @@ def witness(carrier, identity):
     return carrier, identity
 
 
+# One row per active discrepancy. A row leaves the register when its
+# discrepancy is dissolved rather than fixed, and the receipt handshake
+# dissolved four: the ephemeral downgrade an inline packet could attempt,
+# the inline snapshot's sink authority, the accepted-receipt fence before
+# execution records, and the receiver identity/profile/authority family.
+# What replaced the fence -- one committed launch before any execution
+# record, and the writer identity every record carries -- keeps its row.
 COVERAGE = {
     "A1": (
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_noncanonical_persisted_state_is_a_byte_preserving_refusal"),
@@ -24,34 +31,25 @@ COVERAGE = {
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_orphan_replacement_edge_is_a_byte_preserving_refusal"),
     ),
     "A2": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_open_requires_the_current_stored_admission_before_mutation"),),
-    "A3": (witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_ticket_packet_cannot_be_downgraded_to_ephemeral"),),
-    "A4": (
+    "A3": (
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_expiry_cannot_implicitly_open_a_successor"),
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_expired_attempt_can_cross_the_explicit_atomic_replacement"),
     ),
-    "A5": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_suspended_join_retires_the_attempt_but_retains_claimant_observations"),),
-    "A6": (
+    "A4": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_suspended_join_retires_the_attempt_but_retains_claimant_observations"),),
+    "A5": (
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins"),
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch"),
     ),
-    "A7": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_outcome_materializes_only_unstreamed_evidence_once"),),
-    "A8": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal"),),
-    "B1": (
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_snapshot_requires_the_authoritative_state_sink"),
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_inline_tampering_and_reference_divergence_refuse"),
-    ),
+    "A6": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_the_closing_note_appends_to_the_report_and_replays"),),
+    "A7": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal"),),
+    "B1": (witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii"),),
     "B2": (
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_file_and_standard_input_carry_the_packet_without_shell_reconstruction"),
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_wrapper_and_malformed_file_refuse_without_ticket_mutation"),
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_command_emits_codepage_independent_canonical_ascii"),
+        witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_first_filed_record_is_the_acceptance"),
+        witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchLaunchRecordTest.test_an_execution_record_without_a_committed_launch_refuses"),
+        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_a_launch_is_a_byte_preserving_refusal"),
+        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_launch_after_outcome_is_a_byte_preserving_refusal"),
     ),
-    "B3": (
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_accepted_receipt_is_a_durable_replayable_attempt_record"),
-        witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_result_outcome_and_join_require_the_accepted_receipt"),
-        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_the_receipt_is_a_byte_preserving_refusal"),
-        witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_persisted_receipt_after_outcome_is_a_byte_preserving_refusal"),
-    ),
-    "B4": (witness("tests.test_dispatch_packet_v1", "tests.test_dispatch_packet_v1.DispatchPacketV1Test.test_receipt_refuses_identity_profile_and_authority_mismatches"),),
+    "B3": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation"),),
     "C1": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
     "C2": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
     "C3": (
@@ -69,7 +67,7 @@ COVERAGE = {
     "D5": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order"),),
     "D6": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
     "D7": (witness("tests.test_ticket_protocol", "tests.test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model"),),
-    "D8": (witness("tests.test_ticket_packet_gate_coverage", "tests.test_ticket_packet_gate_coverage.TicketPacketGateCoverageTest.test_obsolete_gate_fossils_are_absent"),),
+    "D8": (witness("tests.test_ticket_dispatch_gate_coverage", "tests.test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_obsolete_gate_fossils_are_absent"),),
     "D9": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_gate_stubs_freeze_pack_isolation_and_lens_order"),),
     "E1": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier"),),
     "E2": (
@@ -78,9 +76,12 @@ COVERAGE = {
     ),
     "E3": (witness("tests.test_workspace", "tests.test_workspace_cases.start_cases.TestStartEstablishesEvidenceStore.test_research_pack_creates_and_records_the_canonical_run_store"),),
 }
+# The active count per family, declared rather than derived from a range,
+# so a row that leaves the register has to leave here too.
+FAMILIES = {"A": 7, "B": 3, "C": 4, "D": 9, "E": 3}
 
 
-class TicketPacketGateCoverageTest(unittest.TestCase):
+class TicketDispatchGateCoverageTest(unittest.TestCase):
     def test_obsolete_gate_fossils_are_absent(self):
         fossils = (
             TESTS / "test_tickets_cases" / "gate_blocking.py",
@@ -99,11 +100,9 @@ class TicketPacketGateCoverageTest(unittest.TestCase):
 
     def test_every_active_discrepancy_has_a_routine_canonical_witness(self):
         expected = {
-            *("A" + str(number) for number in range(1, 9)),
-            *("B" + str(number) for number in range(1, 5)),
-            *("C" + str(number) for number in range(1, 5)),
-            *("D" + str(number) for number in range(1, 10)),
-            *("E" + str(number) for number in range(1, 4)),
+            letter + str(number)
+            for letter, count in FAMILIES.items()
+            for number in range(1, count + 1)
         }
         self.assertEqual(expected, set(COVERAGE))
         canonical_modules = set(run_tests.discover(TESTS)[2])
