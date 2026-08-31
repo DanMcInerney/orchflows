@@ -671,6 +671,56 @@ class DispatchV1Test(unittest.TestCase):
                 self.assertEqual("dispatch-join-required", refusal["code"])
                 self.assertEqual(before, self.ticket_text())
 
+    def test_an_attempt_that_never_launched_hands_its_status_back(self):
+        """The 2026-08-31 wedge: a ticket nothing could move.
+
+        Its one attempt opened and self-retired before any launch, so
+        `set-status` refused `dispatch-join-required`, `dispatch-retire`
+        refused `stale-attempt` on the ended attempt, and no join could
+        exist because no outcome had ever been filed.
+        """
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertNotIn("error", self.retire())
+
+        moved = tickets._dispatch(["set-status", "run", "T", "suspended"])
+
+        self.assertNotIn("error", moved)
+        self.assertEqual("suspended", _parse_frontmatter(self.ticket_text())["status"])
+
+    def test_an_attempt_that_launched_keeps_its_status_with_the_join(self):
+        """The other side of that door, so it stays exactly one case wide."""
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.commit_launch()
+        self.assertNotIn("error", self.retire())
+        before = self.ticket_text()
+
+        refusal = tickets._dispatch(["set-status", "run", "T", "suspended"])
+
+        self.assertEqual("dispatch-join-required", refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+
+    def test_a_second_attempt_keeps_its_status_with_the_join(self):
+        """A retry is not a lifecycle that never began."""
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.assertNotIn("error", self.retire())
+        reopened = self.open(dispatch_id="D2", by="worker-2")
+        self.assertEqual("opened", reopened["dispatch"]["outcome"])
+        self.assertNotIn("error", self.retire(
+            dispatch_id="D2", record_id="lifecycle:retire-2",
+        ))
+        before = self.ticket_text()
+
+        refusal = tickets._dispatch(["set-status", "run", "T", "suspended"])
+
+        self.assertEqual("dispatch-join-required", refusal["code"])
+        self.assertEqual(before, self.ticket_text())
+
     def test_protocol_owned_record_ids_cannot_be_squatted(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]

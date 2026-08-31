@@ -390,15 +390,12 @@ def _cmd_check(rest):
                 f"recorded workspace_path {Path(recorded_workspace).resolve()}",
                 EXIT_ISOLATION_MISSING,
             )
-        dirty = workspace_git.dirty_paths(str(ticket_worktree))
-        # Emission, not the item's change: an acceptance oracle imports the
-        # tree it grades and CPython writes bytecode beside it, so counting
-        # those bytes fails the item for having been verified. By path shape,
-        # never by tracked status -- the verdict this replaced fired on
-        # bytecode a frozen baseline tracked. Reported, never dropped.
-        emitted = sorted(name for name in dirty
-                         if name.endswith((".pyc", ".pyo")) or "__pycache__" in name.split("/"))
-        dirty = sorted(set(dirty) - set(emitted))
+        # Emission is not the item's change, and the rule that says which is
+        # which belongs to one owner: the landing grades the same dirty set.
+        # Reported, never dropped.
+        dirty, emitted = workspace_git.emission_split(
+            workspace_git.dirty_paths(str(ticket_worktree))
+        )
         if emitted:
             reported["emission"] = emitted
         if dirty:

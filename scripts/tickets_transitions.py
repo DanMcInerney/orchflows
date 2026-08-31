@@ -84,16 +84,19 @@ _LIFECYCLE_SPECS = (
 ) + tuple(
     # Not a legacy path, though an earlier rendering called it one: these are
     # the only transitions a ticket that was never dispatched can take, and
-    # `_set_status_under_run_lock` refuses outright once `dispatch_v1` exists
-    # (`dispatch-join-required`). Marking an issued-but-undispatched ticket
-    # blocked has no other route, so naming the majority of the table
-    # "legacy" told every cold reader the opposite of the truth.
+    # `_set_status_under_run_lock` refuses once `dispatch_v1` records real
+    # execution (`dispatch-join-required`). Marking an issued-but-undispatched
+    # ticket blocked has no other route, so naming the majority of the table
+    # "legacy" told every cold reader the opposite of the truth. The second
+    # admissible shape is a lifecycle that never began -- one attempt, ended,
+    # carrying nothing but its own lifecycle records -- which otherwise owns
+    # a status it has no join and no retirement left to release.
     LifecycleSpec(
         set_status_command(state),
         STATUSES,
         state,
         "caller",
-        "no dispatch-v1 record (pre-dispatch path)",
+        "no dispatch-v1 record, or a lone attempt that never launched",
         "contracts/worklog.md" if state in TERMINAL_STATES else "contracts/work-item.md",
         "rules/loops.md" if state in TERMINAL_STATES else "rules/topology.md",
     )

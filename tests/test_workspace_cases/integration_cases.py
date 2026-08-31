@@ -1,0 +1,218 @@
+"""What `land` does with a candidate once its item has run.
+
+Every case here is one of the 2026-08-31 trunk defects, each pinned by
+the reading that was red before its fix: a run's commits merged onto the
+incumbent branch of a checkout the run never named, a silent replay over
+a delivery nobody committed, and a retirement refusal that prescribed the
+one command which would have deleted it.
+"""
+
+from .common import *  # noqa: F401,F403
+
+from scripts import (  # noqa: F401
+    state_root, tickets_store, workspace_return,
+)
+
+
+def established(case, tmp, *, ticket_id="T1", repo=None):
+    """One repository, one ticket, one established derived candidate."""
+
+    main, run_dir = make_repo(tmp)
+    ticket = make_ticket(run_dir, ticket_id)
+    done = run_workspace(
+        tmp, "establish", "testrun", ticket_id, "--repo", str(repo or main),
+    )
+    case.assertEqual(0, done.returncode, done.stdout + done.stderr)
+    return main, ticket, state_root.candidate_paths("testrun", ticket_id)
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
+    """A run's commits belong on the branch the run was established from.
+
+    The evidence is commit e18ff25e: integration read the incumbent branch
+    of the project root live, the user's checkout happened to be standing
+    on an unrelated branch, and a whole run's result plus its `done`
+    evaluation landed there.
+    """
+
+    def test_the_first_establishment_records_the_target_on_the_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, _ticket, _derived = established(self, Path(tmp))
+
+            recorded = tickets_store.integration_target("testrun")
+
+            self.assertEqual(str(main.resolve()), recorded["root"])
+            self.assertEqual(
+                git(main, "rev-parse", "--abbrev-ref", "HEAD").strip(),
+                recorded["branch"],
+            )
+
+    def test_a_later_establishment_never_moves_the_recorded_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, _ticket, _derived = established(self, tmp)
+            opened = tickets_store.integration_target("testrun")
+
+            git(main, "checkout", "--quiet", "-b", "somewhere-else")
+            make_ticket(state_root.tickets_root() / "testrun", "T2")
+            second = run_workspace(tmp, "establish", "testrun", "T2", "--repo", str(main))
+
+            self.assertEqual(0, second.returncode, second.stdout + second.stderr)
+            self.assertEqual(opened, tickets_store.integration_target("testrun"))
+
+    def test_a_checkout_that_moved_off_the_recorded_branch_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, _ticket, derived = established(self, tmp)
+            commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
+            recorded = tickets_store.integration_target("testrun")
+            git(main, "checkout", "--quiet", "-b", "codex/somebody-elses-branch")
+            before = git(main, "rev-parse", "HEAD").strip()
+
+            with self.assertRaises(workspace_return.Refused) as refused:
+                workspace_return.integrate(
+                    "testrun", "T1", derived["path"], derived["branch"],
+                )
+
+            self.assertIn("codex/somebody-elses-branch", str(refused.exception))
+            self.assertIn(recorded["branch"], str(refused.exception))
+            # the whole point: nothing was written onto the stranger's branch
+            self.assertEqual(before, git(main, "rev-parse", "HEAD").strip())
+
+    def test_the_recorded_branch_is_merged_and_reported_as_the_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, _ticket, derived = established(self, tmp)
+            commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
+            recorded = tickets_store.integration_target("testrun")
+
+            body, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"],
+            )
+
+            self.assertEqual(0, code)
+            self.assertEqual("merged", body["integrate"]["outcome"])
+            self.assertEqual(recorded["branch"], body["integrate"]["into"])
+            self.assertEqual(str(main.resolve()), body["integrate"]["main_root"])
+            self.assertTrue((main / "scratch" / "work.txt").is_file())
+
+    def test_a_run_that_recorded_no_target_is_refused_with_the_establishment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+            identity = state_root.runs_root() / "testrun" / "run.json"
+            document = json.loads(identity.read_text(encoding="utf-8"))
+            document.pop(tickets_store.INTEGRATION_KEY)
+            identity.write_text(json.dumps(document), encoding="utf-8")
+
+            with self.assertRaises(workspace_return.Refused) as refused:
+                workspace_return.integrate(
+                    "testrun", "T1", derived["path"], derived["branch"],
+                )
+
+            self.assertIn("records no integration target", str(refused.exception))
+            self.assertIn("workspace.py establish testrun T1", str(refused.exception))
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestAnUncommittedDeliveryIsNotAReplay(unittest.TestCase):
+    """Two members of one run landed complete on empty branches.
+
+    Each worker closed without committing. The merge carried nothing, and
+    integration answered `replayed` -- the one word that reads exactly
+    like a lawful second landing, so nothing downstream looked again.
+    """
+
+    def test_a_dirty_candidate_carrying_no_commits_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+            (derived["path"] / "delivery.txt").write_text(
+                "the whole thing, uncommitted\n", encoding="utf-8",
+            )
+
+            with self.assertRaises(workspace_return.Refused) as refused:
+                workspace_return.integrate(
+                    "testrun", "T1", derived["path"], derived["branch"],
+                )
+
+            message = str(refused.exception)
+            self.assertIn("delivery.txt", message)
+            self.assertIn("never committed", message)
+            self.assertIn("Commit it in the candidate", message)
+
+    def test_a_clean_candidate_carrying_no_commits_still_replays(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+
+            body, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"],
+            )
+
+            self.assertEqual(0, code)
+            self.assertEqual("replayed", body["integrate"]["outcome"])
+
+    def test_bytecode_beside_a_replay_is_emission_and_not_a_delivery(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+            cache = derived["path"] / "__pycache__"
+            cache.mkdir(parents=True)
+            (cache / "oracle.cpython-39.pyc").write_bytes(b"\x00")
+
+            body, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"],
+            )
+
+            self.assertEqual(0, code)
+            self.assertEqual("replayed", body["integrate"]["outcome"])
+
+    def test_a_dirty_candidate_that_does_carry_commits_still_merges(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+            commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
+            (derived["path"] / "notes.txt").write_text("scratch\n", encoding="utf-8")
+
+            body, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"],
+            )
+
+            self.assertEqual(0, code)
+            self.assertEqual("merged", body["integrate"]["outcome"])
+
+
+@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
+class TestARefusedRetirementNeverPrescribesForce(unittest.TestCase):
+    """The refusal that saved a worker's only copy also named the command
+    that would have deleted it. `--force` stays available to a caller who
+    has looked; nothing here ever recommends it."""
+
+    def test_uncommitted_work_is_named_with_the_act_that_preserves_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+            (derived["path"] / "unsaved.txt").write_text("work\n", encoding="utf-8")
+
+            kept = run_workspace(tmp, "retire", "testrun", "T1")
+
+            self.assertEqual(1, kept.returncode, kept.stdout)
+            message = payload_of(kept)["error"]
+            self.assertNotIn("--force", message)
+            self.assertIn("unsaved.txt", message)
+            self.assertIn("land testrun/T1 again", message)
+            self.assertTrue(derived["path"].is_dir())
+
+    def test_the_flag_a_caller_passes_deliberately_still_works(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, _ticket, derived = established(self, tmp)
+            (derived["path"] / "unsaved.txt").write_text("work\n", encoding="utf-8")
+
+            forced = run_workspace(tmp, "retire", "testrun", "T1", "--force")
+
+            self.assertEqual(0, forced.returncode, forced.stdout + forced.stderr)
+            self.assertFalse(derived["path"].exists())

@@ -254,7 +254,16 @@ def _create(source, target: Path, branch: str, baseline: str, claimed: bool) -> 
 
 
 def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
-    """Create -- or replay -- the tree this item's identity derives."""
+    """Create -- or replay -- the tree this item's identity derives.
+
+    The run's integration target is recorded here, on the first
+    establishment that reaches it: this call knows the checkout the run is
+    being driven from and the branch that checkout stands on, and by the
+    time `land` merges, that checkout may have been moved to something
+    else entirely. Reading it live is exactly how a run's commits reached
+    an unrelated branch of the user's own checkout. Write-once and never
+    corrected, for the same reason ``workspace_baseline`` is.
+    """
 
     candidate = state_root.candidate_paths(run, ticket_id)
     target, branch = candidate["path"], candidate["branch"]
@@ -292,6 +301,9 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
     )
     if "error" in outcome:
         raise Refused(outcome["error"])
+    integration = tickets_store.record_integration_target(
+        run, str(top), workspace_git._current_branch(read_source),
+    )
     return {
         "run": run,
         "id": ticket_id,
@@ -301,6 +313,9 @@ def _derived(run, ticket_id, path, data, prior_text, held, source, seams):
         PATH_KEY: str(target),
         "workspace_root": str(target),
         "main_root": str(state_root.find_repo_root(source) or top),
+        # what `land` will merge into: this run's, recorded once, reported
+        # here so a driver can see it before any item has been landed
+        tickets_store.INTEGRATION_KEY: integration,
         # by derivation, not by survey: this path belongs to one ticket of
         # one run, so there is no sibling that could be standing in it
         "isolated": True,

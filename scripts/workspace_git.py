@@ -168,6 +168,25 @@ def dirty_paths(cwd, git=_git) -> list:
     return found
 
 
+def emission_split(dirty):
+    """``(the item's uncommitted paths, the bytes a run emitted)``.
+
+    An acceptance oracle imports the tree it grades and CPython writes
+    bytecode beside it, so counting those bytes holds an item against
+    having been verified. By path shape, never by tracked status -- the
+    verdict this replaced fired on bytecode a frozen baseline tracked.
+    Two callers grade a candidate's dirty set, `check` at the join and
+    `workspace_return.integrate` at the landing, and one rule decides for
+    both what is the item's work and what is exhaust.
+    """
+
+    emitted = sorted(
+        name for name in dirty
+        if name.endswith((".pyc", ".pyo")) or "__pycache__" in name.split("/")
+    )
+    return sorted(set(dirty) - set(emitted)), emitted
+
+
 def actual_mutations(name_status: str) -> list:
     """Normalize ``git diff --name-status --no-renames -z`` rows.
 

@@ -454,22 +454,9 @@ class TestRetireRemovesTheDerivedCandidate(unittest.TestCase):
             self.assertEqual(0, done.returncode, done.stdout + done.stderr)
             self.assertEqual("absent", payload_of(done)["retire"]["outcome"])
 
-    def test_a_tree_with_uncommitted_bytes_is_kept_unless_force_is_given(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, _ticket, derived = self._established(tmp)
-            (derived["path"] / "unsaved.txt").write_text("work\n", encoding="utf-8")
-
-            kept = run_workspace(tmp, "retire", "testrun", "T1")
-
-            self.assertEqual(1, kept.returncode, kept.stdout)
-            self.assertIn("worktree remove --force", payload_of(kept)["error"])
-            self.assertTrue(derived["path"].is_dir())
-
-            forced = run_workspace(tmp, "retire", "testrun", "T1", "--force")
-
-            self.assertEqual(0, forced.returncode, forced.stdout + forced.stderr)
-            self.assertFalse(derived["path"].exists())
+    # What a refused retirement says about a tree holding uncommitted work
+    # is `integration_cases.TestARefusedRetirementNeverPrescribesForce`'s,
+    # beside the landing that produced such a tree.
 
     def test_a_directory_that_is_no_worktree_is_refused_naming_the_manual_step(self):
         with tempfile.TemporaryDirectory() as tmp:
