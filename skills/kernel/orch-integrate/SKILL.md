@@ -5,7 +5,7 @@ role: none
 ---
 
 Require: one child return — a completed
-[ticket](../../../contracts/work-item.md), or a bare packet's contracted fields
+[ticket](../../../contracts/work-item.md), or a bare return's contracted fields
 and originating dispatch, graded by its contract.
 
 Grade Goal and Context at the fixed artifact identity through one
@@ -15,8 +15,8 @@ defers review; `checker` requires
 [work-item.md](../../../contracts/work-item.md)'s `checked_by`; uncovered
 Goal claims yield needs-verify. Suspension resumes from `## Handoff`.
 
-The returning name and artifact identity must match the committed dispatch-v1
-packet; reject mismatches and expired attempts.
+The returning name and artifact identity must match the dispatch-v1
+attempt; reject mismatches and expired attempts.
 Integration owns actual candidate diffs and conflict adjudication: resolve
 overlap and ordinary Git conflicts, perform one shared-artifact finalization
 after all candidate joins, and record the fixed joined identity the terminal
@@ -25,7 +25,7 @@ Under required isolation run `workspace.py check` from the integrating checkout
 (exit 6 is caller-vantage failure).
 
 Record blame on run-state. Under dispatch v1 only this join runs
-`tickets.py land`, committing `tickets.py dispatch-join` with packet
+`tickets.py land`, committing `tickets.py dispatch-join` with the attempt's
 assignment seal/dispatch id, fixed
 `outcome` id, and this name; an inline envelope rides `--outcome-file`
 unchanged. Disposition comes from the validated
@@ -38,8 +38,8 @@ atomic attributed join-owned transition. Accepted non-blocking findings go to ru
 improvement or successor candidates, never that repair.
 Every critique join passes its accepted subset through a UTF-8 file (or standard
 input) with `land --accepted-file <path|->`, normalized and bound
-against the executor's complete findings. Repair and verification packets and
-joins pass the fixed artifact with `--artifact`. Ordinary
+against the executor's complete findings. Repair and verification dispatches
+and joins pass the fixed artifact with `--artifact`. Ordinary
 `<id>.check` uses that same seam through `check <run> <id> --stage <id>.check`;
 it accepts no findings and must succeed before `checked_by` is trusted.
 

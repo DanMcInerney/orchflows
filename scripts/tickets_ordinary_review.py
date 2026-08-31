@@ -9,7 +9,7 @@ if __package__:
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
-    from .tickets_packet import GATE_REPAIR_ID, GATE_VERIFY_ID
+    from .tickets_assignment import GATE_REPAIR_ID, GATE_VERIFY_ID
 else:
     from tickets_format import (
         DEFAULT_BOUND_MINUTES, _parse_frontmatter,
@@ -17,7 +17,7 @@ else:
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
-    from tickets_packet import GATE_REPAIR_ID, GATE_VERIFY_ID
+    from tickets_assignment import GATE_REPAIR_ID, GATE_VERIFY_ID
 
 
 def _listed(values) -> str:

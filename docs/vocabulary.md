@@ -188,7 +188,7 @@ that needs a different meaning needs a different word.
   §9. Research craft narrows the term for sources: no shared upstream.
 - **checker** — the durable adjudication carrier for the ordinary
   outside-independence path: an explicit derived review-stage ticket whose
-  fresh read-only `orch-check` accepts the exact packet, challenges one
+  fresh read-only `orch-check` accepts the exact assignment, challenges one
   fixed artifact and its evidence, and joins its accepted set before the
   target can record `checked_by`.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
@@ -211,7 +211,7 @@ that needs a different meaning needs a different word.
   and benchmark qualification are not gates.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: the `verify` review kind where criteria carry a score scale,
-  blindness being a property of the packet's `inputs`, not of a skill.
+  blindness being a property of the assignment's `inputs`, not of a skill.
 
 The benchmark pipeline's artifacts are named here and defined by their
 producers, never restated: **evaluation design** (the execute lane's
@@ -223,12 +223,12 @@ composition).
 
 ## Delegation
 
-- **dispatch / delegation packet** — sending one packet to one fresh
-  child, and the packet itself: Goal, Context, optional Suggested files,
+- **dispatch** — starting one fresh child on one sealed ticket. The ticket is
+  the assignment it carries — Goal, Context, optional Suggested files,
   operational bound, and exact executor binding, per
   `contracts/work-item.md` and `contracts/dispatch.md`, plus an optional one-shot `profile`
   overriding role resolution for that dispatch alone. Role-bearing dispatch is
-  ticket-durable.
+  ticket-durable, and nothing travels beside the ticket: see **launch**.
 - **assignment seal** — the proof that an exact validated assignment digest
   is immutable for dispatch. A later cut generation may add or change members
   under the same immutable root semantics; changing sealed semantic-root fields
@@ -238,21 +238,18 @@ composition).
   `orchflows.dispatch.v1`, identified by `dispatch_id` and an absolute lease;
   its ticket record owns opening, committed-record replay, retirement,
   replacement, and expiry precedence.
-- **packet projection** — the immutable dispatch-v1 delivery record generated
-  from one sealed attempt: a ticket reference plus seal. It is committed
-  before the child is launched, and the child's own first filed record is
-  what proves the child accepted it.
 - **dispatch outcome** — one attempt's distinguished durable return envelope,
   reserved as `outcome`; it carries the closing evidence and disposition for
   direct commit or unchanged relay before join.
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. Suggested files do not attenuate it; actual changes
   are adjudicated at the join.
-- **launch spec** — the `launch` object `tickets.py dispatch` returns once the
-  packet is committed: the host, verb, agent, model, effort, native fields, and
-  prompt for the child, resolved from the host record. It is CLI output the
-  caller invokes verbatim — never persisted, never on the dispatch wire, and so
-  not one of `contracts/dispatch.md`'s shapes.
+- **launch** — the one object `tickets.py dispatch` emits and commits: the
+  host, verb, agent, model, effort, native fields, and generated prompt for
+  the child, resolved from the host record. The caller invokes it verbatim
+  and adds nothing. Its prompt is the only child-facing instruction surface
+  there is; it points at the ticket rather than copying it, and the child's
+  own first filed record is what proves the child accepted it.
 - **land** — `tickets.py land`: one locked transaction importing the outcome,
   joining it, retiring the candidate worktree, and reporting the frontier that
   join made ready. It composes the granular return operations, which stay public
@@ -270,7 +267,7 @@ composition).
   `rules/roles.md`.
 - **profile** — a role's concrete model and effort binding on one host,
   owned by `skills/engines/orch-frontier/references/profiles.md`; a
-  packet's optional `profile` slot names one explicitly, overriding role
+  ticket's optional `profile` slot names one explicitly, overriding role
   resolution for that dispatch.
 - **host** — the runtime carrying the agents; one record per host under
   `hosts/` names them and owns each one's launch binding. `tickets.py dispatch

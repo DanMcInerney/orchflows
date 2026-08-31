@@ -19,10 +19,10 @@ the transition fields applicable to retirement or replacement. The attempt is
 that path's sole owner: the ticket carries no projection of it. States are `live`, `retired`, and `replaced`; clock expiry never
 writes an implicit state transition. Each record has exactly `record_id`, `kind`, canonical-JSON
 `content`, absolute `committed_at`, and stored `success`. Record ids are unique
-within an attempt. Kinds are `generic`, `packet`, `result`, `outcome`,
-`join`, and `lifecycle`; `dispatch-packet`, `outcome`,
+within an attempt. Kinds are `generic`, `launch`, `result`, `outcome`,
+`join`, and `lifecycle`; `launch`, `outcome`,
 `join:*`, and `lifecycle:*` are reserved for their owning operations.
-Execution events are an ordered grammar, not a bag: the committed packet
+Execution events are an ordered grammar, not a bag: the committed launch
 precedes every result record; the one outcome follows results; join follows
 outcome. Reordering them makes the whole persisted state invalid without
 mutation.
@@ -63,27 +63,28 @@ failed step surfaces its own error plus any failed cleanup; every step
 replays idempotently. A composition over these operations therefore replays
 as a whole, and reports which of its steps it found already done.
 
-## Packet
+## Launch
 
-`dispatch-packet` commits the projection, and that committed record is the
-whole packet: nothing validates a packet a caller carries back. The public
-command emits ASCII-escaped canonical JSON, preserving every packet character
-independently of the subprocess code page.
+There is no wire object. The sealed ticket is the assignment, and `dispatch`
+is one lock over readiness, the minted attempt, the established workspace, and
+one committed `launch` record: `host`, `verb`, `agent`, `model`, `effort`,
+native `fields`, and the generated `prompt`. That prompt is the whole
+child-facing instruction surface, so an orchestrator invokes the launch
+verbatim and hand-adds nothing; a caller who lost it replays the same
+`dispatch` call and is handed the committed launch back unchanged.
 
-A packet has exactly `protocol`, `source`, `dispatch_id`, `assignment_seal`,
-`lease_expires_at`, `role`, `assigned_name`, `workspace`, `pack`, `prompt`,
-`review_kind`, and `durability` — the identities a child cannot derive from
-the ticket it is pointed at, and nothing it can. `review_kind` is null for an
-ordinary execution packet or one of `critique`, `repair`, and `verify` for a
-typed review lane. `source` is an exact `{run,id}` object, and
-`durability` is `ticket`: work carrying no ticket is outside this protocol.
-There is no return-address field: a child's return is its records, and the
-harness notifies its caller.
+The prompt names, once each, what a child cannot derive: the ticket's absolute
+path inside the established workspace, that workspace and the instruction to
+run from inside it, this host's verified interpreter, the resolved pack craft,
+the review lane's root ticket path, the assigned name, the lease deadline, the
+filled filing and closing commands, the craft's verification scope, and that
+every check runs to completion in the turn it starts. It names no skill for
+the child to invoke and no pack for it to resolve: it hands the paths.
 
-Projection refuses `state-inaccessible` when the sink holding the ticket
-cannot be read, `review-invalid` when the ticket's review ledger does not
-admit this lane, and `workspace-unestablished` or `workspace-mismatch` when
-the named tree is not the candidate the establishment recorded.
+Dispatch refuses `state-inaccessible` when the sink holding the ticket cannot
+be read, `review-invalid` when the ticket's review ledger does not admit this
+lane, and `workspace-unestablished` or `workspace-mismatch` when the named
+tree is not the candidate the establishment recorded.
 
 A dispatched child proves who it is the same way on its first write as on
 every later one, by naming `(dispatch_id, assignment_seal, --by)`; the first
@@ -110,27 +111,28 @@ retirement, changed join content conflicts, and an unseen join on an ended
 attempt is stale. Only join writes suspended or terminal ticket status. Every
 joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
+The join reads the tree the item was executed in off the attempt.
 For review-stage tickets the same atomic join also advances the ticket's
 validated `orchflows.review.v1` chain: critique requires the canonical accepted
 subset from the file-based `--accepted-file <path|->` seam, repair requires the
 exact output artifact, and verification must match that artifact and carry a
 `PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review kind has one closed field
 schema, and the ledger tip equals the
-protocol-owned join's `review_identity`. A review lane's packet names that
+protocol-owned join's `review_identity`. A review lane's prompt names that
 ledger by the ticket path holding it and by its tip identity; the chain
-itself is never copied onto the wire. `GatePlan` seals the normalized
+itself is never copied. `GatePlan` seals the normalized
 workspace; a code artifact is a full Git commit that resolves to that
-workspace's exact HEAD before packet commit and after repair.
+workspace's exact HEAD before launch and after repair.
 
 The ordinary checker is a derived `<id>.check` review-stage ticket. It uses
-the same committed packet, outcome, and join as gate review.
+the same committed launch, outcome, and join as gate review.
 Only `check <run> <id> --stage <id>.check` attaches its authenticated receiver
 identity to the target's `checked_by`; direct caller-supplied findings are not
 a protocol operation.
 
 ## Cutover
 
-The public facade has no role-bearing `claim` or legacy `packet` route and no
+The public facade has no role-bearing `claim` route, no packet route, and no
 dual reader. A claimed or suspended ticket without this record is
 `claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
 and the attempt's `owner` and `opened_at` are the lease — the ticket carries
@@ -216,7 +218,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | --- | --- | --- |
 | `committed_at` | yes | — |
 | `content` | yes | — |
-| `kind` | yes | `generic`, `packet`, `result`, `outcome`, `join`, `lifecycle` |
+| `kind` | yes | `generic`, `launch`, `result`, `outcome`, `join`, `lifecycle` |
 | `record_id` | yes | — |
 | `success` | yes | — |
 
@@ -236,11 +238,11 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `dispatch_id` | yes | — |
 | `record_id` | yes | — |
 
-### `dispatch_packet_record`
+### `dispatch_launch_record`
 
 | field | required | declared values |
 | --- | --- | --- |
-| `packet` | yes | — |
+| `launch` | yes | — |
 
 ### `dispatch_result_record`
 
@@ -354,22 +356,17 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `joined_at` | yes | — |
 | `review_identity` | no | — |
 
-### `dispatch_packet`
+### `dispatch_launch`
 
 | field | required | declared values |
 | --- | --- | --- |
-| `protocol` | yes | — |
-| `source` | yes | — |
-| `dispatch_id` | yes | — |
-| `assignment_seal` | yes | — |
-| `lease_expires_at` | yes | — |
-| `role` | yes | — |
-| `assigned_name` | yes | — |
-| `workspace` | yes | — |
-| `pack` | yes | — |
+| `host` | yes | — |
+| `verb` | yes | — |
+| `agent` | yes | — |
+| `model` | yes | — |
+| `effort` | yes | — |
+| `fields` | yes | — |
 | `prompt` | yes | — |
-| `review_kind` | yes | `critique`, `repair`, `verify`, `null` |
-| `durability` | yes | `ticket` |
 
 ### `dispatch_outcome`
 

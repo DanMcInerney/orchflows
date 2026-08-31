@@ -10,7 +10,7 @@ Two lanes, and the ticket's own ``isolation`` decides which. An item that
 declares ``required`` gets a tree of its own, created here at the path
 ``state_root.candidate_paths`` derives from its run and its id -- never a
 tree a caller named, because a caller naming the tree is how two siblings
-came to be dispatched into one directory and how a packet came to carry
+came to be dispatched into one directory and how a launch came to carry
 another item's workspace. Everything else is observed rather than created:
 the caller stands somewhere, and what it is standing in is recorded.
 
@@ -155,7 +155,7 @@ def _observed(run, ticket_id, path, data, prior_text, held, seams, where):
     _validate_write_paths(data.get("write_scope"), top)
     branch, head = workspace_git._head_and_branch(git_out)
     dirty = sorted(set(seams["dirty_paths"]()))
-    # Write-once: ``tickets_packet.py`` feeds this stamp to ``cutcheck.py
+    # Write-once: ``tickets_assignment.py`` feeds this stamp to ``cutcheck.py
     # --baseline``, so it goes on naming the revision the item was cut from,
     # never the moved tree a re-establishment stands in. The observation is
     # reported under its own key instead of recorded: a second stamp would

@@ -20,9 +20,9 @@ if __package__:
 else:
     from tickets_context import graded_admission, run_snapshot
 if __package__:
-    from .tickets_packet import _claim_is_stale
+    from .tickets_assignment import _claim_is_stale
 else:
-    from tickets_packet import _claim_is_stale
+    from tickets_assignment import _claim_is_stale
 if __package__:
     from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 else:
@@ -47,10 +47,10 @@ if __package__:
 else:
     from tickets_readiness import readiness_facts
 if __package__:
-    from .tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome, review_records, state_from_text
+    from .tickets_review import REVIEW_FIELD, ReviewError, launch_state, repair_outcome, review_records, state_from_text
     from .tickets_dispatch_schema import state as _dispatch_state
 else:
-    from tickets_review import REVIEW_FIELD, ReviewError, packet_state, repair_outcome, review_records, state_from_text
+    from tickets_review import REVIEW_FIELD, ReviewError, launch_state, repair_outcome, review_records, state_from_text
     from tickets_dispatch_schema import state as _dispatch_state
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --stage <id.check>'
@@ -349,7 +349,7 @@ def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
     if _section_body(text, 'Result'):
         return {'error': 'join-noop-repair requires an empty repair Result'}
     try:
-        review = packet_state(ticket_path, text, None, None)
+        review = launch_state(ticket_path, text, None, None)
         review = repair_outcome(review, '', '[]', written_by, no_op=True)
     except ReviewError as error:
         return _classification('review-invalid', str(error))

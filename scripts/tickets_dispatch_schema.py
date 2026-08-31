@@ -9,7 +9,7 @@ if __package__:
         DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
         DISPATCH_JOIN_CONTENT_FIELDS,
         DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
-        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_RECORD_FIELDS,
+        DISPATCH_LAUNCH_FIELDS, DISPATCH_LAUNCH_RECORD_FIELDS,
         DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
@@ -22,7 +22,7 @@ if __package__:
         EXECUTOR_RESULT_VALUES,
     )
     from .tickets_dispatch_identity import (
-        IDENTITY_RE, OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
         RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
@@ -36,7 +36,7 @@ else:
         DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
         DISPATCH_JOIN_CONTENT_FIELDS,
         DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
-        DISPATCH_PACKET_FIELDS, DISPATCH_PACKET_RECORD_FIELDS,
+        DISPATCH_LAUNCH_FIELDS, DISPATCH_LAUNCH_RECORD_FIELDS,
         DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
@@ -49,7 +49,7 @@ else:
         EXECUTOR_RESULT_VALUES,
     )
     from tickets_dispatch_identity import (
-        IDENTITY_RE, OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
         RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
@@ -187,25 +187,16 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             record["success"], run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
-    if kind == "packet":
-        if not _closed(content, set(DISPATCH_PACKET_RECORD_FIELDS)) or not isinstance(content["packet"], dict):
-            return _invalid("committed packet content has an invalid shape")
-        packet = content["packet"]
-        # The closed wire, graded where the record is read. It used to be
-        # graded on arrival by the receiver instead; with the handshake gone
-        # the persisted record is the only packet there is, and the shape it
-        # must close is `contracts/dispatch.md`'s declared one.
-        if not _closed(packet, set(DISPATCH_PACKET_FIELDS)):
-            return _invalid("committed packet has unknown or missing fields")
-        if (
-            packet.get("protocol") != PROTOCOL
-            or packet.get("dispatch_id") != attempt["dispatch_id"]
-            or packet.get("assignment_seal") != attempt["assignment_seal"]
-            or packet.get("assigned_name") != attempt["owner"]
-            or packet.get("durability") != "ticket"
-            or packet.get("source") != {"run": run, "id": ticket_id}
-        ):
-            return _invalid("committed packet differs from its ticket attempt")
+    if kind == "launch":
+        if not _closed(content, set(DISPATCH_LAUNCH_RECORD_FIELDS)) or not isinstance(content["launch"], dict):
+            return _invalid("committed launch content has an invalid shape")
+        # The launch object closes `contracts/dispatch.md`'s declared shape and
+        # carries no identity of its own: it is the invocation, and what binds
+        # it to this attempt is the stored success below, the same anchor every
+        # other record is held to. A launch that restated the seal and the
+        # dispatch id would be a second home for both.
+        if not _closed(content["launch"], set(DISPATCH_LAUNCH_FIELDS)):
+            return _invalid("committed launch has unknown or missing fields")
         return _committed_success_failure(
             record["success"], run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,

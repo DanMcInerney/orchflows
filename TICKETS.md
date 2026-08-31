@@ -10,8 +10,8 @@ the shape, [rules/verification.md](rules/verification.md) owns review,
 ## One file is the whole work order
 
 A ticket is one markdown file holding the durable assignment, lifecycle,
-result, and verification truth for one job. A role-bearing child receives a
-committed packet projection, not merely this file path. Tickets live in the
+result, and verification truth for one job. A role-bearing child is pointed at
+this file by its launch prompt, and reads it whole. Tickets live in the
 per-user state sink, outside every repository
 ([rules/visibility.md](rules/visibility.md) §6), which is why a fresh
 context in any checkout resumes a run mid-flight.
@@ -49,20 +49,21 @@ and sections without mutation.
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
 delivery. The caller invokes `tickets.py dispatch`, which promotes readiness,
-establishes the workspace, opens one attempt, and commits its immutable
-projection atomically — then resolves the child's host
-launch and returns it, so the caller invokes a `launch` object rather than
-transcribing a model and agent by hand. The granular `dispatch-open` and
-`dispatch-packet` operations remain public for recovery. Hand the response
-`.packet` value to the child as a file with `--packet-file <path>`. There is no
+establishes the workspace, opens one attempt, and commits one immutable
+`launch` atomically — the agent, model, effort, and the whole prompt the child
+is given, so the caller invokes a `launch` object rather than
+transcribing a model, an agent, or a set of instructions by hand. The granular
+`dispatch-open`, `dispatch-retire`, and `dispatch-replace` operations remain
+public for recovery, and replaying the same `dispatch` call hands back the same
+launch. There is no
 accept step: the child's first filed record is its acceptance, and every record
 it files carries the attempt's dispatch id, seal, and owner.
 
 The assignment seal identifies semantic generation. The dispatch id identifies
 one attempt and remains fixed across exact delivery retries. Transport silence
-replays the stored projection to the same child; it never creates a second live
+replays the stored launch to the same child; it never creates a second live
 child. Retirement precedes replacement, and `dispatch-replace` performs both
-sides atomically. The packet carries one reserved `outcome` identity. The
+sides atomically. The attempt reserves one `outcome` identity. The
 child commits its unstreamed closing evidence delta with `dispatch-outcome`.
 The join consumes only that durable outcome, so recovery never guesses
 which streamed write closed the attempt. Fixed record ids replay identically
@@ -73,7 +74,7 @@ it, retires the derived worktree, and reports the frontier that join made
 ready — one lock around all three, and it says which steps it found already
 done. `dispatch-outcome` and `dispatch-join` remain public for recovery.
 
-A packet names its ticket and never copies it, so the sink is always the
+A launch prompt names its ticket and never copies it, so the sink is always the
 authority a child reads its assignment from. A claimed ticket without an attempt refuses
 `claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
 whose owner and opened time are the lease. The normative shapes and precedence live in
@@ -132,8 +133,8 @@ The frontmatter carries two related mechanisms:
 against a snapshot of the whole run — dependencies complete, executor
 bound by the stamped pack, workspace policy, inputs resolvable — and
 stamps a hash **receipt** of the frozen cut. `dispatch-open` atomically records
-the claim and absolute lease, and `dispatch-packet` commits the delivery
-projection against that same seal. After an
+the claim and absolute lease, and `dispatch` commits the launch
+against that same seal. After an
 attempt opens, the assignment is a fixed target
 ([rules/verification.md](rules/verification.md) §3).
 Every joined disposition retires the attempt. A suspended ticket retains its
@@ -188,7 +189,7 @@ Three moments use readers who did not produce the fixed artifact
   `## Risks`; `[]` fills an empty section so nothing is ambiguous.
   Work that cannot finish within its bound suspends through the join with a
   concise `## Handoff` rather than improvising.
-- **The absolute lease does not move.** Packet replay, transport activity, and
+- **The absolute lease does not move.** Launch replay, transport activity, and
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a
   retired attempt, never a live predecessor.

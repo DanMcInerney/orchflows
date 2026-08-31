@@ -5,7 +5,7 @@
 
 - Root routes, launches what `dispatch` emits, and lands
   returns; relay a `kind: user-only` question verbatim. Never author a
-  role-bearing payload. Packet-less or wrong-profile role-bearing work refuses;
+  role-bearing payload. Prompt-less or wrong-profile role-bearing work refuses;
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
   items still run only when named. Route smallest-first: **answer** — context
   evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
@@ -13,9 +13,8 @@
   its executor chooses implementation and verification. **graph** — for one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
-  [--host <host>] [--workspace <tree>]` and invoke its
-  emitted `launch` verbatim. Then
-  `tickets.py land` its
+  [--host <host>] [--workspace <tree>]`, invoke the emitted `launch`
+  verbatim adding nothing to its prompt, then `tickets.py land` its
   return through `orch-integrate` and start `orch-frontier`. **outline** — one planner
   runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
   `orch-decompose` root for distinct results/dependencies. The planner never

@@ -5,26 +5,45 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 if __package__:
+    from .tickets_assignment import (
+        dispatch_assignment, workspace_establishment_finding,
+    )
     from .tickets_attempts import (
-        _cmd_dispatch_open, _cmd_dispatch_retire,
+        LAUNCH_RECORD_ID, _cmd_dispatch_open, _cmd_dispatch_retire,
+        _classification, _commit_record,
     )
     from .tickets_commands import DISPATCH_USAGE
     from .tickets_dispatch_launch import launch_spec, precheck, selected_host
-    from .tickets_dispatch_packet import _cmd_dispatch_packet
-    from .tickets_format import _extract_flag, canonical_json
+    from .tickets_dispatch_schema import stored_state
+    from .tickets_format import (
+        _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
+        parse_canonical_json,
+    )
+    from .tickets_generations import seal_findings
     from .tickets_lifecycle import _cmd_ready
-    from .tickets_store import _run_lock, _segment_error
+    from .tickets_review import launch_mutation, launch_state_result
+    from .tickets_store import _run_lock, _segment_error, _tickets_root
 else:
-    from tickets_attempts import _cmd_dispatch_open, _cmd_dispatch_retire
+    from tickets_assignment import dispatch_assignment, workspace_establishment_finding
+    from tickets_attempts import (
+        LAUNCH_RECORD_ID, _cmd_dispatch_open, _cmd_dispatch_retire,
+        _classification, _commit_record,
+    )
     from tickets_commands import DISPATCH_USAGE
     from tickets_dispatch_launch import launch_spec, precheck, selected_host
-    from tickets_dispatch_packet import _cmd_dispatch_packet
-    from tickets_format import _extract_flag, canonical_json
+    from tickets_dispatch_schema import stored_state
+    from tickets_format import (
+        _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
+        parse_canonical_json,
+    )
+    from tickets_generations import seal_findings
     from tickets_lifecycle import _cmd_ready
-    from tickets_store import _run_lock, _segment_error
+    from tickets_review import launch_mutation, launch_state_result
+    from tickets_store import _run_lock, _segment_error, _tickets_root
 
 
 def _workspace(source: Path, verb: str, arguments: list):
@@ -73,7 +92,7 @@ def _workspace_prepare(run: str, ticket_id: str, workspace: str | None) -> dict:
     sibling of this run waited them out for a tree that was not theirs. Its
     verdict is reported rather than raised, exactly as the workspace owner
     reports it -- a tree that could not be prepared is still the workspace
-    the packet names, and the child reads the answer and plans around it.
+    the launch names, and the child reads the answer and plans around it.
     """
 
     source = Path(workspace).expanduser().resolve() if workspace else Path.cwd()
@@ -109,47 +128,19 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
     return response
 
 
-def _write_packet_file(destination: str, packet: dict):
-    """Put the committed packet where the launched child can read it.
-
-    UTF-8 with LF, written whole: the child is told a path rather than told
-    to reconstruct a shell literal, which is how a packet came to be
-    truncated by a console code page. The packet is already durable in the
-    attempt when this runs, so a write that fails is reported with the one
-    command that replays it rather than pretending the dispatch failed.
-    """
-
-    path = Path(destination).expanduser()
-    try:
-        if path.parent and not path.parent.is_dir():
-            path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(canonical_json(packet) + "\n")
-    except (OSError, ValueError) as error:
-        return {
-            "error": (
-                f"dispatch packet is committed and the packet file could not be "
-                f"written: {error}. Replay this exact `tickets.py dispatch` call "
-                "to write it"
-            ),
-            "code": "packet-file-unwritable",
-        }
-    return None
-
-
 def _cmd_dispatch(rest):
-    """Compose ready, workspace, attempt, packet, launch and preparation.
+    """Compose ready, workspace, attempt, launch, and preparation.
 
     The established public operations remain the recovery seam. This
     caller convenience operation composes them in order, relays every
-    structured refusal unchanged, and retires a newly opened attempt if
-    packet projection refuses so no live attempt is left behind.
+    structured refusal unchanged, and retires a newly opened attempt if the
+    launch refuses so no live attempt is left behind.
 
     The launch binding is resolved twice on purpose: once before anything is
     opened, so a host or role that cannot be launched refuses while the
-    ticket is still untouched, and once from the committed packet, which is
-    the authority on what was actually projected. Both ask the one resolver,
-    under this one lock, so they cannot disagree.
+    ticket is still untouched, and once from the graded assignment, which is
+    the authority on what is actually being launched. Both ask the one
+    resolver, under this one lock, so they cannot disagree.
 
     Only the steps that decide the dispatch run under that lock. Tree
     preparation decides nothing and costs the most, so it follows the lock
@@ -164,7 +155,6 @@ def _cmd_dispatch(rest):
     artifact = _extract_flag(args, "--artifact")
     review_kind = _extract_flag(args, "--review-kind")
     host = selected_host(_extract_flag(args, "--host"))
-    packet_file = _extract_flag(args, "--packet-file")
     if len(args) != 2 or not all((owner, dispatch_id, lease)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
     run, ticket_id = args
@@ -189,7 +179,7 @@ def _cmd_dispatch(rest):
         dispatched = _dispatched_under_run_lock(
             run, ticket_id, host=host, owner=owner, dispatch_id=dispatch_id,
             lease=lease, workspace=workspace, artifact=artifact,
-            review_kind=review_kind, packet_file=packet_file,
+            review_kind=review_kind,
         )
     if "error" in dispatched:
         return dispatched
@@ -202,8 +192,7 @@ def _cmd_dispatch(rest):
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
-                               lease, workspace, artifact,
-                               review_kind, packet_file):
+                               lease, workspace, artifact, review_kind):
     """Everything the run lock has to hold, and nothing that does not."""
 
     # Before the first side effect: an attempt opened for a launch that
@@ -227,40 +216,25 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
 
     established = _workspace_establish(run, ticket_id, workspace)
     if "error" in established:
-        projected = established
+        launched = established
     else:
-        # only establishment's own answer reaches the packet: the caller's
-        # ``--workspace`` named the tree to cut from, and a packet built
-        # from that instead has carried another item's workspace
+        # only establishment's own answer reaches the launch: the caller's
+        # ``--workspace`` named the tree to cut from, and a launch built
+        # from that instead has named another item's workspace
         candidate = established.get("establish")
         workspace_path = (
             candidate.get("workspace_path") if isinstance(candidate, dict) else None
         )
         if not str(workspace_path or "").strip():
-            projected = {"error": "workspace establish did not record workspace_path"}
+            launched = {"error": "workspace establish did not record workspace_path"}
         else:
-            packet_args = [
-                run, ticket_id, "--dispatch-id", dispatch_id,
-                "--workspace", workspace_path,
-            ]
-            if review_kind is not None:
-                packet_args.extend(("--review-kind", review_kind))
-            if artifact is not None:
-                packet_args.extend(("--artifact", artifact))
-            try:
-                projected = _cmd_dispatch_packet(packet_args, _lock_held=True)
-                if not isinstance(projected, dict):
-                    projected = {
-                        "error": "dispatch-packet returned a non-object response"
-                    }
-                elif "error" not in projected and not isinstance(
-                    projected.get("packet"), dict
-                ):
-                    projected = {"error": "dispatch-packet returned no packet"}
-            except Exception as error:
-                projected = {"error": str(error)}
-    if "error" not in projected:
-        return _launched(projected, record, packet_file)
+            launched = _launched_under_run_lock(
+                run, ticket_id, record, dispatch_id=dispatch_id,
+                workspace=workspace_path, artifact=artifact,
+                review_kind=review_kind,
+            )
+    if "error" not in launched:
+        return launched
     if newly_opened:
         retirement = _cmd_dispatch_retire([
             run, ticket_id, "--assignment-seal", dispatch["assignment_seal"],
@@ -269,29 +243,157 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
         ], _lock_held=True)
         if not isinstance(retirement, dict) or "error" in retirement:
             return {
-                "error": "dispatch attempt retirement failed after projection refusal",
+                "error": "dispatch attempt retirement failed after launch refusal",
                 "code": "dispatch-retirement-failed",
-                "projection": projected,
+                "launch": launched,
                 "retirement": retirement,
             }
-    return projected
+    return launched
 
 
-def _launched(projected: dict, record: dict, packet_file):
-    """The committed packet plus the concrete invocation that carries it."""
-
-    packet = projected["packet"]
-    if packet_file is not None:
-        failure = _write_packet_file(packet_file, packet)
-        if failure is not None:
-            return {**failure, "packet": packet}
-    launch, failure = launch_spec(record, packet, packet_file=packet_file)
+def _attempt(data: dict, dispatch_id: str, *, stored_only: bool = False):
+    if __package__:
+        from .tickets_dispatch_schema import state as _state
+    else:
+        from tickets_dispatch_schema import state as _state
+    state, failure = (stored_state(data) if stored_only else _state(data))
     if failure is not None:
-        return {**failure, "packet": packet}
-    return {**projected, "launch": launch}
+        return None, failure
+    if state is None:
+        status = str(data.get("status") or "")
+        if status in ("claimed", "suspended"):
+            return None, _classification(
+                "legacy-live-claim", "pre-v1 live claim has no dispatch record",
+            )
+        return None, _classification(
+            "dispatch-mismatch", "ticket has no dispatch-v1 attempt",
+        )
+    found = next(
+        (item for item in state["attempts"] if item.get("dispatch_id") == dispatch_id),
+        None,
+    )
+    if found is None:
+        return None, _classification(
+            "dispatch-mismatch",
+            f"dispatch_id '{dispatch_id}' was never opened for this ticket",
+        )
+    return found, None
+
+
+def _live_attempt(attempt: dict):
+    lease = _parse_iso(attempt.get("lease_expires_at"))
+    if (
+        attempt.get("state") != "live"
+        or lease is None
+        or datetime.now(timezone.utc) >= lease
+    ):
+        return _classification(
+            "stale-attempt", "launch belongs to an ended dispatch attempt",
+        )
+    return None
+
+
+def _committed_launch(attempt: dict):
+    """The launch this attempt was already started with, or None.
+
+    The record is the authority on what the child was handed, so a replay
+    returns those bytes rather than composing them again: the prompt names
+    absolute paths and this interpreter, and a second composition from a
+    moved checkout would report a launch that never happened.
+    """
+
+    record = next(
+        (
+            item for item in attempt.get("records") or []
+            if item.get("record_id") == LAUNCH_RECORD_ID
+        ),
+        None,
+    )
+    if record is None:
+        return None
+    try:
+        content = parse_canonical_json(record["content"])
+    except (KeyError, TypeError, ValueError):
+        content = None
+    launch = content.get("launch") if isinstance(content, dict) else None
+    if not isinstance(launch, dict):
+        return _classification(
+            "dispatch-record-invalid",
+            "committed launch record has no canonical content",
+        )
+    return content
+
+
+def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
+                             workspace, artifact, review_kind):
+    """Grade the assignment, resolve the launch, and commit it, once.
+
+    Every read decides what the commit writes -- stored attempt, replay
+    comparison, review state, seal -- so the caller's lock covers the reads
+    too, and `_commit_record` is told the lock is held rather than opening a
+    second one on the same run.
+    """
+
+    root = _tickets_root()
+    if root is None:
+        return _classification("state-inaccessible", "state sink is not configured")
+    path = root / run / f"{ticket_id}.md"
+    text, failure = _read_utf8(path)
+    if failure is not None:
+        return _classification("state-inaccessible", failure["error"])
+    data = _parse_frontmatter(text)
+    attempt, failure = _attempt(data, dispatch_id, stored_only=True)
+    if failure is not None:
+        return failure
+    replay = _committed_launch(attempt)
+    if replay is not None:
+        return replay
+    attempt, failure = _attempt(data, dispatch_id)
+    if failure is not None:
+        return failure
+    review_state, review_error = launch_state_result(path, text, artifact, workspace)
+    if review_error is not None:
+        return _classification("review-invalid", review_error)
+    finding = workspace_establishment_finding(data, workspace)
+    if finding is not None:
+        return _classification(*finding)
+    failure = _live_attempt(attempt)
+    if failure is not None:
+        return failure
+    seal = str(data.get("assignment_seal") or "")
+    if seal != attempt.get("assignment_seal") or seal_findings(ticket_id, text):
+        # The same fact `_commit_record` fences every write on, refused here
+        # before the launch is composed rather than after: one code for one
+        # fact, and it is the one the commit below would raise anyway.
+        return _classification(
+            "assignment-mismatch",
+            "ticket no longer matches the attempt's sealed assignment",
+        )
+    arguments = [run, ticket_id, "--by", attempt["owner"], "--workspace", workspace]
+    if review_kind is not None:
+        arguments.extend(("--review-kind", review_kind))
+    graded = dispatch_assignment(
+        arguments, attempt=attempt, review_state=review_state,
+    )
+    if "error" in graded:
+        return graded
+    launch, failure = launch_spec(host_record, graded["assignment"])
+    if failure is not None:
+        return failure
+    content = {"launch": launch}
+    committed = _commit_record(
+        run, ticket_id, dispatch_id, LAUNCH_RECORD_ID, content,
+        mutate=launch_mutation(
+            review_state, run, ticket_id, dispatch_id, LAUNCH_RECORD_ID,
+        ),
+        record_kind="launch", _lock_held=True,
+    )
+    if "error" in committed:
+        return committed
+    return content
 
 
 __all__ = (
-    "_cmd_dispatch", "_dispatched_under_run_lock", "_launched",
+    "_cmd_dispatch", "_dispatched_under_run_lock", "_launched_under_run_lock",
     "_workspace_establish", "_workspace_prepare",
 )

@@ -3,7 +3,7 @@
 `contracts/dispatch.md` gives the tree an isolated item runs in to the
 attempt that dispatched it, and nothing else records it. The ticket
 frontmatter used to carry a projection of the same path, and a second home
-is how a packet came to name a tree the establishment had not created.
+is how a launch came to name a tree the establishment had not created.
 
 Both directions live here, in one module both families import: the
 workspace family writes the path when it establishes the tree, and the
@@ -39,6 +39,16 @@ def _format():
     return tickets_format
 
 
+def recorded_workspace(attempt: dict):
+    """The tree one attempt recorded, or ``None``.
+
+    The single read of the field, so a caller holding an attempt and a caller
+    holding a ticket ask the same question of the same key.
+    """
+
+    return str((attempt or {}).get(PATH_KEY) or "").strip() or None
+
+
 def attempt_workspace(data: dict):
     """The tree this ticket's dispatch attempt recorded, or ``None``.
 
@@ -53,7 +63,7 @@ def attempt_workspace(data: dict):
     attempts = state.get("attempts") or []
     live = [item for item in attempts if item.get("state") == "live"]
     for attempt in (live or list(reversed(attempts))):
-        recorded = str(attempt.get(PATH_KEY) or "").strip()
+        recorded = recorded_workspace(attempt)
         if recorded:
             return recorded
     return None
@@ -87,4 +97,6 @@ def recorded_on_attempt(text: str, workspace_path: str):
     ), True
 
 
-__all__ = ("PATH_KEY", "attempt_workspace", "recorded_on_attempt")
+__all__ = (
+    "PATH_KEY", "attempt_workspace", "recorded_on_attempt", "recorded_workspace",
+)

@@ -138,9 +138,9 @@ def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -
 
 
 # The fork-arrival clause: what a skill fork that arrives holding a
-# contract and no packet must do. Eighteen firings in one session proved
-# the dispatch packet structurally cannot carry this rule -- a packet-less
-# fork never reads a packet -- and rules/token-economy.md 11 priced the
+# contract and no launch prompt must do. Eighteen firings in one session
+# proved the launch structurally cannot carry this rule -- a fork that
+# arrives without one never reads one -- and rules/token-economy.md 11 priced the
 # 22-contract sweep out of the skill bodies (tests/test_skill_fork_governance.py
 # holds the clause's property ledger and that pricing's history). The
 # adapter is upstream of the contract in a fork's load path, and the
@@ -148,10 +148,10 @@ def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -
 # so the clause lands on every rendered name surface of a role-bearing
 # skill: one owner, zero skill-body words, no doclint pairing.
 FORK_ARRIVAL_CLAUSE = (
-    "Arriving without a packet, refuse before reading anything: your "
+    "Arriving without a launch prompt, refuse before reading anything: your "
     "refusal is your return, reaching your invoker through the invocation "
     "itself, never the coordinator. Acquire nothing, claim no name, derive "
-    "no objective. Invoking a skill by name, forward your packet or refuse."
+    "no objective. Invoking a skill by name, forward your prompt or refuse."
 )
 
 
@@ -159,7 +159,7 @@ def fork_arrival_preamble(role) -> str:
     """The clause paragraph a role-bearing name surface opens with.
 
     Only planner and worker adapters fork (`host_legal_frontmatter`), so
-    only their surfaces can produce the packet-less arrival the clause
+    only their surfaces can produce the prompt-less arrival the clause
     governs; a `role: none` surface runs in the invoking context and
     carries nothing extra."""
 
@@ -200,7 +200,7 @@ def codex_role_adapter_body(name: str, role: str, profile: dict, lib_skill_md: P
         "the exact named skill directly; never redispatch it. Otherwise root "
         f"must dispatch one child with agent_type `{binding['agent_type']}` and "
         f"fork_turns `{binding['fork_turns']}`, passing the "
-        "complete packet and exact named skill; refuse execution when that "
+        "emitted launch prompt and exact named skill; refuse execution when that "
         "matching role child is missing or mismatched; there is no inline "
         f"fallback.\n\n{FORK_ARRIVAL_CLAUSE}\n"
     )
@@ -230,10 +230,10 @@ def _role_description(name: str) -> str:
 # return into the durable artifact; deliver it by SendMessage). No rendered
 # role agent file names roles.md anywhere (D-2).
 ROLE_INSTRUCTIONS = (
-    "Stay within delegated scope. Every record names the packet's dispatch id, "
+    "Stay within delegated scope. Every record names your launch's dispatch id, "
     "seal, and assigned name; your first record is your acceptance. "
     "Execute the exact primary skill, or each exact member of a "
-    "packet-stated ordered sequence, directly; never redispatch. Refuse a missing "
+    "launch-stated ordered sequence, directly; never redispatch. Refuse a missing "
     "or mismatched role."
 )
 

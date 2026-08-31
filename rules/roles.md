@@ -14,7 +14,7 @@ names the worker-or-planner authority a dispatched child files under.
 3. Concrete model and effort bindings per host are owned solely by
    [profiles.md](../skills/engines/orch-frontier/references/profiles.md).
 4. Resolve role at each dispatch, against the active host's profile
-   bindings (clause 3), in order: an explicit packet profile wins; else
+   bindings (clause 3), in order: an explicit ticket profile wins; else
    the applied skill's declared role — a multi-stage pack's stages run
    in one child at the role resolved from the ticket's `executor`; a
    `none` declaration or a dispatch naming no applied skill takes only a
@@ -33,4 +33,4 @@ names the worker-or-planner authority a dispatched child files under.
 8. The [dispatch contract](../contracts/dispatch.md) binds every record a
    child files to the attempt it was dispatched under. A write naming another
    authority is a structured refusal; the child never substitutes or repairs
-   the packet.
+   that authority.

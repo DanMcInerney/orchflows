@@ -13,7 +13,6 @@ if __package__:
     from .tickets_worklog import WORKLOG_USAGE
     from .tickets_seal import GENERATION_SUBCOMMANDS
     from .tickets_attempts import DISPATCH_COMMIT_USAGE, DISPATCH_OPEN_USAGE, DISPATCH_REPLACE_USAGE, DISPATCH_RETIRE_USAGE
-    from .tickets_dispatch_packet import DISPATCH_PACKET_USAGE
     from .tickets_join import DISPATCH_JOIN_USAGE
     from .tickets_outcome import DISPATCH_OUTCOME_USAGE
     from .tickets_land import LAND_USAGE
@@ -31,7 +30,6 @@ else:
     DISPATCH_OPEN_USAGE = _attempts.DISPATCH_OPEN_USAGE
     DISPATCH_REPLACE_USAGE = _attempts.DISPATCH_REPLACE_USAGE
     DISPATCH_RETIRE_USAGE = _attempts.DISPATCH_RETIRE_USAGE
-    DISPATCH_PACKET_USAGE = __import__("tickets_dispatch_packet").DISPATCH_PACKET_USAGE
     DISPATCH_JOIN_USAGE = __import__("tickets_join").DISPATCH_JOIN_USAGE
     DISPATCH_OUTCOME_USAGE = __import__("tickets_outcome").DISPATCH_OUTCOME_USAGE
     LAND_USAGE = __import__('tickets_land').LAND_USAGE
@@ -45,7 +43,7 @@ DISPATCH_USAGE = (
     "--lease-expires-at <absolute-iso> "
     "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
     "[--review-kind critique|repair|verify] "
-    "[--host <name>] [--packet-file <path>]"
+    "[--host <name>]"
 )
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 GRADE_USAGE = "grade <run> <root>"
@@ -73,7 +71,6 @@ SUBCOMMAND_USAGE = {
     "dispatch-replace": DISPATCH_REPLACE_USAGE,
     "dispatch-outcome": DISPATCH_OUTCOME_USAGE,
     "dispatch-join": DISPATCH_JOIN_USAGE,
-    "dispatch-packet": DISPATCH_PACKET_USAGE,
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "join-noop-repair": JOIN_NOOP_REPAIR_USAGE,
@@ -96,7 +93,7 @@ SUBCOMMAND_SUMMARY = {
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
     "ready": "Promote sealed tickets whose dependencies are complete.",
-    "dispatch": "Atomically ready, establish, open, and project one dispatch packet, and resolve its host launch.",
+    "dispatch": "Atomically ready, establish, open, and emit the one launch that starts this ticket's child.",
     "land": "Atomically import the outcome, join it, retire the derived worktree, and report the frontier.",
     "loop-arm": "Create or replay the next iteration ticket of one loop stub from its frozen goal.",
     "loop-evaluate": "Read the done-check for the latest terminal iteration: run the command, or mint/read the fresh check.",
@@ -107,7 +104,6 @@ SUBCOMMAND_SUMMARY = {
     "dispatch-replace": "Atomically replace one live dispatch-v1 attempt with a unique successor.",
     "dispatch-outcome": "Commit or replay the attempt's one reserved executor outcome envelope.",
     "dispatch-join": "Commit or replay one outcome-fenced join and its lifecycle transition.",
-    "dispatch-packet": "Commit or replay one dispatch-v1 packet projection.",
     "check": "Anchor one completed durable checker stage to its target's checked_by field.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
     "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
@@ -134,7 +130,7 @@ VALUE_FLAGS = frozenset({
     "--outcome-record-id", "--status", "--stage",
     "--accepted-file", "--review-kind", "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
-    "--host", "--packet-file", "--outcome-file",
+    "--host", "--outcome-file",
 })
 
 

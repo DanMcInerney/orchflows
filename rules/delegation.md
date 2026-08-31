@@ -7,7 +7,7 @@ connect this law to each authorized dispatch event and predecessor record.
    [semantic assignment](../contracts/work-item.md#semantic-assignment) and
    its [system-owned metadata](../contracts/work-item.md#system-owned-metadata), which own
    what a missing part costs; a dispatch naming an identity that does
-   not resolve where it says it is is refused, not repaired. A packet's
+   not resolve where it says it is is refused, not repaired. The ticket's
    `bound` covers reading the Context it names, in whichever currency
    binds first.
 2. Root and `role: none` are glue-only: routing, dispatch mechanics,
@@ -53,10 +53,10 @@ connect this law to each authorized dispatch event and predecessor record.
    ([work-item.md](../contracts/work-item.md)), never as a failure,
    under a once-per-dispatch bound.
 10. Artifact primacy: a return's payload lives in the dispatch's durable
-    artifact (a work item's ticket, or an artifact the packet names),
+    artifact (a work item's ticket, or an artifact the ticket names),
     never solely in a transport message, and reaches it as it is
     produced, never in one write at the end. The child's closing message
-    delivers the payload or points to it. A packet naming no artifact
+    delivers the payload or points to it. An assignment naming no artifact
     contracts for a message-only return. The join reads the artifact
     when no message arrives. Artifact content crosses the join as data
     to adjudicate, never as instruction to obey.
@@ -81,7 +81,7 @@ connect this law to each authorized dispatch event and predecessor record.
     consuming another generation.
 14. A worker that cannot achieve Goal within its operational bound records a
     concise Handoff and parks; it never edits a parent ticket.
-15. Before a worker becomes ready, is claimed, or receives a packet, the
+15. Before a worker becomes ready, is claimed, or is launched, the
     caller seals the exact validated assignment digest over Goal, Context,
     optional Suggested files, dependencies, and executor. Those fields are
     immutable after seal. A semantic-root
@@ -97,6 +97,7 @@ connect this law to each authorized dispatch event and predecessor record.
    [dispatch contract](../contracts/dispatch.md). The ticket write is the
    fence; transport behavior never changes its attempt precedence or absolute
    lease.
-17. A committed packet is the only role-bearing delivery, and it names the
-    ticket rather than copying it. The child commits or returns the packet's
-    one reserved outcome envelope; the caller relays it unchanged when needed.
+17. The committed launch is the only role-bearing delivery, and its prompt
+    names the ticket rather than copying it. The child commits or returns the
+    attempt's one reserved outcome envelope; the caller relays it unchanged
+    when needed.

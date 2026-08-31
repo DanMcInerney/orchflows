@@ -100,6 +100,41 @@ def pack_path(pack, *, root=None) -> Path:
     raise AdapterError("pack-unresolved", f"pack does not resolve: {name}")
 
 
+def craft_path(pack, *, root=None) -> Path:
+    """The stamped pack's own craft file, where the pack's signature names it.
+
+    Read through the same declared-cell seam as the adapter key, and resolved
+    against the pack directory, so a pack that moves or renames its craft is
+    still the one place that says where the craft is. A launch prompt hands
+    this path to the child instead of telling it to resolve the pack, which is
+    the one instruction a fork arriving without a prompt could not obey.
+    """
+
+    path = pack_path(pack, root=root)
+    try:
+        if __package__:
+            from . import packs_support
+        else:  # pragma: no cover - direct/installed script path
+            import packs_support
+        value = packs_support._declared_cell(path, "craft")
+        targets = packs_support._reference_paths(value)
+    except ImportError as error:  # pragma: no cover - broken installation
+        raise AdapterError("pack-resolver-unavailable", str(error)) from error
+    except packs_support.PackError as error:
+        raise AdapterError("craft-declaration-invalid", error.detail) from error
+    if not targets:
+        raise AdapterError(
+            "craft-declaration-invalid",
+            f"pack declares no craft reference: {path}",
+        )
+    resolved = (path.parent / targets[0]).resolve()
+    if not resolved.is_file():
+        raise AdapterError(
+            "craft-declaration-invalid", f"pack craft does not resolve: {resolved}",
+        )
+    return resolved
+
+
 def declared_adapter(pack, *, root=None) -> str:
     """Read the stable adapter key from the pack's typed `adapter` leaf.
 
@@ -170,5 +205,6 @@ def adapter_id(pack, *, root=None) -> str:
 
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
-    "adapter_id", "adapter_spec", "declared_adapter", "derived_isolation", "pack_path",
+    "adapter_id", "adapter_spec", "craft_path", "declared_adapter",
+    "derived_isolation", "pack_path",
 )

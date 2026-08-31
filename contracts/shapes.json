@@ -2,8 +2,8 @@
   "schema_version": 1,
   "constants": {
     "dispatch_protocol": "orchflows.dispatch.v1",
+    "launch_record_id": "launch",
     "outcome_record_id": "outcome",
-    "packet_record_id": "dispatch-packet",
     "review_protocol": "orchflows.review.v1"
   },
   "shapes": [
@@ -37,7 +37,7 @@
       "contract": "dispatch.md",
       "fields": ["committed_at", "content", "kind", "record_id", "success"],
       "required": ["committed_at", "content", "kind", "record_id", "success"],
-      "values": {"kind": ["generic", "packet", "result", "outcome", "join", "lifecycle"]}
+      "values": {"kind": ["generic", "launch", "result", "outcome", "join", "lifecycle"]}
     },
     {
       "name": "dispatch_stored_success",
@@ -52,10 +52,10 @@
       "required": ["protocol", "run", "id", "dispatch_id", "record_id"]
     },
     {
-      "name": "dispatch_packet_record",
+      "name": "dispatch_launch_record",
       "contract": "dispatch.md",
-      "fields": ["packet"],
-      "required": ["packet"]
+      "fields": ["launch"],
+      "required": ["launch"]
     },
     {
       "name": "dispatch_result_record",
@@ -122,22 +122,10 @@
       "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"]
     },
     {
-      "name": "dispatch_packet",
+      "name": "dispatch_launch",
       "contract": "dispatch.md",
-      "fields": [
-        "protocol", "source", "dispatch_id", "assignment_seal",
-        "lease_expires_at", "role", "assigned_name", "workspace", "pack",
-        "prompt", "review_kind", "durability"
-      ],
-      "required": [
-        "protocol", "source", "dispatch_id", "assignment_seal",
-        "lease_expires_at", "role", "assigned_name", "workspace", "pack",
-        "prompt", "review_kind", "durability"
-      ],
-      "values": {
-        "durability": ["ticket"],
-        "review_kind": ["critique", "repair", "verify", "null"]
-      }
+      "fields": ["host", "verb", "agent", "model", "effort", "fields", "prompt"],
+      "required": ["host", "verb", "agent", "model", "effort", "fields", "prompt"]
     },
     {
       "name": "dispatch_outcome",

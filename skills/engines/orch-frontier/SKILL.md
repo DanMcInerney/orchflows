@@ -11,11 +11,10 @@ Choose assigned-name/dispatch-id/lease; two commands per ticket:
 Outbound: `tickets.py dispatch <run> <id> --by <name> --dispatch-id <id>
 --lease-expires-at <absolute-iso> --host <host>`.
 One transaction admits the ticket, establishes the workspace or evidence-store
-([workspaces](references/workspaces.md)), opens the attempt, commits the
-packet. Its result carries a
+([workspaces](references/workspaces.md)), opens the attempt, and emits one
 `launch`; invoke it verbatim with its exact fields
-([profiles](references/profiles.md)). Hand the response `.packet` to the child
-through `--packet-file <path>`; its first filed record is its acceptance.
+([profiles](references/profiles.md)). Its prompt is everything the child is
+told; add nothing to it. The child's first filed record is its acceptance.
 
 `tickets.py land <run> <id> --assignment-seal <seal> --dispatch-id <id>
 --outcome-record-id outcome --by <join-name> [--outcome-file <path|->]` imports

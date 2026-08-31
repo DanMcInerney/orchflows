@@ -112,7 +112,7 @@ FRONTMATTER_KEYS = {
 }
 
 # The value and its normalization both come from ``tickets.py``, never a
-# second spelling here: packet projection gates the host establishment off
+# second spelling here: dispatch gates the host establishment off
 # this same declaration, and a grader reading it differently skips the grade
 # at exit 0 while the join reads success.
 REQUIRED = tickets.REQUIRED_ISOLATION

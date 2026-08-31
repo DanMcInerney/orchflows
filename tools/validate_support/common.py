@@ -193,9 +193,9 @@ CARRIAGE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 CARRIAGE_DASH_SPLIT_RE = re.compile(r"[–—]")  # en dash, em dash
 # Rule 10(c) / pack-signature.md's sharing constraint: "the executor's and
 # assembly's Return files per work-item.md's filing law -- the ticket, or
-# the store the packet names."
+# the store the assignment names."
 # That law's two filing destinations -- "the ticket -- or the store the
-# packet names" -- are this check's two pass conditions: the bound skill's
+# assignment names" -- are this check's two pass conditions: the bound skill's
 # own body names the ticket/work-item filing, or the pack's workspace
 # names a store; kernel-tier primitives stay domain-blind per the redteam
 # critique's Move 7 and rely on the second, rather than hardcoding

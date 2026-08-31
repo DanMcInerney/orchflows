@@ -161,18 +161,22 @@ def _closes_the_run(run: str, ticket_id: str) -> bool:
 
 
 def _attempt_workspace(attempt: dict) -> str | None:
-    record = next((
-        item for item in attempt.get("records", [])
-        if item.get("kind") == "packet" and item.get("record_id") == "dispatch-packet"
-    ), None)
-    if record is None:
-        return None
+    """The tree this attempt was executed in, from that field's one owner.
+
+    Read off the attempt, not off any record it carries: the establishment
+    records the tree there, and a launch that restated it would be the second
+    home this field no longer has. Imported at call time because the flat
+    installed layout fixes no order between these two families.
+    """
+
     try:
-        content = parse_canonical_json(record["content"])
-    except (KeyError, TypeError, ValueError):
+        if __package__:
+            from . import workspace_record
+        else:  # pragma: no cover - the flat installed layout
+            import workspace_record
+    except ImportError:  # pragma: no cover - a partial install
         return None
-    packet = content.get("packet") if isinstance(content, dict) else None
-    return packet.get("workspace") if isinstance(packet, dict) else None
+    return workspace_record.recorded_workspace(attempt)
 
 
 def _cmd_dispatch_join(rest, *, _lock_held=False):

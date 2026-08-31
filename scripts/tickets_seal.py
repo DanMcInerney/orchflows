@@ -254,7 +254,7 @@ def _cmd_seal(rest) -> dict:
                 # its receipt rewritten inside this same transaction. A member
                 # promoted under the previous generation otherwise holds a
                 # receipt only the previous generation computes, and its next
-                # packet is refused for staleness the seal itself introduced.
+                # dispatch is refused for staleness the seal itself introduced.
                 refreshed = refresh_admissions(
                     run, run_dir, sealed, write_atomically,
                 )

@@ -186,7 +186,7 @@ flowchart TD
     dec --> frontier["orch-frontier — dispatch ready units"]
     frontier --> exec["unit executor"]
     exec --> path{"independence path"}
-    path -->|unit-local| checker["durable &lt;id&gt;.check — packet, outcome, join"]
+    path -->|unit-local| checker["durable &lt;id&gt;.check — launch, outcome, join"]
     path -->|gate-deferred| join["orch-integrate — each return crosses once"]
     checker --> join
     join -->|named downstream gate| gate["composite gate"]
@@ -238,14 +238,15 @@ bricks either way.
 ### Two verbs move a child
 
 Sending work to a subagent and getting it back used to be a hand-typed
-sequence — read the host file, pick the model, compose the packet, then
-import, join, and clean up afterwards. Each of those is now one command.
+sequence — read the host file, pick the model, write the child's prompt,
+then import, join, and clean up afterwards. Each of those is now one command.
 
 `tickets.py dispatch` is the whole outbound half in one transaction: it
 admits the ticket, creates the isolated worktree the child will work in,
-opens the attempt, commits the packet, and hands back a `launch` object
-naming the exact agent, model and effort to invoke. The orchestrator's
-job is to invoke it verbatim. `tickets.py land` is the whole inbound
+opens the attempt, and hands back one `launch` object naming the exact
+agent, model and effort, and carrying the whole prompt the child is given
+— the ticket's path, its workspace, the interpreter, the pack's craft, the
+filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
 half: import the result, adjudicate it at the join, retire the worktree,
 and report what became ready to dispatch next.
 

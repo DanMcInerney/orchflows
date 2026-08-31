@@ -14,6 +14,7 @@ from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
 from scripts import tickets
+from scripts import tickets_dispatch_launch as launch_module
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json,
     parse_canonical_json,
@@ -98,22 +99,27 @@ class DispatchV1Test(unittest.TestCase):
 
         return establish
 
-    def project_packet(self, dispatch_id="D1"):
-        """Commit the packet this attempt's execution records enter behind.
+    def commit_launch(self, dispatch_id="D1"):
+        """Commit the launch this attempt's execution records enter behind.
 
         The establishment records the tree on the open attempt first, which
-        is the order the dispatch facade runs those two steps in.
+        is the order the dispatch facade runs those two steps in. Reached at
+        the facade's own seam because there is no public verb for it: the
+        launch is committed by `dispatch` and by nothing else.
         """
 
         record_established_workspace(
             Path(self.temporary.name) / "tickets" / "run" / "T.md", self.candidate
         )
-        projected = tickets._dispatch([
-            "dispatch-packet", "run", "T", "--dispatch-id", dispatch_id,
-            "--workspace", str(self.candidate),
-        ])
-        self.assertNotIn("error", projected, projected)
-        return projected["packet"]
+        facade = tickets._tickets_dispatch_facade_module
+        host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
+        self.assertIsNone(failure, failure)
+        committed = facade._launched_under_run_lock(
+            "run", "T", host, dispatch_id=dispatch_id,
+            workspace=str(self.candidate), artifact=None, review_kind=None,
+        )
+        self.assertNotIn("error", committed, committed)
+        return committed["launch"]
 
     def retire(self, dispatch_id="D1", record_id="lifecycle:retire-1", seal=None):
         return tickets._dispatch([
@@ -218,7 +224,7 @@ class DispatchV1Test(unittest.TestCase):
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         self.assertNotIn("error", self.outcome())
         # written after the outcome, so admission grades the sealed member
         # alone: from here the run has a root, and `T` is one of its items
@@ -383,7 +389,7 @@ class DispatchV1Test(unittest.TestCase):
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         before = self.ticket_text()
 
         undeclared = self.replace()
@@ -515,7 +521,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_write_and_receipt_are_one_replayable_operation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
 
         committed = self.result()
         self.assertEqual("orchflows.dispatch.v1", committed["result"]["protocol"])
@@ -542,7 +548,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_result_refuses_attempt_identity_and_writer_mismatches_without_mutation(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         before = self.ticket_text()
 
         wrong_seal = self.result(seal="sha256:not-the-assignment")
@@ -581,7 +587,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_join_consumes_a_fixed_result_identity_and_replays_after_retirement(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         outcome = self.outcome()
         self.assertNotIn("error", outcome)
 
@@ -623,7 +629,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_outcome_materializes_only_unstreamed_evidence_once(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         self.result(body="delivered")
         streamed = self.ticket_text()
 
@@ -644,7 +650,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_suspended_join_retires_the_attempt_but_retains_claimant_observations(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         self.outcome(status="suspended")
 
         joined = tickets._dispatch([
@@ -676,7 +682,7 @@ class DispatchV1Test(unittest.TestCase):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         before = self.ticket_text()
-        for record_id in ("dispatch-packet", "outcome", "join:outcome", "lifecycle:x"):
+        for record_id in ("launch", "outcome", "join:outcome", "lifecycle:x"):
             with self.subTest(record_id=record_id):
                 refusal = self.commit(record_id=record_id)
                 self.assertEqual("record-id-reserved", refusal["code"])
@@ -739,7 +745,7 @@ class DispatchV1Test(unittest.TestCase):
     def test_forged_outcome_success_cannot_drive_join(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
@@ -766,17 +772,17 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())
 
-    def test_persisted_execution_without_a_packet_is_a_byte_preserving_refusal(self):
+    def test_persisted_execution_without_a_launch_is_a_byte_preserving_refusal(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
         state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
         records = state["attempts"][0]["records"]
         state["attempts"][0]["records"] = [
-            record for record in records if record["record_id"] != "dispatch-packet"
+            record for record in records if record["record_id"] != "launch"
         ]
         path.write_text(
             _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
@@ -784,32 +790,32 @@ class DispatchV1Test(unittest.TestCase):
         )
         before = path.read_bytes()
 
-        refusal = self.commit(record_id="probe-after-missing-packet")
+        refusal = self.commit(record_id="probe-after-missing-launch")
 
         self.assertEqual("dispatch-record-invalid", refusal["code"])
-        self.assertIn("committed packet", refusal["error"])
+        self.assertIn("committed launch", refusal["error"])
         self.assertEqual(before, path.read_bytes())
 
-    def test_persisted_packet_after_outcome_is_a_byte_preserving_refusal(self):
+    def test_persisted_launch_after_outcome_is_a_byte_preserving_refusal(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
-        self.project_packet()
+        self.commit_launch()
         self.outcome()
         path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         text = path.read_text(encoding="utf-8")
         state = parse_canonical_json(_parse_frontmatter(text)["dispatch_v1"])
         records = state["attempts"][0]["records"]
-        packet = next(record for record in records if record["kind"] == "packet")
+        launched = next(record for record in records if record["kind"] == "launch")
         state["attempts"][0]["records"] = [
-            record for record in records if record is not packet
-        ] + [packet]
+            record for record in records if record is not launched
+        ] + [launched]
         path.write_text(
             _set_frontmatter_field(text, "dispatch_v1", canonical_json(state)),
             encoding="utf-8",
         )
         before = path.read_bytes()
 
-        refusal = self.commit(record_id="probe-after-reordered-packet")
+        refusal = self.commit(record_id="probe-after-reordered-launch")
 
         self.assertEqual("dispatch-record-invalid", refusal["code"])
         self.assertEqual(before, path.read_bytes())
@@ -843,7 +849,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_text())
 
     def test_legacy_role_bearing_facade_routes_are_absent(self):
-        for command in ("claim", "packet"):
+        for command in ("claim", "packet", "dispatch-packet"):
             refusal = tickets._dispatch([command, "run", "T"])
             self.assertIn("unknown subcommand", refusal["error"])
 
@@ -852,7 +858,7 @@ class DispatchV1Test(unittest.TestCase):
 
         self.assertIn("dispatch <run> <id>", payload["help"]["usage"])
 
-    def test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt(self):
+    def test_dispatch_facade_relays_launch_refusal_and_closes_new_attempt(self):
         refusal = {
             "code": "review-invalid",
             "error": "review projection is not current",
@@ -874,8 +880,9 @@ class DispatchV1Test(unittest.TestCase):
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened) as open_call,
             mock.patch.object(
-                tickets, "_cmd_dispatch_packet", return_value=refusal,
-            ) as packet,
+                tickets._tickets_dispatch_facade_module,
+                "_launched_under_run_lock", return_value=refusal,
+            ) as launched,
             mock.patch.object(
                 tickets, "_cmd_dispatch_retire", return_value={"dispatch": {}}
             ) as retire,
@@ -892,16 +899,13 @@ class DispatchV1Test(unittest.TestCase):
             "run", "T", "--by", "worker", "--dispatch-id", "D1",
             "--lease-expires-at", self.lease,
         ], _lock_held=True)
-        packet.assert_called_once_with([
-            "run", "T", "--dispatch-id", "D1",
-            "--workspace", str(self.candidate),
-        ], _lock_held=True)
+        self.assertEqual(1, launched.call_count)
         retire.assert_called_once_with([
             "run", "T", "--assignment-seal", "seal", "--dispatch-id", "D1",
             "--record-id", "lifecycle:dispatch-facade-D1",
         ], _lock_held=True)
 
-    def test_dispatch_facade_returns_the_committed_packet(self):
+    def test_dispatch_facade_returns_the_committed_launch(self):
         with mock.patch.object(
             tickets._tickets_dispatch_facade_module,
             "_workspace_establish",
@@ -913,13 +917,14 @@ class DispatchV1Test(unittest.TestCase):
  "--workspace", str(self.candidate),
             ])
 
-        self.assertIn("packet", result, result)
+        self.assertIn("launch", result, result)
+        self.assertNotIn("packet", result)
         state = parse_canonical_json(
             _parse_frontmatter(self.ticket_text())["dispatch_v1"]
         )
         self.assertEqual("live", state["attempts"][0]["state"])
         self.assertEqual(
-            ["dispatch-packet"],
+            ["launch"],
             [record["record_id"] for record in state["attempts"][0]["records"]],
         )
 
@@ -966,10 +971,10 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(before, self.ticket_text())
 
     def test_dispatch_facade_surfaces_a_retirement_that_failed_to_resolve(self):
-        """A projection refusal retires the attempt it opened.  When that
+        """A launch refusal retires the attempt it opened.  When that
         retirement itself fails the attempt is left live, and returning the
-        projection alone would report a refusal that quietly fenced the
-        ticket against every later dispatch."""
+        refusal alone would report one that quietly fenced the ticket against
+        every later dispatch."""
 
         opened = {
             "dispatch": {
@@ -978,7 +983,7 @@ class DispatchV1Test(unittest.TestCase):
                 "dispatch_id": "D1",
             }
         }
-        projection = {"error": "projection refused", "code": "review-invalid"}
+        refused = {"error": "launch refused", "code": "review-invalid"}
         retirement = {"error": "retire refused", "code": "attempt-invalid"}
         with (
             mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
@@ -989,7 +994,8 @@ class DispatchV1Test(unittest.TestCase):
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(
-                tickets, "_cmd_dispatch_packet", return_value=projection,
+                tickets._tickets_dispatch_facade_module,
+                "_launched_under_run_lock", return_value=refused,
             ),
             mock.patch.object(
                 tickets, "_cmd_dispatch_retire", return_value=retirement,
@@ -1002,7 +1008,7 @@ class DispatchV1Test(unittest.TestCase):
             ])
 
         self.assertEqual("dispatch-retirement-failed", result["code"])
-        self.assertEqual(projection, result["projection"])
+        self.assertEqual(refused, result["launch"])
         self.assertEqual(retirement, result["retirement"])
 
     def test_dispatch_facade_holds_one_run_lock_across_every_mutating_step(self):
@@ -1042,13 +1048,9 @@ class DispatchV1Test(unittest.TestCase):
             events.append(("open", _lock_held))
             return opened
 
-        def packet(_args, *, _lock_held=False):
-            events.append(("packet", _lock_held))
-            return {"packet": {"dispatch_id": "D1"}}
-
-        def launch(_record, _packet, *, packet_file=None):
+        def launched(_run, _ticket, _host, **_facts):
             events.append("launch")
-            return {"verb": "Agent"}, None
+            return {"launch": {"verb": "Agent"}}
 
         def prepare(_run, _ticket, _workspace):
             events.append("prepare")
@@ -1061,8 +1063,7 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_establish", side_effect=workspace),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_workspace_prepare", side_effect=prepare),
             mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_open", side_effect=open_attempt),
-            mock.patch.object(tickets._tickets_dispatch_facade_module, "_cmd_dispatch_packet", side_effect=packet),
-            mock.patch.object(tickets._tickets_dispatch_facade_module, "launch_spec", side_effect=launch),
+            mock.patch.object(tickets._tickets_dispatch_facade_module, "_launched_under_run_lock", side_effect=launched),
         ):
             result = tickets._tickets_dispatch_facade_module._cmd_dispatch([
                 "run", "T", "--by", "worker", "--dispatch-id", "D1",
@@ -1072,7 +1073,6 @@ class DispatchV1Test(unittest.TestCase):
 
         self.assertEqual(
             {
-                "packet": {"dispatch_id": "D1"},
                 "launch": {"verb": "Agent"},
                 "prepare": {"frontend": "skipped: no-lockfile"},
             },
@@ -1086,44 +1086,9 @@ class DispatchV1Test(unittest.TestCase):
         # minutes, which inside the lock every sibling of the run waited out.
         self.assertEqual(
             ["ready", "lock-enter", ("launch-precheck", "claude"), ("open", True),
-             "workspace", ("packet", True), "launch", "lock-exit", "prepare"],
+             "workspace", "launch", "lock-exit", "prepare"],
             events,
         )
-
-    def test_dispatch_facade_retires_when_projection_returns_no_packet(self):
-        opened = {
-            "dispatch": {
-                "outcome": "opened",
-                "assignment_seal": "seal",
-                "dispatch_id": "D1",
-            }
-        }
-        with (
-            mock.patch.object(tickets, "_cmd_ready", return_value={"ready": []}),
-            mock.patch.object(
-                tickets._tickets_dispatch_facade_module,
-                "_workspace_establish",
-                side_effect=self._establishes(),
-            ),
-            mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
-            mock.patch.object(tickets, "_cmd_dispatch_packet", return_value=None),
-            mock.patch.object(
-                tickets, "_cmd_dispatch_retire", return_value={"dispatch": {}}
-            ) as retire,
-        ):
-            result = tickets._dispatch([
-                "dispatch", "run", "T", "--by", "worker",
-                "--dispatch-id", "D1", "--lease-expires-at", self.lease,
- "--workspace", str(self.candidate),
-            ])
-
-        self.assertEqual(
-            {"error": "dispatch-packet returned a non-object response"}, result
-        )
-        retire.assert_called_once_with([
-            "run", "T", "--assignment-seal", "seal", "--dispatch-id", "D1",
-            "--record-id", "lifecycle:dispatch-facade-D1",
-        ], _lock_held=True)
 
 
 if __name__ == "__main__":

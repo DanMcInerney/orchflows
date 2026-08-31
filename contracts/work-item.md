@@ -83,7 +83,7 @@ compare-and-swap sealing refuses a stale snapshot.
 
 The ticket's `dispatch_v1` frontmatter value binds the complete closed
 [dispatch contract](dispatch.md). That contract solely owns attempts, records,
-packets, outcomes, joins, precedence, and cutover. Ticket lifecycle
+launches, outcomes, joins, precedence, and cutover. Ticket lifecycle
 projects its accepted mutations: open creates `claimed`; once a dispatch record
 exists, only the outcome-fenced join creates `suspended` or a terminal state,
 and raw status writes are refused as `dispatch-join-required`. Before any
@@ -92,11 +92,11 @@ or a terminal state — it is the pre-dispatch surface, not a legacy one — and
 `ready` and `claimed` remain the admission boundary's alone. A suspended ticket retains claimant
 observations for its Handoff, but its joined dispatch attempt is retired.
 
-## Dispatch-v1 packet projection
+## Dispatch-v1 launch
 
-Packet projection is the [dispatch contract](dispatch.md)'s wire boundary. The
-projection names this ticket and never copies it, so it creates no second
-ticket truth.
+The [dispatch contract](dispatch.md) owns the launch and its generated prompt.
+This ticket is the assignment that prompt points at, and nothing copies it, so
+there is no second ticket truth.
 
 ## Review-stage ledger
 
@@ -108,7 +108,7 @@ pack, normalized isolation, and ordered lens assignment identities;
 `RepairOutcome` fixes the resulting artifact or proves no-op from an empty
 accepted set; `Verification` fixes its artifact, verdict, and evidence.
 
-Composite gate packets copy only the validated predecessor chain. Critique,
+A composite gate lane consumes only the validated predecessor chain. Critique,
 repair, and verification joins append their stage atomically with the lifecycle
 join. The ordinary distinct checker writes the same `GatePlan` and
 `CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
@@ -120,9 +120,9 @@ After the semantic sections, tickets carry executor-owned `## Result`,
 `## Verification`, `## Feedback`, and `## Risks`; `## Handoff` is optional.
 They are append-only after seal and are excluded from assignment fingerprints.
 The executor files them as work is produced through `tickets.py result` under
-[result.md](result.md), naming the packet's `assignment_seal`, `dispatch_id`,
-a unique `record_id`, and recorded writer. Reference packet
-prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
+[result.md](result.md), naming the attempt's `assignment_seal`, `dispatch_id`,
+a unique `record_id`, and recorded writer. The launch prompt carries the first
+three fixed identities and a `RECORD_ID` placeholder;
 the executor chooses a fresh record id for each streamed write. At closing,
 every executor commits or returns the reserved
 [dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use

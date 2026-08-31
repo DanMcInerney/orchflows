@@ -359,7 +359,7 @@ def fixed_gate_snapshot(target_id: str, snapshot: dict) -> dict | None:
     """Return a deterministic fixed-result gate answer, or ``None``.
 
     ``reusable`` is true only when every declared cover resolves to the same
-    current identity.  The caller can then avoid issuing a checker packet.
+    current identity.  The caller can then avoid dispatching a checker.
     No verdict adequacy is inferred here; the stored verdict is returned as
     evidence for the caller's route.
     """
@@ -415,7 +415,7 @@ def _cmd_grade(rest):
 
 
 def _cmd_fixed_gate(rest):
-    """Probe a fixed result without issuing a checker packet.
+    """Probe a fixed result without dispatching a checker.
 
     ``None`` means the target is an ordinary lifecycle ticket and the
     existing gate materializer should handle it.  An explicit fixed result

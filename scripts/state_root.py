@@ -128,7 +128,7 @@ def candidate_paths(run: str, ticket_id: str) -> dict:
     Pure, and derived from the identity alone: two siblings of one run
     derive two paths without consulting each other, which is what makes
     creating the tree outside the run lock safe. Nothing else may compute
-    either value -- a second spelling is how a packet came to carry
+    either value -- a second spelling is how a launch came to carry
     another ticket's workspace.
 
     The segments are refused here rather than trusted, because the run

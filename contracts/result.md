@@ -1,7 +1,7 @@
 # Result contract
 
 The generated [result lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
-names the committed packet these executor records may enter behind.
+names the committed launch these executor records may enter behind.
 
 The executor files work into its ticket's `## Result`, `## Verification`,
 `## Feedback`, `## Risks`, and optional `## Handoff` sections as it is
@@ -33,7 +33,7 @@ refusal leaves the ticket byte-identical. A filed body may itself carry `## `
 headings without being read as a second ticket section, and survives the round
 trip byte for byte; how it is stored that way is
 [`scripts/tickets_markdown.py`](../scripts/tickets_markdown.py)'s.
-An unseen result requires the attempt's committed packet, and carries the
+An unseen result requires the attempt's committed launch, and carries the
 `(dispatch_id, assignment_seal, --by)` the attempt was opened under: that
 triple is the writer's whole authority, on this write and on every other.
 

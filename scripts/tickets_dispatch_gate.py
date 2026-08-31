@@ -9,7 +9,7 @@ if __package__:
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
     from .tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
-    from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from .tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from .tickets_review import ReviewError, review_records, state_from_text
     from .tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 else:
@@ -20,7 +20,7 @@ else:
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
     from tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
-    from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
     from tickets_review import ReviewError, review_records, state_from_text
     from tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 

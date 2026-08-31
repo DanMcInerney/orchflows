@@ -373,8 +373,6 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
 # a one-value enum matches too easily to be worth a blanket rule, and the
 # roster starts at exactly the enums the fact registry consolidated.
 RATCHETED_ENUMS = (
-    ("dispatch_packet", "durability"),
-    ("dispatch_packet", "review_kind"),
     ("dispatch_record", "kind"),
     ("executor_result", "mode"),
     ("executor_result", "operation"),

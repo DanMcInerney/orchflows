@@ -287,7 +287,7 @@ def repair_predecessor_state(ticket_path: Path, dependencies) -> dict:
     return _review_state([plan, aggregate], allow_legacy=True)
 
 
-def packet_state(
+def launch_state(
     ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
 ) -> dict | None:
     data = _parse_frontmatter(text)
@@ -310,10 +310,10 @@ def packet_state(
         )
         plan = review_records(state, allow_legacy=True)[0]
         if artifact is not None and artifact != plan["artifact"]:
-            raise ReviewError("repair packet artifact differs from GatePlan")
+            raise ReviewError("repair launch artifact differs from GatePlan")
         if workspace is not None:
             if "workspace" in plan and _workspace_identity(workspace) != plan["workspace"]:
-                raise ReviewError("repair packet workspace differs from GatePlan")
+                raise ReviewError("repair launch workspace differs from GatePlan")
             validate_fixed_artifact(
                 plan["pack"], plan["artifact"], workspace or plan.get("workspace"),
             )
@@ -330,10 +330,10 @@ def packet_state(
         if not records or records[-1]["kind"] != "RepairOutcome":
             raise ReviewError("verification predecessor has no RepairOutcome")
         if artifact is None or artifact != records[-1]["artifact"]:
-            raise ReviewError("verification packet must name the exact repaired artifact")
+            raise ReviewError("verification launch must name the exact repaired artifact")
         plan = records[0]
         if "workspace" in plan and _workspace_identity(workspace) != plan["workspace"]:
-            raise ReviewError("verification packet workspace differs from GatePlan")
+            raise ReviewError("verification launch workspace differs from GatePlan")
         validate_fixed_artifact(
             plan["pack"], records[-1]["artifact"], workspace or plan.get("workspace"),
         )
@@ -341,16 +341,16 @@ def packet_state(
     return None
 
 
-def packet_state_result(
+def launch_state_result(
     ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
 ):
     try:
-        return packet_state(ticket_path, text, artifact, workspace), None
+        return launch_state(ticket_path, text, artifact, workspace), None
     except ReviewError as error:
         return None, str(error)
 
 
-def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id):
+def launch_mutation(review_state, run, ticket_id, dispatch_id, record_id):
     if review_state is None:
         return None
     if __package__:
@@ -368,17 +368,6 @@ def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id):
             None,
         )
     return commit
-
-
-def replay_review_failure(text: str, expected) -> str | None:
-    if expected is None:
-        return None
-    try:
-        return None if state_from_text(text, required=True) == expected else (
-            "committed packet review ledger diverged"
-        )
-    except ReviewError as error:
-        return str(error)
 
 
 def canonical_finding_array(value: str, subject: str) -> str:
@@ -492,8 +481,8 @@ def verification_outcome(
 
 __all__ = (
     "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate",
-    "aggregate_adjudication", "canonical_json", "packet_mutation", "packet_state_result",
-    "replay_review_failure",
-    "repair_outcome", "repair_predecessor_state", "review_records", "state_from_text",
+    "aggregate_adjudication", "canonical_json", "launch_mutation",
+    "launch_state", "launch_state_result", "repair_outcome",
+    "repair_predecessor_state", "review_records", "state_from_text",
     "verification_outcome",
 )

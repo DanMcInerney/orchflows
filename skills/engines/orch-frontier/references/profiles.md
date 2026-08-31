@@ -17,9 +17,10 @@ orchestrator; only children carry profiles.
 
 - Invoke the emitted `launch` verbatim. Never substitute a blocked model or
   profile, and never retype a field the launch already carries.
-- The granular `dispatch-open` and `dispatch-packet`
+- The granular `dispatch-open`, `dispatch-retire`, and `dispatch-replace`
   operations stay public for recovery; reach for them when a transaction has to
-  be resumed, never to hand-assemble one that would have succeeded.
+  be resumed, never to hand-assemble one that would have succeeded. A lost
+  launch comes back from replaying the same `dispatch` call.
 - A native capability is established only through the adapter's native launch
   field. A requested capability rides the prompt and is noted unverified; the
   request alone never becomes evidence that the host established it.

@@ -13,10 +13,10 @@ rather than falling back to the tree the caller happened to stand in, and the
 refusal fails the whole dispatch. `--repo <source-tree>` aims it at another
 checkout; `--workspace <path>` on `dispatch` names the tree to cut from.
 
-Only establishment's own return reaches the packet. After the run lock is
+Only establishment's own return reaches the launch. After the run lock is
 released, `workspace.py prepare` installs what the recorded workspace declares.
 `tickets.py land` retires the derived worktree at the join.
 
-Packet projection refuses a missing, different, or unavailable required
+Dispatch refuses a missing, different, or unavailable required
 workspace, and the join grader rejects a Git branch relocated from its recorded
 path.

@@ -325,7 +325,7 @@ def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
     A receipt names the exact state it was taken over, so a member promoted
     under one generation holds a receipt only that generation recomputes.
     Re-generationing the run therefore leaves every promoted member stale --
-    a lawful recut, and then the root's next packet refused for a staleness
+    a lawful recut, and then the root's next dispatch refused for a staleness
     the recut itself introduced, five times before this was written.
 
     Only a member already carrying a real receipt is touched: a pending one

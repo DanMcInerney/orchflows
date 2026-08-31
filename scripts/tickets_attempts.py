@@ -13,7 +13,7 @@ if __package__:
     from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
         RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
@@ -33,7 +33,7 @@ else:
     import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, PROTOCOL,
+        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
         RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
