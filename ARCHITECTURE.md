@@ -56,7 +56,7 @@ family's five owner modules.
   project, home, pinned imports, lib — with its reserved-prefix floor and
   shadow notices; `packs_support.py` and `tickets_adapters.py` route through
   it and spell no root of their own. `rings_trust.py` owns the never-portable
-  trust ledger. `orchflows.py` is the ring command surface over
+  trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
   `orchflows_scaffold.py` (`new` skeletons) and `orchflows_adapters.py`
   (generated inert host adapters).

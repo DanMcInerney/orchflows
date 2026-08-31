@@ -181,9 +181,22 @@ def _sealed_parent(run_dir, parent: str):
     return data, None
 
 
-def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
-            done, isolation, bound, artifacts):
-    """`(ticket_id, refusal)` -- the whole write, under the caller's lock."""
+def _mint(run: str, run_dir, parent, fields: dict, sections: list):
+    """`(ticket_id, refusal)` -- one runtime child's id, seal, and write.
+
+    All of what the runtime doors share, and the reason they can share it:
+    the id is read out of the run directory under the caller's own hold of
+    the run lock, and a child hangs its admission on its parent's seal
+    rather than on a cut that closed before it existed -- it inherits the
+    parent's two generations and self-seals its own bytes. What each door
+    owns is only which fields and sections its ticket carries, which is why
+    those arrive as arguments and nothing here reads them.
+
+    `frame-open` is the third caller. A frame is not a brick -- it binds no
+    executor and stamps no pack -- and it is minted exactly this way,
+    because being a runtime child of a sealed parent is the one thing the
+    two kinds have wholly in common.
+    """
 
     ticket_id = next_brick_id(parent, _issued_ids(run_dir))
     inherit = None
@@ -191,11 +204,28 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
         inherit, refusal = _sealed_parent(run_dir, parent)
         if refusal is not None:
             return None, refusal
+    text = _render_ticket({"id": ticket_id, **fields}, sections)
+    if inherit is not None:
+        for field in ("root_generation", "cut_generation"):
+            text = _set_frontmatter_field(text, field, inherit[field])
+        text = _set_frontmatter_field(
+            text, "assignment_seal", assignment_digest(ticket_id, text),
+        )
+    issued = _issue_ticket(run, ticket_id, text, _lock_held=True)
+    if "error" in issued:
+        return None, issued
+    return ticket_id, None
+
+
+def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
+            done, isolation, bound, artifacts):
+    """`(ticket_id, refusal)` -- one brick's fields, minted through `_mint`."""
+
     pinned, refusal = pinned_pack_digest(pack)
     if refusal is not None:
         return None, refusal
     fields = {
-        "id": ticket_id, "run": run, "status": "pending",
+        "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
         "pack": pack, "pack_digest": pinned,
         "independence": BRICK_INDEPENDENCE,
@@ -207,17 +237,7 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
     if details:
         sections.append(("Details", details))
     sections.append((REPORT_SECTION, ""))
-    text = _render_ticket(fields, sections)
-    if inherit is not None:
-        for field in ("root_generation", "cut_generation"):
-            text = _set_frontmatter_field(text, field, inherit[field])
-        text = _set_frontmatter_field(
-            text, "assignment_seal", assignment_digest(ticket_id, text),
-        )
-    issued = _issue_ticket(run, ticket_id, text, _lock_held=True)
-    if "error" in issued:
-        return None, issued
-    return ticket_id, None
+    return _mint(run, run_dir, parent, fields, sections)
 
 
 def _sealed_root(run: str, ticket_id: str):
@@ -344,4 +364,5 @@ def _cmd_judge(rest):
 __all__ = (
     "ARTIFACT_KINDS", "BRICK_INDEPENDENCE", "DO_EXECUTOR", "DO_USAGE",
     "JUDGE_EXECUTOR", "JUDGE_USAGE", "_cmd_brick", "_cmd_do", "_cmd_judge",
+    "_launched", "_mint", "_run_dir", "_sealed_root",
 )

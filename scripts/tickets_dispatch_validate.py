@@ -20,7 +20,15 @@ else:
     from tickets_format import _parse_iso, canonical_json, parse_canonical_json
 
 
-def validate_state(state: dict, *, run=None, ticket_id=None):
+def validate_state(state: dict, *, run=None, ticket_id=None, frame=False):
+    """Grade one persisted attempt state whole, or classify how it is not one.
+
+    ``frame`` says this state belongs to a call-stack frame
+    (contracts/work-item.md's marker), which is the one ticket kind that has
+    no launch to precede its records: nothing is dispatched, because the
+    driver is the session that opened it.
+    """
+
     if set(state) != set(DISPATCH_STATE_REQUIRED):
         return classification("dispatch-record-invalid", "dispatch_v1 has unknown or missing top-level fields")
     attempts = state.get("attempts")
@@ -125,7 +133,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
         # The child's first filed record is its acceptance, so nothing here
         # asks for a separate one -- but a child that filed anything was
         # launched, and the committed launch is that launch.
-        if execution_present and causal_kinds[:1] != ["launch"]:
+        if execution_present and not frame and causal_kinds[:1] != ["launch"]:
             return classification(
                 "dispatch-record-invalid",
                 "one committed launch must precede execution records",

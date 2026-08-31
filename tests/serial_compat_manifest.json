@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2094,
+  "count": 2113,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -949,6 +949,25 @@
    "test_ticket_done_predicate.LandDonePredicateTest.test_two_rounds_with_no_delta_close_the_ticket_stalled",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
+   "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
+   "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
+   "test_ticket_frames.FrameCloseTest.test_a_judge_under_the_frame_lets_the_same_close_land",
+   "test_ticket_frames.FrameCloseTest.test_a_judged_criterion_is_a_judge_brick_rather_than_a_frame_gate",
+   "test_ticket_frames.FrameCloseTest.test_a_passing_done_command_is_what_closes_the_frame_complete",
+   "test_ticket_frames.FrameCloseTest.test_a_refused_done_command_leaves_the_frame_open_and_unwritten",
+   "test_ticket_frames.FrameCloseTest.test_a_stated_reason_in_the_journal_is_the_other_lawful_close",
+   "test_ticket_frames.FrameCloseTest.test_an_unjudged_line_with_no_reason_buys_nothing",
+   "test_ticket_frames.FrameCloseTest.test_land_stays_the_brick_door_and_frame_close_says_so",
+   "test_ticket_frames.FrameJournalTest.test_a_journal_append_outlives_the_frames_nominal_expiry",
+   "test_ticket_frames.FrameJournalTest.test_a_wave_appends_through_the_result_door_under_the_frames_identity",
+   "test_ticket_frames.FrameShapeTest.test_a_called_frame_hangs_under_its_caller_and_seals_through_it",
+   "test_ticket_frames.FrameShapeTest.test_a_frame_carrying_a_craft_binding_is_off_contract",
+   "test_ticket_frames.FrameShapeTest.test_an_ordinary_ticket_still_owes_its_executor",
+   "test_ticket_frames.FrameShapeTest.test_opening_a_frame_mints_the_run_and_seals_its_goal",
+   "test_ticket_frames.ResumeTest.test_a_closed_frame_leaves_the_listing_and_a_nested_one_joins_it",
+   "test_ticket_frames.ResumeTest.test_an_empty_sink_says_so_rather_than_printing_a_header",
+   "test_ticket_frames.ResumeTest.test_another_projects_run_is_not_this_projects_to_resume",
+   "test_ticket_frames.ResumeTest.test_one_open_frame_is_listed_with_its_goal_age_and_children",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_launch",
@@ -2097,7 +2116,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "012dc31a9cfcaee42c1133f1be3047e9f8ba2d617cceb301eb255450abab5840"
+  "sha256": "efef1d653c937856f50938020ce481cac88f48c40f25e548c50e90ebb9d6f48f"
  },
  "mutation_owners": [
   {
@@ -4563,6 +4582,23 @@
   {
    "module": "tests.test_ticket_done_predicate",
    "owner": "LandIntegratesTheCandidateTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_frames",
+   "owner": "FrameSinkTest.call",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_frames",
+   "owner": "FrameSinkTest.setUp",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",
