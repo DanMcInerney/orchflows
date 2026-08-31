@@ -59,7 +59,7 @@ def _result_under_run_lock(rest):
     text_arg = _extract_flag(args, '--text')
     stray = next((arg for arg in args if arg.startswith('-')), None)
     if stray is not None:
-        return {'error': f'result does not accept {stray}: it writes body sections only, never frontmatter — commit the reserved outcome envelope, then let orch-integrate call dispatch-join. usage: {RESULT_USAGE}'}
+        return {'error': f'result does not accept {stray}: it writes body sections only, never frontmatter — commit the reserved outcome envelope, then let the caller land it. usage: {RESULT_USAGE}'}
     if len(args) != 2:
         return {'error': f'usage: {RESULT_USAGE}'}
     run, ticket_id = args
