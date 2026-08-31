@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2059,
+  "count": 2064,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1982,6 +1982,11 @@
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_module_docstring_names_what_the_deviation_is_read_against",
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_resolvers_are_imported_never_copied",
    "tests.test_workspace_cases.contract_cases.TestScriptShape.test_the_script_is_stdlib_only_and_network_free",
+   "tests.test_workspace_cases.document_cases.TestTheDocumentLaneObservesTheTreeItStandsIn.test_it_records_the_callers_tree_and_claims_no_git_fact",
+   "tests.test_workspace_cases.document_cases.TestTheDocumentLaneObservesTheTreeItStandsIn.test_start_observes_the_same_tree_establish_does",
+   "tests.test_workspace_cases.document_cases.TestTheRefusalSurvivesForWhatCannotBeGiven.test_an_explicit_required_override_is_still_refused_unstamped",
+   "tests.test_workspace_cases.document_cases.TestTheRefusalSurvivesForWhatCannotBeGiven.test_an_unconsulted_isolation_reproduces_the_field_refusal",
+   "tests.test_workspace_cases.document_cases.TestTheTrunkDispatchesAndLandsADocumentItem.test_a_content_pack_ticket_dispatches_and_lands_unisolated",
    "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_a_first_establishment_still_records_what_it_observed",
    "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_an_empty_stamp_is_no_stamp",
    "tests.test_workspace_cases.emission_cases.TestBaselineIsWrittenOnce.test_re_establishment_preserves_the_stamp_and_reports_what_it_saw",
@@ -2062,7 +2067,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5dcd42bebcfc7c76d68a99e9da3259f7966c5ec0af26318e6137b966b76ad593"
+  "sha256": "3478f96357e4f3bc0d388053dbeb155e4ba3335e5caea0a64c27e14e343e4daf"
  },
  "mutation_owners": [
   {
@@ -5145,6 +5150,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_workspace_cases.document_cases",
+   "owner": "TestTheRefusalSurvivesForWhatCannotBeGiven.test_an_unconsulted_isolation_reproduces_the_field_refusal",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {
