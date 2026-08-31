@@ -86,7 +86,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**graph**",
             "**outline**",
             "`launch`",
-            "`tickets.py dispatch <run>",
+            "`tickets.py do <run>",
             "`tickets.py land`",
         ):
             self.assertIn(anchor, collapsed_host)
@@ -102,7 +102,11 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("sequence: [orch-outline, orch-slice]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
-    def test_graph_lane_emits_the_complete_decompose_route(self):
+    def test_graph_lane_emits_the_complete_brick_route(self):
+        """The graph route is the whole wave: open the frame, re-read its
+        journal, spend a brick, land it, close. Each anchor is a step a
+        driver cannot supply from its own reading, and the journal re-read
+        is the one that survives a compaction nothing else notices."""
         host = re.sub(
             r"\s+",
             " ",
@@ -111,19 +115,21 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         graph = host.partition("**graph**")[2].partition("**outline**")[0]
 
         for anchor in (
-            "stamped root",
-            "tickets.py dispatch <run> <root> --by <assigned-name> "
-            "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "[--host <host>] [--workspace <tree>]",
+            "tickets.py frame-open <run>",
+            "re-read that frame's `## Report`",
+            "tickets.py do <run> --pack <pack> --goal-file <f> "
+            "[--parent <frame>] [--workspace <tree>]",
             "invoke the emitted `launch` verbatim adding nothing to its prompt",
             "tickets.py land",
             "`land --status`",
-            "Repeat until that frontier is empty",
+            "`artifact:` and `findings:` line verbatim",
+            "`frame-close`",
+            "`orchflows resume`",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)
         # The facade owns each of these; the route may not re-teach a manual
-        # spelling of a step `dispatch` or `land` already performs.
+        # spelling of a step a brick door or `land` already performs.
         for absent in (
             "tickets.py claim",
             "tickets.py packet",
@@ -144,9 +150,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         )
         graph = host.partition("**graph**")[2].partition("**outline**")[0]
 
-        self.assertIn("tickets.py dispatch", graph)
+        self.assertIn("tickets.py do", graph)
         self.assertLess(
-            graph.index("tickets.py dispatch"), graph.index("tickets.py land")
+            graph.index("tickets.py do"), graph.index("tickets.py land")
         )
         # Establishment is inside the dispatch transaction, so the contract
         # that owns the transaction states it and the route does not repeat
@@ -207,16 +213,14 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         spec_route = host.split("**outline**", 1)[1].split("**fix**", 1)[0]
 
         for anchor in (
-            "direct root",
-            "lawful executor",
-            "`orch-slice` root",
-            "distinct results/dependencies",
             "one planner",
+            "planning `orch-do`",
+            "seals the root",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
 
-        self.assertRegex(spec_route, r"one planner.*`orch-slice` root")
+        self.assertRegex(spec_route, r"one planner.*planning `orch-do`")
         self.assertIn("planner never drives the run", spec_route)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
