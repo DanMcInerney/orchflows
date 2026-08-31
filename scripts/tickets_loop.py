@@ -17,16 +17,16 @@ iteration.
 from __future__ import annotations
 
 import hashlib
-import re
 import shlex
 import subprocess
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
-        DELIVERED_STATE, REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
+        DELIVERED_STATE, DONE_TICKET_SUFFIX, ITERATION_MARKER, REPAIR_MARKER,
+        REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
         _executor_of, _sections, _set_frontmatter_field, dequote, is_loop_stub,
-        loop_defects, parse_done, ticket_defects,
+        iteration_of, loop_defects, parse_done, ticket_defects,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
@@ -37,9 +37,10 @@ if __package__:
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
-        DELIVERED_STATE, REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
+        DELIVERED_STATE, DONE_TICKET_SUFFIX, ITERATION_MARKER, REPAIR_MARKER,
+        REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
         _executor_of, _sections, _set_frontmatter_field, dequote, is_loop_stub,
-        loop_defects, parse_done, ticket_defects,
+        iteration_of, loop_defects, parse_done, ticket_defects,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
@@ -51,15 +52,13 @@ else:  # pragma: no cover - direct/installed flat script path
 LOOP_ARM_USAGE = "loop-arm <run> <id>"
 LOOP_EVALUATE_USAGE = "loop-evaluate <run> <id>"
 LOOP_ADVANCE_USAGE = "loop-advance <run> <id>"
-DONE_TICKET_SUFFIX = ".done"
-# The two iteration markers this machinery arms under. A loop's body is an
-# `.iter.NN` ticket; a landing whose `done` command refused arms its round
-# two as a `.repair.NN` ticket through the same three rules below, because
-# the question -- is there anything left to build on, and has it moved? --
-# is the same question in both places.
-ITERATION_MARKER = "iter"
-REPAIR_MARKER = "repair"
-ITERATION_RE = re.compile(r"\.(?:iter|repair)\.(\d+)$")
+# The two markers this machinery arms under are `tickets_format`'s, beside
+# the grammar that reads them: a loop's body is an `.iter.NN` ticket, and a
+# landing whose `done` command refused arms its round two as a `.repair.NN`
+# ticket through the same three rules below, because the question -- is there
+# anything left to build on, and has it moved? -- is the same question in
+# both places. The sealed-admission door reads the same grammar to bind a
+# round through the ticket it was minted under.
 # Two consecutive terminal iterations with no result delta exit stalled
 # (rules/loops.md).
 STALL_WINDOW = 2
@@ -70,22 +69,19 @@ def iterations(run_dir, parent_id, marker: str = ITERATION_MARKER):
 
     One reader for both markers: a loop's `<id>.iter.NN` bodies and the
     `<id>.repair.NN` rounds a failed `done` command arms. The `.done` check
-    tickets minted beside them are skipped -- they judge an iteration and
-    are not one.
+    tickets minted beside them are not rounds -- they judge one -- and the
+    grammar `iteration_of` owns does not read them as one.
     """
 
     found = []
     for path in sorted(run_dir.glob(f"{parent_id}.{marker}.*.md")):
-        stem = path.stem
-        if stem.endswith(DONE_TICKET_SUFFIX):
-            continue
-        match = ITERATION_RE.search(stem)
-        if match is None:
+        parsed = iteration_of(path.stem)
+        if parsed is None or parsed[0] != parent_id:
             continue
         loaded = _load_ticket(path)
         if "error" in loaded:
             continue
-        found.append((int(match.group(1)), stem, loaded))
+        found.append((parsed[1], path.stem, loaded))
     return sorted(found)
 
 

@@ -28,23 +28,25 @@ import subprocess
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
-        DELIVERED_STATE, REPORT_SECTION, _sections, _set_frontmatter_field,
+        DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
+        _sections, _set_frontmatter_field,
         _write_section, dequote, done_defects, parse_done,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
-    from .tickets_loop import REPAIR_MARKER, advance_action, check_reading
+    from .tickets_loop import advance_action, check_reading
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
     from .tickets_store import _create_text_exclusively, _write_text_atomically
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
-        DELIVERED_STATE, REPORT_SECTION, _sections, _set_frontmatter_field,
+        DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
+        _sections, _set_frontmatter_field,
         _write_section, dequote, done_defects, parse_done,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
-    from tickets_loop import REPAIR_MARKER, advance_action, check_reading
+    from tickets_loop import advance_action, check_reading
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
     from tickets_store import _create_text_exclusively, _write_text_atomically
 
@@ -54,7 +56,6 @@ else:  # pragma: no cover - direct/installed flat script path
 COMMAND_VERIFICATION = "done command `{command}` exited {exit} in {tree}"
 CHECK_VERIFICATION = "done check `{criterion}` judged {status} by {ticket}"
 COMMAND_TIMEOUT_SECONDS = 1800
-DONE_TICKET_SUFFIX = ".done"
 
 
 def predicate(data: dict):
@@ -246,6 +247,6 @@ def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
 
 
 __all__ = (
-    "CHECK_VERIFICATION", "COMMAND_VERIFICATION", "DONE_TICKET_SUFFIX",
+    "CHECK_VERIFICATION", "COMMAND_VERIFICATION",
     "predicate", "record_verification", "resolve", "verification_line",
 )

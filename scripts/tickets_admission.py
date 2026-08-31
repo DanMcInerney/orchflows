@@ -12,8 +12,8 @@ if __package__:
     from .tickets_format import (
         DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
-        is_review_stage_id, _executor_of, _parse_frontmatter,
-        _set_frontmatter_field,
+        is_loop_stub, is_review_stage_id, round_parent, _executor_of,
+        _parse_frontmatter, _set_frontmatter_field,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
@@ -21,8 +21,8 @@ else:
     from tickets_format import (
         DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
         SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
-        is_review_stage_id, _executor_of, _parse_frontmatter,
-        _set_frontmatter_field,
+        is_loop_stub, is_review_stage_id, round_parent, _executor_of,
+        _parse_frontmatter, _set_frontmatter_field,
     )
 
 ADMISSION_PENDING = "pending"
@@ -138,6 +138,29 @@ def graph_descendants(ticket_id: str, siblings) -> list:
     ]
 
 
+def loop_round_stub(ticket_id: str, siblings) -> str | None:
+    """The live loop stub whose own machinery minted this id, or ``None``.
+
+    `loop-arm` writes `<stub>.iter.NN` from the stub's frozen goal, and the
+    `check` done form mints `<stub>.iter.NN.done` beside a round to judge it.
+    Both appear only after the cut that sealed the stub, so neither is ever a
+    member of the sealed assignment set and neither is a member the stub was
+    decomposed into -- the two readings that refused the whole loop lane the
+    first time it was driven through the dispatch trunk.
+
+    `tickets_format.round_parent` owns the grammar; what is added here is the
+    marker, because the same grammar spells a landing's `<id>.repair.NN`
+    rounds and those descend from an ordinary ticket, not from a loop.
+    """
+    stub_id = round_parent(ticket_id)
+    if stub_id is None:
+        return None
+    text = dict(siblings or {}).get(stub_id)
+    if text is None or not is_loop_stub(_parse_frontmatter(text)):
+        return None
+    return stub_id
+
+
 def graph_closed(ticket_id: str, siblings, *evidence) -> bool:
     """Whether a decomposed root yet owes ``graph_findings`` a member count.
 
@@ -159,9 +182,18 @@ def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False
     authority with a caller, so it is refused at every admission door.  The
     member-count checks are deferred until a generation is being validated:
     the first root ticket is necessarily issued before its members exist.
+
+    A loop stub's own rounds are dropped before the count: an armed
+    `<stub>.iter.NN` is an id-descendant of its stub by construction, and
+    reading it as a member would refuse every armed loop stub for owning the
+    iterations the loop marker is the licence to arm.  An author-written
+    child of a loop stub matches no round grammar and is still refused.
     """
     executor = _executor_of(data)
-    descendants = graph_descendants(ticket_id, siblings)
+    descendants = [
+        identifier for identifier in graph_descendants(ticket_id, siblings)
+        if loop_round_stub(identifier, siblings) is None
+    ]
     findings = []
     if executor == ROOT_EXECUTOR:
         if dequote(data.get("independence")) == "checker":
@@ -222,6 +254,32 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
     else:
         from tickets_ordinary_review import ordinary_stage_text
     return target_id, ordinary_stage_text(run, target_id, target, kind)
+
+
+def sealed_loop_target(ticket_id, text, data, siblings, digest):
+    """The loop stub one lawful post-seal round binds its admission through.
+
+    The sealed cut names the assignments that existed when it was sealed, and
+    a round exists only afterwards, so a round can never be named there.  What
+    the seal did name is the stub, and a round is lawful exactly when it
+    descends from that stub unaltered: the stub's own `root_generation` and
+    `cut_generation`, and a self-seal that still matches the round's current
+    bytes.  A round whose bytes moved after it was armed fails that last
+    reading and falls through to the sealed-set door, which has never named it
+    and refuses it.
+    """
+    stub_id = loop_round_stub(ticket_id, siblings)
+    if stub_id is None:
+        return None
+    stub = _parse_frontmatter(siblings[stub_id])
+    if any(
+        str(data.get(field) or "") != str(stub.get(field) or "")
+        for field in ("cut_generation", "root_generation")
+    ):
+        return None
+    if str(data.get("assignment_seal") or "") != digest(ticket_id, text):
+        return None
+    return stub_id
 
 
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
@@ -287,6 +345,9 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             review_target = _ordinary_review_target(
                 ticket_id, data, dependencies, siblings,
             )
+            loop_stub = sealed_loop_target(
+                ticket_id, text, data, siblings, assignment_digest,
+            )
             if review_target is not None:
                 target_id, expected_stage = review_target
                 target_text = siblings.get(target_id)
@@ -313,6 +374,13 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
                         "ordinary-review-stage-mismatch", "assignment_seal",
                         "ordinary repair or verification assignment differs from "
                         "the canonical checked-target continuation",
+                    ))
+            elif loop_stub is not None:
+                stub = _parse_frontmatter(siblings[loop_stub])
+                if sealed_assignments.get(loop_stub) != stub.get("assignment_seal"):
+                    findings.append(finding(
+                        "sealed-loop-stub-mismatch", "assignment_seal",
+                        "sealed state does not bind the loop stub this round was armed from",
                     ))
             elif sealed_assignments.get(ticket_id) != data.get("assignment_seal"):
                 findings.append(finding("sealed-assignment-mismatch", "assignment_seal", "sealed state does not bind this assignment"))
@@ -387,6 +455,6 @@ def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
 __all__ = (
     "ADMISSION_PENDING", "RESULT_BEARING_STATES", "adapter_id",
     "binding_findings", "dependency_order_findings", "finding",
-    "graph_findings", "grade_admission", "is_receipt", "pinned_digest_finding",
-    "refresh_admissions",
+    "graph_findings", "grade_admission", "is_receipt", "loop_round_stub",
+    "pinned_digest_finding", "refresh_admissions", "sealed_loop_target",
 )
