@@ -16,6 +16,8 @@ SHARED_READER_MODULES = (
     "console.py",
     "packs.py",
     "packs_support.py",
+    "rings.py",
+    "rings_trust.py",
     "state_root.py",
     "tickets_adapters.py",
     "tickets_bound.py",

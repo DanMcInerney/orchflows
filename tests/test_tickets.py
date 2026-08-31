@@ -1,5 +1,7 @@
 """Public ticket command regressions for the current semantic contract."""
+import contextlib
 import json
+import os
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -46,6 +48,7 @@ from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
     TerminalNoteTest,
 )
 
+import scripts.rings_trust as rings_trust
 import scripts.tickets as tickets_mod
 import scripts.tickets_assignment as tickets_assignment
 import scripts.tickets_dispatch_launch as launch_module
@@ -59,19 +62,37 @@ __all__ = (
 class AdapterRegistryTest(unittest.TestCase):
     """A pack selects one registered mechanism through its typed adapter cell."""
 
-    def _pack(self, root: Path, adapter: str):
-        pack = root / "packs" / "widget-pack"
-        pack.mkdir(parents=True)
+    @contextlib.contextmanager
+    def _project(self):
+        """A trusted project ring under a temporary home.
+
+        The ring is `<root>/.orchflows/packs`, the one fixed path
+        `scripts/rings.py` reads; the bare `<root>/packs` this fixture used
+        to write is no longer a resolution root anywhere.
+        """
+
+        with tempfile.TemporaryDirectory() as raw, tempfile.TemporaryDirectory() as raw_home:
+            root = Path(raw).resolve()
+            home = Path(raw_home).resolve()
+            (root / ".orchflows" / "packs").mkdir(parents=True)
+            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(home / "state")}):
+                yield root
+
+    def _pack(self, root: Path, adapter: str, body: str = None):
+        pack = root / ".orchflows" / "packs" / "widget-pack"
+        pack.mkdir(parents=True, exist_ok=True)
         (pack / "SKILL.md").write_text(
-            "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
-            "| cell | binding |\n| --- | --- |\n"
-            f"| adapter | {adapter} |\n",
+            body if body is not None else (
+                "---\nname: widget-pack\ndescription: Synthetic project pack.\n---\n\n"
+                "| cell | binding |\n| --- | --- |\n"
+                f"| adapter | {adapter} |\n"
+            ),
             encoding="utf-8",
         )
+        rings_trust.grant(root / ".orchflows")
 
     def test_a_project_pack_selects_git_without_a_pack_name_registration(self):
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+        with self._project() as root:
             self._pack(root, "git")
 
             self.assertEqual("git", tickets_mod.adapter_id("widget-pack", root=root))
@@ -81,9 +102,17 @@ class AdapterRegistryTest(unittest.TestCase):
             self.assertTrue(adapter.deterministic_gate)
             self.assertEqual("git-overlap", adapter.conflict_semantics)
 
+    def test_an_untrusted_project_pack_refuses_before_its_adapter_is_read(self):
+        with self._project() as root:
+            self._pack(root, "git")
+            rings_trust.revoke(root / ".orchflows")
+
+            with self.assertRaises(tickets_mod.AdapterError) as caught:
+                tickets_mod.adapter_id("widget-pack", root=root)
+            self.assertEqual("pack-untrusted", caught.exception.code)
+
     def test_an_unregistered_declared_key_fails_closed(self):
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+        with self._project() as root:
             self._pack(root, "no-such-adapter")
 
             with self.assertRaises(tickets_mod.AdapterError) as caught:
@@ -91,26 +120,21 @@ class AdapterRegistryTest(unittest.TestCase):
             self.assertEqual("adapter-unregistered", caught.exception.code)
 
     def test_unknown_pack_cells_fail_through_the_shared_resolver_parser(self):
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            pack = root / "packs" / "widget-pack"
-            pack.mkdir(parents=True)
-            (pack / "SKILL.md").write_text(
+        with self._project() as root:
+            self._pack(root, "git", body=(
                 "---\nname: widget-pack\n---\n\n"
                 "| cell | binding |\n| --- | --- |\n"
                 "| workspace | widget records |\n"
                 "| adapter | git |\n"
-                "| executor | orch-tdd |\n",
-                encoding="utf-8",
-            )
+                "| executor | orch-tdd |\n"
+            ))
 
             with self.assertRaises(tickets_mod.AdapterError) as caught:
                 tickets_mod.adapter_id("widget-pack", root=root)
             self.assertEqual("adapter-declaration-invalid", caught.exception.code)
 
     def test_admission_reports_exactly_adapter_unregistered_for_the_pack_key(self):
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
+        with self._project() as root:
             self._pack(root, "no-such-adapter")
             ticket = (
                 "---\nid: T1\nrun: testrun\nstatus: pending\n"
@@ -118,7 +142,7 @@ class AdapterRegistryTest(unittest.TestCase):
                 "pack: widget-pack\nisolation: required\n---\n\n"
                 "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
             )
-            with mock.patch("scripts.tickets_adapters.Path.cwd", return_value=root):
+            with mock.patch("scripts.rings.Path.cwd", return_value=root):
                 grade = tickets_mod.grade_admission("T1", ticket, {}, context={})
             adapter_codes = [
                 item["code"] for item in grade["findings"]

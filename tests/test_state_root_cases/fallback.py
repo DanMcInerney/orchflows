@@ -208,7 +208,7 @@ class TestThereIsNoFallback(SinkFixture):
         flat = self.tmp / "bin"
         flat.mkdir()
         names = ["console.py", "friction.py", "packs.py", "packs_support.py",
-                 "state_root.py"] + [
+                 "rings.py", "rings_trust.py", "state_root.py"] + [
             path.name for path in SCRIPTS_DIR.glob("tickets*.py")
         ]
         for name in names:

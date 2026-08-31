@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from scripts import state_root
+    from scripts import rings
     from scripts.tickets_markdown import dequote
 except ImportError:
-    import state_root
+    import rings
     from tickets_markdown import dequote
 
 
@@ -70,34 +70,35 @@ class AdapterError(ValueError):
         self.detail = detail
 
 
-def _candidate_roots(root=None):
-    start = Path(root or Path.cwd()).resolve()
-    for directory in (start, *start.parents):
-        yield directory / "packs"
-        yield directory / ".orchflows" / "packs"
-    try:
-        yield state_root.state_root().parent / "lib" / "packs"
-    except OSError:
-        pass
-    source = Path(__file__).resolve().parent.parent / "packs"
-    yield source
+# One code per ring refusal. The bare ``<dir>/packs`` ancestor root this
+# module used to check before ``<dir>/.orchflows/packs`` is gone: it gave
+# admission and execution two different first hits for one name, which is
+# the divergence ``scripts/rings.py`` exists to close.
+_RING_CODES = {
+    "unresolved": "pack-unresolved",
+    "reserved-name": "pack-reserved",
+    "bundle-untrusted": "pack-untrusted",
+    "trust-unavailable": "pack-untrusted",
+    "name-invalid": "pack-unresolved",
+}
 
 
 def pack_path(pack, *, root=None) -> Path:
-    """Resolve the stamped pack in project, installed, then source scope."""
+    """Resolve the stamped pack through the one ring resolver.
+
+    ``root`` is where to stand while looking, never a root to search: the
+    order is project ring, home ring, pinned imports, then lib, and
+    ``scripts/rings.py`` owns it for every caller.
+    """
 
     name = dequote(pack)
     if not name:
         raise AdapterError("pack-unresolved", "ticket names no pack")
-    seen = set()
-    for packs_root in _candidate_roots(root):
-        candidate = (packs_root / name / "SKILL.md").resolve()
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        if candidate.is_file():
-            return candidate
-    raise AdapterError("pack-unresolved", f"pack does not resolve: {name}")
+    try:
+        record = rings.resolve("pack", name, start=root)
+    except rings.RingError as error:
+        raise AdapterError(_RING_CODES.get(error.code, "pack-unresolved"), error.detail) from error
+    return Path(str(record["path"]))
 
 
 def craft_path(pack, *, root=None) -> Path:

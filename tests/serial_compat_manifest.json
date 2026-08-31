@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1988,
+  "count": 2010,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -592,12 +592,16 @@
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
+   "test_packs.PackResolutionTests.test_a_bundle_edit_invalidates_the_remembered_grant",
    "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
+   "test_packs.PackResolutionTests.test_a_reserved_name_in_a_ring_is_refused_loudly",
+   "test_packs.PackResolutionTests.test_a_use_once_grant_is_spent_by_the_resolution_it_allows",
+   "test_packs.PackResolutionTests.test_an_untrusted_project_bundle_refuses_with_the_two_step_remedy",
    "test_packs.PackResolutionTests.test_cells_returns_every_cell_of_the_resolved_digest",
    "test_packs.PackResolutionTests.test_cli_emits_json_for_resolve_and_cells",
    "test_packs.PackResolutionTests.test_every_pack_resolves_a_distinct_outline_section",
-   "test_packs.PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
-   "test_packs.PackResolutionTests.test_project_scope_with_identical_bytes_has_the_same_digest",
+   "test_packs.PackResolutionTests.test_project_ring_is_discovered_from_the_current_directory",
+   "test_packs.PackResolutionTests.test_project_ring_with_identical_bytes_has_the_same_digest",
    "test_packs.PackResolutionTests.test_public_facade_does_not_reexport_private_support_names",
    "test_packs.PackResolutionTests.test_public_facade_uses_same_family_resolver_owner",
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
@@ -646,6 +650,24 @@
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
+   "test_rings.InventoryTests.test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it",
+   "test_rings.InventoryTests.test_inventory_reports_ring_shadows_and_trust_for_every_kind",
+   "test_rings.ReservationAndShadowTests.test_a_non_reserved_collision_wins_nearest_and_names_both_paths",
+   "test_rings.ReservationAndShadowTests.test_a_reserved_name_refuses_even_when_the_library_also_holds_it",
+   "test_rings.ReservationAndShadowTests.test_a_reserved_ring_name_refuses_loudly_rather_than_never_running",
+   "test_rings.ReservationAndShadowTests.test_the_library_keeps_its_own_reserved_names",
+   "test_rings.RingOrderTests.test_a_bare_packs_ancestor_directory_is_not_a_root",
+   "test_rings.RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
+   "test_rings.RingOrderTests.test_lib_skills_expand_one_sublayer",
+   "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
+   "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
+   "test_rings.RingOrderTests.test_the_search_order_is_project_home_imports_then_lib",
+   "test_rings.TrustTests.test_a_project_ring_refuses_until_the_user_grants_trust",
+   "test_rings.TrustTests.test_a_repo_supplied_ledger_grants_nothing",
+   "test_rings.TrustTests.test_an_edit_outside_the_ring_directories_does_not_re_prompt",
+   "test_rings.TrustTests.test_line_endings_do_not_change_a_bundle_digest",
+   "test_rings.TrustTests.test_revoke_drops_both_halves_of_the_two_step",
+   "test_rings.TrustTests.test_the_ledger_never_lives_inside_a_repository",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
    "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
@@ -1991,7 +2013,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e269f7fc3829733317206d76fd0689231cd51af0e885f8e92f01cef7bc8ad7ea"
+  "sha256": "bbd722599068cba919dca74f0f0ec9b18a7d69c2631b06619b3d5abe8098d13f"
  },
  "mutation_owners": [
   {
@@ -3715,10 +3737,18 @@
   },
   {
    "module": "tests.test_packs",
-   "owner": "PackResolutionTests.test_project_scope_is_discovered_from_the_current_directory",
+   "owner": "PackResolutionTests.test_project_ring_is_discovered_from_the_current_directory",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_packs",
+   "owner": "_home",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
@@ -3743,6 +3773,14 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "module-cache"
+   ]
+  },
+  {
+   "module": "tests.test_rings",
+   "owner": "_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
