@@ -27,7 +27,7 @@ from __future__ import annotations
 import urllib.parse
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .. import transport
 from . import (
@@ -281,6 +281,57 @@ def _page_from(response: transport.TransportResponse) -> NativePage:
     )
 
 
+def _instant_seconds(stamped: str) -> Optional[int]:
+    """One manifest instant as whole UTC seconds, or nothing unparseable.
+
+    A local parser rather than a shared one, matching another
+    origin-adjacent adapter module's own tiny parser of the same name: each
+    owns its own rather than reaching into `ordering`, which stays a
+    core-only import.
+    """
+
+    if not stamped:
+        return None
+    try:
+        moment = datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return int(moment.timestamp())
+
+
+def origin_recency_term(window_start: str, window_end: str) -> str:
+    """The origin's own ``f_TPR=r<seconds>`` value for one step's window, or nothing.
+
+    Measured live 2026-08-31: the same ``keywords`` read twice, once bare and
+    once with a candidate ``f_TPR=r<seconds>`` added, moved the oldest posting
+    forward (a common term: every card in the last 24 h) and, on a rarer
+    keyword where the unfiltered page was not already saturated, dropped the
+    row count too (10 postings bare, 6 with ``r3600``) — the exact pair
+    Details asked for, so the term is real. LinkedIn reports a posting's date
+    at day precision (``DESCRIPTOR.standing_loss``), which is why the reading
+    above needed a rare keyword to see the row count move: a common one fills
+    every page regardless, so only the oldest-date signal was visible on it.
+
+    A pure function of the step's two instants, imitating the same three
+    properties this shape's exemplar already sets: lives beside this
+    adapter, returns the origin's own term, returns nothing when there is no
+    bound to state. Like Reddit's ``t=``, LinkedIn's ``f_TPR`` is a
+    span measured back from *now* — the guest surface has no second parameter
+    for an explicit endpoint — so ``window_end`` plays no part in the answer,
+    for the same reason it plays none there.
+    """
+
+    del window_end  # Documented above: `f_TPR` is a span back from "now".
+    start_seconds = _instant_seconds(window_start)
+    if start_seconds is None:
+        return ""
+    now_seconds = _instant_seconds(transport.utc_now_iso())
+    if now_seconds is None:
+        return ""
+    age = now_seconds - start_seconds
+    return "r" + str(age if age > 0 else 1)
+
+
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
     """Read one page of guest job search and return exactly one NativePage.
 
@@ -292,10 +343,15 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     seam and every call starts at the top.
     """
 
+    params: Dict[str, str] = {"keywords": request.query, "start": request.cursor}
+    if request.window_start:
+        recency = origin_recency_term(request.window_start, request.window_end)
+        if recency:
+            params["f_TPR"] = recency
     return fetch_one_page(
         DESCRIPTOR,
         carrier,
-        params={"keywords": request.query, "start": request.cursor},
+        params=params,
         parse=_page_from,
         native_order=NATIVE_ORDER,
     )

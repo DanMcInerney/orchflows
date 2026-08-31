@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import urllib.parse
-from typing import Any, Optional
+from datetime import datetime, timezone
+from typing import Any, Optional, Tuple
 
 from ... import transport
 from .. import AdapterDescriptor
@@ -229,3 +230,77 @@ def cursor_in(source: str, name: str) -> str:
         if key == name and value:
             return value
     return ""
+
+
+_SECONDS_PER_HOUR = 3600
+_SECONDS_PER_DAY = 24 * _SECONDS_PER_HOUR
+_SECONDS_PER_WEEK = 7 * _SECONDS_PER_DAY
+_SECONDS_PER_MONTH = 30 * _SECONDS_PER_DAY
+_SECONDS_PER_YEAR = 365 * _SECONDS_PER_DAY
+
+# The origin's own vocabulary (`TIME_WINDOWS`, minus `"all"`) paired with the
+# span each bucket reaches back from *now*, ascending. `origin_time_bucket`
+# below picks the first one wide enough to still cover `window_start`.
+_T_BUCKET_SPANS: Tuple[Tuple[str, int], ...] = (
+    ("hour", _SECONDS_PER_HOUR),
+    ("day", _SECONDS_PER_DAY),
+    ("week", _SECONDS_PER_WEEK),
+    ("month", _SECONDS_PER_MONTH),
+    ("year", _SECONDS_PER_YEAR),
+)
+
+
+def _instant_seconds(stamped: str) -> Optional[int]:
+    """One manifest instant (``RECORD_INSTANT_FORMAT``) as whole UTC seconds.
+
+    A local parser rather than a shared one: another origin-adjacent adapter
+    module already reads the same manifest spelling this same way, and each
+    owns its own tiny parser rather than reaching into `ordering`, which
+    stays a core-only import (`test_dependency_boundary_cases`'s edge table
+    names no adapter as one of its importers).
+    """
+
+    if not stamped:
+        return None
+    try:
+        moment = datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return int(moment.timestamp())
+
+
+def origin_time_bucket(window_start: str, window_end: str) -> str:
+    """The coarsest-covering native ``t=`` value for one step's window, or nothing.
+
+    A pure function of the step's two instants, imitating this shape's
+    exemplar's three properties: it lives beside this adapter, it returns the
+    origin's own term, and it returns nothing when there is no bound to
+    state, so an unwindowed step's request is unchanged.
+
+    Reddit's own bucket is a span measured back from *now*, never from an
+    explicit endpoint — `_fetch_listing`/`_fetch_search` send it as the
+    route's only time parameter, and there is no second one to narrow the
+    near edge. The smallest bucket that still reaches ``window_start`` is the
+    one returned. A step whose ``window_end`` sits before now is therefore
+    over-covered at the near edge — the origin also answers with records
+    newer than ``window_end`` — which is lawful (`_support/runner_plan.py`'s
+    `in_window` still trims what a caller keeps) but is exactly why
+    ``window_end`` plays no part in the choice below: nothing this route
+    accepts can pull the near edge in from "now", so a second instant could
+    not narrow it. A step with no ``window_start`` needs no bucket at all:
+    the unbounded answer already reaches back far enough, and the same filter
+    trims the far edge.
+    """
+
+    del window_end  # Documented above: the near edge is fixed at "now" here.
+    start_seconds = _instant_seconds(window_start)
+    if start_seconds is None:
+        return ""
+    now_seconds = _instant_seconds(transport.utc_now_iso())
+    if now_seconds is None:
+        return ""
+    age = now_seconds - start_seconds
+    for bucket, span in _T_BUCKET_SPANS:
+        if age <= span:
+            return bucket
+    return "all"

@@ -162,6 +162,41 @@ class ScopeTests(unittest.TestCase):
 
             self.assertEqual([], entries)
 
+    def test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations(self):
+        """The blocking defect R.03 measured: `_destination()` ignored kind,
+        so a skill and a workflow sharing a name rendered to the same host
+        path and the second write silently clobbered the first. Goal clause
+        5 asks for exactly this shape -- a skill and a workflow of one name
+        in one home ring -- so this is the collision case, not an
+        incidental sweep."""
+
+        with _world() as world:
+            _skill(world["home"] / "skills", "collide-flow")
+            workflow = world["home"] / "workflows" / "collide-flow" / "template.md"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_bytes(
+                b"---\nname: collide-flow\nentry: named\nplaceholders: []\n---\n\nbody\n"
+            )
+
+            with patch.object(orchflows_adapters, "detected", return_value=["claude"]):
+                entries = orchflows_adapters.plan("home", start=world["root"])
+
+                destinations = [destination for destination, _ in entries]
+                self.assertEqual(2, len(entries))
+                self.assertEqual(2, len(set(destinations)), destinations)
+                claude_home = world["root"] / "claude-home"
+                skill_dest = claude_home / "skills" / "collide-flow" / "SKILL.md"
+                workflow_dest = claude_home / "skills" / "collide-flow-workflow" / "SKILL.md"
+                self.assertEqual({skill_dest, workflow_dest}, set(destinations))
+                bodies = dict(entries)
+                self.assertIn("tickets.py instantiate collide-flow --run <run>", bodies[workflow_dest])
+                self.assertNotIn("tickets.py instantiate", bodies[skill_dest])
+
+                orchflows_adapters.write("home", start=world["root"])
+
+            self.assertEqual(bodies[skill_dest], skill_dest.read_text(encoding="utf-8"))
+            self.assertEqual(bodies[workflow_dest], workflow_dest.read_text(encoding="utf-8"))
+
 
 class CommittedProofTests(unittest.TestCase):
     """This repository's own super-research shim is now generated."""
@@ -195,6 +230,51 @@ class CommittedProofTests(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             self.assertNotIn(str(ROOT), text)
             self.assertIn("Read .orchflows/skills/super-research/SKILL.md", text)
+
+
+class PortabilityTests(unittest.TestCase):
+    """Goal clause 5's own wording: 'from a checkout that is not this one.'
+    A resolution or a rendering read against ROOT proves nothing about
+    portability -- this repository is always its own project ring. Copying
+    the two manifests into a scratch home ring and resolving/rendering them
+    from there is the only reading that can fail if the pair stopped being
+    portable."""
+
+    def test_super_research_copies_out_as_a_skill_and_a_workflow_together(self):
+        with _world() as world:
+            skill_copy = world["home"] / "skills" / "super-research" / "SKILL.md"
+            skill_copy.parent.mkdir(parents=True)
+            skill_copy.write_bytes(
+                (ROOT / ".orchflows" / "skills" / "super-research" / "SKILL.md").read_bytes()
+            )
+            workflow_copy = world["home"] / "workflows" / "super-research" / "template.md"
+            workflow_copy.parent.mkdir(parents=True)
+            workflow_copy.write_bytes(
+                (ROOT / "example-workflows" / "super-research" / "template.md").read_bytes()
+            )
+
+            skill_record = rings.resolve(
+                "skill", "super-research", trust=False, start=world["root"],
+            )
+            workflow_record = rings.resolve(
+                "workflow", "super-research", start=world["root"],
+            )
+            self.assertEqual("home", skill_record["ring"])
+            self.assertEqual("home", workflow_record["ring"])
+
+            with patch.object(orchflows_adapters, "detected", return_value=["claude"]):
+                entries = orchflows_adapters.plan("home", start=world["root"])
+
+            rendered = {
+                path.parent.name: text
+                for path, text in entries
+                if "super-research" in path.parent.name
+            }
+            self.assertEqual({"super-research", "super-research-workflow"}, set(rendered))
+            self.assertIn(
+                "tickets.py instantiate super-research --run <run>",
+                rendered["super-research-workflow"],
+            )
 
 
 class InstantiateResolutionTests(unittest.TestCase):

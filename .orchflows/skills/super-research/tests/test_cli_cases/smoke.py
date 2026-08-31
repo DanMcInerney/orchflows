@@ -1,5 +1,37 @@
 from ._support import *
 
+# Every (adapter, kind) pair `SMOKE_PROBES` declares a field set for, counted
+# by name rather than transcribed name for name — a literal copy of all
+# nineteen rows would only prove this test can read the same file it exists
+# to check against drift, and F3's own mutation (`R.04`'s: dropping `body`
+# from `web_search`'s row) is a removal, which a count already catches.
+# Derived once, here, from the shape this table held when the completeness
+# gap was found and closed; it is the pin, not a relay of `probes.py`'s own
+# say-so at import time.
+PINNED_FIELD_COUNTS_BY_ADAPTER_AND_KIND = {
+    ("bluesky", "post"): 8,
+    ("github_rest", "repository"): 7,
+    ("hacker_news", "story"): 5,
+    ("instagram_public", "post"): 4,
+    ("instagram_public", "profile"): 4,
+    ("linkedin_jobs", "job_posting"): 4,
+    ("linkedin_public", "profile"): 6,
+    ("open_page", "web_page"): 8,
+    ("prediction_markets", "market"): 5,
+    ("public_page", "web_page"): 7,
+    ("reddit_archive", "post"): 7,
+    ("reddit_feed", "post"): 4,
+    ("reddit_shreddit", "post"): 8,
+    ("rss_atom", "feed_entry"): 5,
+    ("stocktwits", "post"): 5,
+    ("web_search", "web_hit"): 3,
+    ("x_fxtwitter", "post"): 9,
+    ("x_guest", "profile"): 6,
+    ("x_syndication", "post"): 7,
+    ("youtube_innertube", "video"): 3,
+}
+
+
 class SmokeProbeTableTest(unittest.TestCase):
     """The enumeration itself: nineteen probes, each naming things that exist."""
 
@@ -41,6 +73,24 @@ class SmokeProbeTableTest(unittest.TestCase):
                             self.assertTrue(name[len(cli.ATTRIBUTE_PREFIX):])
                         else:
                             self.assertIn(name, record_fields)
+
+    def test_the_declared_field_set_sizes_match_a_pinned_count_by_kind(self):
+        # The forward-only check above proves every declared name is
+        # legitimate; it never compares against what a row used to declare,
+        # so a field silently dropped from any probe passes it untouched.
+        # `R.04` proved this by mutation: removing `"body"` from
+        # `web_search`'s field_sets left the whole offline suite green. This
+        # is that oracle, the same shape `test_the_probes_are_exactly_the_
+        # live_roster` already uses for the roster itself — a count pinned
+        # independently of `probes.py`'s own say-so, so a later drop turns
+        # this row red rather than passing silently.
+        counted = {
+            (probe.adapter_id, kind): len(names)
+            for probe in cli.SMOKE_PROBES
+            for kind, names in probe.field_sets
+        }
+
+        self.assertEqual(counted, PINNED_FIELD_COUNTS_BY_ADAPTER_AND_KIND)
 
     def test_every_probe_reads_a_route_the_core_can_reach(self):
         for probe in cli.SMOKE_PROBES:

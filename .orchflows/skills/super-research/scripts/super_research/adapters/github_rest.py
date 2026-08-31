@@ -34,6 +34,7 @@ total and a row count. A caller that wants page two says so.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from .. import transport
@@ -130,6 +131,15 @@ NATIVE_ORDERS = {
 # that no longer carries this is a shape change and not a search that matched
 # nothing.
 ITEMS_KEY = "items"
+
+# The manifest's own instant spelling, parsed here rather than imported from
+# `ordering`: each origin-adjacent adapter module owns its own tiny parser of
+# the same name, rather than reaching into a shared one.
+RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+# GitHub's search qualifiers read a day, never a finer instant — measured live
+# 2026-08-31: `created:>=2026-08-24` and `created:2026-08-01..2026-08-15` both
+# answered with every `created_at` inside the named day boundary.
+GITHUB_SEARCH_DATE_FORMAT = "%Y-%m-%d"
 
 # Every key these payloads publish that this module reads, under GitHub's own
 # names.
@@ -326,6 +336,66 @@ def repository_params(target: str) -> Dict[str, str]:
     return {"owner": owner, "repo": repository}
 
 
+def _instant_seconds(stamped: str) -> Optional[int]:
+    """One manifest instant as whole UTC seconds, or nothing unparseable."""
+
+    if not stamped:
+        return None
+    try:
+        moment = datetime.strptime(stamped, RECORD_INSTANT_FORMAT).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return int(moment.timestamp())
+
+
+def _search_date(stamped: str) -> str:
+    """One manifest instant as the day GitHub's search qualifiers read."""
+
+    seconds = _instant_seconds(stamped)
+    if seconds is None:
+        return ""
+    return datetime.fromtimestamp(seconds, tz=timezone.utc).strftime(GITHUB_SEARCH_DATE_FORMAT)
+
+
+def origin_created_qualifier(window_start: str, window_end: str) -> str:
+    """The `created:` qualifier `search`'s `q` should carry, or nothing.
+
+    Measured live 2026-08-31: `created:>=2026-08-24` moved `total_count` from
+    1,244,282 to 6,725 and every returned `created_at` after the named day;
+    `created:2026-08-01..2026-08-15` (both edges) put every returned
+    `created_at` inside that exact span. The one-sided `<=` form is the same
+    qualifier grammar mirrored, not independently re-measured. A pure
+    function of the step's two instants, day-precision because that is what
+    was measured, returning nothing when neither edge is usable.
+    """
+
+    start = _search_date(window_start)
+    end = _search_date(window_end)
+    if start and end:
+        return "created:" + start + ".." + end
+    if start:
+        return "created:>=" + start
+    if end:
+        return "created:<=" + end
+    return ""
+
+
+def origin_since_param(window_start: str) -> str:
+    """The `since` value `issues` should carry, or nothing.
+
+    Measured live 2026-08-31: `since=<a few minutes in the future>` on an
+    active repository's issue list answered zero rows where the same call
+    without it answered a full page, so `since` genuinely filters by
+    `updated_at` rather than being silently ignored (as `releases`' own
+    `since` is — measured the same way, unchanged). No `until`/`before`
+    exists on this route (undocumented, unmeasured): the far edge stays the
+    core's own post-filter, exactly as an adapter with no window reach at all
+    already leaves it.
+    """
+
+    return window_start
+
+
 def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> NativePage:
     """Read one of the four declared operations and return exactly one NativePage.
 
@@ -337,10 +407,13 @@ def fetch_native_page(carrier: transport.Transport, request: AdapterRequest) -> 
     operation, argument = operation_for(request)
     descriptor, collection = OPERATION_SURFACES[operation]
     if operation == SEARCH_OPERATION:
-        params = {"index": collection, "q": argument}
+        qualifier = origin_created_qualifier(request.window_start, request.window_end)
+        params = {"index": collection, "q": (argument + " " + qualifier) if qualifier else argument}
     else:
         params = repository_params(argument)
         params["resource"] = collection
+        if operation == ISSUES_OPERATION and request.window_start:
+            params["since"] = origin_since_param(request.window_start)
     if request.cursor:
         # The page the core froze. No next one is derived here: GitHub states a
         # total and not a page count, and inventing one from the rows returned

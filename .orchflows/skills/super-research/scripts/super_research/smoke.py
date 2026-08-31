@@ -44,6 +44,7 @@ from tempfile import gettempdir
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import runner, schema, transport
+from ._support.smoke_plan import probe_window_start
 from .probes import ATTRIBUTE_PREFIX, ENGAGEMENT_PREFIX, SmokeProbe
 
 # What a kind's whole list is missing when the read returned no row of it at all.
@@ -136,7 +137,7 @@ class SmokeObservation:
     warnings: Tuple[str, ...] = ()
 
 
-def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
+def probe_step(probe: SmokeProbe, as_of: str) -> schema.AcquisitionStep:
     """One ordinary manifest step, bounded to one page.
 
     A smoke has no private path into an adapter: this is the same step kind a
@@ -146,8 +147,14 @@ def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
     module's callers have always been told it makes. Declared on both kinds,
     though only a discovery step can page, so the bound is a property of the
     step a smoke builds rather than of the branch it took.
+
+    ``window_start`` carries a probe's own declared window, open-ended so a
+    live account's most recent activity always stays inside it; a probe
+    that declares none leaves this the empty string, the same default an
+    unwindowed step has always carried.
     """
 
+    window_start = probe_window_start(probe.window_days, as_of)
     if probe.kind == "discovery":
         return schema.AcquisitionStep(
             step_id="smoke",
@@ -156,6 +163,7 @@ def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
             query=probe.target,
             max_items=probe.max_items,
             max_pages=PAGES_PER_SMOKE,
+            window_start=window_start,
         )
     return schema.AcquisitionStep(
         step_id="smoke",
@@ -166,6 +174,7 @@ def probe_step(probe: SmokeProbe) -> schema.AcquisitionStep:
         ),
         max_items=probe.max_items,
         max_pages=PAGES_PER_SMOKE,
+        window_start=window_start,
     )
 
 
@@ -174,7 +183,7 @@ def probe_manifest(probe: SmokeProbe, as_of: str) -> schema.AcquisitionManifest:
         manifest_id="smoke-" + probe.adapter_id,
         mode="staged",
         as_of=as_of,
-        steps=(probe_step(probe),),
+        steps=(probe_step(probe, as_of),),
     )
 
 

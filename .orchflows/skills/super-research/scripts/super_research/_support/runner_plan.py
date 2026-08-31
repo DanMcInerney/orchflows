@@ -84,3 +84,31 @@ def reached_origin(page: NativePage) -> bool:
         and cache.CACHE_HIT not in page.loss
         and transport.UNREACHABLE not in page.loss
     )
+
+
+def offers_another_page(
+    step: schema.AcquisitionStep, page: NativePage, kept: int, calls_made: int
+) -> bool:
+    """Whether this page leaves a next one the step could still want.
+
+    Four questions, and only the first is about the page. A hydration step
+    never pages: its calls are one per hit the caller froze, which is what makes
+    each hydration record's provenance exact rather than inferred, and a page
+    read off a cursor was authorized by nobody. A page that names no cursor is
+    the origin saying there is nothing after it. And a step whose cap is already
+    met wants nothing further, nor does one that has read every page it asked
+    for — both of those are the caller's own bound reached, and every stop this
+    function makes is therefore a step finishing rather than a recall cut short.
+    That is the whole difference between here and the two refusals in
+    `runner.run_step`'s own loop: those stop a step that still wanted more, and
+    say so with a loss code.
+
+    ``max_pages`` only ever lowers the count. A step declaring more than
+    `runner.MAX_PAGES_PER_STEP` is stopped by the core's backstop in the loop,
+    where stopping is a loss, because a bound the core imposed is not one the
+    caller reached.
+    """
+
+    if step.max_pages and calls_made >= step.max_pages:
+        return False
+    return step.kind == "discovery" and bool(page.cursor_out) and kept < step.max_items

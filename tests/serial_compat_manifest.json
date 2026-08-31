@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2049,
+  "count": 2054,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -678,7 +678,9 @@
    "test_ring_adapters.CommittedProofTests.test_the_committed_shim_holds_no_machine_specific_path",
    "test_ring_adapters.CommittedProofTests.test_the_committed_shim_keeps_its_manual_invocation_flag",
    "test_ring_adapters.InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
+   "test_ring_adapters.PortabilityTests.test_super_research_copies_out_as_a_skill_and_a_workflow_together",
    "test_ring_adapters.ScopeTests.test_a_hand_written_neighbour_is_never_removed",
+   "test_ring_adapters.ScopeTests.test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations",
    "test_ring_adapters.ScopeTests.test_a_pack_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_a_reserved_ring_item_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_project_adapters_point_repository_relative",
@@ -695,6 +697,8 @@
    "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
    "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
    "test_rings.RingOrderTests.test_the_search_order_is_project_home_imports_then_lib",
+   "test_rings.SuperResearchGoalTests.test_the_skill_stays_resolvable_as_a_project_ring_skill",
+   "test_rings.SuperResearchGoalTests.test_the_workflow_resolves_from_the_lib_ring_by_bare_name",
    "test_rings.TrustTests.test_a_project_ring_refuses_until_the_user_grants_trust",
    "test_rings.TrustTests.test_a_repo_supplied_ledger_grants_nothing",
    "test_rings.TrustTests.test_an_edit_outside_the_ring_directories_does_not_re_prompt",
@@ -903,6 +907,7 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_discovers_tests_from_project_scope_directory",
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
+   "test_super_research_suite.SuperResearchSuiteTest.test_the_skill_suite_exits_zero",
    "test_templates.TemplateTest.test_all_routed_compositions_have_current_ticket_shape",
    "test_templates.TemplateTest.test_every_routed_composition_instantiates",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
@@ -2052,7 +2057,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "c47c0e28ed8ff760c4d35fb2ebfc658efff2f4464826e6c11fbb051db2783c43"
+  "sha256": "11f4ff8b0041aa651f514a22287da01980123f87fc34a60479018fc9fc77feff"
  },
  "mutation_owners": [
   {
@@ -3881,6 +3886,22 @@
   {
    "module": "tests.test_ring_adapters",
    "owner": "InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ring_adapters",
+   "owner": "PortabilityTests.test_super_research_copies_out_as_a_skill_and_a_workflow_together",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ring_adapters",
+   "owner": "ScopeTests.test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"

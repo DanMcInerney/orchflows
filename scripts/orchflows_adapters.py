@@ -187,10 +187,19 @@ def _surfaces(scope: str, records: Dict[str, dict], project: Optional[Path]) -> 
     ]
 
 
-def _destination(surface: str, record, root: Path, item_key: str, name: str) -> Path:
+def _destination(surface: str, record, root: Path, item_key: str, kind: str, name: str) -> Path:
+    # A ring may hold a skill and a workflow of one name (Goal clause 5: the
+    # two copy out together). Both render through the same "skill" surface
+    # -- there is no per-host "workflow" installed-item template -- so a
+    # destination keyed on name alone collapses them onto one path and the
+    # second write silently clobbers the first. The slug carries kind into
+    # the path while `render()` still gets the true, unsuffixed name, so a
+    # workflow's frontmatter and its `tickets.py instantiate {name}` body
+    # stay correct; only where the file lands changes.
+    slug = f"{name}-workflow" if kind == "workflow" else name
     if item_key == "agents":
-        return root / Path(AGENTS_ITEM.format(name=name))
-    return _item_path(record, "skill", root, name)
+        return root / Path(AGENTS_ITEM.format(name=slug))
+    return _item_path(record, "skill", root, slug)
 
 
 def plan(scope: str, *, project: Optional[Path] = None, lib: Optional[Path] = None, **overrides):
@@ -213,7 +222,10 @@ def plan(scope: str, *, project: Optional[Path] = None, lib: Optional[Path] = No
             # one here, and the one the convergence was written against.
             host_record = records.get(surface) or records["claude"]
             text = render(str(record["kind"]), str(record["name"]), item, host_record, pointer)
-            written.append((_destination(surface, host_record, root, item_key, str(record["name"])), text))
+            destination = _destination(
+                surface, host_record, root, item_key, str(record["kind"]), str(record["name"]),
+            )
+            written.append((destination, text))
     return written
 
 
