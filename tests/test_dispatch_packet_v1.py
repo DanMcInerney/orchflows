@@ -245,7 +245,6 @@ class DispatchPacketV1Test(unittest.TestCase):
         stored = parse_canonical_json(packet_record["content"])
         stored["packet"]["review_kind"] = "no-such-lane"
         packet_record["content"] = canonical_json(stored)
-        packet_record["success"]["committed_record"]["content"] = stored
         self.ticket_path.write_text(
             tickets._set_frontmatter_field(
                 text, "dispatch_v1", canonical_json(state),
@@ -287,7 +286,7 @@ class DispatchPacketV1Test(unittest.TestCase):
         packet_record = state["attempts"][0]["records"][0]
         packet_record["content"] = canonical_json(stored)
         packet_record["success"] = {"committed_record": {
-            "content": stored, "dispatch_id": "D1", "id": legacy_id,
+            "dispatch_id": "D1", "id": legacy_id,
             "protocol": "orchflows.dispatch.v1", "record_id": "dispatch-packet",
             "run": "run",
         }}

@@ -282,7 +282,8 @@ class DispatchV1Test(unittest.TestCase):
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         committed = self.commit()
         self.assertEqual("R1", committed["committed_record"]["record_id"])
-        self.assertEqual({"value": 1}, committed["committed_record"]["content"])
+        # the record stores its content once; the success carries identity
+        self.assertNotIn("content", committed["committed_record"])
 
         retired = self.retire()
         self.assertEqual("retired", retired["dispatch"]["outcome"])

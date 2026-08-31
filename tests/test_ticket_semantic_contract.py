@@ -677,7 +677,10 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", "critic-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
-        self.assertIn('"kind":"GatePlan"', packet["prompt"])
+        # by path and tip identity, never a second copy of the ledger
+        self.assertIn("Immutable review ledger: read", packet["prompt"])
+        self.assertIn("tip is GatePlan", packet["prompt"])
+        self.assertNotIn('"kind":"GatePlan"', packet["prompt"])
         self.commit_outcome("clean", critique_id, opened, "critic", "critic-D1")
         self.dispatch(
             "dispatch-join", "clean", critique_id,
@@ -738,7 +741,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", "verify-D1",
             "--artifact", artifact, "--workspace", str(ROOT),
         )["packet"]
-        self.assertIn('"kind":"RepairOutcome"', verify_packet["prompt"])
+        self.assertIn("tip is RepairOutcome", verify_packet["prompt"])
         self.assertIn(
             "Begin ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or "
             "`UNVERIFIED:` so the join can bind the verdict to the verified artifact.",

@@ -48,8 +48,8 @@
     {
       "name": "dispatch_committed_record",
       "contract": "dispatch.md",
-      "fields": ["protocol", "run", "id", "dispatch_id", "record_id", "content"],
-      "required": ["protocol", "run", "id", "dispatch_id", "record_id", "content"]
+      "fields": ["protocol", "run", "id", "dispatch_id", "record_id"],
+      "required": ["protocol", "run", "id", "dispatch_id", "record_id"]
     },
     {
       "name": "dispatch_packet_record",

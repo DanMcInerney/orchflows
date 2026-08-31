@@ -246,7 +246,6 @@ GATE_EXECUTOR_SECTIONS = _tickets_packet_module.GATE_EXECUTOR_SECTIONS
 GATE_REPAIR_ID = _tickets_packet_module.GATE_REPAIR_ID
 GATE_VERIFY_ID = _tickets_packet_module.GATE_VERIFY_ID
 PACKET_SECTIONS = _tickets_packet_module.PACKET_SECTIONS
-PACKET_USAGE = _tickets_packet_module.PACKET_USAGE
 _packet_under_run_lock = _tickets_packet_module._packet_under_run_lock
 COVERAGE_RECORD_NAME = _tickets_result_module.COVERAGE_RECORD_NAME
 IMPROVEMENT_USAGE = _tickets_result_module.IMPROVEMENT_USAGE

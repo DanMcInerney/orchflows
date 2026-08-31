@@ -242,7 +242,7 @@ def _packet_transaction(
     content = {"packet": packet}
     committed = _commit_record(
         run, ticket_id, dispatch_id, PACKET_RECORD_ID, content,
-        mutate=packet_mutation(review_state, run, ticket_id, dispatch_id, PACKET_RECORD_ID, content),
+        mutate=packet_mutation(review_state, run, ticket_id, dispatch_id, PACKET_RECORD_ID),
         record_kind="packet", _lock_held=True,
     )
     if "error" in committed:

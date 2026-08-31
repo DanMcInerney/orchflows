@@ -350,7 +350,7 @@ def packet_state_result(
         return None, str(error)
 
 
-def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id, content):
+def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id):
     if review_state is None:
         return None
     if __package__:
@@ -364,7 +364,7 @@ def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id, conten
         )
         return (
             updated,
-            _record_response(run, ticket_id, dispatch_id, record_id, content),
+            _record_response(run, ticket_id, dispatch_id, record_id),
             None,
         )
     return commit

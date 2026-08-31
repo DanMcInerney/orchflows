@@ -193,16 +193,22 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
     except OSError as error:
         return {"error": f"unable to open dispatch attempt: {error}"}
 
-def _record_response(
-    run: str, ticket_id: str, dispatch_id: str, record_id: str, content
-) -> dict:
+def _record_response(run: str, ticket_id: str, dispatch_id: str, record_id: str) -> dict:
+    """The stored success for one committed record: its identity alone.
+
+    Not the content. Every record already stores that once, as the
+    canonical string the `(dispatch_id, record_id)` idempotency
+    comparison is made against, and the second copy under this success
+    was ~73% of a gate ticket's bytes -- 275 KB on the largest one.
+    A caller that wants the content reads the record.
+    """
+
     return {"committed_record": {
         "protocol": PROTOCOL,
         "run": run,
         "id": ticket_id,
         "dispatch_id": dispatch_id,
         "record_id": record_id,
-        "content": content,
     }}
 
 def _commit_record(
@@ -305,7 +311,7 @@ def _commit_record(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
             if mutate is None:
-                success = _record_response(run, ticket_id, dispatch_id, record_id, content)
+                success = _record_response(run, ticket_id, dispatch_id, record_id)
                 updated = text
             else:
                 updated, success, failure = mutate(text, data, attempt, state)

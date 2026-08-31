@@ -39,12 +39,6 @@ else:
     )
 
 PACKET_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-# What projection itself reads, not a command line: `packet` was routed
-# once and is not any more, and a refusal shaped like an invocation is
-# an invitation to run a subcommand that answers `unknown subcommand`.
-# The one door is `dispatch-packet`, whose own usage `tickets_commands`
-# publishes.
-PACKET_USAGE = "packet projection reads <run> <id> [--by <name>] [--workspace <path>] [--review-kind critique|repair|verify]"
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
 GATE_VERIFY_ID = "{root}.gate.verify"
@@ -152,7 +146,11 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     workspace = _extract_flag(args, "--workspace")
     requested_review_kind = _extract_flag(args, "--review-kind")
     if len(args) != 2:
-        return {"error": f"usage: {PACKET_USAGE}"}
+        # Not a usage line: `packet` has not been a routed subcommand
+        # since the cutover, and a refusal shaped like an invocation
+        # invites a caller to run a verb that answers `unknown
+        # subcommand`. The one door is `dispatch-packet`.
+        return {"error": "packet projection reads one <run> and one <id>"}
     if requested_review_kind is not None:
         requested_review_kind = dequote(requested_review_kind)
         if requested_review_kind not in REVIEW_KINDS:
@@ -248,11 +246,16 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     if workspace:
         prompt.append(f"Workspace: {workspace}")
     if review_state is not None:
-        prompt.extend((
-            "Immutable review ledger; consume this exact predecessor chain:",
-            canonical_json(review_state),
-        ))
-    isolation = derived_isolation(loaded.get("isolation"), loaded.get("pack"))
+        # By path, not by value. The ticket's own `review_v1` is the
+        # chain; embedding it here made one gate ticket carry the same
+        # 54 KB ledger twice, and the tip identity is the whole fact a
+        # child needs to know which chain it is consuming.
+        tip = (review_state.get("records") or [{}])[-1]
+        prompt.append(
+            "Immutable review ledger: read `review_v1` in "
+            f"{ticket_path}; consume that exact predecessor chain, whose "
+            f"tip is {tip.get('kind')} {tip.get('identity')}."
+        )
     if review_kind == "critique":
         prompt.append("File the complete findings array in Result or Feedback as evidence is produced; the join accepts only an --accepted-file subset and sets terminal status.")
     elif review_kind == "verify":
@@ -273,12 +276,13 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
     prompt.append(_command_text(sys.executable, script, "result", run_id, loaded["id"], *result_identity, "--by", assigned_name, "--section", "SECTION", "--text", "TEXT", "--append"))
     if assigned_name is not None:
         prompt.append(f"Your assigned name is `{assigned_name}`; use exactly it wherever a command takes --by.")
+    # Exactly what the projection reads. Six more keys rode along here
+    # unread once their wire fields died, and an unread key is a field
+    # nothing keeps true.
     return {"packet": {
-        "run": run_id, "id": loaded["id"], "path": str(ticket_path),
-        "executor": executor, "script": executor_script, "pack": loaded.get("pack"),
+        "run": run_id, "id": loaded["id"],
+        "executor": executor, "pack": loaded.get("pack"),
         "profile": loaded.get("profile"),
-        "independence": loaded.get("independence") or "checker",
-        "isolation": isolation, "admission": stored, "assigned_name": assigned_name,
         "workspace": workspace, "prompt": "\n".join(prompt),
         "review_kind": review_kind,
     }}
@@ -286,6 +290,6 @@ def _packet_under_run_lock(rest, *, result_attempt=None, review_state=None):
 
 __all__ = (
     "GATE_CRITIQUE_ID", "GATE_EXECUTOR_SECTIONS", "GATE_REPAIR_ID",
-    "GATE_VERIFY_ID", "PACKET_SECTIONS", "PACKET_USAGE", "_claim_is_stale",
+    "GATE_VERIFY_ID", "PACKET_SECTIONS", "_claim_is_stale",
     "_packet_under_run_lock",
 )

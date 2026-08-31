@@ -79,7 +79,7 @@ def _closed(value, keys) -> bool:
 
 
 def _committed_success_failure(
-    success, content, *, run, ticket_id, dispatch_id, record_id,
+    success, *, run, ticket_id, dispatch_id, record_id,
 ):
     if not _closed(success, set(DISPATCH_STORED_SUCCESS_FIELDS)):
         return _invalid(f"record '{record_id}' has a non-canonical stored success")
@@ -87,10 +87,9 @@ def _committed_success_failure(
     expected = {
         "protocol": PROTOCOL, "run": run, "id": ticket_id,
         "dispatch_id": dispatch_id, "record_id": record_id,
-        "content": content,
     }
     if committed != expected:
-        return _invalid(f"record '{record_id}' stored success differs from its content or origin")
+        return _invalid(f"record '{record_id}' stored success differs from its origin")
     return None
 
 
@@ -185,7 +184,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     kind = record["kind"]
     if kind == "generic":
         return _committed_success_failure(
-            record["success"], content, run=run, ticket_id=ticket_id,
+            record["success"], run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
     if kind == "packet":
@@ -208,7 +207,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
         ):
             return _invalid("committed packet differs from its ticket attempt")
         return _committed_success_failure(
-            record["success"], content, run=run, ticket_id=ticket_id,
+            record["success"], run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
     if kind == "result":
