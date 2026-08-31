@@ -388,7 +388,10 @@ class PackPinTest(unittest.TestCase):
                 if item["code"] == "pack-digest-mismatch"
             )
             self.assertIn("changed under the seal", detail)
-            self.assertIn("stamp-generation", detail)
+            # The remedy names a living door: the generation stamp retired
+            # into the brick fold, so a caller is sent to `do` or `judge`.
+            self.assertIn("tickets.py do | judge", detail)
+            self.assertNotIn("stamp-generation", detail)
 
     def test_an_unchanged_pack_grades_clean(self):
         with self._pinned_world() as (tmp, _pack):

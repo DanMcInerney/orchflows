@@ -26,13 +26,14 @@ place this evidence law in the ticket lifecycle.
    checker recorded by `checked_by`, or none at all. A gate-deferred ticket
    does not use `checked_by`. Independence comes from that checker or from
    the predicate, never from a standing verification child. The checker path
-   is the driver's to walk: author `<id>.check` as one read-only
-   `orch-judge` ticket depending on its target, spend one distinct dispatch
-   on it, land that return, then anchor the joined stage through
+   is the driver's to walk: author `<id>.check` against the sealed target,
+   spend one distinct read-only `orch-judge` dispatch on it, land that
+   return, then anchor the joined stage through
    `check <run> <id> --stage <id>.check`. An accepted checked target takes
-   one repair `do` brick against the blockers it accepted; a clean one
-   closes with no repair at all; a gate-deferred root takes no stage,
-   because no door emits a review family for it.
+   one separate
+   repair ticket, opened as a `do` brick against the blockers it accepted;
+   a clean one closes with no repair at all; a gate-deferred root takes no
+   stage, because no door emits a review family for it.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
