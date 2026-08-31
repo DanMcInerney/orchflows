@@ -3,7 +3,7 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
+    from .tickets_format import REPORT_SECTION, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
     from .tickets_generations import assignment_digest, seal_findings
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
@@ -14,7 +14,7 @@ if __package__:
     from .tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
+    from tickets_format import REPORT_SECTION, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
     from tickets_generations import assignment_digest, seal_findings
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
@@ -68,7 +68,7 @@ def _gate_body(kind: str, root_id: str, lens: str = "", units=None):
 
 
 def _gate_sections(*args, **kwargs):
-    return _gate_body(*args, **kwargs) + [("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")]
+    return _gate_body(*args, **kwargs) + [(REPORT_SECTION, "")]
 
 
 def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,

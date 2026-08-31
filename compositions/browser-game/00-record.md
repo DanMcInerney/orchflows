@@ -45,16 +45,4 @@ Exceptional constraints:
 - combine research, prose, code, and rendered outcomes into one artifact identity
 - file a program record that the instance validator rejects
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

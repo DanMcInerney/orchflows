@@ -80,7 +80,7 @@ _LIFECYCLE_SPECS = (
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
 ) + (
     LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
-    LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Result", "contracts/verdict.md", "rules/verification.md"),
+    LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Report", "contracts/verdict.md", "rules/verification.md"),
 ) + tuple(
     # Not a legacy path, though an earlier rendering called it one: these are
     # the only transitions a ticket that was never dispatched can take, and

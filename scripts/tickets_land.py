@@ -67,7 +67,7 @@ else:  # pragma: no cover - direct/installed flat script path
 LAND_USAGE = (
     "land <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> [--status <disposition>] "
-    "[--outcome-file <path|->] "
+    "[--outcome-file <path|->] [--findings-file <path|->] "
     "[--accepted-file <path|->] [--artifact <fixed-identity>]"
 )
 JOIN_RECORD_PREFIX = "join:"
@@ -232,8 +232,8 @@ def _done_outcome(decision: dict) -> str:
     return decision.get("action") or "checked"
 
 
-def _land_transaction(run, ticket_id, identity, outcome_file, accepted_file,
-                      artifact, driver_status):
+def _land_transaction(run, ticket_id, identity, outcome_file, findings_file,
+                      accepted_file, artifact, driver_status):
     """The state acts, in order, under the caller's one run lock."""
 
     prior = _prior_records(run, ticket_id, identity["dispatch_id"])
@@ -286,6 +286,8 @@ def _land_transaction(run, ticket_id, identity, outcome_file, accepted_file,
         "--by", identity["by"],
         "--status", decision["status"],
     ]
+    if findings_file is not None:
+        arguments.extend(("--findings-file", findings_file))
     if accepted_file is not None:
         arguments.extend(("--accepted-file", accepted_file))
     if artifact is not None:
@@ -319,6 +321,7 @@ def _cmd_land(rest):
         "by": _extract_flag(args, "--by"),
     }
     outcome_file = _extract_flag(args, "--outcome-file")
+    findings_file = _extract_flag(args, "--findings-file")
     accepted_file = _extract_flag(args, "--accepted-file")
     artifact = _extract_flag(args, "--artifact")
     driver_status = _extract_flag(args, "--status")
@@ -333,8 +336,8 @@ def _cmd_land(rest):
     try:
         with _run_lock(run):
             landed = _land_transaction(
-                run, ticket_id, identity, outcome_file, accepted_file, artifact,
-                driver_status,
+                run, ticket_id, identity, outcome_file, findings_file,
+                accepted_file, artifact, driver_status,
             )
     except OSError as error:
         return {"error": f"unable to land {run}/{ticket_id}: {error}"}

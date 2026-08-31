@@ -32,16 +32,4 @@ Exceptional constraints:
 - move the declared coverage floor with the target's execution cost
 - buy speed from the coverage floor, the oracle, or the horizon the outcome needs
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

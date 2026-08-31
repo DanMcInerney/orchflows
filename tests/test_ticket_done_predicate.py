@@ -145,14 +145,8 @@ class LandDonePredicateTest(unittest.TestCase):
         self.seal = parse_canonical_json(tickets._parse_frontmatter(
             self.ticket_path().read_text(encoding="utf-8")
         )["dispatch_v1"])["attempts"][0]["assignment_seal"]
-        for name, body in (("result", "delivered"), ("verification", "verified")):
-            path = Path(self.temporary.name) / f"outcome-{name}.txt"
-            path.write_text(body, encoding="utf-8")
         self.run_command(
-            "dispatch-outcome", "run", "T",
-            "--result-file", str(Path(self.temporary.name) / "outcome-result.txt"),
-            "--verification-file",
-            str(Path(self.temporary.name) / "outcome-verification.txt"),
+            "dispatch-outcome", "run", "T", "--note", "delivered and verified",
         )
 
     def land(self, *extra):
@@ -177,7 +171,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertEqual("checked", self.steps(landed)["done"]["outcome"])
         verification = _sections(
             self.ticket_path().read_text(encoding="utf-8")
-        )["Verification"]
+        )["Report"]
         self.assertIn("### Written by `root-join`", verification)
         self.assertIn(f"done command `{command}` exited 0 in ", verification)
 
@@ -346,14 +340,8 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         return path
 
     def close(self):
-        for name, body in (("result", "delivered"), ("verification", "verified")):
-            evidence = Path(self.temporary.name) / f"outcome-{name}.txt"
-            evidence.write_text(body, encoding="utf-8")
         closed = tickets._dispatch([
-            "dispatch-outcome", "run", "T",
-            "--result-file", str(Path(self.temporary.name) / "outcome-result.txt"),
-            "--verification-file",
-            str(Path(self.temporary.name) / "outcome-verification.txt"),
+            "dispatch-outcome", "run", "T", "--note", "delivered and verified",
         ])
         self.assertNotIn("error", closed, closed)
 

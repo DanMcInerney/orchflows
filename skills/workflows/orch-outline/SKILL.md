@@ -43,7 +43,7 @@ launch the child from the `launch` object it returns.
 That planner's joined outcome is what permits successor materialization.
 Never send a follow-up after the prior planner outcome closed.
 
-Resolve the accepted predecessor `## Result` identity; semantic-root change is
+Resolve the accepted predecessor `## Report` identity; semantic-root change is
 unsupported without that accepted predecessor result identity. Once resolved,
 fresh successor run: create root via `tickets.py new`; `root_generation`
 ordinal `1`; make `## Context` cite it; preserve predecessor bytes. Never

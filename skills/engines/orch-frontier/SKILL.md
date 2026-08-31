@@ -55,12 +55,12 @@ and checker/gate is closed, run the standards owner's required checks exactly on
 
 Watch per [profiles](references/profiles.md); recompute on outcomes, tickets,
 suspensions, or transport silence. `bound-check` parks overdue motionless work
-as `suspended` through `land`, Handoff naming bound
+as `suspended` through `land`, the report naming bound
 and `last_motion_at`; motion reports `over-bound`. Promote with `tickets.py ready`;
 report `skipped` and blockers. Dependents wait; unsatisfied exclusions exit with
 remainder.
 Quiescent: read `successors.md`; when a `planned` entry exists and run is
-complete, return its trigger and the predecessor's accepted `## Result`
+complete, return its trigger and the predecessor's accepted `## Report`
 identity to the materialization owner, who replaces it
 ([work-item](../../../contracts/work-item.md#roots-decomposition-and-integration)).
 Otherwise exit; `limited` when bounds leave tickets open.

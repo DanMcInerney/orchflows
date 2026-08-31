@@ -24,16 +24,4 @@ Exceptional constraints:
 - edit a golden result inside a canary run
 - treat divergence as failure
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

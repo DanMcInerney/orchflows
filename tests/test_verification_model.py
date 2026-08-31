@@ -165,7 +165,7 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
             "materialization run",
             "planner ticket bound to this exact skill",
             "`tickets.py dispatch`",
-            "accepted predecessor `## Result` identity",
+            "accepted predecessor `## Report` identity",
             "fresh successor run",
             "`root_generation` ordinal `1`",
             "`tickets.py new`",
@@ -191,7 +191,7 @@ class CritiqueContractTest(unittest.TestCase):
         self.assertIn("A critique enumerates evidence-backed findings", check)
         self.assertIn("one thread per shared cause", check)
         self.assertIn("extinguishes the class", check)
-        self.assertIn("A verification records", check)
+        self.assertIn("Write the complete\nseven-field findings array to one JSON file", check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-check/SKILL.md")

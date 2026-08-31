@@ -147,37 +147,28 @@ class DispatchV1Test(unittest.TestCase):
 
     def result(
         self, *, dispatch_id="D1", record_id="result-1", by="worker",
-        seal=None, section="Result", body="delivered", append=False,
+        seal=None, body="delivered",
     ):
-        arguments = [
+        return tickets._dispatch([
             "result", "run", "T",
             "--assignment-seal", seal or self.opened_seal,
             "--dispatch-id", dispatch_id,
             "--record-id", record_id,
             "--by", by,
-            "--section", section,
             "--text", body,
-        ]
-        if append:
-            arguments.append("--append")
-        return tickets._dispatch(arguments)
+        ])
 
     def evidence_file(self, name: str, body: str) -> str:
         path = Path(self.temporary.name) / f"outcome-{name}.txt"
         path.write_text(body, encoding="utf-8")
         return str(path)
 
-    def outcome(self, *, handoff=False, result="delivered"):
-        """Close through typed evidence files; the envelope names no status."""
+    def outcome(self, *, note="delivered and verified"):
+        """Close with one free-text note; the envelope names no status."""
 
-        arguments = [
-            "dispatch-outcome", "run", "T",
-            "--result-file", self.evidence_file("result", result),
-            "--verification-file", self.evidence_file("verification", "verified"),
-        ]
-        if handoff:
-            arguments += ["--handoff-file", self.evidence_file("handoff", "resume here")]
-        return tickets._dispatch(arguments)
+        return tickets._dispatch([
+            "dispatch-outcome", "run", "T", "--note", note,
+        ])
 
     def join(self, *, status="complete", seal=None, by="root-join"):
         """The join, carrying the disposition the joining authority records."""
@@ -439,10 +430,7 @@ class DispatchV1Test(unittest.TestCase):
         envelope = {
             "assignment_seal": self.opened_seal,
             "by": "worker", "dispatch_id": "D1",
-            "evidence": {
-                "Result": "delivered", "Verification": "verified",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
+            "evidence": "delivered and verified",
             "id": "T", "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1", "run": "run/../run",
             "status": "complete",
@@ -534,7 +522,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("result-1", committed["result"]["record_id"])
         self.assertEqual("worker", committed["result"]["by"])
         written = self.ticket_text()
-        result_body = _sections(written)["Result"]
+        result_body = _sections(written)["Report"]
         self.assertEqual(1, result_body.count("### Written by `worker`"), result_body)
         self.assertEqual(1, result_body.count("delivered"), result_body)
 
@@ -546,7 +534,7 @@ class DispatchV1Test(unittest.TestCase):
         conflict = self.result(body="different")
         self.assertEqual("idempotency-conflict", conflict["code"])
         self.assertEqual(retired, self.ticket_text())
-        stale = self.result(record_id="result-2", body="later", append=True)
+        stale = self.result(record_id="result-2", body="later")
         self.assertEqual("stale-attempt", stale["code"])
         self.assertEqual(retired, self.ticket_text())
 
@@ -622,7 +610,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual(joined_text, self.ticket_text())
         self.assertEqual(outcome, self.outcome())
 
-        changed_outcome = self.outcome(result="a different closing note")
+        changed_outcome = self.outcome(note="a different closing note")
         conflict = changed_outcome
         self.assertEqual("idempotency-conflict", conflict["code"])
         unseen = list(arguments)
@@ -631,32 +619,37 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("outcome-record-mismatch", mismatch["code"])
         self.assertEqual(joined_text, self.ticket_text())
 
-    def test_outcome_materializes_only_unstreamed_evidence_once(self):
+    def test_the_closing_note_appends_to_the_report_and_replays(self):
+        """No delta law: the note is prose, and prose is not deduplicated.
+
+        The five typed evidence sections could be snapshotted twice, so a
+        repeat was refused. One free-text channel has nothing to snapshot,
+        and refusing a repeated sentence would lose the close over a
+        reader's inconvenience.
+        """
+
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         self.commit_launch()
         self.result(body="delivered")
-        streamed = self.ticket_text()
 
-        repeated = self.outcome(result="delivered")
-
-        self.assertEqual("outcome-invalid", repeated["code"])
-        self.assertEqual(streamed, self.ticket_text())
-
-        committed = self.outcome(result="closing result delta")
+        committed = self.outcome(note="delivered")
         self.assertNotIn("error", committed)
         closed = self.ticket_text()
-        result_body = _sections(closed)["Result"]
-        self.assertEqual(1, result_body.count("delivered"))
-        self.assertEqual(1, result_body.count("closing result delta"))
-        self.assertEqual(committed, self.outcome(result="closing result delta"))
+        report = _sections(closed)["Report"]
+        self.assertEqual(2, report.count("delivered"))
+        self.assertEqual(committed, self.outcome(note="delivered"))
+        self.assertEqual(closed, self.ticket_text())
+
+        conflict = self.outcome(note="a different closing note")
+        self.assertEqual("idempotency-conflict", conflict["code"])
         self.assertEqual(closed, self.ticket_text())
 
     def test_suspended_join_retires_the_attempt_but_retains_claimant_observations(self):
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         self.commit_launch()
-        self.outcome(handoff=True)
+        self.outcome(note="parked mid-way; resume here")
 
         joined = self.join(status="suspended")
 

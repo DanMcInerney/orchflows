@@ -32,16 +32,4 @@ Exceptional constraints:
 - deliver a brief 01-triage did not disposition ready-for-agent
 - answer a ready-for-human brief on the maintainer's behalf
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

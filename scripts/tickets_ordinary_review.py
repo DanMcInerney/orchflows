@@ -11,7 +11,7 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_format import (
-        DEFAULT_BOUND_MINUTES, _parse_frontmatter,
+        DEFAULT_BOUND_MINUTES, REPORT_SECTION, _parse_frontmatter,
         _set_frontmatter_field,
     )
     from .tickets_generations import assignment_digest
@@ -19,7 +19,7 @@ if __package__:
     from .tickets_assignment import GATE_REPAIR_ID
 else:
     from tickets_format import (
-        DEFAULT_BOUND_MINUTES, _parse_frontmatter,
+        DEFAULT_BOUND_MINUTES, REPORT_SECTION, _parse_frontmatter,
         _set_frontmatter_field,
     )
     from tickets_generations import assignment_digest
@@ -47,8 +47,7 @@ def _sections(target_id: str, dependency: str):
                 "for the root Goal.",
             ]),
         ),
-        ("Result", ""), ("Verification", ""),
-        ("Feedback", "[]"), ("Risks", "[]"),
+        (REPORT_SECTION, ""),
     ]
 
 

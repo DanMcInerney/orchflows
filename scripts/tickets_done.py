@@ -28,8 +28,8 @@ import subprocess
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
-        DELIVERED_STATE, _sections, _set_frontmatter_field, _write_section,
-        dequote, done_defects, parse_done,
+        DELIVERED_STATE, REPORT_SECTION, _sections, _set_frontmatter_field,
+        _write_section, dequote, done_defects, parse_done,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
@@ -39,8 +39,8 @@ if __package__:
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
-        DELIVERED_STATE, _sections, _set_frontmatter_field, _write_section,
-        dequote, done_defects, parse_done,
+        DELIVERED_STATE, REPORT_SECTION, _sections, _set_frontmatter_field,
+        _write_section, dequote, done_defects, parse_done,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
@@ -114,11 +114,13 @@ def verification_line(reading: dict) -> str:
 def record_verification(path, reading: dict, by: str):
     """Write the predicate's own evidence into the ticket, attributed to land.
 
-    System-written and attributed to the driver that landed, never to a
-    child: no child ran this, and evidence whose writer is wrong is evidence
-    a reader cannot weigh. Filed once -- a re-landed ticket whose predicate
-    answers the same way finds its own line already in the section and
-    leaves it there rather than stacking a second copy.
+    Into `## Report`, beside what the child filed, because there is one
+    channel and this is one more thing worth reading about the item. System-
+    written and attributed to the driver that landed, never to a child: no
+    child ran this, and evidence whose writer is wrong is evidence a reader
+    cannot weigh. Filed once -- a re-landed ticket whose predicate answers
+    the same way finds its own line already in the section and leaves it
+    there rather than stacking a second copy.
     """
 
     body = f"{RESULT_ATTRIBUTION_PREFIX}`{by}`\n\n{verification_line(reading)}"
@@ -126,12 +128,12 @@ def record_verification(path, reading: dict, by: str):
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:
         return "replayed", {"error": f"unreadable ticket for done evidence: {error}"}
-    prior = _sections(text).get("Verification", "")
+    prior = _sections(text).get(REPORT_SECTION, "")
     if body.rstrip() and body.rstrip() in prior:
         return "replayed", None
     try:
         _write_text_atomically(
-            path, _write_section(text, "Verification", body, bool(prior.strip())),
+            path, _write_section(text, REPORT_SECTION, body, bool(prior.strip())),
         )
     except (OSError, ValueError) as error:
         return "refused", {"error": f"unable to file done evidence: {error}"}
@@ -162,7 +164,7 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
             f"round: {number}",
             "The candidate is already merged; repair in this tree.",
         ])),
-        ("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]"),
+        (REPORT_SECTION, ""),
     ])
     cut_generation = str(source.get("cut_generation") or "").strip()
     if cut_generation:

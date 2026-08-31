@@ -28,16 +28,4 @@ Exceptional constraints:
 - editing a friction entry or a prior covered line
 - ranking a proposal on evidence a covered watermark already answers
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

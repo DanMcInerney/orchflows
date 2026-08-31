@@ -32,16 +32,4 @@ Exceptional constraints:
 - restate or call evolve's verification, search, or selection internals
 - letting a benchmaker run targeting benchmaker call evolve
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

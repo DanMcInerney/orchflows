@@ -374,8 +374,8 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
 # roster starts at exactly the enums the fact registry consolidated.
 RATCHETED_ENUMS = (
     ("dispatch_record", "kind"),
-    ("executor_result", "mode"),
     ("executor_result", "operation"),
+    ("done_binding", "form"),
 )
 # The two modules the ratchet exists to protect: one is generated from the
 # contract, the other is the reserved namespace's declared owner.

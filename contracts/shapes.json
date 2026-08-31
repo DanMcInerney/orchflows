@@ -60,8 +60,8 @@
     {
       "name": "dispatch_result_record",
       "contract": "dispatch.md",
-      "fields": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
-      "required": ["assignment_seal", "body", "mode", "operation", "section", "writer"]
+      "fields": ["assignment_seal", "body", "operation", "writer"],
+      "required": ["assignment_seal", "body", "operation", "writer"]
     },
     {
       "name": "dispatch_result_success",
@@ -72,8 +72,8 @@
     {
       "name": "dispatch_result_projection",
       "contract": "dispatch.md",
-      "fields": ["protocol", "run", "id", "path", "section", "mode", "by", "assignment_seal", "dispatch_id", "record_id"],
-      "required": ["protocol", "run", "id", "path", "section", "mode", "by", "assignment_seal", "dispatch_id", "record_id"]
+      "fields": ["protocol", "run", "id", "path", "by", "assignment_seal", "dispatch_id", "record_id"],
+      "required": ["protocol", "run", "id", "path", "by", "assignment_seal", "dispatch_id", "record_id"]
     },
     {
       "name": "dispatch_transition_success",
@@ -139,12 +139,6 @@
         "protocol", "run", "id", "assignment_seal", "dispatch_id",
         "outcome_record_id", "by", "evidence"
       ]
-    },
-    {
-      "name": "dispatch_outcome_evidence",
-      "contract": "dispatch.md",
-      "fields": ["Result", "Verification", "Feedback", "Risks", "Handoff"],
-      "required": ["Result", "Verification", "Feedback", "Risks", "Handoff"]
     },
     {
       "name": "review_state",
@@ -236,9 +230,9 @@
     {
       "name": "executor_result",
       "contract": "result.md",
-      "fields": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
-      "required": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
-      "values": {"operation": ["result"], "mode": ["write", "append", "replace"]}
+      "fields": ["assignment_seal", "body", "operation", "writer"],
+      "required": ["assignment_seal", "body", "operation", "writer"],
+      "values": {"operation": ["result"]}
     },
     {
       "name": "verdict_criterion",

@@ -17,16 +17,13 @@ if __package__:
     )
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_format import (
-        TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8,
-        _section_body, _write_section, canonical_json, is_critique_stage_id,
+        REPORT_SECTION, TicketFormatError, _extract_flag, _parse_frontmatter,
+        _read_utf8, _section_body, _write_section, canonical_json,
         parse_canonical_json,
     )
-    from .tickets_markdown import SECTION_SENTINEL
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
     from .tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
-    from .tickets_shapes import (
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
-    )
+    from .tickets_shapes import DISPATCH_OUTCOME_REQUIRED
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
@@ -34,30 +31,18 @@ else:
     )
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_format import (
-        TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8,
-        _section_body, _write_section, canonical_json, is_critique_stage_id,
+        REPORT_SECTION, TicketFormatError, _extract_flag, _parse_frontmatter,
+        _read_utf8, _section_body, _write_section, canonical_json,
         parse_canonical_json,
     )
-    from tickets_markdown import SECTION_SENTINEL
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
     from tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
-    from tickets_shapes import (
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
-    )
+    from tickets_shapes import DISPATCH_OUTCOME_REQUIRED
 
 
-OUTCOME_SECTIONS = tuple(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
-OUTCOME_FILE_FLAGS = {
-    "Result": "--result-file",
-    "Verification": "--verification-file",
-    "Feedback": "--feedback-file",
-    "Risks": "--risks-file",
-    "Handoff": "--handoff-file",
-}
 DISPATCH_OUTCOME_USAGE = (
     "dispatch-outcome <run> <id> "
-    "[--result-file <path>] [--verification-file <path>] [--feedback-file <path>] "
-    "[--risks-file <path>] [--handoff-file <path>] | --file <canonical-outcome-path|->"
+    "(--note <text> | --note-file <path> | --file <canonical-outcome-path|->)"
 )
 
 
@@ -93,24 +78,6 @@ def _outcome_attempt(run: str, ticket_id: str):
         if any(item.get("record_id") == OUTCOME_RECORD_ID for item in attempt.get("records", [])):
             return (path, text, data, state, attempt), None
     return (path, text, data, state, state["attempts"][-1]), None
-
-
-def _prior_result_body(attempt: dict, section: str):
-    """Resolve one section from the latest committed executor result."""
-
-    body = None
-    for record in attempt.get("records", []):
-        if record.get("kind") != "result":
-            continue
-        try:
-            content = parse_canonical_json(record["content"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        if isinstance(content, dict) and content.get("section") == section:
-            candidate = content.get("body")
-            if isinstance(candidate, str) and candidate.strip():
-                body = candidate
-    return body
 
 
 def _outcome_file(path):
@@ -173,33 +140,22 @@ def _outcome_attempt_match(content: dict, run: str, ticket_id: str, attempt: dic
 
 
 def _outcome_content(args: list):
-    """Parse typed close inputs, or a complete inline-relay carrier.
+    """Parse the closing note, or a complete inline-relay carrier.
 
-    The typed form is the default one: an envelope with no `--file` closes
-    the attempt out of the evidence flags and the records already streamed.
-    It used to be `--status` that selected it, and `--status` is gone --
-    a child no longer names its own disposition, so the note it files says
-    only what it did.
+    The note is one free text, so the typed form is one flag rather than five:
+    nothing downstream parses this prose, so nothing here asks a child to sort
+    it into sections first. `--file` still carries the whole canonical
+    envelope, which is how a coordinator relays one it did not write.
     """
 
-    source_present = "--file" in args
-    file_present = {
-        section: flag in args for section, flag in OUTCOME_FILE_FLAGS.items()
-    }
+    present = [flag for flag in ("--file", "--note", "--note-file") if flag in args]
     source_file = _extract_flag(args, "--file")
-    file_args = {
-        section: _extract_flag(args, flag)
-        for section, flag in OUTCOME_FILE_FLAGS.items()
-    }
-    if source_present and source_file is None:
+    note = _extract_flag(args, "--note")
+    note_file = _extract_flag(args, "--note-file")
+    values = {"--file": source_file, "--note": note, "--note-file": note_file}
+    if any(values[flag] is None for flag in present):
         return None, {
             "error": "dispatch-outcome flags require a value",
-            "code": "outcome-invalid", "protocol": PROTOCOL,
-        }
-    if any(file_present[section] and file_args[section] is None
-           for section in OUTCOME_FILE_FLAGS):
-        return None, {
-            "error": "dispatch-outcome evidence flags require a value",
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
     if args:
@@ -207,14 +163,19 @@ def _outcome_content(args: list):
             "error": f"dispatch-outcome does not accept {' '.join(args)}; usage: {DISPATCH_OUTCOME_USAGE}",
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
+    if len(present) != 1:
+        return None, {
+            "error": f"dispatch-outcome takes exactly one of --note, --note-file or --file; got {present or 'none'}. usage: {DISPATCH_OUTCOME_USAGE}",
+            "code": "outcome-invalid", "protocol": PROTOCOL,
+        }
     if source_file is not None:
-        if any(value is not None for value in file_args.values()):
-            return None, {
-                "error": "--file carries the complete outcome and cannot be combined with typed inputs",
-                "code": "outcome-invalid", "protocol": PROTOCOL,
-            }
         return _outcome_file(source_file)
-    return {"_files": file_args}, None
+    if note_file is not None:
+        body, failure = _read_utf8(note_file, "closing note file")
+        if failure is not None:
+            return None, failure
+        return {"_note": body}, None
+    return {"_note": note}, None
 
 
 def _outcome_failure(run: str, ticket_id: str, content):
@@ -229,34 +190,16 @@ def _outcome_failure(run: str, ticket_id: str, content):
         failure = _identity_failure(kind, value)
         if failure is not None:
             return _classification("outcome-invalid", failure["error"])
+    # One free text, and nothing parses it: a child's closing note is prose
+    # for a reader, so this asks only that it exist and that it not forge the
+    # section grammar or the writer attribution the ticket file owns.
     evidence = content.get("evidence")
-    if not isinstance(evidence, dict) or set(evidence) != set(OUTCOME_SECTIONS):
-        return _classification("outcome-invalid", "outcome evidence must close the five executor sections")
-    if any(not isinstance(evidence.get(section), str) for section in OUTCOME_SECTIONS):
-        return _classification("outcome-invalid", "outcome evidence bodies must be strings")
-    required_sections = ("Result", "Verification", "Feedback", "Risks")
-    if any(not evidence[section].strip() for section in required_sections):
-        return _classification("outcome-invalid", "closing outcome evidence is incomplete")
-    # Handoff is optional and uncoupled: the envelope no longer names a
-    # disposition, so nothing here can require or forbid a handoff on the
-    # strength of one. A child that has work to hand over writes it, and
-    # the join that reads the note decides what the ticket became.
-    if is_critique_stage_id(ticket_id):
-        # Critique Result and Feedback are generated finding carriers, not
-        # arbitrary prose.  Keep the import lazy because tickets_review
-        # consumes this module while joining a review stage.
-        if __package__:
-            from .tickets_review import ReviewError, canonical_finding_array
-        else:
-            from tickets_review import ReviewError, canonical_finding_array
-        for section in ("Result", "Feedback"):
-            try:
-                canonical_finding_array(evidence[section], f"critique outcome {section}")
-            except ReviewError as error:
-                return _classification("outcome-invalid", str(error))
-    for body in evidence.values():
-        if any(line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines()):
-            return _classification("outcome-invalid", "outcome evidence contains a reserved heading or attribution")
+    if not isinstance(evidence, str):
+        return _classification("outcome-invalid", "outcome evidence must be one closing note")
+    if not evidence.strip():
+        return _classification("outcome-invalid", "closing outcome evidence is empty")
+    if any(line.startswith("## ") or line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in evidence.splitlines()):
+        return _classification("outcome-invalid", "outcome evidence contains a reserved heading or attribution")
     return None
 
 
@@ -285,28 +228,7 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
     if failure is not None:
         return failure
     _path, _text, _data, _state, attempt = inferred
-    if isinstance(carrier, dict) and "_files" in carrier:
-        evidence = {}
-        for section in OUTCOME_SECTIONS:
-            source = carrier["_files"].get(section)
-            if source is not None:
-                body, read_failure = _read_utf8(source, f"{section} evidence file")
-                if read_failure is not None:
-                    return read_failure
-            elif section in {"Result", "Verification"}:
-                body = _prior_result_body(attempt, section)
-                if body is None:
-                    return _classification(
-                        "outcome-invalid",
-                        f"outcome requires {section} evidence through --{section.lower()}-file or a prior result record",
-                    )
-            elif section in {"Feedback", "Risks"}:
-                body = "[]"
-            else:
-                body = ""
-            if body is None:
-                body = ""
-            evidence[section] = body
+    if isinstance(carrier, dict) and "_note" in carrier:
         content = {
             "protocol": PROTOCOL,
             "run": run,
@@ -315,7 +237,7 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
             "dispatch_id": attempt["dispatch_id"],
             "outcome_record_id": OUTCOME_RECORD_ID,
             "by": attempt["owner"],
-            "evidence": evidence,
+            "evidence": carrier["_note"],
         }
     else:
         content = carrier
@@ -331,35 +253,18 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
         return failure
 
     def commit_outcome(text, _data, _attempt, _state):
-        updated = text
+        # The note appends to Report like any other filing. Nothing compares
+        # it against what the child already streamed: the delta law was there
+        # to keep five typed sections from being snapshotted twice, and with
+        # one free-text channel a repeated sentence is a reader's problem,
+        # never a refusal that loses the close.
+        prior = _section_body(text, REPORT_SECTION)
         try:
-            for section in OUTCOME_SECTIONS:
-                body = content["evidence"][section]
-                if not body:
-                    continue
-                prior = _section_body(updated, section)
-                materialized = (
-                    f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{body}"
-                )
-                # The writer stores each block with trailing whitespace
-                # stripped, and a block with nothing before it in the
-                # section carries no leading blank line, so neither side of
-                # this comparison may depend on either: rstrip both before
-                # comparing, and test membership on its own, with no
-                # required prefix.
-                stripped = materialized.rstrip()
-                if stripped and (prior.rstrip() == stripped or stripped in prior):
-                    flag = OUTCOME_FILE_FLAGS[section]
-                    return text, None, _classification(
-                        "outcome-invalid",
-                        f"outcome {section} repeats evidence already materialized "
-                        f"by this dispatch. Pass only the unstreamed delta through "
-                        f"`{flag}`",
-                    )
-                updated = _write_section(
-                    updated, section, materialized,
-                    bool(prior and prior != SECTION_SENTINEL),
-                )
+            updated = _write_section(
+                text, REPORT_SECTION,
+                f"{RESULT_ATTRIBUTION_PREFIX}`{content['by']}`\n\n{content['evidence']}",
+                bool(prior),
+            )
         except TicketFormatError as error:
             return text, None, _classification("outcome-invalid", str(error))
         return updated, {"outcome": content}, None
@@ -372,8 +277,6 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
     )
 
 __all__ = (
-    "DISPATCH_OUTCOME_USAGE", "OUTCOME_FILE_FLAGS",
-    "OUTCOME_SECTIONS", "_cmd_dispatch_outcome", "_outcome_attempt",
+    "DISPATCH_OUTCOME_USAGE", "_cmd_dispatch_outcome", "_outcome_attempt",
     "_outcome_attempt_match", "_outcome_content", "_outcome_failure",
-    "_prior_result_body",
 )

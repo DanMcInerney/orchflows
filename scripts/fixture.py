@@ -24,7 +24,7 @@ except ImportError:  # pragma: no cover - the installed copy's path
 
 STATUS_RE = re.compile(r"^status:\s*([^\r\n]+)$", re.MULTILINE)
 ID_RE = re.compile(r"^id:\s*([^\r\n]+)$", re.MULTILINE)
-SECTIONS = ("Result", "Verification", "Feedback", "Risks")
+REQUIRED_SECTIONS = ("Report",)
 USAGE = "fixture <completed-ticket> --output <directory>"
 
 
@@ -61,7 +61,7 @@ def freeze_ticket(source: Path, output: Path) -> dict:
     if status != "complete":
         raise FixtureError(f"fixture source must be complete, got {status!r}")
     ticket_id = _identity(text, ID_RE, "id")
-    missing = [heading for heading in SECTIONS[:2] if not _section(text, heading)]
+    missing = [heading for heading in REQUIRED_SECTIONS if not _section(text, heading)]
     if missing:
         raise FixtureError("fixture source has empty " + ", ".join(missing))
     digest = "sha256:" + hashlib.sha256(payload).hexdigest()

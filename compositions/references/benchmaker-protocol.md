@@ -122,7 +122,7 @@ and the fraction of criteria decided by deterministic oracle versus by
 judged oracle, which is recorded per criterion and never summed.
 
 The record lands outside the package — in the measuring ticket's
-`## Result` — one entry per measurement event, naming the git revision
+`## Report` — one entry per measurement event, naming the git revision
 of the benchmark it covers, the full candidate identity the manifest's
 `incomparability` bounds, the date, the measured scope, and these
 figures.

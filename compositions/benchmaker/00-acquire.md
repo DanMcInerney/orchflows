@@ -31,16 +31,4 @@ Exceptional constraints:
 
 - let unsupported semantics become invented target truth
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

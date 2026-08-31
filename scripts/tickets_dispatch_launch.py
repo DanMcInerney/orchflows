@@ -32,14 +32,14 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, classification,
     )
     from .tickets_format import (
-        EXECUTOR_SECTIONS, _executor_of, _parse_frontmatter, _read_utf8,
+        REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
     from .tickets_store import NO_SINK_ERROR, _tickets_root
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, PROTOCOL, classification
     from tickets_format import (
-        EXECUTOR_SECTIONS, _executor_of, _parse_frontmatter, _read_utf8,
+        REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
     from tickets_store import NO_SINK_ERROR, _tickets_root
 
@@ -276,19 +276,20 @@ def _lane_lines(assignment: dict) -> list:
     if review_kind == "critique":
         return [
             "Remain read-only. Enumerate every evidence-backed material blocker, "
-            "then synthesize and rank the smallest architectural repair set. File "
-            "one complete seven-field JSON findings array in Result or Feedback; "
-            "never rewrite Result or Verification.",
+            "then synthesize and rank the smallest architectural repair set. Write "
+            "the complete seven-field JSON findings array to a file in this "
+            "workspace and name that path in your report; the join reads the file "
+            "and binds it in the review ledger. Never rewrite another ticket.",
         ]
     if review_kind == "repair":
         return [
             "Resolve only the accepted blockers, preserving the fixed pack and "
-            "workspace authority, then file fresh evidence for the repaired artifact.",
+            "workspace authority, then report fresh evidence for the repaired artifact.",
         ]
     if script is not None:
         return [
-            f"Run the script {script} with the ticket path above, and file its "
-            "stdout as Result and its exit status as Verification.",
+            f"Run the script {script} with the ticket path above, and report its "
+            "stdout and its exit status.",
         ]
     return [
         "Goal, Context, and any Details are the sealed assignment: Goal is the "
@@ -320,7 +321,7 @@ def _reading_lines(assignment: dict) -> list:
     if dependencies:
         lines.append(
             "Dependency results are system-owned inputs. Read these completed "
-            "tickets' Result and Verification sections: " + ", ".join(dependencies)
+            f"tickets' `## {REPORT_SECTION}`: " + ", ".join(dependencies)
         )
     return lines
 
@@ -381,24 +382,29 @@ def launch_prompt(assignment: dict) -> str:
         "wherever a command takes --by.",
         f"Your lease expires at {assignment['lease_expires_at']}; it is absolute "
         "and is never extended.",
-        "File evidence as it is produced; the join alone sets terminal status. "
-        f"SECTION is one of {list(EXECUTOR_SECTIONS)}, RECORD_ID is a fresh "
-        "identity of your own for each record, and PATH is a file in this workspace:",
+        f"File as you go into `## {REPORT_SECTION}`, the one channel: every "
+        "write appends there, in whatever form you judge useful. RECORD_ID is a "
+        "fresh identity of your own for each record, and PATH is a file in this "
+        "workspace:",
         _command(sys.executable, script, "result", run, ticket_id, *identity,
-                 "--section", "SECTION", "--file", "PATH", "--append"),
-        _command(sys.executable, script, "result", run, ticket_id, *identity,
-                 "--section", "SECTION", "--text", "TEXT", "--append"),
-        f"Close exactly once with the reserved `{OUTCOME_RECORD_ID}` envelope, "
-        "the closing delta and nothing else: it names no status, because what "
-        "this ticket became is checked at the join and never claimed here. "
-        f"Write it to a file with {CANONICAL_DUMP}, then:",
-        _command(sys.executable, script, "dispatch-outcome", run, ticket_id,
                  "--file", "PATH"),
-        f"The envelope names protocol {PROTOCOL}, run {run}, id {ticket_id}, "
-        f"assignment_seal {assignment['assignment_seal']}, dispatch_id "
-        f"{assignment['dispatch_id']}, outcome_record_id {OUTCOME_RECORD_ID}, by "
-        f"{assignment['assigned_name']}, and evidence with "
-        f"{', '.join(EXECUTOR_SECTIONS)}.",
+        _command(sys.executable, script, "result", run, ticket_id, *identity,
+                 "--text", "TEXT"),
+        "Report what a reader would need and cannot re-derive: the exit code of "
+        "every command you ran as you observed it, what you changed and why, what "
+        "you deliberately did not do and why, and anything the assignment asked "
+        "you to cover. The join alone sets terminal status.",
+        f"Close exactly once with the reserved `{OUTCOME_RECORD_ID}` note, which "
+        "names no status because what this ticket became is checked at the join "
+        "and never claimed here:",
+        _command(sys.executable, script, "dispatch-outcome", run, ticket_id,
+                 "--note-file", "PATH"),
+        "A coordinator relaying a whole canonical envelope for you passes it "
+        f"through `--file` instead; that envelope names protocol {PROTOCOL}, run "
+        f"{run}, id {ticket_id}, assignment_seal {assignment['assignment_seal']}, "
+        f"dispatch_id {assignment['dispatch_id']}, outcome_record_id "
+        f"{OUTCOME_RECORD_ID}, by {assignment['assigned_name']}, and evidence as "
+        f"one string, written with {CANONICAL_DUMP}.",
     ]
     return "\n".join(lines)
 

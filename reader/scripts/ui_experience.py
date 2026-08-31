@@ -33,10 +33,16 @@ NAVIGATION = (
     ("friction", "Friction", "/friction", False, ""),
 )
 VIEW_IDS = {"now", "run-map", "ticket", "sessions", "session-graph", "friction"}
+# The current ticket grammar first, then the section names the sink still
+# holds. This viewer is the one consumer that reads user state written under
+# earlier contracts -- history is never rewritten (contracts/work-item.md) --
+# and it writes nothing, so reading a name no writer produces any more shows a
+# reader what is there rather than reviving a filing route.
 VISIBLE_SECTIONS = (
-    "Goal", "Context", "Details", "Result", "Verification",
-    "Feedback", "Risks", "Handoff",
+    "Goal", "Context", "Details", "Report",
+    "Result", "Verification", "Feedback", "Risks", "Handoff",
 )
+REPORT_SECTION = "Report"
 FRICTION_FIELDS = ("ts", "host", "observed", "expected", "run", "ticket")
 WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^\s`\"'<>]+"
@@ -208,7 +214,7 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
             }
             for row in record["verification"]["rows"]
         ],
-        "result": _text(sections.get("Result")),
+        "result": _text(sections.get(REPORT_SECTION)) or _text(sections.get("Result")),
         "feedback": _text(sections.get("Feedback")),
         "risks": _text(sections.get("Risks")),
         "rationale": _rationale_identity(sections.get("Rationale")),

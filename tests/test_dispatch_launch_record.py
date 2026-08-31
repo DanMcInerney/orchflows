@@ -144,16 +144,16 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         ]
         self.assertEqual(2, len(filing), prompt)
         for command in filing:
-            self.assertIn("--append", command)
+            self.assertNotIn("--section", command)
+            self.assertNotIn("--append", command)
 
         text_command = next(command for command in filing if "--text" in command)
-        text_command[text_command.index("SECTION")] = "Result"
         text_command[text_command.index("TEXT")] = "first emitted text record"
         text_command[text_command.index("RECORD_ID")] = "R1"
-        self.assertEqual("append", self.run_command(*text_command)["result"]["mode"])
+        self.run_command(*text_command)
         text_command[text_command.index("first emitted text record")] = "second one"
         text_command[text_command.index("R1")] = "R2"
-        self.assertEqual("append", self.run_command(*text_command)["result"]["mode"])
+        self.run_command(*text_command)
         body = self.ticket_path.read_text(encoding="utf-8")
         self.assertIn("first emitted text record", body)
         self.assertIn("second one", body)
@@ -172,19 +172,18 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         filed = self.run_command(
             "result", "run", "T", "--assignment-seal", seal,
             "--dispatch-id", "D1", "--record-id", "result-1",
-            "--by", "worker", "--section", "Result", "--text", "delivered",
+            "--by", "worker", "--text", "delivered",
         )
-        self.assertEqual("write", filed["result"]["mode"])
+        self.assertEqual("worker", filed["result"]["by"])
         self.run_command(
             "result", "run", "T", "--assignment-seal", seal,
             "--dispatch-id", "D1", "--record-id", "result-2",
-            "--by", "worker", "--section", "Verification", "--text", "checked",
+            "--by", "worker", "--text", "checked",
         )
-        delta = Path(self.temporary.name) / "closing-delta.txt"
-        delta.write_text("the unstreamed closing delta", encoding="utf-8")
+        note = Path(self.temporary.name) / "closing-note.txt"
+        note.write_text("the closing note", encoding="utf-8")
         self.run_command(
-            "dispatch-outcome", "run", "T",
-            "--result-file", str(delta), "--verification-file", str(delta),
+            "dispatch-outcome", "run", "T", "--note-file", str(note),
         )
         joined = self.run_command(
             "dispatch-join", "run", "T", "--assignment-seal", seal,
@@ -210,7 +209,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
             "result", "run", "T",
             "--assignment-seal", opened["dispatch"]["assignment_seal"],
             "--dispatch-id", "D1", "--record-id", "result-1",
-            "--by", "worker", "--section", "Result", "--text", "delivered",
+            "--by", "worker", "--text", "delivered",
         ])
         self.assertEqual("dispatch-record-invalid", refusal["code"], refusal)
         self.assertIn("committed launch", refusal["error"])

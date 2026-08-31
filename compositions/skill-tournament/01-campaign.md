@@ -36,16 +36,4 @@ Exceptional constraints:
 - restate or call evolve's verification, search, or selection internals
 - activating a selected result here — a selected result requires a separate authorized integration before activation
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

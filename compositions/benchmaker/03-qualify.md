@@ -30,16 +30,4 @@ Exceptional constraints:
 
 - return a self-qualified verdict set where the builder-disjoint context is unreachable
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

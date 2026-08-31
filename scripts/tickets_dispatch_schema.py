@@ -17,7 +17,7 @@ if __package__:
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
         DISPATCH_JOIN_SUCCESS_VALUES,
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
         EXECUTOR_RESULT_VALUES,
     )
@@ -28,8 +28,8 @@ if __package__:
         record_id_namespace_ok,
     )
     from .tickets_format import (
-        EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
-        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
+        TERMINAL_STATES, _parse_iso, canonical_json,
+        is_review_stage_id, parse_canonical_json,
     )
 else:
     from tickets_shapes import (
@@ -44,7 +44,7 @@ else:
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
         DISPATCH_JOIN_SUCCESS_VALUES,
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
         EXECUTOR_RESULT_VALUES,
     )
@@ -55,8 +55,8 @@ else:
         record_id_namespace_ok,
     )
     from tickets_format import (
-        EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
-        is_critique_stage_id, is_review_stage_id, parse_canonical_json,
+        TERMINAL_STATES, _parse_iso, canonical_json,
+        is_review_stage_id, parse_canonical_json,
     )
 
 ATTEMPT_STATES = frozenset(DISPATCH_ATTEMPT_VALUES["state"])
@@ -64,9 +64,7 @@ ATTEMPT_KEYS = frozenset(DISPATCH_ATTEMPT_FIELDS)
 ATTEMPT_REQUIRED_KEYS = frozenset(DISPATCH_ATTEMPT_REQUIRED)
 RECORD_KEYS = frozenset(DISPATCH_RECORD_FIELDS)
 RECORD_KINDS = frozenset(DISPATCH_RECORD_VALUES["kind"])
-OUTCOME_SECTIONS = frozenset(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 RESULT_OPERATION = EXECUTOR_RESULT_VALUES["operation"][0]
-RESULT_MODES = frozenset(EXECUTOR_RESULT_VALUES["mode"])
 JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 
 
@@ -106,23 +104,8 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
     if any(content.get(key) != value for key, value in expected.items()):
         return "outcome envelope differs from its attempt or ticket origin"
     evidence = content.get("evidence")
-    if not _closed(evidence, OUTCOME_SECTIONS):
-        return "outcome evidence does not close the five executor sections"
-    if any(not isinstance(evidence.get(section), str) for section in OUTCOME_SECTIONS):
-        return "outcome evidence bodies are not strings"
-    if any(not evidence[section].strip() for section in OUTCOME_SECTIONS - {"Handoff"}):
-        return "outcome evidence is incomplete"
-    if is_critique_stage_id(ticket_id):
-        try:
-            if __package__:
-                from .tickets_review_schema import SchemaError, finding_values
-            else:
-                from tickets_review_schema import SchemaError, finding_values
-            for section in ("Result", "Feedback"):
-                values = parse_canonical_json(evidence[section])
-                finding_values(values, f"critique outcome {section}")
-        except (TypeError, ValueError, SchemaError) as error:
-            return f"critique outcome findings are invalid: {error}"
+    if not isinstance(evidence, str) or not evidence.strip():
+        return "outcome evidence is not a non-empty closing note"
     return None
 
 
@@ -135,20 +118,9 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
         content.get("operation") != RESULT_OPERATION
         or content.get("assignment_seal") != attempt["assignment_seal"]
         or content.get("writer") != attempt["owner"]
-        or content.get("section") not in EXECUTOR_SECTIONS
-        or content.get("mode") not in RESULT_MODES
         or not isinstance(content.get("body"), str)
     ):
         return _invalid(f"result record '{record_id}' content differs from its attempt")
-    if is_critique_stage_id(ticket_id) and content["section"] in {"Result", "Feedback"}:
-        try:
-            if __package__:
-                from .tickets_review_schema import SchemaError, finding_values
-            else:
-                from tickets_review_schema import SchemaError, finding_values
-            finding_values(parse_canonical_json(content["body"]), f"critique {content['section']} result")
-        except (TypeError, ValueError, SchemaError) as error:
-            return _invalid(f"result record '{record_id}' critique findings are invalid: {error}")
     success = record["success"]
     if not _closed(success, set(DISPATCH_RESULT_SUCCESS_FIELDS)):
         return _invalid(f"result record '{record_id}' has a non-canonical stored success")
@@ -158,14 +130,12 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
         return _invalid(f"result record '{record_id}' stored success has an invalid shape")
     expected = {
         "protocol": PROTOCOL, "run": run, "id": ticket_id,
-        "section": content["section"], "by": content["writer"],
+        "by": content["writer"],
         "assignment_seal": content["assignment_seal"],
         "dispatch_id": attempt["dispatch_id"], "record_id": record_id,
     }
     if any(result.get(key) != value for key, value in expected.items()):
         return _invalid(f"result record '{record_id}' stored success differs from its content")
-    if result.get("mode") not in ({content["mode"], "write"} if content["mode"] != "write" else {"write"}):
-        return _invalid(f"result record '{record_id}' stored mode differs from its request")
     result_path = result.get("path")
     if not isinstance(result_path, str):
         return _invalid(f"result record '{record_id}' has no canonical ticket path")

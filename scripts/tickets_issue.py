@@ -7,8 +7,8 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_flag,
+        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -21,8 +21,8 @@ else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_emission import grade_run_emission
     from tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_flag,
+        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -131,7 +131,7 @@ def _cmd_new(rest):
     sections = [("Goal", goal), ("Context", context)]
     if details:
         sections.append(("Details", details))
-    sections.extend((("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")))
+    sections.append((REPORT_SECTION, ""))
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
 

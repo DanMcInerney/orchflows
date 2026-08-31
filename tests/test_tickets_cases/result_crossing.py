@@ -12,7 +12,7 @@ class TestResultBodySource(unittest.TestCase):
             body.write_text("from a file\n", encoding="utf-8")
             before = (run_dir / "T1.md").read_text(encoding="utf-8")
             result = run_main(
-                worktree, "result", "testrun", "T1", "--section", "Result",
+                worktree, "result", "testrun", "T1",
                 "--file", str(body), "--text", "from a string",
             )
             self.assertEqual(1, result.returncode)
@@ -24,7 +24,7 @@ class TestResultBodySource(unittest.TestCase):
             tmp = Path(tmp)
             _, worktree, run_dir = make_worktree(tmp, {"T1": ("claimed", "[]")})
             before = (run_dir / "T1.md").read_text(encoding="utf-8")
-            result = run_main(worktree, "result", "testrun", "T1", "--section", "Result")
+            result = run_main(worktree, "result", "testrun", "T1")
             self.assertEqual(1, result.returncode)
             self.assertIn("error", json.loads(result.stdout))
             self.assertEqual(before, (run_dir / "T1.md").read_text(encoding="utf-8"))

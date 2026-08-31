@@ -172,12 +172,12 @@ class TestTheGeneratedEnumRatchet(unittest.TestCase):
             )
             (root / "scripts").mkdir()
             (root / "scripts" / "tickets_planted.py").write_text(
-                'MODES = ("write", "append", "replace")\n', encoding="utf-8"
+                'FORMS = ("command", "check")\n', encoding="utf-8"
             )
             messages = self._errors(root)
         self.assertEqual(1, len(messages), messages)
-        self.assertIn("MODES", messages[0])
-        self.assertIn("executor_result.mode", messages[0])
+        self.assertIn("FORMS", messages[0])
+        self.assertIn("done_binding.form", messages[0])
 
     def test_a_collection_built_from_names_is_not_a_restatement(self):
         """The point is the second spelling of the members, not a second

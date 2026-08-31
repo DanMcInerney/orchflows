@@ -29,16 +29,4 @@ Exceptional constraints:
 - rank candidates
 - promote or activate anything
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

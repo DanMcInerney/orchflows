@@ -118,14 +118,14 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         self.assertNotIn("error", accepted)
         path = Path(accepted["new"]["path"])
         corrupted = path.read_text(encoding="utf-8").replace(
-            "## Result\n", "## Result\n\nfirst\\nsecond\n", 1,
+            "## Report\n", "## Report\n\nfirst\\nsecond\n", 1,
         )
         path.write_text(corrupted, encoding="utf-8")
 
         linted = self.dispatch("lint", "testrun", "T5")
         messages = [item["message"] for item in linted["lint"]["findings"]]
         self.assertTrue(
-            any("backslash-n" in message and "Result" in message for message in messages),
+            any("backslash-n" in message and "Report" in message for message in messages),
             messages,
         )
         self.assertEqual(1, linted["exit_code"])
@@ -146,8 +146,7 @@ class EscapedNewlineShapeTest(unittest.TestCase):
         sections = [
             ("Goal", "Deliver the artifact."),
             ("Context", "note one\\nnote two"),
-            ("Result", ""), ("Verification", ""),
-            ("Feedback", "[]"), ("Risks", "[]"),
+            ("Report", ""),
         ]
         text = _render_ticket(fields, sections)
         defects = ticket_defects(text)

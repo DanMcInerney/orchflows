@@ -51,10 +51,7 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, re
     sections = [
         ("Goal", f"Deliver the observable result for {ticket_id}."),
         ("Context", "The root assignment and repository are authoritative."),
-        ("Result", ""),
-        ("Verification", ""),
-        ("Feedback", "[]"),
-        ("Risks", "[]"),
+        ("Report", ""),
     ]
     return _render_ticket(fields, sections)
 
@@ -84,12 +81,11 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "`id`", "`repair`", "`summary`",
             ):
                 self.assertIn(field, text)
-            self.assertIn("either `Result` or `Feedback`", " ".join(text.split()))
+            self.assertIn("--findings-file", " ".join(text.split()))
         self.assertIn("has exactly", result_contract)
-        self.assertIn("valid JSON encoding", result_contract)
-        self.assertNotIn("records findings in `## Feedback`", result_contract)
+        self.assertNotIn("either `Result` or `Feedback`", " ".join(result_contract.split()))
 
-    def test_critique_join_normalizes_result_findings_and_accepted_json(self):
+    def test_critique_join_normalizes_findings_and_accepted_json(self):
         findings = [{
             "blocking": True,
             "class": "correctness",
@@ -103,27 +99,10 @@ class SemanticTicketContractTest(unittest.TestCase):
         accepted = json.dumps(
             findings, ensure_ascii=True, sort_keys=True, separators=(",", ":")
         )
-        attempt = {"records": [
-            {
-                "kind": "result",
-                "content": tickets_review.canonical_json({
-                    "body": streamed,
-                    "section": "Result",
-                }),
-            },
-            {
-                "kind": "result",
-                "content": tickets_review.canonical_json({
-                    "body": "Inspected the fixed render and transition trace.",
-                    "section": "Feedback",
-                }),
-            },
-        ]}
-        extracted = tickets_join._critique_findings(
-            attempt, {
-                "Result": "No unstreamed finding delta.",
-                "Feedback": "Inspected evidence already streamed.",
-            }
+        # Whatever encoding the file carries, the join normalizes it before
+        # it binds the array in the ledger. Nothing is scraped out of prose.
+        extracted = tickets_review.canonical_finding_array(
+            streamed, "critique findings",
         )
         self.assertEqual(tickets_review.canonical_json(findings), extracted)
 
@@ -147,10 +126,15 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(findings, adjudicated["records"][-1]["findings"])
         self.assertEqual(findings, adjudicated["records"][-1]["accepted"])
 
-    def test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses(self):
-        """A critique that streams a finding and repeats it in the reserved
-        outcome recorded one fact twice.  Two records claiming one id with
-        different content are two claims, and still refuse."""
+    def test_findings_have_one_carrier_and_a_repeated_id_refuses(self):
+        """One file, one array, and no reconstruction from several carriers.
+
+        The findings used to be flattened out of every streamed result record
+        and the outcome's copy of the same sections, and the flattening then
+        had to collapse the duplicate a child produced by filing the same
+        finding twice. There is one carrier now, so the only thing left to
+        grade is the array itself.
+        """
 
         finding = {
             "blocking": True,
@@ -161,24 +145,19 @@ class SemanticTicketContractTest(unittest.TestCase):
             "repair": "Repair test-x.",
             "summary": "test-x is red.",
         }
-        streamed = {"records": [{
-            "kind": "result",
-            "content": tickets_review.canonical_json(
-                {"body": json.dumps([finding], indent=2), "section": "Feedback"}
+        self.assertFalse(hasattr(tickets_join, "_critique_findings"))
+        self.assertEqual(
+            tickets_review.canonical_json([finding]),
+            tickets_review.canonical_finding_array(
+                json.dumps([finding], indent=2), "critique findings",
             ),
-        }]}
-
-        carried_twice = tickets_join._critique_findings(
-            streamed,
-            {"Result": tickets_review.canonical_json([finding]), "Feedback": ""},
         )
-        self.assertEqual(tickets_review.canonical_json([finding]), carried_twice)
 
         conflicting = dict(finding, summary="test-x is green.")
         with self.assertRaisesRegex(Exception, "repeats finding id B1"):
-            tickets_join._critique_findings(
-                streamed,
-                {"Result": tickets_review.canonical_json([conflicting]), "Feedback": ""},
+            tickets_review.canonical_finding_array(
+                tickets_review.canonical_json([finding, conflicting]),
+                "critique findings",
             )
 
     def seal(self, run, root):
@@ -228,43 +207,19 @@ class SemanticTicketContractTest(unittest.TestCase):
         path.write_text(findings, encoding="utf-8")
         return ["--accepted-file", str(path)]
 
-    def evidence_flags(self, ticket_id, dispatch_id, evidence) -> list:
-        """Typed closing files, the only carrier `dispatch-outcome` still takes."""
+    def findings_flags(self, ticket_id, findings: str) -> list:
+        """The complete findings cross as a file, like the accepted subset."""
 
-        flags = []
-        for section, body in sorted(evidence.items()):
-            if not body:
-                continue
-            path = (
-                Path(self.temporary.name)
-                / f"outcome-{ticket_id}-{dispatch_id}-{section}.txt"
-            )
-            path.write_text(body, encoding="utf-8")
-            flags.extend((f"--{section.lower()}-file", str(path)))
-        return flags
+        path = Path(self.temporary.name) / f"findings-{ticket_id}.json"
+        path.write_text(findings, encoding="utf-8")
+        return ["--findings-file", str(path)]
 
     def commit_outcome(self, run, ticket_id, opened, by, dispatch_id):
-        review = ".gate.critique." in ticket_id or ticket_id.endswith(".check")
-        content = {
-            "assignment_seal": opened["assignment_seal"],
-            "by": by,
-            "dispatch_id": dispatch_id,
-            "evidence": {
-                # A review stage's Result and Feedback are finding carriers,
-                # not prose: the same rule the join applies to the close.
-                "Result": "[]" if review else "closing result delta",
-                "Verification": "closing verification delta",
-                # These fixtures stream Feedback as a result record first, and
-                # the close carries only the delta that has not entered yet.
-                "Feedback": "" if review else "closing feedback delta: []",
-                "Risks": "closing risk delta: []", "Handoff": "",
-            },
-            "id": ticket_id, "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": run,
-        }
+        """One free-text closing note; the envelope carries nothing typed."""
+
         return self.dispatch(
             "dispatch-outcome", run, ticket_id,
-            *self.evidence_flags(ticket_id, dispatch_id, content["evidence"]),
+            "--note", f"closing note for {ticket_id}",
         )
 
     def test_a_long_assignment_is_issued_and_reaches_generation_stamping(self):
@@ -354,7 +309,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
         self.assertIn("Details is the planner's guidance", launched["prompt"])
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
-        self.assertEqual({"Goal", "Context", "Result", "Verification", "Feedback", "Risks"}, set(_sections(text)))
+        self.assertEqual({"Goal", "Context", "Report"}, set(_sections(text)))
 
     def test_preissue_lint_and_new_grade_the_same_projected_file_candidate(self):
         source = Path(self.temporary.name) / "R1.md"
@@ -482,7 +437,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(["--record-id", "RECORD_ID"], argv[7:9])
         self.assertEqual(["--by", "worker"], argv[9:11])
         argv[argv.index("RECORD_ID")] = "result-1"
-        argv[argv.index("SECTION")] = "Result"
         argv[argv.index("TEXT")] = "filed from the emitted prompt"
         filed = self.dispatch(*argv)
         self.assertEqual("worker", filed["result"]["by"])
@@ -636,7 +590,7 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "--assignment-seal", opened["assignment_seal"],
                 "--dispatch-id", f"member-D{suffix}",
                 "--record-id", "result-1", "--by", f"member-{suffix}",
-                "--section", "Result", "--text", "done",
+                "--text", "done",
             )
             self.commit_outcome(
                 "clean", ticket_id, opened, f"member-{suffix}", f"member-D{suffix}"
@@ -673,7 +627,9 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--assignment-seal", opened["assignment_seal"],
             "--dispatch-id", "critic-D1",
             "--outcome-record-id", "outcome", "--by", "root-join",
-            "--status", "complete", *self.accepted_file(critique_id, "[]"),
+            "--status", "complete",
+            *self.findings_flags(critique_id, "[]"),
+            *self.accepted_file(critique_id, "[]"),
         )
         critique = (
             Path(self.temporary.name) / "tickets" / "clean" / f"{critique_id}.md"
@@ -705,7 +661,10 @@ class SemanticTicketContractTest(unittest.TestCase):
             Path(self.temporary.name) / "tickets" / "clean" / "R.gate.repair.md"
         ).read_text(encoding="utf-8")
         self.assertIn("status: complete", repair)
-        self.assertIn("### Written by `root-join`\n\n[]", repair)
+        self.assertIn(
+            f"### Written by `root-join`\n\n{tickets_lifecycle.NOOP_REPAIR_NOTE}",
+            repair,
+        )
         repair_review = json.loads(_parse_frontmatter(repair)["review_v1"])
         self.assertEqual(
             ["GatePlan", "CritiqueAdjudication", "RepairOutcome"],
@@ -813,7 +772,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "result", "checker", "R.check",
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--record-id", "feedback-1",
-            "--by", "checker-a", "--section", "Feedback", "--text", findings,
+            "--by", "checker-a", "--text", "findings are in the file the join reads",
         )
         self.commit_outcome(
             "checker", "R.check", stage_opened, "checker-a", "checker-D1"
@@ -823,6 +782,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--status", "complete",
+            *self.findings_flags("R.check", findings),
             *self.accepted_file("R.check", findings),
         )
         equivalent = json.dumps(json.loads(findings), ensure_ascii=False, indent=2)
@@ -831,6 +791,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--assignment-seal", stage_opened["assignment_seal"],
             "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--status", "complete",
+            *self.findings_flags("R.check-equivalent", equivalent),
             *self.accepted_file("R.check-equivalent", equivalent),
         )
         self.assertEqual(first_join, replayed_join)
@@ -926,23 +887,9 @@ class SemanticTicketContractTest(unittest.TestCase):
             artifact=artifact, record=False,
         )
         self.assertIn(review["records"][1]["identity"], repair_launch["prompt"])
-        repair_outcome = {
-            "assignment_seal": repair_opened["assignment_seal"],
-            "by": "repairer", "dispatch_id": "repair-D1",
-            "evidence": {
-                "Result": "Repaired every accepted checker blocker.",
-                "Verification": "Targeted repair checks are green.",
-                "Feedback": "[]", "Risks": "[]", "Handoff": "",
-            },
-            "id": "R.gate.repair", "outcome_record_id": "outcome",
-            "protocol": "orchflows.dispatch.v1", "run": "checker",
-        }
         self.dispatch(
             "dispatch-outcome", "checker", "R.gate.repair",
-            *self.evidence_flags(
-                repair_outcome["id"], repair_outcome["dispatch_id"],
-                repair_outcome["evidence"],
-            ),
+            "--note", "Repaired every accepted checker blocker; checks are green.",
         )
         self.dispatch(
             "dispatch-join", "checker", "R.gate.repair",

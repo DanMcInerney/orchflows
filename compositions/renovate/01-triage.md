@@ -22,16 +22,4 @@ Exceptional constraints:
 
 - investigate a finding past the cheap checks triage licenses
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

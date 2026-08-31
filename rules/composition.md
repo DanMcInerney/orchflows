@@ -48,4 +48,4 @@
     repository gate or distorts the
     record a Return field is contracted to carry — disagreement,
     rationale, and contradiction are recorded as found — and is named
-    in the result's `## Feedback`.
+    in the result's `## Report`.

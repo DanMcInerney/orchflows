@@ -49,7 +49,7 @@ connect this law to each authorized dispatch event and predecessor record.
    dispatch is abandoned; retirement is the dispatching caller's own
    action, never a separate watchdog. `tickets.py land` crosses it and
    retires the derived worktree in the same transaction.
-   Suspension and escalation cross the ticket's committed `## Handoff`
+   Suspension and escalation cross the ticket's committed `## Report`
    ([work-item.md](../contracts/work-item.md)), never as a failure,
    under a once-per-dispatch bound.
 10. Artifact primacy: a return's payload lives in the dispatch's durable
@@ -79,8 +79,8 @@ connect this law to each authorized dispatch event and predecessor record.
     may instead set another finite positive bound. Recurrence of the same
     normalized validation-failure identity suspends immediately rather than
     consuming another generation.
-14. A worker that cannot achieve Goal within its operational bound records a
-    concise Handoff and parks; it never edits a parent ticket.
+14. A worker that cannot achieve Goal within its operational bound reports
+    concisely what a resumer needs and parks; it never edits a parent ticket.
 15. Before a worker becomes ready, is claimed, or is launched, the
     caller seals the exact validated assignment digest over Goal, Context,
     optional Details, dependencies, and executor. Those fields are

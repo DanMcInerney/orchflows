@@ -406,20 +406,20 @@ class TestRepairingAnUnreadableRunIdentity(SinkTest):
 
 
 class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
-    """`## Findings` inside `## Result` is the writer's heading, not a
+    """`## Findings` inside `## Report` is the writer's heading, not a
     sibling ticket section. It was refused about eighteen times; it is now
     indent-quoted on the way in and read back byte for byte."""
 
     BODY = "## Findings\n\nOne finding.\n\n## Method\n\n- ran the suite\n"
 
-    def file_result(self, body, section="Result"):
+    def file_result(self, body):
         path = self.home / "body.md"
         path.write_text(body, encoding="utf-8")
         return tickets._dispatch([
             "result", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", "D1", "--record-id", "R1", "--by", "worker",
-            "--section", section, "--file", str(path),
+            "--file", str(path),
         ])
 
     def accept(self):
@@ -431,7 +431,7 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
         self.accept()
         self.assertNotIn("error", self.file_result(self.BODY))
         filed = _section_body(
-            self.ticket_path("T").read_text(encoding="utf-8"), "Result"
+            self.ticket_path("T").read_text(encoding="utf-8"), "Report"
         )
         self.assertIn(self.BODY.strip(), filed)
 
@@ -447,16 +447,16 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
         `_section_body` strips it -- so these bodies open at column zero, as
         a filed one does behind its writer attribution."""
 
-        ticket = "---\nid: a\n---\n\n## Result\n\n[]\n"
+        ticket = "---\nid: a\n---\n\n## Report\n"
         for body in (
             "## a", "## a\n\n ## b\n\n  ## c", "prose\n\n ## indented",
             "### deeper\n\n## a\n", "no headings at all",
         ):
             with self.subTest(body=body):
-                written = _write_section(ticket, "Result", body)
-                read_back = _section_body(written, "Result")
+                written = _write_section(ticket, "Report", body)
+                read_back = _section_body(written, "Report")
                 self.assertEqual(body.strip(), read_back)
-                self.assertEqual(written, _write_section(ticket, "Result", read_back))
+                self.assertEqual(written, _write_section(ticket, "Report", read_back))
 
     def test_a_cut_section_is_left_exactly_as_authored(self):
         """Goal, Context and Details feed the assignment digest, so
@@ -596,13 +596,7 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
 
     def close(self):
         outcome = self.home / "outcome.json"
-        evidence = {name: "" for name in (
-            "Result", "Verification", "Feedback", "Risks", "Handoff",
-        )}
-        evidence.update({
-            "Result": "Delivered.", "Verification": "Ran the suite.",
-            "Feedback": "[]", "Risks": "[]",
-        })
+        evidence = "Delivered; ran the suite."
         outcome.write_text(canonical_json({
             "protocol": "orchflows.dispatch.v1", "run": "run", "id": "T",
             "assignment_seal": self.frontmatter("T")["assignment_seal"],
@@ -665,10 +659,16 @@ class TestTheJoinsTerminalWriteIsInsideTheLock(SealedRunTest):
         self.assertEqual("T", identity["terminal_ticket_id"])
 
 
-class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
-    """A closing section that repeats evidence a streamed result record
-    already materialized used to say only that it repeated -- not which flag
-    carries the unstreamed delta instead, so the caller had to guess one."""
+class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
+    """The delta law and its remedy line are gone with the five sections.
+
+    A closing section that repeated a streamed one used to refuse, and the
+    refusal had to name which of five typed flags carried the unstreamed
+    delta. There is one free-text channel now and no consumer parses it, so
+    there is nothing to snapshot twice -- and refusing a close because a
+    sentence recurs would lose the record that closes the attempt over a
+    reader's inconvenience.
+    """
 
     def accept(self):
         """Commit the launch every record below enters behind."""
@@ -682,83 +682,44 @@ class TestOutcomeNamesTheDeltaFlag(SealedRunTest):
             "result", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", "D1", "--record-id", "result-1", "--by", "worker",
-            "--section", "Result", "--file", str(path),
+            "--file", str(path),
         )
 
-    def evidence_file(self, name, body):
-        path = self.home / f"outcome-{name}.txt"
-        path.write_text(body, encoding="utf-8")
-        return str(path)
-
-    def close(self, *, result="delivered", verification="verified"):
+    def close(self, *, note="delivered"):
         return tickets._dispatch([
-            "dispatch-outcome", "run", "T",
-            "--result-file", self.evidence_file("result", result),
-            "--verification-file", self.evidence_file("verification", verification),
+            "dispatch-outcome", "run", "T", "--note", note,
         ])
 
-    def test_a_repeated_section_names_its_flag(self):
+    def test_a_note_repeating_a_streamed_line_still_closes(self):
         self.accept()
         self.stream_result()
-        refused = self.close(result="delivered")
-        self.assertEqual("outcome-invalid", refused["code"])
-        self.assertIn("--result-file", refused["error"])
 
-    def test_a_different_cause_is_not_told_that_remedy(self):
-        """Empty Result evidence refuses `outcome-invalid` for being
-        incomplete, a cause the repeated-section flag has no bearing on."""
+        committed = self.close(note="delivered")
 
-        self.accept()
-        refused = self.close(result="")
-        self.assertEqual("outcome-invalid", refused["code"])
-        self.assertNotIn("--result-file", refused["error"])
-
-    def test_the_named_flag_is_the_one_that_works(self):
-        self.accept()
-        self.stream_result()
-        committed = self.close(result="closing result delta")
         self.assertNotIn("error", committed)
-
-    def stream_second_result(self, body):
-        return self.dispatch(
-            "result", "run", "T",
-            "--assignment-seal", self.frontmatter("T")["assignment_seal"],
-            "--dispatch-id", "D1", "--record-id", "result-2", "--by", "worker",
-            "--section", "Result", "--text", body, "--append",
+        report = _section_body(
+            self.ticket_path("T").read_text(encoding="utf-8"), "Report"
         )
+        self.assertEqual(2, report.count("delivered"), report)
 
-    def test_a_trailing_newline_in_the_filed_body_still_refuses(self):
-        """Miss case A: a filed body that ends with a newline byte-matches
-        an already-streamed block only after both sides are rstripped, so
-        neither the exact-equality nor the substring reading fires.
-
-        Regression for state sink run 20260831T001500Z-friction-fixes,
-        ticket R1.02: a repeated block that is not the section's first
-        (so the substring reading's blank-line prefix is present) still
-        slipped past the guard once the closing file's content carried a
-        trailing newline the streamed copy had stripped on write.
-        """
-
+    def test_an_empty_note_is_the_one_thing_the_close_still_refuses(self):
         self.accept()
-        self.stream_result(body="first")
-        self.assertNotIn("error", self.stream_second_result("second"))
-        refused = self.close(result="second\n")
+        refused = self.close(note="   ")
         self.assertEqual("outcome-invalid", refused["code"])
-        self.assertIn("--result-file", refused["error"])
+        self.assertIn("empty", refused["error"])
 
-    def test_a_first_block_repeat_still_refuses(self):
-        """Miss case B: a repeated block that is the section's first has
-        nothing before it, so the substring reading's required leading
-        blank line can never match -- independent of any newline mismatch,
-        since this filed body reproduces the stored block byte for byte.
-        """
-
+    def test_the_typed_evidence_flags_are_ordinary_unknown_arguments(self):
         self.accept()
-        self.stream_result(body="first")
-        self.assertNotIn("error", self.stream_second_result("second"))
-        refused = self.close(result="first")
-        self.assertEqual("outcome-invalid", refused["code"])
-        self.assertIn("--result-file", refused["error"])
+        for flag in (
+            "--result-file", "--verification-file", "--feedback-file",
+            "--risks-file", "--handoff-file",
+        ):
+            with self.subTest(flag=flag):
+                refused = tickets._dispatch([
+                    "dispatch-outcome", "run", "T", flag, str(self.home / "x"),
+                ])
+                self.assertEqual("outcome-invalid", refused["code"])
+                self.assertIn("does not accept", refused["error"])
 
 
 class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):

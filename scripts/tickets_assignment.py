@@ -24,7 +24,7 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_format import (
-        CHECKED_BY_KEY, _executor_of, lease_of, parse_loop,
+        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of, parse_loop,
         _extract_flag, _read_utf8, _sections, dequote,
     )
     from .tickets_registry import REVIEW_KINDS
@@ -39,7 +39,7 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_format import (
-        CHECKED_BY_KEY, _executor_of, lease_of, parse_loop,
+        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of, parse_loop,
         _extract_flag, _read_utf8, _sections, dequote,
     )
     from tickets_registry import REVIEW_KINDS
@@ -51,7 +51,7 @@ else:
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
-GATE_EXECUTOR_SECTIONS = [("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")]
+GATE_EXECUTOR_SECTIONS = [(REPORT_SECTION, "")]
 GATE_MARKER = ".gate."
 CHECK_SUFFIX = ".check"
 # The craft owns its verification scope; this finds the sentence rather than

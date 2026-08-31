@@ -423,7 +423,7 @@ class DispatchLaunchTest(unittest.TestCase):
         filed = tickets._dispatch([
             "result", "run", "T", "--assignment-seal", state["assignment_seal"],
             "--dispatch-id", state["dispatch_id"], "--record-id", "R1",
-            "--by", state["owner"], "--section", "Result",
+            "--by", state["owner"],
             "--text", "the first filed record is the acceptance",
         ])
 
@@ -514,15 +514,10 @@ class LandTest(unittest.TestCase):
         path.write_text(body, encoding="utf-8")
         return str(path)
 
-    def commit_outcome(self, handoff=False):
-        arguments = [
-            "dispatch-outcome", "run", "T",
-            "--result-file", self.evidence("result", "delivered"),
-            "--verification-file", self.evidence("verification", "verified"),
-        ]
-        if handoff:
-            arguments += ["--handoff-file", self.evidence("handoff", "resume here")]
-        return self.run_command(*arguments)
+    def commit_outcome(self, note="delivered and verified"):
+        return self.run_command(
+            "dispatch-outcome", "run", "T", "--note", note,
+        )
 
     def land(self, *extra, status="complete"):
         graded = ["--status", status] if status is not None else []
@@ -571,10 +566,7 @@ class LandTest(unittest.TestCase):
             "assignment_seal": self.seal,
             "by": "worker",
             "dispatch_id": "D1",
-            "evidence": {
-                "Feedback": "[]", "Handoff": "", "Result": "delivered",
-                "Risks": "[]", "Verification": "verified",
-            },
+            "evidence": "delivered and verified",
             "id": "T",
             "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1",
@@ -600,10 +592,7 @@ class LandTest(unittest.TestCase):
 
         envelope = {
             "assignment_seal": self.seal, "by": "worker", "dispatch_id": "D1",
-            "evidence": {
-                "Feedback": "[]", "Handoff": "", "Result": "delivered",
-                "Risks": "[]", "Verification": "verified",
-            },
+            "evidence": "delivered and verified",
             "id": "T", "outcome_record_id": "outcome",
             "protocol": "orchflows.dispatch.v1", "run": "run",
         }
@@ -617,7 +606,7 @@ class LandTest(unittest.TestCase):
         self.assertEqual("committed", self.steps(landed)["dispatch-outcome"])
 
     def test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in(self):
-        self.commit_outcome(handoff=True)
+        self.commit_outcome(note="parked; resume here")
 
         landed = self.land(status="suspended")
 

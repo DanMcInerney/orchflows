@@ -16,7 +16,7 @@ of candidates, each written and scored under the frozen evaluation,
 until the frozen promotion rule and margin are met over the final
 incumbent's score card or {{bound}} is spent.
 
-Each generation consumes 01-eligibility's `## Result` and scores blind through
+Each generation consumes 01-eligibility's `## Report` and scores blind through
 orch-check; `search_plan.py advance` selects search-policy/v1 cases under the
 generation protocol.
 
@@ -43,16 +43,4 @@ Exceptional constraints:
 - keeping a candidate that lacks PASS on every required admission criterion — kill it, since a score never compensates
 - taking an archive member as anything but an exploration parent
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

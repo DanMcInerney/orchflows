@@ -40,7 +40,7 @@ COVERAGE = {
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins"),
         witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch"),
     ),
-    "A6": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_outcome_materializes_only_unstreamed_evidence_once"),),
+    "A6": (witness("tests.test_dispatch_v1", "tests.test_dispatch_v1.DispatchV1Test.test_the_closing_note_appends_to_the_report_and_replays"),),
     "A7": (witness("tests.test_ticket_semantic_contract", "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_complete_code_cut_keeps_one_root_generation_before_and_after_seal"),),
     "B1": (witness("tests.test_dispatch_launch_record", "tests.test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii"),),
     "B2": (

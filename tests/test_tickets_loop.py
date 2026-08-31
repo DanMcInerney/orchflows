@@ -42,17 +42,7 @@ Converge the probe artifact until the done command exits 0.
 
 - input: the probe script decides done off its sibling marker file.
 
-## Result
-
-## Verification
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report
 """
 
 PROBE_SCRIPT = (
@@ -100,7 +90,7 @@ class LoopStubProtocolTest(unittest.TestCase):
             root = Path(self._sink.name) / "tickets" / "looprun" / f"{ticket_id}.md"
             text = root.read_text(encoding="utf-8")
             root.write_text(
-                text.replace("## Result\n", f"## Result\n\n{result_text}\n", 1),
+                text.replace("## Report\n", f"## Report\n\n{result_text}\n", 1),
                 encoding="utf-8",
             )
         closed = tickets._dispatch(["set-status", "looprun", ticket_id, status])

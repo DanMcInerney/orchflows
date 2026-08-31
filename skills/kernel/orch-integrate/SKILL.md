@@ -13,7 +13,7 @@ outside-independence path ([verification.md](../../../rules/verification.md) §7
 `independence: gate`
 defers review; `checker` requires
 [work-item.md](../../../contracts/work-item.md)'s `checked_by`; uncovered
-Goal claims yield needs-check. Suspension resumes from `## Handoff`.
+Goal claims yield needs-check. Suspension resumes from `## Report`.
 
 The returning name and artifact identity must match the dispatch-v1
 attempt; reject mismatches and expired attempts.

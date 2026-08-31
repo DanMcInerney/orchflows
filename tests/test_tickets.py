@@ -180,7 +180,7 @@ def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
         "---\n\n"
         "## Goal\n\nTest result attribution.\n\n"
         "## Context\n\n[]\n\n"
-        "## Result\n\n[]\n",
+        "## Report\n",
         encoding="utf-8",
     )
     return ticket
@@ -237,18 +237,18 @@ class ResultAttributionTest(unittest.TestCase):
             first = run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R1", "--by", "agent-a",
-                "--section", "Result", "--text", "first record",
+                "--text", "first record",
             )
             second = run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R2", "--by", "agent-a",
-                "--section", "Result", "--text", "second record", "--append",
+                "--text", "second record",
             )
 
             self.assertEqual("agent-a", first["result"]["by"])
             self.assertEqual("agent-a", second["result"]["by"])
             text = ticket.read_text(encoding="utf-8")
-            body = tickets_mod._sections(text)["Result"]
+            body = tickets_mod._sections(text)["Report"]
             self.assertEqual(2, body.count("### Written by `agent-a`"), body)
             self.assertEqual(1, body.count("first record"), body)
             self.assertEqual(1, body.count("second record"), body)
@@ -271,7 +271,7 @@ class ResultAttributionTest(unittest.TestCase):
                     before = ticket.read_bytes()
                     payload = run_cmd(
                         tmp, "result", "testrun", "T1", *extra,
-                        "--section", "Result", "--text", body,
+                        "--text", body,
                     )
                     self.assertIn("error", payload)
                     self.assertEqual(before, ticket.read_bytes())
@@ -282,13 +282,13 @@ class ResultAttributionTest(unittest.TestCase):
             run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R1", "--by", "agent-a",
-                "--section", "Result", "--text", "first",
+                "--text", "first",
             )
             before = ticket.read_bytes()
             refused = run_cmd(
                 tmp, "result", "testrun", "T1", "--assignment-seal", seal,
                 "--dispatch-id", "D1", "--record-id", "R2", "--by", "agent-a",
-                "--section", "Result", "--text", "replacement", "--replace",
+                "--section", "Result", "--text", "replacement",
             )
-            self.assertIn("append-only", refused["error"])
+            self.assertIn("--section", refused["error"])
             self.assertEqual(before, ticket.read_bytes())

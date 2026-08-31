@@ -3,17 +3,14 @@
 from __future__ import annotations
 
 import unittest
-import json
-import hashlib
 import os
 import tempfile
 from pathlib import Path
 from unittest import mock
 
 from scripts import tickets
-from scripts.tickets_issue_render import _render_ticket
-from scripts.tickets_format import _set_frontmatter_field
-from scripts.tickets_grade import fixed_gate_snapshot, grade_snapshot, GradeError
+from scripts import tickets_grade
+from scripts.tickets_grade import grade_snapshot, GradeError
 from scripts import tickets_review
 
 
@@ -79,29 +76,6 @@ class GradeSnapshotTest(unittest.TestCase):
         self.assertEqual("loop", grade_snapshot("R", loop)["shape"])
         self.assertEqual(1, grade_snapshot("R", loop)["width"])
 
-    def test_fixed_gate_reuses_only_when_all_covers_match(self):
-        ledger = {"protocol": "orchflows.review.v1", "records": [{
-            "kind": "Verification",
-            "verdict": "PASS",
-            "covers": {
-                "base": "sha256:base",
-                "result": "sha256:result",
-                "dependencies": [],
-            },
-        }]}
-        snapshot = {
-            "R": {
-                "id": "R",
-                "assignment_seal": "sha256:base",
-                "result_identity": "sha256:result",
-                "depends_on": [],
-                "review_v1": json.dumps(ledger),
-            },
-        }
-        self.assertTrue(fixed_gate_snapshot("R", snapshot)["reusable"])
-        snapshot["R"]["assignment_seal"] = "sha256:changed"
-        self.assertFalse(fixed_gate_snapshot("R", snapshot)["reusable"])
-
     def test_the_ledger_ends_at_the_repair_and_admits_no_verification_record(self):
         """The chain's last link is `RepairOutcome`.
 
@@ -146,55 +120,21 @@ class GradeSnapshotTest(unittest.TestCase):
                 ),
             ])
 
-    def test_prose_verification_covers_are_read_as_fixed_result_evidence(self):
-        text = "\n".join((
-            "---", "id: R", "assignment_seal: sha256:base",
-            "workspace_baseline: sha256:base", "---", "",
-            "## Goal", "Deliver the result.", "",
-            "## Context", "The repository is fixed.", "",
-            "## Result", "Fixed result identity: " + "a" * 40, "",
-            "## Verification",
-            "PASS: checks are green; covers: base sha256:base; result " + "a" * 40 + "; dependencies none",
-            "",
-        ))
-        result = fixed_gate_snapshot("R", {"R": text})
-        self.assertEqual("PASS", result["verdict"])
-        self.assertTrue(result["reusable"])
+    def test_no_reader_reconstructs_a_verdict_out_of_a_report(self):
+        """The fixed-result probe is gone, not repointed.
 
-    def test_prose_covers_can_use_workspace_baseline_and_result_tip(self):
-        base, result_identity = "b" * 7, "c" * 7
-        text = "\n".join((
-            "---", "id: R", f"workspace_baseline: {base} clean", "---", "",
-            "## Goal", "Deliver the result.", "",
-            "## Context", "The repository is fixed.", "",
-            "## Result", f"Tip of the worktree: {result_identity}", "",
-            "## Verification",
-            f"PASS: checks are green; covers: base `{base}`; result `{result_identity}`; no dependencies.",
-            "",
-        ))
-        result = fixed_gate_snapshot("R", {"R": text})
-        self.assertTrue(result["reusable"])
+        It read a stored `PASS`/`FAIL` and covers list out of two homes that
+        no longer exist -- a `Verification` review record the ledger stopped
+        admitting, and a `## Verification` section the one-channel return
+        replaced. A reader of a shape nothing writes reuses nothing, so
+        `gate` materializes and nothing scrapes a verdict out of prose.
+        """
 
-    def test_fixed_gate_invalidates_when_a_dependency_assignment_changes(self):
-        snapshot = {
-            "R": {
-                "id": "R", "assignment_seal": "sha256:base",
-                "result_identity": "sha256:result", "depends_on": ["D"],
-                "review_v1": json.dumps({"records": [{
-                    "kind": "Verification", "verdict": "PASS", "covers": {
-                        "base": "sha256:base", "result": "sha256:result",
-                        "dependencies": ["sha256:dep"],
-                    },
-                }]}),
-            },
-            "D": {"id": "D", "assignment_seal": "sha256:dep"},
-        }
-        self.assertTrue(fixed_gate_snapshot("R", snapshot)["reusable"])
-        snapshot["D"]["assignment_seal"] = "sha256:changed"
-        self.assertFalse(fixed_gate_snapshot("R", snapshot)["reusable"])
+        self.assertFalse(hasattr(tickets_grade, "fixed_gate_snapshot"))
+        self.assertFalse(hasattr(tickets, "_cmd_fixed_gate"))
 
 
-class FixedGateCommandTest(unittest.TestCase):
+class GradeCommandTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.environment = mock.patch.dict(
@@ -205,58 +145,6 @@ class FixedGateCommandTest(unittest.TestCase):
     def tearDown(self):
         self.environment.stop()
         self.temporary.cleanup()
-
-    def _write_target(self, assignment_seal: str):
-        result_identity = "sha256:" + hashlib.sha256(
-            "The fixed artifact.".encode("utf-8")
-        ).hexdigest()
-        ledger = {
-            "protocol": "orchflows.review.v1",
-            "records": [{
-                "kind": "Verification",
-                "verdict": "PASS",
-                "covers": {
-                    "base": assignment_seal,
-                    "result": result_identity,
-                    "dependencies": [],
-                },
-            }],
-        }
-        fields = {
-            "id": "R", "run": "run", "status": "complete",
-            "admission": "git:sha256:admission", "executor": "orch-tdd",
-            "pack": "orch-code-pack", "independence": "checker",
-            "isolation": "required", "depends_on": [], "bound": "30m",
-            "root_generation": "root:R",
-            "cut_generation": "cut:R", "assignment_seal": assignment_seal,
-        }
-        text = _render_ticket(fields, [
-            ("Goal", "Deliver the result."),
-            ("Context", "The repository is fixed."),
-            ("Result", "The fixed artifact."),
-            ("Verification", json.dumps(ledger, separators=(",", ":"))),
-            ("Feedback", "[]"), ("Risks", "[]"),
-        ])
-        run_dir = Path(self.temporary.name) / "tickets" / "run"
-        run_dir.mkdir(parents=True)
-        (run_dir / "R.md").write_text(text, encoding="utf-8")
-        return run_dir / "R.md"
-
-    def test_unchanged_fixed_result_does_not_emit_checker_and_changed_one_does(self):
-        path = self._write_target("sha256:base")
-        reused = tickets._dispatch(["gate", "run", "R"])
-        self.assertEqual("reused", reused["gate"]["outcome"])
-        self.assertFalse(path.with_name("R.check.md").exists())
-
-        path.write_text(
-            path.read_text(encoding="utf-8").replace(
-                "assignment_seal: sha256:base", "assignment_seal: sha256:changed"
-            ),
-            encoding="utf-8",
-        )
-        stale = tickets._dispatch(["gate", "run", "R"])
-        self.assertEqual("checker-emitted", stale["gate"]["outcome"])
-        self.assertTrue(path.with_name("R.check.md").exists())
 
     def test_grade_command_reads_one_exact_run_snapshot(self):
         run_dir = Path(self.temporary.name) / "tickets" / "run"

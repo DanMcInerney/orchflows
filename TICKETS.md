@@ -27,11 +27,8 @@ context in any checkout resumes a run mid-flight.
     │ ## Goal              observable result             ┐        │
     │ ## Context           facts and constraints          │ seal   │
     │ ## Details           optional planner guidance     ┘        │
-    │ ## Result            ┐                                      │
-    │ ## Verification      │ executor-written,                    │
-    │ ## Feedback          │ streamed while the                   │
-    │ ## Risks             │ work happens                         │
-    │ ## Handoff           ┘                                      │
+    │ ## Report            executor-written, streamed while       │
+    │                      the work happens                       │
     └─────────────────────────────────────────────────────────────┘
 
 The semantic assignment is sealed before dispatch. A later semantic change
@@ -103,7 +100,7 @@ Cut shape — what a unit may be, who owns what — is
 The frontmatter carries two related mechanisms:
 
 - **`depends_on`** is the dependency graph. A ticket is admitted only once
-  every dependency has landed a Result — `complete`, or `limited` where the
+  every dependency has landed a report — `complete`, or `limited` where the
   work stopped short but still delivered one; `blocked` and `failed` do not
   satisfy it. `orch-frontier` dispatches every
   ticket whose dependencies are done, all in parallel — the rolling
@@ -137,7 +134,7 @@ against that same seal. After an
 attempt opens, the assignment is a fixed target
 ([rules/verification.md](rules/verification.md) §3).
 Every joined disposition retires the attempt. A suspended ticket retains its
-claimant observations and `## Handoff`, but it has no live attempt.
+claimant observations and its `## Report`, but it has no live attempt.
 
 ## Review
 
@@ -168,8 +165,9 @@ Three moments use readers who did not produce the fixed artifact
    normalized established workspace, root pack, isolation `none`, and stable ordered lens
    identities. Independent critiques remain parallel. `CritiqueAdjudication`
    binds the full findings and accepted blocker set; `RepairOutcome` binds the
-   repaired identity or proves that set empty; fresh `Verification` evaluates
-   exactly that predecessor identity. Each append-only stage names the prior
+   repaired identity or proves that set empty, and the chain ends there — the
+   fresh outside check is the root's own `done` predicate, run by `land`.
+   Each append-only stage names the prior
    stage digest, forming one predecessor-linked `orchflows.review.v1` chain.
 
 ## Errors and feedback
@@ -184,10 +182,11 @@ Three moments use readers who did not produce the fixed artifact
   `orch-integrate` adjudicates it. For v1, only the join sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
-- **Silence is explicit.** Findings go to `## Feedback`, hazards to
-  `## Risks`; `[]` fills an empty section so nothing is ambiguous.
-  Work that cannot finish within its bound suspends through the join with a
-  concise `## Handoff` rather than improvising.
+- **Structure only where a machine reads it.** A critique's findings are a
+  JSON file the join reads; everything else a child has to say goes to
+  `## Report` in whatever form it judges useful. Work that cannot finish
+  within its bound suspends through the join, reporting what a resumer needs
+  rather than improvising.
 - **The absolute lease does not move.** Launch replay, transport activity, and
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a

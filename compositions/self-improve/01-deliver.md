@@ -9,7 +9,7 @@ isolation: required
 
 ## Goal
 
-The top-ranked proposal from 00-mine's `## Result` landed in
+The top-ranked proposal from 00-mine's `## Report` landed in
 {{workspace}} at its causal owner: the exact change the proposal names,
 the owner's dependents still holding, the owner's required checks green
 at the landed revision, and — as the delivery's last act — the covered
@@ -34,16 +34,4 @@ Exceptional constraints:
 - editing a friction entry or a prior covered line
 - marking a criterion complete on the executor's own claim
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

@@ -107,8 +107,9 @@ exists, only the outcome-fenced join creates `suspended` or a terminal state,
 and raw status writes are refused as `dispatch-join-required`. Before any
 dispatch record exists, `set-status` is the caller's only route to `suspended`
 or a terminal state — it is the pre-dispatch surface, not a legacy one — and
-`ready` and `claimed` remain the admission boundary's alone. A suspended ticket retains claimant
-observations for its Handoff, but its joined dispatch attempt is retired.
+`ready` and `claimed` remain the admission boundary's alone. A suspended ticket
+retains claimant observations for whoever resumes it, but its joined dispatch
+attempt is retired.
 
 ## Dispatch-v1 launch
 
@@ -130,23 +131,25 @@ A composite gate lane consumes only the validated predecessor chain. Critique
 and repair joins append their stage atomically with the lifecycle
 join. The ordinary distinct checker writes the same `GatePlan` and
 `CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
-artifact, complete canonical findings, and accepted subset.
+artifact, complete canonical findings, and accepted subset. Those two arrays
+are the findings' one durable home: they reach the join as files, never as
+prose a consumer would have to read out of a report.
 
 ## Executor records
 
-After the semantic sections, tickets carry executor-owned `## Result`,
-`## Verification`, `## Feedback`, and `## Risks`; `## Handoff` is optional.
-They are append-only after seal and are excluded from assignment fingerprints.
-The executor files them as work is produced through `tickets.py result` under
+After the semantic sections, a ticket carries one executor-owned `## Report`.
+It is append-only after seal and is excluded from assignment fingerprints, and
+its form is the executor's: the protocol reads nothing out of it, so it
+prescribes no headings inside it. The executor files as work is produced
+through `tickets.py result` under
 [result.md](result.md), naming the attempt's `assignment_seal`, `dispatch_id`,
 a unique `record_id`, and recorded writer. The launch prompt carries the first
 three fixed identities and a `RECORD_ID` placeholder;
 the executor chooses a fresh record id for each streamed write. At closing,
 every executor commits or returns the reserved
-[dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use
-`[]` when empty. Outcome evidence is a closing delta: it contains only evidence
-not already materialized by streamed result records, and every item is appended
-exactly once.
+[dispatch outcome](dispatch.md#outcome-and-join), whose evidence is one closing
+note appended here like any other filing. `land` appends its `done` predicate's
+reading to the same section, attributed to the driver that ran it.
 
 ## Roots, decomposition, and integration
 

@@ -12,13 +12,14 @@ the review criteria, its `## Evidence` the methods a checker may challenge.
 Apply both to the fixed artifact and the executor record. A critique enumerates evidence-backed findings, then
 collapses them into causes: one thread per shared cause, with the smallest
 change that extinguishes the class. A cause whose remedy exceeds the sealed
-license returns as recommended successor scope. A verification records
-methods, covered identities, and the warranted verdict. Stream the review
-record and commit the reserved outcome.
+license returns as recommended successor scope. Write the complete
+seven-field findings array to one JSON file and name its path in the report;
+the join reads that file and binds it in the ledger. Stream the review
+report and commit the reserved outcome.
 
 Never: edit the artifact or sealed semantics; infer a verdict from effort;
 mix a review stage with another kind; or import craft outside the resolved
 pack and shared rules.
 
-Return: the completed review ticket with status, findings or verdict,
-verification evidence, and the pack evidence record.
+Return: the completed review ticket with status, the findings file path,
+its evidence, and the pack evidence record.

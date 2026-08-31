@@ -283,7 +283,6 @@ apply_fixes = _tickets_lint_module.apply_fixes
 lint_findings = _tickets_lint_module.lint_findings
 _cmd_lint = _tickets_lint_module._cmd_lint
 _cmd_gate = _tickets_dispatch_module._cmd_gate
-_cmd_fixed_gate = _tickets_grade_module._cmd_fixed_gate
 _cmd_grade = _tickets_dispatch_module._cmd_grade
 _cmd_dispatch = _tickets_dispatch_module._cmd_dispatch
 _cmd_help = _tickets_dispatch_module._cmd_help

@@ -447,8 +447,8 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     if "executor: orch-check" not in eligibility:
         errors.append("eligibility-unit")
     # The campaign reuses the eligibility verdicts rather than re-taking
-    # them: it cites that stub's Result as its own fixed input.
-    if "01-eligibility's `## Result`" not in campaign:
+    # them: it cites that stub's report as its own fixed input.
+    if "01-eligibility's `## Report`" not in campaign:
         errors.append("generation-verify-binding")
     if re.search(r"^id:\s*04-", evolve, re.MULTILINE):
         errors.append("closing-wrapper")

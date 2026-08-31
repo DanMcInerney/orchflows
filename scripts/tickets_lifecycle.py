@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
+    from .tickets_format import CHECKED_BY_KEY, REPORT_SECTION, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
 else:
-    from tickets_format import CHECKED_BY_KEY, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
+    from tickets_format import CHECKED_BY_KEY, REPORT_SECTION, ROOT_EXECUTOR, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _set_frontmatter_field, _write_section, canonical_json, dequote
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, TicketWriteRefused, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically, locked_ticket_write
 else:
@@ -55,6 +55,7 @@ else:
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
 CHECK_USAGE = 'check <run> <id> --stage <id.check>'
 JOIN_NOOP_REPAIR_USAGE = 'join-noop-repair <run> <id> --by <join_name>'
+NOOP_REPAIR_NOTE = 'No repair: every critique lens accepted an empty blocker set.'
 
 
 def lifecycle_rows() -> tuple:
@@ -346,16 +347,16 @@ def _join_noop_repair_under_run_lock(rest, *, ticket_path=None):
                 or str(loaded.get('review_kind') or '') != 'critique'
                 or str(loaded.get('status') or '') != 'complete'):
             return {'error': f'join-noop-repair dependency is not a completed gate critique: {dependency}'}
-    if _section_body(text, 'Result'):
-        return {'error': 'join-noop-repair requires an empty repair Result'}
+    if _section_body(text, REPORT_SECTION):
+        return {'error': f'join-noop-repair requires an empty repair {REPORT_SECTION}'}
     try:
         review = launch_state(ticket_path, text, None, None)
-        review = repair_outcome(review, '', '[]', written_by, no_op=True)
+        review = repair_outcome(review, '', NOOP_REPAIR_NOTE, written_by, no_op=True)
     except ReviewError as error:
         return _classification('review-invalid', str(error))
     timestamp = datetime.now(timezone.utc).strftime(UTC_STAMP)
     updated = _set_frontmatter_field(text, 'status', 'claimed')
-    updated = _write_section(updated, 'Result', f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n[]')
+    updated = _write_section(updated, REPORT_SECTION, f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n{NOOP_REPAIR_NOTE}')
     updated = _set_frontmatter_field(updated, REVIEW_FIELD, canonical_json(review))
     updated = _set_frontmatter_field(updated, 'status', 'complete')
     try:

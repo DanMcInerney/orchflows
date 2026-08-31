@@ -25,16 +25,4 @@ Exceptional constraints:
 - instantiating a template — every canary item is already a ticket
 - adding, removing, or reordering a canary item to make the set run
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report

@@ -23,9 +23,9 @@ import subprocess
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
-        DELIVERED_STATE, RESULT_BEARING_STATES, TERMINAL_STATES, _executor_of,
-        _sections, _set_frontmatter_field, dequote, loop_defects, parse_loop,
-        ticket_defects,
+        DELIVERED_STATE, REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
+        _executor_of, _sections, _set_frontmatter_field, dequote, loop_defects,
+        parse_loop, ticket_defects,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
@@ -36,9 +36,9 @@ if __package__:
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
-        DELIVERED_STATE, RESULT_BEARING_STATES, TERMINAL_STATES, _executor_of,
-        _sections, _set_frontmatter_field, dequote, loop_defects, parse_loop,
-        ticket_defects,
+        DELIVERED_STATE, REPORT_SECTION, RESULT_BEARING_STATES, TERMINAL_STATES,
+        _executor_of, _sections, _set_frontmatter_field, dequote, loop_defects,
+        parse_loop, ticket_defects,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
@@ -139,7 +139,7 @@ def _iteration_context(data, text, number, prior):
     if prior is not None:
         prior_number, prior_id, _ = prior
         lines.append(
-            f"- prior iteration: {prior_id} — read its `## Result` before working; an identical retry is a defect"
+            f"- prior iteration: {prior_id} — read its `## {REPORT_SECTION}` before working; an identical retry is a defect"
         )
     return "\n\n".join(lines)
 
@@ -183,7 +183,7 @@ def _cmd_loop_arm(rest):
     ]
     if sections.get("Details", "").strip():
         body.append(("Details", sections["Details"].strip()))
-    body += [("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")]
+    body.append((REPORT_SECTION, ""))
     rendered = _render_ticket(fields, body)
     cut_generation = str(data.get("cut_generation") or "").strip()
     if cut_generation:
@@ -286,7 +286,7 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
     rendered = _render_ticket(fields, [
         ("Goal", goal),
         ("Context", "\n".join(f"- {line}" for line in context)),
-        ("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]"),
+        (REPORT_SECTION, ""),
     ])
     cut_generation = str(source.get("cut_generation") or "").strip()
     if cut_generation:
@@ -358,11 +358,18 @@ def _cmd_loop_evaluate(rest):
 
 
 def _result_reading(run_dir, iteration_id):
+    """What one round left behind, as the stall rule compares it.
+
+    The whole report, because the report is the whole of what a round filed:
+    two rounds that produced byte-identical reports converged on nothing,
+    which is the reading `advance_action` closes `stalled` on.
+    """
+
     try:
         text = (run_dir / f"{iteration_id}.md").read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return None
-    return _sections(text).get("Result", "").strip()
+    return _sections(text).get(REPORT_SECTION, "").strip()
 
 
 def _cmd_loop_advance(rest):

@@ -301,8 +301,8 @@ composition).
 - **worklog** — the run view `tickets.py worklog` renders from the ticket
   directory per `contracts/worklog.md`, never a second hand-written
   file; what makes fresh-context iteration and resumption possible.
-- **handoff** — the suspension, resumption, or escalation record: a
-  ticket's `## Handoff` section, per `contracts/work-item.md`.
+- **handoff** — the suspension, resumption, or escalation record: what a
+  parked child writes into its `## Report`, per `contracts/work-item.md`.
 
 ## Improvement
 

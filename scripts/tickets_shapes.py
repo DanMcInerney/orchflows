@@ -52,10 +52,6 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                       'fields': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'evidence'),
                       'required': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'evidence'),
                       'values': {}},
- 'dispatch_outcome_evidence': {'contract': 'dispatch.md',
-                               'fields': ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff'),
-                               'required': ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff'),
-                               'values': {}},
  'dispatch_record': {'contract': 'dispatch.md',
                      'fields': ('committed_at', 'content', 'kind', 'record_id', 'success'),
                      'required': ('committed_at', 'content', 'kind', 'record_id', 'success'),
@@ -89,12 +85,12 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                                 'state'),
                                    'values': {'outcome': ('replaced',), 'state': ('live',)}},
  'dispatch_result_projection': {'contract': 'dispatch.md',
-                                'fields': ('protocol', 'run', 'id', 'path', 'section', 'mode', 'by', 'assignment_seal', 'dispatch_id', 'record_id'),
-                                'required': ('protocol', 'run', 'id', 'path', 'section', 'mode', 'by', 'assignment_seal', 'dispatch_id', 'record_id'),
+                                'fields': ('protocol', 'run', 'id', 'path', 'by', 'assignment_seal', 'dispatch_id', 'record_id'),
+                                'required': ('protocol', 'run', 'id', 'path', 'by', 'assignment_seal', 'dispatch_id', 'record_id'),
                                 'values': {}},
  'dispatch_result_record': {'contract': 'dispatch.md',
-                            'fields': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
-                            'required': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
+                            'fields': ('assignment_seal', 'body', 'operation', 'writer'),
+                            'required': ('assignment_seal', 'body', 'operation', 'writer'),
                             'values': {}},
  'dispatch_result_success': {'contract': 'dispatch.md', 'fields': ('result',), 'required': ('result',), 'values': {}},
  'dispatch_retire_request': {'contract': 'dispatch.md',
@@ -113,9 +109,9 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
  'dispatch_transition_success': {'contract': 'dispatch.md', 'fields': ('dispatch',), 'required': ('dispatch',), 'values': {}},
  'done_binding': {'contract': 'work-item.md', 'fields': ('form', 'value'), 'required': ('form', 'value'), 'values': {'form': ('command', 'check')}},
  'executor_result': {'contract': 'result.md',
-                     'fields': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
-                     'required': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
-                     'values': {'mode': ('write', 'append', 'replace'), 'operation': ('result',)}},
+                     'fields': ('assignment_seal', 'body', 'operation', 'writer'),
+                     'required': ('assignment_seal', 'body', 'operation', 'writer'),
+                     'values': {'operation': ('result',)}},
  'loop_stub': {'contract': 'work-item.md', 'fields': ('done',), 'required': ('done',), 'values': {}},
  'pack_cells': {'contract': 'pack-signature.md',
                 'fields': ('adapter', 'stages', 'assembly', 'craft'),
@@ -267,10 +263,6 @@ DISPATCH_LAUNCH_VALUES = SHAPES['dispatch_launch']['values']
 DISPATCH_OUTCOME_FIELDS = tuple(SHAPES['dispatch_outcome']['fields'])
 DISPATCH_OUTCOME_REQUIRED = frozenset(SHAPES['dispatch_outcome']['required'])
 DISPATCH_OUTCOME_VALUES = SHAPES['dispatch_outcome']['values']
-
-DISPATCH_OUTCOME_EVIDENCE_FIELDS = tuple(SHAPES['dispatch_outcome_evidence']['fields'])
-DISPATCH_OUTCOME_EVIDENCE_REQUIRED = frozenset(SHAPES['dispatch_outcome_evidence']['required'])
-DISPATCH_OUTCOME_EVIDENCE_VALUES = SHAPES['dispatch_outcome_evidence']['values']
 
 REVIEW_STATE_FIELDS = tuple(SHAPES['review_state']['fields'])
 REVIEW_STATE_REQUIRED = frozenset(SHAPES['review_state']['required'])

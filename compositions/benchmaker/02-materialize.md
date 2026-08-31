@@ -32,16 +32,4 @@ Exceptional constraints:
 - select, add, remove, rank, rewrite or substitute a case
 - let a candidate or search context read, choose, rewrite, retire or receive item-level feedback from protected evidence
 
-## Result
-
-
-## Verification
-
-
-## Feedback
-
-[]
-
-## Risks
-
-[]
+## Report
