@@ -279,18 +279,20 @@ def _read_references(rows: Dict[str, str], pack_dir: Path) -> List[Dict[str, obj
     return sorted(result, key=lambda item: str(item["path"]))
 
 
-def _signature_digest(pack_dir: Path) -> Optional[str]:
-    """Hash the signature contract governing this pack's authored scope."""
+def _signature_digest() -> Optional[str]:
+    """Hash the library's signature contract -- never the pack's own copy.
 
-    here = Path(__file__).resolve()
-    candidates = (
-        pack_dir.parent.parent / "contracts" / "pack-signature.md",
-        here.parent.parent / "contracts" / "pack-signature.md",
-        here.parent.parent / "lib" / "contracts" / "pack-signature.md",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return _sha256(_read_bytes(candidate, "pack signature"))
+    The bytes come from lib and only lib. The pack-relative lookup this
+    used to try first (``<pack>/../../contracts/pack-signature.md``) was the
+    self-supply hole: a project ring shipping its own signature contract
+    fed its own pack's identity, so the document that decides whether a
+    pack is well-formed was readable from the pack (FM-2, mise
+    CVE-2026-35533's class). A ring that ships one now changes nothing.
+    """
+
+    candidate = rings.lib_root() / "contracts" / "pack-signature.md"
+    if candidate.is_file():
+        return _sha256(_read_bytes(candidate, "pack signature"))
     return None
 
 
@@ -313,7 +315,7 @@ def _resolved(path: Path, scope: str, name: str) -> Dict[str, object]:
         "pack": name,
         "cells": cells,
         "references": references,
-        "signature_sha256": _signature_digest(path.parent),
+        "signature_sha256": _signature_digest(),
     }
     digest = "sha256:" + _sha256(_canonical_json(identity))
     return {
@@ -344,11 +346,12 @@ def resolve_pack(
     canonical_root: Optional[Path] = None,
     project_root: Optional[Path] = None,
     user_root: Optional[Path] = None,
+    start: Optional[Path] = None,
 ) -> Dict[str, object]:
     """Resolve one pack through the one ring resolver: project, home,
     imports, then lib. Scope and filesystem paths are observations; the
     digest is not derived from them, so identical bytes in two rings
-    resolve to one identity."""
+    resolve to one identity. ``start`` is where to stand while looking."""
 
     name = _pack_name(pack)
     try:
@@ -358,6 +361,7 @@ def resolve_pack(
             project=project_root,
             home=user_root,
             lib_dir=canonical_root,
+            start=start,
         )
     except rings.RingError as error:
         raise PackError(_RING_CODES.get(error.code, "pack-unresolved"), error.detail) from error

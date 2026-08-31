@@ -73,10 +73,13 @@ def _gate_sections(*args, **kwargs):
 
 def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
                _suggested=None, sections=None, pack=None, **metadata) -> str:
+    # The gate inherits the pin rather than retaking it: a stage cut to
+    # review one target has to read the pack that target was admitted
+    # under, not whatever resolves when the stage is written.
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
-        "pack": pack,
+        "pack": pack, "pack_digest": metadata.get("pack_digest"),
         "independence": metadata.get("independence") or "gate",
         "depends_on": list(depends_on),
         "isolation": metadata.get("isolation"), "bound": NEW_DEFAULT_BOUND,
@@ -164,7 +167,8 @@ def _checker_stage_under_run_lock(rest, *, target_path=None):
     text = _gate_stub(
         run, stage_id, "orch-check", [target_id],
         sections=sections, root_generation=root_generation,
-        pack=target.get("pack"), isolation="none", review_order=0,
+        pack=target.get("pack"), pack_digest=target.get("pack_digest"),
+        isolation="none", review_order=0,
         independence="gate", review_kind="critique",
     )
     cut_generation = str(target.get("cut_generation") or "")
@@ -323,6 +327,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
     rendered = []
     critique_ids = []
     gate_pack = root_ticket.get("pack")
+    gate_pack_digest = root_ticket.get("pack_digest")
     for review_order, lens in enumerate(lenses):
         critique_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
         critique_ids.append(critique_id)
@@ -330,6 +335,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
         rendered.append((critique_id, _gate_stub(
             run, critique_id, "orch-check", units,
             sections=sections, root_generation=root_generation, pack=gate_pack,
+            pack_digest=gate_pack_digest,
             isolation="none", review_order=review_order, review_kind="critique",
         )))
     repaired_by = GATE_REPAIR_ID.format(root=root_id)
@@ -337,7 +343,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
     rendered.append((repaired_by, _gate_stub(
         run, repaired_by, "orch-execute", critique_ids,
         sections=sections, root_generation=root_generation, pack=gate_pack,
-        isolation="none", review_kind="repair",
+        pack_digest=gate_pack_digest, isolation="none", review_kind="repair",
     )))
     for ticket_id, text in rendered:
         defects = ticket_defects(text)

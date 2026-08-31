@@ -132,22 +132,41 @@ class PackResolutionTests(unittest.TestCase):
 
             self.assertNotEqual(before["digest"], after["digest"])
 
-    def test_signature_contract_byte_changes_the_digest(self):
+    def test_the_library_signature_contract_byte_changes_the_digest(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             pack_root = root / "packs"
-            _copy_pack_with_contract(PACKS / "orch-code-pack", pack_root / "sample-pack", root)
-            skill = pack_root / "sample-pack" / "SKILL.md"
-            skill.write_text(
-                skill.read_text(encoding="utf-8").replace("name: orch-code-pack", "name: sample-pack"),
-                encoding="utf-8",
-            )
-            before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
-            contract = root / "contracts" / "pack-signature.md"
-            contract.write_bytes(contract.read_bytes() + b"\ncontract change\n")
-            after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+            _copy_pack(PACKS / "orch-code-pack", pack_root / "sample-pack")
+            _named_pack(pack_root / "sample-pack", "sample-pack")
+            library = root / "lib"
+            (library / "contracts").mkdir(parents=True)
+            contract = library / "contracts" / "pack-signature.md"
+            shutil.copyfile(ROOT / "contracts" / "pack-signature.md", contract)
+
+            with patch.object(rings, "lib_root", return_value=library):
+                before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+                contract.write_bytes(contract.read_bytes() + b"\ncontract change\n")
+                after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
 
             self.assertNotEqual(before["digest"], after["digest"])
+
+    def test_a_pack_relative_signature_contract_feeds_no_digest(self):
+        """FM-2: the document that decides whether a pack is well formed is
+        never readable from the pack. A ring shipping its own copy of the
+        signature contract used to feed its own pack's identity."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            pack_root = root / "packs"
+            _copy_pack_with_contract(PACKS / "orch-code-pack", pack_root / "sample-pack", root)
+            _named_pack(pack_root / "sample-pack", "sample-pack")
+            before = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+
+            contract = root / "contracts" / "pack-signature.md"
+            contract.write_bytes(contract.read_bytes() + b"\nself-supplied\n")
+            after = packs.resolve_pack("sample-pack", canonical_root=pack_root)
+
+            self.assertEqual(before["digest"], after["digest"])
 
     def test_project_ring_with_identical_bytes_has_the_same_digest(self):
         with tempfile.TemporaryDirectory() as tmp:

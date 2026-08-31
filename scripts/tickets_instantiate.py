@@ -26,6 +26,7 @@ if __package__:
         _write_text_atomically,
     )
     from .tickets_admission import dependency_order_findings
+    from .tickets_issue import pinned_pack_digest
     from .tickets_worklog import _template_order
     from .tickets_emission import grade_run_emission
     from .tickets_context import run_snapshot
@@ -47,6 +48,7 @@ else:  # pragma: no cover - direct/installed flat script path
         _write_text_atomically,
     )
     from tickets_admission import dependency_order_findings
+    from tickets_issue import pinned_pack_digest
     from tickets_worklog import _template_order
     from tickets_emission import grade_run_emission
     from tickets_context import run_snapshot
@@ -223,6 +225,15 @@ def _cmd_instantiate(rest):
         text = _set_frontmatter_field(text, 'run', run)
         text = _set_frontmatter_field(text, 'status', entry.status)
         text = _set_frontmatter_field(text, 'admission', entry.admission)
+        # Instantiation is this graph's issue time, so it is where every
+        # stub naming a pack takes its pin -- one resolution per stub, and
+        # the whole template refused before anything is written if one of
+        # them cannot resolve.
+        pinned, refusal = pinned_pack_digest(_parse_frontmatter(text).get('pack'))
+        if refusal is not None:
+            return {**refusal, 'error': refusal['error'] + '. Nothing was written'}
+        if pinned:
+            text = _set_frontmatter_field(text, 'pack_digest', pinned)
         for field in entry.blanks:
             text = _set_frontmatter_field(text, field, '')
         path = run_dir / f'{stub_id}.md'

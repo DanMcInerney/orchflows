@@ -136,6 +136,32 @@ def craft_path(pack, *, root=None) -> Path:
     return resolved
 
 
+def pack_digest(pack, *, root=None) -> str:
+    """The resolved pack's content digest, through the one pack resolver.
+
+    A ticket pins this at issue time and every later door compares against
+    it, which is what makes "the stamped pack digest" a verification rather
+    than a lookup: `cells_for` re-derives digests to *find* a pack, and a
+    search can never notice that the pack changed under a sealed
+    assignment.
+    """
+
+    name = dequote(pack)
+    if not name:
+        raise AdapterError("pack-unresolved", "ticket names no pack")
+    try:
+        if __package__:
+            from . import packs_support
+        else:  # pragma: no cover - direct/installed script path
+            import packs_support
+        resolved = packs_support.resolve_pack(name, start=root)
+    except ImportError as error:  # pragma: no cover - broken installation
+        raise AdapterError("pack-resolver-unavailable", str(error)) from error
+    except packs_support.PackError as error:
+        raise AdapterError(error.code, error.detail) from error
+    return str(resolved["digest"])
+
+
 def declared_adapter(pack, *, root=None) -> str:
     """Read the stable adapter key from the pack's typed `adapter` leaf.
 
@@ -207,5 +233,5 @@ def adapter_id(pack, *, root=None) -> str:
 __all__ = (
     "ADAPTER_REGISTRY", "Adapter", "AdapterError", "adapter_for_key",
     "adapter_id", "adapter_spec", "craft_path", "declared_adapter",
-    "derived_isolation", "pack_path",
+    "derived_isolation", "pack_digest", "pack_path",
 )

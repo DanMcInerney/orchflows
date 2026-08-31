@@ -202,7 +202,7 @@
       "contract": "work-item.md",
       "fields": [
         "id", "run", "status", "admission", "executor", "pack",
-        "profile", "independence", "depends_on", "isolation", "bound", "loop",
+        "pack_digest", "profile", "independence", "depends_on", "isolation", "bound", "loop",
         "done",
         "checked_by", "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1",

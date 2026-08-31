@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2010,
+  "count": 2017,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -593,6 +593,7 @@
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
    "test_packs.PackResolutionTests.test_a_bundle_edit_invalidates_the_remembered_grant",
+   "test_packs.PackResolutionTests.test_a_pack_relative_signature_contract_feeds_no_digest",
    "test_packs.PackResolutionTests.test_a_referenced_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_a_reserved_name_in_a_ring_is_refused_loudly",
    "test_packs.PackResolutionTests.test_a_use_once_grant_is_spent_by_the_resolution_it_allows",
@@ -607,8 +608,8 @@
    "test_packs.PackResolutionTests.test_real_packs_resolve_to_typed_flat_cells_without_skill_bindings",
    "test_packs.PackResolutionTests.test_root_keyword_is_not_a_resolver_compatibility_alias",
    "test_packs.PackResolutionTests.test_scope_aliases_are_not_accepted_by_the_resolver_facade",
-   "test_packs.PackResolutionTests.test_signature_contract_byte_changes_the_digest",
    "test_packs.PackResolutionTests.test_text_reference_line_endings_do_not_change_pack_identity",
+   "test_packs.PackResolutionTests.test_the_library_signature_contract_byte_changes_the_digest",
    "test_packs.PackShapeRefusalTests.test_old_skill_binding_cell_is_refused",
    "test_packs.PackShapeRefusalTests.test_unknown_digest_and_consumer_are_closed_refusals",
    "test_preflight.PreflightDocumentationTest.test_module_docstring_names_the_active_ci_topology",
@@ -932,8 +933,14 @@
    "test_tickets.AdapterRegistryTest.test_a_project_pack_selects_git_without_a_pack_name_registration",
    "test_tickets.AdapterRegistryTest.test_admission_reports_exactly_adapter_unregistered_for_the_pack_key",
    "test_tickets.AdapterRegistryTest.test_an_unregistered_declared_key_fails_closed",
+   "test_tickets.AdapterRegistryTest.test_an_untrusted_project_pack_refuses_before_its_adapter_is_read",
    "test_tickets.AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
    "test_tickets.AdapterRegistryTest.test_unknown_pack_cells_fail_through_the_shared_resolver_parser",
+   "test_tickets.PackPinTest.test_a_pack_edited_under_the_pin_refuses_at_admission",
+   "test_tickets.PackPinTest.test_a_pack_that_cannot_be_pinned_refuses_at_issue",
+   "test_tickets.PackPinTest.test_an_unchanged_pack_grades_clean",
+   "test_tickets.PackPinTest.test_new_pins_the_stamped_packs_digest_at_issue_time",
+   "test_tickets.PackPinTest.test_the_pinned_digest_is_inside_the_sealed_assignment",
    "test_tickets.ResultAttributionTest.test_ambiguous_overwrite_lifecycle_and_forged_paths_are_refused",
    "test_tickets.ResultAttributionTest.test_each_append_records_and_returns_exactly_one_current_claim_writer",
    "test_tickets_bound.BoundCheckCommandTest.test_a_claim_exactly_at_its_bound_has_not_yet_passed_it",
@@ -2013,7 +2020,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "bbd722599068cba919dca74f0f0ec9b18a7d69c2631b06619b3d5abe8098d13f"
+  "sha256": "b718d85ccd32d0c4bc6dd0e79d47ae692e794c5037bdb6be69bd53de71546c12"
  },
  "mutation_owners": [
   {
@@ -3745,6 +3752,14 @@
   },
   {
    "module": "tests.test_packs",
+   "owner": "PackResolutionTests.test_the_library_signature_contract_byte_changes_the_digest",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_packs",
    "owner": "_home",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -4383,10 +4398,26 @@
   },
   {
    "module": "tests.test_tickets",
+   "owner": "AdapterRegistryTest._project",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_tickets",
    "owner": "AdapterRegistryTest.test_consumers_branch_on_properties_not_the_adapter_key",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_tickets",
+   "owner": "PackPinTest._pinned_world",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
    ]
   },
   {
