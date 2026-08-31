@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2093,
+  "count": 2094,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -930,6 +930,7 @@
    "test_ticket_bricks.BrickIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
    "test_ticket_bricks.BrickLandingTest.test_a_document_brick_lands_on_the_drivers_grade",
    "test_ticket_bricks.BrickLandingTest.test_a_git_brick_runs_its_done_predicate_at_the_landing",
+   "test_ticket_bricks.BrickLandingTest.test_a_judge_under_a_landed_brick_carries_both_machine_lines",
    "test_ticket_bricks.BrickPromptTest.test_a_document_brick_is_told_to_print_a_doc_line",
    "test_ticket_bricks.BrickPromptTest.test_a_git_brick_is_told_to_commit_and_to_print_a_git_line",
    "test_ticket_bricks.BrickPromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
@@ -2096,7 +2097,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f216aad1a13be61b9c495a7e94dfb891a7c10e017513c9ef803c2502b56d8168"
+  "sha256": "012dc31a9cfcaee42c1133f1be3047e9f8ba2d617cceb301eb255450abab5840"
  },
  "mutation_owners": [
   {

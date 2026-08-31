@@ -287,22 +287,45 @@ class BrickPromptTest(BrickSinkTest):
 
 
 class BrickLandingTest(BrickSinkTest):
-    """`do` to `land`, once over a git pack and once over a document tree."""
+    """`do` to `land`, once over a git pack and once over a document tree.
 
-    def _close_and_land(self, ticket_id: str, *extra):
+    The whole chain the door is meant to fold: one command mints, seals,
+    establishes and emits; the child files a result and closes its reserved
+    outcome; `land` evaluates, joins, and reports.
+    """
+
+    def _filed_and_closed(self, ticket_id: str, artifact: str):
         attempt = parse_canonical_json(
             _parse_frontmatter(self.ticket_text(ticket_id))["dispatch_v1"]
         )["attempts"][0]
+        filed = tickets._dispatch([
+            "result", self.RUN, ticket_id,
+            "--assignment-seal", attempt["assignment_seal"],
+            "--dispatch-id", attempt["dispatch_id"],
+            "--record-id", "note-1", "--by", ticket_id,
+            "--text", f"Committed in the candidate.\n\nartifact: {artifact}",
+        ])
+        self.assertNotIn("error", filed, filed)
         closed = tickets._dispatch([
-            "dispatch-outcome", self.RUN, ticket_id, "--note", "delivered",
+            "dispatch-outcome", self.RUN, ticket_id,
+            "--note", f"delivered; artifact: {artifact}",
         ])
         self.assertNotIn("error", closed, closed)
+        return attempt
+
+    def _land(self, ticket_id: str, attempt: dict, *extra):
         return tickets._dispatch([
             "land", self.RUN, ticket_id,
             "--assignment-seal", attempt["assignment_seal"],
             "--dispatch-id", attempt["dispatch_id"],
             "--outcome-record-id", "outcome", "--by", "driver", *extra,
         ])
+
+    def _assert_three_lines(self, answer: dict, artifact_form: str, findings: bool):
+        prompt = self.prompt(answer)
+        self.assertIn("Commit your work inside this candidate before you close", prompt)
+        self.assertIn(artifact_form, prompt)
+        self.assertEqual(findings, "findings: <path>" in prompt)
 
     def test_a_git_brick_runs_its_done_predicate_at_the_landing(self):
         import sys
@@ -311,21 +334,46 @@ class BrickLandingTest(BrickSinkTest):
             {"form": "command", "value": f'"{sys.executable}" -c "raise SystemExit(0)"'},
             sort_keys=True,
         )
-        self.brick(
+        answer = self.brick(
             "do", "--pack", CODE_PACK, "--isolation", "none", "--done", done,
         )
+        self._assert_three_lines(answer, "artifact: git:<full-commit-id>", False)
 
-        landed = self._close_and_land("B1")
+        attempt = self._filed_and_closed("B1", "git:" + "d" * 40)
+        landed = self._land("B1", attempt)
 
         self.assertNotIn("error", landed, landed)
         self.assertEqual("complete", landed["land"]["status"])
         self.assertEqual(0, landed["land"]["done"]["exit"])
+        self.assertIn("Committed in the candidate.", _sections(
+            self.ticket_text("B1")
+        )["Report"])
 
     def test_a_document_brick_lands_on_the_drivers_grade(self):
+        answer = self.brick("do", "--pack", DOC_PACK)
+        self._assert_three_lines(
+            answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", False,
+        )
+
+        attempt = self._filed_and_closed("B1", "doc:notes.md@sha256:" + "e" * 64)
+        landed = self._land("B1", attempt, "--status", "complete")
+
+        self.assertNotIn("error", landed, landed)
+        self.assertEqual("complete", landed["land"]["status"])
+
+    def test_a_judge_under_a_landed_brick_carries_both_machine_lines(self):
         self.brick("do", "--pack", DOC_PACK)
 
-        landed = self._close_and_land("B1", "--status", "complete")
+        answer = self.brick(
+            "judge", "--pack", DOC_PACK, "--parent", "B1",
+            "--artifacts", "doc:notes.md@sha256:" + "e" * 64,
+        )
 
+        self._assert_three_lines(
+            answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", True,
+        )
+        attempt = self._filed_and_closed("B1.1", "doc:review.md@sha256:" + "f" * 64)
+        landed = self._land("B1.1", attempt, "--status", "complete")
         self.assertNotIn("error", landed, landed)
         self.assertEqual("complete", landed["land"]["status"])
 
