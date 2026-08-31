@@ -71,10 +71,22 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
   all-time-top ordering (X's syndication timeline is the measured case); a
   record with no publication time is kept, because dropping it would decide
   the unknown. The step's warning states how many were dropped; no loss code
-  is attached, because the bound is the caller's own. Adapters whose origin
-  takes a date bound send it in the origin's own terms as well (Arctic Shift
-  `after`/`before`, HN Algolia `numericFilters`, Bluesky `since`/`until`, Google
-  News `when:`), so the budget is spent server-side where it can be.
+  is attached for the count, because the bound is the caller's own and the
+  count can be zero at any window width or age. Adapters whose origin takes a
+  date bound send it in the origin's own terms as well (HN Algolia
+  `numericFilters`, Bluesky `since`/`until` on its search method, Google News
+  `when:`), so the budget is spent server-side where it can be.
+- Capability is per **operation**, not per adapter — Bluesky sends
+  `since`/`until` on search and none on its author feed, and `x_guest` and
+  `github_rest` split the same way — so `_support/window_reach.WINDOW_REACH`
+  declares it keyed by adapter id and then by operation, total over the live
+  roster. A windowed step whose operation is declared unable to bound time at
+  the origin carries `window_not_honored` in its `StepResult.loss`,
+  independent of the drop count above and of whatever the read answered with:
+  it is a statement about the operation's own shape, not about this one
+  answer, so it holds at any window width and any window age. An empty
+  in-window answer and an unhonored bound are therefore two different
+  readings a caller tells apart off `loss` rather than by parsing a sentence.
 
 `as_of` must be spelled `YYYY-MM-DDTHH:MM:SSZ` and `parse_manifest` refuses any
 other spelling, because `ordering.instant_seconds` returns nothing for one and an
@@ -331,6 +343,7 @@ The retained codes, what each one means, and every module that spells one:
 | `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit |
 | `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search`, standing on every index hit |
 | `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated; `coverage`, which reads it |
+| `window_not_honored` | this step carried a window and called an operation `_support.window_reach.WINDOW_REACH` declares unable to bound time at its origin, independent of what the read answered with | `runner`, when a windowed call names such an operation |
 
 Five of the names above are readers rather than emitters: `runner.reached_origin`
 reads `cache_hit`, `smoke.channel_of` reads `network_intercepted` and

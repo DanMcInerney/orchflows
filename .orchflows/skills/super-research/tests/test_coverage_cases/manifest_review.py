@@ -60,6 +60,37 @@ class ReviewManifestTest(unittest.TestCase):
 
         self.assertEqual(subjects(found, coverage.WINDOW_ABSENT), ["web"])
 
+    def test_the_advisory_is_read_per_operation_not_per_adapter(self):
+        """The bluesky split: one adapter, two answers, only one fires.
+
+        The old `SERVER_SIDE_WINDOW` tuple named `bluesky` whole, so an
+        unwindowed `author:` step would have fired this advisory too — the
+        author feed sends no bound however it is asked. This is the case
+        that forces `coverage` to read `window_reach`'s per-operation table
+        rather than a per-adapter one.
+        """
+
+        found = coverage.review_manifest(
+            manifest(
+                step("bs-search", "discovery", "bluesky", query="search:spacex",
+                     window_start="2026-08-01T00:00:00Z"),
+                step("bs-author", "discovery", "bluesky", query="author:bsky.app"),
+            )
+        )
+
+        self.assertEqual(subjects(found, coverage.WINDOW_ABSENT), [])
+
+    def test_an_unwindowed_search_step_is_still_named(self):
+        found = coverage.review_manifest(
+            manifest(
+                step("bs-search-1", "discovery", "bluesky", query="search:spacex",
+                     window_start="2026-08-01T00:00:00Z"),
+                step("bs-search-2", "discovery", "bluesky", query="search:starship"),
+            )
+        )
+
+        self.assertEqual(subjects(found, coverage.WINDOW_ABSENT), ["bs-search-2"])
+
     def test_no_window_anywhere_is_a_choice_and_draws_nothing(self):
         """An all-evergreen manifest is a legitimate shape, not an oversight.
 
