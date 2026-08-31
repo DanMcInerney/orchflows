@@ -505,6 +505,42 @@ class TestChildEnv(unittest.TestCase):
             if key != "PYTHONIOENCODING":
                 self.assertEqual(value, env.get(key), key)
 
+    def test_a_parallel_dispatch_declares_its_worker_count(self):
+        self.assertEqual("6", run_tests.child_env(6).get("ORCHFLOWS_TEST_PARALLELISM"))
+
+    def test_a_serial_dispatch_declares_nothing_beyond_stdio(self):
+        self.assertEqual(run_tests.child_env(), run_tests.child_env(1))
+
+
+class TestParallelDispatchDeclaresLoad(unittest.TestCase):
+    """The declaration reaches real children of a real parallel dispatch."""
+
+    MODULE = textwrap.dedent(
+        '''\
+        import os
+        import unittest
+
+        class Declared(unittest.TestCase):
+            def test_it(self):
+                self.assertEqual("2", os.environ.get("ORCHFLOWS_TEST_PARALLELISM"))
+        '''
+    )
+
+    def test_children_of_a_two_worker_dispatch_see_two(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for name in ("test_decl_a.py", "test_decl_b.py"):
+                (Path(tmp) / name).write_text(self.MODULE, encoding="utf-8")
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(REPO_ROOT)
+            completed = subprocess.run(
+                [sys.executable, str(RUN_TESTS_PY), "--tests-dir", tmp,
+                 "--no-cache", "-j", "2"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+            )
+        self.assertEqual(0, completed.returncode, completed.stdout)
+
 
 class TestFailureOutputSurvivesTheConsole(unittest.TestCase):
     """A failing module's non-ASCII message survives a cp1252 console."""
