@@ -317,15 +317,20 @@ def iteration_of(ticket_id):
 def round_parent(ticket_id):
     """The ticket whose post-seal round machinery minted this id, or None.
 
-    A round names its parent, and the `.done` judge minted for a round names
-    the same parent that round does. Both are the machinery's ids rather
-    than an author's, so both bind through the one sealed ticket they
-    descend from; this answers *whose*, and the caller answers whether that
-    ticket is the kind whose machinery may mint them.
+    A round names its parent, and a `.done` judge names the subject it was
+    minted beside: a loop's judge stands beside an `.iter.NN` round and
+    binds through that round's parent, while a landing's `check` form mints
+    its judge beside the landed ticket itself, so the judge binds through
+    it. All are the machinery's ids rather than an author's; this answers
+    *whose*, and the caller answers whether that ticket is the kind whose
+    machinery may mint them -- the loop marker for a stub's rounds, the
+    `done` predicate `land` evaluates for a landing's.
     """
     text = str(ticket_id or '')
     if text.endswith(DONE_TICKET_SUFFIX):
-        text = text[:-len(DONE_TICKET_SUFFIX)]
+        subject = text[:-len(DONE_TICKET_SUFFIX)]
+        parsed = iteration_of(subject)
+        return (subject if parsed is None else parsed[0]) or None
     parsed = iteration_of(text)
     return None if parsed is None else parsed[0]
 def parse_done(data):

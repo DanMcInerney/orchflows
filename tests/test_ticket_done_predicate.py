@@ -6,6 +6,9 @@ round-two slot when that code was non-zero; and the tree that shipped never
 had a gate run against it. So: the predicate is evaluated by `land` in the
 integrated tree, its exit is the verdict, a refusal arms a repair round
 instead of wedging, and the candidate is merged before any of it.
+`LandRoundAdmissionTest` then drives the armed round through `ready` and
+the dispatch admission door, where the loop lane's rounds had already
+refused once and the landing lane's reproduced both refusals verbatim.
 """
 
 from __future__ import annotations
@@ -25,6 +28,8 @@ from scripts import state_root
 from scripts import tickets
 from scripts import tickets_done
 from scripts import tickets_loop
+from scripts.tickets_context import graded_admission, run_snapshot
+from scripts.tickets_dispatch_guards import admission_failure
 from scripts.tickets_format import _sections, parse_canonical_json
 
 # The interpreter every predicate below is run through: a bare `python` is a
@@ -39,6 +44,33 @@ def _command(code: int) -> str:
 
 def _done(form: str, value: str) -> str:
     return json.dumps({"form": form, "value": value}, sort_keys=True)
+
+
+# An author-written child of the landed ticket: it is an id-descendant like
+# a round is, and it is not a round, so it is what tells the shape exemption
+# from a hole in the shape check.
+AUTHORED_CHILD = """---
+id: T.extra
+run: run
+status: pending
+executor: orch-execute
+pack: orch-code-pack
+depends_on: []
+bound: 30m
+independence: checker
+isolation: none
+---
+
+## Goal
+
+A hand-authored child of a landed ticket, which is not one of its rounds.
+
+## Context
+
+- input: written straight into the run directory.
+
+## Report
+"""
 
 
 class DonePredicateGrammarTest(unittest.TestCase):
@@ -84,8 +116,12 @@ class DonePredicateGrammarTest(unittest.TestCase):
         self.assertIn("done", tickets_generations.ASSIGNMENT_SYSTEM_FIELDS)
 
 
-class LandDonePredicateTest(unittest.TestCase):
-    """The predicate, in the composition that owns it."""
+class LandTrunkTest(unittest.TestCase):
+    """The temp sink, candidate checkout, and one landing every case runs on.
+
+    `stand_up` walks the whole trunk short of `land`: new, done binding,
+    stamp, validate, seal, ready, dispatch, outcome.
+    """
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -165,6 +201,18 @@ class LandDonePredicateTest(unittest.TestCase):
 
     def steps(self, landed) -> dict:
         return {step["step"]: step for step in landed["land"]["steps"]}
+
+    def _codes(self, ticket_id):
+        """The admission finding codes one ticket carries right now."""
+
+        snapshot, failures = run_snapshot(self.ticket_path().parent)
+        self.assertEqual([], failures, failures)
+        grade = graded_admission(ticket_id, snapshot[ticket_id], snapshot, "run")
+        return {str(item["code"]) for item in grade["findings"]}
+
+
+class LandDonePredicateTest(LandTrunkTest):
+    """The predicate, in the composition that owns it."""
 
     def test_a_passing_command_is_the_verdict_and_land_files_its_evidence(self):
         command = _command(0)
@@ -263,6 +311,80 @@ class LandDonePredicateTest(unittest.TestCase):
         self.stand_up(_done("command", _command(0)))
         both = self.land("--status", "complete")
         self.assertIn("land evaluates", both["error"])
+
+
+class LandRoundAdmissionTest(LandTrunkTest):
+    """A landing's armed round crosses `ready` and the dispatch admission door.
+
+    The loop lane refused `sealed-assignment-mismatch` and
+    `graph-direct-members` the first time it was driven through the trunk,
+    and the landing lane reproduced both verbatim: `land` mints its
+    `<id>.repair.NN` round and `<id>.done` judge through the same machinery
+    past the same seal, under a parent whose licence is the `done` predicate
+    rather than the loop marker.
+    """
+
+    def _arm_repair_round(self):
+        """One failing command-form landing, and the round it armed."""
+
+        self.stand_up(_done("command", _command(3)))
+        landed = self.land()
+        self.assertNotIn("error", landed, landed)
+        self.assertEqual("T.repair.1", self.steps(landed)["done"]["repair"])
+
+    def test_ready_promotes_the_armed_round_and_the_landing_owns_no_members(self):
+        self._arm_repair_round()
+        self.assertNotIn("graph-direct-members", self._codes("T"))
+        promoted = self.run_command("ready", "--run", "run")
+        self.assertIn(
+            "T.repair.1", {item["id"] for item in promoted["ready"]}, promoted,
+        )
+        path = self.ticket_path("T.repair.1")
+        text = path.read_text(encoding="utf-8")
+        self.assertIsNone(admission_failure(
+            path, text, tickets._parse_frontmatter(text), "run", "T.repair.1",
+        ))
+
+    def test_a_round_edited_after_it_was_armed_is_bound_by_nothing(self):
+        self._arm_repair_round()
+        self.assertEqual(set(), self._codes("T.repair.1"))
+        path = self.ticket_path("T.repair.1")
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "done predicate pass", "done predicate sing", 1,
+            ),
+            encoding="utf-8",
+        )
+        self.assertIn("sealed-assignment-mismatch", self._codes("T.repair.1"))
+
+    def test_a_hand_authored_child_of_a_landed_ticket_is_still_refused(self):
+        self._arm_repair_round()
+        self.assertNotIn("graph-direct-members", self._codes("T"))
+        (self.ticket_path().parent / "T.extra.md").write_text(
+            AUTHORED_CHILD, encoding="utf-8",
+        )
+        self.assertIn("graph-direct-members", self._codes("T"))
+
+    def test_a_round_whose_landing_the_seal_does_not_name_is_refused(self):
+        self._arm_repair_round()
+        self.assertEqual(set(), self._codes("T.repair.1"))
+        parent = self.ticket_path()
+        parent.write_text(tickets._set_frontmatter_field(
+            parent.read_text(encoding="utf-8"), "assignment_seal",
+            "sha256:" + "0" * 64,
+        ), encoding="utf-8")
+        self.assertIn("sealed-landing-mismatch", self._codes("T.repair.1"))
+
+    def test_the_minted_done_judge_binds_through_the_landed_ticket(self):
+        self.stand_up(_done("check", "the Goal clause no oracle covers"))
+        landed = self.land()
+        self.assertEqual("await-done-check", self.steps(landed)["done"]["outcome"])
+        self.assertNotIn("graph-direct-members", self._codes("T"))
+        # The two lane refusals are gone; what stands is the judge's own
+        # dependency on the still-claimed ticket it judges, a readiness
+        # wedge the admission door does not own. Pinned exactly so the fix
+        # that clears it retires this line too.
+        self.assertEqual({"dependency-incomplete"}, self._codes("T.done"))
 
 
 class LandIntegratesTheCandidateTest(unittest.TestCase):
