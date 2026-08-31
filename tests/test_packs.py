@@ -192,7 +192,10 @@ class PackResolutionTests(unittest.TestCase):
                 [
                     "shadow: pack 'sample-pack' resolves from the project ring "
                     f"at {resolved['path']} and shadows lib "
-                    f"{canonical / 'sample-pack' / 'SKILL.md'}"
+                    # The resolver canonicalizes roots (containment guards need
+                    # real paths); /var vs /private/var and 8.3 short names on
+                    # the CI runners diverge from the raw tempdir spelling.
+                    f"{(canonical / 'sample-pack' / 'SKILL.md').resolve()}"
                 ],
                 resolved["notices"],
             )
