@@ -1,32 +1,18 @@
-"""Stand a fixture in a real candidate checkout.
+"""Stand a fixture's candidate workspace up the way a dispatch does.
 
 An isolation-required item runs in a tree `workspace.py` established, and
 several suites need that tree to be a real Git top-level rather than a bare
 directory: the establishment grade, the join's isolation check, and the
-launch fixtures all read git from inside it. Both moves -- make the checkout,
-and run a block from inside it -- are owned here instead of being spelled out
-once per suite.
+launch fixtures all read git from inside it. The two moves a fixture makes
+-- create the checkout, and record it on the open attempt -- are owned here
+instead of being spelled out once per suite.
 """
 
 from __future__ import annotations
 
-import contextlib
-import os
 from pathlib import Path
 import subprocess
 import unittest
-
-
-@contextlib.contextmanager
-def standing_in(path):
-    """Run the enclosed block with the process cwd at ``path``."""
-
-    previous = Path.cwd()
-    os.chdir(str(path))
-    try:
-        yield
-    finally:
-        os.chdir(str(previous))
 
 
 def record_established_workspace(ticket_path, workspace, *, strict=True) -> None:

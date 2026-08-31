@@ -78,14 +78,17 @@ class TicketProtocolTest(unittest.TestCase):
         ):
             self.assertIn(token, dispatch)
         # The handshake half rode out with its machinery: no survivor keeps
-        # its vocabulary alive in the contract that used to own it.
+        # its vocabulary alive in the contract that used to own it. Read
+        # against the normative prose alone -- a supersession record's whole
+        # job is to name what it retired, so it names these on purpose.
+        normative = dispatch.partition("T0 supersession record")[0]
         for retired in (
             "`dispatch-receive`", "`dispatch-receipt`", "`receipt-required`",
             "`authority-mismatch`", "`profile-mismatch`",
             "`assignment-divergent`", "`packet-invalid`", "`inline`",
             "`reply_to`", "`reference`", "`admission`", "`independence`",
         ):
-            self.assertNotIn(retired, dispatch)
+            self.assertNotIn(retired, normative)
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         frontier = (root / "skills" / "engines" / "orch-frontier" / "SKILL.md").read_text(encoding="utf-8")
         profiles = (root / "skills" / "engines" / "orch-frontier" / "references" / "profiles.md").read_text(encoding="utf-8")

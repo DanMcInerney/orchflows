@@ -390,3 +390,12 @@ pack's stages run in order at the head's one role, and the orch- prefix
 wedge that classified chain entries goes with it; isolation becomes the
 rare explicit override over the value derived from the stamped pack's
 adapter.
+
+T0 supersession record sha256:0fc272b985dbceb3b1cbcd3309109e254ee85fdee485fbc522262a68f64e2443:
+`workspace_path` leaves the frontmatter. The dispatch attempt establishes
+the tree and is now its sole owner, so the ticket's projection of the same
+path — the second home that let a packet name a tree the establishment had
+not created — is gone, and lint refuses the field. The Git-only
+`workspace_branch` and `workspace_baseline` observations stay where they
+were. Packet projection keeps its own section, without the receipt half the
+dispatch contract retired.

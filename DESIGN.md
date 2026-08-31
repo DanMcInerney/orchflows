@@ -329,6 +329,21 @@ perfect: a perfect model still cannot make a non-atomic sequence
 atomic, and still cannot know which of two spellings of a path is the
 one the join will grade. That is the test for what belongs in code.
 
+- **The receipt handshake, superseded 2026-08-30.** The accept step
+  (`dispatch-receive`, the `dispatch-receipt` record, the inline packet
+  form, and their refusal family) policed the packet-less-fork class, and
+  PR #89 had already closed that class structurally at the installer, at
+  the one point in a fork's load path a packet can never reach. What was
+  left cost the accept phase 29 s to 6 m 16 s per child, mostly
+  refusal-retry over the receiver's own directory, and stored 50–59 KB of
+  duplicated handshake per gate ticket. It fails the same test: a perfect
+  model still cannot make the accept atomic, but it also never needed to —
+  the child's first filed record already proves the same identity the
+  receipt echoed back, because `result` validates
+  `(dispatch_id, assignment_seal, --by)` on every write. The evidence and
+  the full disposition are `research/subagent-simplification-design-2026-08-30.md`;
+  the law is `contracts/dispatch.md`'s supersession record.
+
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an

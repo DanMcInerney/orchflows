@@ -99,6 +99,13 @@ remaining a deterministic declaration-to-consumer gate.
 T0 supersession record sha256:cdc9c619f5843f308755e4ba841a4617957adca850afc2769f1a2017c6ef3301:
 the generated T0 section now uses declaration-specific wording.
 
+T0 supersession record sha256:36d63a5c339d9a7c987df1ad4725f6bc46d48490c57f664e59d9043a389b04a8:
+an unseen executor result is admitted behind the attempt's committed packet
+rather than behind a durable accepted receipt. The receipt is gone; the
+`(dispatch_id, assignment_seal, --by)` triple every result already carried
+is the writer's whole authority, and the first record a child files is its
+acceptance.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 

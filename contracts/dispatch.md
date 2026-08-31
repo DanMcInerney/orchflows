@@ -163,6 +163,21 @@ remaining a deterministic declaration-to-consumer gate.
 T0 supersession record sha256:e26b5916a54fd4b95c20790abb7aa55173782d0454576b8cf77cf0e0edbe46ac:
 the generated T0 section now uses declaration-specific wording.
 
+T0 supersession record sha256:8b9d58a02911955ff011275988aba554c8b502557348009f7fe1bf268414e0a5:
+the receipt handshake and the inline packet form are removed. The `receipt`
+record kind, the `dispatch-receipt` reserved id, and the refusals that
+existed only for the handshake ride out with them; a child's first filed
+record is its acceptance, proved by the `(dispatch_id, assignment_seal,
+--by)` every write already carries, and the one surviving ordering rule is
+that a committed packet precedes every execution record. The wire keeps
+twelve fields: `form`, `inline`, `reference`, `reply_to`, `admission`,
+`independence`, `isolation`, `executor`, `profile`, and
+`outcome_record_id` had no reader left, and `durability` declares only
+`ticket`. The attempt gains the `workspace_path` its establishment records
+and becomes that path's sole owner. A committed record's content is stored
+once, and a review lane's packet names its ledger by ticket path and tip
+identity rather than copying the chain.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 
