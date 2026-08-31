@@ -120,20 +120,24 @@ class Advisory:
     message: str
 
 
-# The adapters that spend a step's window at the origin, in the origin's own
-# terms — Google News `when:`, HN Algolia `numericFilters`, Bluesky
-# `since`/`until`. Read back off the source: these are exactly the adapter
-# modules whose executable code names `window_start`/`window_end`.
+# Whether a step's own operation would have spent the window at the origin,
+# in the origin's own terms — Google News `when:`, HN Algolia
+# `numericFilters`, Bluesky `since`/`until`. Read from
+# :data:`window_reach.WINDOW_REACH`, keyed by adapter and then by operation,
+# because capability is a property of an operation and not of an adapter:
+# `bluesky` sends `since`/`until` on search and none on its author feed, so a
+# tuple of adapter ids could not say what is true here and this module no
+# longer keeps one.
 #
-# The window check below fires only for these, and the narrowing is what makes
-# it worth reading. Every unwindowed step spends its cap on whatever the origin
-# ranks first; on these three that is also a bound the origin would have
-# applied itself, so omitting it is strictly wasteful and never a choice. On
-# the rest it is frequently deliberate — `prediction_markets` wants open
-# markets closing next year, and warning about those trained a reader to skip
-# the line that mattered. Measured 2026-08-17: unnarrowed, this fired on five
-# steps of which three were correct as written.
-SERVER_SIDE_WINDOW = ("bluesky", "hacker_news", "web_search")
+# The window check below fires only where the operation can, and the
+# narrowing is what makes it worth reading. Every unwindowed step spends its
+# cap on whatever the origin ranks first; where the operation can also bound
+# it server-side, omitting the window is strictly wasteful and never a
+# choice. Elsewhere it is frequently deliberate — `prediction_markets` wants
+# open markets closing next year, and warning about those trained a reader to
+# skip the line that mattered. Measured 2026-08-17, at the coarser
+# per-adapter granularity this table has since replaced: unnarrowed, this
+# fired on five steps of which three were correct as written.
 
 DEPTH_NOT_PLANNED = "depth_not_planned"
 WINDOW_ABSENT = "window_absent"
@@ -232,7 +236,15 @@ def review_manifest(manifest: schema.AcquisitionManifest) -> Tuple[Advisory, ...
             # omission — it is the ordinary shape.
             if step.kind != "discovery":
                 continue
-            if step.adapter_id not in SERVER_SIDE_WINDOW:
+            try:
+                can_bound = runner.reach_for(step.adapter_id, query=step.query)
+            except runner.WindowReachError:
+                # An adapter or operation this table does not name is not
+                # this review's failure to report: `runner.run_step` is
+                # where an unrecognized adapter is refused, and this
+                # advisory stays as silent about it as it always has been.
+                continue
+            if not can_bound:
                 continue
             found.append(
                 Advisory(

@@ -68,6 +68,7 @@ from ._support.runner_plan import artifact_id_for, in_window, planned_calls, rea
 from ._support.runner_plan import refused_step as _refused_step
 from ._support.runner_schedule import MAX_CONCURRENT_LANES, StepOutcome, lanes_of
 from ._support import runner_schedule
+from ._support.window_reach import WINDOW_NOT_HONORED, WindowReachError, reach_for
 _RUN_STEPS_IMPL = runner_schedule.run_steps
 # Every adapter this core can reach, spelled once. It is a literal tuple, not a
 # registry: exact search over an id still finds the two branches below, and a
@@ -318,6 +319,12 @@ def run_step(
     pages = 0
     truncated = False
     outside_window = 0
+    # Whether any call this step made named an operation declared unable to
+    # bound time at its origin, while the step itself carried a window. Read
+    # per call rather than once for the step, because a hydration step's
+    # calls address hits the caller named and are not guaranteed to share an
+    # operation the way a discovery step's continuations always do.
+    window_unhonored = False
 
     # Every call this step will make. A discovery step's continuations are
     # appended as they are earned, one per page that offers a cursor worth
@@ -351,6 +358,12 @@ def run_step(
             # ones the caller also selected.
             truncated = True
             break
+        if (step.window_start or step.window_end) and not window_unhonored:
+            # A declaration about the call's own shape, asked before the read
+            # rather than the answer: whether this operation could have spent
+            # the window at the origin does not depend on what came back.
+            if not reach_for(step.adapter_id, query=request.query, target_ids=request.target_ids):
+                window_unhonored = True
         began_us = tick_us(clock)
         try:
             page = call_adapter(step.adapter_id, carrier, request)
@@ -441,6 +454,14 @@ def run_step(
             "{0} record(s) the origin dated outside the step's window were dropped"
             " before the cap counted them".format(outside_window)
         )
+    if window_unhonored:
+        # Typed, unlike the count above: this is not about how many rows the
+        # core's own filter trimmed, which can be zero at any window width or
+        # age, but about whether the operation this step called could have
+        # asked the origin to bound it at all. A caller reads this off
+        # `loss` rather than off a sentence, so an empty in-window answer and
+        # an unhonored bound stay two different readings.
+        loss.append(WINDOW_NOT_HONORED)
     outcome = "partial" if truncated else schema.reduce_outcomes(tuple(page_outcomes))
     # The route this step actually read, when its pages agree on one. They
     # always do for an adapter with one surface, and they do for a two-surface

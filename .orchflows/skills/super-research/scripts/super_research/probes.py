@@ -45,6 +45,15 @@ class SmokeProbe:
     or channel id can, and a probe target that has quietly rotted would
     otherwise report a working platform as a gap. Same shape, and the same
     reason, as an adapter's ``volatile_identifiers``.
+
+    ``window_days`` declares this probe's own window, relative to the run's
+    own ``as_of`` rather than to a fixed date: zero, the default, leaves
+    ``smoke.probe_step`` building the same unwindowed step it always has,
+    byte for byte. `cli.py`'s own law admits no free-form flag — a
+    ``--window-start`` would be a second argument on an operation declared
+    to take one — so a probe that is meant to exercise a live windowed read
+    declares the window here instead, and ``smoke --adapter <id>`` spends it
+    with no new argument and no new operation.
     """
 
     adapter_id: str
@@ -61,6 +70,7 @@ class SmokeProbe:
     # property of a discovery step authorizing exactly one call and was written
     # down nowhere; it is a stated one now, and no probe can opt out of it.
     max_items: int = 200
+    window_days: int = 0
 
 
 # Nineteen probes, one per live adapter, each asserting the field set its row
@@ -280,6 +290,15 @@ SMOKE_PROBES = (
                 ),
             ),
         ),
+        # This operation is declared able to bound time at the origin
+        # (`window_reach.WINDOW_REACH["hacker_news"]["search_by_date"]`), and
+        # its `numericFilters` are already live — this is one of the three
+        # adapters `SERVER_SIDE_WINDOW` used to name whole. A year is wide
+        # enough that a live "python" search stays inside it regardless of
+        # when this runs, so the probe still asserts its roster row; the
+        # point is a live windowed read with no `window_not_honored` loss,
+        # checkable by command rather than asserted in prose.
+        window_days=365,
     ),
     SmokeProbe(
         adapter_id="github_rest",
@@ -402,6 +421,15 @@ SMOKE_PROBES = (
             ),
         ),
         target_recovery="Any current Bluesky handle or DID; the AppView resolves both.",
+        # The author feed is declared unable to bound time at the origin
+        # (`bluesky.py:463-465`, `window_reach.WINDOW_REACH["bluesky"]["author"]`):
+        # `operation_params` sends no `since`/`until` on this method however
+        # this step is windowed. A year is wide enough that a live account
+        # this active still answers its roster row; the point is a live
+        # windowed read that carries `window_reach.WINDOW_NOT_HONORED` in its
+        # step's own `loss`, checkable by command rather than asserted in
+        # prose.
+        window_days=365,
     ),
     SmokeProbe(
         adapter_id="x_fxtwitter",
