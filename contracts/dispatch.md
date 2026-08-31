@@ -79,7 +79,9 @@ run from inside it, this host's verified interpreter, the resolved pack craft,
 the review lane's root ticket path, the assigned name, the lease deadline, the
 filled filing and closing commands, the craft's verification scope, and that
 every check runs to completion in the turn it starts. It names no skill for
-the child to invoke and no pack for it to resolve: it hands the paths.
+the child to invoke and no pack for it to resolve: it hands the paths. The
+public command emits ASCII-escaped canonical JSON, preserving every prompt
+character independently of the subprocess code page.
 
 Dispatch refuses `state-inaccessible` when the sink holding the ticket cannot
 be read, `review-invalid` when the ticket's review ledger does not admit this
@@ -179,6 +181,24 @@ twelve fields: `form`, `inline`, `reference`, `reply_to`, `admission`,
 and becomes that path's sole owner. A committed record's content is stored
 once, and a review lane's packet names its ledger by ticket path and tip
 identity rather than copying the chain.
+
+T0 supersession record sha256:441bc5276a8ba5e7f92a76163d7deedcf764781f13ad94c60f4fed89824f9f5a:
+the packet is not a wire object any more; it is not an object at all. The
+`dispatch_packet` shape, its twelve remaining fields, the `dispatch-packet`
+verb, and the `--packet-file` carriage are removed, and the `packet` record
+kind is renamed `launch` and reshaped to the emitted invocation: `host`,
+`verb`, `agent`, `model`, `effort`, native `fields`, and the generated
+`prompt`. `dispatch` is the one operation that commits it, under one run
+lock, and replaying that call returns the committed launch unchanged. The
+prompt becomes the whole child-facing instruction surface and carries, once
+each, the facts a child cannot derive: its ticket's absolute path, the
+established workspace, this host's verified interpreter, the resolved pack
+craft and that craft's verification-scope sentence, a review lane's root
+ticket path, the assigned name, the lease deadline, the filled filing and
+closing commands, and the turn-completion rule for every check. The launch
+record carries no identity of its own: its stored success binds it to the
+attempt, and the join reads the executed tree off the attempt's
+`workspace_path` rather than off any record.
 
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 1981,
+  "count": 1979,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -104,16 +104,16 @@
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
    "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
-   "test_dispatch_launch.DispatchLaunchTest.test_a_packet_profile_override_resolves_the_planner_binding",
+   "test_dispatch_launch.DispatchLaunchTest.test_a_review_lane_prompt_names_the_root_ticket_it_answers_to",
+   "test_dispatch_launch.DispatchLaunchTest.test_a_sealed_profile_override_resolves_the_planner_binding",
    "test_dispatch_launch.DispatchLaunchTest.test_an_unknown_host_refuses_before_the_attempt_is_opened",
    "test_dispatch_launch.DispatchLaunchTest.test_an_unresolved_role_refuses_before_the_attempt_is_opened",
-   "test_dispatch_launch.DispatchLaunchTest.test_an_unwritable_packet_file_names_the_replay_and_keeps_the_packet",
    "test_dispatch_launch.DispatchLaunchTest.test_dispatching_a_sealed_pending_item_readies_it_without_hanging",
    "test_dispatch_launch.DispatchLaunchTest.test_the_dispatch_carries_the_launch_its_host_record_declares",
    "test_dispatch_launch.DispatchLaunchTest.test_the_host_flag_selects_another_hosts_binding",
-   "test_dispatch_launch.DispatchLaunchTest.test_the_packet_file_is_written_and_the_prompt_names_it",
+   "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_carries_every_fact_a_child_cannot_derive",
    "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_names_the_identities_every_record_is_filed_under",
-   "test_dispatch_launch.DispatchLaunchTest.test_the_removed_inline_selectors_are_ordinary_unknown_arguments",
+   "test_dispatch_launch.DispatchLaunchTest.test_the_removed_carriage_selectors_are_ordinary_unknown_arguments",
    "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
    "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
    "test_dispatch_launch.LandTest.test_land_imports_the_outcome_it_is_handed",
@@ -130,20 +130,20 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_a_committed_packet_replays_before_current_validation",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_an_execution_record_without_a_committed_packet_refuses",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_committed_projection_replay_precedes_retirement_and_conflict",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_legacy_gate_repair_replays_stored_packet_across_head_change",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_packet_command_emits_codepage_independent_canonical_ascii",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_a_workspace_other_than_the_recorded_candidate",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_projection_refuses_an_unrecorded_candidate_workspace",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_reference_projection_is_committed_and_exact_retry_replays",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_research_projection_requires_the_recorded_store_to_exist",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_the_first_filed_record_is_the_acceptance",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_the_handshake_verbs_are_gone_from_the_public_surface",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_the_removed_outcome_content_form_still_refuses",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_the_return_address_is_no_longer_a_flag_or_a_field",
-   "test_dispatch_packet_v1.DispatchPacketV1Test.test_uncommitted_projection_still_runs_current_review_validation",
+   "test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_after_retirement",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_before_current_resolution",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_research_dispatch_requires_the_recorded_store_to_exist",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_an_execution_record_without_a_committed_launch_refuses",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_an_uncommitted_launch_still_runs_current_review_validation",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_dispatch_refuses_a_workspace_other_than_the_recorded_candidate",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_dispatch_refuses_an_unrecorded_candidate_workspace",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_first_filed_record_is_the_acceptance",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_launch_is_committed_once_and_an_exact_retry_replays",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_packet_file_flag_is_an_ordinary_unknown_argument",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_prompt_fills_the_filing_commands_the_protocol_accepts",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_removed_outcome_content_form_still_refuses",
+   "test_dispatch_launch_record.DispatchLaunchRecordTest.test_the_retired_delivery_verbs_are_gone_from_the_public_surface",
    "test_dispatch_standalone.StandaloneDispatchTest.test_every_name_the_dispatch_table_reads_is_bound_without_a_package",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty",
@@ -155,10 +155,9 @@
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_holds_one_run_lock_across_every_mutating_step",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_is_a_public_one_call_surface",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_preserves_ticket_bytes_on_a_pre_open_refusal",
-   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
-   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_relays_launch_refusal_and_closes_new_attempt",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_readiness_refusal_without_starting_workspace",
-   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_returns_the_committed_launch",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_facade_surfaces_a_retirement_that_failed_to_resolve",
    "test_dispatch_v1.DispatchV1Test.test_dispatch_operations_refuse_a_ticket_frontmatter_origin_mismatch",
    "test_dispatch_v1.DispatchV1Test.test_expired_attempt_can_cross_the_explicit_atomic_replacement",
@@ -175,8 +174,8 @@
    "test_dispatch_v1.DispatchV1Test.test_open_requires_the_current_stored_admission_before_mutation",
    "test_dispatch_v1.DispatchV1Test.test_orphan_replacement_edge_is_a_byte_preserving_refusal",
    "test_dispatch_v1.DispatchV1Test.test_outcome_materializes_only_unstreamed_evidence_once",
-   "test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_a_packet_is_a_byte_preserving_refusal",
-   "test_dispatch_v1.DispatchV1Test.test_persisted_packet_after_outcome_is_a_byte_preserving_refusal",
+   "test_dispatch_v1.DispatchV1Test.test_persisted_execution_without_a_launch_is_a_byte_preserving_refusal",
+   "test_dispatch_v1.DispatchV1Test.test_persisted_launch_after_outcome_is_a_byte_preserving_refusal",
    "test_dispatch_v1.DispatchV1Test.test_protocol_owned_record_ids_cannot_be_squatted",
    "test_dispatch_v1.DispatchV1Test.test_raw_terminal_and_suspension_writes_cannot_bypass_dispatch_join",
    "test_dispatch_v1.DispatchV1Test.test_replace_help_states_lifecycle_record_id_namespace",
@@ -543,8 +542,7 @@
    "test_lock_discipline.TestOnlyTheRunsOwnRootClosesIt.test_the_root_decides_whichever_member_joins_first",
    "test_lock_discipline.TestSplitTerminalWriteIsSurfaced.test_a_failed_identity_write_alone_still_rolls_the_ticket_back",
    "test_lock_discipline.TestSplitTerminalWriteIsSurfaced.test_a_failed_rollback_names_both_errors_and_the_retry_that_replays",
-   "test_lock_discipline.TestStandaloneDispatchPacketIsLocked.test_the_commit_is_told_the_lock_is_already_held",
-   "test_lock_discipline.TestStandaloneDispatchPacketIsLocked.test_the_whole_projection_waits_for_the_run_lock",
+   "test_lock_discipline.TestTheLaunchStepInheritsTheFacadeLock.test_the_commit_is_told_the_lock_is_already_held",
    "test_lock_discipline.TestTheOneLockedWritePrimitive.test_every_mutating_command_enters_through_the_primitive",
    "test_lock_discipline.TestTheOneLockedWritePrimitive.test_no_command_reaches_its_handler_outside_that_primitive",
    "test_lock_discipline.TestTheOneLockedWritePrimitive.test_the_primitive_refuses_by_raising_not_by_returning",
@@ -645,7 +643,7 @@
    "test_registry_census.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
    "test_registry_census.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
-   "test_registry_census.CallableRegistryTests.test_the_declared_packet_shape_carries_one_typed_review_kind",
+   "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_replay_says_so_on_the_line_every_reader_reads",
    "test_run_required.TestAReplayIsNotAnExecution.test_a_served_verdict_is_named_a_replay_and_not_a_run",
    "test_run_required.TestAReplayIsNotAnExecution.test_asking_for_an_execution_runs_them_at_the_proved_tree",
@@ -805,9 +803,9 @@
    "test_staleness_and_remedies.TestAFiledBodyKeepsItsOwnHeadings.test_the_quoting_is_injective_and_byte_stable",
    "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_a_pending_member_is_left_at_its_pending_receipt",
    "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_resealing_the_same_generation_refreshes_nothing",
-   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_the_next_packet_emission_needs_no_manual_repair",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_the_next_dispatch_needs_no_manual_repair",
    "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_the_seal_reissues_the_claimed_roots_receipt",
-   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_without_the_repair_that_same_packet_is_refused",
+   "test_staleness_and_remedies.TestARecutRepairsTheReceiptsItInvalidated.test_without_the_repair_that_same_dispatch_is_refused",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_an_invented_command_is_caught",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_every_named_command_is_routed",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_the_guard_reads_the_messages_it_is_for",
@@ -853,14 +851,14 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_packet",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_route",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
-   "test_ticket_packet_gate_coverage.TicketPacketGateCoverageTest.test_every_active_discrepancy_has_a_routine_canonical_witness",
-   "test_ticket_packet_gate_coverage.TicketPacketGateCoverageTest.test_obsolete_gate_fossils_are_absent",
+   "test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_every_active_discrepancy_has_a_routine_canonical_witness",
+   "test_ticket_dispatch_gate_coverage.TicketDispatchGateCoverageTest.test_obsolete_gate_fossils_are_absent",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
-   "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_packet_projection",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
+   "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_launch",
    "test_ticket_protocol.TicketProtocolTest.test_host_skill_and_ui_project_established_non_live_suspension",
    "test_ticket_protocol.TicketProtocolTest.test_join_contract_consumes_one_fixed_result_and_absolute_attempt_lease",
    "test_ticket_protocol.TicketProtocolTest.test_public_documents_project_the_current_dispatch_and_gate_model",
@@ -886,9 +884,9 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_prompt_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
@@ -1511,9 +1509,9 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_one_finding_on_both_carriers_is_one_finding_and_a_conflict_refuses",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_over_ceiling_direct_and_decomposed_roots_reach_generation_stamping",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_packet_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_prompt_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
@@ -1984,7 +1982,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "bdd6710bf4dd709b8dd7a0a4a9b0a4a58495732451b4eb675868db083749b7d2"
+  "sha256": "d239e0f037059e040348850646f3cc8e987be10b0d2fb1b2bc939325aa342dcf"
  },
  "mutation_owners": [
   {
@@ -2130,14 +2128,6 @@
   },
   {
    "module": "tests.test_dispatch_launch",
-   "owner": "DispatchLaunchTest.test_an_unwritable_packet_file_names_the_replay_and_keeps_the_packet",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_dispatch_launch",
    "owner": "DispatchLaunchTest.test_dispatching_a_sealed_pending_item_readies_it_without_hanging",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -2150,6 +2140,7 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",
+    "monkeypatch",
     "threads"
    ]
   },
@@ -2170,8 +2161,16 @@
    ]
   },
   {
-   "module": "tests.test_dispatch_packet_v1",
-   "owner": "DispatchPacketV1Test.setUp",
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchCarriageTest.commit",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchCarriageTest.setUp",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",
@@ -2179,8 +2178,41 @@
    ]
   },
   {
-   "module": "tests.test_dispatch_packet_v1",
-   "owner": "DispatchPacketV1Test.test_uncommitted_projection_still_runs_current_review_validation",
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchLaunchRecordTest.established",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchLaunchRecordTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchLaunchRecordTest.test_an_uncommitted_launch_still_runs_current_review_validation",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchLaunchRecordTest.test_dispatch_refuses_a_workspace_other_than_the_recorded_candidate",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch_record",
+   "owner": "DispatchLaunchRecordTest.test_dispatch_refuses_an_unrecorded_candidate_workspace",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -2213,15 +2245,7 @@
   },
   {
    "module": "tests.test_dispatch_v1",
-   "owner": "DispatchV1Test.test_dispatch_facade_relays_packet_refusal_and_closes_new_attempt",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_dispatch_v1",
-   "owner": "DispatchV1Test.test_dispatch_facade_retires_when_projection_returns_no_packet",
+   "owner": "DispatchV1Test.test_dispatch_facade_relays_launch_refusal_and_closes_new_attempt",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -2237,7 +2261,7 @@
   },
   {
    "module": "tests.test_dispatch_v1",
-   "owner": "DispatchV1Test.test_dispatch_facade_returns_the_committed_packet",
+   "owner": "DispatchV1Test.test_dispatch_facade_returns_the_committed_launch",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -3986,7 +4010,7 @@
   },
   {
    "module": "tests.test_staleness_and_remedies",
-   "owner": "TestARecutRepairsTheReceiptsItInvalidated.test_without_the_repair_that_same_packet_is_refused",
+   "owner": "TestARecutRepairsTheReceiptsItInvalidated.test_without_the_repair_that_same_dispatch_is_refused",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"

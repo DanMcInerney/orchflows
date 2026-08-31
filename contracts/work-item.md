@@ -399,3 +399,9 @@ not created — is gone, and lint refuses the field. The Git-only
 `workspace_branch` and `workspace_baseline` observations stay where they
 were. Packet projection keeps its own section, without the receipt half the
 dispatch contract retired.
+
+T0 supersession record sha256:3f22969c019c621ea83e4e6d630ff1ddadc9ff4cce7a5ccbfc7da874a0419f37:
+the packet projection section becomes the launch section. This ticket is the
+assignment the dispatch contract's generated prompt points at, and nothing
+copies it; the executor-record identities are the attempt's, carried into
+that prompt with a `RECORD_ID` placeholder the child fills per write.

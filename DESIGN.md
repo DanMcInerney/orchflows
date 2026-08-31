@@ -344,6 +344,21 @@ one the join will grade. That is the test for what belongs in code.
   the full disposition are `research/subagent-simplification-design-2026-08-30.md`;
   the law is `contracts/dispatch.md`'s supersession record.
 
+- **The packet as a wire object, superseded 2026-08-31.** Of its
+  twenty-one fields, the two a child could not obtain any other way —
+  where its assignment is, and which tree to stand in — were the two the
+  wire did not carry, so twelve of twelve launches were composed by hand
+  against `rules/delegation.md`'s "improvises neither", and those hand
+  prompts were the dominant defect source of the runs that produced this
+  design. The wire is gone. `dispatch` emits one launch whose prompt is
+  the whole child-facing surface and whose every fact is machine-filled,
+  which is the same test again: a perfect model still cannot know which
+  spelling of an absolute path the establishment recorded, and it should
+  never have been asked to type one. What the prompt refuses to say is as
+  load-bearing as what it says — it names no skill for the child to invoke
+  and no pack for it to resolve, because a fork arriving without a prompt
+  can obey neither.
+
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an

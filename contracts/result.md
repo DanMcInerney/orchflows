@@ -106,6 +106,11 @@ rather than behind a durable accepted receipt. The receipt is gone; the
 is the writer's whole authority, and the first record a child files is its
 acceptance.
 
+T0 supersession record sha256:730ceeaa514de270f8094c987eccd06afa7244e99dc393774567a1eed6241cd2:
+the record an unseen executor result enters behind is the attempt's
+committed launch. The packet it used to name is gone, and the identities
+this contract requires of every write are unchanged.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 
