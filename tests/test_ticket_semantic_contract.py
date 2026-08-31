@@ -12,7 +12,9 @@ import subprocess
 from unittest import mock
 
 from scripts import cutcheck
-from tests._candidate_checkout import git_checkout
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from scripts import tickets
 from scripts import tickets_generations
 from scripts import tickets_join
@@ -191,8 +193,18 @@ class SemanticTicketContractTest(unittest.TestCase):
         )["dispatch"]
 
     def accept_packet(self, run, ticket_id, by, dispatch_id, workspace=None):
-        """Commit the packet the named child's records enter behind."""
+        """Establish, then commit the packet this child's records enter behind.
 
+        The establishment records the tree on the open attempt, which is
+        where the projection reads it from and the order the dispatch
+        facade runs the two steps in.
+        """
+
+        if workspace is not None:
+            record_established_workspace(
+                Path(self.temporary.name) / "tickets" / run / f"{ticket_id}.md",
+                workspace,
+            )
         packet_args = [
             "dispatch-packet", run, ticket_id, "--dispatch-id", dispatch_id,
         ]
@@ -343,13 +355,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket_path = Path(self.temporary.name) / "tickets" / "direct" / "R1.md"
         established = ticket_path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", "C:/candidate"),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket_path.write_text(established, encoding="utf-8")
         opened = self.open_attempt("direct", "R1", "worker", "direct-D1")
+        record_established_workspace(ticket_path, "C:/candidate")
         packet = self.dispatch(
             "dispatch-packet", "direct", "R1", "--dispatch-id", opened["dispatch_id"],
  "--workspace", "C:/candidate",
@@ -462,7 +474,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket_path = Path(self.temporary.name) / "tickets" / "packet" / "R1.md"
         established = ticket_path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -625,7 +636,6 @@ class SemanticTicketContractTest(unittest.TestCase):
             ticket = Path(self.temporary.name) / "tickets" / "clean" / f"{ticket_id}.md"
             established = ticket.read_text(encoding="utf-8")
             for key, value in (
-                ("workspace_path", candidate),
                 ("workspace_branch", f"candidate-{suffix}"),
                 ("workspace_baseline", "0123456789abcdef clean"),
             ):
@@ -819,7 +829,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket = Path(self.temporary.name) / "tickets" / "checker" / "R.md"
         established = ticket.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(ROOT)),
             ("workspace_branch", "integration"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -1246,13 +1255,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         ticket = Path(self.temporary.name) / "tickets" / "tdd" / "R.md"
         established = ticket.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", "C:/candidate"),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             established = tickets._set_frontmatter_field(established, key, value)
         ticket.write_text(established, encoding="utf-8")
         opened = self.open_attempt("tdd", "R", "worker", "tdd-D1")
+        record_established_workspace(ticket, "C:/candidate")
         prompt = self.dispatch(
             "dispatch-packet", "tdd", "R", "--dispatch-id", opened["dispatch_id"],
  "--workspace", "C:/candidate",

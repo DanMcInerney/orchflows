@@ -12,6 +12,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from tests._candidate_checkout import record_established_workspace
 from scripts import tickets, tickets_review
 from scripts.tickets_packet import workspace_establishment_finding
 from scripts.tickets_format import canonical_json, parse_canonical_json
@@ -47,7 +48,6 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.ticket_path = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         established = self.ticket_path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(self.candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -61,6 +61,8 @@ class DispatchPacketV1Test(unittest.TestCase):
             "--dispatch-id", "D1", "--lease-expires-at", self.lease,
         )
         self.assignment_seal = opened["dispatch"]["assignment_seal"]
+        # after the open, because the attempt owns the established tree
+        record_established_workspace(self.ticket_path, self.candidate)
 
     def tearDown(self):
         self.environment.stop()
@@ -324,11 +326,16 @@ class DispatchPacketV1Test(unittest.TestCase):
 
     def test_projection_refuses_an_unrecorded_candidate_workspace(self):
         text = self.ticket_path.read_text(encoding="utf-8")
-        text = "\n".join(
-            line for line in text.splitlines()
-            if not line.startswith("workspace_path:")
-        ) + "\n"
-        self.ticket_path.write_text(text, encoding="utf-8")
+        state = parse_canonical_json(
+            tickets._parse_frontmatter(text)["dispatch_v1"]
+        )
+        state["attempts"][0].pop("workspace_path")
+        self.ticket_path.write_text(
+            tickets._set_frontmatter_field(
+                text, "dispatch_v1", canonical_json(state),
+            ),
+            encoding="utf-8",
+        )
 
         refusal = self.project()
 
@@ -341,13 +348,32 @@ class DispatchPacketV1Test(unittest.TestCase):
         self.assertEqual("workspace-mismatch", refusal["code"])
         self.assertNotIn("packet", refusal)
 
+    @staticmethod
+    def _established(workspace: str) -> dict:
+        """Frontmatter whose live attempt records `workspace` and nothing else."""
+
+        return {
+            "pack": "orch-research-pack",
+            "isolation": "required",
+            "dispatch_v1": canonical_json({
+                "protocol": "orchflows.dispatch.v1",
+                "attempts": [{
+                    "assignment_seal": "sha256:" + "0" * 64,
+                    "dispatch_id": "D1",
+                    "lease_expires_at": "2099-01-01T00:00:00Z",
+                    "opened_at": "2026-01-01T00:00:00Z",
+                    "outcome_record_id": "outcome",
+                    "owner": "worker",
+                    "records": [],
+                    "state": "live",
+                    "workspace_path": workspace,
+                }],
+            }),
+        }
+
     def test_research_projection_requires_the_recorded_store_to_exist(self):
         with tempfile.TemporaryDirectory() as store:
-            data = {
-                "pack": "orch-research-pack",
-                "isolation": "required",
-                "workspace_path": store,
-            }
+            data = self._established(store)
             self.assertIsNone(workspace_establishment_finding(data, store))
         finding = workspace_establishment_finding(data, store)
         self.assertEqual("workspace-unestablished", finding[0])

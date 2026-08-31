@@ -214,9 +214,25 @@ class TestWorkspaceStampsUnderTheRunLock(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         tmp = Path(self.temporary.name)
         use_sink(tmp)
+        # A live attempt, because that is what the established tree is
+        # recorded on: `start` writes the path into `dispatch_v1`, and a
+        # claimed ticket without an attempt has nowhere to carry it.
+        attempt = json.dumps({
+            "protocol": "orchflows.dispatch.v1",
+            "attempts": [{
+                "assignment_seal": "sha256:" + "0" * 64,
+                "dispatch_id": "D1",
+                "lease_expires_at": "2099-01-01T00:00:00Z",
+                "opened_at": "2026-01-01T00:00:00Z",
+                "outcome_record_id": "outcome",
+                "owner": "worker",
+                "records": [],
+                "state": "live",
+            }],
+        }, separators=(",", ":"), sort_keys=True)
         self.ticket = ticket_at(
             sink_root() / "tickets" / "testrun", "T1", status="claimed",
-            extra=(("pack", "orch-research-pack"),),
+            extra=(("pack", "orch-research-pack"), ("dispatch_v1", attempt)),
         )
         self.here = tmp
 

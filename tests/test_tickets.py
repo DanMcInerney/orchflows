@@ -6,7 +6,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from tests._candidate_checkout import git_checkout
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from tests.test_ticket_semantic_contract import SemanticTicketContractTest
 from tests.test_tickets_cases.common import run_cmd, use_sink
 from tests.test_tickets_cases.cli_help import HelpTest  # noqa: F401
@@ -203,7 +205,6 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     ticket = sink / "tickets" / "testrun" / "T1.md"
     established = ticket.read_text(encoding="utf-8")
     for key, value in (
-        ("workspace_path", str(tmp.resolve())),
         ("workspace_branch", "candidate-branch"),
         ("workspace_baseline", "0123456789abcdef clean"),
     ):
@@ -214,6 +215,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         "dispatch-open", "testrun", "T1", "--by", by,
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]
+    record_established_workspace(ticket, tmp.resolve())
     packet = tickets_mod._dispatch([
         "dispatch-packet", "testrun", "T1", "--dispatch-id", "D1",
  "--workspace", str(tmp.resolve()),

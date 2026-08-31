@@ -57,7 +57,11 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
             "retired": {"retired_at", "retirement"},
             "replaced": {"replaced_at", "replaced_by", "replacement"},
         }
-        present = set(attempt) - required - {"replaces"}
+        # `workspace_path` rides with the attempt in every state, so it is
+        # excluded from the transition-field comparison exactly as `replaces`
+        # is: it says which tree the item was executed in, not where in the
+        # lifecycle the attempt stands.
+        present = set(attempt) - required - {"replaces", "workspace_path"}
         if present != transition_fields[state_name]:
             return classification("dispatch-record-invalid", f"attempt {ordinal} transition fields do not match state '{state_name}'")
         for time_field in ("retired_at", "replaced_at"):

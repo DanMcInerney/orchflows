@@ -20,7 +20,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from tests._candidate_checkout import git_checkout
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
 from scripts.tickets_format import (
@@ -104,12 +106,14 @@ class SealedRunTest(SinkTest):
         path = self.ticket_path("T")
         text = path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(self.candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
             text = _set_frontmatter_field(text, key, value)
         path.write_text(text, encoding="utf-8")
+        # the established tree is the attempt's, so it is recorded
+        # after the open, exactly as the facade orders the two steps
+        record_established_workspace(path, self.candidate)
 
     def recut(self):
         """The lawful membership change: one checker stage joins the cut."""

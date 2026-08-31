@@ -29,6 +29,33 @@ def standing_in(path):
         os.chdir(str(previous))
 
 
+def record_established_workspace(ticket_path, workspace, *, strict=True) -> None:
+    """Put the established tree on the ticket's live attempt.
+
+    What `workspace.py establish` writes, for a fixture that stands the
+    establishment up by hand. It goes on the attempt because that is the
+    field's one owner (`contracts/dispatch.md`), so it can only be recorded
+    once an attempt is open -- which is also the order the dispatch facade
+    runs the two steps in.
+
+    ``strict=False`` for a fixture standing in for the establishment inside a
+    composition whose open is itself stubbed: the real verb records nothing
+    when there is no attempt and still answers with the path, and a stub that
+    raised there would fail the case for the stub rather than the code.
+    """
+
+    from scripts import workspace_record
+
+    path = Path(ticket_path)
+    text = path.read_text(encoding="utf-8")
+    updated, recorded = workspace_record.recorded_on_attempt(text, str(workspace))
+    if not recorded:
+        if strict:
+            raise AssertionError(f"{path} has no live attempt to record a workspace on")
+        return
+    path.write_text(updated, encoding="utf-8")
+
+
 def git_checkout(path) -> Path:
     """Initialize ``path`` as a real Git top-level a fixture can work in."""
 

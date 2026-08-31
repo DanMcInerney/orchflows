@@ -154,7 +154,9 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
             self.assertTrue(body["isolated"])
             self.assertEqual([], body["shared_with"])
             after = ticket.read_text(encoding="utf-8")
-            self.assertIn(f"workspace_path: {derived['path']}\n", after)
+            # the tree is the attempt's; the Git-only observations stay
+            # in the frontmatter that has always owned them
+            self.assertEqual(str(derived["path"]), recorded_workspace(ticket))
             self.assertIn(f"workspace_branch: {derived['branch']}\n", after)
             self.assertIn(
                 str(derived["path"]).replace("\\", "/"),
@@ -577,9 +579,9 @@ class TestFacadeDispatchesDistinctCandidates(unittest.TestCase):
                 self.assertEqual(str(derived["path"]), workspace_path)
                 self.assertNotEqual(str(main.resolve()), workspace_path)
                 self.assertTrue(derived["path"].is_dir())
-                self.assertIn(
-                    f"workspace_path: {derived['path']}\n",
-                    tickets_by_id[ticket_id].read_text(encoding="utf-8"),
+                self.assertEqual(
+                    str(derived["path"]),
+                    recorded_workspace(tickets_by_id[ticket_id]),
                 )
 
     def test_a_failed_establishment_refuses_the_dispatch_as_one_transaction(self):

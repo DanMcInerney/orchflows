@@ -19,7 +19,8 @@
       "contract": "dispatch.md",
       "fields": [
         "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-        "outcome_record_id", "owner", "records", "state", "retired_at",
+        "outcome_record_id", "owner", "records", "state", "workspace_path",
+        "retired_at",
         "retirement", "replaced_at", "replaced_by", "replacement", "replaces"
       ],
       "required": [
@@ -228,7 +229,7 @@
         "id", "run", "status", "admission", "executor", "pack",
         "profile", "independence", "depends_on", "isolation", "bound", "loop",
         "checked_by", "root_generation", "cut_generation", "assignment_seal",
-        "workspace_branch", "workspace_baseline", "workspace_path", "dispatch_v1",
+        "workspace_branch", "workspace_baseline", "dispatch_v1",
         "review_order", "review_v1", "review_stage", "review_kind"
       ],
       "required": ["id", "run", "status", "executor", "depends_on", "bound"],

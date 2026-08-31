@@ -23,7 +23,7 @@ read -- a write that landed in between is reported, never absorbed.
 
 ``prepare`` is the same argument taken to its end: installing what the
 tree declares costs a package manager's minutes and writes no ticket at
-all, so it is its own verb, run against the recorded ``workspace_path``
+all, so it is its own verb, run against the tree the attempt records
 after the establishment's lock has been let go.
 
 Nothing here records a success it did not achieve. A refused establishment
@@ -38,7 +38,7 @@ from pathlib import Path
 
 try:
     from . import state_root, tickets_adapters, tickets_format, tickets_store
-    from . import workspace_git, workspace_prepare
+    from . import workspace_git, workspace_prepare, workspace_record
 except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import state_root
     import tickets_adapters
@@ -46,6 +46,7 @@ except ImportError:  # a flat ``bin`` layout, where these are top-level modules
     import tickets_store
     import workspace_git
     import workspace_prepare
+    import workspace_record
 
 Refused = workspace_git.Refused
 ISOLATION_KEY = workspace_git.ISOLATION_KEY
@@ -360,7 +361,7 @@ def prepare(run: str, ticket_id: str):
     ``pnpm install`` is minutes, and while it ran inside the dispatch
     facade's critical section every sibling of the run waited it out for a
     tree that was not theirs. Nothing here writes a ticket or a stamp, so
-    there is no lock to take -- it reads the ``workspace_path`` the
+    there is no lock to take -- it reads the established tree the
     establishment already recorded and works in that directory.
 
     The preparation's verdict is reported, never raised: a tree that cannot
@@ -371,7 +372,7 @@ def prepare(run: str, ticket_id: str):
     """
 
     path, data, _ = _loaded(run, ticket_id)
-    recorded = str(data.get(PATH_KEY) or "").strip()
+    recorded = str(workspace_record.attempt_workspace(data) or "").strip()
     if not recorded:
         raise Refused(
             f"{run}/{ticket_id} records no {PATH_KEY}: establish it first with "

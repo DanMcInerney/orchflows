@@ -24,7 +24,9 @@ import threading
 import unittest
 from unittest import mock
 
-from tests._candidate_checkout import git_checkout
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch
 from scripts.tickets_format import canonical_json, parse_canonical_json
@@ -195,7 +197,6 @@ class DispatchLaunchTest(unittest.TestCase):
         path = self.ticket_path(run)
         text = path.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(self.candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -211,9 +212,19 @@ class DispatchLaunchTest(unittest.TestCase):
         return result
 
     def established(self):
+        """Stand in for `workspace.py establish`: record the tree on the open
+        attempt, which is where it lives, then answer as the real verb does."""
+
+        def establish(run, ticket_id, _workspace):
+            record_established_workspace(
+                Path(self.temporary.name) / "tickets" / run / f"{ticket_id}.md",
+                self.candidate, strict=False,
+            )
+            return {"establish": {"workspace_path": str(self.candidate)}}
+
         return mock.patch.object(
             tickets._tickets_dispatch_facade_module, "_workspace_establish",
-            return_value={"establish": {"workspace_path": str(self.candidate)}},
+            side_effect=establish,
         )
 
     def dispatch(self, *extra, dispatch_id="D1", run="run"):
@@ -401,7 +412,6 @@ class LandTest(unittest.TestCase):
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
         text = self.ticket_path().read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(self.candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -415,9 +425,10 @@ class LandTest(unittest.TestCase):
             "--dispatch-id", "D1", "--lease-expires-at", lease,
         )
         self.seal = opened["dispatch"]["assignment_seal"]
+        record_established_workspace(self.ticket_path(), self.candidate)
         packet = self.run_command(
             "dispatch-packet", "run", "T", "--dispatch-id", "D1",
- "--workspace", str(self.candidate),
+            "--workspace", str(self.candidate),
         )["packet"]
         carrier = Path(self.temporary.name) / "packet.json"
         carrier.write_text(canonical_json(packet), encoding="utf-8")

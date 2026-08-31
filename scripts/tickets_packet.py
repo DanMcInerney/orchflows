@@ -61,6 +61,23 @@ def _command_text(*arguments) -> str:
     return shlex.join(values)
 
 
+def _attempt_workspace(data: dict):
+    """The tree the ticket's dispatch attempt recorded, through its one owner.
+
+    Loaded at call time rather than at module scope: the flat installed
+    layout initializes these siblings in an order neither may depend on.
+    """
+
+    try:
+        if __package__:
+            from . import workspace_record
+        else:  # pragma: no cover - the flat installed layout
+            import workspace_record
+    except ImportError:  # pragma: no cover - a partial install
+        return None
+    return workspace_record.attempt_workspace(data)
+
+
 def workspace_establishment_finding(data: dict, workspace):
     """Return the refusal code/detail for a non-established packet workspace."""
 
@@ -74,11 +91,11 @@ def workspace_establishment_finding(data: dict, workspace):
     required = derived_isolation(data.get("isolation"), pack) == "required"
     if not required:
         return None
-    recorded = str(data.get("workspace_path") or "").strip()
+    recorded = _attempt_workspace(data)
     if not recorded:
         return (
             "workspace-unestablished",
-            "required workspace has no pre-dispatch workspace_path record",
+            "required workspace has no pre-dispatch establishment on this attempt",
         )
     if workspace != recorded:
         return (

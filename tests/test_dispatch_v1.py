@@ -10,7 +10,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tests._candidate_checkout import git_checkout
+from tests._candidate_checkout import (
+    git_checkout, record_established_workspace,
+)
 from scripts import tickets
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json,
@@ -42,7 +44,6 @@ class DispatchV1Test(unittest.TestCase):
         ticket = Path(self.temporary.name) / "tickets" / "run" / "T.md"
         established = ticket.read_text(encoding="utf-8")
         for key, value in (
-            ("workspace_path", str(self.candidate)),
             ("workspace_branch", "candidate-branch"),
             ("workspace_baseline", "0123456789abcdef clean"),
         ):
@@ -84,12 +85,32 @@ class DispatchV1Test(unittest.TestCase):
     def _candidate_checkout(self) -> Path:
         return git_checkout(Path(self.temporary.name) / "candidate")
 
-    def project_packet(self, dispatch_id="D1"):
-        """Commit the packet this attempt's execution records enter behind."""
+    def _establishes(self):
+        """Stand in for `workspace.py establish`: record on the open attempt,
+        then answer exactly as the real verb answers."""
 
+        def establish(run, ticket_id, _workspace):
+            record_established_workspace(
+                Path(self.temporary.name) / "tickets" / run / f"{ticket_id}.md",
+                self.candidate, strict=False,
+            )
+            return {"establish": {"workspace_path": str(self.candidate)}}
+
+        return establish
+
+    def project_packet(self, dispatch_id="D1"):
+        """Commit the packet this attempt's execution records enter behind.
+
+        The establishment records the tree on the open attempt first, which
+        is the order the dispatch facade runs those two steps in.
+        """
+
+        record_established_workspace(
+            Path(self.temporary.name) / "tickets" / "run" / "T.md", self.candidate
+        )
         projected = tickets._dispatch([
             "dispatch-packet", "run", "T", "--dispatch-id", dispatch_id,
- "--workspace", str(self.candidate),
+            "--workspace", str(self.candidate),
         ])
         self.assertNotIn("error", projected, projected)
         return projected["packet"]
@@ -848,7 +869,7 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
                 "_workspace_establish",
-                return_value={"establish": {"workspace_path": str(self.candidate)}},
+                side_effect=self._establishes(),
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened) as open_call,
             mock.patch.object(
@@ -883,7 +904,7 @@ class DispatchV1Test(unittest.TestCase):
         with mock.patch.object(
             tickets._tickets_dispatch_facade_module,
             "_workspace_establish",
-            return_value={"establish": {"workspace_path": str(self.candidate)}},
+            side_effect=self._establishes(),
         ):
             result = tickets._dispatch([
                 "dispatch", "run", "T", "--by", "worker",
@@ -963,7 +984,7 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
                 "_workspace_establish",
-                return_value={"establish": {"workspace_path": str(self.candidate)}},
+                side_effect=self._establishes(),
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(
@@ -1081,7 +1102,7 @@ class DispatchV1Test(unittest.TestCase):
             mock.patch.object(
                 tickets._tickets_dispatch_facade_module,
                 "_workspace_establish",
-                return_value={"establish": {"workspace_path": str(self.candidate)}},
+                side_effect=self._establishes(),
             ),
             mock.patch.object(tickets, "_cmd_dispatch_open", return_value=opened),
             mock.patch.object(tickets, "_cmd_dispatch_packet", return_value=None),
