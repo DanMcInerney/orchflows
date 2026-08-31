@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class TemplateTest(unittest.TestCase):
     def test_all_routed_compositions_have_current_ticket_shape(self):
         findings = []
-        for directory in sorted((ROOT / "compositions").iterdir()):
+        for directory in sorted((ROOT / "example-workflows").iterdir()):
             if directory.is_dir() and directory.name != "references":
                 if not (directory / tickets.TEMPLATE_FILE).is_file():
                     continue
@@ -30,7 +30,7 @@ class TemplateTest(unittest.TestCase):
             previous = os.environ.get(tickets.state_root.ENV_VAR)
             os.environ[tickets.state_root.ENV_VAR] = state
             try:
-                for directory in sorted((ROOT / "compositions").iterdir()):
+                for directory in sorted((ROOT / "example-workflows").iterdir()):
                     if not directory.is_dir() or directory.name == "references":
                         continue
                     if not (directory / tickets.TEMPLATE_FILE).is_file():

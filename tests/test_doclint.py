@@ -209,7 +209,7 @@ class LibraryTreeTest(unittest.TestCase):
     file that carries it, so scanning a tier still resolves the citations
     it makes into every other one."""
 
-    TIERS = ("rules", "contracts", "docs", "skills", "packs", "compositions", "templates")
+    TIERS = ("rules", "contracts", "docs", "skills", "packs", "example-workflows", "templates")
 
     def test_no_tier_carries_a_dangling_link(self):
         dangling = []
@@ -375,9 +375,12 @@ class InstallationScopeDocumentationTest(unittest.TestCase):
     def test_project_authoring_scope_remains_a_distinct_custom_item_landing_zone(self):
         scopes = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(encoding="utf-8")
         self.assertIn("## Scope and landing", scopes)
-        self.assertIn("<repo>/.orchflows/compositions/<name>", scopes)
+        self.assertIn("<repo>/.orchflows/workflows/<name>", scopes)
+        # The rings table also carries a `| project |` row, so read this one
+        # out of the scope section rather than off the first match.
+        section = scopes.split("## Scope and landing", 1)[1].split("\n## ", 1)[0]
         project_row = next(
-            line for line in scopes.splitlines() if line.startswith("| project |")
+            line for line in section.splitlines() if line.startswith("| project |")
         )
         self.assertIn("<repo>/.orchflows/skills/<name>/SKILL.md", project_row)
         self.assertIn("repository's `AGENTS.md`", project_row)

@@ -111,7 +111,7 @@ checkout — resumes mid-flight. What a ticket is — anatomy, lifecycle,
 review, failure handling — is [TICKETS.md](TICKETS.md).
 
 Team setup: each teammate runs the user install. Repository-local custom
-skills and compositions are ordinary repository work under
+skills and workflows are ordinary repository work under
 `<repo>/.orchflows`, governed by
 [custom workflow authoring](docs/custom-workflow-authoring.md); they are not an installation scope. Uninstall:
 `python install.py --user --uninstall` removes only what it generated;
@@ -132,7 +132,7 @@ and keep it by default.
 Every run auto-logs its friction — retries, missing inputs,
 workarounds — under an always-on law, and `trace.py` extracts each
 session's requests, narration and tool calls into one event record.
-the improvement composition mines those logs into proposals you accept or
+the improvement workflow mines those logs into proposals you accept or
 reject, each scoped to where the change lands: your **environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
 that keep causing friction), or the **workflows** themselves. Real
@@ -144,26 +144,26 @@ proposals from my own usage:
 - Remove overlapping verification steps from a workflow to speed it up
 - Add a documentation-update step a user kept requesting manually
 
-Chain any bricks and put the improvement composition last and you have a
+Chain any bricks and put the improvement workflow last and you have a
 workflow that upgrades itself:
 
     > my release workflow: investigate what merged since the last
       tag → a root ticket for the release notes under the content pack
       → improvement proposal
 
-The coolest part: it runs on itself. I run the improvement composition across
+The coolest part: it runs on itself. I run the improvement workflow across
 all sessions in a project, then point a second run at the first one.
 
 ### Tournaments: evolve and benchmaker
 
-The `benchmaker` composition builds a qualified benchmark for any
+The `benchmaker` workflow builds a qualified benchmark for any
 target with an observable outcome — a prompt, a skill, a script. The
-`evolve` composition then runs a tournament against it:
+`evolve` workflow then runs a tournament against it:
 bounded generations planned deterministically from settled public outcomes,
 blind judges, and promotion only when a frozen rule and margin are beaten.
 Together they turn "make this
 better" into a measured campaign instead of vibes. The dataflow is in
-[compositions/benchmaker/template.md](compositions/benchmaker/template.md);
+[example-workflows/benchmaker/template.md](example-workflows/benchmaker/template.md);
 `skill-tournament` applies
 the same loop to the library's own skills.
 
@@ -265,7 +265,7 @@ still there for recovery; nothing needs them on a healthy path.
     │                         skill, workflows/ assembled from them
     ├── Layer 2 · packs/     — per-domain data (code, content, research, design, data),
     │                         never control flow
-    └── Layer 3 · compositions/ — named workflows, callable like any skill
+    └── Layer 3 · example-workflows/ — named workflows, callable like any skill
 
 Four layers, dependencies pointing one way. `ARCHITECTURE.md` is the
 codemap — what lives where, who owns it — and `ls` is the current list;

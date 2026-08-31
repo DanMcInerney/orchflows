@@ -129,7 +129,7 @@ lands. It is proposed and evolves under §5, never from symmetry.
 | vocabulary | [vocabulary-authoring.md](vocabulary-authoring.md) | [vocabulary.md](vocabulary.md); each pack's craft Vocabulary | `<repo>/docs/vocabulary.md` | consumer test; craft budget |
 | pack | [pack-authoring.md](pack-authoring.md); [custom-workflow-authoring.md](custom-workflow-authoring.md) | `packs/` | a scoped pack | pack-signature checks in tools/validate.py |
 | skill | [rules/composition.md](../rules/composition.md) §5, §11; [rules/token-economy.md](../rules/token-economy.md) §6; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `skills/` | `<repo>/.orchflows/skills/<name>` | tools/validate.py; authoring lens |
-| composition | [contracts/work-item.md](../contracts/work-item.md), Template and stub; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `compositions/` | `<repo>/.orchflows/compositions/<name>` | `tickets.py instantiate`; tools/validate.py |
+| workflow | [contracts/work-item.md](../contracts/work-item.md), Template and stub; [custom-workflow-authoring.md](custom-workflow-authoring.md) | `example-workflows/` | `<repo>/.orchflows/workflows/<name>` | `tickets.py instantiate`; tools/validate.py |
 | review | [library-review.md](library-review.md) — its method; the constitution is the parameter | this library's constitution | a project's constitution under the same report contract | the report contract |
 | router | `templates/host-block.md`; [custom-workflow-authoring.md](custom-workflow-authoring.md) | the host block | the project routing block | authoring lens |
 

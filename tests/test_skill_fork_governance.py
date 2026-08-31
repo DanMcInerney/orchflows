@@ -187,7 +187,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     # No skill declares `role: none` any more: the driver loop stopped being
     # one. The role-less name surface left is a composition manifest, and the
     # same composers render it.
-    GLUE = "compositions/self-improve/template.md"
+    GLUE = "example-workflows/self-improve/template.md"
 
     def test_no_skill_contract_body_carries_a_copy(self):
         """A body copy re-opens the doclint saturation the relocation closed."""

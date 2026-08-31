@@ -99,7 +99,7 @@ alone. Both bind the bench-stack adapter design.
 ## Next steps, in order
 
 1. PR this branch (case set + protocol hardening + this file).
-2. Evolve campaign: incumbent = `compositions/benchmaker.md` +
+2. Evolve campaign: incumbent = `example-workflows/benchmaker.md` +
    `references/benchmaker-protocol.md` at this branch; benchmark =
    this case set with the campaign scorer; findings B1-B4 as
    generation direction; the seven clean sweeps as regression

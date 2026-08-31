@@ -21,7 +21,7 @@ charter names.
 - input: {"name":"sources","type":"literal","value":"{{sources}}"}
 - input: {"name":"rigor","type":"literal","value":"{{rigor}}"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
-- input: {"name":"research-charter","type":"literal","value":"the research charter at compositions/references/benchmaker-research.md in the orchflows library"}
+- input: {"name":"research-charter","type":"literal","value":"the research charter at example-workflows/references/benchmaker-research.md in the orchflows library"}
 
 ## Details
 

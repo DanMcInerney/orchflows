@@ -40,6 +40,16 @@ def _home():
             yield home
 
 
+def _row(output: str, name: str):
+    """One `list` row, split on whitespace: the table pads to fit."""
+
+    for line in output.splitlines():
+        cells = line.split()
+        if len(cells) >= 5 and cells[1] == name:
+            return cells
+    raise AssertionError(f"{name} is not listed in:\n{output}")
+
+
 def _run(*argv):
     stream = io.StringIO()
     with contextlib.redirect_stdout(stream):
@@ -238,12 +248,13 @@ class ListTests(unittest.TestCase):
                 code, output = _run("list", "--kind", "workflow")
 
             self.assertEqual(0, code, output)
-            self.assertIn("workflow  team-flow  project  untrusted", output)
+            row = _row(output, "team-flow")
+            self.assertEqual(["workflow", "team-flow", "project", "untrusted"], row[:4])
             self.assertIn("shadow:", output)
             with patch.object(rings.Path, "cwd", return_value=project):
                 rings_trust.grant(project / ".orchflows")
                 _code, after = _run("list", "--kind", "workflow")
-            self.assertIn("project  trusted", after)
+            self.assertEqual("trusted", _row(after, "team-flow")[3])
 
     def test_list_names_a_reserved_ring_item_rather_than_hiding_it(self):
         with _home() as home:

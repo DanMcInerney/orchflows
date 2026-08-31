@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SCHEMA_PATH = ROOT / "compositions" / "references" / "browser-game-program-record.schema.json"
+SCHEMA_PATH = ROOT / "example-workflows" / "references" / "browser-game-program-record.schema.json"
 
 
 REQUIRED_RECORDS = {

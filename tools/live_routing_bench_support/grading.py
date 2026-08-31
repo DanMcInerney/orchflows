@@ -37,7 +37,7 @@ ANSWER_LINE_RE = re.compile(r"^ROUTE:\s*answer", re.IGNORECASE | re.MULTILINE)
 BY_NAME_RE = re.compile(r"/by-name/([a-z0-9][a-z0-9-]*)/SKILL\.md", re.IGNORECASE)
 # The same name reached the other way: a template is instantiated from its
 # own directory under the installed library.
-TEMPLATE_RE = re.compile(r"/compositions/([a-z0-9][a-z0-9-]*)")
+TEMPLATE_RE = re.compile(r"/example-workflows/([a-z0-9][a-z0-9-]*)")
 
 
 def route_class(route: str) -> str:

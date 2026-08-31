@@ -96,7 +96,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertEqual(1, host.count(authoring_pointer))
         self.assertRegex(
             collapsed_host,
-            re.compile(r"Skill/composition/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
+            re.compile(r"Skill/workflow/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
         decompose = (ROOT / "skills/kernel/orch-slice/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("Context: pointers by identity", decompose)

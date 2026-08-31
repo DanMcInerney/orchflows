@@ -18,7 +18,7 @@ cost each checked independently, with a verdict per required criterion.
 
 ## Context
 
-- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
+- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at example-workflows/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 - input: {"name":"pack","type":"literal","value":"{{pack}}"}
 

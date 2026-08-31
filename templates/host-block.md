@@ -20,7 +20,7 @@
   that frontier is empty. **outline** — one planner
   runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
   `orch-slice` root for distinct results/dependencies. The planner never
-  drives the run. Skill/composition/pack/contract/router work carries
+  drives the run. Skill/workflow/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
   cause enters single; an unknown or unverified cause enters outline. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.

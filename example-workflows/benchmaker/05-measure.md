@@ -16,8 +16,8 @@ rungs, on [§Measurement pass](../references/benchmaker-protocol.md#measurement-
 
 ## Context
 
-- input: {"name":"manifest-contract","type":"literal","value":"the manifest contract at compositions/references/benchmaker-manifest.md in the orchflows library"}
-- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
+- input: {"name":"manifest-contract","type":"literal","value":"the manifest contract at example-workflows/references/benchmaker-manifest.md in the orchflows library"}
+- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at example-workflows/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Details

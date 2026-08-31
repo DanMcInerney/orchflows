@@ -19,7 +19,7 @@ class WorkflowCompositionTests(unittest.TestCase):
         for link_kind in ("template", "stub"):
             with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
                 root = Path(directory)
-                composition = root / "compositions" / "demo"
+                composition = root / "example-workflows" / "demo"
                 composition.mkdir(parents=True)
                 external = Path(outside) / f"{link_kind}.md"
                 if link_kind == "template":
@@ -110,11 +110,11 @@ class WorkflowCompositionTests(unittest.TestCase):
         by_id = {node["id"]: node for node in detail["nodes"]}
 
         self.assertEqual(
-            identity.source_id("lib/compositions/evolve/template.md"),
+            identity.source_id("lib/example-workflows/evolve/template.md"),
             by_id["workflow:evolve"]["source_id"],
         )
         self.assertEqual(
-            identity.source_id("lib/compositions/evolve/02-campaign.md"),
+            identity.source_id("lib/example-workflows/evolve/02-campaign.md"),
             by_id["work:evolve/02-campaign"]["source_id"],
         )
         self.assertEqual(
@@ -132,27 +132,27 @@ class WorkflowCompositionTests(unittest.TestCase):
     def test_duplicate_dangling_and_unresolved_source_are_diagnosed_without_repair(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            self._write(root / "compositions" / "demo" / "template.md", """---
+            self._write(root / "example-workflows" / "demo" / "template.md", """---
 name: demo
 description: Demonstrate malformed topology.
 entry: named
 ---
 """)
-            self._write(root / "compositions" / "demo" / "00-start.md", """---
+            self._write(root / "example-workflows" / "demo" / "00-start.md", """---
 id: 00-start
 executor: orch-known
 depends_on: []
 bound: once
 ---
 """)
-            self._write(root / "compositions" / "demo" / "01-end.md", """---
+            self._write(root / "example-workflows" / "demo" / "01-end.md", """---
 id: 01-end
 executor: orch-missing
 depends_on: [00-start, 99-ghost]
 bound: once
 ---
 """)
-            self._write(root / "compositions" / "demo" / "02-duplicate.md", """---
+            self._write(root / "example-workflows" / "demo" / "02-duplicate.md", """---
 id: 01-end
 executor: orch-missing
 depends_on: [00-start]

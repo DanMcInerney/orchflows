@@ -128,7 +128,7 @@ retargets to distinct `## Outline` sections.
 - `skills/engines/orch-loop/` retires: entry in
   `scripts/tickets_registry.py` `SUPERSEDED_EXECUTORS` mapping to the
   loop stub form; templates binding `executor: orch-loop` (grep
-  `templates/`, `compositions/`) migrate to loop stubs.
+  `templates/`, `example-workflows/`) migrate to loop stubs.
 
 Acceptance: the evolve composition's generation loop runs as a loop stub
 whose body is the generation template, with selection and promotion in

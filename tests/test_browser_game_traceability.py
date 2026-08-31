@@ -34,10 +34,10 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
         temporary = Path(tempfile.mkdtemp(prefix="browser-game-trace-"))
         self.addCleanup(shutil.rmtree, temporary, True)
         for relative in (
-            Path("compositions/browser-game"),
-            Path("compositions/references/browser-game-program-record.schema.json"),
-            Path("compositions/references/browser-game-intake-policy.json"),
-            Path("compositions/references/browser-game-instance-fixtures.json"),
+            Path("example-workflows/browser-game"),
+            Path("example-workflows/references/browser-game-program-record.schema.json"),
+            Path("example-workflows/references/browser-game-intake-policy.json"),
+            Path("example-workflows/references/browser-game-instance-fixtures.json"),
             Path("scripts/browser_game_validate.py"),
             Path("tests/test_browser_game_traceability.py"),
             Path("tests/test_browser_game_instances.py"),
@@ -61,7 +61,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_implemented_behavior_without_a_normative_identity_is_rejected(self):
         root = self._copy_tree()
-        manifest_path = root / "compositions/browser-game/traceability.json"
+        manifest_path = root / "example-workflows/browser-game/traceability.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["behaviors"][0]["identities"] = []
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -73,7 +73,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
     def test_test_or_help_identity_disagreement_is_rejected(self):
         for surface, relative in (
             ("test", "tests/test_browser_game_traceability.py"),
-            ("help", "compositions/browser-game/template.md"),
+            ("help", "example-workflows/browser-game/template.md"),
         ):
             with self.subTest(surface=surface):
                 root = self._copy_tree()
@@ -99,7 +99,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_unlisted_implementation_marker_is_rejected(self):
         root = self._copy_tree()
-        implementation = root / "compositions/browser-game/00-record.md"
+        implementation = root / "example-workflows/browser-game/00-record.md"
         implementation.write_text(
             implementation.read_text(encoding="utf-8")
             + "\n<!-- BGW-TRACE[" + "implementation:unlisted-behavior|PJ-21] -->\n",
@@ -112,15 +112,15 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_orphan_manifest_row_is_rejected(self):
         root = self._copy_tree()
-        manifest_path = root / "compositions/browser-game/traceability.json"
+        manifest_path = root / "example-workflows/browser-game/traceability.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["behaviors"].append(
             {
                 "behavior": "orphan-behavior",
                 "identities": ["PJ-21"],
-                "implementation": "compositions/browser-game/00-record.md",
+                "implementation": "example-workflows/browser-game/00-record.md",
                 "test": "tests/test_browser_game_traceability.py",
-                "help": "compositions/browser-game/template.md",
+                "help": "example-workflows/browser-game/template.md",
             }
         )
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -131,7 +131,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_identity_present_on_only_two_surfaces_is_rejected(self):
         root = self._copy_tree()
-        help_path = root / "compositions/browser-game/template.md"
+        help_path = root / "example-workflows/browser-game/template.md"
         help_path.write_text(
             help_path.read_text(encoding="utf-8").replace(
                 "BGW-TRACE[" + "help:checkpoint-disposition|PJ-05]",
@@ -146,7 +146,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_governed_minimum_schema_field_cannot_be_removed(self):
         root = self._copy_tree()
-        schema_path = root / "compositions/references/browser-game-program-record.schema.json"
+        schema_path = root / "example-workflows/references/browser-game-program-record.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         required = schema["$defs"]["releaseContractRevision"]["required"]
         required.remove("recovery")
@@ -158,7 +158,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_governing_identity_on_schema_row_cannot_drift(self):
         root = self._copy_tree()
-        schema_path = root / "compositions/references/browser-game-program-record.schema.json"
+        schema_path = root / "example-workflows/references/browser-game-program-record.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         schema["$defs"]["qaOracleRevision"]["x-governing-identities"] = ["PJ-24"]
         schema_path.write_text(json.dumps(schema, indent=2) + "\n", encoding="utf-8")
@@ -169,7 +169,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_repository_validator_runs_the_browser_game_audit(self):
         root = self._copy_tree()
-        schema_path = root / "compositions/references/browser-game-program-record.schema.json"
+        schema_path = root / "example-workflows/references/browser-game-program-record.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         schema["$defs"]["releaseContractRevision"]["required"].remove("recovery")
         schema_path.write_text(json.dumps(schema, indent=2) + "\n", encoding="utf-8")

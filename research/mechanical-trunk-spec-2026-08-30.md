@@ -447,7 +447,7 @@ verb appears), `packs/*/SKILL.md` + `packs/*/references/`,
 `scripts/tickets_registry.py`, `scripts/packs.py`,
 `scripts/packs_support.py`, `scripts/tickets_dispatch*.py` (verb-name
 touchpoints only), `installer/` (every name list/tuple), `install.py`,
-`compositions/` (grep for the verb in stubs), `reader/docs/workflows.md`
+`example-workflows/` (grep for the verb in stubs), `reader/docs/workflows.md`
 + reader projection name lists if they enumerate verbs, `tests/`,
 `tools/render_shapes.py` output regeneration.
 

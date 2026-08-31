@@ -78,7 +78,7 @@ class WarningCeilingTest(unittest.TestCase):
         cross = set(warning_lines(stdout, CROSS_TIER))
         composition = {
             line for line in warning_lines(stdout)
-            if line.startswith("WARN compositions/")
+            if line.startswith("WARN example-workflows/")
         }
         self.assertEqual(set(), near & cross)
         # Only the dated browser-game protocol exception remains; all shipped

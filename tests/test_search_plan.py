@@ -25,9 +25,9 @@ ROOT = Path(__file__).resolve().parents[1]
 # text graded below is the whole directory, stubs first, because the law
 # that used to be one composition body is now spread across the stubs
 # that carry it.
-EVOLVE = ROOT / "compositions" / "evolve"
-EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
-TOURNAMENT = ROOT / "compositions" / "skill-tournament"
+EVOLVE = ROOT / "example-workflows" / "evolve"
+EVOLVE_GENERATION = ROOT / "example-workflows" / "references" / "evolve-generation.md"
+TOURNAMENT = ROOT / "example-workflows" / "skill-tournament"
 # Since P4-3 the planner is a script and nothing else: the `orch-search-plan`
 # skill wrapped one command and one protocol in a dispatchable contract no
 # caller used as one — the campaign always named the bare filename. The

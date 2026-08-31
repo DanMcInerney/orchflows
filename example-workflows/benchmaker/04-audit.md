@@ -16,7 +16,7 @@ under the audit lens.
 
 ## Context
 
-- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at compositions/references/benchmaker-protocol.md in the orchflows library"}
+- input: {"name":"protocol-contract","type":"literal","value":"the protocol contract at example-workflows/references/benchmaker-protocol.md in the orchflows library"}
 - input: {"name":"package","type":"literal","value":"{{package}}"}
 
 ## Details

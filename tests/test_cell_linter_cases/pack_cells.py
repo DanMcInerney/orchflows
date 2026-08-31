@@ -521,7 +521,7 @@ WARNING_CEILING = 0
 # same reason as above. Raised once, at the P4 gate join (2026-08-16),
 # from 12 to the count the widened corpus reports: the check now reads
 # docs/ (vocabulary.md excepted -- the definitional owner) and
-# compositions/ and compares skills against skills. V2 deliberately binds
+# example-workflows/ and compares skills against skills. V2 deliberately binds
 # names across tier owners; its exact count has no headroom and only falls.
 CROSS_TIER_WARNING_CEILING = 29
 

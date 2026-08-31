@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
 
 import tools.validate as validate  # noqa: E402
 
-COMPOSITIONS = ROOT / "compositions"
+COMPOSITIONS = ROOT / "example-workflows"
 TEMPLATE_FILE = "template.md"
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")

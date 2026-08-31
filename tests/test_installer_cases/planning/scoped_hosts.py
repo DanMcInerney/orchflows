@@ -426,13 +426,13 @@ class TestScopedHostConfiguration(unittest.TestCase):
 
     def test_discover_templates_requires_a_manifest_with_entry(self):
         """A name surface is a template directory whose manifest declares an
-        `entry`. Everything else under `compositions/` is library data: the
+        `entry`. Everything else under `example-workflows/` is library data: the
         shared `references/` tree, a directory mid-authoring, and — the case
         this replaces — any stray top-level `*.md`, which was the second
         grammar's whole surface until P4-3 deleted it."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            comps = root / "compositions"
+            comps = root / "example-workflows"
             (comps / "fix").mkdir(parents=True)
             (comps / "fix" / "template.md").write_text(
                 "---\nname: fix\ndescription: routed fix chain\nentry: routed\n"
@@ -485,7 +485,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
             prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
             by_name_names = {dest.parent.name for dest, _ in plan.by_name}
-            lib_comps = (home / ".orchflows" / "lib" / "compositions").resolve()
+            lib_comps = (home / ".orchflows" / "lib" / "example-workflows").resolve()
             for directory, frontmatter, _ in templates:
                 name = directory.name
                 self.assertIn(name, adapter_names)

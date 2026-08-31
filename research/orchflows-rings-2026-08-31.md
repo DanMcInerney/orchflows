@@ -244,7 +244,7 @@ extends the same pipeline to rings:
 
 ### 4.6 In the library repo
 
-`compositions/` → **`example-workflows/`**, and the user-facing term
+`example-workflows/` → **`example-workflows/`**, and the user-facing term
 becomes **workflow** (vocabulary owns the rename; "composition" was
 library jargon). The existing workflows (evolve, drift-canary,
 self-improve, benchmaker, browser-game, renovate, skill-tournament) move
@@ -266,11 +266,11 @@ super-research lands there *and* in the home ring — the dual proof.
    adapters for all three hosts; `orchflows add` + `imports.lock`.
 5. `instantiate <name>` resolution; `orchflows new` scaffolds;
    `orchflows list`.
-6. `compositions/` → `example-workflows/` + vocabulary rename; generated
+6. `example-workflows/` → `example-workflows/` + vocabulary rename; generated
    project-ring adapter replaces the super-research shim.
 7. Sweep the stale scope docs the audit flagged
    (`custom-workflow-authoring.md`, `documentation.md` factory table,
-   vocabulary's dead `.orchflows/compositions/` landing zone,
+   vocabulary's dead `.orchflows/workflows/` landing zone,
    `scope-edges.json` orphan).
 
 **Deliberately deferred**: any registry/marketplace (P3 says reference-

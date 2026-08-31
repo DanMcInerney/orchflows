@@ -144,7 +144,7 @@ ENVELOPE_VOCAB_RES = (
 
 # --- Ticket templates (contracts/work-item.md, Template and stub) ----
 #
-# A template is a directory `compositions/<name>/` holding `template.md`
+# A template is a directory `example-workflows/<name>/` holding `template.md`
 # plus one ticket stub per other `*.md` file; a stub is a ticket per
 # contracts/work-item.md missing only `run`, `status` and `claimed_*`,
 # with `{{placeholder}}` where instantiation fills a value. These checks

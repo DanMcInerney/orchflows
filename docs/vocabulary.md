@@ -7,7 +7,7 @@ that needs a different meaning needs a different word.
 ## Structure
 
 - **tier** — one of four layers: T0 contracts, T1 skills, T2 packs, T3
-  compositions. T0 is the only data interface between them; a higher
+  workflows. T0 is the only data interface between them; a higher
   tier may still name a lower one's files and skills, per
   `ARCHITECTURE.md`'s dependency direction. A role's capability is a
   **capability class**, never a tier.
@@ -26,9 +26,8 @@ that needs a different meaning needs a different word.
   `executor` verb (`rules/loops.md`), never a call edge.
 - **kernel** — the primitive skills under `skills/kernel/`; a kernel
   skill calls no skill.
-- **workflow** — an assembled skill calling primitives or other
-  workflows; always domain-blind. A T3 composition is a **named
-  workflow**.
+- **workflow skill** — an assembled T1 skill calling primitives or other
+  skills; always domain-blind. It lives under `skills/workflows/`.
 - **checker** — `orch-check`: the planner-role callable rendering findings
   or verdicts over a fixed artifact and never a deliverable; it is exempt
   from the envelope per `rules/composition.md`.
@@ -49,16 +48,20 @@ that needs a different meaning needs a different word.
   acts under the sections its skill names.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **composition** — a T3 named workflow: a template (below) under
-  `compositions/` (canonical) or `<repo>/.orchflows/compositions/`
-  (custom); entry `routed | named`; admitted under
+- **workflow** — a T3 named workflow: a template (below) under
+  `example-workflows/` (the library's gallery) or a ring's workflows
+  directory (yours); entry `routed | named`; admitted under
   `docs/custom-workflow-authoring.md`. One instantiated into a run is a
-  **composition instance**.
+  **workflow instance**. This is the user-facing word.
+- **composition** — the former spelling of **workflow**. It survives in
+  one place: the reader's projection still discriminates a T3
+  `composition` from a T1 workflow skill
+  (`reader/docs/workflows.md`). New prose says workflow.
 - **combinator** — one of the three ways a template composes its stubs:
   a `depends_on` edge, disjoint parallel stubs (no dependency path
   between them, so the frontier may run them together), and a loop stub
   (the `loop` field of `contracts/work-item.md`). There is no fourth.
-- **dispatchable unit / envelope** — a skill or composition another may
+- **dispatchable unit / envelope** — a skill or workflow another may
   bind as a step or loop body, and the leading `Return` fields it must
   carry — status, result identity, verification — per
   `contracts/result.md`.
@@ -130,7 +133,7 @@ that needs a different meaning needs a different word.
 - **template** — a directory of ticket stubs plus its `template.md`
   manifest, instantiated into a run's ticket directory by `tickets.py
   instantiate` and drained by the driver two commands at a time; the one
-  form a composition takes. Shape per `contracts/work-item.md`.
+  form a workflow takes. Shape per `contracts/work-item.md`.
 - **stub** — a template's unit: a ticket missing only `run`, `status`,
   `claimed_*` and any `{{placeholder}}`.
 - **terminal ticket** — the stub no other stub depends on; its Goal is the
@@ -213,10 +216,10 @@ that needs a different meaning needs a different word.
 The benchmark pipeline's artifacts are named here and defined by their
 producers, never restated: **evaluation design** (the execute lane's
 Return), **benchmark** and its manifest field set
-(`compositions/references/benchmaker-manifest.md`), **score card**
+(`example-workflows/references/benchmaker-manifest.md`), **score card**
  (the judging check's Return where the criteria carry a scale), **evolution
 result**, **evaluation mode** and **incumbent** (the `evolve`
-composition).
+workflow).
 
 ## Delegation
 
