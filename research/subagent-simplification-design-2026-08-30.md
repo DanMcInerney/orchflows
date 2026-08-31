@@ -1,6 +1,8 @@
 # Subagent + packet/ticket simplification — design
 
-2026-08-30. Status: **PROPOSED — awaiting review. Nothing here is implemented.**
+2026-08-30. Status: **IMPLEMENTED on this branch** — stages A/B/C landed
+2026-08-31 (see the branch history from `27d167ce` forward); deferrals are
+recorded in the stage commit messages and the PR body.
 
 Synthesis over seven parallel investigations (A performance audit, B
 pre-refactor baseline, C envelope/packet drift, D external-tool survey,
