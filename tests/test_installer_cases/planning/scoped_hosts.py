@@ -360,10 +360,11 @@ class TestScopedHostConfiguration(unittest.TestCase):
             ):
                 plan = install.build_plan("user", None)
 
-            # Compositions are invocable by name and get an adapter stub like
-            # skills, whatever their entry value. What differs is the body: a
-            # skill's is an `@`-include of one file, and a template is a
-            # directory, which `@` cannot include.
+            # Workflows are invocable by name and get an adapter stub like
+            # skills. What differs is the body: a skill's is an `@`-include
+            # of one file, and a workflow's is a pointer, because the body's
+            # own relative links resolve against the library directory it
+            # lives in rather than the host surface the stub is written to.
             templates = install.discover_templates()
             template_names = {directory.name for directory, _, _ in templates}
             self.assertEqual(
@@ -392,8 +393,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertNotIn("placeholders:", frontmatter)
                 if dest.parent.name in template_names:
                     self.assertNotIn("@", body)
-                    self.assertIn("tickets.py instantiate", body)
-                    self.assertIn("tickets.py land", body)
+                    self.assertIn("is a workflow skill", body)
+                    self.assertIn("invoke the skill", body)
+                    self.assertIn("disable-model-invocation: true", frontmatter)
                 elif dest.parent.name in role_bearing:
                     # A role-bearing adapter forks, so its body opens with the
                     # fork-arrival clause and then the `@`-include; the clause
@@ -424,52 +426,49 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 if dest.parent.name not in template_names:
                     self.assertIn("follow it exactly.", body)
 
-    def test_discover_templates_requires_a_manifest_with_entry(self):
-        """A name surface is a template directory whose manifest declares an
-        `entry`. Everything else under `example-workflows/` is library data: the
-        shared `references/` tree, a directory mid-authoring, and — the case
-        this replaces — any stray top-level `*.md`, which was the second
-        grammar's whole surface until P4-3 deleted it."""
+    def test_discover_templates_requires_a_named_workflow_body(self):
+        """A name surface is a workflow directory holding one `SKILL.md` that
+        declares a `name`. Everything else under `example-workflows/` is
+        library data: the shared `references/` tree, a directory mid-authoring,
+        and — the case this replaces — any stray top-level `*.md`, which was
+        the second grammar's whole surface until P4-3 deleted it."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             comps = root / "example-workflows"
             (comps / "fix").mkdir(parents=True)
-            (comps / "fix" / "template.md").write_text(
-                "---\nname: fix\ndescription: routed fix chain\nentry: routed\n"
-                "placeholders: [failure]\n---\n\nFour stubs, one chain.\n",
+            (comps / "fix" / "SKILL.md").write_text(
+                "---\nname: fix\ndescription: routed fix chain\n"
+                "disable-model-invocation: true\n---\n\nOne frame, four calls.\n",
                 encoding="utf-8",
-            )
-            (comps / "fix" / "00-reproduce.md").write_text(
-                "---\nid: 00-reproduce\n---\n\nstub\n", encoding="utf-8"
             )
             (comps / "references").mkdir()
             (comps / "references" / "shared.md").write_text("prose\n", encoding="utf-8")
-            (comps / "no-entry").mkdir()
-            (comps / "no-entry" / "template.md").write_text(
-                "---\nname: no-entry\ndescription: missing entry\n---\n\nbody\n",
+            (comps / "no-name").mkdir()
+            (comps / "no-name" / "SKILL.md").write_text(
+                "---\ndescription: missing name\n---\n\nbody\n",
                 encoding="utf-8",
             )
             (comps / "unfrontmattered").mkdir()
-            (comps / "unfrontmattered" / "template.md").write_text(
+            (comps / "unfrontmattered" / "SKILL.md").write_text(
                 "# no frontmatter\n\nprose only\n", encoding="utf-8"
             )
             (comps / "legacy.md").write_text(
-                "---\nname: legacy\ndescription: the deleted step form\n"
-                "entry: routed\n---\n\nSteps: one.\n",
+                "---\nname: legacy\ndescription: the deleted step form\n---\n\n"
+                "Steps: one.\n",
                 encoding="utf-8",
             )
 
             found = install.discover_templates(root)
             self.assertEqual(["fix"], [directory.name for directory, _, _ in found])
             directory, frontmatter, body = found[0]
-            self.assertEqual("routed", install.frontmatter_field(frontmatter, "entry"))
-            self.assertEqual("[failure]", install.frontmatter_field(frontmatter, "placeholders"))
-            self.assertIn("Four stubs, one chain.", body)
+            self.assertEqual("fix", install.frontmatter_field(frontmatter, "name"))
+            self.assertIn("One frame, four calls.", body)
 
-    def test_template_surfaces_cover_every_entry_value(self):
-        # Routed and named templates alike surface as Claude adapters, Codex
-        # prompts, and by-name entries -- the named tier is unreachable from
-        # a host without them (SPEC §8).
+    def test_workflow_surfaces_are_manual_only_on_every_host(self):
+        # Every workflow surfaces as a Claude adapter, a Codex prompt, and a
+        # by-name entry -- unreachable from a host without them (SPEC §8) --
+        # and the Claude adapter is manual-invocation-only whatever the body
+        # declared, because a workflow's prose runs as orchestrator reasoning.
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
@@ -481,30 +480,25 @@ class TestScopedHostConfiguration(unittest.TestCase):
 
             templates = install.discover_templates()
             if not templates:
-                self.skipTest("no invocable templates in this tree")
+                self.skipTest("no invocable workflows in this tree")
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
             prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
             by_name_names = {dest.parent.name for dest, _ in plan.by_name}
             lib_comps = (home / ".orchflows" / "lib" / "example-workflows").resolve()
-            for directory, frontmatter, _ in templates:
+            for directory, _frontmatter, _ in templates:
                 name = directory.name
                 self.assertIn(name, adapter_names)
                 self.assertIn(name, prompt_names)
                 self.assertIn(name, by_name_names)
-                # Both stubs point at the template directory: the adapter to
-                # instantiate it, the pointer to read its manifest.
+                # Both surfaces name the one body: the adapter to invoke it,
+                # the pointer to read it.
                 adapter = next(c for d, c in plan.claude_adapters if d.parent.name == name)
-                self.assertIn(str(lib_comps / name), adapter)
+                self.assertIn(str(lib_comps / name / "SKILL.md"), adapter)
+                self.assertIn("disable-model-invocation: true", adapter)
+                self.assertNotIn("--set ", adapter)
                 pointer = next(c for d, c in plan.by_name if d.parent.name == name)
-                self.assertIn(str(lib_comps / name / "template.md"), pointer)
-                self.assertIn("entry:", pointer)
-                # Every `--set` the adapter offers is a placeholder the
-                # manifest declares, so a reader cannot be handed one
-                # `tickets.py instantiate` will refuse.
-                declared = (install.frontmatter_field(frontmatter, "placeholders") or "")
-                names = {item.strip() for item in declared.strip("[]").split(",") if item.strip()}
-                offered = set(re.findall(r"--set (\w+)=", adapter))
-                self.assertEqual(names, offered, name)
+                self.assertIn(str(lib_comps / name / "SKILL.md"), pointer)
+                self.assertIn("invoked by name only", pointer)
 
     def test_user_plan_writes_flat_by_name_index_for_every_package(self):
         with tempfile.TemporaryDirectory() as tmp:

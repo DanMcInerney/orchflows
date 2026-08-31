@@ -73,7 +73,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
     def test_test_or_help_identity_disagreement_is_rejected(self):
         for surface, relative in (
             ("test", "tests/test_browser_game_traceability.py"),
-            ("help", "example-workflows/browser-game/template.md"),
+            ("help", "example-workflows/browser-game/SKILL.md"),
         ):
             with self.subTest(surface=surface):
                 root = self._copy_tree()
@@ -99,7 +99,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_unlisted_implementation_marker_is_rejected(self):
         root = self._copy_tree()
-        implementation = root / "example-workflows/browser-game/00-record.md"
+        implementation = root / "example-workflows/browser-game/SKILL.md"
         implementation.write_text(
             implementation.read_text(encoding="utf-8")
             + "\n<!-- BGW-TRACE[" + "implementation:unlisted-behavior|PJ-21] -->\n",
@@ -118,9 +118,9 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
             {
                 "behavior": "orphan-behavior",
                 "identities": ["PJ-21"],
-                "implementation": "example-workflows/browser-game/00-record.md",
+                "implementation": "example-workflows/browser-game/SKILL.md",
                 "test": "tests/test_browser_game_traceability.py",
-                "help": "example-workflows/browser-game/template.md",
+                "help": "example-workflows/browser-game/SKILL.md",
             }
         )
         manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -131,7 +131,7 @@ class BrowserGameTraceabilityTests(unittest.TestCase):
 
     def test_identity_present_on_only_two_surfaces_is_rejected(self):
         root = self._copy_tree()
-        help_path = root / "example-workflows/browser-game/template.md"
+        help_path = root / "example-workflows/browser-game/SKILL.md"
         help_path.write_text(
             help_path.read_text(encoding="utf-8").replace(
                 "BGW-TRACE[" + "help:checkpoint-disposition|PJ-05]",

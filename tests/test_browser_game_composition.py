@@ -1,14 +1,14 @@
-"""Closed user-facing admission for the canonical browser-game composition."""
+"""Closed user-facing admission for the canonical browser-game workflow."""
 
 from __future__ import annotations
 
-import os
-import tempfile
 import unittest
 from pathlib import Path
 
 from installer.packages import (
+    MANUAL_ONLY,
     discover_templates,
+    manual_only_frontmatter,
     split_frontmatter,
     template_adapter_body,
 )
@@ -32,21 +32,22 @@ DISPOSITIONS = (
 
 
 class BrowserGameCompositionTests(unittest.TestCase):
-    def _template(self):
-        path = COMPOSITION / "template.md"
+    def _workflow(self):
+        path = COMPOSITION / "SKILL.md"
         text = path.read_text(encoding="utf-8")
         return path, text, tickets._parse_frontmatter(text)
 
     def test_named_invocation_closes_inputs_outputs_questions_and_dispositions(self):
-        _, text, manifest = self._template()
+        _, text, frontmatter = self._workflow()
 
-        self.assertEqual("browser-game", manifest["name"])
-        self.assertEqual("named", manifest["entry"])
-        self.assertEqual(["brief", "workspace"], manifest["placeholders"])
+        self.assertEqual("browser-game", frontmatter["name"])
+        self.assertEqual("true", frontmatter["disable-model-invocation"])
         normalized = " ".join(text.split())
         for term in (
+            "`brief`",
+            "`workspace`",
             "versioned program record",
-            "evidence identities",
+            "evidence",
             "successor plan",
             "kind: user-only",
             "verbatim",
@@ -56,64 +57,38 @@ class BrowserGameCompositionTests(unittest.TestCase):
         for disposition in DISPOSITIONS:
             self.assertIn(f"`{disposition}`", text)
 
-    def test_template_is_discoverable_instantiable_and_has_one_terminal(self):
+    def test_the_workflow_is_discoverable_and_calls_a_frame_and_bricks(self):
         discovered = {
             path.name: (path, frontmatter, body)
             for path, frontmatter, body in discover_templates(ROOT)
         }
         self.assertIn("browser-game", discovered)
 
-        stubs = {
-            path.stem: tickets._parse_frontmatter(path.read_text(encoding="utf-8"))
-            for path in sorted(COMPOSITION.glob("*.md"))
-            if path.name != tickets.TEMPLATE_FILE
-        }
+        _, text, _ = self._workflow()
+        for call in (
+            "tickets.py frame-open",
+            "do --pack orch-content-pack",
+            "do --pack orch-research-pack",
+            "judge --pack orch-content-pack",
+            "tickets.py frame-close",
+        ):
+            self.assertIn(call, text)
+        # The template era is gone: no stub files, no instantiation route.
         self.assertEqual(
-            {
-                "00-record": "orch-do",
-                "01-evidence": "orch-do",
-                "02-checkpoint": "orch-do",
-            },
-            {name: fields["executor"] for name, fields in stubs.items()},
+            ["SKILL.md"], sorted(path.name for path in COMPOSITION.glob("*.md"))
         )
-        depended_on = {
-            dependency
-            for fields in stubs.values()
-            for dependency in fields.get("depends_on", [])
-        }
-        self.assertEqual({"02-checkpoint"}, set(stubs) - depended_on)
+        self.assertNotIn("instantiate", text)
 
-        previous = os.environ.get(tickets.state_root.ENV_VAR)
-        with tempfile.TemporaryDirectory() as directory:
-            os.environ[tickets.state_root.ENV_VAR] = directory
-            try:
-                result = tickets._cmd_instantiate(
-                    [
-                        str(COMPOSITION),
-                        "--run",
-                        "20260828T000000Z-browser-game-admission",
-                        "--set",
-                        "brief=an incomplete cooperative puzzle-game brief",
-                        "--set",
-                        "workspace=browser-game-product",
-                    ]
-                )
-            finally:
-                if previous is None:
-                    os.environ.pop(tickets.state_root.ENV_VAR, None)
-                else:
-                    os.environ[tickets.state_root.ENV_VAR] = previous
-        self.assertNotIn("error", result, result)
-        self.assertIn("instantiate", result)
-
-    def test_installer_adapter_exposes_exact_required_settings_without_legacy(self):
-        path, text, _ = self._template()
+    def test_installer_adapter_points_at_the_body_and_forces_manual_only(self):
+        path, text, _ = self._workflow()
         frontmatter, _ = split_frontmatter(text)
         adapter = template_adapter_body("browser-game", path.parent, frontmatter)
+        rendered = manual_only_frontmatter(frontmatter) + adapter
 
-        self.assertIn("--set brief=<brief>", adapter)
-        self.assertIn("--set workspace=<workspace>", adapter)
-        self.assertEqual(2, adapter.count("--set "))
+        self.assertIn(str(path.parent / "SKILL.md"), adapter)
+        self.assertNotIn("--set ", adapter)
+        self.assertNotIn("instantiate", adapter)
+        self.assertEqual(1, rendered.count(MANUAL_ONLY))
         admitted = "\n".join(
             file.read_text(encoding="utf-8") for file in sorted(COMPOSITION.rglob("*.md"))
         ) + "\n" + adapter
@@ -121,9 +96,9 @@ class BrowserGameCompositionTests(unittest.TestCase):
             self.assertNotIn(forbidden, admitted)
 
     def test_checkpoint_consumes_the_kind_separated_successor_plan_contract(self):
-        checkpoint = (COMPOSITION / "02-checkpoint.md").read_text(encoding="utf-8")
+        _, checkpoint, _ = self._workflow()
         self.assertIn(
-            "example-workflows/references/browser-game-program-record.schema.json"
+            "../references/browser-game-program-record.schema.json"
             "#/$defs/successorPlanRevision",
             checkpoint,
         )
@@ -136,7 +111,3 @@ class BrowserGameCompositionTests(unittest.TestCase):
             "status",
         ):
             self.assertIn(field, " ".join(checkpoint.split()))
-
-
-if __name__ == "__main__":
-    unittest.main()

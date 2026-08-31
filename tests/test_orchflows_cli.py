@@ -215,7 +215,7 @@ class NewTests(unittest.TestCase):
                 code, output = _run("new", "workflow", "team-flow")
 
             self.assertEqual(0, code, output)
-            self.assertTrue((project / ".orchflows" / "workflows" / "team-flow" / "template.md").is_file())
+            self.assertTrue((project / ".orchflows" / "workflows" / "team-flow" / "SKILL.md").is_file())
             self.assertIn("orchflows trust", output)
 
     def test_a_reserved_name_is_refused_before_anything_is_written(self):
@@ -236,11 +236,11 @@ class ListTests(unittest.TestCase):
             for directory in ("skills", "packs", "workflows"):
                 (home / directory).mkdir(parents=True, exist_ok=True)
             (home / "workflows" / "team-flow").mkdir(parents=True)
-            (home / "workflows" / "team-flow" / "template.md").write_text(
+            (home / "workflows" / "team-flow" / "SKILL.md").write_text(
                 "---\nname: team-flow\n---\n", encoding="utf-8",
             )
             (project / ".orchflows" / "workflows" / "team-flow").mkdir(parents=True)
-            (project / ".orchflows" / "workflows" / "team-flow" / "template.md").write_text(
+            (project / ".orchflows" / "workflows" / "team-flow" / "SKILL.md").write_text(
                 "---\nname: team-flow\n---\n", encoding="utf-8",
             )
 

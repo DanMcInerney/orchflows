@@ -7,8 +7,7 @@ from ._support import (
     ROOT,
     bodies,
     split_document,
-    stub_graph,
-    template_files,
+    workflow_files,
 )
 
 EVOLVE = COMPOSITIONS / "evolve"
@@ -23,34 +22,23 @@ SUPERSEDED_BODIES = (
 
 
 class TestBenchmarkArchitecture(unittest.TestCase):
-    """Pin benchmark call edges, template graph, and demoted owners."""
+    """Pin benchmark call edges, brick order, and demoted owners."""
 
     # (label, sources, exactly, at_least, never)
     CALL_EDGES = (
         (
-            "skill-tournament", template_files(TOURNAMENT),
+            "skill-tournament", workflow_files(TOURNAMENT),
             frozenset(), frozenset(), frozenset(),
         ),
         (
-            "evolve", template_files(EVOLVE) + (EVOLVE_GENERATION,),
+            "evolve", workflow_files(EVOLVE) + (EVOLVE_GENERATION,),
             frozenset(), frozenset(), frozenset(),
         ),
     )
-
-    EVOLVE_GRAPH = {
-        "00-eval": ("orch-do", []),
-        "01-eligibility": ("orch-judge", ["00-eval"]),
-        "02-campaign": ("orch-do", ["01-eligibility"]),
-        "03-result": ("orch-judge", ["02-campaign"]),
-    }
-    TOURNAMENT_GRAPH = {
-        "00-benchmark": ("orch-do", []),
-        "01-campaign": ("orch-do", ["00-benchmark"]),
-    }
     # `orch-judge` was demoted here at U12 (a68eeabe): one of several rejected
     # candidate names from the seven-verb convergence, not the callable this
     # rename (W2b, verbs-rename) later minted from `orch-check`. That verb is
-    # exactly what these templates now bind, so it is dropped from this list;
+    # exactly what these workflows now call, so it is dropped from this list;
     # the remaining five stay dead.
     DEMOTED = (
         "orch-bench", "orch-benchmaker", "orch-delegate",
@@ -66,39 +54,47 @@ class TestBenchmarkArchitecture(unittest.TestCase):
                 self.assertLessEqual(set(at_least), calls)
                 self.assertEqual(set(), calls & set(never))
 
-    def test_the_evolve_template_names_its_executors_in_frontmatter(self):
-        self.assertEqual(self.EVOLVE_GRAPH, stub_graph(EVOLVE))
-        self.assertEqual(self.TOURNAMENT_GRAPH, stub_graph(TOURNAMENT))
+    def test_evolve_judges_before_it_generates_and_before_it_closes(self):
+        body = bodies(*workflow_files(EVOLVE))
+        admit = body.index("Admit the incumbent")
+        generations = body.index("Generations, until")
+        close = body.index("Close the campaign")
 
-    def test_evolve_verifies_before_it_ranks_and_before_it_closes(self):
-        graph = stub_graph(EVOLVE)
-        self.assertEqual("orch-judge", graph["01-eligibility"][0])
-        self.assertEqual(["01-eligibility"], graph["02-campaign"][1])
-        self.assertEqual("orch-judge", graph["03-result"][0])
-        self.assertEqual(["02-campaign"], graph["03-result"][1])
-        terminal = [
-            stub for stub in graph
-            if not any(stub in depends for _, depends in graph.values())
-        ]
-        self.assertEqual(["03-result"], terminal)
+        self.assertLess(admit, generations)
+        self.assertLess(generations, close)
+        for anchor in (admit, close):
+            self.assertIn("judge --pack orch-code-pack", body[anchor:])
+        # The loop's exit is a judge verdict, never a `loop:` marker.
+        self.assertIn("judge's verdict is the loop's only exit condition", body)
+        self.assertNotIn("loop:", body)
+
+    def test_the_tournament_nests_both_campaigns_as_frames(self):
+        body = bodies(*workflow_files(TOURNAMENT))
+
+        self.assertIn("tickets.py frame-open <run> --parent <frame>", body)
+        self.assertIn("`benchmaker`", body)
+        self.assertIn("`evolve`", body)
 
     def test_no_demoted_owner_reappears_in_either_campaign(self):
         for directory in (EVOLVE, TOURNAMENT):
             text = "".join(
                 path.read_text(encoding="utf-8")
-                for path in template_files(directory)
+                for path in workflow_files(directory)
             )
             for name in self.DEMOTED:
-                with self.subTest(template=directory.name, demoted=name):
+                with self.subTest(workflow=directory.name, demoted=name):
                     self.assertNotIn(name, text)
 
     def test_the_superseded_campaign_bodies_stay_deleted(self):
         for path in SUPERSEDED_BODIES:
             with self.subTest(body=path.name):
-                self.assertFalse(path.exists(), f"{path} is the template's twin")
+                self.assertFalse(path.exists(), f"{path} is the workflow's twin")
 
     def test_the_campaigns_stay_manual_only_entries(self):
         for directory in (EVOLVE, TOURNAMENT):
-            with self.subTest(template=directory.name):
-                manifest = directory / "template.md"
-                self.assertEqual("named", split_document(manifest)[0].get("entry"))
+            with self.subTest(workflow=directory.name):
+                body = directory / "SKILL.md"
+                self.assertEqual(
+                    "true",
+                    split_document(body)[0].get("disable-model-invocation"),
+                )
