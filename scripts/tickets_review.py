@@ -1,4 +1,11 @@
-"""Immutable predecessor-linked review records for gates and checkers."""
+"""Immutable predecessor-linked review records for checker stages.
+
+The findings array a critique files and the accepted subset its receiver
+adjudicates live here, and `tickets.py land` is what carries them in. The
+composite gate that used to mint several lensed critique plans is gone with
+the door that emitted its stubs; a plan is minted for one checker stage now,
+and critique-to-repair beyond that is prose over `judge` and `do`.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +14,7 @@ import re
 import subprocess
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec, derived_isolation
+    from .tickets_adapters import AdapterError, adapter_spec
     from .tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         dequote, parse_canonical_json,
@@ -18,7 +25,7 @@ if __package__:
         validate_records,
     )
 else:
-    from tickets_adapters import AdapterError, adapter_spec, derived_isolation
+    from tickets_adapters import AdapterError, adapter_spec
     from tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
         dequote, parse_canonical_json,
@@ -127,68 +134,11 @@ def validate_fixed_artifact(pack, artifact: str, workspace) -> tuple[str, str]:
     return f"git:{expected}", normalized_workspace
 
 
-def _lens(ticket_id: str) -> str:
-    marker = ".gate.critique."
-    if marker not in ticket_id:
-        raise ReviewError(f"not a gate critique ticket: {ticket_id}")
-    return ticket_id.split(marker, 1)[1]
-
-
 def _gate_root(ticket_id: str) -> str:
-    for suffix in (".gate.critique.", ".gate.repair"):
-        if suffix in ticket_id:
-            return ticket_id.split(suffix, 1)[0]
-    raise ReviewError(f"not a gate ticket: {ticket_id}")
-
-
-def _critique_paths(ticket_path: Path) -> list[Path]:
-    root_id = _gate_root(ticket_path.stem)
-    paths = list(ticket_path.parent.glob(f"{root_id}.gate.critique.*.md"))
-    ranked = []
-    for path in paths:
-        data = _load_ticket(path)
-        if "error" in data:
-            raise ReviewError(data["error"])
-        order_text = str(data.get("review_order") or "")
-        if not order_text.isdigit():
-            raise ReviewError(f"gate critique has no stable review_order: {path.stem}")
-        order = int(order_text)
-        ranked.append((order, path, data))
-    ranked.sort(key=lambda item: item[0])
-    if [item[0] for item in ranked] != list(range(len(ranked))):
-        raise ReviewError("gate critique review_order is not unique and contiguous")
-    return [item[1] for item in ranked]
-
-
-def gate_plan(ticket_path: Path, artifact: str, workspace: str) -> dict:
-    data = _load_ticket(ticket_path)
-    artifact, workspace = validate_fixed_artifact(
-        data.get("pack"), artifact, workspace,
-    )
-    criteria = []
-    for path in _critique_paths(ticket_path):
-        data = _load_ticket(path)
-        seal = str(data.get("assignment_seal") or "")
-        if not seal:
-            raise ReviewError(f"gate critique is not sealed: {path.stem}")
-        criteria.append({
-            "identity": seal,
-            "lens": _lens(path.stem),
-            "order": int(data["review_order"]),
-            "ticket": path.stem,
-        })
-    if not criteria:
-        raise ReviewError("gate plan has no critique criteria")
-    return _record(
-        "GatePlan", None,
-        artifact=artifact.strip(),
-        criteria=criteria,
-        isolation=derived_isolation(data.get("isolation"), data.get("pack")),
-        mode="gate",
-        pack=data.get("pack"),
-        root=_gate_root(ticket_path.stem),
-        workspace=workspace,
-    )
+    suffix = ".gate.repair"
+    if suffix in ticket_id:
+        return ticket_id.split(suffix, 1)[0]
+    raise ReviewError(f"not a repair ticket: {ticket_id}")
 
 
 def checker_plan(
@@ -308,10 +258,6 @@ def launch_state(
             checker_plan(
                 target_path, artifact or "", workspace or "", stage_path=ticket_path,
             )
-        ])
-    if review_kind == "critique" and ".gate.critique." in ticket_id:
-        return _review_state([
-            gate_plan(ticket_path, artifact or "", workspace or "")
         ])
     if review_kind == "repair" and ticket_id.endswith(".gate.repair"):
         state = repair_predecessor_state(

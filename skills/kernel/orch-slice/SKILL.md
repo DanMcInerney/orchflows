@@ -30,14 +30,13 @@ would miss Goal, reporting that. Where you did not investigate, leave the
 choice. Details may overlap and never grant
 authority. Declared `isolation: required`, a cut takes no workspace.
 
-Write the sole composite gate through `tickets.py gate`: one critique per
-unique lens feeding one repair.
-Then run `cutcheck.py` on that complete gate-bearing assignment draft; correct
+Write no gate family: a critique is one `tickets.py judge` brick over the
+delivered members and the repair answering it one `tickets.py do` brick, both
+sequenced by the caller's prose.
+Run `cutcheck.py` on the complete assignment draft; correct
 structural defects and re-run to 0. The [cut lens](references/cut-lens.md)
 judges advisories and undecidable matters. Follow
-[topology](../../../rules/topology.md) §§8–§10 through
-`tickets.py draft-validate` and `tickets.py seal` over the exact same complete
-cut.
+[topology](../../../rules/topology.md) §§8–§10 over that exact cut.
 
 Never: edit the root ticket's frozen statement.
 

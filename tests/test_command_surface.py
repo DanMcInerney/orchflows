@@ -42,18 +42,25 @@ class CurrentCommandSurfaceTest(unittest.TestCase):
                     stale.append(f"{path.relative_to(ROOT).as_posix()}: {command}")
         self.assertEqual([], stale)
 
-    def test_generation_and_gate_operators_are_reachable(self):
+    def test_the_retired_generation_and_gate_doors_are_named_nowhere(self):
+        """The four pre-brick doors and the gate family left the surface.
+
+        `stamp-generation`, `draft-validate`, and `seal` are folded inside
+        `tickets.py do` and `tickets.py judge`; `gate` and `checker-stage`
+        are gone with the choreography, and critique-to-repair is prose over
+        `judge` and `do`. A skill that still walked a caller through one of
+        them would be walking it into `unknown subcommand`.
+        """
+
+        retired = {
+            "stamp-generation", "draft-validate", "seal", "gate",
+            "checker-stage", "loop-arm", "loop-evaluate", "loop-advance",
+        }
+        self.assertEqual(set(), retired & routed_commands())
         named = set()
         for path in SKILLS.rglob("SKILL.md"):
             named.update(NAMED_COMMAND.findall(path.read_text(encoding="utf-8")))
-        # `stamp-generation` lived only in `orch-outline`'s own body ("Run
-        # `tickets.py stamp-generation`, `tickets.py draft-validate`, then
-        # `tickets.py seal`..."). W2b (verbs-rename) retired `orch-outline`
-        # with no successor skill body naming it; `draft-validate`, `seal`,
-        # and `gate` all survive in `orch-slice`'s still-live body.
-        # Restoring `stamp-generation`'s reachability is a later wave's job,
-        # once a planning `orch-do` body states the intake sequence again.
-        self.assertEqual(set(), {"draft-validate", "seal", "gate"} - named)
+        self.assertEqual(set(), retired & named)
 
     def test_removed_authority_commands_have_no_route_or_facade_export(self):
         removed = {"amend", "amendment-request", "grant", "recut", "reissue", "result-grade"}

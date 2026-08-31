@@ -151,10 +151,14 @@ Deliver one result.
                 # that replaced the verb, named as the remedy it is.
                 if successor not in registry.EXECUTOR_REGISTRY:
                     self.assertIn(successor, registry.executor_refusal(superseded))
-        # The absorbed loop engine refuses toward the loop field mechanism.
+        # The loop lane is gone: the refusal names the mechanism that
+        # replaced it -- prose over bricks and land's `done` predicate --
+        # rather than the arm/evaluate/advance doors W3a deleted.
         loop_refusal = registry.executor_refusal("orch-loop")
         self.assertIn("superseded", loop_refusal)
-        self.assertIn("loop-arm", loop_refusal)
+        self.assertIn("do` bricks", loop_refusal)
+        self.assertIn("tickets.py land", loop_refusal)
+        self.assertNotIn("loop-arm", loop_refusal)
         self.assertNotIn("bind '", loop_refusal)
 
     def test_the_outline_doorway_and_its_predecessor_collapse_to_one_remedy(self):

@@ -83,18 +83,6 @@ def _invalidate_assignment(text):
     return text
 
 
-def _distinct_gate_lenses(lenses: list) -> list:
-    seen, repeated = set(), []
-    for lens in lenses:
-        identity = lens.casefold()
-        if identity in seen and lens not in repeated:
-            repeated.append(lens)
-        seen.add(identity)
-    if repeated:
-        raise ValueError("gate review lenses must be distinct; repeated: " + ", ".join(repeated))
-    return lenses
-
-
 def _cmd_new(rest):
     """Create one current-format ticket, or place an already-written one."""
     args = list(rest)
@@ -249,7 +237,11 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
     if GATE_ID_MARKER in ticket_id:
-        return {"error": f"ticket id '{ticket_id}' is reserved for `tickets.py gate`"}
+        return {"error": (
+            f"ticket id '{ticket_id}' uses the reserved `.gate.` review-stage "
+            "grammar; a critique is a `tickets.py judge` brick and the repair "
+            "answering it a `tickets.py do` brick under the same parent"
+        )}
     root = _tickets_root()
     if root is None:
         return {"error": NO_SINK_ERROR}
@@ -278,7 +270,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
 
 __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
-    "_cmd_new", "_distinct_gate_lenses", "_frontmatter_list", "_issue_defects",
+    "_cmd_new", "_frontmatter_list", "_issue_defects",
     "_issue_ticket", "_place_ticket", "_project_file_ticket", "_render_ticket",
     "pinned_pack_digest",
 )
