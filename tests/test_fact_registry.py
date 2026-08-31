@@ -96,7 +96,7 @@ class TestOneReviewStagePredicate(unittest.TestCase):
             with self.subTest(identifier):
                 self.assertTrue(tickets_format.is_review_stage_id(identifier))
                 self.assertTrue(tickets_format.is_critique_stage_id(identifier))
-        for identifier in ("00-root.gate.repair", "00-root.gate.verify"):
+        for identifier in ("00-root.gate.repair",):
             with self.subTest(identifier):
                 self.assertTrue(tickets_format.is_review_stage_id(identifier))
                 self.assertFalse(tickets_format.is_critique_stage_id(identifier))

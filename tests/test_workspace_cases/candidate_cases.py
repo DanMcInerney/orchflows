@@ -90,7 +90,7 @@ class TestDerivedCandidatePaths(unittest.TestCase):
         os.environ[STATE_HOME_ENV_VAR] = str(Path.home() / ".orchflows" / "state")
         try:
             derived = state_root.candidate_paths(
-                "20260830T120000Z", "01-workspace-owner.gate.verify"
+                "20260830T120000Z", "01-workspace-owner.gate.critique.code"
             )
         finally:
             if prior is not None:
