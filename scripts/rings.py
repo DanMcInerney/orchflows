@@ -17,9 +17,10 @@ never a silent first-hit.  `orch-` is a mechanically reserved floor: a
 project, home, or imports item bearing that prefix is refused loudly here
 rather than shadowing a library name or, worse, never running.
 
-A skill lives at `<name>/SKILL.md`, a pack at `<name>/SKILL.md`, a workflow
-at `<name>/template.md`.  Home roots are honoured when they exist and never
-required to; `orchflows sync` creates them.
+A skill lives at `<name>/SKILL.md`, a pack at `<name>/SKILL.md`, and a
+workflow — a skill whose prose calls bricks — at `<name>/SKILL.md` too.
+Home roots are honoured when they exist and never required to;
+`orchflows sync` creates them.
 
 This module is the sole owner of that order.  `scripts/packs_support.py` and
 `scripts/tickets_adapters.py` both route through it, which is what keeps
@@ -44,7 +45,7 @@ KINDS = ("skill", "pack", "workflow")
 RINGS = ("project", "home", "imports", "lib")
 RING_DIRS = {"skill": "skills", "pack": "packs", "workflow": "workflows"}
 LIB_DIRS = {"skill": "skills", "pack": "packs", "workflow": "example-workflows"}
-MANIFESTS = {"skill": "SKILL.md", "pack": "SKILL.md", "workflow": "template.md"}
+MANIFESTS = {"skill": "SKILL.md", "pack": "SKILL.md", "workflow": "SKILL.md"}
 RESERVED_PREFIX = "orch-"
 BUNDLE_DIR = ".orchflows"
 IMPORTS_DIR = "imports"

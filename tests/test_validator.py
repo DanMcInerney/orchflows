@@ -333,7 +333,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
             validate._bind_root(saved)
 
     def test_schema_fixture_format_and_script_are_refused(self):
-        self._write("example-workflows/probe/template.md")
+        self._write("example-workflows/probe/SKILL.md")
         self._write("example-workflows/probe/state.schema.json", "{}\n")
         self._write("example-workflows/probe/replay-fixtures.json", "{}\n")
         self._write("example-workflows/probe/validate.py", "# executable machinery\n")
@@ -357,7 +357,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
                 )
 
     def test_browser_game_is_the_one_dated_visible_exception(self):
-        self._write("example-workflows/browser-game/template.md")
+        self._write("example-workflows/browser-game/SKILL.md")
         self._write(
             "example-workflows/references/browser-game-checkpoint.schema.json", "{}\n"
         )
@@ -383,7 +383,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self.assertIn("script", exception[0])
 
     def test_removing_the_browser_game_entry_exposes_its_protocol_artifacts(self):
-        self._write("example-workflows/browser-game/template.md")
+        self._write("example-workflows/browser-game/SKILL.md")
         self._write(
             "example-workflows/references/browser-game-checkpoint.schema.json", "{}\n"
         )
@@ -399,7 +399,7 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self.assertTrue(all("workflow 'browser-game'" in line for line in errors))
 
     def test_a_script_module_named_for_a_composition_is_refused_by_boundary(self):
-        self._write("example-workflows/probe/template.md")
+        self._write("example-workflows/probe/SKILL.md")
         self._write("scripts/probe_validate.py", "# composition machinery\n")
         self._write("scripts/probeish.py", "# unrelated bounded stem\n")
 

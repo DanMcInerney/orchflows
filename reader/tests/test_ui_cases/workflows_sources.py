@@ -166,13 +166,10 @@ class WorkflowSourceTests(unittest.TestCase):
     def test_inventory_is_exact_and_exposes_only_opaque_ids(self):
         evolve = sources.source_inventory(ROOT, "evolve")
         expected_evolve_paths = {
-            "lib/example-workflows/evolve/template.md",
-            "lib/example-workflows/evolve/00-eval.md",
-            "lib/example-workflows/evolve/01-eligibility.md",
-            "lib/example-workflows/evolve/02-campaign.md",
-            "lib/example-workflows/evolve/03-result.md",
-            "lib/skills/kernel/orch-do/SKILL.md",
-            "lib/skills/kernel/orch-judge/SKILL.md",
+            "lib/example-workflows/evolve/SKILL.md",
+            "lib/packs/orch-code-pack/SKILL.md",
+            "bin/search_plan.py",
+            "bin/tickets.py",
         }
         self.assertEqual(
             {identity.source_id(path) for path in expected_evolve_paths},

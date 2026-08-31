@@ -24,15 +24,15 @@
    "test_architecture_owners.StatedCeilingTest.test_the_map_is_inside_the_ceiling_it_states",
    "test_architecture_owners.StatedCeilingTest.test_the_map_states_a_ceiling",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_choice_authorizing_dispositions_require_settled_q12",
-   "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_composition_owns_and_links_the_checkpoint_contract",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_covered_candidate_or_evidence_change_invalidates_disposition",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_each_disposition_is_bound_to_one_branch_shape",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_one_disposition_is_bound_to_fixed_candidate_and_evidence",
+   "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_the_workflow_owns_and_links_the_checkpoint_contract",
    "test_browser_game_checkpoint.BrowserGameCheckpointContractTests.test_time_sensitive_evidence_carries_its_dated_q12_boundary",
    "test_browser_game_composition.BrowserGameCompositionTests.test_checkpoint_consumes_the_kind_separated_successor_plan_contract",
-   "test_browser_game_composition.BrowserGameCompositionTests.test_installer_adapter_exposes_exact_required_settings_without_legacy",
+   "test_browser_game_composition.BrowserGameCompositionTests.test_installer_adapter_points_at_the_body_and_forces_manual_only",
    "test_browser_game_composition.BrowserGameCompositionTests.test_named_invocation_closes_inputs_outputs_questions_and_dispositions",
-   "test_browser_game_composition.BrowserGameCompositionTests.test_template_is_discoverable_instantiable_and_has_one_terminal",
+   "test_browser_game_composition.BrowserGameCompositionTests.test_the_workflow_is_discoverable_and_calls_a_frame_and_bricks",
    "test_browser_game_instances.BrowserGameInstanceValidationTests.test_accessibility_promise_cannot_use_empirical_source",
    "test_browser_game_instances.BrowserGameInstanceValidationTests.test_checkpoint_coverage_must_equal_bound_identities",
    "test_browser_game_instances.BrowserGameInstanceValidationTests.test_checkpoint_coverage_must_equal_evidence_set",
@@ -52,10 +52,10 @@
    "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_conditional_controls_are_inactive_without_a_recorded_trigger",
    "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_conditional_experiments_are_inactive_without_their_promotion_trigger",
    "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_empirical_gaps_remain_independent_and_require_evidence",
-   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_evidence_ticket_consumes_the_intake_policy",
    "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_experiment_matches_one_open_decision_and_only_its_cells",
    "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_intake_policy_has_no_product_default_escape_hatch",
-   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_record_ticket_links_both_intake_contracts",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_the_evidence_call_consumes_the_intake_policy",
+   "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_the_record_call_links_both_intake_contracts",
    "test_browser_game_intake_policy.BrowserGameIntakePolicyTests.test_user_only_gaps_have_one_verbatim_root_relay_shape",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_contract_and_program_revisions_are_versioned",
    "test_browser_game_program_record.TestBrowserGameProgramRecord.test_each_required_record_is_present_or_has_a_stable_open_identity",
@@ -460,15 +460,15 @@
    "test_installer.TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
    "test_installer.TestScopedHostConfiguration.test_codex_limit_merge_handles_dotted_agent_keys",
    "test_installer.TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
-   "test_installer.TestScopedHostConfiguration.test_discover_templates_requires_a_manifest_with_entry",
+   "test_installer.TestScopedHostConfiguration.test_discover_templates_requires_a_named_workflow_body",
    "test_installer.TestScopedHostConfiguration.test_existing_marker_collision_is_refused_while_building_the_plan",
    "test_installer.TestScopedHostConfiguration.test_invalid_codex_agent_type_is_rejected",
-   "test_installer.TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
    "test_installer.TestScopedHostConfiguration.test_the_planned_grok_surface_hangs_off_grok_home",
    "test_installer.TestScopedHostConfiguration.test_user_plan_merges_limits_and_writes_native_role_agents",
    "test_installer.TestScopedHostConfiguration.test_user_plan_targets_user_config_and_agent_directories",
    "test_installer.TestScopedHostConfiguration.test_user_plan_writes_claude_adapters_and_codex_skill_stubs",
    "test_installer.TestScopedHostConfiguration.test_user_plan_writes_flat_by_name_index_for_every_package",
+   "test_installer.TestScopedHostConfiguration.test_workflow_surfaces_are_manual_only_on_every_host",
    "test_installer.TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
    "test_installer.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped",
@@ -674,7 +674,7 @@
    "test_registry_census.CallableRegistryTests.test_the_outline_doorway_and_its_predecessor_collapse_to_one_remedy",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
    "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
-   "test_ring_adapters.BodyTests.test_a_workflow_adapter_carries_the_instantiate_route",
+   "test_ring_adapters.BodyTests.test_a_workflow_adapter_points_at_its_body_and_is_manual_only",
    "test_ring_adapters.BodyTests.test_an_orchflows_only_field_never_reaches_a_host",
    "test_ring_adapters.BodyTests.test_the_manual_invocation_flag_survives_into_a_claude_adapter",
    "test_ring_adapters.CommittedProofTests.test_the_committed_agents_shim_is_what_the_machinery_renders",
@@ -1460,7 +1460,7 @@
    "tests.test_search_plan_cases.projection.TestBoundedResume.test_worklog_launch_and_restart_contract_has_failure_controls",
    "tests.test_search_plan_cases.protocol.TestArchitecture.test_known_wrong_ownership_fixtures_are_rejected",
    "tests.test_search_plan_cases.protocol.TestArchitecture.test_planner_is_evaluation_mode_agnostic",
-   "tests.test_search_plan_cases.protocol.TestArchitecture.test_the_campaign_stub_names_the_planner_it_selects_through",
+   "tests.test_search_plan_cases.protocol.TestArchitecture.test_the_campaign_prose_names_the_planner_it_selects_through",
    "tests.test_search_plan_cases.protocol.TestArchitecture.test_thin_evolve_owns_one_campaign_call_graph",
    "tests.test_search_plan_cases.protocol.TestCanonicalAdvance.test_advance_is_the_only_subcommand_and_a_second_word_is_not_ignored",
    "tests.test_search_plan_cases.protocol.TestCanonicalAdvance.test_closed_schema_identity_numeric_and_reference_failures_exit_two",
@@ -1504,15 +1504,15 @@
    "tests.test_state_root_cases.repository.TestFindRepoRootNamesTheProject.test_relative_gitdir_pointer_resolves_to_the_superproject",
    "tests.test_state_root_cases.repository.TestFindRepoRootNamesTheProject.test_the_walk_up_is_bounded",
    "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_each_body_calls_exactly_the_edges_its_architecture_declares",
-   "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_evolve_verifies_before_it_ranks_and_before_it_closes",
+   "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_evolve_judges_before_it_generates_and_before_it_closes",
    "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_no_demoted_owner_reappears_in_either_campaign",
    "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_the_campaigns_stay_manual_only_entries",
-   "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_the_evolve_template_names_its_executors_in_frontmatter",
    "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_the_superseded_campaign_bodies_stay_deleted",
+   "tests.test_static_tree_invariants_cases.benchmark_architecture.TestBenchmarkArchitecture.test_the_tournament_nests_both_campaigns_as_frames",
    "tests.test_static_tree_invariants_cases.compositions.TestCompositionLinks.test_every_composition_link_resolves",
-   "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_each_template_binds_the_executors_its_composition_named",
-   "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_each_template_ends_at_the_stub_carrying_its_done_check",
-   "tests.test_static_tree_invariants_cases.compositions.TestCompositionTemplates.test_no_composition_stub_uses_a_removed_executor",
+   "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_declares_its_name_and_manual_invocation",
+   "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_directory_holds_exactly_one_body",
+   "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_opens_a_frame_calls_or_nests_and_closes",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_decomposer_states_the_goal_by_anchor",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_join_skips_the_repair_on_an_empty_accepted_set",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_sections_put_proven_seams_on_the_first_frontier",
@@ -2072,7 +2072,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "31fd4dde10510983beb56b669718daab739ed19044b59eb8afe29099950767af"
+  "sha256": "e26fcac0b9c4fad929f9d1a0a68a49fcca8672f5eb600ff3fa7fd696a6c135b0"
  },
  "mutation_owners": [
   {
@@ -2139,14 +2139,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "import-path"
-   ]
-  },
-  {
-   "module": "tests.test_browser_game_composition",
-   "owner": "BrowserGameCompositionTests.test_template_is_discoverable_instantiable_and_has_one_terminal",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "environment"
    ]
   },
   {
@@ -3127,14 +3119,6 @@
   },
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
-   "owner": "TestScopedHostConfiguration.test_template_surfaces_cover_every_entry_value",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.planning.scoped_hosts",
    "owner": "TestScopedHostConfiguration.test_the_planned_grok_surface_hangs_off_grok_home",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -3168,6 +3152,14 @@
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
    "owner": "TestScopedHostConfiguration.test_user_plan_writes_flat_by_name_index_for_every_package",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_workflow_surfaces_are_manual_only_on_every_host",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"

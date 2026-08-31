@@ -80,16 +80,24 @@ class BodyTests(unittest.TestCase):
 
             self.assertIn("disable-model-invocation: true", text)
 
-    def test_a_workflow_adapter_carries_the_instantiate_route(self):
+    def test_a_workflow_adapter_points_at_its_body_and_is_manual_only(self):
+        """The flag is forced, never inherited: a ring workflow is authored
+        outside this library, its prose runs as orchestrator reasoning, and a
+        host firing it on its own reading of a description would open that
+        surface with nobody asking."""
+
         with _world() as world:
-            item = world["home"] / "workflows" / "team-flow" / "template.md"
+            item = world["home"] / "workflows" / "team-flow" / "SKILL.md"
             item.parent.mkdir(parents=True)
-            item.write_bytes(b"---\nname: team-flow\nentry: team-flow\n---\n\nbody\n")
+            item.write_bytes(b"---\nname: team-flow\ndescription: does it.\n---\n\nbody\n")
             records = orchflows_adapters.host_records()
 
             text = orchflows_adapters.render("workflow", "team-flow", item, records["claude"])
 
-            self.assertIn("tickets.py instantiate team-flow --run <run>", text)
+            self.assertIn("is a workflow skill", text)
+            self.assertIn(str(item), text)
+            self.assertIn("disable-model-invocation: true", text)
+            self.assertNotIn("instantiate", text)
 
 
 class ScopeTests(unittest.TestCase):
@@ -172,10 +180,10 @@ class ScopeTests(unittest.TestCase):
 
         with _world() as world:
             _skill(world["home"] / "skills", "collide-flow")
-            workflow = world["home"] / "workflows" / "collide-flow" / "template.md"
+            workflow = world["home"] / "workflows" / "collide-flow" / "SKILL.md"
             workflow.parent.mkdir(parents=True)
             workflow.write_bytes(
-                b"---\nname: collide-flow\nentry: named\nplaceholders: []\n---\n\nbody\n"
+                b"---\nname: collide-flow\ndescription: collides.\n---\n\nbody\n"
             )
 
             with patch.object(orchflows_adapters, "detected", return_value=["claude"]):
@@ -189,8 +197,8 @@ class ScopeTests(unittest.TestCase):
                 workflow_dest = claude_home / "skills" / "collide-flow-workflow" / "SKILL.md"
                 self.assertEqual({skill_dest, workflow_dest}, set(destinations))
                 bodies = dict(entries)
-                self.assertIn("tickets.py instantiate collide-flow --run <run>", bodies[workflow_dest])
-                self.assertNotIn("tickets.py instantiate", bodies[skill_dest])
+                self.assertIn("is a workflow skill", bodies[workflow_dest])
+                self.assertNotIn("is a workflow skill", bodies[skill_dest])
 
                 orchflows_adapters.write("home", start=world["root"])
 
@@ -247,10 +255,10 @@ class PortabilityTests(unittest.TestCase):
             skill_copy.write_bytes(
                 (ROOT / ".orchflows" / "skills" / "super-research" / "SKILL.md").read_bytes()
             )
-            workflow_copy = world["home"] / "workflows" / "super-research" / "template.md"
+            workflow_copy = world["home"] / "workflows" / "super-research" / "SKILL.md"
             workflow_copy.parent.mkdir(parents=True)
             workflow_copy.write_bytes(
-                (ROOT / "example-workflows" / "super-research" / "template.md").read_bytes()
+                (ROOT / "example-workflows" / "super-research" / "SKILL.md").read_bytes()
             )
 
             skill_record = rings.resolve(
@@ -272,8 +280,10 @@ class PortabilityTests(unittest.TestCase):
             }
             self.assertEqual({"super-research", "super-research-workflow"}, set(rendered))
             self.assertIn(
-                "tickets.py instantiate super-research --run <run>",
-                rendered["super-research-workflow"],
+                "is a workflow skill", rendered["super-research-workflow"],
+            )
+            self.assertIn(
+                "disable-model-invocation: true", rendered["super-research-workflow"],
             )
 
 
@@ -282,9 +292,9 @@ class InstantiateResolutionTests(unittest.TestCase):
         from scripts import tickets_instantiate
 
         with _world() as world:
-            template = world["home"] / "workflows" / "team-flow" / "template.md"
+            template = world["home"] / "workflows" / "team-flow" / "SKILL.md"
             template.parent.mkdir(parents=True)
-            template.write_bytes(b"---\nname: team-flow\nentry: team-flow\n---\n")
+            template.write_bytes(b"---\nname: team-flow\ndescription: does it.\n---\n")
 
             with patch.object(rings.Path, "cwd", return_value=world["root"]):
                 resolved, failure = tickets_instantiate._template_directory("team-flow")

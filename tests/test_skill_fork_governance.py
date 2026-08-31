@@ -189,9 +189,11 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     PLANNER = "skills/kernel/orch-judge/SKILL.md"
     WORKER = "skills/kernel/orch-do/SKILL.md"
     # No skill declares `role: none` any more: the driver loop stopped being
-    # one. The role-less name surface left is a composition manifest, and the
-    # same composers render it.
-    GLUE = "example-workflows/self-improve/template.md"
+    # one. The role-less name surface left is a workflow body, and the same
+    # composers render it. A workflow declares no role deliberately -- its
+    # prose is driven by the orchestrator in place, so it never forks and
+    # can never produce the prompt-less arrival the clause governs.
+    GLUE = "example-workflows/self-improve/SKILL.md"
 
     def test_no_skill_contract_body_carries_a_copy(self):
         """A body copy re-opens the doclint saturation the relocation closed."""

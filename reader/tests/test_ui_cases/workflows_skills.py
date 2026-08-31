@@ -66,6 +66,43 @@ class WorkflowSkillTests(unittest.TestCase):
             detail["relations"],
         )
 
+    def test_a_library_workflow_projects_its_pack_and_its_scripts(self):
+        """`example-workflows/<name>/SKILL.md` is the second canonical home
+        for a workflow skill. The pack a brick call stamps resolves like any
+        other canonical name -- it ships in `packs/` -- so a workflow that
+        names its own pack is not an unresolved reference."""
+
+        detail = skills.project_workflow_skill(ROOT, "evolve")
+
+        self.assertEqual("evolve", detail["id"])
+        self.assertEqual("workflow-skill", detail["type"])
+        self.assertEqual(
+            {
+                "workflow:evolve",
+                "skill:orch-code-pack",
+                "script:bin/search_plan.py",
+                "script:bin/tickets.py",
+            },
+            {node["id"] for node in detail["nodes"]},
+        )
+        self.assertEqual([], detail["diagnostics"])
+        by_id = {node["id"]: node for node in detail["nodes"]}
+        self.assertEqual(
+            identity.source_id("lib/example-workflows/evolve/SKILL.md"),
+            by_id["workflow:evolve"]["source_id"],
+        )
+        self.assertEqual(
+            identity.source_id("lib/packs/orch-code-pack/SKILL.md"),
+            by_id["skill:orch-code-pack"]["source_id"],
+        )
+        self.assertEqual(
+            sorted(
+                detail["edges"],
+                key=lambda edge: (edge["from"], edge["kind"], edge["to"], edge["id"]),
+            ),
+            detail["relations"],
+        )
+
     def test_repeated_calls_coalesce_while_prose_links_and_carriage_create_nothing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

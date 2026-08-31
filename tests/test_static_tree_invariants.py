@@ -10,7 +10,7 @@ from tests.test_static_tree_invariants_cases.benchmark_architecture import (
 )
 from tests.test_static_tree_invariants_cases.compositions import (
     TestCompositionLinks,
-    TestCompositionTemplates,
+    TestWorkflowSkills,
 )
 from tests.test_static_tree_invariants_cases.cut_rules import (
     TestCutGoalAnchors,

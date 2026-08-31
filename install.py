@@ -171,6 +171,7 @@ from installer.packages import (
     frontmatter_field,
     host_legal_frontmatter,
     load_role_profiles,
+    manual_only_frontmatter,
     render_claude_agent,
     render_codex_agent,
     resolve_source_commit,

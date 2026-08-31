@@ -3,7 +3,7 @@
 Sixteen benchmark-building tasks that exercise the `benchmaker`
 composition from every angle it claims to cover. This set supersedes
 the thirteen-case hand-authored set: it was produced end to end by
-the `benchmaker` composition (`example-workflows/benchmaker/template.md`)
+the `benchmaker` composition (`example-workflows/benchmaker/SKILL.md`)
 run against benchmaker's own fixed identity, under the self-benchmarking
 rule `docs/benchmaker.md` §Self-benchmarking stated at e66f3b6 (the
 file since deleted), from a frozen two-lane research synthesis, a
