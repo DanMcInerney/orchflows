@@ -38,7 +38,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
             )
 
         ticket = selected["ticket"]
-        self.assertEqual(["[redacted-host-path]"], ticket["suggested_files"])
+        self.assertEqual("- [redacted-host-path]", ticket["details"])
         self.assertIn("[redacted-host-path]", ticket["context"])
         self.assertNotIn(private_path, ticket["raw"])
         self.assertIn("[redacted-host-path]", ticket["raw"])
@@ -188,7 +188,7 @@ class TestExperienceFoundationGap(unittest.TestCase):
             self.assertIsInstance(readiness["causal_chain"], list)
 
         ticket = selected["ticket"]
-        self.assertEqual(["scratch/g1.txt"], ticket["suggested_files"])
+        self.assertEqual("- scratch/g1.txt", ticket["details"])
         self.assertIsInstance(ticket["context"], str)
         self.assertIsInstance(ticket["pack"], str)
         self.assertIsInstance(ticket["history"], list)

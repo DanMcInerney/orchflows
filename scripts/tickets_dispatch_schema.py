@@ -3,93 +3,69 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 
 if __package__:
     from .tickets_shapes import (
         DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
-        DISPATCH_INLINE_SNAPSHOT_FIELDS, DISPATCH_JOIN_CONTENT_FIELDS,
+        DISPATCH_JOIN_CONTENT_FIELDS,
         DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
-        DISPATCH_PACKET_RECORD_FIELDS,
-        DISPATCH_PACKET_REFERENCE_FIELDS, DISPATCH_RECEIPT_RECORD_FIELDS,
+        DISPATCH_LAUNCH_FIELDS, DISPATCH_LAUNCH_RECORD_FIELDS,
         DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
         DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
-        DISPATCH_RECEIPT_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
-        DISPATCH_OUTCOME_VALUES,
-        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_JOIN_SUCCESS_VALUES,
+        DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+        EXECUTOR_RESULT_VALUES,
+    )
+    from .tickets_dispatch_identity import (
+        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
+        classification, identity_failure, record_id_is_reserved,
+        record_id_namespace_ok,
     )
     from .tickets_format import (
-        EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
-        parse_canonical_json,
+        TERMINAL_STATES, _parse_iso, canonical_json,
+        is_review_stage_id, parse_canonical_json,
     )
 else:
     from tickets_shapes import (
         DISPATCH_ATTEMPT_FIELDS, DISPATCH_ATTEMPT_REQUIRED,
-        DISPATCH_INLINE_SNAPSHOT_FIELDS, DISPATCH_JOIN_CONTENT_FIELDS,
+        DISPATCH_JOIN_CONTENT_FIELDS,
         DISPATCH_JOIN_SUCCESS_FIELDS, DISPATCH_JOIN_SUCCESS_REQUIRED,
-        DISPATCH_PACKET_RECORD_FIELDS,
-        DISPATCH_PACKET_REFERENCE_FIELDS, DISPATCH_RECEIPT_RECORD_FIELDS,
+        DISPATCH_LAUNCH_FIELDS, DISPATCH_LAUNCH_RECORD_FIELDS,
         DISPATCH_REPLACEMENT_DISPATCH_FIELDS, DISPATCH_RETIREMENT_DISPATCH_FIELDS,
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
         DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
-        DISPATCH_RECEIPT_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
-        DISPATCH_OUTCOME_VALUES,
-        DISPATCH_PROTOCOL, OUTCOME_RECORD_ID as SHAPE_OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID as SHAPE_PACKET_RECORD_ID,
-        RECEIPT_RECORD_ID as SHAPE_RECEIPT_RECORD_ID,
-        DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
+        DISPATCH_JOIN_SUCCESS_VALUES,
+        DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
+        EXECUTOR_RESULT_VALUES,
+    )
+    from tickets_dispatch_identity import (
+        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
+        classification, identity_failure, record_id_is_reserved,
+        record_id_namespace_ok,
     )
     from tickets_format import (
-        EXECUTOR_SECTIONS, TERMINAL_STATES, _parse_iso, canonical_json,
-        parse_canonical_json,
+        TERMINAL_STATES, _parse_iso, canonical_json,
+        is_review_stage_id, parse_canonical_json,
     )
 
-PROTOCOL = DISPATCH_PROTOCOL
-OUTCOME_RECORD_ID = SHAPE_OUTCOME_RECORD_ID
-PACKET_RECORD_ID = SHAPE_PACKET_RECORD_ID
-RECEIPT_RECORD_ID = SHAPE_RECEIPT_RECORD_ID
-RESERVED_RECORD_IDS = frozenset({
-    OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID,
-})
-RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
-IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 ATTEMPT_STATES = frozenset(DISPATCH_ATTEMPT_VALUES["state"])
 ATTEMPT_KEYS = frozenset(DISPATCH_ATTEMPT_FIELDS)
 ATTEMPT_REQUIRED_KEYS = frozenset(DISPATCH_ATTEMPT_REQUIRED)
 RECORD_KEYS = frozenset(DISPATCH_RECORD_FIELDS)
 RECORD_KINDS = frozenset(DISPATCH_RECORD_VALUES["kind"])
-OUTCOME_SECTIONS = frozenset(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
-JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
-
-
-def classification(code: str, detail: str) -> dict:
-    return {"error": detail, "code": code, "protocol": PROTOCOL}
-
-
-def identity_failure(kind: str, value, *, allow_path: bool = False):
-    if not isinstance(value, str) or not value:
-        return classification(f"{kind}-invalid", f"{kind} must be a non-empty string")
-    if any(ord(mark) < 32 or mark == "`" for mark in value):
-        return classification(f"{kind}-invalid", f"{kind} contains a control character or backtick")
-    if not allow_path and IDENTITY_RE.fullmatch(value) is None:
-        return classification(f"{kind}-invalid", f"{kind} is not a canonical protocol identity")
-    return None
-
-
-def record_id_is_reserved(record_id: str) -> bool:
-    return record_id in RESERVED_RECORD_IDS or record_id.startswith(RESERVED_RECORD_PREFIXES)
+RESULT_OPERATION = EXECUTOR_RESULT_VALUES["operation"][0]
+JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 
 
 def _invalid(detail: str):
@@ -101,7 +77,7 @@ def _closed(value, keys) -> bool:
 
 
 def _committed_success_failure(
-    success, content, *, run, ticket_id, dispatch_id, record_id,
+    success, *, run, ticket_id, dispatch_id, record_id,
 ):
     if not _closed(success, set(DISPATCH_STORED_SUCCESS_FIELDS)):
         return _invalid(f"record '{record_id}' has a non-canonical stored success")
@@ -109,10 +85,9 @@ def _committed_success_failure(
     expected = {
         "protocol": PROTOCOL, "run": run, "id": ticket_id,
         "dispatch_id": dispatch_id, "record_id": record_id,
-        "content": content,
     }
     if committed != expected:
-        return _invalid(f"record '{record_id}' stored success differs from its content or origin")
+        return _invalid(f"record '{record_id}' stored success differs from its origin")
     return None
 
 
@@ -128,28 +103,9 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
     }
     if any(content.get(key) != value for key, value in expected.items()):
         return "outcome envelope differs from its attempt or ticket origin"
-    if content.get("status") not in JOIN_STATUSES:
-        return "outcome status is not a join disposition"
     evidence = content.get("evidence")
-    if not _closed(evidence, OUTCOME_SECTIONS):
-        return "outcome evidence does not close the five executor sections"
-    if any(not isinstance(evidence.get(section), str) for section in OUTCOME_SECTIONS):
-        return "outcome evidence bodies are not strings"
-    if any(not evidence[section].strip() for section in OUTCOME_SECTIONS - {"Handoff"}):
-        return "outcome evidence is incomplete"
-    if (content["status"] == "suspended") != bool(evidence["Handoff"].strip()):
-        return "outcome Handoff does not match its disposition"
-    if ".gate.critique." in ticket_id or ticket_id.endswith(".check"):
-        try:
-            if __package__:
-                from .tickets_review_schema import SchemaError, finding_values
-            else:
-                from tickets_review_schema import SchemaError, finding_values
-            for section in ("Result", "Feedback"):
-                values = parse_canonical_json(evidence[section])
-                finding_values(values, f"critique outcome {section}")
-        except (TypeError, ValueError, SchemaError) as error:
-            return f"critique outcome findings are invalid: {error}"
+    if not isinstance(evidence, str) or not evidence.strip():
+        return "outcome evidence is not a non-empty closing note"
     return None
 
 
@@ -159,23 +115,12 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
     if not _closed(content, required):
         return _invalid(f"result record '{record_id}' content has an invalid shape")
     if (
-        content.get("operation") != "result"
+        content.get("operation") != RESULT_OPERATION
         or content.get("assignment_seal") != attempt["assignment_seal"]
         or content.get("writer") != attempt["owner"]
-        or content.get("section") not in EXECUTOR_SECTIONS
-        or content.get("mode") not in {"write", "append", "replace"}
         or not isinstance(content.get("body"), str)
     ):
         return _invalid(f"result record '{record_id}' content differs from its attempt")
-    if (".gate.critique." in ticket_id or ticket_id.endswith(".check")) and content["section"] in {"Result", "Feedback"}:
-        try:
-            if __package__:
-                from .tickets_review_schema import SchemaError, finding_values
-            else:
-                from tickets_review_schema import SchemaError, finding_values
-            finding_values(parse_canonical_json(content["body"]), f"critique {content['section']} result")
-        except (TypeError, ValueError, SchemaError) as error:
-            return _invalid(f"result record '{record_id}' critique findings are invalid: {error}")
     success = record["success"]
     if not _closed(success, set(DISPATCH_RESULT_SUCCESS_FIELDS)):
         return _invalid(f"result record '{record_id}' has a non-canonical stored success")
@@ -185,14 +130,12 @@ def _result_failure(record, content, *, run, ticket_id, attempt):
         return _invalid(f"result record '{record_id}' stored success has an invalid shape")
     expected = {
         "protocol": PROTOCOL, "run": run, "id": ticket_id,
-        "section": content["section"], "by": content["writer"],
+        "by": content["writer"],
         "assignment_seal": content["assignment_seal"],
         "dispatch_id": attempt["dispatch_id"], "record_id": record_id,
     }
     if any(result.get(key) != value for key, value in expected.items()):
         return _invalid(f"result record '{record_id}' stored success differs from its content")
-    if result.get("mode") not in ({content["mode"], "write"} if content["mode"] != "write" else {"write"}):
-        return _invalid(f"result record '{record_id}' stored mode differs from its request")
     result_path = result.get("path")
     if not isinstance(result_path, str):
         return _invalid(f"result record '{record_id}' has no canonical ticket path")
@@ -207,28 +150,23 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     kind = record["kind"]
     if kind == "generic":
         return _committed_success_failure(
-            record["success"], content, run=run, ticket_id=ticket_id,
+            record["success"], run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
-    if kind == "packet":
-        if not _closed(content, set(DISPATCH_PACKET_RECORD_FIELDS)) or not isinstance(content["packet"], dict):
-            return _invalid("committed packet content has an invalid shape")
-        packet = content["packet"]
-        if (
-            packet.get("protocol") != PROTOCOL
-            or packet.get("dispatch_id") != attempt["dispatch_id"]
-            or packet.get("assignment_seal") != attempt["assignment_seal"]
-            or packet.get("assigned_name") != attempt["owner"]
-            or packet.get("durability") != "ticket"
-            or packet.get("source") != {"run": run, "id": ticket_id}
-        ):
-            return _invalid("committed packet differs from its ticket attempt")
+    if kind == "launch":
+        if not _closed(content, set(DISPATCH_LAUNCH_RECORD_FIELDS)) or not isinstance(content["launch"], dict):
+            return _invalid("committed launch content has an invalid shape")
+        # The launch object closes `contracts/dispatch.md`'s declared shape and
+        # carries no identity of its own: it is the invocation, and what binds
+        # it to this attempt is the stored success below, the same anchor every
+        # other record is held to. A launch that restated the seal and the
+        # dispatch id would be a second home for both.
+        if not _closed(content["launch"], set(DISPATCH_LAUNCH_FIELDS)):
+            return _invalid("committed launch has unknown or missing fields")
         return _committed_success_failure(
-            record["success"], content, run=run, ticket_id=ticket_id,
+            record["success"], run=run, ticket_id=ticket_id,
             dispatch_id=attempt["dispatch_id"], record_id=record_id,
         )
-    if kind == "receipt":
-        return accepted_receipt_failure(attempt)
     if kind == "result":
         return _result_failure(record, content, run=run, ticket_id=ticket_id, attempt=attempt)
     if kind == "outcome":
@@ -285,7 +223,7 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     if kind == "join":
         if not isinstance(content, dict):
             return _invalid(f"join record '{record_id}' has invalid content")
-        review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
+        review_stage = is_review_stage_id(ticket_id)
         expected = {
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
@@ -317,18 +255,18 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             "review-identity", joined.get("review_identity"),
         ) is not None:
             return _invalid(f"join record '{record_id}' has invalid review identity")
-        outcome_content = parse_canonical_json(outcome["content"])
-        outcome_status = (
-            outcome_content.get("status") if isinstance(outcome_content, dict) else None
-        )
-        if outcome_status not in JOIN_STATUSES:
-            return _invalid(f"join record '{record_id}' consumes an invalid outcome")
+        # The disposition is the join's own. The outcome is still required
+        # to exist -- its existence is what closed the attempt -- but it no
+        # longer carries a status for this to check itself against, so the
+        # grade is that the joining authority recorded a lawful one.
+        if joined.get("status") not in JOIN_STATUSES:
+            return _invalid(f"join record '{record_id}' records an invalid disposition")
         expected_join = {
             "protocol": PROTOCOL, "run": run, "id": ticket_id,
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
             "outcome_record_id": OUTCOME_RECORD_ID, "by": content["joined_by"],
-            "status": outcome_status,
+            "status": joined["status"],
             "joined_at": attempt.get("retired_at"),
         }
         if review_stage:
@@ -337,61 +275,6 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             return _invalid(f"join record '{record_id}' differs from its outcome or retirement")
         return None
     return _invalid(f"record '{record_id}' has an unsupported kind")
-
-
-def accepted_receipt_failure(attempt: dict):
-    records = attempt.get("records") or []
-    receipt_record = next(
-        (item for item in records if item.get("record_id") == RECEIPT_RECORD_ID),
-        None,
-    )
-    if receipt_record is None:
-        return classification(
-            "receipt-required",
-            "receiver acceptance must be committed before execution records",
-        )
-    packet_record = next(
-        (item for item in records if item.get("record_id") == PACKET_RECORD_ID),
-        None,
-    )
-    try:
-        packet_content = parse_canonical_json(packet_record["content"])
-        receipt_content = parse_canonical_json(receipt_record["content"])
-    except (KeyError, TypeError, ValueError):
-        return classification(
-            "dispatch-record-invalid", "accepted receipt has no committed packet",
-        )
-    packet = packet_content.get("packet") if isinstance(packet_content, dict) else None
-    receipt = (
-        receipt_content.get("receipt")
-        if isinstance(receipt_content, dict) else None
-    )
-    required = set(DISPATCH_RECEIPT_FIELDS)
-    valid = (
-        isinstance(packet, dict)
-        and set(packet_content) == set(DISPATCH_PACKET_RECORD_FIELDS)
-        and set(receipt_content) == set(DISPATCH_RECEIPT_RECORD_FIELDS)
-        and receipt_content.get("packet") == packet
-        and isinstance(receipt, dict)
-        and set(receipt) == required
-        and receipt_record.get("kind") == "receipt"
-        and receipt_record.get("success") == {"receipt": receipt}
-        and receipt.get("protocol") == PROTOCOL
-        and receipt.get("outcome") == "accepted"
-        and receipt.get("durability") == "ticket"
-        and receipt.get("state_sink_checked") is True
-        and receipt.get("assignment_seal") == attempt.get("assignment_seal")
-        and receipt.get("dispatch_id") == attempt.get("dispatch_id")
-        and packet.get("assignment_seal") == attempt.get("assignment_seal")
-        and packet.get("dispatch_id") == attempt.get("dispatch_id")
-        and packet.get("assigned_name") == attempt.get("owner")
-    )
-    if not valid:
-        return classification(
-            "dispatch-record-invalid",
-            "accepted receipt does not bind the committed packet and attempt",
-        )
-    return None
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None):
@@ -428,7 +311,7 @@ def state(data: dict):
         return parsed, failure
     ticket_id = str(data.get("id") or "").strip()
     review_text = str(data.get("review_v1") or "").strip()
-    review_stage = ".gate." in ticket_id or ticket_id.endswith(".check")
+    review_stage = is_review_stage_id(ticket_id)
     if review_text and review_stage:
         try:
             if __package__:
@@ -468,3 +351,35 @@ def state(data: dict):
                         "critique adjudication authority differs from the accepted receiver",
                     )
     return parsed, None
+
+
+def attempt_window(data: dict):
+    """Return the current attempt's immutable clock from validated state.
+
+    It reads the clock `state` has just validated, so it belongs beside that
+    reader rather than beside the operations that consume the window.
+    """
+
+    validated, failure = state(data)
+    if failure is not None or validated is None:
+        return None, failure
+    attempts = validated["attempts"]
+    if not attempts:
+        return None, classification(
+            "dispatch-record-invalid", "dispatch_v1 has no execution attempt"
+        )
+    attempt = next(
+        (item for item in reversed(attempts) if item.get("state") == "live"),
+        attempts[-1],
+    )
+    opened = _parse_iso(attempt.get("opened_at"))
+    expires = _parse_iso(attempt.get("lease_expires_at"))
+    if opened is None or expires is None:
+        return None, classification(
+            "dispatch-record-invalid", "dispatch attempt has no absolute lease window"
+        )
+    return {
+        "attempt": attempt,
+        "opened_at": opened,
+        "lease_expires_at": expires,
+    }, None

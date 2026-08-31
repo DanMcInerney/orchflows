@@ -14,9 +14,7 @@ from tools import validate
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROFILE_OWNER_LINK = (
-    "[role profiles](../skills/engines/orch-frontier/references/profiles.md)"
-)
+PROFILE_OWNER_LINK = "[role profiles](../hosts/profiles.md)"
 
 
 def _custom_routing_uses_profile_owner(text: str) -> bool:
@@ -39,15 +37,15 @@ def _frontmatter(path: str) -> dict[str, str]:
 
 
 def _skill_path(name: str) -> str:
-    tier = "workflows" if name == "orch-spec" else "kernel"
+    tier = "workflows" if name == "orch-outline" else "kernel"
     return f"skills/{tier}/{name}/SKILL.md"
 
 
 class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
-        "orch-spec": "planner",
+        "orch-outline": "planner",
         "orch-check": "planner",
-        "orch-decompose": "planner",
+        "orch-slice": "planner",
         "orch-execute": "worker",
     }
 
@@ -59,20 +57,16 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                     _frontmatter(_skill_path(name))["role"],
                 )
 
-        glue = {
-            "skills/engines/orch-frontier/SKILL.md",
-            "skills/engines/orch-loop/SKILL.md",
-            "skills/kernel/orch-integrate/SKILL.md",
-        }
-        for path in glue:
-            with self.subTest(glue=path):
-                self.assertEqual("none", _frontmatter(path)["role"])
+        # No skill is glue any more: the driver and the join are commands,
+        # so every callable declares planner or worker.
+        self.assertEqual(
+            set(self.WORKFLOW_ROLES),
+            {path.parent.name for path in (ROOT / "skills").rglob("SKILL.md")},
+        )
 
         delegation = (ROOT / "rules/delegation.md").read_text(encoding="utf-8")
         roles = (ROOT / "rules/roles.md").read_text(encoding="utf-8")
-        profiles = (
-            ROOT / "skills/engines/orch-frontier/references/profiles.md"
-        ).read_text(encoding="utf-8")
+        profiles = (ROOT / "hosts/profiles.md").read_text(encoding="utf-8")
         host = (ROOT / "templates/host-block.md").read_text(encoding="utf-8")
         collapsed_host = re.sub(r"\s+", " ", host)
         combined = "\n".join((delegation, roles, profiles, host))
@@ -92,50 +86,57 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "**answer**",
             "**single**",
             "**graph**",
-            "**spec**",
-            "`orch-planner`",
+            "**outline**",
+            "`launch`",
             "`tickets.py dispatch <run>",
-            "outer coordinator joins",
+            "`tickets.py land`",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
         self.assertEqual(1, host.count(authoring_pointer))
         self.assertRegex(
             collapsed_host,
-            re.compile(r"Skill/composition/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
+            re.compile(r"Skill/workflow/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
-        decompose = (ROOT / "skills/kernel/orch-decompose/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("relevant Context", decompose)
+        decompose = (ROOT / "skills/kernel/orch-slice/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Context: pointers by identity", decompose)
         self.assertNotIn("**errand**", collapsed_host)
-        self.assertNotIn("sequence: [orch-spec, orch-decompose]", host)
+        self.assertNotIn("sequence: [orch-outline, orch-slice]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
-    def test_graph_lane_emits_the_complete_decompose_packet(self):
+    def test_graph_lane_emits_the_complete_decompose_route(self):
         host = re.sub(
             r"\s+",
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        graph = host.partition("**graph**")[2].partition("**spec**")[0]
+        graph = host.partition("**graph**")[2].partition("**outline**")[0]
 
         for anchor in (
             "stamped root",
             "tickets.py dispatch <run> <root> --by <assigned-name> "
             "--dispatch-id <dispatch-id> --lease-expires-at <absolute-iso> "
-            "--reply-to <parent-name> [--workspace <tree>]",
-            "tickets.py dispatch-receive",
-            "accepted",
-            "exact `orch-decompose`",
-            "establish the matching `orch-planner`",
-            "send the emitted packet",
-            "ticket path is not a packet",
-            "outer coordinator joins",
-            "starts `orch-frontier`",
+            "[--host <host>] [--workspace <tree>]",
+            "invoke the emitted `launch` verbatim adding nothing to its prompt",
+            "tickets.py land",
+            "`land --status`",
+            "Repeat until that frontier is empty",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, graph)
-        self.assertNotIn("tickets.py claim", graph)
-        self.assertNotIn("tickets.py packet", graph)
+        # The facade owns each of these; the route may not re-teach a manual
+        # spelling of a step `dispatch` or `land` already performs.
+        for absent in (
+            "tickets.py claim",
+            "tickets.py packet",
+            "tickets.py dispatch-open",
+            "tickets.py dispatch-packet",
+            "tickets.py dispatch-join",
+            "tickets.py dispatch-receive",
+            "workspace.py establish",
+        ):
+            with self.subTest(absent=absent):
+                self.assertNotIn(absent, graph)
 
     def test_host_and_frontier_establish_the_workspace_before_dispatch(self):
         host = re.sub(
@@ -143,21 +144,18 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        graph = host.partition("**graph**")[2].partition("**spec**")[0]
-        frontier = re.sub(
-            r"\s+",
-            " ",
-            (ROOT / "skills/engines/orch-frontier/SKILL.md").read_text(
-                encoding="utf-8"
-            ),
-        )
+        graph = host.partition("**graph**")[2].partition("**outline**")[0]
 
-        for text in (graph, frontier):
-            with self.subTest(owner="graph" if text is graph else "frontier"):
-                self.assertIn("tickets.py dispatch", text)
-                if text is frontier:
-                    self.assertIn("workspace_path", text)
-                self.assertLess(text.index("tickets.py dispatch"), text.index("dispatch-receive"))
+        self.assertIn("tickets.py dispatch", graph)
+        self.assertLess(
+            graph.index("tickets.py dispatch"), graph.index("tickets.py land")
+        )
+        # Establishment is inside the dispatch transaction, so the contract
+        # that owns the transaction states it and the route does not repeat
+        # it as a step of its own.
+        dispatch_contract = (ROOT / "contracts/dispatch.md").read_text(encoding="utf-8")
+        self.assertIn("the established workspace", dispatch_contract)
+        self.assertNotIn("workspace.py establish", graph)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -196,32 +194,32 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "directly",
             "never redispatch",
         ):
             self.assertIn(anchor, role_agent)
 
-    def test_spec_route_consumes_the_root_shape_it_sealed(self):
+    def test_outline_route_consumes_the_root_shape_it_sealed(self):
         host = re.sub(
             r"\s+",
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        spec_route = host.split("**spec**", 1)[1].split("**fix**", 1)[0]
+        spec_route = host.split("**outline**", 1)[1].split("**fix**", 1)[0]
 
         for anchor in (
             "direct root",
             "lawful executor",
-            "`orch-decompose` root",
+            "`orch-slice` root",
             "distinct results/dependencies",
             "one planner",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
 
-        self.assertRegex(spec_route, r"one planner.*`orch-decompose` root")
-        self.assertIn("planner never starts the frontier", spec_route)
+        self.assertRegex(spec_route, r"one planner.*`orch-slice` root")
+        self.assertIn("planner never drives the run", spec_route)
 
     def test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -241,7 +239,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                     f"agent_type `orch_{role}`",
                     "fork_turns `none`",
                     f"`{name}`",
-                    "complete packet",
+                    "emitted launch prompt",
                     "matching role",
                     "directly",
                     "refuse",
@@ -251,7 +249,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-spec", "orch-check", "orch-execute"}:
+        for name in {"orch-outline", "orch-check", "orch-execute"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]
@@ -266,7 +264,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
+            "launch-stated ordered sequence",
             "directly",
             "never redispatch",
             "mismatched",

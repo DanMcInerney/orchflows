@@ -23,8 +23,7 @@ class LifecycleTableTest(unittest.TestCase):
                 "dispatch-commit",
                 "dispatch-open",
                 "dispatch-outcome",
-                "dispatch-packet",
-                "dispatch-receive",
+                "dispatch",
                 "dispatch-replace",
                 "dispatch-retire",
                 "issue",
@@ -71,9 +70,9 @@ class LifecycleTableTest(unittest.TestCase):
 
     def test_dispatch_rows_expose_attempt_and_record_state(self):
         rows = tickets_lifecycle.lifecycle_rows()
-        receive = next(row for row in rows if row.event == "dispatch-receive")
-        self.assertEqual("claimed / packet committed", receive.predecessor)
-        self.assertEqual("claimed / receipt accepted", receive.result)
+        filed = next(row for row in rows if row.event == "result")
+        self.assertEqual("claimed / launched", filed.predecessor)
+        self.assertEqual("claimed / launched + result record", filed.result)
         retire = next(row for row in rows if row.event == "dispatch-retire")
         self.assertEqual("claimed / live attempt", retire.predecessor)
         self.assertEqual("claimed / retired attempt", retire.result)
@@ -92,7 +91,7 @@ class LifecycleTableTest(unittest.TestCase):
             try:
                 validate.ROOT = root
                 diag = validate.Diagnostics()
-                validate.validate_lifecycle_render(diag)
+                validate.validate_regenerated_artifacts(diag, ("lifecycle",))
             finally:
                 validate.ROOT = prior
             self.assertTrue(diag.has_errors)

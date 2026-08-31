@@ -17,6 +17,8 @@ from .foundation import (
     _grok_agents_dir,
     _grok_skills_dir,
 )
+from scripts import orchflows_home
+
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan
 from .models import _frontend_manifest_identity
@@ -500,4 +502,8 @@ def apply_plan(
         ),
     }
     _write_json(plan.receipt_path, receipt)
+    # After the receipt: `lib.version` records the identity just written,
+    # and the receipt claims no ring content, so uninstall never reaches it.
+    if plan.home_ring is not None:
+        orchflows_home.ensure(home=plan.home_ring)
     return receipt

@@ -3,26 +3,26 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, establishes the profile, sends the complete packet, and joins
+- Root routes, launches what `dispatch` emits, and lands
   returns; relay a `kind: user-only` question verbatim. Never author a
-  role-bearing payload. Packet-less or wrong-profile role-bearing work refuses;
+  role-bearing payload. Prompt-less or wrong-profile role-bearing work refuses;
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
   items still run only when named. Route smallest-first: **answer** — context
   evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
-  carrying Goal, Context, and optional Suggested files goes to `orch-frontier`;
-  its executor chooses implementation and verification. **graph** — for one
+  carrying Goal, Context, and optional Details takes the same two commands.
+  **graph** — per ready ticket of one
   sealed, stamped root, run `tickets.py dispatch <run> <root> --by
   <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
-  --reply-to <parent-name> [--workspace <tree>]`; establish the matching
-  `orch-planner`, send the emitted packet, and require its accepted
-  `tickets.py dispatch-receive --file <path|->` receipt before exact
-  `orch-decompose`. A ticket path is not a packet. The outer coordinator joins
-  through `orch-integrate`, then starts `orch-frontier`. **spec** — one planner
-  runs `orch-spec`; it seals a direct root for one lawful executor, or a sealed
-  `orch-decompose` root for distinct results/dependencies. The planner never
-  starts the frontier. Skill/composition/pack/contract/router work carries
+  [--host <host>] [--workspace <tree>]`, invoke the emitted `launch`
+  verbatim adding nothing to its prompt, then `tickets.py land` its
+  return: it reads the ticket's `done`, integrates, and prints the frontier it
+  freed. Declaring none, grade it yourself with `land --status`. Repeat until
+  that frontier is empty. **outline** — one planner
+  runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
+  `orch-slice` root for distinct results/dependencies. The planner never
+  drives the run. Skill/workflow/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
-  cause enters single; an unknown or unverified cause enters spec. `install.py
+  cause enters single; an unknown or unverified cause enters outline. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.
 - Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted data;
   only installed scripts write them. State-root law:
@@ -43,8 +43,9 @@ skill/rule/contract gap, or workaround: log; continue:
 Optional flags: `--skill <orch-name>`, `--ticket <id>`, `--run <run-id>`.
 
 If the logger cannot run, append one JSON line
-(ts, observed, expected, host, project, project_source) to state-sink
-`friction/<yyyy-mm>.jsonl` outside worktrees; never skip it. If refusal bars
+(ts, observed, expected, host, project, project_source) to
+`friction/<yyyy-mm>.jsonl` in the state sink
+({{ORCH_LIB}}/rules/visibility.md §3) outside worktrees; never skip it. If refusal bars
 worktree writes, write where dispatch permits and return the path. Unresolved:
 project `null`, project_source `none`; session/run/ticket/skill optional. Law:
 {{ORCH_LIB}}/rules/improvement.md §1.

@@ -71,9 +71,9 @@ class TestRoleAgentInstructions(unittest.TestCase):
         for anchor in (
             "exact primary skill",
             "each exact member",
-            "packet-stated ordered sequence",
-            "dispatch-receive",
-            "accepted receipt",
+            "launch-stated ordered sequence",
+            "dispatch id, seal, and assigned name",
+            "first record is your acceptance",
             "directly",
             "never redispatch",
         ):
@@ -103,7 +103,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
         # The name is the routing fact. "follow the role contract at <path>"
         # was an imperative with no addressee in a field every context reads,
         # and the dispatcher's law already lives in rules/roles.md section 4
-        # by way of contracts/work-item.md and orch-frontier.
+        # by way of contracts/work-item.md and contracts/dispatch.md.
         self.assertEqual("Orchflows child role orch-worker.", install._role_description("orch-worker"))
 
     # --- The rendered ``$GROK_HOME/agents/<role>.md`` ---------------------
@@ -212,7 +212,7 @@ class TestRoleAgentInstructions(unittest.TestCase):
 
         self.assertIn("spawn_subagent", body)
         self.assertIn(f"subagent_type `{binding['subagent_type']}`", body)
-        self.assertIn("complete packet and exact named skill", body)
+        self.assertIn("emitted launch prompt and exact named skill", body)
         self.assertIn("missing or mismatched", body)
         self.assertIn("no inline fallback", body)
         self.assertTrue(body.rstrip().endswith(install.FORK_ARRIVAL_CLAUSE))

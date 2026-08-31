@@ -69,10 +69,21 @@ def make_run(tmp: Path, tickets: tuple) -> Path:
     for tid, status, bound, claimed_minutes_ago, motion_minutes_ago in tickets:
         claim = ""
         if claimed_minutes_ago is not None:
-            claimed_at = (NOW - timedelta(minutes=claimed_minutes_ago)).strftime(UTC_STAMP)
-            claim = f"claimed_by: agent-a\nclaimed_at: {claimed_at}\n"
-        elif status == "claimed":
-            claim = "claimed_by: agent-a\nclaimed_at: not a timestamp\n"
+            # A claim exists only as a dispatch attempt whose absolute lease
+            # window is the bound converted at open time.
+            opened = NOW - timedelta(minutes=claimed_minutes_ago)
+            expires = opened + timedelta(minutes=tickets_bound.parse_bound(bound)[0])
+            state = {"protocol": "orchflows.dispatch.v1", "attempts": [{
+                "assignment_seal": "sha256:sealed",
+                "dispatch_id": "D-" + tid,
+                "lease_expires_at": expires.strftime(UTC_STAMP),
+                "opened_at": opened.strftime(UTC_STAMP),
+                "outcome_record_id": "outcome",
+                "owner": "agent-a",
+                "records": [],
+                "state": "live",
+            }]}
+            claim = "dispatch_v1: " + canonical_json(state) + "\n"
         path = run_dir / f"{tid}.md"
         path.write_bytes(
             TICKET.format(tid=tid, status=status, bound=bound, claim=claim).encode("utf-8")
@@ -165,43 +176,6 @@ class BoundGrammarTest(unittest.TestCase):
                 )
 
 
-class ParkPredicateTest(unittest.TestCase):
-    """Overdue and parked are two questions, and the second one is the
-    only one whose answer takes an item away from the agent holding it."""
-
-    CLAIMED = datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-
-    def at(self, minutes: int) -> datetime:
-        return self.CLAIMED + timedelta(minutes=minutes)
-
-    def test_a_bound_that_has_not_elapsed_parks_nothing(self):
-        self.assertFalse(tickets_bound.should_park(self.CLAIMED, 30, None, self.at(29)))
-        self.assertFalse(
-            tickets_bound.should_park(self.CLAIMED, 30, self.at(5), self.at(30))
-        )
-
-    def test_a_bound_elapsed_with_no_motion_after_it_is_the_park(self):
-        self.assertTrue(
-            tickets_bound.should_park(self.CLAIMED, 30, self.at(10), self.at(90))
-        )
-        self.assertTrue(tickets_bound.should_park(self.CLAIMED, 30, None, self.at(90)))
-        # Motion exactly at the deadline is motion up to it, not after it.
-        self.assertTrue(
-            tickets_bound.should_park(self.CLAIMED, 30, self.at(30), self.at(90))
-        )
-
-    def test_motion_after_the_bound_elapsed_is_over_bound_and_not_parked(self):
-        self.assertFalse(
-            tickets_bound.should_park(self.CLAIMED, 30, self.at(85), self.at(90))
-        )
-
-    def test_a_claim_with_no_readable_start_has_no_deadline_to_have_passed(self):
-        self.assertFalse(tickets_bound.should_park(None, 30, None, self.at(90)))
-
-    def test_the_facade_exports_the_predicate_the_engine_rule_names(self):
-        self.assertIs(tickets_bound.should_park, tickets_mod.should_park)
-
-
 class BoundCheckCommandTest(unittest.TestCase):
     """`bound-check` over one run: what it lists, what it calls overdue,
     and the exit code the engine's re-check reads without parsing anything."""
@@ -268,10 +242,10 @@ class BoundCheckCommandTest(unittest.TestCase):
             self.assertEqual([90, 90], [rows["T1"]["elapsed_minutes"], rows["T2"]["elapsed_minutes"]])
             self.assertTrue(rows["T1"]["overdue"])
             self.assertTrue(rows["T2"]["overdue"])
-            # The one field that separates them: T1 stopped inside its
-            # bound, T2 is still working past it.
+            # The absolute lease decides both: motion cannot extend it, so
+            # an expired claim parks whether or not its holder kept moving.
             self.assertTrue(rows["T1"]["park"])
-            self.assertFalse(rows["T2"]["park"])
+            self.assertTrue(rows["T2"]["park"])
 
     def test_dispatch_v1_uses_its_absolute_lease_and_motion_cannot_extend_it(self):
         with tempfile.TemporaryDirectory() as tmp:

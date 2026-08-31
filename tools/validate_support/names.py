@@ -1,4 +1,4 @@
-"""Validate canonical names and lens anchors."""
+"""Validate canonical names and mandatory craft sections."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ _read_source = __dep_packages._read_source
 rel = __dep_packages.rel
 
 from tools.validate_support import common as __dep_common
+CRAFT_MANDATORY_SECTIONS = __dep_common.CRAFT_MANDATORY_SECTIONS
 ROLE_PROFILES = __dep_common.ROLE_PROFILES
 ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
@@ -15,7 +16,7 @@ re = __dep_common.re
 
 # Every shipped prose tree is recursive; depth does not change a call edge.
 NAME_CHECKED_TREES = (
-    "rules", "docs", "contracts", "templates", "compositions", "packs", "skills"
+    "rules", "docs", "contracts", "templates", "example-workflows", "packs", "skills"
 )
 NAME_CHECKED_FILES = ("README.md", "DESIGN.md", "ARCHITECTURE.md", "AGENTS.md", "TICKETS.md")
 # Host routing owns this control directive; it is not a package in the
@@ -27,9 +28,6 @@ HOST_ROUTING_DIRECTIVES = {"orch-off"}
 # called" (rule 2 again), so DESIGN.md's supersession history needs no
 # allowlist -- it just does not backtick the names it is burying.
 BACKTICKED_NAME_RE = re.compile(r"`(orch-[a-z0-9]+(?:-[a-z0-9]+)*)`")
-# The lens cell is a pointer into a section, and the row is compared as
-# three words of text (see CELL_CLAUSE_MIN_WORDS above) rather than
-# resolved -- so nothing looked at whether the section is there.
 # The marker that says this tree is the library and not an isolated
 # fixture. Same idiom as validate_friction_locations' owner check: a
 # fixture copies the real contracts/ beside a synthetic skills/, and
@@ -37,8 +35,6 @@ BACKTICKED_NAME_RE = re.compile(r"`(orch-[a-z0-9]+(?:-[a-z0-9]+)*)`")
 # fixture's own emptiness. ARCHITECTURE.md is the tier map, so a tree
 # without it has no tier map for a name to resolve against.
 NAME_CHECK_MARKER = ROOT / "ARCHITECTURE.md"
-LENS_ROW_RE = re.compile(r"^\|\s*lens\s*\|(.*)\|\s*$", re.MULTILINE)
-LENS_ANCHOR_RE = re.compile(r"\(([^)]*#[^)]*)\)")
 HEADING_RE = re.compile(r"^#+\s+(.*\S)\s*$", re.MULTILINE)
 
 
@@ -90,38 +86,32 @@ def validate_names(packages, diag: Diagnostics) -> None:
             )
 
 
-def validate_lens_anchor(packages, diag: Diagnostics) -> None:
-    """Each pack's lens cell anchor lands on a heading that exists.
+CRAFT_SECTION_HEADING_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
 
-    contracts/pack-signature.md binds the lens to the check lane plus the
-    pack's craft `## Lens`, and every gate lane the pack stamps reads its
-    criteria there. Deleting the heading left the validator at exit 0.
+
+def validate_craft_sections(packages, diag: Diagnostics) -> None:
+    """Each pack's craft carries every mandatory `##` section.
+
+    contracts/pack-signature.md's craft-section table names the sections
+    each verb reads — the heading does what the lane projection did, so a
+    missing one silently drops a domain's slicing, evidence, or review
+    criteria. Deleting a heading left the validator at exit 0.
     """
 
     for pkg in packages:
         if not pkg["is_pack"]:
             continue
-        row = LENS_ROW_RE.search(pkg.get("body") or "")
-        if row is None:
-            continue  # a missing cell is validate_pack_signature's finding
-        file_label = rel(pkg["skill_md"])
-        for target in LENS_ANCHOR_RE.findall(row.group(1)):
-            relative, _, anchor = target.partition("#")
-            craft = (pkg["skill_md"].parent / relative).resolve()
-            if not craft.is_file():
+        craft = pkg["path"] / "references" / "craft.md"
+        if not craft.is_file():
+            continue  # a missing craft is validate_pack_signature's finding
+        found = set(CRAFT_SECTION_HEADING_RE.findall(_read_source(craft)))
+        for section in CRAFT_MANDATORY_SECTIONS:
+            if section not in found:
                 diag.error(
-                    file_label,
-                    f"lens cell anchor `{target}` names no file at "
-                    f"{relative} beside this pack",
-                )
-                continue
-            if anchor.lower() not in _heading_slugs(_read_source(craft)):
-                diag.error(
-                    file_label,
-                    f"lens cell anchor `{target}` lands nowhere: "
-                    f"{rel(craft)} carries no heading reached by "
-                    f"`#{anchor}` — the cell binds a `## Lens` section, so "
-                    "that section has to be there",
+                    rel(craft),
+                    f"craft carries no `## {section}` heading — "
+                    "contracts/pack-signature.md's craft-section table makes "
+                    "it mandatory, so that section has to be there",
                 )
 
 
@@ -137,6 +127,6 @@ def validate_unique_names(packages, diag: Diagnostics) -> None:
 __all__ = (
     'NAME_CHECKED_TREES', 'NAME_CHECKED_FILES', 'BACKTICKED_NAME_RE',
     'HOST_ROUTING_DIRECTIVES',
-    'NAME_CHECK_MARKER', 'LENS_ROW_RE', 'LENS_ANCHOR_RE', 'HEADING_RE',
-    '_heading_slugs', 'validate_names', 'validate_lens_anchor', 'validate_unique_names',
+    'NAME_CHECK_MARKER', 'HEADING_RE', 'CRAFT_SECTION_HEADING_RE',
+    '_heading_slugs', 'validate_names', 'validate_craft_sections', 'validate_unique_names',
 )

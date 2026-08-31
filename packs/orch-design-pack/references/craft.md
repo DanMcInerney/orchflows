@@ -10,9 +10,10 @@ Framework specifics live with the workspace's standards owner.
   capture shows, a verdict covers, and a golden capture pins.
 - **breakpoint** — a named viewport width where layout decisions may
   change; the spec's breakpoint set closes the list.
-- **state** — one interaction or data condition of a view: hover,
-  focus, disabled, empty, loading, error, overflow; enumerated per
-  view, each one rendered, never assumed.
+- **state** — one interaction, data, or user-preference condition of a
+  view: hover, focus, disabled, empty, loading, error, overflow,
+  reduced motion, forced colors; enumerated per view, each one
+  rendered, never assumed.
 - **capture** — the saved rendered image at one view identity; the
   only evidence a visual verdict accepts.
 - **golden capture** — an approved capture frozen as the baseline for
@@ -31,6 +32,67 @@ Framework specifics live with the workspace's standards owner.
 - **affordance** — what an element's appearance promises about
   interaction; kept when the behavior behind it matches the promise.
 
+## Workspace
+
+git plus render: identities are view identities; a candidate diff pairs
+with fresh captures at the exact viewport; render conflicts and contested
+captures regenerate once at the join.
+
+## Spec fields
+
+repository; render/capture/diff commands; views by breakpoint/state;
+language; accessibility bar; golden identities (none greenfield);
+standards owner pointer
+
+## Outline
+
+### What a frozen design root carries
+
+- A closed breakpoint set, plus the states each view is required to render
+  rather than have assumed for it.
+- Executable render, capture and diff commands, each marked pre-existing or
+  to-be-authored; a visual bar nothing can run is an opinion held for later,
+  not something frozen.
+- An accessibility floor with the command deciding it, and either golden
+  identities or their deliberate absence on greenfield.
+
+### Worth asking at intake
+
+- Which views are in, at which breakpoints, in which states?
+- What settles "right" here — an approved baseline, a token scale, or a judge?
+- Which design-language dimensions get scored, and in what attention order?
+- Does anything already rendered count as approved, or does this start empty?
+
+### Exemplar policy
+
+Hand over one capture, or one live view identity, together with the dimensions
+it stands for. An image with nothing attached settles nothing later, when two
+readers take it two ways.
+
+## Slicing
+
+Token-first view tickets: the token set alone opens the first frontier.
+Every view's capture samples rendered values against the tokens, so each
+view the acceptance enumerates by breakpoint and state depends on that
+item under [rules/topology.md](../../../rules/topology.md) §3's edge rule
+and takes the frontier behind it. Pair the tokens with one core view,
+exempt from the one-view rule below, only while the design language
+stays unproven.
+
+- Each ticket is one view with its full identity set (the spec's
+  breakpoints × its enumerated states), provable by capture and the
+  ticket's deterministic checks; one view composing another is the
+  only edge.
+- Each view item repeats verbatim its identity list, its render,
+  capture and diff commands, its accessibility bar and design
+  language, and the standards owner pointer.
+
+## Evidence
+
+Identify the render and its covered view, breakpoint, and state matrix. Record
+fresh captures, exercised interactions, console and accessibility readings,
+relevant build output, and uncovered states.
+
 ## Lens
 
 - Design language: every view holds the spec's design language on
@@ -46,7 +108,7 @@ Framework specifics live with the workspace's standards owner.
 - Consistency: one decision resolves one way on every view;
   cross-view drift is the finding class only this lens sees.
 
-## Execute stages
+## Stages
 
 - Enumerate view identities before editing: view, breakpoint and state
   are a closed capture set, including empty, loading, error and focus.

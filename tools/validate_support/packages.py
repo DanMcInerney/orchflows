@@ -23,7 +23,6 @@ PACK_TABLE_CELL_RE = __dep_common.PACK_TABLE_CELL_RE
 Path = __dep_common.Path
 REQUIRE_RE = __dep_common.REQUIRE_RE
 RETURN_RE = __dep_common.RETURN_RE
-ROLE_NONE_TIERS = __dep_common.ROLE_NONE_TIERS
 ROLE_VALUES = __dep_common.ROLE_VALUES
 ROOT = __dep_common.ROOT
 SENTENCE_END_RE = __dep_common.SENTENCE_END_RE
@@ -33,6 +32,13 @@ SKIPPED = __dep_common.SKIPPED
 SURFACE_BUDGET = __dep_common.SURFACE_BUDGET
 TABLE_DELIM_ROW_RE = __dep_common.TABLE_DELIM_ROW_RE
 re = __dep_common.re
+
+# The de-quoting primitive is `scripts/tickets_format`'s, imported rather
+# than respelled: this validator and the runtime read the same cell values,
+# and the four inline `.strip("`")` sites here were the tools-layer half of
+# the twenty-one that graded a padded value as a different value from its
+# bare twin. `tools` may import `scripts`; the reverse is what is forbidden.
+from scripts.tickets_format import dequote
 
 CONTRACTS_DIR = ROOT / "contracts"
 PINS_FILE = ROOT / "tests" / "pins.json"
@@ -81,8 +87,8 @@ def discover_packages():
     home a reference may keep, though: ``rules/visibility.md`` §4 makes a
     references file public only where its owner's body names the local
     path, and a directory with no body names nothing. ``profiles.md``
-    therefore lives under ``skills/engines/orch-frontier/``, whose body
-    names it.
+    therefore lives beside the host records it describes, in ``hosts/``,
+    rather than under a skill that no longer exists to name it.
     """
     packages = []
     for tier in SKILL_TIERS:
@@ -187,8 +193,6 @@ def validate_role(fm: dict, pkg: dict, diag: Diagnostics) -> None:
     if role not in ROLE_VALUES:
         diag.error(file_label, f"role '{role}' is not one of {sorted(ROLE_VALUES)}")
         return
-    if pkg["kind"] in ROLE_NONE_TIERS and role != "none":
-        diag.error(file_label, f"{pkg['kind']} skill must declare role: none, got '{role}'")
     if pkg["kind"] == "workflows" and role == "none":
         diag.error(file_label, "workflows skill must declare planner or worker, got 'none'")
 
@@ -270,7 +274,7 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
     if row and "(references/craft.md)" not in row.group(1):
         diag.error(file_label, "craft cell must bind [references/craft.md](references/craft.md)")
     cells = dict(PACK_CELL_ROW_RE.findall(body))
-    if "adapter" in cells and not PACK_ADAPTER_RE.match(cells["adapter"].strip().strip("`")):
+    if "adapter" in cells and not PACK_ADAPTER_RE.match(dequote(cells["adapter"])):
         diag.error(
             file_label,
             f"adapter cell must be one registered mechanism key, got: {cells['adapter']!r}",
@@ -281,14 +285,14 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
         if not (raw_stages.startswith("[") and raw_stages.endswith("]")):
             diag.error(file_label, f"stages cell must be a bracketed list, got: {raw_stages!r}")
         else:
-            stages = [part.strip().strip("`") for part in raw_stages[1:-1].split(",") if part.strip()]
+            stages = [dequote(part) for part in raw_stages[1:-1].split(",") if part.strip()]
             if any(not PACK_STAGE_RE.fullmatch(stage) for stage in stages):
                 diag.error(file_label, f"stages cell has an invalid stage, got: {raw_stages!r}")
             if len(stages) != len(set(stages)):
                 diag.error(file_label, "stages cell repeats a stage")
     if "assembly" in cells:
         raw_assembly = cells["assembly"].strip()
-        assembly = raw_assembly.strip("`")
+        assembly = dequote(raw_assembly)
         if raw_assembly != assembly or (
             assembly != "none" and (
                 not PACK_STAGE_RE.fullmatch(assembly)
@@ -301,7 +305,7 @@ def validate_pack_signature(body: str, pkg: dict, diag: Diagnostics) -> None:
 def assembly_form_ok(binding: str, stages=None) -> bool:
     """Return whether one typed assembly value is closed and stage-backed."""
     raw = binding.strip()
-    value = raw.strip("`")
+    value = dequote(raw)
     if value == "none":
         return raw == "none"
     return raw == value and bool(PACK_STAGE_RE.fullmatch(value)) and (not stages or value in stages)
@@ -313,7 +317,7 @@ def cell_clauses(text: str) -> list:
 
     A clause is one assertion: a markdown table's data row, or a
     sentence, cut again at every ';' because this library's prose joins
-    independent assertions with the semicolon (a workspace cell is one
+    independent assertions with the semicolon (a workspace section is one
     such list). A ',' is not a cut point: it joins parts of one
     assertion, and cutting there reports shared connective idiom
     ('never by count') as duplicated content.

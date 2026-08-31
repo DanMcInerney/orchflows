@@ -28,7 +28,7 @@ ARTIFACT_SCHEMA = "orchflows.ticket-artifact.v1"
 NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 ARTIFACT_ID_RE = re.compile(r"art_[A-Za-z0-9_-]{43}\Z")
-RESULT_HEADING_RE = re.compile(r"^## Result[ \t]*\r?$", re.MULTILINE)
+RESULT_HEADING_RE = re.compile(r"^## Report[ \t]*\r?$", re.MULTILINE)
 NEXT_HEADING_RE = re.compile(r"^## [^\r\n]+", re.MULTILINE)
 WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^`\"'<>\r\n]+"

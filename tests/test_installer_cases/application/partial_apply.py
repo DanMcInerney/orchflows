@@ -56,7 +56,7 @@ class TestPartialApplyAfterRmtree(unittest.TestCase):
 
             with patch.object(install.shutil, "copy2", side_effect=flaky_copy2):
                 with self.assertRaisesRegex(RuntimeError, "simulated crash"):
-                    install.apply_plan(plan)
+                    install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             # rmtree already ran: the pre-existing stale file is gone.
             self.assertFalse((lib_home / "old.md").exists())

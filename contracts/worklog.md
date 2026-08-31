@@ -17,7 +17,8 @@ path. A successor has its own run view after its predecessor result is fixed.
 
 - `goal` — the root ticket's `## Goal` and `## Context` verbatim; for a loop
   run the loop ticket's, and for a template run its terminal ticket's.
-- `iterations` — every ticket in `claimed_at` order, each with its
+- `iterations` — every ticket ordered by its dispatch attempt's
+  `opened_at` (the lease the record owns), each with its
   `## Verification` entries.
 - `failed_approaches` — the `## Result` and `## Feedback` of every
   `failed` or `limited` ticket, and of every loop iteration ticket: the
@@ -40,9 +41,10 @@ layout it is rendered from is `scripts/tickets.py`'s.
 
 For a multi-kind request, `successors.md` beside this view is the durable
 successor plan: ordered kind, pack, proposed run/root ids and `planned` or
-`opened` state. It is not a transcript and not a second worklog. `orch-spec`
-is its sole writer; a drained `orch-frontier` reads it to trigger successor
-materialization from the predecessor's accepted result identity.
+`opened` state. It is not a transcript and not a second worklog. `orch-outline`
+is its sole writer; the driver reads it once `tickets.py land` reports an
+empty frontier, and triggers successor materialization from the
+predecessor's accepted result identity.
 
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape

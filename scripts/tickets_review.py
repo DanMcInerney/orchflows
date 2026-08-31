@@ -7,10 +7,10 @@ import re
 import subprocess
 
 if __package__:
-    from .tickets_adapters import AdapterError, adapter_spec
+    from .tickets_adapters import AdapterError, adapter_spec, derived_isolation
     from .tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
-        parse_canonical_json,
+        dequote, parse_canonical_json,
     )
     from .tickets_store import _load_ticket
     from .tickets_review_schema import (
@@ -18,10 +18,10 @@ if __package__:
         nonempty as _nonempty, validate_records,
     )
 else:
-    from tickets_adapters import AdapterError, adapter_spec
+    from tickets_adapters import AdapterError, adapter_spec, derived_isolation
     from tickets_format import (
         _executor_of, _parse_frontmatter, _set_frontmatter_field, canonical_json,
-        parse_canonical_json,
+        dequote, parse_canonical_json,
     )
     from tickets_store import _load_ticket
     from tickets_review_schema import (
@@ -126,7 +126,7 @@ def _lens(ticket_id: str) -> str:
 
 
 def _gate_root(ticket_id: str) -> str:
-    for suffix in (".gate.critique.", ".gate.repair", ".gate.verify"):
+    for suffix in (".gate.critique.", ".gate.repair"):
         if suffix in ticket_id:
             return ticket_id.split(suffix, 1)[0]
     raise ReviewError(f"not a gate ticket: {ticket_id}")
@@ -174,7 +174,7 @@ def gate_plan(ticket_path: Path, artifact: str, workspace: str) -> dict:
         "GatePlan", None,
         artifact=artifact.strip(),
         criteria=criteria,
-        isolation=str(data.get("isolation") or "none"),
+        isolation=derived_isolation(data.get("isolation"), data.get("pack")),
         mode="gate",
         pack=data.get("pack"),
         root=_gate_root(ticket_path.stem),
@@ -287,12 +287,12 @@ def repair_predecessor_state(ticket_path: Path, dependencies) -> dict:
     return _review_state([plan, aggregate], allow_legacy=True)
 
 
-def packet_state(
+def launch_state(
     ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
 ) -> dict | None:
     data = _parse_frontmatter(text)
     ticket_id = str(data.get("id") or ticket_path.stem)
-    review_kind = str(data.get("review_kind") or "").strip().strip("`")
+    review_kind = dequote(data.get("review_kind"))
     if review_kind == "critique" and ticket_id.endswith(".check"):
         target_path = ticket_path.with_name(f"{ticket_id[:-len('.check')]}.md")
         return _review_state([
@@ -310,47 +310,27 @@ def packet_state(
         )
         plan = review_records(state, allow_legacy=True)[0]
         if artifact is not None and artifact != plan["artifact"]:
-            raise ReviewError("repair packet artifact differs from GatePlan")
+            raise ReviewError("repair launch artifact differs from GatePlan")
         if workspace is not None:
             if "workspace" in plan and _workspace_identity(workspace) != plan["workspace"]:
-                raise ReviewError("repair packet workspace differs from GatePlan")
+                raise ReviewError("repair launch workspace differs from GatePlan")
             validate_fixed_artifact(
                 plan["pack"], plan["artifact"], workspace or plan.get("workspace"),
             )
         return state
-    if review_kind == "verify" and ticket_id.endswith(".gate.verify"):
-        dependencies = list(data.get("depends_on") or [])
-        if len(dependencies) != 1:
-            raise ReviewError("verification requires one repair predecessor")
-        state = state_from_text(
-            _dependency_text(ticket_path, str(dependencies[0])), required=True,
-            allow_legacy=True,
-        )
-        records = review_records(state, allow_legacy=True)
-        if not records or records[-1]["kind"] != "RepairOutcome":
-            raise ReviewError("verification predecessor has no RepairOutcome")
-        if artifact is None or artifact != records[-1]["artifact"]:
-            raise ReviewError("verification packet must name the exact repaired artifact")
-        plan = records[0]
-        if "workspace" in plan and _workspace_identity(workspace) != plan["workspace"]:
-            raise ReviewError("verification packet workspace differs from GatePlan")
-        validate_fixed_artifact(
-            plan["pack"], records[-1]["artifact"], workspace or plan.get("workspace"),
-        )
-        return _review_state(records, allow_legacy=True)
     return None
 
 
-def packet_state_result(
+def launch_state_result(
     ticket_path: Path, text: str, artifact: str | None, workspace: str | None,
 ):
     try:
-        return packet_state(ticket_path, text, artifact, workspace), None
+        return launch_state(ticket_path, text, artifact, workspace), None
     except ReviewError as error:
         return None, str(error)
 
 
-def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id, content):
+def launch_mutation(review_state, run, ticket_id, dispatch_id, record_id):
     if review_state is None:
         return None
     if __package__:
@@ -364,21 +344,10 @@ def packet_mutation(review_state, run, ticket_id, dispatch_id, record_id, conten
         )
         return (
             updated,
-            _record_response(run, ticket_id, dispatch_id, record_id, content),
+            _record_response(run, ticket_id, dispatch_id, record_id),
             None,
         )
     return commit
-
-
-def replay_review_failure(text: str, expected) -> str | None:
-    if expected is None:
-        return None
-    try:
-        return None if state_from_text(text, required=True) == expected else (
-            "committed packet review ledger diverged"
-        )
-    except ReviewError as error:
-        return str(error)
 
 
 def canonical_finding_array(value: str, subject: str) -> str:
@@ -463,37 +432,9 @@ def repair_outcome(
     return _review_state([*records, record], allow_legacy=True)
 
 
-def verification_outcome(
-    state: dict, artifact: str | None, verification: str, by: str,
-    *, covers=None,
-) -> dict:
-    records = review_records(state, allow_legacy=True)
-    if not records or records[-1]["kind"] != "RepairOutcome":
-        raise ReviewError("verification requires a RepairOutcome predecessor")
-    repaired = records[-1]
-    if artifact is not None and artifact != repaired["artifact"]:
-        raise ReviewError("verification join names a different artifact")
-    verdict = verification.partition(":")[0].strip()
-    if verdict not in {"PASS", "FAIL", "UNVERIFIED"}:
-        raise ReviewError(
-            "verification evidence must begin PASS:, FAIL:, or UNVERIFIED:"
-        )
-    fields = {
-        "artifact": repaired["artifact"],
-        "by": by,
-        "evidence": verification,
-        "verdict": verdict,
-    }
-    if covers is not None:
-        fields["covers"] = covers
-    record = _record("Verification", repaired["identity"], **fields)
-    return _review_state([*records, record], allow_legacy=True)
-
-
 __all__ = (
     "REVIEW_FIELD", "REVIEW_PROTOCOL", "ReviewError", "adjudicate",
-    "aggregate_adjudication", "canonical_json", "packet_mutation", "packet_state_result",
-    "replay_review_failure",
-    "repair_outcome", "repair_predecessor_state", "review_records", "state_from_text",
-    "verification_outcome",
+    "aggregate_adjudication", "canonical_json", "launch_mutation",
+    "launch_state", "launch_state_result", "repair_outcome",
+    "repair_predecessor_state", "review_records", "state_from_text",
 )

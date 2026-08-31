@@ -30,7 +30,7 @@ PUBLIC_ROUTE_SPECS = (
 CATALOG_SCHEMA = "orchflows.workflow-catalog.v1"
 PACKAGE_ROOT = catalog.ROOT
 LIBRARY_ROOT = (
-    PACKAGE_ROOT if (PACKAGE_ROOT / "compositions").is_dir() else PACKAGE_ROOT / "lib"
+    PACKAGE_ROOT if (PACKAGE_ROOT / "example-workflows").is_dir() else PACKAGE_ROOT / "lib"
 )
 SUMMARY_RELATIVE_PATH = Path("reader") / "docs" / "workflow-summary-manifest.json"
 

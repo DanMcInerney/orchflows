@@ -5,18 +5,16 @@ from __future__ import annotations
 if __package__:
     from .tickets_dispatch_schema import (
         ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID, RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
-        _record_failure, classification, identity_failure,
-        record_id_is_reserved,
+        RECORD_KEYS, RECORD_KINDS, _invalid, _record_failure, classification,
+        identity_failure, record_id_namespace_ok,
     )
     from .tickets_shapes import DISPATCH_STATE_REQUIRED
     from .tickets_format import _parse_iso, canonical_json, parse_canonical_json
 else:
     from tickets_dispatch_schema import (
         ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
-        PACKET_RECORD_ID, RECEIPT_RECORD_ID, RECORD_KEYS, RECORD_KINDS, _invalid,
-        _record_failure, classification, identity_failure,
-        record_id_is_reserved,
+        RECORD_KEYS, RECORD_KINDS, _invalid, _record_failure, classification,
+        identity_failure, record_id_namespace_ok,
     )
     from tickets_shapes import DISPATCH_STATE_REQUIRED
     from tickets_format import _parse_iso, canonical_json, parse_canonical_json
@@ -59,7 +57,11 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
             "retired": {"retired_at", "retirement"},
             "replaced": {"replaced_at", "replaced_by", "replacement"},
         }
-        present = set(attempt) - required - {"replaces"}
+        # `workspace_path` rides with the attempt in every state, so it is
+        # excluded from the transition-field comparison exactly as `replaces`
+        # is: it says which tree the item was executed in, not where in the
+        # lifecycle the attempt stands.
+        present = set(attempt) - required - {"replaces", "workspace_path"}
         if present != transition_fields[state_name]:
             return classification("dispatch-record-invalid", f"attempt {ordinal} transition fields do not match state '{state_name}'")
         for time_field in ("retired_at", "replaced_at"):
@@ -91,18 +93,9 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
             if record.get("kind") not in RECORD_KINDS:
                 return classification("dispatch-record-invalid", f"record '{record_id}' has an unknown kind")
             kind = record["kind"]
-            if kind in {"packet", "receipt", "result", "outcome", "join"}:
+            if kind in {"launch", "result", "outcome", "join"}:
                 causal_kinds.append(kind)
-            namespace_ok = {
-                "packet": record_id == PACKET_RECORD_ID,
-                "receipt": record_id == RECEIPT_RECORD_ID,
-                "outcome": record_id == OUTCOME_RECORD_ID,
-                "join": record_id.startswith("join:"),
-                "lifecycle": record_id.startswith("lifecycle:"),
-                "generic": not record_id_is_reserved(record_id),
-                "result": not record_id_is_reserved(record_id),
-            }
-            if not namespace_ok[kind]:
+            if record_id_namespace_ok(kind, record_id) is False:
                 return classification("dispatch-record-invalid", f"record '{record_id}' does not belong to kind '{kind}'")
             if not isinstance(record.get("content"), str) or not isinstance(record.get("success"), dict):
                 return classification("dispatch-record-invalid", f"record '{record_id}' has invalid content or success")
@@ -120,9 +113,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
                 )
                 if failure is not None:
                     return failure
-        causal_rank = {
-            "packet": 0, "receipt": 1, "result": 2, "outcome": 3, "join": 4,
-        }
+        causal_rank = {"launch": 0, "result": 1, "outcome": 2, "join": 3}
         if causal_kinds != sorted(causal_kinds, key=causal_rank.__getitem__):
             return classification(
                 "dispatch-record-invalid",
@@ -131,17 +122,13 @@ def validate_state(state: dict, *, run=None, ticket_id=None):
         execution_present = any(
             kind in {"result", "outcome", "join"} for kind in causal_kinds
         )
-        if execution_present and causal_kinds[:2] != ["packet", "receipt"]:
-            return classification(
-                "receipt-required",
-                "one committed packet and its accepted receipt must precede execution records",
-            )
-        if "receipt" in causal_kinds and (
-            not causal_kinds or causal_kinds[0] != "packet"
-        ):
+        # The child's first filed record is its acceptance, so nothing here
+        # asks for a separate one -- but a child that filed anything was
+        # launched, and the committed launch is that launch.
+        if execution_present and causal_kinds[:1] != ["launch"]:
             return classification(
                 "dispatch-record-invalid",
-                "accepted receipt must follow its committed packet",
+                "one committed launch must precede execution records",
             )
         if "join" in causal_kinds and "outcome" not in causal_kinds:
             return classification(

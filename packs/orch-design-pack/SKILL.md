@@ -7,12 +7,7 @@ Cells per [contracts/pack-signature.md](../../contracts/pack-signature.md):
 
 | cell | binding |
 | --- | --- |
-| slicing | [references/slicing.md](references/slicing.md) |
-| workspace | git plus render: identities are [view identities](references/craft.md); isolated candidates have repository write authority; Suggested files are non-binding; integration resolves actual diff and render conflicts through the conflict owner, regenerates shared captures once, then runs the final gate; generation metadata: root_generation, cut_generation, assignment_seal |
-| required_spec_fields | repository; render/capture/diff commands; views by breakpoint/state; language; accessibility bar; golden identities (none greenfield); standards owner pointer |
-| craft | [references/craft.md](references/craft.md) |
 | adapter | git-plus-render |
 | stages | [render] |
 | assembly | none |
-| lens | [references/craft.md#lens](references/craft.md#lens) |
-| evidence | [references/evidence.md](references/evidence.md) |
+| craft | [references/craft.md](references/craft.md) |

@@ -14,20 +14,6 @@
         {"source": "checkpoint", "target": "successors", "kind": "branch"}
       ]
     },
-    "fix": {
-      "nodes": [
-        {"id": "reproduce", "label": "Reproduce the failure"},
-        {"id": "cause", "label": "Prove the root cause"},
-        {"id": "repair", "label": "Repair the defect"},
-        {"id": "verify", "label": "Verify the regression guard"}
-      ],
-      "edges": [
-        {"source": "reproduce", "target": "cause", "kind": "sequence"},
-        {"source": "cause", "target": "cause", "kind": "loop"},
-        {"source": "cause", "target": "repair", "kind": "sequence"},
-        {"source": "repair", "target": "verify", "kind": "sequence"}
-      ]
-    },
     "benchmaker": {
       "nodes": [
         {"id": "acquire", "label": "Acquire fixed evidence"},
@@ -117,7 +103,7 @@
         {"source": "challenge", "target": "verdict", "kind": "sequence"}
       ]
     },
-    "orch-decompose": {
+    "orch-slice": {
       "nodes": [
         {"id": "root", "label": "Read the stamped root"},
         {"id": "slice", "label": "Cut independent outcomes"},
@@ -139,41 +125,7 @@
         {"source": "apply", "target": "evidence", "kind": "sequence"}
       ]
     },
-    "orch-frontier": {
-      "nodes": [
-        {"id": "ready", "label": "Read ready tickets"},
-        {"id": "dispatch", "label": "Dispatch one frontier wave"},
-        {"id": "join", "label": "Join returned outcomes"}
-      ],
-      "edges": [
-        {"source": "ready", "target": "dispatch", "kind": "sequence"},
-        {"source": "dispatch", "target": "join", "kind": "sequence"}
-      ]
-    },
-    "orch-integrate": {
-      "nodes": [
-        {"id": "inspect", "label": "Inspect returned evidence"},
-        {"id": "adjudicate", "label": "Adjudicate one child result"},
-        {"id": "record", "label": "Record the join"}
-      ],
-      "edges": [
-        {"source": "inspect", "target": "adjudicate", "kind": "sequence"},
-        {"source": "adjudicate", "target": "record", "kind": "sequence"}
-      ]
-    },
-    "orch-loop": {
-      "nodes": [
-        {"id": "observe", "label": "Observe the done-check"},
-        {"id": "decide", "label": "Decide whether Goal holds"},
-        {"id": "repeat", "label": "Repeat within the bound"}
-      ],
-      "edges": [
-        {"source": "observe", "target": "decide", "kind": "sequence"},
-        {"source": "decide", "target": "repeat", "kind": "branch"},
-        {"source": "repeat", "target": "observe", "kind": "loop"}
-      ]
-    },
-    "orch-spec": {
+    "orch-outline": {
       "nodes": [
         {"id": "investigate", "label": "Investigate the fixed facts"},
         {"id": "decide", "label": "Settle user decisions"},

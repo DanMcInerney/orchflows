@@ -8,22 +8,20 @@ try:
 except ImportError:
     msvcrt = None
 if __package__:
-    from .tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section
+    from .tickets_format import REPORT_SECTION, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _write_section, dequote, lease_of
 else:
-    from tickets_format import EXECUTOR_SECTIONS, EXECUTOR_SECTIONS_BY_KEY, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _sections, _write_section
+    from tickets_format import REPORT_SECTION, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _write_section, dequote, lease_of
 if __package__:
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
 else:
-    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically
+    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
 if __package__:
-    from .tickets_markdown import SECTION_SENTINEL
     from .tickets_attempts import PROTOCOL, _commit_record
     from .tickets_shapes import (
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
     )
 else:
-    from tickets_markdown import SECTION_SENTINEL
     from tickets_attempts import PROTOCOL, _commit_record
     from tickets_shapes import (
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
@@ -32,62 +30,36 @@ else:
 
 TERMINAL_HEADING = '## terminal'
 RESULT_ATTRIBUTION_PREFIX = '### Written by '
-RESULT_USAGE = f'result <run> <id> --assignment-seal <seal> --dispatch-id <id> --record-id <id> --by <writer> --section <name> (--file <path> | --text <string>) [--append | --replace]; every record is fenced to one dispatch-v1 attempt, and an executor-owned section is append-only except over the cut sentinel {SECTION_SENTINEL}'
+RESULT_USAGE = f'result <run> <id> --assignment-seal <seal> --dispatch-id <id> --record-id <id> --by <writer> (--file <path> | --text <string>); every record is fenced to one dispatch-v1 attempt and appends to ## {REPORT_SECTION}'
 RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact <name> [--replace] | --terminal <state>) (--file <path> | --text <string>))'
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
 COVERAGE_RECORD_NAME = 'covered.jsonl'
 
 
-def _critique_ticket(ticket_id: str) -> bool:
-    """Return whether a ticket carries the generated critique result seam."""
-
-    return ".gate.critique." in ticket_id or ticket_id.endswith(".check")
-
-
-def _validate_critique_body(ticket_id: str, section: str, body: str):
-    """Validate one critique Result/Feedback body through the shared schema."""
-
-    if not _critique_ticket(ticket_id) or section not in {"Result", "Feedback"}:
-        return None
-    # Import lazily: tickets_review consumes result records while joining a
-    # review, so importing its schema at module import time would make the
-    # tickets facade's flat and package seams cycle.
-    if __package__:
-        from .tickets_review import canonical_finding_array, ReviewError
-    else:
-        from tickets_review import canonical_finding_array, ReviewError
-    try:
-        canonical_finding_array(body, f"critique {section} result")
-    except ReviewError as error:
-        return {"code": "result-invalid", "error": str(error), "protocol": PROTOCOL}
-    return None
-
 def _cmd_result(rest):
     return _result_under_run_lock(rest)
 
 
 def _result_under_run_lock(rest):
-    """Commit one attributed section record and its replay receipt together."""
+    """Commit one attributed report record and its replay receipt together.
+
+    There is one section and one mode: every filing appends to `## Report` as
+    the work is produced. The flags that chose between five sections, and the
+    pair that chose between writing over a prefilled `[]` and adding after it,
+    are gone with the sections they sorted -- nothing downstream reads which
+    heading a fact arrived under, so nothing asks the child to pick one.
+    """
     args = list(rest)
     assignment_seal = _extract_flag(args, '--assignment-seal')
     dispatch_id = _extract_flag(args, '--dispatch-id')
     record_id = _extract_flag(args, '--record-id')
     written_by = _extract_flag(args, '--by')
-    section = _extract_flag(args, '--section')
     file_arg = _extract_flag(args, '--file')
     text_arg = _extract_flag(args, '--text')
-    append = '--append' in args
-    while '--append' in args:
-        args.remove('--append')
-    replace = '--replace' in args
-    while '--replace' in args:
-        args.remove('--replace')
-    if append and replace:
-        return {'error': f'result takes one of --append or --replace, not both: they are the two ways to write a section that already carries content. usage: {RESULT_USAGE}'}
     stray = next((arg for arg in args if arg.startswith('-')), None)
     if stray is not None:
-        return {'error': f'result does not accept {stray}: it writes body sections only, never frontmatter — commit the reserved outcome envelope, then let orch-integrate call dispatch-join. usage: {RESULT_USAGE}'}
+        return {'error': f'result does not accept {stray}: it writes body sections only, never frontmatter — commit the reserved outcome envelope, then let the caller land it. usage: {RESULT_USAGE}'}
     if len(args) != 2:
         return {'error': f'usage: {RESULT_USAGE}'}
     run, ticket_id = args
@@ -100,11 +72,6 @@ def _result_under_run_lock(rest):
     written_by = written_by.strip()
     if any(mark in written_by for mark in ('`', '\r', '\n')):
         return {'error': 'result --by contains a character that cannot form one canonical writer attribution: backticks and line breaks are refused'}
-    if section is None:
-        return {'error': f'result requires --section <name>, one of {list(EXECUTOR_SECTIONS)}'}
-    canonical = EXECUTOR_SECTIONS_BY_KEY.get(section.strip().strip('#').strip().lower())
-    if canonical is None:
-        return {'error': f"section '{section}' is not one of the sections an executor writes: {list(EXECUTOR_SECTIONS)}"}
     if file_arg is not None and text_arg is not None:
         return {'error': 'result takes one of --file <path> or --text <string>, not both'}
     if file_arg is None and text_arg is None:
@@ -117,18 +84,19 @@ def _result_under_run_lock(rest):
         body = text_arg
     if body is None:
         return {"error": f"result requires a readable body from --file <path> or --text <string>. usage: {RESULT_USAGE}"}
-    if any((line.startswith('## ') for line in body.splitlines())):
-        return {'error': f"a '## {canonical}' body may not contain a level-2 heading ('## ...'): it would be read as a sibling ticket section. Use '###' or deeper for sub-headings inside a section"}
+    # A level-2 heading in the body is the writer's, not a sibling section:
+    # `tickets_markdown` indent-quotes it on the way in and takes the quote
+    # off on the way out, so `## Findings` inside `## Report` is filed as
+    # written and read back byte for byte.
     if any((line.startswith(RESULT_ATTRIBUTION_PREFIX) for line in body.splitlines())):
         return {'error': f"a result body may not contain the canonical writer attribution prefix '{RESULT_ATTRIBUTION_PREFIX}': tickets.py adds exactly one for this write"}
     tickets_root = _tickets_root()
     if tickets_root is None:
         return {'error': NO_SINK_ERROR}
     ticket_path = tickets_root / run / f'{ticket_id}.md'
-    request_mode = 'append' if append else ('replace' if replace else 'write')
     content = {
-        'assignment_seal': assignment_seal, 'body': body, 'mode': request_mode,
-        'operation': 'result', 'section': canonical, 'writer': written_by,
+        'assignment_seal': assignment_seal, 'body': body,
+        'operation': 'result', 'writer': written_by,
     }
     if set(content) != set(DISPATCH_RESULT_RECORD_FIELDS):
         return {"error": "result record shape is not the generated dispatch result shape"}
@@ -137,33 +105,23 @@ def _result_under_run_lock(rest):
         recorded = (str(data.get('run') or '').strip(), str(data.get('id') or '').strip())
         if recorded != (run, ticket_id):
             return text, None, {'error': f'ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded[0] or "<missing>"}/{recorded[1] or "<missing>"}'}
-        status = str(data.get('status') or '').strip().strip('`')
+        status = dequote(data.get('status'))
         if status != 'claimed':
             return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
-        if str(data.get('claimed_by') or '').strip() != written_by:
+        if lease_of(data)[0] != written_by:
             return text, None, {'code': 'identity-mismatch', 'error': 'result writer does not match the current ticket claimant', 'protocol': PROTOCOL}
-        critique_failure = _validate_critique_body(ticket_id, canonical, body)
-        if critique_failure is not None:
-            return text, None, critique_failure
-        prior = _section_body(text, canonical)
-        sentinel = prior == SECTION_SENTINEL
-        effective_append = append and not sentinel
-        if replace and not sentinel:
-            return text, None, {'error': f"executor-owned section '## {canonical}' is append-only except over the cut sentinel {SECTION_SENTINEL}; pass --append. ticket: {ticket_path}"}
-        if prior and not sentinel and not append and not replace:
-            return text, None, {'error': f"'## {canonical}' already carries content: refusing to overwrite it silently. Pass --append to add after it. ticket: {ticket_path}"}
+        prior = _section_body(text, REPORT_SECTION)
         try:
             rendered = _write_section(
-                text, canonical,
+                text, REPORT_SECTION,
                 f'{RESULT_ATTRIBUTION_PREFIX}`{written_by}`\n\n{body}',
-                effective_append,
+                bool(prior),
             )
         except TicketFormatError as error:
             return text, None, {'error': f'{error}. ticket: {ticket_path}'}
-        mode = 'write' if sentinel else request_mode
         success = {'result': {
             'protocol': PROTOCOL, 'run': run, 'id': ticket_id,
-            'path': str(ticket_path), 'section': canonical, 'mode': mode,
+            'path': str(ticket_path),
             'by': written_by, 'assignment_seal': assignment_seal,
             'dispatch_id': dispatch_id, 'record_id': record_id,
         }}
@@ -254,11 +212,15 @@ def _cmd_run_state(rest):
     if '--tree' in rest:
         index = list(rest).index('--tree')
         tree = rest[index + 1] if index + 1 < len(rest) else None
-    if not rest or _segment_error('run id', rest[0]) is not None or ('--tree' in rest and tree not in RUN_STATE_TREES):
+    # A named tree that is not one of the four is the body's refusal, not a
+    # lock's: nothing is written, and the message names the closed set.
+    if not rest or ('--tree' in rest and tree not in RUN_STATE_TREES):
         return _run_state_under_run_lock(rest)
     try:
-        with _run_lock(rest[0]):
+        with locked_run_write(rest[0]):
             return _run_state_under_run_lock(rest)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {'error': f'unwritable run state: {error}'}
 def _run_state_under_run_lock(rest):

@@ -33,10 +33,16 @@ NAVIGATION = (
     ("friction", "Friction", "/friction", False, ""),
 )
 VIEW_IDS = {"now", "run-map", "ticket", "sessions", "session-graph", "friction"}
+# The current ticket grammar first, then the section names the sink still
+# holds. This viewer is the one consumer that reads user state written under
+# earlier contracts -- history is never rewritten (contracts/work-item.md) --
+# and it writes nothing, so reading a name no writer produces any more shows a
+# reader what is there rather than reviving a filing route.
 VISIBLE_SECTIONS = (
-    "Goal", "Context", "Suggested files", "Result", "Verification",
-    "Feedback", "Risks", "Handoff",
+    "Goal", "Context", "Details", "Report",
+    "Result", "Verification", "Feedback", "Risks", "Handoff",
 )
+REPORT_SECTION = "Report"
 FRICTION_FIELDS = ("ts", "host", "observed", "expected", "run", "ticket")
 WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^\s`\"'<>]+"
@@ -181,7 +187,6 @@ def _ticket_summary(ticket: dict, explanations: dict, indexed: dict, malformed_i
 
 def _redact_host_paths(text: str, root: Path, ticket: dict) -> str:
     known = [str(root), root.as_posix(), _text(ticket.get("path"))]
-    known.extend(_text(item) for item in ticket.get("suggested_files", ()))
     for marker in sorted((item for item in known if item), key=len, reverse=True):
         text = text.replace(marker, REDACTED_HOST_PATH)
     text = WINDOWS_HOST_PATH_RE.sub(REDACTED_HOST_PATH, text)
@@ -209,13 +214,13 @@ def _ticket_detail(ticket: dict, run_record: dict, root: Path, run: str) -> dict
             }
             for row in record["verification"]["rows"]
         ],
-        "result": _text(sections.get("Result")),
+        "result": _text(sections.get(REPORT_SECTION)) or _text(sections.get("Result")),
         "feedback": _text(sections.get("Feedback")),
         "risks": _text(sections.get("Risks")),
         "rationale": _rationale_identity(sections.get("Rationale")),
     }
     record["context"] = _redact_host_paths(_text(sections.get("Context")), root, ticket)
-    record["suggested_files"] = [_redact_host_paths(_text(item), root, {}) for item in ticket.get("suggested_files", ())]
+    record["details"] = _redact_host_paths(_text(ticket.get("details")), root, ticket)
     record["pack"] = _text(ticket.get("pack"))
     events = read_events(root, run)
     record["history"] = [

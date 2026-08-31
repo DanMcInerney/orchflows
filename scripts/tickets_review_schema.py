@@ -9,7 +9,6 @@ if __package__:
         REVIEW_CRITIQUE_FIELDS, REVIEW_FINDING_FIELDS, REVIEW_GATE_PLAN_FIELDS,
         REVIEW_CRITERION_FIELDS,
         REVIEW_RECORD_COMMON_FIELDS, REVIEW_REPAIR_FIELDS, REVIEW_STATE_REQUIRED,
-        REVIEW_VERIFICATION_FIELDS, REVIEW_VERIFICATION_REQUIRED,
         REVIEW_RECORD_COMMON_VALUES, REVIEW_STATE_VALUES,
         REVIEW_PROTOCOL as SHAPE_REVIEW_PROTOCOL,
     )
@@ -19,7 +18,6 @@ else:
         REVIEW_CRITIQUE_FIELDS, REVIEW_FINDING_FIELDS, REVIEW_GATE_PLAN_FIELDS,
         REVIEW_CRITERION_FIELDS,
         REVIEW_RECORD_COMMON_FIELDS, REVIEW_REPAIR_FIELDS, REVIEW_STATE_REQUIRED,
-        REVIEW_VERIFICATION_FIELDS, REVIEW_VERIFICATION_REQUIRED,
         REVIEW_RECORD_COMMON_VALUES, REVIEW_STATE_VALUES,
         REVIEW_PROTOCOL as SHAPE_REVIEW_PROTOCOL,
     )
@@ -140,39 +138,13 @@ def _shape(record: dict, index: int, plan: dict | None, *, legacy: bool) -> None
             if accepted != [item for member in members for item in member["accepted"]]:
                 raise SchemaError("aggregate CritiqueAdjudication rewrites the accepted set")
         return
-    fields = (
-        set(REVIEW_REPAIR_FIELDS)
-        if kind == "RepairOutcome" else set(REVIEW_VERIFICATION_REQUIRED)
-    )
-    # ``covers`` is optional for legacy review ledgers.  New fixed-result
-    # ledgers may carry the closed identities from contracts/verdict.md;
-    # retaining the old shape keeps already-issued gate records replayable.
-    if kind == "Verification" and "covers" in record:
-        fields = fields | {"covers"}
-    if set(record) != common | fields:
+    if set(record) != common | set(REVIEW_REPAIR_FIELDS):
         raise SchemaError(f"review record {index} {kind} has unknown or missing fields")
-    if kind == "RepairOutcome":
-        finding_values(record["accepted"], "RepairOutcome accepted")
-        if not isinstance(record["no_op"], bool) or any(
-            not nonempty(record[key]) for key in ("artifact", "by", "input_artifact", "result")
-        ):
-            raise SchemaError("RepairOutcome has an invalid field type")
-    elif record["verdict"] not in {"PASS", "FAIL", "UNVERIFIED"} or any(
-        not nonempty(record[key]) for key in ("artifact", "by", "evidence")
+    finding_values(record["accepted"], "RepairOutcome accepted")
+    if not isinstance(record["no_op"], bool) or any(
+        not nonempty(record[key]) for key in ("artifact", "by", "input_artifact", "result")
     ):
-        raise SchemaError("Verification has an invalid field type")
-    elif "covers" in record:
-        covers = record["covers"]
-        def valid_cover(value):
-            if isinstance(value, str):
-                return nonempty(value)
-            if isinstance(value, list):
-                return all(valid_cover(item) for item in value)
-            if isinstance(value, dict):
-                return all(nonempty(key) and valid_cover(item) for key, item in value.items())
-            return False
-        if not isinstance(covers, (dict, list)) or not covers or not valid_cover(covers):
-            raise SchemaError("Verification covers contains an empty identity")
+        raise SchemaError("RepairOutcome has an invalid field type")
 
 
 def validate_records(value, *, allow_legacy: bool = False) -> list:
@@ -206,7 +178,7 @@ def validate_records(value, *, allow_legacy: bool = False) -> list:
             plan = record
         elif record["kind"] == "GatePlan":
             raise SchemaError("review ledger contains more than one GatePlan")
-        expected = {"CritiqueAdjudication": "GatePlan", "RepairOutcome": "CritiqueAdjudication", "Verification": "RepairOutcome"}.get(record["kind"])
+        expected = {"CritiqueAdjudication": "GatePlan", "RepairOutcome": "CritiqueAdjudication"}.get(record["kind"])
         if expected and records[index - 1]["kind"] != expected:
             raise SchemaError(f"{record['kind']} does not follow {expected}")
         if record["kind"] == "RepairOutcome":
@@ -217,7 +189,5 @@ def validate_records(value, *, allow_legacy: bool = False) -> list:
                 raise SchemaError("RepairOutcome input artifact differs from GatePlan")
             if record["no_op"] and (record["accepted"] or record["artifact"] != plan["artifact"]):
                 raise SchemaError("RepairOutcome no-op bypasses accepted blockers or changes artifact")
-        if record["kind"] == "Verification" and record["artifact"] != records[index - 1]["artifact"]:
-            raise SchemaError("Verification names a different repaired artifact")
         prior = record["identity"]
     return records

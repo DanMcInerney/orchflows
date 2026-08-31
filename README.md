@@ -15,7 +15,8 @@ just talk; it picks the right workflow.
 
 Works with Claude Code, Codex and Grok Build, on Windows, macOS, and
 Linux. It configures whichever CLI it finds. To update: `git pull`,
-rerun.
+rerun. `python install.py doctor --quick` answers, in one line, whether
+what is installed still matches the checkout you are standing in.
 
 Each host keeps its own user-scope surface under its own home, and each
 home has an override the installer follows: `CLAUDE_CONFIG_DIR`,
@@ -76,8 +77,10 @@ Nothing marks "done" except an external check passing.
 
 Routing projects four shapes: `answer` when evidence already decides,
 `single` for one ordinary ticket, `graph` for a frozen root that needs
-decomposition, and `spec` when that root must first be settled. Known-cause
-work enters the smallest of those shapes; an unknown-cause failure uses fix.
+decomposition, and `outline` when that root must first be settled — the
+`orch-outline` planner freezes and seals it. Known-cause
+work enters the smallest of those shapes; an unknown-cause failure uses fix,
+which is a disambiguation between two of them rather than a fifth shape.
 Everything else runs only when you name it, so the routing table never
 grows as the library does. The table is installed at
 `~/.orchflows/host-block.md`, the one surface every turn already pays
@@ -86,7 +89,7 @@ the way, the router's off flag stands it down for the session.
 
 Name the bricks yourself when you want a specific shape:
 
-    > orch-loop the build until `pytest -q` exits 0
+    > loop the build until `pytest -q` exits 0
     > orch-check this cache design — rank what it gets wrong
     > evolve this blog post — no benchmark, derive a blind judge panel
     > evolve the summarizer prompt against the frozen benchmark
@@ -100,7 +103,7 @@ Or build your own workflow in plain English:
 That gets admitted as a named workflow — a directory of ticket stubs
 with the edges between them written down and one end-to-end done check
 on the last one. It's project-local and callable by name from then on,
-like a `/site-work-and-merge` you own; `orch-frontier` runs it.
+like a `/site-work-and-merge` you own; two commands per ticket run it.
 
 Runs survive session death: every ticket is a file in one per-user
 state sink outside every repository, so a fresh context — in any
@@ -108,17 +111,17 @@ checkout — resumes mid-flight. What a ticket is — anatomy, lifecycle,
 review, failure handling — is [TICKETS.md](TICKETS.md).
 
 Team setup: each teammate runs the user install. Repository-local custom
-skills and compositions are ordinary repository work under
+skills and workflows are ordinary repository work under
 `<repo>/.orchflows`, governed by
 [custom workflow authoring](docs/custom-workflow-authoring.md); they are not an installation scope. Uninstall:
 `python install.py --user --uninstall` removes only what it generated;
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
-package and template, `four` mints only `orch-spec`, `orch-frontier`,
-and `fix` and leaves every other name to resolve at
+package and template, `four` mints only `orch-outline` and
+`orch-slice` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
-[profiles.md](skills/engines/orch-frontier/references/profiles.md). Edit
+[profiles.md](hosts/profiles.md). Edit
 a rendered role agent to run your own; installs ask before replacing it
 and keep it by default.
 
@@ -129,7 +132,7 @@ and keep it by default.
 Every run auto-logs its friction — retries, missing inputs,
 workarounds — under an always-on law, and `trace.py` extracts each
 session's requests, narration and tool calls into one event record.
-the improvement composition mines those logs into proposals you accept or
+the improvement workflow mines those logs into proposals you accept or
 reject, each scoped to where the change lands: your **environment** (a
 missing interpreter, a broken tool), your **project** (code or docs
 that keep causing friction), or the **workflows** themselves. Real
@@ -141,26 +144,26 @@ proposals from my own usage:
 - Remove overlapping verification steps from a workflow to speed it up
 - Add a documentation-update step a user kept requesting manually
 
-Chain any bricks and put the improvement composition last and you have a
+Chain any bricks and put the improvement workflow last and you have a
 workflow that upgrades itself:
 
     > my release workflow: investigate what merged since the last
       tag → a root ticket for the release notes under the content pack
       → improvement proposal
 
-The coolest part: it runs on itself. I run the improvement composition across
+The coolest part: it runs on itself. I run the improvement workflow across
 all sessions in a project, then point a second run at the first one.
 
 ### Tournaments: evolve and benchmaker
 
-The `benchmaker` composition builds a qualified benchmark for any
+The `benchmaker` workflow builds a qualified benchmark for any
 target with an observable outcome — a prompt, a skill, a script. The
-`evolve` composition then runs a tournament against it:
+`evolve` workflow then runs a tournament against it:
 bounded generations planned deterministically from settled public outcomes,
 blind judges, and promotion only when a frozen rule and margin are beaten.
 Together they turn "make this
 better" into a measured campaign instead of vibes. The dataflow is in
-[compositions/benchmaker/template.md](compositions/benchmaker/template.md);
+[example-workflows/benchmaker/template.md](example-workflows/benchmaker/template.md);
 `skill-tournament` applies
 the same loop to the library's own skills.
 
@@ -169,22 +172,21 @@ the same loop to the library's own skills.
 `orch-execute` renders a supplied subject as a verified visual page when
 the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
-[`orch-spec`](skills/workflows/orch-spec/SKILL.md),
-[`orch-decompose`](skills/kernel/orch-decompose/SKILL.md), and
-[`orch-frontier`](skills/engines/orch-frontier/SKILL.md);
+[`orch-outline`](skills/workflows/orch-outline/SKILL.md) and
+[`orch-slice`](skills/kernel/orch-slice/SKILL.md);
 [verification](rules/verification.md) owns acceptance. This view shows
 only the checker-or-gate choice; that rule owns the other ordinary paths and
 their details:
 
 ```mermaid
 flowchart TD
-    spec["orch-spec — freeze one root ticket"] --> pack{"stamp a domain pack"}
-    pack --> dec["orch-decompose — cut ordered units"]
-    dec --> frontier["orch-frontier — dispatch ready units"]
+    outline["orch-outline — freeze one root ticket"] --> pack{"stamp a domain pack"}
+    pack --> dec["orch-slice — cut ordered units"]
+    dec --> frontier["tickets.py dispatch — one launch per ready unit"]
     frontier --> exec["unit executor"]
     exec --> path{"independence path"}
-    path -->|unit-local| checker["durable &lt;id&gt;.check — packet, receipt, outcome, join"]
-    path -->|gate-deferred| join["orch-integrate — each return crosses once"]
+    path -->|unit-local| checker["durable &lt;id&gt;.check — launch, outcome, join"]
+    path -->|gate-deferred| join["tickets.py land — each return crosses once"]
     checker --> join
     join -->|named downstream gate| gate["composite gate"]
     join -->|otherwise| accepted["accepted result"]
@@ -214,22 +216,44 @@ self-improvement wired into every run.
 
 ### Legos
 
-- **One brick, one job.** `orch-frontier` runs the graph,
-  `orch-check` challenges Goal and evidence, its typed verify lane independently
-  decides Goal, `orch-loop` iterates, and the `fix` workflow proves the cause
-  before repairing it.
+- **One brick, one job.** `orch-outline` freezes the root, `orch-slice`
+  cuts it, `orch-execute` builds each unit,
+  `orch-check` challenges Goal and evidence, a ticket's `done` predicate
+  decides Goal at `land`, and its loop field iterates it. The graph itself
+  is not a brick: two commands run it.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
   outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
-  status, writer, and evidence. The durable result identity then feeds any
+  writer, and evidence. The durable result identity then feeds any
   successor's evidence. A named workflow is just
   tickets with the edges between them written down, so a chain needs
   no per-pair glue.
 
 You snap bricks by naming them; the agent snaps them by routing. Same
 bricks either way.
+
+### Two verbs move a child
+
+Sending work to a subagent and getting it back used to be a hand-typed
+sequence — read the host file, pick the model, write the child's prompt,
+then import, join, and clean up afterwards. Each of those is now one command.
+
+`tickets.py dispatch` is the whole outbound half in one transaction: it
+admits the ticket, creates the isolated worktree the child will work in,
+opens the attempt, and hands back one `launch` object naming the exact
+agent, model and effort, and carrying the whole prompt the child is given
+— the ticket's path, its workspace, the interpreter, the pack's craft, the
+filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
+half: import the result, adjudicate it at the join, retire the worktree,
+and report what became ready to dispatch next.
+
+That split is the honest line between mechanical and judgment. Both
+commands are pure bookkeeping — replayable, refusing before they touch
+anything. What stays a judgment call is what the work *is* and whether
+it is good: the root, the cut, the review. The granular commands are
+still there for recovery; nothing needs them on a healthy path.
 
 ### Skills and workflows
 
@@ -238,12 +262,10 @@ bricks either way.
     ├── Layer 0 · contracts/ — the narrow waist: hash-pinned data shapes, the only
     │                         interface between everything above them
     ├── Layer 1 · skills/    — everything callable: kernel/ primitives that call no
-    │                         skill, engines/ that add control flow, workflows/
-    │                         assembled from both, instances/ that do a domain's
-    │                         hands-on work, utilities/
-    ├── Layer 2 · packs/     — per-domain data (code, content, research, design),
+    │                         skill, workflows/ assembled from them
+    ├── Layer 2 · packs/     — per-domain data (code, content, research, design, data),
     │                         never control flow
-    └── Layer 3 · compositions/ — named workflows, callable like any skill
+    └── Layer 3 · example-workflows/ — named workflows, callable like any skill
 
 Four layers, dependencies pointing one way. `ARCHITECTURE.md` is the
 codemap — what lives where, who owns it — and `ls` is the current list;
@@ -256,17 +278,26 @@ this README does not keep a second copy of it.
     │                        workspace: git, one worktree per work item
     ├── orch-content-pack  — delivers documents   · artifact evidence     · executor orch-execute, assembly stage
     │                        workspace: document tree with outline slots
+    ├── orch-data-pack     — delivers analyses    · reproduction evidence · executor orch-execute, assembly stage
+    │                        workspace: git, datasets pinned by digest manifest
     ├── orch-design-pack   — delivers rendered UI · capture evidence      · executor orch-execute
     │                        workspace: git plus render (view × breakpoint × state)
     └── orch-research-pack — delivers answers     · source evidence       · executor orch-execute, assembly stage
                              workspace: evidence store of lane packets
 
 A pack is pure data — no control flow. It supplies the domain's
-vocabulary, artifact evidence, executors, workspace rules, and design
-principles, all satisfying one frozen pack-signature, so everything the
-library builds inside a domain stays cohesive. Stamp a different pack
-on the root ticket and the identical pipeline ships code, documents,
-research, or UI.
+vocabulary, artifact evidence, workspace rules, and design principles,
+all satisfying one frozen pack-signature, so everything the library
+builds inside a domain stays cohesive. Stamp a different pack on the
+root ticket and the identical pipeline ships code, documents, research,
+analyses, or UI.
+
+Each pack is read three ways, one per verb — its **execute** taste when
+work is produced, its **check** taste when work is challenged, and its
+**outline** taste at intake, telling the planner what a well-formed
+frozen root looks like in that domain and which questions are worth
+asking before sealing one. Same data, three projections; the signature
+says which cells each gets.
 
 ### Advantages over Anthropic's Dynamic Workflows
 

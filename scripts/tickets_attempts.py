@@ -13,10 +13,11 @@ if __package__:
     from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
     from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS, accepted_receipt_failure,
+        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
-        record_id_is_reserved as _record_id_is_reserved, state as _state,
+        record_id_is_reserved as _record_id_is_reserved,
+        record_id_namespace_ok as _namespace_ok, state as _state,
         validate_state as _validate_state,
     )
     from .tickets_store import (
@@ -32,10 +33,11 @@ else:
     import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
     from tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PACKET_RECORD_ID, RECEIPT_RECORD_ID, PROTOCOL,
-        RECORD_KINDS, accepted_receipt_failure,
+        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
-        record_id_is_reserved as _record_id_is_reserved, state as _state,
+        record_id_is_reserved as _record_id_is_reserved,
+        record_id_namespace_ok as _namespace_ok, state as _state,
         validate_state as _validate_state,
     )
     from tickets_store import (
@@ -59,34 +61,8 @@ DISPATCH_REPLACE_USAGE = (
     "dispatch-replace <run> <id> --assignment-seal <seal> "
     "--dispatch-id <current-id> --record-id <lifecycle:id> "
     "--replacement-dispatch-id <new-id> --by <name> "
-    "--lease-expires-at <absolute-iso>"
+    "--lease-expires-at <absolute-iso> [--supersede-live]"
 )
-
-def attempt_window(data: dict):
-    """Return the current attempt's immutable clock from the state owner."""
-    state, failure = _state(data)
-    if failure is not None or state is None:
-        return None, failure
-    attempts = state["attempts"]
-    if not attempts:
-        return None, _classification(
-            "dispatch-record-invalid", "dispatch_v1 has no execution attempt"
-        )
-    attempt = next(
-        (item for item in reversed(attempts) if item.get("state") == "live"),
-        attempts[-1],
-    )
-    opened = _parse_iso(attempt.get("opened_at"))
-    expires = _parse_iso(attempt.get("lease_expires_at"))
-    if opened is None or expires is None:
-        return None, _classification(
-            "dispatch-record-invalid", "dispatch attempt has no absolute lease window"
-        )
-    return {
-        "attempt": attempt,
-        "opened_at": opened,
-        "lease_expires_at": expires,
-    }, None
 
 def _open_response(run: str, ticket_id: str, attempt: dict, outcome: str) -> dict:
     return {"dispatch": {
@@ -147,15 +123,10 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
             status = str(data.get("status") or "")
             if state is None and status in ("claimed", "suspended"):
                 return _classification(
-                    "legacy-live-claim",
-                    "pre-v1 live claim must be completed or abandoned by its existing owner before dispatch-v1 cutover",
+                    "claim-without-dispatch",
+                    "a live claim exists only as a dispatch-v1 attempt; this claimed ticket has no dispatch record",
                 )
             seal = str(data.get("assignment_seal") or "").strip()
-            findings = seal_findings(ticket_id, text)
-            if findings:
-                return _classification(
-                    "assignment-mismatch", "ticket assignment is not sealed at its current semantic generation"
-                )
             request = {
                 "assignment_seal": seal,
                 "dispatch_id": dispatch_id,
@@ -167,13 +138,27 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                 (attempt for attempt in attempts if attempt.get("dispatch_id") == dispatch_id),
                 None,
             )
+            # contracts/dispatch.md's attempt precedence, which `_commit_record`
+            # already keeps: an exact replay of an opened dispatch_id returns
+            # its stored success first, and only an unseen open may then be
+            # classified assignment-mismatch. Graded the other way round, a
+            # retry of the very call that opened the attempt was refused for
+            # the seal it had itself been opened against.
             if same is not None:
                 prior = {key: same.get(key) for key in request}
                 if prior == request:
                     return _open_response(run, ticket_id, same, "replayed")
                 return _classification(
                     "idempotency-conflict",
-                    f"dispatch_id '{dispatch_id}' was already opened with different content",
+                    f"dispatch_id '{dispatch_id}' was already opened with different "
+                    "content; `tickets.py dispatch` retires a failed attempt "
+                    "automatically, so open a fresh --dispatch-id instead of "
+                    "reusing this one, or run `tickets.py dispatch-replace` to "
+                    "replace a still-live attempt explicitly",
+                )
+            if seal_findings(ticket_id, text):
+                return _classification(
+                    "assignment-mismatch", "ticket assignment is not sealed at its current semantic generation"
                 )
             failure = dispatch_guards.admission_failure(path, text, data, run, ticket_id)
             if failure is not None:
@@ -203,23 +188,27 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
             encoded = canonical_json({"attempts": attempts, "protocol": PROTOCOL})
             updated = _set_frontmatter_field(text, "dispatch_v1", encoded)
             updated = _set_frontmatter_field(updated, "status", "claimed")
-            updated = _set_frontmatter_field(updated, "claimed_by", owner)
-            updated = _set_frontmatter_field(updated, "claimed_at", attempt["opened_at"])
             _write_text_atomically(path, updated)
             return _open_response(run, ticket_id, attempt, "opened")
     except OSError as error:
         return {"error": f"unable to open dispatch attempt: {error}"}
 
-def _record_response(
-    run: str, ticket_id: str, dispatch_id: str, record_id: str, content
-) -> dict:
+def _record_response(run: str, ticket_id: str, dispatch_id: str, record_id: str) -> dict:
+    """The stored success for one committed record: its identity alone.
+
+    Not the content. Every record already stores that once, as the
+    canonical string the `(dispatch_id, record_id)` idempotency
+    comparison is made against, and the second copy under this success
+    was ~73% of a gate ticket's bytes -- 275 KB on the largest one.
+    A caller that wants the content reads the record.
+    """
+
     return {"committed_record": {
         "protocol": PROTOCOL,
         "run": run,
         "id": ticket_id,
         "dispatch_id": dispatch_id,
         "record_id": record_id,
-        "content": content,
     }}
 
 def _commit_record(
@@ -238,14 +227,7 @@ def _commit_record(
             return failure
     if record_kind not in RECORD_KINDS:
         return _classification("record-kind-invalid", f"unknown record kind '{record_kind}'")
-    owned = {
-        "packet": record_id == PACKET_RECORD_ID,
-        "receipt": record_id == RECEIPT_RECORD_ID,
-        "outcome": record_id == OUTCOME_RECORD_ID,
-        "join": record_id.startswith("join:"),
-        "lifecycle": record_id.startswith("lifecycle:"),
-    }
-    if record_kind in owned and not owned[record_kind]:
+    if record_kind not in ("generic", "result") and not _namespace_ok(record_kind, record_id):
         return _classification("record-id-invalid", f"{record_kind} operation used another record namespace")
     if record_kind in ("generic", "result") and _record_id_is_reserved(record_id):
         return _classification("record-id-reserved", f"record_id '{record_id}' belongs to a protocol-owned operation")
@@ -270,8 +252,8 @@ def _commit_record(
             if state is None:
                 if str(data.get("status") or "") in ("claimed", "suspended"):
                     return _classification(
-                        "legacy-live-claim",
-                        "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
+                        "claim-without-dispatch",
+                        "a live claim exists only as a dispatch-v1 attempt; this claimed ticket has no dispatch record",
                     )
                 return _classification("dispatch-mismatch", "ticket has no dispatch-v1 attempt")
             attempt = next(
@@ -294,7 +276,10 @@ def _commit_record(
                 if prior.get("content") != normalized:
                     return _classification(
                         "idempotency-conflict",
-                        f"record_id '{record_id}' was already committed with different content",
+                        f"record_id '{record_id}' was already committed with "
+                        "different content; choose a different --record-id for "
+                        "new content, or match the original content exactly to "
+                        "replay it",
                     )
                 success = prior.get("success")
                 if not isinstance(success, dict):
@@ -325,12 +310,8 @@ def _commit_record(
                 return _classification(
                     "identity-mismatch", "result writer does not match the dispatch attempt owner"
                 )
-            if record_kind in ("result", "outcome", "join"):
-                failure = accepted_receipt_failure(attempt)
-                if failure is not None:
-                    return failure
             if mutate is None:
-                success = _record_response(run, ticket_id, dispatch_id, record_id, content)
+                success = _record_response(run, ticket_id, dispatch_id, record_id)
                 updated = text
             else:
                 updated, success, failure = mutate(text, data, attempt, state)
@@ -394,11 +375,11 @@ def _cmd_dispatch_retire(rest, *, _lock_held=False):
     }
 
     def retire(text, _data, attempt, _state_record):
-        if attempt.get("state") != "live":
-            return text, None, _classification(
-                "stale-attempt",
-                f"dispatch_id '{dispatch_id}' is already {attempt.get('state')}",
-            )
+        # No state guard here: `_commit_record` refuses an unseen record on an
+        # attempt whose state is not live as `stale-attempt` before any mutate
+        # runs, and an exact replay returns its stored success without
+        # reaching this at all. A second copy of that rule could only ever
+        # disagree with the one that decides.
         retired_at = datetime.now(timezone.utc).strftime(UTC_STAMP)
         response = {"dispatch": {
             "protocol": PROTOCOL,
@@ -431,6 +412,9 @@ def _cmd_dispatch_replace(rest):
     replacement_id = _extract_flag(args, "--replacement-dispatch-id")
     owner = _extract_flag(args, "--by")
     lease_text = _extract_flag(args, "--lease-expires-at")
+    supersede_live = "--supersede-live" in args
+    if supersede_live:
+        args.remove("--supersede-live")
     if len(args) != 2 or not all((
         assignment_seal, dispatch_id, record_id, replacement_id, owner, lease_text,
     )):
@@ -461,9 +445,15 @@ def _cmd_dispatch_replace(rest):
         if any(item.get("dispatch_id") == replacement_id for item in state["attempts"]):
             return text, None, _classification(
                 "idempotency-conflict",
-                f"replacement dispatch_id '{replacement_id}' was already used",
+                f"replacement dispatch_id '{replacement_id}' was already used; "
+                "choose a different --replacement-dispatch-id",
             )
         now = datetime.now(timezone.utc)
+        undeclared = dispatch_guards.undeclared_supersession_failure(
+            current, now, declared=supersede_live,
+        )
+        if undeclared is not None:
+            return text, None, undeclared
         if lease <= now:
             return text, None, _classification(
                 "lease-expired", "replacement lease is not later than the replacement time"
@@ -499,8 +489,6 @@ def _cmd_dispatch_replace(rest):
         current["replacement"] = response
         state["attempts"].append(replacement)
         updated = _set_frontmatter_field(text, "status", "claimed")
-        updated = _set_frontmatter_field(updated, "claimed_by", owner)
-        updated = _set_frontmatter_field(updated, "claimed_at", opened_at)
         return updated, response, None
 
     return _commit_record(

@@ -1,6 +1,6 @@
 """The grading context every ticket command builds the same way.
 
-`lint`, `ready`, `claim` and `packet` all grade one ticket against the same
+`lint`, `ready`, `claim` and `dispatch` all grade one ticket against the same
 two surroundings: the sibling texts of its run directory, and the run-state
 tree the sealed grader resolves its generation records from. Each built
 both for itself, and lint's copy of the second was empty -- so a sealed root

@@ -19,7 +19,7 @@
     "settings": "settings.json"
   },
   "frontmatter": {
-    "legal_keys": ["name", "description", "context", "agent"],
+    "legal_keys": ["name", "description", "context", "agent", "disable-model-invocation"],
     "role_fields": {"context": "fork", "agent": "orch-{role}"}
   },
   "launch": {

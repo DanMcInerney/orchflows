@@ -25,9 +25,9 @@ ROOT = Path(__file__).resolve().parents[1]
 # text graded below is the whole directory, stubs first, because the law
 # that used to be one composition body is now spread across the stubs
 # that carry it.
-EVOLVE = ROOT / "compositions" / "evolve"
-EVOLVE_GENERATION = ROOT / "compositions" / "references" / "evolve-generation.md"
-TOURNAMENT = ROOT / "compositions" / "skill-tournament"
+EVOLVE = ROOT / "example-workflows" / "evolve"
+EVOLVE_GENERATION = ROOT / "example-workflows" / "references" / "evolve-generation.md"
+TOURNAMENT = ROOT / "example-workflows" / "skill-tournament"
 # Since P4-3 the planner is a script and nothing else: the `orch-search-plan`
 # skill wrapped one command and one protocol in a dispatchable contract no
 # caller used as one — the campaign always named the bare filename. The
@@ -436,7 +436,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     # loop body's reduce. None of the four may reappear.
     executors = Counter(EXECUTOR_RE.findall(evolve))
     required = Counter(
-        {"orch-spec": 1, "orch-loop": 1, "orch-check": 2}
+        {"orch-outline": 1, "orch-execute": 1, "orch-check": 2}
     )
     if executors != required:
         errors.append("evolve-call-graph")
@@ -447,8 +447,8 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     if "executor: orch-check" not in eligibility:
         errors.append("eligibility-unit")
     # The campaign reuses the eligibility verdicts rather than re-taking
-    # them: it cites that stub's Result as its own fixed input.
-    if "01-eligibility's `## Result`" not in campaign:
+    # them: it cites that stub's report as its own fixed input.
+    if "01-eligibility's `## Report`" not in campaign:
         errors.append("generation-verify-binding")
     if re.search(r"^id:\s*04-", evolve, re.MULTILINE):
         errors.append("closing-wrapper")

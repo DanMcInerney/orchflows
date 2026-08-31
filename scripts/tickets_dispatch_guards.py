@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 if __package__:
+    from .tickets_admission import ADMISSION_PENDING
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_schema import classification
     from .tickets_format import _parse_iso
 else:
+    from tickets_admission import ADMISSION_PENDING
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_schema import classification
     from tickets_format import _parse_iso
@@ -34,11 +36,23 @@ def admission_failure(path, text: str, data: dict, run: str, ticket_id: str):
         return classification(
             "admission-mismatch", "ticket no longer has a valid sealed admission"
         )
-    if str(data.get("admission") or "") != grade["receipt"]:
+    stored = str(data.get("admission") or "")
+    if stored == grade["receipt"]:
+        return None
+    # A never-promoted ticket is the common half of this refusal and the only
+    # half with a mechanical remedy: it holds the pending placeholder because
+    # nothing has admitted it yet, and `ready` is the command that does. This
+    # is the door a claim on a pending ticket actually reaches -- the status
+    # check further down never sees it -- so the remedy is named here.
+    if stored == ADMISSION_PENDING:
         return classification(
-            "admission-mismatch", "ticket's stored admission receipt is not current"
+            "admission-mismatch",
+            "ticket has never been admitted: its receipt is still the pending "
+            f"placeholder. Promote it with `tickets.py ready --run {run}`",
         )
-    return None
+    return classification(
+        "admission-mismatch", "ticket's stored admission receipt is not current"
+    )
 
 
 def live_attempt_failure(attempts, now):
@@ -57,4 +71,31 @@ def live_attempt_failure(attempts, now):
     )
 
 
-__all__ = ("admission_failure", "live_attempt_failure", "origin_failure")
+def undeclared_supersession_failure(attempt, now, *, declared: bool):
+    """Refuse replacing work that is still inside the lease it was opened
+    under, unless the caller says that is what it means to do.
+
+    A caller cannot observe a child think.  Quiet is not evidence that the
+    child stopped -- the bound the attempt was opened under is the only
+    evidence this protocol has -- so superseding still-authorized work is a
+    declaration the caller makes, never one the transition infers from
+    silence.  Past the lease the attempt is stale and crosses freely.
+    """
+
+    if declared:
+        return None
+    expiry = _parse_iso(attempt.get("lease_expires_at"))
+    if expiry is None or now >= expiry:
+        return None
+    return classification(
+        "supersession-undeclared",
+        f"dispatch_id '{attempt.get('dispatch_id')}' holds a lease until "
+        f"{attempt.get('lease_expires_at')}; declare --supersede-live to "
+        "replace work that is still within its bound",
+    )
+
+
+__all__ = (
+    "admission_failure", "live_attempt_failure", "origin_failure",
+    "undeclared_supersession_failure",
+)

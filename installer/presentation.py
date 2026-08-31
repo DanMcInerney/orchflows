@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from scripts import orchflows_home
+
 from .foundation import (
     _claude_md_path,
     _claude_settings_path,
@@ -30,6 +32,13 @@ def print_plan(plan: Plan, source_commit: str | None) -> None:
         print(
             f"frontend distribution: {plan.frontend_action} {plan.frontend_home} "
             f"(manifest {plan.frontend_manifest_sha256})"
+        )
+    if plan.home_ring is not None:
+        print(
+            f"home ring: {plan.home_ring} "
+            f"({', '.join(orchflows_home.RING_DIRS)}, "
+            f"{orchflows_home.LIB_VERSION_NAME}, "
+            f"{orchflows_home.GITIGNORE_NAME} block)"
         )
     print()
     print(f"runtime directories ({len(plan.runtime_dirs)}):")

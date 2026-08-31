@@ -20,7 +20,7 @@ from tests.test_validator_cases.contracts_and_names import (
 )
 from tests.test_validator_cases.corpus_and_surfaces import (
     TestDuplicationCorpus,
-    TestLensAnchor,
+    TestCraftSections,
     TestLicensedCopies,
     TestWordBudgetAndLinks,
 )
@@ -72,10 +72,9 @@ class TestDomainBlindnessAdmission(_IsolatedTree):
         (pack / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: synthetic pack\n---\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| slicing | inline |\n| workspace | inline |\n"
-            "| required_spec_fields | inline |\n| craft | [references/craft.md](references/craft.md) |\n"
             "| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| lens | inline |\n| evidence | inline |\n",
+            "| assembly | none |\n"
+            "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
 
@@ -156,7 +155,7 @@ class TestPrivateReferenceAdmission(_IsolatedTree):
 
 
 class TestStructuralAdmissionMutants(_IsolatedTree):
-    def _write_skill(self, name, body, tier="instances", role="worker"):
+    def _write_skill(self, name, body, tier="kernel", role="worker"):
         path = self.tmp_path / "skills" / tier / name
         path.mkdir(parents=True)
         (path / "SKILL.md").write_text(
@@ -188,17 +187,17 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
         result = self._run()
         self.assertIn("Return must be the terminal paragraph", result.stdout)
 
-    def test_a_utility_call_edge_is_primitive_impurity(self):
+    def test_a_kernel_call_edge_is_primitive_impurity(self):
         self._write_skill(
             "orch-target", "Require: input.\nNever: skip.\nReturn: the completed ticket.\n"
         )
         self._write_skill(
             "orch-helper",
             "Require: input.\nCall `orch-target`.\nNever: skip.\nReturn: the completed ticket.\n",
-            tier="utilities",
+            tier="kernel",
         )
         result = self._run()
-        self.assertIn("utility skills are primitives", result.stdout)
+        self.assertIn("kernel skills are primitives", result.stdout)
 
     def test_pack_control_flow_is_rejected(self):
         self._write_pack(
@@ -213,7 +212,7 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
             "| slicing | inline |\n| workspace | inline |\n"
             "| required_spec_fields | inline |\n| craft | inline |\n"
             "| adapter | git |\n| adapter | git |\n| stages | [stage] |\n"
-            "| assembly | none |\n| lens | inline |\n| evidence | inline |"
+            "| assembly | none |\n| evidence | inline |"
         )
         self._write_pack(
             "orch-duplicate-pack",
@@ -257,6 +256,20 @@ class TestStructuralAdmissionMutants(_IsolatedTree):
 
     def test_pin_rewrite_requires_a_discriminating_supersession_record(self):
         subprocess.run(["git", "init"], cwd=self.tmp_path, check=True, capture_output=True)
+        # Auto-gc detaches and keeps writing .git/objects after the commit
+        # returns; the tempdir teardown then races it to ENOTEMPTY.
+        subprocess.run(
+            ["git", "config", "gc.auto", "0"],
+            cwd=self.tmp_path,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "gc.autoDetach", "false"],
+            cwd=self.tmp_path,
+            check=True,
+            capture_output=True,
+        )
         subprocess.run(
             ["git", "config", "user.email", "validator@example.invalid"],
             cwd=self.tmp_path,
@@ -320,23 +333,23 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
             validate._bind_root(saved)
 
     def test_schema_fixture_format_and_script_are_refused(self):
-        self._write("compositions/probe/template.md")
-        self._write("compositions/probe/state.schema.json", "{}\n")
-        self._write("compositions/probe/replay-fixtures.json", "{}\n")
-        self._write("compositions/probe/validate.py", "# executable machinery\n")
+        self._write("example-workflows/probe/template.md")
+        self._write("example-workflows/probe/state.schema.json", "{}\n")
+        self._write("example-workflows/probe/replay-fixtures.json", "{}\n")
+        self._write("example-workflows/probe/validate.py", "# executable machinery\n")
 
         findings = self._findings()
 
         for relative, kind in (
-            ("compositions/probe/state.schema.json", "schema"),
-            ("compositions/probe/replay-fixtures.json", "fixture format"),
-            ("compositions/probe/validate.py", "script"),
+            ("example-workflows/probe/state.schema.json", "schema"),
+            ("example-workflows/probe/replay-fixtures.json", "fixture format"),
+            ("example-workflows/probe/validate.py", "script"),
         ):
             with self.subTest(relative=relative):
                 self.assertTrue(
                     any(
                         line.startswith("ERROR " + relative)
-                        and "composition 'probe'" in line
+                        and "workflow 'probe'" in line
                         and kind in line
                         for line in findings
                     ),
@@ -344,12 +357,12 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
                 )
 
     def test_browser_game_is_the_one_dated_visible_exception(self):
-        self._write("compositions/browser-game/template.md")
+        self._write("example-workflows/browser-game/template.md")
         self._write(
-            "compositions/references/browser-game-checkpoint.schema.json", "{}\n"
+            "example-workflows/references/browser-game-checkpoint.schema.json", "{}\n"
         )
         self._write(
-            "compositions/references/browser-game-instance-fixtures.json", "{}\n"
+            "example-workflows/references/browser-game-instance-fixtures.json", "{}\n"
         )
         self._write("scripts/browser_game_validate.py", "# legacy validator\n")
 
@@ -370,12 +383,12 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         self.assertIn("script", exception[0])
 
     def test_removing_the_browser_game_entry_exposes_its_protocol_artifacts(self):
-        self._write("compositions/browser-game/template.md")
+        self._write("example-workflows/browser-game/template.md")
         self._write(
-            "compositions/references/browser-game-checkpoint.schema.json", "{}\n"
+            "example-workflows/references/browser-game-checkpoint.schema.json", "{}\n"
         )
         self._write(
-            "compositions/references/browser-game-instance-fixtures.json", "{}\n"
+            "example-workflows/references/browser-game-instance-fixtures.json", "{}\n"
         )
         self._write("scripts/browser_game_validate.py", "# legacy validator\n")
 
@@ -383,10 +396,10 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
 
         errors = [line for line in findings if line.startswith("ERROR ")]
         self.assertEqual(3, len(errors), findings)
-        self.assertTrue(all("composition 'browser-game'" in line for line in errors))
+        self.assertTrue(all("workflow 'browser-game'" in line for line in errors))
 
     def test_a_script_module_named_for_a_composition_is_refused_by_boundary(self):
-        self._write("compositions/probe/template.md")
+        self._write("example-workflows/probe/template.md")
         self._write("scripts/probe_validate.py", "# composition machinery\n")
         self._write("scripts/probeish.py", "# unrelated bounded stem\n")
 
@@ -395,21 +408,21 @@ class TestCompositionProtocolAdmission(_IsolatedTree):
         errors = [line for line in findings if line.startswith("ERROR ")]
         self.assertEqual(1, len(errors), findings)
         self.assertTrue(errors[0].startswith("ERROR scripts/probe_validate.py"), errors)
-        self.assertIn("composition 'probe'", errors[0])
-        self.assertIn("composition-named script machinery", errors[0])
+        self.assertIn("workflow 'probe'", errors[0])
+        self.assertIn("workflow-named script machinery", errors[0])
 
     def test_authoring_standard_states_the_protocol_boundary_and_exception(self):
         text = (ROOT / "docs" / "custom-workflow-authoring.md").read_text(
             encoding="utf-8"
         )
-        admission = text.split("## Composition admission", 1)
+        admission = text.split("## Workflow admission", 1)
 
-        self.assertEqual(2, len(admission), "missing Composition admission section")
+        self.assertEqual(2, len(admission), "missing Workflow admission section")
         for term in (
             "schema",
             "fixture format",
             "script",
-            "composition-named",
+            "workflow-named",
             "browser-game",
             "2026-08-28",
             "warning",

@@ -152,17 +152,21 @@ class AdapterIsolationAdmissionTest(unittest.TestCase):
             {item["code"] for item in graded["findings"]},
         )
 
-    def test_an_isolating_adapter_requires_isolation_for_any_executor(self):
+    def test_an_isolating_adapter_derives_isolation_for_any_executor(self):
+        from scripts.tickets_adapters import derived_isolation
+
+        self.assertEqual("required", derived_isolation(None, "orch-research-pack"))
+        self.assertEqual("none", derived_isolation(None, "orch-content-pack"))
+        # An explicit value is the rare declared override, taken as stated,
+        # so admission no longer grades what the derivation decides.
+        self.assertEqual("none", derived_isolation("none", "orch-research-pack"))
         text = ticket_text("orch-draft", pack="orch-research-pack").replace(
             "isolation: required", "isolation: none"
         )
         graded = admission.grade_admission("T1", text, {"T1": text})
         codes = {item["code"] for item in graded["findings"]}
         self.assertNotIn("executor-pack-mismatch", codes)
-        self.assertIn(
-            "vcs-isolation-required",
-            codes,
-        )
+        self.assertNotIn("vcs-isolation-required", codes)
 
 
 if __name__ == "__main__":

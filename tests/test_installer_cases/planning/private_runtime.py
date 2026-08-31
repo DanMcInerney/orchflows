@@ -43,7 +43,9 @@ class RuntimeVenvTests(unittest.TestCase):
                 "sys.modules[spec.name] = installer",
                 "spec.loader.exec_module(installer)",
                 f"with patch.object(installer.Path, 'home', return_value=Path({str(self.home)!r})), patch.object(installer, 'detect_hosts', return_value=(False, True, False)):",
-                "    raise SystemExit(installer.main(['--user', '--yes']))",
+                "    accepted = installer.resolve_source_commit()",
+                "    raise SystemExit(installer.main("
+                "['--user', '--yes', '--accepted-source', accepted]))",
             )
         )
         completed = subprocess.run(
@@ -67,10 +69,10 @@ class RuntimeVenvTests(unittest.TestCase):
     def test_user_install_reuses_healthy_private_runtime(self):
         self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             marker = install.private_runtime_home() / "reuse-marker"
             marker.write_text("keep", encoding="utf-8")
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
         self.assertEqual("keep", marker.read_text(encoding="utf-8"))
 
     def test_the_runtime_links_its_base_interpreter_rather_than_copying_it(self):
@@ -88,7 +90,7 @@ class RuntimeVenvTests(unittest.TestCase):
         if os.name == "nt":
             self.skipTest("Windows venvs copy: symlinking there needs a privilege")
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             runtime_home = install.private_runtime_home()
             runtime_python = install.private_runtime_python(runtime_home)
         self.assertFalse(runtime_python.resolve().is_relative_to(runtime_home.resolve()))
@@ -96,7 +98,7 @@ class RuntimeVenvTests(unittest.TestCase):
     def test_user_install_repairs_an_unhealthy_private_runtime(self):
         self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             runtime_home = install.private_runtime_home()
             marker = runtime_home / "unhealthy-marker"
             marker.write_text("remove me", encoding="utf-8")
@@ -105,7 +107,7 @@ class RuntimeVenvTests(unittest.TestCase):
             (runtime_home / install.RUNTIME_METADATA_FILENAME).write_text(
                 json.dumps(metadata) + "\n", encoding="utf-8"
             )
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
         self.assertFalse(marker.exists())
         self.assertTrue(install.private_runtime_is_healthy(runtime_home))
 
@@ -125,7 +127,7 @@ class RuntimeVenvTests(unittest.TestCase):
     def test_failed_repair_preserves_the_previous_runtime(self):
         self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             runtime_home = install.private_runtime_home()
             old_python = install.private_runtime_python(runtime_home)
             marker = runtime_home / "old-generation"
@@ -139,7 +141,7 @@ class RuntimeVenvTests(unittest.TestCase):
                 install, "_build_private_runtime", side_effect=RuntimeError("build failed")
             ):
                 with self.assertRaisesRegex(RuntimeError, "build failed"):
-                    install.apply_plan(install.build_plan("user", None))
+                    install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
         self.assertTrue(old_python.is_file())
         self.assertEqual("keep", marker.read_text(encoding="utf-8"))
 
@@ -150,7 +152,7 @@ class RuntimeVenvTests(unittest.TestCase):
         marker.write_text("keep", encoding="utf-8")
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             with self.assertRaisesRegex(RuntimeError, "unowned private runtime"):
-                install.apply_plan(install.build_plan("user", None))
+                install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
         self.assertEqual("keep", marker.read_text(encoding="utf-8"))
 
     def test_rendered_friction_command_executes_from_a_spaced_home(self):
@@ -158,7 +160,7 @@ class RuntimeVenvTests(unittest.TestCase):
         spaced_home = self.root / "home with spaces"
         spaced_home.mkdir()
         with patch.object(install.Path, "home", return_value=spaced_home), mock_host_clis("codex"):
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
         rendered = (spaced_home / ".codex" / "AGENTS.md").read_text(encoding="utf-8")
         shell = "PowerShell" if os.name == "nt" else "POSIX"
         command = next(
@@ -191,7 +193,7 @@ class RuntimeVenvTests(unittest.TestCase):
         self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
             self.assertEqual("create", install.build_plan("user", None).runtime_action)
-            install.apply_plan(install.build_plan("user", None))
+            install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             self.assertEqual("reuse", install.build_plan("user", None).runtime_action)
             metadata = install._runtime_metadata()
             metadata["requirements_sha256"] = "0" * 64
@@ -212,7 +214,7 @@ class RuntimeVenvTests(unittest.TestCase):
 
             with patch.object(install, "_create_private_runtime", side_effect=create_then_fail):
                 with self.assertRaisesRegex(RuntimeError, "later install step failed"):
-                    install.apply_plan(plan)
+                    install.apply_plan(plan, accepted_source=install.resolve_source_commit())
             receipt = json.loads(plan.receipt_path.read_text(encoding="utf-8"))
             report = install.run_uninstall("user", None, dry_run=True)
             runtime_home = install.private_runtime_home()
@@ -224,9 +226,9 @@ class RuntimeVenvTests(unittest.TestCase):
     def test_update_and_uninstall_follow_the_private_runtime_policy(self):
         self.use_copied_runtime_builds()
         with patch.object(install.Path, "home", return_value=self.home), mock_host_clis("codex"):
-            first = install.apply_plan(install.build_plan("user", None))
+            first = install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             runtime_home = install.private_runtime_home()
-            second = install.apply_plan(install.build_plan("user", None))
+            second = install.apply_plan(install.build_plan("user", None), accepted_source=install.resolve_source_commit())
             report = install.run_uninstall("user", None, dry_run=False)
         self.assertEqual(first["runtime"], second["runtime"])
         self.assertEqual(str(runtime_home), second["runtime"]["home"])

@@ -16,11 +16,16 @@ UNROUTED = "unrouted"
 ERROR = "error"
 ROLE_AGENT_TYPES = {"planner": "orch-planner", "worker": "orch-worker"}
 
-# The host block's routing table, read as transcript evidence.
+# The host block's routing table, read as transcript evidence. The route
+# class stays `spec`: it is the frozen expectation vocabulary of
+# `benchmarks/routing/cases.json`, and renaming it would rewrite a
+# benchmark whose results are already recorded against those labels. Only
+# the callable's own name moved.
+# `single` has no skill name any more: the driver issues and dispatches the
+# one ticket itself, so that route is only ever observed from Bash.
 ROUTING_SKILLS = {
-    "orch-frontier": "single",
-    "orch-decompose": "graph",
-    "orch-spec": "spec",
+    "orch-slice": "graph",
+    "orch-outline": "spec",
 }
 # Export the exact routed callable set for the live harness facade. All other
 # skill names are named invocations, never an implicit repair route.
@@ -32,7 +37,7 @@ ANSWER_LINE_RE = re.compile(r"^ROUTE:\s*answer", re.IGNORECASE | re.MULTILINE)
 BY_NAME_RE = re.compile(r"/by-name/([a-z0-9][a-z0-9-]*)/SKILL\.md", re.IGNORECASE)
 # The same name reached the other way: a template is instantiated from its
 # own directory under the installed library.
-TEMPLATE_RE = re.compile(r"/compositions/([a-z0-9][a-z0-9-]*)")
+TEMPLATE_RE = re.compile(r"/example-workflows/([a-z0-9][a-z0-9-]*)")
 
 
 def route_class(route: str) -> str:

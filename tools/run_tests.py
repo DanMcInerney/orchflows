@@ -41,7 +41,7 @@ TIMING_PATH = ROOT / ".orch" / "run_tests_record.json"
 # off the timing artifacts CI uploads; a leg with a cache never reads it.
 DEFAULT_COLD_ORDER = tuple("tests.test_" + _name for _name in (
     "installer_planning", "workspace", "serial_compat",
-    "installer_shared", "cutcheck", "tickets", "validate", "ui",
+    "installer_shared", "cutcheck", "tickets", "validate",
     "run_required", "affected_tests", "cell_linter",
 ))
 IMPORT_BOOTSTRAP_ROOTS = frozenset(
@@ -222,14 +222,16 @@ def schedule(modules, times, tests_dir=DEFAULT_TESTS_DIR):
 
     return sorted(modules, key=lambda name: (-times.get(name, float("inf")), name))
 
-def child_env() -> dict:
-    """Preserve the environment while pinning only child stdio to UTF-8."""
+def child_env(jobs: int = 1) -> dict:
+    """Pin child stdio to UTF-8; a parallel dispatch declares its worker count."""
 
     env = dict(os.environ)
     env["PYTHONIOENCODING"] = "utf-8"
+    if jobs > 1:  # so a child's wall-clock deadlines can see sibling starvation
+        env["ORCHFLOWS_TEST_PARALLELISM"] = str(jobs)
     return env
 
-def run_module(module: str, import_root: Path, verbosity: int) -> dict:
+def run_module(module: str, import_root: Path, verbosity: int, jobs: int = 1) -> dict:
     handle, result_path = tempfile.mkstemp(prefix="run_tests_", suffix=".json")
     os.close(handle)
     command = [
@@ -245,7 +247,7 @@ def run_module(module: str, import_root: Path, verbosity: int) -> dict:
     # in the console codepage, cp1252, and every non-ASCII character in an
     # assertion message reaches this process as U+FFFD.
     completed = subprocess.run(
-        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=child_env()
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=child_env(jobs)
     )
     finished = time.monotonic()
     duration = finished - started
@@ -485,7 +487,7 @@ def main(argv=None) -> int:
             finish(run_module(module, import_root, verbosity))
     else:
         with ThreadPoolExecutor(max_workers=jobs) as pool:
-            futures = [pool.submit(run_module, module, import_root, verbosity) for module in ordered]
+            futures = [pool.submit(run_module, module, import_root, verbosity, jobs) for module in ordered]
             for future in as_completed(futures):
                 finish(future.result())
     wall = time.monotonic() - started

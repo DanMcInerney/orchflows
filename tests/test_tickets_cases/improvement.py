@@ -1,6 +1,7 @@
 """Behavioral ticket regression cases."""
 
 from .identity_terminal import *  # noqa: F401,F403
+from .run_state_artifacts import *  # noqa: F401,F403
 
 def improvement_of() -> Path:
     """The sink's improvement tree, wherever ``use_sink`` last pointed."""
@@ -270,10 +271,11 @@ class TestImprovementWriter(unittest.TestCase):
             use_sink(Path(tmp))
             payload = run_cmd(Path(tmp))
             self.assertIn("improvement", payload["error"])
-        self.assertIn("Subcommands:", tickets_mod.__doc__)
-        listed = tickets_mod.__doc__.partition("Subcommands:")[2]
-        self.assertIn("improvement --proposal <name> (--file <path> | --text <string>)", listed)
-        self.assertIn("improvement --covered <line>", listed)
+        # `--help` owns the live command list (the module docstring says so),
+        # so the usage table is where the spelling is graded, not the prose.
+        usage = tickets_mod.SUBCOMMAND_USAGE["improvement"]
+        self.assertIn("--proposal <name> (--file <path> | --text <string>)", usage)
+        self.assertIn("--covered <line>", usage)
 class ExitConventionTest(unittest.TestCase):
     """Pin the exit convention: exit 1 when JSON has 'error', exit 0 otherwise."""
 
@@ -282,7 +284,7 @@ class ExitConventionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_repo(tmp, {})
-            result = run_full(tmp, "result", "no-run", "no-id", "--section", "Result", "--text", "x")
+            result = run_full(tmp, "result", "no-run", "no-id", "--text", "x")
             self.assertIn("error", result.stdout)
             self.assertEqual(1, result.returncode)
 
@@ -306,12 +308,12 @@ class ExitConventionTest(unittest.TestCase):
             self.assertNotIn("error", payload)
             self.assertEqual(0, result.returncode)
 
-    def test_error_exits_1_claim(self):
-        """An error path exits with code 1: claim on non-ready ticket."""
+    def test_error_exits_1_missing_ticket(self):
+        """An error path exits with code 1: a ticket the run does not hold."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             make_repo(tmp, {"T1": ("complete", "[]")})
-            result = run_full(tmp, "claim", "testrun", "T1", "--by", "test")
+            result = run_full(tmp, "show", "testrun", "T-absent")
             payload = json.loads(result.stdout)
             self.assertIn("error", payload)
             self.assertEqual(1, result.returncode)

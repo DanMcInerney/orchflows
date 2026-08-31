@@ -31,9 +31,7 @@ for _import_root in (_FACADE_ROOT, _FACADE_ROOT / "scripts", Path.cwd()):
         sys.path.insert(0, str(_import_root))
 
 import doclint
-from tools import render_lifecycle as _render_lifecycle
-from tools import render_hosts as _render_hosts_module
-from tools import render_shapes as _render_shapes_module
+from tools import regen as _regen
 
 from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
@@ -120,27 +118,16 @@ def validate_markdown_links(diag: Diagnostics) -> None:
         _restore_support(state)
 
 
-def validate_lifecycle_render(diag: Diagnostics) -> None:
-    """Refuse a missing or hand-edited lifecycle view."""
-    owners = (
-        ROOT / "scripts" / "tickets_transitions.py",
-        ROOT / "scripts" / "tickets_lifecycle.py",
-    )
-    target = ROOT / "docs" / "lifecycle.md"
-    missing = [path for path in owners if not path.is_file()]
-    if missing:
-        diag.warn("docs/lifecycle.md", "lifecycle render check skipped: transition owners are absent")
-        return
-    try:
-        actual = target.read_text(encoding="utf-8")
-    except OSError as error:
-        diag.error("docs/lifecycle.md", f"generated lifecycle table is unreadable: {error}")
-        return
-    if actual != _render_lifecycle.render():
-        diag.error(
-            "docs/lifecycle.md",
-            "generated lifecycle table drifted from transition code; run tools/render_lifecycle.py",
-        )
+def validate_regenerated_artifacts(diag: Diagnostics, names=None) -> None:
+    """Refuse any derived artifact whose generator would change its bytes.
+
+    `tools/regen.py` owns the artifact-to-generator declaration and every
+    comparison; this reports what it found, so a stale generated file fails
+    the five required checks rather than waiting for a sixth.
+    """
+
+    for finding in _regen.check(ROOT, names=names):
+        (diag.error if finding.level == "error" else diag.warn)(finding.label, finding.message)
 
 # --- documented paths resolve in the installed tree --------------------
 # install.py owns the installed layout, so its directory roster is imported
@@ -164,18 +151,40 @@ STATE_PATH_HEADS = ("tickets", "runs", "friction", "improvement", "references")
 # A path, not a command: no spaces, at least one separator. `tickets.py new`
 # and skill executors are not paths and never reach the resolver.
 DOCUMENTED_PATH_RE = re.compile(r"`([A-Za-z0-9_][A-Za-z0-9_.-]*/(?:[A-Za-z0-9_.-]+/?)*)`")
-# Non-navigation occurrences and not-yet-materialized UI design paths. Keys
-# are exact source lines so another occurrence is still graded.
+# Non-navigation occurrences and not-yet-materialized UI design paths. Keyed
+# by the sentence that carries the token, never by its line number: an
+# insertion anywhere above an exempt site silently moved the key off it and
+# the exemption then covered whatever line had taken the number. The marker
+# is a distinctive fragment of the carrying sentence, so the same token on
+# another line is still graded and a reworded sentence fails loudly here
+# rather than quietly widening the exemption.
 DOC_PATH_EXEMPT_SITES = frozenset({
-    ("contracts/pack-signature.md", 77, "tests/pins.json"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/api/client.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/api/schema.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/app/registry.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/feed.ts"),
-    ("reader/docs/modularization.md", 7, "reader/web/src/state/location.ts"),
-    ("reader/docs/modularization.md", 17, "app/catalog.ts"),
-    ("reader/docs/modularization.md", 55, "reader/web/src/state/location.ts"),
+    ("contracts/pack-signature.md", "tests/pins.json",
+     "share the same contract"),
+    ("reader/docs/modularization.md", "reader/web/src/api/client.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/api/schema.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/app/registry.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/feed.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
+     "remain separate central seams"),
+    ("reader/docs/modularization.md", "app/catalog.ts",
+     "Array order is rail/display order only"),
+    ("reader/docs/modularization.md", "reader/web/src/state/location.ts",
+     "There is no second registration or routing owner"),
 })
+
+
+def _doc_path_exempt(source_label: str, token: str, line: str) -> bool:
+    """Whether this occurrence of `token` is one of the recorded exemptions."""
+
+    return any(
+        path == source_label and exempt == token and marker in line
+        for path, exempt, marker in DOC_PATH_EXEMPT_SITES
+    )
 
 
 def _documented_path_finding(token: str, source: Path, root: Path):
@@ -228,33 +237,6 @@ def validate_documented_paths(diag: Diagnostics) -> None:
         _restore_support(state)
 
 
-def validate_rendered_hosts(diag: Diagnostics) -> None:
-    source = ROOT / "hosts"
-    rendered = ROOT / "installer" / "host_adapters"
-    if not source.is_dir() or not rendered.is_dir():
-        return
-    try:
-        _render_hosts_module.check_all(
-            source, rendered, ROOT / "templates" / "host-block.md"
-        )
-    except ValueError as error:
-        diag.error("hosts", str(error))
-
-
-def validate_shape_render(diag: Diagnostics) -> None:
-    """Refuse drift between the T0 declaration and its generated consumers."""
-
-    source = ROOT / "contracts" / "shapes.json"
-    validator = ROOT / "scripts" / "tickets_shapes.py"
-    if not source.is_file() or not validator.is_file():
-        diag.warn("contracts/shapes.json", "T0 shape render check skipped: declaration or validator is absent")
-        return
-    try:
-        _render_shapes_module.check(ROOT)
-    except (OSError, KeyError, ValueError) as error:
-        diag.error("contracts/shapes.json", f"generated T0 shape consumers are stale: {error}")
-
-
 def _validate_documented_paths_impl(diag: Diagnostics) -> None:
     """Resolve backticked paths across shipped prose; skip non-library fixtures."""
 
@@ -274,10 +256,10 @@ def _validate_documented_paths_impl(diag: Diagnostics) -> None:
             if not source.is_file():
                 continue
             text = _read_source(source)
-            for line_number, line in enumerate(text.splitlines(), 1):
+            for line in text.splitlines():
                 for match in DOCUMENTED_PATH_RE.finditer(line):
                     token = match.group(1)
-                    if (rel(source), line_number, token) in DOC_PATH_EXEMPT_SITES:
+                    if _doc_path_exempt(rel(source), token, line):
                         continue
                     finding = _documented_path_finding(token, source, root)
                     if finding is not None:
@@ -313,17 +295,16 @@ def _run_validation_impl() -> Diagnostics:
     validate_carriage(packages, diag)
     validate_cell_duplication(packages, diag)
     validate_cross_tier_duplication(packages, diag)
+    validate_generated_enum_copies(diag)
     validate_envelope(packages, diag)
     validate_composition_admission(diag)
     validate_templates(diag)
     validate_browser_game_traceability(diag, root=ROOT)
     validate_cross_package_links(packages, diag)
     validate_names(packages, diag)
-    validate_lens_anchor(packages, diag)
+    validate_craft_sections(packages, diag)
     validate_markdown_links(diag)
-    validate_lifecycle_render(diag)
-    validate_shape_render(diag)
-    validate_rendered_hosts(diag)
+    validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)
     validate_pins(diag)

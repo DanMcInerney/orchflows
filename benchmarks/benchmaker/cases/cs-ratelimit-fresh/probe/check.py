@@ -65,7 +65,7 @@ CLOCK_OPS = frozenset(("advance",))
 
 
 # ---- P0.e: the post-qualification manifest fields -------------------
-# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# `example-workflows/references/benchmaker-manifest.md` owns the eight. None is
 # re-derivable after the fact, so a package that omits one cannot be repaired
 # by a consumer. This case covers `incomparability`:
 # the injected clock is part of the scaffold, so a wall-clock score and an

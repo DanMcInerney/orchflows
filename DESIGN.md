@@ -105,15 +105,16 @@ bodies were mostly sequencing, and every recurring shape grew the
 routing table — the one surface every session pays for on every
 request. The replacement:
 
-- **The routing table stays fixed while the named tier grows.** Five
-  branches — answer, single, graph, spec, fix — and one closed rule: everything else
+- **The routing table stays fixed while the named tier grows.** Four
+  branches — answer, single, graph, and the intake verb since renamed
+  outline — and one closed rule: everything else
   runs only when named. Recurring shapes accumulate as templates under
-  `compositions/`, never in the dispatch prose (diluted attention: the
+  `example-workflows/`, never in the dispatch prose (diluted attention: the
   always-paid cost never grows).
 - **A template is tickets, not a second grammar.** A demoted pattern's
   law rides its stubs' Goal and Context; the combinators are the ticket graph's own — a `depends_on` edge,
   parallel stubs, a loop stub — so `tickets.py instantiate` writes a run
-  and `orch-frontier` drains it with no engine, contract or step file to
+  and the driver drains it with no engine, contract or step file to
   keep in step with the ticket contract (cheap generation: the gate is
   the same graded ticket shape every other item has).
 - **The envelope closes the algebra.** Every ticket attempt closes through
@@ -122,11 +123,12 @@ request. The replacement:
   identity becomes successor evidence with no per-pair glue (search is memory:
   one return shape, one name).
 
-Its open decisions closed as: ticket sets drained by `orch-frontier`,
+Its open decisions closed as: ticket sets drained by orch-frontier,
 proven on the `fix` fixture; Claude keeps all skill adapters — measured
 2026-08-16, the verdict and its caveat in benchmarks/routing/README.md;
 the delegation contract merged into `work-item.md`; orch-delegate (the
-skill) deleted; the domain instances and `orch-loop` kept.
+skill) deleted; the domain instances and the loop engine kept (the
+engine since absorbed into the driver as the ticket `loop` field, 2026-08-30).
 
 ## Why documentation is designed this way
 
@@ -156,7 +158,7 @@ Why this shape:
 
 - **A cell, not a loose reference.** Generic skills reference domain
   facts only through the stamped pack's cells
-  ([rules/composition.md](rules/composition.md) §9). `orch-spec` is
+  ([rules/composition.md](rules/composition.md) §9). `orch-outline` is
   generic and needs the nouns; reaching them any other way is a
   signature leak.
 - **One file, not vocabulary and design separately.** A good craft
@@ -276,6 +278,181 @@ forever while a parser can decay gracefully — `schema_confidence` and
 `parse_errors` price host drift instead of failing the run silently
 (cheap generation; diluted attention).
 
+## Why custom items live in rings
+
+Designed 2026-08-31 from an audit of this library's own scoping plus a
+fifteen-system survey (Claude Code, the cross-vendor agent-skills layer,
+GitHub Actions, pre-commit, VS Code, direnv/mise/nix, dbt, npm, cargo,
+krew, Homebrew, Terraform, oh-my-zsh, Obsidian, Emacs dir-locals). The
+audit's surprise was that this was greenfield rather than
+reorganization: project scope existed for packs alone, project skills
+had no reader at all, project workflows were documented in three places
+and read by nothing, and `/super-research` ran entirely outside the
+library through a hand-written host shim.
+
+- **Three rings, one bundle shape, one resolver.** Every surveyed system
+  that got scoping right uses one fixed, short, root-relative path per
+  kind and no configurable search path; GitHub Actions goes furthest and
+  forbids subdirectories. Two resolvers disagreeing about which file is
+  "the pack" was a live divergence here, so the order is stated once in
+  code and the bare `<dir>/packs` root that caused it is gone. The same
+  `.orchflows` directory is a project ring, the home ring's custom half,
+  and a publishable bundle, so nothing has to be reshaped to move
+  between them.
+- **The home ring is a git repository, not a config directory.** The
+  sync question — "how do I get my workflow onto the next machine" —
+  has a boring answer once the committed and regenerable halves are
+  separated by one `.gitignore`: clone, install, sync. Friction history
+  and run ledgers travel with the items, which is what makes the clone
+  worth having.
+- **Reference plus pin, never promotion.** GitHub spent four years on
+  "make this action work everywhere" and shipped better reference syntax
+  rather than a copy-it-globally command; npm's global tier is the
+  survey's cautionary tale, one version for all projects and outside
+  every lockfile. So `orchflows add url@pin` records a pin and
+  `imports/` is regenerable from it, and there is no `promote`.
+- **Trust is granted by digest, kept outside the artifact, and never
+  syncs.** Every surveyed system puts the approval record in user-local
+  state precisely because config directories are dotfile-synced; mise
+  says it in one line, that a repository may request trust and may never
+  grant it. Nix's two-step prompt — use once, or remember — is what
+  makes "yes, just this once" cheap and persistence deliberate. The
+  failure this closes is not hypothetical: a config file that trusted
+  its own path was a real CVE, and this library's pack digest read the
+  signature contract from beside the pack, so a ring could supply the
+  document its own identity was taken against.
+- **The seal is the lockfile.** Skill bodies said "the stamped pack
+  digest" while no field carried one, so the ticket named a pack and a
+  name resolves to whatever bytes are nearest. Pinning at issue and
+  verifying at every later door makes the trust grant and the seal cite
+  one digest: what was approved is what runs.
+- **Generated adapters are inert on purpose.** Orchflows can gate what
+  enters its own prompts and tickets. It cannot gate a host's native
+  loading of a repository's committed `.claude/skills/`, where a skill
+  body's preprocessing runs before the model sees anything. So the
+  generated bodies carry a pointer or a command and nothing executable,
+  and the host-side gap is left to the host rather than papered over.
+
+Deliberately not built: a registry or marketplace (reference plus pin is
+enough; curation is a badge, not a gate), sandboxing (no surveyed system
+has one), and signing (the digest is krew-style checksumming already;
+real signing needs artifact hosting this library does not do).
+
+## Why the trunk is mechanical
+
+Reviewed 2026-08-30 across PRs #117–#136, roughly 30 session
+transcripts, and 7,200+ friction records. Six recurring bug classes
+turned out to be one shape: a deterministic fact or a multi-step
+transaction with no mechanical owner, left to the model to reproduce
+from prose. A model reproduces prose well and reproduces it *slightly
+differently each time*, which is exactly the failure mode a contract
+cannot catch — every individual step is defensible, and the sequence is
+wrong. So each thread was answered by naming an owner in code, and the
+corresponding instructions were deleted from the docs rather than kept
+as fallback lore. Fallback lore is how two owners appear.
+
+- **The LLM sequenced dispatch and return by hand.** Now `tickets.py
+  dispatch` is the outbound transaction and `tickets.py land` the
+  inbound one. The role→launch hop in particular was the single
+  transcribed link in the system — read the host file, pick the profile
+  row, type a model into the launch verb — and a mistyped model there
+  killed a dispatch. Emitting a `launch` object the caller invokes
+  verbatim removes the transcription, not just the mistake.
+- **The per-child worktree had no creator.** `work-item.md` called
+  establishment "host-owned", which meant improvised; isolation was
+  recorded rather than enforced. It was the largest single friction
+  cluster (341 entries over ten days). `workspace.py establish` now
+  creates it, `state_root.candidate_paths` alone derives where, and an
+  establishment that cannot succeed refuses the dispatch instead of
+  quietly falling back to the shared tree — the fallback being how a
+  packet came to carry another ticket's workspace.
+- **One fact defined in N places.** Consolidation was chosen over
+  synchronization on the usual grounds, but the sharper reason is that
+  duplicated facts drift *silently*: nothing fails when two spellings
+  disagree until something downstream branches on the difference.
+- **Derived artifacts had no regeneration owner.** Each consumer was
+  repaired individually as it went stale. `tools/regen.py` declares
+  artifact→generator once and validate calls its check, so staleness
+  fails the existing five rather than earning a sixth.
+- **Refusals named no remedy.** A refusal that tells the caller nothing
+  actionable is an invitation to improvise, and improvisation around a
+  refusal is how runs wedged. Every such message now names a command
+  that exists, and a test proves it exists.
+- **Tickets carried stale values instead of derivations.** A recorded
+  value is true once; a derivation is true whenever it is read.
+
+The two-verb split also draws the honest line for this library's
+central claim. `dispatch` and `land` are pure bookkeeping — replayable,
+refusing before side effects. What is left to judgment is what the work
+is and whether it is good. Ask what happens if the model becomes
+perfect: a perfect model still cannot make a non-atomic sequence
+atomic, and still cannot know which of two spellings of a path is the
+one the join will grade. That is the test for what belongs in code.
+
+- **The receipt handshake, superseded 2026-08-30.** The accept step
+  (`dispatch-receive`, the `dispatch-receipt` record, the inline packet
+  form, and their refusal family) policed the packet-less-fork class, and
+  PR #89 had already closed that class structurally at the installer, at
+  the one point in a fork's load path a packet can never reach. What was
+  left cost the accept phase 29 s to 6 m 16 s per child, mostly
+  refusal-retry over the receiver's own directory, and stored 50–59 KB of
+  duplicated handshake per gate ticket. It fails the same test: a perfect
+  model still cannot make the accept atomic, but it also never needed to —
+  the child's first filed record already proves the same identity the
+  receipt echoed back, because `result` validates
+  `(dispatch_id, assignment_seal, --by)` on every write. The evidence and
+  the full disposition are `research/subagent-simplification-design-2026-08-30.md`;
+  the law is `contracts/dispatch.md`'s supersession record.
+
+- **The packet as a wire object, superseded 2026-08-31.** Of its
+  twenty-one fields, the two a child could not obtain any other way —
+  where its assignment is, and which tree to stand in — were the two the
+  wire did not carry, so twelve of twelve launches were composed by hand
+  against `rules/delegation.md`'s "improvises neither", and those hand
+  prompts were the dominant defect source of the runs that produced this
+  design. The wire is gone. `dispatch` emits one launch whose prompt is
+  the whole child-facing surface and whose every fact is machine-filled,
+  which is the same test again: a perfect model still cannot know which
+  spelling of an absolute path the establishment recorded, and it should
+  never have been asked to type one. What the prompt refuses to say is as
+  load-bearing as what it says — it names no skill for the child to invoke
+  and no pack for it to resolve, because a fork arriving without a prompt
+  can obey neither.
+- **Structure only where a machine reads it.** The ticket used to
+  over-prescribe in both directions at once. On the way out it forbade the
+  planner from naming a file, a check, or a step — a law written against a
+  planner that guesses, which also bound the planner that had just spent an
+  hour reading the code. On the way back it required a child to sort its work
+  into five headings no consumer read. The evidence that broke both is the
+  same evidence: the freehand briefs that built stages A through C violated
+  the first wholesale — evidence-anchored prescribed deletions, named checks,
+  definition-of-done commands, 1,300 words — and their unstructured returns
+  beat the sectioned ones, because honest exit codes and deferrals-with-
+  reasons are what a reader needs and no taxonomy produces them. So `Details`
+  is free-form and unbounded, and `Report` is one channel. The rule that
+  replaces both is narrow: prescribe as hard as investigation earned, carry
+  the evidence and the escape hatch with every prescription, and keep
+  structure only where something mechanical reads it — which, on the return
+  side, is one JSON findings file the join binds into the review ledger, and
+  nothing else. The test is the amnesia test again: a perfect model still
+  cannot guess the file you already read, and still gains nothing from being
+  told which heading to file a fact under.
+- **A verb is only a verb if a model has to judge something.** The library
+  shipped six callables; two of them were the driver and the join, and by
+  the time `dispatch` emitted a complete launch and `land` evaluated the
+  done predicate, integrated the candidate and printed the ready frontier,
+  neither had any judgment left to spend a whole child's context on. So the
+  engines tier dies with orch-frontier, orch-integrate dies with the
+  handshake it used to adjudicate, and what is callable is exactly the four
+  things a model still has to decide: freeze a root, cut it, build a unit,
+  challenge one. Everything they used to say that was mechanical is a
+  command; everything that was law moved to the rule that already owned the
+  question — `rules/delegation.md` §5 for how a driver grades a return,
+  `rules/verification.md` §§7, 9 for which independence path a ticket walks
+  and what a clean gate skips. The test is the amnesia test once more: a
+  perfect model cannot guess a run's ready set, and gains nothing from being
+  handed a skill body that tells it to ask `land` for one.
+
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an
@@ -289,7 +466,8 @@ forever while a parser can decay gracefully — `schema_confidence` and
   outranks; restating it would create the library's first two-owner
   fact.
 - **A generic orch-unit executor.** The generic unit endpoint is
-  `orch-frontier` over one ticket; executors are the domain leaves a
+  `tickets.py dispatch` and `tickets.py land` over one ticket; executors
+  are the domain leaves a
   pack binds by exact
   name, and [rules/delegation.md](rules/delegation.md) §8 forbids
   splitting a named executor into a generic shell plus a method file —
@@ -320,7 +498,7 @@ forever while a parser can decay gracefully — `schema_confidence` and
   composition contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
-  admitted because `orch-spec`'s noun source had no owner — not
+  admitted because `orch-outline`'s noun source had no owner — not
   because more reference material seemed nice. The next cell must
   clear the same bar.
 - **A generated Claude Code plugin.** Audited 2026-07-16 against a

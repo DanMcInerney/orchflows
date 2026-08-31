@@ -57,15 +57,14 @@ def _owner(root: Path, path: Path, workflow_type: str) -> dict:
 
 def _canonical_owners(root: Path) -> list[dict]:
     compositions = sorted(
-        (root / "compositions").glob("*/template.md"),
+        (root / "example-workflows").glob("*/template.md"),
         key=lambda path: path.parent.name,
     )
     skill_paths = set((root / "skills" / "workflows").glob("*/SKILL.md"))
     skill_paths.update(
-        root / "skills" / tier / name / "SKILL.md"
+        root / "skills" / "kernel" / name / "SKILL.md"
         for name in CALLABLE_EXECUTORS
-        for tier in ("kernel", "engines")
-        if (root / "skills" / tier / name / "SKILL.md").is_file()
+        if (root / "skills" / "kernel" / name / "SKILL.md").is_file()
     )
     workflow_skills = sorted(skill_paths, key=lambda path: path.parent.name)
     owners = [_owner(root, path, "composition") for path in compositions]

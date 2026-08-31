@@ -1,16 +1,24 @@
 """Tree preparation, a detached workspace, and absolute write-scope entries.
 
-Three behaviors ``workspace.py start`` gained together, because all three
-are things the host does to a workspace that the grader then has to read:
-it installs the frontend dependencies the tree declares, it materializes a
-workspace at a bare revision rather than a branch, and it writes scope
-entries as absolute paths. Each one used to be a refusal or a silent miss.
+Three behaviors this script gained together, because all three are things
+the host does to a workspace that the grader then has to read: it installs
+the frontend dependencies the tree declares, it materializes a workspace at
+a bare revision rather than a branch, and it writes scope entries as
+absolute paths. Each one used to be a refusal or a silent miss.
+
+The install is ``prepare``'s and no longer ``start``'s: it is the one act
+here that costs a package manager's minutes and writes no ticket, so it
+takes no run lock and every caller reaches it as its own verb, against the
+``workspace_path`` the observation already recorded.
 """
 
-import shutil  # noqa: E402  not among the names ``common`` re-exports
+import inspect  # noqa: E402  not among the names ``common`` re-exports
+import shutil  # noqa: E402  the same
 
 from .common import *  # noqa: F401,F403
 
+import scripts.tickets_dispatch_facade as dispatch_facade  # noqa: E402
+import scripts.workspace_candidate as workspace_candidate  # noqa: E402
 import scripts.workspace_prepare as workspace_prepare  # noqa: E402
 
 # A stand-in for pnpm. It records what it was called with and exits with
@@ -161,11 +169,6 @@ class TestDetachedWorkspaceIsRecordedAndGraded(unittest.TestCase):
         self.assertEqual(["scratch/a.txt"], body["changed"])
         self.assertEqual(1, body["commits"])
 
-    def test_check_reports_a_breach_from_a_detached_workspace_too(self):
-        done = self._graded_detached({"docs/leak.md": "leak\n"})
-
-        self.assertEqual(4, done.returncode, done.stdout + done.stderr)
-        self.assertEqual(["docs/leak.md"], payload_of(done)["breaches"])
 
     def test_a_removed_workspace_is_refused_rather_than_graded_at_its_revision(self):
         """The record names where the workspace began. A workspace that is
@@ -226,97 +229,21 @@ class TestDetachedWorkspaceIsRecordedAndGraded(unittest.TestCase):
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
-class TestAbsoluteScopeEntriesAreCanonicalised(unittest.TestCase):
-    """An absolute entry inside the tree is the same grant as its relative
-    form and is recorded as one; an absolute entry outside the tree names
-    nothing this repository can match, and is refused where the cut can
-    still fix it rather than at the join."""
-
-    def test_an_absolute_in_tree_entry_is_recorded_relative_and_graded(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir = make_repo(tmp)
-            base = git(main, "rev-parse", "HEAD").strip()
-            worktree = add_worktree(main, "wt-branch", tmp / "wt")
-            make_ticket(run_dir, "T1", scope=(str(worktree / "scratch"),),
-                        extra=((workspace.ISOLATION_KEY, "required"),))
-
-            started = run_workspace(worktree, "start", "testrun", "T1")
-
-            self.assertEqual(0, started.returncode, started.stderr)
-            self.assertEqual(
-                ["scratch"], payload_of(started)["start"][workspace.WRITE_SCOPE_KEY]
-            )
-            commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
-            commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
-
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-
-            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
-            body = payload_of(done)["check"]
-            self.assertEqual(["scratch"], body[workspace.WRITE_SCOPE_KEY])
-            self.assertEqual("pass", body["verdict"])
-
-    def test_a_nested_workspace_is_the_same_grant_from_either_side(self):
-        """A workspace of this repository is a directory inside it -- the
-        layout this repository's own runs use. The same absolute entry is
-        then under both the workspace and the checkout holding it, and
-        answered by the outer one it names the workspace's own path: the
-        item's in-scope commit graded as a breach of the grant it was
-        written for."""
-
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir = make_repo(tmp)
-            commit_in(main, {".gitignore": ".orch/\nnested/\n"}, "ignore these")
-            base = git(main, "rev-parse", "HEAD").strip()
-            worktree = add_worktree(main, "wt-branch", main / "nested" / "wt")
-            make_ticket(run_dir, "T1", scope=(str(worktree / "scratch"),),
-                        extra=((workspace.ISOLATION_KEY, "required"),))
-
-            started = run_workspace(worktree, "start", "testrun", "T1")
-
-            self.assertEqual(0, started.returncode, started.stderr)
-            self.assertEqual(
-                ["scratch"], payload_of(started)["start"][workspace.WRITE_SCOPE_KEY]
-            )
-            commit_in(worktree, {"scratch/a.txt": "one\n"}, "item work")
-            commit_in(main, {"README.md": "advanced\n"}, "caller moves on")
-
-            done = run_workspace(main, "check", "testrun", "T1", "--base", base)
-
-            self.assertEqual(0, done.returncode, done.stdout + done.stderr)
-            body = payload_of(done)["check"]
-            self.assertEqual(["scratch"], body[workspace.WRITE_SCOPE_KEY])
-            self.assertEqual("pass", body["verdict"])
-
-    def test_an_absolute_out_of_tree_entry_is_refused_at_start(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp = Path(tmp)
-            main, run_dir = make_repo(tmp)
-            outside = tmp / "elsewhere"
-            outside.mkdir()
-            ticket = make_ticket(run_dir, "T1", scope=("scratch", str(outside)))
-            before = ticket.read_text(encoding="utf-8")
-            worktree = add_worktree(main, "wt-branch", tmp / "wt")
-
-            done = run_workspace(worktree, "start", "testrun", "T1")
-
-            self.assertEqual(1, done.returncode, done.stdout)
-            error = payload_of(done)["error"]
-            self.assertIn(str(outside), error)
-            self.assertIn("nothing in this repository can match it", error)
-            self.assertEqual(before, ticket.read_text(encoding="utf-8"))
-
-
-@unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
-class TestStartPreparesTheFrontendTree(unittest.TestCase):
+class TestPrepareInstallsTheFrontendTree(unittest.TestCase):
     """A workspace whose tree declares frontend dependencies is unusable
     until they are installed, and the item executed in it discovered that by
-    watching its own first check fail. ``start`` installs them once, from the
-    lockfile, offline where it can, and says in its payload what happened."""
+    watching its own first check fail. ``prepare`` installs them once, from
+    the lockfile, offline where it can, and says in its payload what
+    happened."""
 
     def _started(self, tmp: Path, environment=None, *, lockfile=True):
+        """``start`` records the tree, then ``prepare`` installs into it.
+
+        Two calls because they are two verbs: the record is written under
+        the run lock and the install is not, and only the second one may
+        call pnpm at all.
+        """
+
         main, run_dir, worktree = frontend_repo(tmp, lockfile=lockfile)
         make_ticket(run_dir, "T1")
         log = tmp / "pnpm-argv.txt"
@@ -324,7 +251,10 @@ class TestStartPreparesTheFrontendTree(unittest.TestCase):
         environment = dict(environment or {})
         environment.setdefault("PATH", path_holding(tmp / "bin"))
         environment.setdefault("STUB_PNPM_LOG", str(log))
-        done = run_workspace_under(worktree, environment, "start", "testrun", "T1")
+        recorded = run_workspace_under(worktree, environment, "start", "testrun", "T1")
+        self.assertEqual(0, recorded.returncode, recorded.stderr)
+        self.assertNotIn("frontend", payload_of(recorded)["start"])
+        done = run_workspace_under(worktree, environment, "prepare", "testrun", "T1")
         calls = [
             json.loads(line)
             for line in (log.read_text(encoding="utf-8").splitlines() if log.exists() else [])
@@ -336,7 +266,7 @@ class TestStartPreparesTheFrontendTree(unittest.TestCase):
             done, calls = self._started(Path(tmp))
 
             self.assertEqual(0, done.returncode, done.stderr)
-            self.assertEqual("installed", payload_of(done)["start"]["frontend"])
+            self.assertEqual("installed", payload_of(done)["prepare"]["frontend"])
             self.assertEqual(
                 ["install", "--frozen-lockfile", "--prefer-offline"], calls[0]
             )
@@ -354,7 +284,7 @@ class TestStartPreparesTheFrontendTree(unittest.TestCase):
             done, calls = self._started(tmp, {"PLAYWRIGHT_BROWSERS_PATH": str(cache)})
 
             self.assertEqual(0, done.returncode, done.stderr)
-            self.assertEqual("missing", payload_of(done)["start"]["playwright_browser"])
+            self.assertEqual("missing", payload_of(done)["prepare"]["playwright_browser"])
             for argv in calls:
                 self.assertNotIn(
                     "install", argv[1:], f"a browser install was attempted: {argv}"
@@ -367,7 +297,7 @@ class TestStartPreparesTheFrontendTree(unittest.TestCase):
             done, calls = self._started(tmp, {"PATH": path_holding()})
 
             self.assertEqual(0, done.returncode, done.stderr)
-            body = payload_of(done)["start"]
+            body = payload_of(done)["prepare"]
             self.assertEqual("skipped: pnpm-missing", body["frontend"])
             self.assertEqual("unknown", body["playwright_browser"])
             self.assertEqual([], calls)
@@ -377,20 +307,20 @@ class TestStartPreparesTheFrontendTree(unittest.TestCase):
             done, calls = self._started(Path(tmp), lockfile=False)
 
             self.assertEqual(0, done.returncode, done.stderr)
-            self.assertEqual("skipped: no-lockfile", payload_of(done)["start"]["frontend"])
+            self.assertEqual("skipped: no-lockfile", payload_of(done)["prepare"]["frontend"])
             self.assertEqual([], calls)
 
-    def test_a_failing_install_is_reported_with_its_exit_and_start_still_records(self):
+    def test_a_failing_install_is_reported_with_its_exit_and_prepare_still_answers(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             done, _ = self._started(tmp, {"STUB_PNPM_INSTALL_EXIT": "3"})
 
             self.assertEqual(0, done.returncode, done.stderr)
-            self.assertEqual("failed: 3", payload_of(done)["start"]["frontend"])
+            self.assertEqual("failed: 3", payload_of(done)["prepare"]["frontend"])
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
-class TestStartReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
+class TestPrepareReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
     """Whether a Playwright browser is already here is a fact the item needs
     before it writes a render check. Fetching one is a download this script
     will not make on a caller's behalf, so it is reported, never supplied."""
@@ -401,9 +331,11 @@ class TestStartReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
         stub_pnpm(tmp / "bin")
         environment = dict(environment)
         environment.setdefault("PATH", path_holding(tmp / "bin"))
-        done = run_workspace_under(worktree, environment, "start", "testrun", "T1")
+        recorded = run_workspace_under(worktree, environment, "start", "testrun", "T1")
+        self.assertEqual(0, recorded.returncode, recorded.stderr)
+        done = run_workspace_under(worktree, environment, "prepare", "testrun", "T1")
         self.assertEqual(0, done.returncode, done.stderr)
-        return payload_of(done)["start"]["playwright_browser"]
+        return payload_of(done)["prepare"]["playwright_browser"]
 
     def test_a_named_executable_that_resolves_is_present(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -452,6 +384,53 @@ class TestStartReportsTheBrowserWithoutFetchingOne(unittest.TestCase):
                     "PLAYWRIGHT_BROWSERS_PATH": str(cache),
                     "STUB_PNPM_EXEC_EXIT": "1",
                 }),
+            )
+
+
+class TestPreparationIsOutsideEveryLock(unittest.TestCase):
+    """The install is minutes; the run lock is what every sibling waits on.
+
+    Structural, because the cost is structural: a case that only asserts the
+    payload would stay green the day someone moves the call back inside the
+    critical section, and the symptom of that is siblings idling, not a red.
+    """
+
+    def test_neither_establishment_lane_installs_while_it_stamps(self):
+        source = inspect.getsource(workspace_candidate)
+        lanes = [
+            inspect.getsource(getattr(workspace_candidate, name))
+            for name in ("_observed", "_derived")
+        ]
+        self.assertIn("workspace_prepare.prepare(", source)
+        for lane, name in zip(lanes, ("_observed", "_derived")):
+            with self.subTest(lane=name):
+                self.assertNotIn("workspace_prepare.prepare(", lane)
+
+    def test_the_facade_prepares_after_it_lets_the_lock_go(self):
+        source = inspect.getsource(dispatch_facade._cmd_dispatch)
+        self.assertLess(
+            source.index("with _run_lock(run):"),
+            source.index("_workspace_prepare("),
+        )
+        self.assertNotIn(
+            "_workspace_prepare(",
+            inspect.getsource(dispatch_facade._dispatched_under_run_lock),
+        )
+
+    def test_prepare_refuses_an_item_that_recorded_no_workspace(self):
+        """A step skipped, not a step that failed: nothing is installed and
+        the refusal names the verb that records the path."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _, run_dir = make_repo(tmp)
+            make_ticket(run_dir, "T1")
+
+            done = run_workspace(tmp, "prepare", "testrun", "T1")
+
+            self.assertNotEqual(0, done.returncode)
+            self.assertIn(
+                "workspace.py establish testrun T1", payload_of(done)["error"]
             )
 
 

@@ -26,24 +26,19 @@ rel = __dep_packages.rel
 
 CELL_DUPLICATION_ALLOWLIST = (
     {
-        "family": "code<->design git-workspace seam",
+        "family": "identity-term workspace naming",
         "reason": (
-            "The code and design packs both run on git, so their workspace "
-            "cells share the worktree-per-item clause and the conflict "
-            "binding and their required_spec_fields share the standards-owner "
-            "pointer. A "
-            "workspace-kind abstraction factoring those mechanics out is not "
-            "worth a permanent concept for two packs: this duplication is "
-            "paid consciously and revisited when a third git-workspace pack "
-            "appears -- that arrival is the trigger, not a judgment call."
+            "The signature's craft-section table requires every Workspace "
+            "section to open by naming its adapter semantics and identity "
+            "unit -- 'X: identities are Y' -- so these clauses rhyme by "
+            "mandate, not by drift. Each names a different adapter and a "
+            "different identity unit; only the mandated skeleton matches."
         ),
-        # Normalized clauses, matched exactly. The seam's other two halves
-        # -- 'standards owner by pointer' and the conflict-owner binding --
-        # sit under CELL_CLAUSE_MIN_WORDS and so never reach this list;
-        # lowering the floor would surface them here.
+        # Normalized clauses, matched exactly.
         "clauses": (
-            "each frontier item gets its own worktree branched from the run's "
-            "current revision at dispatch, merged at the join",
+            "document tree: identities are document revisions",
+            "git plus render: identities are view identities",
+            "evidence store: identities are evidence packets",
         ),
     },
 )
@@ -51,10 +46,9 @@ CELL_DUPLICATION_ALLOWLIST = (
 
 def _cell_content(pkg: dict, cell: str, binding: str):
     """(text, label) for the content behind one cell. A pointer cell
-    resolves to its reference file -- four of the eight rows are
-    byte-identical in every pack, and :758 mandates one of them, so
-    comparing the row instead of what it points at convicts the
-    signature itself."""
+    resolves to its reference file -- every pack's craft row is mandated
+    to bind references/craft.md, so comparing the row instead of what it
+    points at convicts the signature itself."""
     if cell in CRAFT_CELLS_BY_POINTER:
         match = CELL_REFERENCE_LINK_RE.search(binding)
         if match:
@@ -62,6 +56,24 @@ def _cell_content(pkg: dict, cell: str, binding: str):
             if target.is_file():
                 return _read_source(target), rel(target)
     return binding, rel(pkg["skill_md"])
+
+
+CRAFT_SECTION_RE = re.compile(r"(?m)^##\s+(.*\S)\s*$")
+
+
+def _craft_sections(text: str) -> dict:
+    """{section name: body} for one craft document's `##` sections.
+
+    `###` subsections stay inside their parent's body; the fold made the
+    craft document the one prose owner, so the `##` heading is the unit
+    the signature's craft-section table names and the linter compares.
+    """
+    sections = {}
+    matches = list(CRAFT_SECTION_RE.finditer(text))
+    for i, match in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        sections[match.group(1)] = text[match.end():end]
+    return sections
 
 
 def free_content(clause: str) -> str:
@@ -74,11 +86,12 @@ def free_content(clause: str) -> str:
 
 
 def validate_cell_duplication(packages, diag: Diagnostics) -> None:
-    """Per signature cell, compare the content behind it across packs:
-    a clause carried verbatim by two packs is an error, a clause pair
-    whose free_content matches at CELL_SIMILARITY_THRESHOLD or above is a
-    warning naming both sites. Allowlisted clauses are out of the
-    comparison entirely."""
+    """Per same-named craft section, compare the content behind it across
+    packs: a clause carried verbatim by two packs is an error, a clause
+    pair whose free_content matches at CELL_SIMILARITY_THRESHOLD or above
+    is a warning naming both sites. Allowlisted clauses are out of the
+    comparison entirely. Differently named sections never compare — the
+    section heading scopes the comparison the way the cell name did."""
     packs = [pkg for pkg in packages if pkg["is_pack"]]
     if len(packs) < 2:
         return
@@ -86,14 +99,18 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
     for family in CELL_DUPLICATION_ALLOWLIST:
         allowed.update(family["clauses"])
 
-    for cell in PACK_SIGNATURE_CELLS:
-        per_pack = []
-        for pkg in packs:
-            binding = dict(PACK_CELL_ROW_RE.findall(pkg.get("body", ""))).get(cell)
-            if binding is None:
-                continue
-            text, label = _cell_content(pkg, cell, binding)
-            per_pack.append((label, [c for c in cell_clauses(text) if c not in allowed]))
+    per_section = {}
+    for pkg in packs:
+        binding = dict(PACK_CELL_ROW_RE.findall(pkg.get("body", ""))).get("craft")
+        if binding is None:
+            continue
+        text, label = _cell_content(pkg, "craft", binding)
+        for name, body in _craft_sections(text).items():
+            clauses = [c for c in cell_clauses(body) if c not in allowed]
+            per_section.setdefault(name, []).append((label, clauses))
+
+    for name in sorted(per_section):
+        per_pack = per_section[name]
 
         sites = {}
         for label, clauses in per_pack:
@@ -105,7 +122,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
             ordered = sorted(labels)
             diag.error(
                 ordered[0],
-                f"{cell}: cell content duplicated verbatim in "
+                f"{name}: craft section duplicated verbatim in "
                 f"{', '.join(ordered[1:])}: {clause!r}",
             )
 
@@ -127,7 +144,7 @@ def validate_cell_duplication(packages, diag: Diagnostics) -> None:
                         if ratio >= CELL_SIMILARITY_THRESHOLD:
                             diag.warn(
                                 left_label,
-                                f"{cell}: cell content near-duplicate at "
+                                f"{name}: craft section near-duplicate at "
                                 f"{ratio:.2f} with {right_label}: "
                                 f"{left!r} ~ {right!r}",
                             )
@@ -270,10 +287,10 @@ def cross_tier_documents(packages):
     # written against a reference it was told to link -- restatement the
     # check could not see because the corpus stopped at the tiers that
     # existed when it was written.
-    compositions = ROOT / "compositions"
+    compositions = ROOT / "example-workflows"
     if compositions.is_dir():
         for path in sorted(compositions.rglob("*.md")):
-            documents.append(("compositions", rel(path), _read_source(path)))
+            documents.append(("example-workflows", rel(path), _read_source(path)))
     host_block = ROOT / "templates" / "host-block.md"
     if host_block.is_file():
         documents.append(("templates", rel(host_block), _read_source(host_block)))
@@ -349,8 +366,129 @@ def validate_cross_tier_duplication(packages, diag: Diagnostics) -> None:
             f"{right_label}: {left_clause!r} ~ {right_clause!r}",
         )
 
+
+
+# --- generated-enum ratchet ---------------------------------------------------
+# The shapes whose value sets a script may not restate. Named, not swept:
+# a one-value enum matches too easily to be worth a blanket rule, and the
+# roster starts at exactly the enums the fact registry consolidated.
+RATCHETED_ENUMS = (
+    ("dispatch_record", "kind"),
+    ("executor_result", "operation"),
+    ("done_binding", "form"),
+)
+# The two modules the ratchet exists to protect: one is generated from the
+# contract, the other is the reserved namespace's declared owner.
+ENUM_OWNER_MODULES = ("tickets_shapes.py", "tickets_dispatch_identity.py")
+RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
+
+
+def _generated_value_sets(root=None) -> dict:
+    """Every ratcheted value set, keyed by the set, named by its owner.
+
+    Read from `contracts/shapes.json` rather than the generated module, so
+    the ratchet grades a script against the contract itself and one read
+    answers for every script below.
+    """
+
+    import json
+
+    root = ROOT if root is None else root
+    try:
+        data = json.loads((root / "contracts" / "shapes.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return {}
+    found = {}
+    for shape in data.get("shapes") or ():
+        for field, values in (shape.get("values") or {}).items():
+            if (shape.get("name"), field) in RATCHETED_ENUMS:
+                found[frozenset(values)] = (
+                    f"contracts/shapes.json's {shape['name']}.{field}"
+                )
+    constants = data.get("constants") or {}
+    reserved = frozenset(
+        value for key, value in constants.items() if key.endswith("_record_id")
+    )
+    if reserved:
+        found[reserved] = "the reserved record-id namespace"
+    found[frozenset(RESERVED_RECORD_PREFIXES)] = "the reserved record-id prefixes"
+    return found
+
+
+def _module_string_sets(text: str):
+    """Every module-level assignment of a literal set of strings.
+
+    A collection built out of names is not a restatement -- it is already
+    reading its values from somewhere -- so only literals are collected,
+    and the one wrapping call a frozenset needs is looked through.
+    """
+
+    import ast
+
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        value = node.value
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Name)
+            and value.func.id in ("frozenset", "set", "tuple", "list")
+            and value.args
+        ):
+            value = value.args[0]
+        if not isinstance(value, (ast.Set, ast.Tuple, ast.List)) or not value.elts:
+            continue
+        if not all(
+            isinstance(item, ast.Constant) and isinstance(item.value, str)
+            for item in value.elts
+        ):
+            continue
+        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+        yield (names[0] if names else "<unnamed>"), frozenset(
+            item.value for item in value.elts
+        ), node.lineno
+
+
+def validate_generated_enum_copies(diag: Diagnostics, root=None) -> None:
+    """Refuse a script that restates a value set a generated shape owns.
+
+    The duplicated-facts class this ratchet closes: an enum lives in
+    `contracts/shapes.json`, the generated module exposes it, and a script
+    then spells the same members inline. The two agree until the contract
+    moves, and the one that did not move is the one a caller was reading.
+    """
+
+    root = ROOT if root is None else root
+    owned = _generated_value_sets(root)
+    if not owned:
+        return
+    for source in sorted((root / "scripts").glob("*.py")):
+        if source.name in ENUM_OWNER_MODULES:
+            continue
+        try:
+            text = source.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for name, values, line in _module_string_sets(text):
+            owner = owned.get(values)
+            if owner is None:
+                continue
+            diag.error(
+                source.relative_to(root).as_posix(),
+                f"line {line}: `{name}` restates {owner}; import the "
+                "generated value set instead of spelling its members",
+            )
+
+
 __all__ = (
-    'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'free_content', 'validate_cell_duplication',
+    'ENUM_OWNER_MODULES', 'RATCHETED_ENUMS', '_generated_value_sets',
+    '_module_string_sets', 'validate_generated_enum_copies',
+    'CELL_DUPLICATION_ALLOWLIST', '_cell_content', 'CRAFT_SECTION_RE', '_craft_sections',
+    'free_content', 'validate_cell_duplication',
     'CROSS_TIER_DUPLICATE_LEVEL', 'CROSS_TIER_CITATION_RES', 'CROSS_TIER_PROSE_MIN_WORDS', '_cross_tier_prose',
     'SAME_TIER_COMPARED', 'LICENSED_COPIES', '_licensed', 'cross_tier_documents',
     '_cross_tier_clauses', '_cross_tier_accept', 'validate_cross_tier_duplication',

@@ -166,12 +166,14 @@ class WorkflowSourceTests(unittest.TestCase):
     def test_inventory_is_exact_and_exposes_only_opaque_ids(self):
         evolve = sources.source_inventory(ROOT, "evolve")
         expected_evolve_paths = {
-            "lib/compositions/evolve/template.md",
-            "lib/compositions/evolve/00-eval.md",
-            "lib/compositions/evolve/01-eligibility.md",
-            "lib/compositions/evolve/02-campaign.md",
-            "lib/compositions/evolve/03-result.md",
-            "lib/skills/engines/orch-loop/SKILL.md",
+            "lib/example-workflows/evolve/template.md",
+            "lib/example-workflows/evolve/00-eval.md",
+            "lib/example-workflows/evolve/01-eligibility.md",
+            "lib/example-workflows/evolve/02-campaign.md",
+            "lib/example-workflows/evolve/03-result.md",
+            "lib/skills/kernel/orch-execute/SKILL.md",
+            "lib/skills/kernel/orch-check/SKILL.md",
+            "lib/skills/workflows/orch-outline/SKILL.md",
         }
         self.assertEqual(
             {identity.source_id(path) for path in expected_evolve_paths},
@@ -242,12 +244,12 @@ class WorkflowSourceTests(unittest.TestCase):
 
         for source_id in requests:
             with self.subTest(source_id=source_id):
-                status, payload = sources.project_source(ROOT, "orch-spec", source_id)
+                status, payload = sources.project_source(ROOT, "orch-outline", source_id)
                 self.assertEqual((404, NOT_FOUND), (status, payload))
                 self.assertNotIn(str(ROOT), repr(payload))
                 self.assertNotIn("state", repr(payload).lower())
 
-        self.assertEqual((), sources.source_inventory(ROOT, "../../orch-spec"))
+        self.assertEqual((), sources.source_inventory(ROOT, "../../orch-outline"))
         self.assertEqual((), sources.source_inventory(ROOT, "missing-workflow"))
 
     def test_escaped_symlink_is_not_opened_and_is_indistinguishable_from_missing(self):

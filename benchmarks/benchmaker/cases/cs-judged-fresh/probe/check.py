@@ -49,7 +49,7 @@ SOURCE_ID = re.compile(r"^(m\d-\d{2}):", re.M)
 
 
 # ---- P0.e: the post-qualification manifest fields -------------------
-# `compositions/references/benchmaker-manifest.md` owns the eight. None is
+# `example-workflows/references/benchmaker-manifest.md` owns the eight. None is
 # re-derivable after the fact, so a package that omits one cannot be repaired
 # by a consumer. This case covers `anchors`:
 # a judged outcome is only as good as the reference it is bound to, and

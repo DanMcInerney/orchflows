@@ -14,17 +14,22 @@ with unique `dispatch_id` values and at most one `state: live` member.
 
 Each attempt has exactly `assignment_seal`, `dispatch_id`, `owner`, absolute
 `opened_at`, absolute `lease_expires_at`, `outcome_record_id: outcome`, `state`,
-and `records`, plus only the transition fields applicable to retirement or
-replacement. States are `live`, `retired`, and `replaced`; clock expiry never
+and `records`, plus the `workspace_path` its establishment recorded and only
+the transition fields applicable to retirement or replacement. The attempt is
+that path's sole owner: the ticket carries no projection of it. States are `live`, `retired`, and `replaced`; clock expiry never
 writes an implicit state transition. Each record has exactly `record_id`, `kind`, canonical-JSON
 `content`, absolute `committed_at`, and stored `success`. Record ids are unique
-within an attempt. Kinds are `generic`, `packet`, `receipt`, `result`, `outcome`,
-`join`, and `lifecycle`; `dispatch-packet`, `dispatch-receipt`, `outcome`,
+within an attempt. Kinds are `generic`, `launch`, `result`, `outcome`,
+`join`, and `lifecycle`; `launch`, `outcome`,
 `join:*`, and `lifecycle:*` are reserved for their owning operations.
-Execution events are an ordered grammar, not a bag: one packet precedes its
-accepted receipt; only then may result records occur; the one outcome follows
-results; join follows outcome. Removing or reordering the receipt makes the
-whole persisted state invalid without mutation.
+Execution events are an ordered grammar, not a bag: the committed launch
+precedes every result record; the one outcome follows results; join follows
+outcome. Reordering them makes the whole persisted state invalid without
+mutation.
+
+A record's content is stored once, as that canonical string. Stored success
+carries the record's identity and never a second copy of what it committed;
+a caller that wants the content reads the record.
 
 Every read and mutation validates the whole closed state first. Record content
 and stored success are closed per kind and must agree with ticket origin,
@@ -47,91 +52,98 @@ is `idempotency-conflict`. Only then may an unseen record be classified as
 attempt is `live-attempt`. Opening, replacing, retiring, outcome import, and
 joining are atomic ticket writes. Expiry makes unseen work stale but does not
 authorize or persist a successor: the expired live attempt must cross
-`dispatch-retire` or the atomic `dispatch-replace` transition first. The
+`dispatch-retire` or the atomic `dispatch-replace` transition first. Replacing
+an attempt still inside its lease supersedes authorized work, and silence is
+not evidence that work stopped: it is `supersession-undeclared` unless the
+caller declares it with `--supersede-live`. The
 absolute lease is never extended by transport or result motion.
 
-## Packet and receipt
+Facade transactions order side effects after the last refusable check; a
+failed step surfaces its own error plus any failed cleanup; every step
+replays idempotently. A composition over these operations therefore replays
+as a whole, and reports which of its steps it found already done.
 
-`dispatch-packet` commits the projection and `dispatch-receive` validates it
-against the actual established child before execution. The public command emits
-ASCII-escaped canonical JSON, preserving every packet character independently
-of the subprocess code page. Receipt accepts exactly one carrier:
-`--content <canonical-json>`, `--file <path>`, or UTF-8 standard input through
-`--file -`. The carried value is the response `.packet` member; the response
-wrapper is a structured `packet-invalid` refusal.
+## Launch
 
-A packet has exactly the common fields `protocol`, `source`, `dispatch_id`,
-`assignment_seal`, `outcome_record_id`, `lease_expires_at`, `executor`, `role`,
-`profile`, `assigned_name`, `reply_to`, `workspace`, `pack`, `independence`,
-`isolation`, `admission`, `prompt`, `review_kind`, `form`, and `durability`,
-plus exactly one of `reference` or `inline`. `review_kind` is null for an
-ordinary execution packet or one of `critique`, `repair`, and `verify` for a
-typed review lane. Source and reference are exact `{run,id}` objects.
+There is no wire object. The sealed ticket is the assignment, and `dispatch`
+is one lock over readiness, the minted attempt, the established workspace, and
+one committed `launch` record: `host`, `verb`, `agent`, `model`, `effort`,
+native `fields`, and the generated `prompt`. That prompt is the whole
+child-facing instruction surface, so an orchestrator invokes the launch
+verbatim and hand-adds nothing; a caller who lost it replays the same
+`dispatch` call and is handed the committed launch back unchanged.
 
-Reference is the default and is checked against the committed packet record.
-Inline is a ticket-durable snapshot: `inline` has exactly `assignment` and
-`envelope_seal`; that seal binds assignment, source, dispatch, assignment,
-lease, outcome, owner, role, profile, review kind, reply target, workspace,
-and durability.
-A ticket packet cannot be downgraded to ephemeral. The authoritative ticket
-sink must be available for both reference and inline receipt; self-carried
-inline material cannot authenticate offline role-bearing execution. Packet-only
-ephemeral work is outside this ticket protocol.
+The prompt names, once each, what a child cannot derive: the ticket's absolute
+path inside the established workspace, that workspace and the instruction to
+run from inside it, this host's verified interpreter, the resolved pack craft,
+the review lane's root ticket path, the assigned name, the lease deadline, the
+filled filing and closing commands, the craft's verification scope, what a
+report is expected to carry, and that
+every check runs to completion in the turn it starts. It teaches no verdict
+token and no filing taxonomy: a child files evidence into one channel, never a
+disposition and never a heading of the protocol's choosing. It names no skill for
+the child to invoke and no pack for it to resolve: it hands the paths. The
+public command emits ASCII-escaped canonical JSON, preserving every prompt
+character independently of the subprocess code page.
 
-Receipt success has exactly `protocol`, `outcome: accepted`, `dispatch_id`,
-`assignment_seal`, `form`, `durability`, and `state_sink_checked`. Refusal has
-`protocol`, `code`, and `error`. Unknown packet fields or shapes are
-`packet-invalid`; other codes are `state-inaccessible`, `assignment-divergent`,
-`stale-attempt`, `identity-mismatch`, `role-mismatch`, `profile-mismatch`, and
-`authority-mismatch`. Acceptance atomically commits the reserved
-`dispatch-receipt` record, binding the exact committed packet and receipt to the
-attempt. Result, outcome, and join records refuse with `receipt-required` until
-that durable acceptance exists; an exact committed operation still replays by
-the attempt-precedence rule.
+Dispatch refuses `state-inaccessible` when the sink holding the ticket cannot
+be read, `review-invalid` when the ticket's review ledger does not admit this
+lane, and `workspace-unestablished` or `workspace-mismatch` when the named
+tree is not the candidate the establishment recorded.
+
+A dispatched child proves who it is the same way on its first write as on
+every later one, by naming `(dispatch_id, assignment_seal, --by)`; the first
+record it files is its acceptance, and there is no separate accept step to
+run, to run from the wrong directory, or to refuse.
 
 ## Outcome and join
 
 Every attempt reserves exactly one durable return identity, `outcome`. Its
 closed envelope has exactly `protocol`, `run`, `id`, `assignment_seal`,
-`dispatch_id`, `outcome_record_id`, `by`, `status`, and `evidence`. Evidence has
-exactly string bodies for `Result`, `Verification`, `Feedback`, `Risks`, and
-`Handoff`; the first four are non-empty, Handoff is non-empty only for
-`suspended`. Evidence is the non-empty closing delta not already materialized
-through result records; repeated material is refused so each item is written
-once. `dispatch-outcome` validates the envelope, imports its attributed
-evidence atomically, and commits or replays the reserved outcome record after
-durable receiver acceptance. Thus a reference child may commit directly and an
-offline inline child may return the same envelope for its coordinator to relay
-without inventing another payload.
+`dispatch_id`, `outcome_record_id`, `by`, and `evidence`. Evidence is one
+non-empty string: the child's closing note, in whatever form it judges useful,
+appended to `Report` like every other filing. Nothing parses it, so nothing
+compares it against what already streamed. The envelope names no disposition:
+its existence closes the attempt and says nothing about what the item became.
+`dispatch-outcome` validates the envelope, imports its attributed
+evidence atomically, and commits or replays the reserved outcome record. A
+child commits its note through `--note` or `--note-file`, and a coordinator
+relaying for one passes the whole canonical envelope through `--file` rather
+than inventing another payload.
 
-`dispatch-join` consumes only that distinguished record and derives disposition
-from it. Its id is `join:outcome`; exact replay returns stored success after
+`dispatch-join` consumes only that distinguished record and records the
+disposition `--status` names. Its id is `join:outcome`; exact replay returns
+stored success after
 retirement, changed join content conflicts, and an unseen join on an ended
 attempt is stale. Only join writes suspended or terminal ticket status. Every
 joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
+The join reads the tree the item was executed in off the attempt.
 For review-stage tickets the same atomic join also advances the ticket's
-validated `orchflows.review.v1` chain: critique requires the canonical accepted
-subset from the file-based `--accepted-file <path|->` seam, repair requires the
-exact output artifact, and verification must match that artifact and carry a
-`PASS`, `FAIL`, or `UNVERIFIED` verdict. Every review kind has one closed field
-schema, and the ledger tip equals the
-protocol-owned join's `review_identity`. `GatePlan` seals the normalized
+validated `orchflows.review.v1` chain: critique requires the canonical complete
+findings and accepted subset from the file-based `--findings-file <path|->` and
+`--accepted-file <path|->` seams, and repair requires
+the exact output artifact. The chain ends there. Every review kind has one
+closed field schema, and the ledger tip equals the
+protocol-owned join's `review_identity`. A review lane's prompt names that
+ledger by the ticket path holding it and by its tip identity; the chain
+itself is never copied. `GatePlan` seals the normalized
 workspace; a code artifact is a full Git commit that resolves to that
-workspace's exact HEAD before packet commit and after repair.
+workspace's exact HEAD before launch and after repair.
 
 The ordinary checker is a derived `<id>.check` review-stage ticket. It uses
-the same committed packet, accepted receipt, outcome, and join as gate review.
+the same committed launch, outcome, and join as gate review.
 Only `check <run> <id> --stage <id>.check` attaches its authenticated receiver
 identity to the target's `checked_by`; direct caller-supplied findings are not
 a protocol operation.
 
 ## Cutover
 
-The public facade has no role-bearing `claim` or legacy `packet` route and no
-dual reader. A historical claimed or suspended ticket without this record is
-`legacy-live-claim`; its existing owner must complete or abandon it before
-installation. History is never inferred or rewritten.
+The public facade has no role-bearing `claim` route, no packet route, and no
+dual reader. A claimed or suspended ticket without this record is
+`claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
+and the attempt's `owner` and `opened_at` are the lease — the ticket carries
+no projection of them. History is never inferred or rewritten.
 
 T0 supersession record sha256:82cecc2a7e182409496a6ed451f9121bfb990ab0bf7ca9e69012073093f8be67:
 persisted dispatch semantics now close every record kind and stored success,
@@ -160,6 +172,66 @@ remaining a deterministic declaration-to-consumer gate.
 T0 supersession record sha256:e26b5916a54fd4b95c20790abb7aa55173782d0454576b8cf77cf0e0edbe46ac:
 the generated T0 section now uses declaration-specific wording.
 
+T0 supersession record sha256:8b9d58a02911955ff011275988aba554c8b502557348009f7fe1bf268414e0a5:
+the receipt handshake and the inline packet form are removed. The `receipt`
+record kind, the `dispatch-receipt` reserved id, and the refusals that
+existed only for the handshake ride out with them; a child's first filed
+record is its acceptance, proved by the `(dispatch_id, assignment_seal,
+--by)` every write already carries, and the one surviving ordering rule is
+that a committed packet precedes every execution record. The wire keeps
+twelve fields: `form`, `inline`, `reference`, `reply_to`, `admission`,
+`independence`, `isolation`, `executor`, `profile`, and
+`outcome_record_id` had no reader left, and `durability` declares only
+`ticket`. The attempt gains the `workspace_path` its establishment records
+and becomes that path's sole owner. A committed record's content is stored
+once, and a review lane's packet names its ledger by ticket path and tip
+identity rather than copying the chain.
+
+T0 supersession record sha256:441bc5276a8ba5e7f92a76163d7deedcf764781f13ad94c60f4fed89824f9f5a:
+the packet is not a wire object any more; it is not an object at all. The
+`dispatch_packet` shape, its twelve remaining fields, the `dispatch-packet`
+verb, and the `--packet-file` carriage are removed, and the `packet` record
+kind is renamed `launch` and reshaped to the emitted invocation: `host`,
+`verb`, `agent`, `model`, `effort`, native `fields`, and the generated
+`prompt`. `dispatch` is the one operation that commits it, under one run
+lock, and replaying that call returns the committed launch unchanged. The
+prompt becomes the whole child-facing instruction surface and carries, once
+each, the facts a child cannot derive: its ticket's absolute path, the
+established workspace, this host's verified interpreter, the resolved pack
+craft and that craft's verification-scope sentence, a review lane's root
+ticket path, the assigned name, the lease deadline, the filled filing and
+closing commands, and the turn-completion rule for every check. The launch
+record carries no identity of its own: its stored success binds it to the
+attempt, and the join reads the executed tree off the attempt's
+`workspace_path` rather than off any record.
+
+T0 supersession record sha256:6c60b8402bfe79e2ed262b91c512471c2b850d5fca73403ce8c9a73ae7309308:
+the closing envelope no longer names a disposition. `status` leaves the
+`dispatch_outcome` shape and the whole typed-close flag it selected, so an
+outcome's existence closes the attempt and says nothing more; `Handoff`
+stops being coupled to a disposition the envelope cannot carry and is
+simply optional evidence. `dispatch-join` takes the disposition it records
+through a required `--status`, and `dispatch_join_success` is that value's
+one declaring home. The review chain ends at `RepairOutcome`: the
+`Verification` record kind, its shape, the `verify` review kind, and the
+`PASS`/`FAIL`/`UNVERIFIED` verdict token the join used to parse out of a
+child's prose are all removed, and the prompt teaches no token in their
+place. The fresh outside check is the landed ticket's own `done` predicate,
+run by `land` in the tree it has just merged the candidate into.
+
+T0 supersession record sha256:83bebaf00635c6cb8e2b6f6681024c6ea7f8ca35196b5e3efcfff69dc006ff15:
+the return has one channel. `dispatch_outcome_evidence` is gone: `evidence` is
+one non-empty string, the child's closing note, and the five typed close flags
+become `--note` and `--note-file` while `--file` keeps relaying a whole
+canonical envelope. Nothing parses that note, so the delta rule that refused a
+repeat of already-streamed evidence is gone with the sections it compared.
+`dispatch_result_record` and `dispatch_result_projection` lose `section` and
+`mode` for the same reason -- one section, one mode, both constants restated on
+the wire. A critique's complete findings reach `dispatch-join` through
+`--findings-file <path|->` beside the accepted subset's `--accepted-file`,
+rather than being read back out of the records the child streamed. The prompt
+names what a report is expected to carry and teaches no filing taxonomy.
+
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
 
@@ -184,6 +256,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `owner` | yes | — |
 | `records` | yes | — |
 | `state` | yes | `live`, `retired`, `replaced` |
+| `workspace_path` | no | — |
 | `retired_at` | no | — |
 | `retirement` | no | — |
 | `replaced_at` | no | — |
@@ -197,7 +270,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | --- | --- | --- |
 | `committed_at` | yes | — |
 | `content` | yes | — |
-| `kind` | yes | `generic`, `packet`, `receipt`, `result`, `outcome`, `join`, `lifecycle` |
+| `kind` | yes | `generic`, `launch`, `result`, `outcome`, `join`, `lifecycle` |
 | `record_id` | yes | — |
 | `success` | yes | — |
 
@@ -216,20 +289,12 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `id` | yes | — |
 | `dispatch_id` | yes | — |
 | `record_id` | yes | — |
-| `content` | yes | — |
 
-### `dispatch_packet_record`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `packet` | yes | — |
-
-### `dispatch_receipt_record`
+### `dispatch_launch_record`
 
 | field | required | declared values |
 | --- | --- | --- |
-| `packet` | yes | — |
-| `receipt` | yes | — |
+| `launch` | yes | — |
 
 ### `dispatch_result_record`
 
@@ -237,9 +302,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | --- | --- | --- |
 | `assignment_seal` | yes | — |
 | `body` | yes | — |
-| `mode` | yes | — |
 | `operation` | yes | — |
-| `section` | yes | — |
 | `writer` | yes | — |
 
 ### `dispatch_result_success`
@@ -256,8 +319,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `run` | yes | — |
 | `id` | yes | — |
 | `path` | yes | — |
-| `section` | yes | — |
-| `mode` | yes | — |
 | `by` | yes | — |
 | `assignment_seal` | yes | — |
 | `dispatch_id` | yes | — |
@@ -297,20 +358,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `lease_expires_at` | yes | — |
 | `opened_at` | yes | — |
 | `state` | yes | `live` |
-
-### `dispatch_packet_reference`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `id` | yes | — |
-| `run` | yes | — |
-
-### `dispatch_inline_snapshot`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `assignment` | yes | — |
-| `envelope_seal` | yes | — |
 
 ### `dispatch_join_content`
 
@@ -353,48 +400,21 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `dispatch_id` | yes | — |
 | `outcome_record_id` | yes | — |
 | `by` | yes | — |
-| `status` | yes | — |
+| `status` | yes | `complete`, `blocked`, `stalled`, `limited`, `failed`, `suspended` |
 | `joined_at` | yes | — |
 | `review_identity` | no | — |
 
-### `dispatch_packet`
+### `dispatch_launch`
 
 | field | required | declared values |
 | --- | --- | --- |
-| `protocol` | yes | — |
-| `source` | yes | — |
-| `dispatch_id` | yes | — |
-| `assignment_seal` | yes | — |
-| `outcome_record_id` | yes | — |
-| `lease_expires_at` | yes | — |
-| `executor` | yes | — |
-| `role` | yes | — |
-| `profile` | yes | — |
-| `assigned_name` | yes | — |
-| `reply_to` | yes | — |
-| `workspace` | yes | — |
-| `pack` | yes | — |
-| `independence` | yes | — |
-| `isolation` | yes | — |
-| `admission` | yes | — |
+| `host` | yes | — |
+| `verb` | yes | — |
+| `agent` | yes | — |
+| `model` | yes | — |
+| `effort` | yes | — |
+| `fields` | yes | — |
 | `prompt` | yes | — |
-| `review_kind` | yes | `critique`, `repair`, `verify`, `null` |
-| `form` | yes | `reference`, `inline` |
-| `durability` | yes | `ticket`, `ephemeral` |
-| `reference` | no | — |
-| `inline` | no | — |
-
-### `dispatch_receipt`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `protocol` | yes | `orchflows.dispatch.v1` |
-| `outcome` | yes | `accepted` |
-| `dispatch_id` | yes | — |
-| `assignment_seal` | yes | — |
-| `form` | yes | — |
-| `durability` | yes | `ticket` |
-| `state_sink_checked` | yes | — |
 
 ### `dispatch_outcome`
 
@@ -407,17 +427,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `dispatch_id` | yes | — |
 | `outcome_record_id` | yes | — |
 | `by` | yes | — |
-| `status` | yes | `complete`, `blocked`, `stalled`, `limited`, `failed`, `suspended` |
 | `evidence` | yes | — |
-
-### `dispatch_outcome_evidence`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `Result` | yes | — |
-| `Verification` | yes | — |
-| `Feedback` | yes | — |
-| `Risks` | yes | — |
-| `Handoff` | yes | — |
 
 <!-- END GENERATED T0 SHAPES -->

@@ -18,7 +18,7 @@ from case_validation import (
     run_probe_output,
 )
 
-# ``compositions/references/benchmaker-manifest.md`` owns these eight.
+# ``example-workflows/references/benchmaker-manifest.md`` owns these eight.
 POST_QUALIFICATION_FIELDS = (
     "anchors",
     "builders",

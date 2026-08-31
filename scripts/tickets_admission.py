@@ -8,20 +8,27 @@ from pathlib import Path
 
 if __package__:
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from .tickets_adapters import AdapterError, adapter_spec
+    from .tickets_adapters import AdapterError, adapter_spec, pack_digest
     from .tickets_format import (
-        GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
-        _executor_of, _parse_frontmatter,
+        DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
+        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
+        is_review_stage_id, _executor_of, _parse_frontmatter,
+        _set_frontmatter_field,
     )
 else:
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
-    from tickets_adapters import AdapterError, adapter_spec
+    from tickets_adapters import AdapterError, adapter_spec, pack_digest
     from tickets_format import (
-        GATE_ID_MARKER, ROOT_EXECUTOR, SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json,
-        _executor_of, _parse_frontmatter,
+        DELIVERED_STATE, RESULT_BEARING_STATES, ROOT_EXECUTOR,
+        SCRIPT_EXECUTOR_PREFIX, adapter_id, canonical_json, dequote,
+        is_review_stage_id, _executor_of, _parse_frontmatter,
+        _set_frontmatter_field,
     )
 
 ADMISSION_PENDING = "pending"
+# Re-exported, never respelled: `tickets_format` owns which terminal states
+# carry a Result, because `tickets_readiness` answers the same question for
+# the reader and the two spellings had already drifted.
 _RECEIPT_RE = re.compile(r"^([a-z][a-z0-9-]*):sha256:([0-9a-f]{64})$")
 
 
@@ -52,6 +59,31 @@ def adapter_resolution(pack):
         return None, finding(error.code, "pack", error.detail)
 
 
+def pinned_digest_finding(pack: str, pinned: str):
+    """Refuse a stamped pack whose content is no longer what was sealed.
+
+    The seal is the lockfile: it records the pack's digest at slice time,
+    and every later door compares the resolved pack against it. Without
+    this the ticket carried the pack's *name*, and a name resolves to
+    whatever bytes happen to be nearest -- which is how a project ring
+    would have shadowed the pack a run was admitted under.
+    """
+
+    try:
+        current = pack_digest(pack)
+    except AdapterError as error:
+        return finding(error.code, "pack_digest", error.detail)
+    if current == pinned:
+        return None
+    return finding(
+        "pack-digest-mismatch", "pack_digest",
+        f"pack '{pack}' resolves to {current}, but this sealed assignment "
+        f"pinned {pinned}: the pack changed under the seal, or another ring "
+        "now shadows it. Restore the pinned pack, or open a new generation "
+        "(tickets.py stamp-generation) against the pack you mean to run.",
+    )
+
+
 def binding_findings(ticket_id: str, data: dict) -> list:
     """Grade script resolution and adapter-owned operational isolation."""
     findings = []
@@ -71,8 +103,7 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     unbound = (
         executor.startswith(SCRIPT_EXECUTOR_PREFIX)
         or executor == ROOT_EXECUTOR
-        or ".gate." in ticket_id
-        or ticket_id.endswith(".check")
+        or is_review_stage_id(ticket_id)
     )
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
         target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
@@ -85,34 +116,55 @@ def binding_findings(ticket_id: str, data: dict) -> list:
         adapter, adapter_failure = adapter_resolution(pack)
         if adapter_failure is not None:
             findings.append(adapter_failure)
-        elif adapter and adapter_spec(pack).establishes_isolation and str(data.get("isolation") or "none").strip() != "required":
-            findings.append(finding(
-                "vcs-isolation-required", "isolation",
-                "the selected adapter requires an isolated candidate workspace",
-            ))
+    pinned = str(data.get("pack_digest") or "").strip()
+    if pack and pinned:
+        mismatch = pinned_digest_finding(pack, pinned)
+        if mismatch is not None:
+            findings.append(mismatch)
+    elif pinned:
+        findings.append(finding(
+            "pack-digest-unbound", "pack_digest",
+            "a pinned pack digest without a stamped pack names nothing",
+        ))
     return findings
+
+
+def graph_descendants(ticket_id: str, siblings) -> list:
+    """The executor-result members one ticket owns, gates and checks excluded."""
+    return [
+        identifier for identifier in dict(siblings or {})
+        if identifier.startswith(ticket_id + ".")
+        and not is_review_stage_id(identifier)
+    ]
+
+
+def graph_closed(ticket_id: str, siblings, *evidence) -> bool:
+    """Whether a decomposed root yet owes ``graph_findings`` a member count.
+
+    Members close the shape wherever it is graded.  Each door adds the
+    evidence it alone owns that the cut is final -- a delivered status, a
+    draft's named membership, a carried cut identity.  A sealed root with
+    none of them is still at the graph bootstrap door: it is dispatched to
+    the decomposer precisely so that its members can come to exist, and
+    grading the count there would refuse every run at its first dispatch.
+    """
+    return bool(graph_descendants(ticket_id, siblings)) or any(bool(item) for item in evidence)
 
 
 def graph_findings(ticket_id: str, data: dict, siblings: dict, *, complete=False) -> list:
     """Grade the graph shape owned by one ticket without consulting prose.
 
-    ``orch-decompose`` is the only root executor that may own executor-result
+    ``orch-slice`` is the only root executor that may own executor-result
     members.  A root marked as an ordinary checker would leave the graph's
     authority with a caller, so it is refused at every admission door.  The
     member-count checks are deferred until a generation is being validated:
     the first root ticket is necessarily issued before its members exist.
     """
-    siblings = dict(siblings or {})
     executor = _executor_of(data)
-    descendants = [
-        identifier for identifier in siblings
-        if identifier.startswith(ticket_id + ".")
-        and GATE_ID_MARKER not in identifier
-        and not identifier.endswith(".check")
-    ]
+    descendants = graph_descendants(ticket_id, siblings)
     findings = []
     if executor == ROOT_EXECUTOR:
-        if str(data.get("independence") or "").strip().strip("`").strip() == "checker":
+        if dequote(data.get("independence")) == "checker":
             findings.append(finding(
                 "decomposed-root-checker", "independence",
                 "a decomposed root must declare independence=gate",
@@ -145,16 +197,10 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
         ticket_id[:-len(".check")]
     ]:
         return dependencies[0], None
-    target_id = None
-    kind = None
-    if ticket_id.endswith(".gate.repair"):
-        target_id = ticket_id[:-len(".gate.repair")]
-        kind = "repair"
-    elif ticket_id.endswith(".gate.verify"):
-        target_id = ticket_id[:-len(".gate.verify")]
-        kind = "verify"
-    else:
+    if not ticket_id.endswith(".gate.repair"):
         return None
+    target_id = ticket_id[:-len(".gate.repair")]
+    kind = "repair"
     target_text = siblings.get(target_id)
     checker_text = siblings.get(f"{target_id}.check")
     if target_text is None or checker_text is None:
@@ -194,12 +240,12 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     adapter, adapter_failure = adapter_resolution(data.get("pack"))
     if adapter_failure is not None:
         findings.append(adapter_failure)
-    # A ticket only reaches admission after a cut has been sealed.  During
-    # issue/stamp emission the root is deliberately incomplete; once it
-    # carries a cut identity, its graph is a closed shape and must satisfy
-    # the same member-count grade as the generation and routing doors.
+    # A sealed decomposed root reaches this door before its members are
+    # issued; a delivered one has had every member it will ever own.
+    delivered = dequote(data.get("status")) == DELIVERED_STATE
     findings.extend(graph_findings(
-        ticket_id, data, siblings, complete=bool(str(data.get("cut_generation") or "").strip())
+        ticket_id, data, siblings,
+        complete=graph_closed(ticket_id, siblings, delivered),
     ))
     dependencies = [str(value) for value in (data.get("depends_on") or [])]
     for dependency in dependencies:
@@ -207,7 +253,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             findings.append(finding("dependency-dangling", "depends_on", dependency))
         else:
             status = str(_parse_frontmatter(siblings[dependency]).get("status") or "")
-            if status != "complete":
+            if status not in RESULT_BEARING_STATES:
                 findings.append(finding("dependency-incomplete", "depends_on", f"{dependency}:{status or '<missing>'}"))
     findings.extend(binding_findings(ticket_id, data))
     sealed_record = None
@@ -220,8 +266,8 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     else:
         directory = Path(runs_root) / run / "generations"
         try:
-            sealed_record = json.loads((directory / f"{match.group(4)}.sealed.json").read_text(encoding="utf-8"))
-            validated = json.loads((directory / f"{match.group(4)}.validated.json").read_text(encoding="utf-8"))
+            sealed_record = json.loads((directory / f"{match.group(4)}.sealed.json").read_text(encoding="utf-8-sig"))
+            validated = json.loads((directory / f"{match.group(4)}.validated.json").read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeDecodeError, ValueError):
             findings.append(finding("seal-state-missing", "cut_generation", "sealed and validated records must resolve"))
         else:
@@ -281,8 +327,66 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
     }
 
 
+def dependency_order_findings(ticket_id: str, data: dict) -> list:
+    """Refuse an unsorted ``depends_on`` where it is still cheap to fix.
+
+    Two orderings of one edge set are two assignment digests, so the same
+    cut authored twice seals as two different generations. The digest is not
+    changed to absorb that -- doing so would invalidate every historical
+    seal -- the authoring door refuses it instead, while the list is still a
+    draft nobody has been dispatched against.
+    """
+
+    dependencies = [str(value) for value in (data.get("depends_on") or [])]
+    if dependencies == sorted(dependencies):
+        return []
+    return [{
+        "code": "depends-on-unsorted",
+        "field": "depends_on",
+        "ticket": ticket_id,
+        "detail": "depends_on must be in ascending order: " + ", ".join(sorted(dependencies)),
+    }]
+
+
+def refresh_admissions(run, run_dir, snapshot: dict, write_atomically) -> list:
+    """Re-issue the receipts one lawful mutation of this run invalidated.
+
+    A receipt names the exact state it was taken over, so a member promoted
+    under one generation holds a receipt only that generation recomputes.
+    Re-generationing the run therefore leaves every promoted member stale --
+    a lawful recut, and then the root's next dispatch refused for a staleness
+    the recut itself introduced, five times before this was written.
+
+    Only a member already carrying a real receipt is touched: a pending one
+    holds ``ADMISSION_PENDING`` and takes its receipt at promotion, and a
+    member the mutation left ungradable keeps the stale value rather than
+    being given a receipt over findings. Returns the ids rewritten, so the
+    caller reports the repair instead of leaving it silent.
+    """
+
+    if __package__:
+        from .tickets_context import graded_admission
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_context import graded_admission
+    current = dict(snapshot)
+    rewritten = []
+    for ticket_id in sorted(current):
+        stored = str(_parse_frontmatter(current[ticket_id]).get("admission") or "")
+        if not stored or stored == ADMISSION_PENDING:
+            continue
+        grade = graded_admission(ticket_id, current[ticket_id], current, run)
+        if grade["findings"] or grade["receipt"] == stored:
+            continue
+        text = _set_frontmatter_field(current[ticket_id], "admission", grade["receipt"])
+        current[ticket_id] = text
+        write_atomically(Path(run_dir) / f"{ticket_id}.md", text)
+        rewritten.append(ticket_id)
+    return rewritten
+
+
 __all__ = (
-    "ADMISSION_PENDING", "adapter_id",
-    "binding_findings", "finding", "graph_findings",
-    "grade_admission", "is_receipt",
+    "ADMISSION_PENDING", "RESULT_BEARING_STATES", "adapter_id",
+    "binding_findings", "dependency_order_findings", "finding",
+    "graph_findings", "grade_admission", "is_receipt", "pinned_digest_finding",
+    "refresh_admissions",
 )

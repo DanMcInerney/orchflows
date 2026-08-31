@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.tickets_format import _parse_frontmatter
-from scripts.tickets_sequence import _is_stage_name, _is_skill_name
 from reader.scripts import ui_workflows_identity as identity
 
 
@@ -46,28 +45,11 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
     stub_id = fields.get("id")
     executor = fields.get("executor")
     executor_is_slot = executor == "{{executor}}"
-    sequence = fields.get("sequence")
     if isinstance(executor, list):
         raise WorkflowCompositionError("composition executor must be scalar")
-    if executor_is_slot:
-        executors = []
-    elif sequence is None:
-        executors = [executor]
-    elif not isinstance(sequence, list) or not sequence:
-        raise WorkflowCompositionError("composition sequence must start with executor")
-    elif (
-        all(_is_stage_name(member) for member in sequence)
-        and isinstance(fields.get("pack"), str)
-        and fields["pack"].strip()
-    ):
-        # Pack-cell stages are data validated against the stamped pack.  The
-        # composition projection exposes their one bound executor, rather
-        # than inventing skill nodes for stage labels.
-        executors = [executor]
-    elif not all(_is_skill_name(member) for member in sequence) or sequence[0] != executor:
-        raise WorkflowCompositionError("composition sequence must start with executor")
-    else:
-        executors = sequence
+    # A multi-stage pack runs its stages at the stub's one executor; the
+    # projection never invents skill nodes for stage labels.
+    executors = [] if executor_is_slot else [executor]
     try:
         identity.work_node_id(workflow, stub_id)
         if not executors and not executor_is_slot:
@@ -85,16 +67,18 @@ def _stub(root: Path, path: Path, workflow: str) -> dict:
         except identity.WorkflowIdentityError as error:
             raise WorkflowCompositionError("composition has a malformed dependency") from error
     bound = fields.get("bound")
-    if executors == ["orch-loop"] and (
+    is_loop = bool(str(fields.get("loop") or "").strip())
+    if is_loop and (
         not isinstance(bound, str) or not bound or bound != bound.strip()
     ):
         raise WorkflowCompositionError("loop work must declare its bound")
-    installed_path = f"lib/compositions/{workflow}/{path.name}"
+    installed_path = f"lib/example-workflows/{workflow}/{path.name}"
     return {
         "id": stub_id,
         "executors": executors,
         "depends_on": dependencies,
         "bound": bound,
+        "loop": is_loop,
         "installed_path": installed_path,
     }
 
@@ -146,7 +130,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
 
     root = Path(root)
     workflow_id = _canonical_name(workflow_id, "workflow")
-    directory = root / "compositions" / workflow_id
+    directory = root / "example-workflows" / workflow_id
     template = directory / "template.md"
     template_fields = _fields(root, template)
     if template_fields.get("name") != workflow_id:
@@ -163,7 +147,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
 
     nodes = {}
     workflow_node = identity.workflow_node_id(workflow_id)
-    template_source = f"lib/compositions/{workflow_id}/template.md"
+    template_source = f"lib/example-workflows/{workflow_id}/template.md"
     nodes[workflow_node] = {
         "id": workflow_node,
         "kind": "workflow",
@@ -219,7 +203,7 @@ def project_composition(root: Path = ROOT, workflow_id: str = "") -> dict:
             edges.setdefault(edge["id"], edge)
             executor_positions.setdefault(edge["id"], position)
 
-        if stub["executors"] == ["orch-loop"]:
+        if stub["loop"]:
             edge = _edge(
                 "loop",
                 work_id,

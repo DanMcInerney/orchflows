@@ -9,7 +9,7 @@ class TestASkippedCheckSaysSo(_IsolatedTree):
     """A check that finds nothing to check has not passed.
 
     The isolated tree is contracts/, tools/ and tests/ -- so the checks
-    keyed to skills/, packs/, compositions/, docs/, templates/ and
+    keyed to skills/, packs/, example-workflows/, docs/, templates/ and
     scripts/ find no owner and return. Returning is right: a fixture tree
     is not the library. Returning *silently* is the fallback -- the report
     then reads exactly like a run that graded all of it, and the one
@@ -29,7 +29,7 @@ class TestASkippedCheckSaysSo(_IsolatedTree):
             "scripts/state_root.py",      # the friction-location copies
             "AGENTS.md",                  # a surface budget
             "templates/host-block.md",    # the other surface budget
-            "compositions",               # the template contract
+            "example-workflows",               # the template contract
             "ARCHITECTURE.md",            # the backticked-name check
             "docs",                       # markdown link resolution
             "benchmarks",                 # ditto: one absent root silences it
@@ -92,7 +92,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
     contract is checked at the actual ROOT-relative seam, not just
     parse_frontmatter."""
 
-    def _write_skill(self, name: str, content: bytes, tier: str = "instances"):
+    def _write_skill(self, name: str, content: bytes, tier: str = "kernel"):
         skill_dir = self.tmp_path / "skills" / tier / name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_bytes(content)
@@ -108,7 +108,7 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         tree red on a directory the library merely has not finished emptying.
         (Such a home is still no place for a public reference: visibility §4
         wants an owning body naming the path, which is why `profiles.md` now
-        sits under `skills/engines/orch-frontier/`.)"""
+        sits in `hosts/`, beside the records it describes.)"""
         refs = self.tmp_path / "skills" / "kernel" / "orch-refsonly" / "references"
         refs.mkdir(parents=True)
         (refs / "profiles.md").write_text("A reference with no skill.\n", encoding="utf-8")
@@ -165,17 +165,6 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         self.assertEqual(1, result.returncode)
         self.assertIn("role", result.stdout)
         self.assertIn("badrolepkg", result.stdout)
-
-    def test_engine_declaring_role_other_than_none_is_error(self):
-        self._write_skill(
-            "someenginepkg",
-            b"---\nname: someenginepkg\ndescription: an engine with a non-none role\nrole: worker\n---\n"
-            b"Require: x.\nNever: y.\nReturn: z.\n",
-            tier="engines",
-        )
-        result = self._run()
-        self.assertEqual(1, result.returncode)
-        self.assertIn("engines skill must declare role: none", result.stdout)
 
     def test_workflow_declaring_planner_role_is_valid(self):
         self._write_skill(

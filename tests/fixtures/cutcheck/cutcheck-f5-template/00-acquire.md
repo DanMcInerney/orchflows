@@ -2,7 +2,7 @@
 id: 00-acquire
 run: cutcheck-f5-template
 status: pending
-executor: orch-decompose
+executor: orch-slice
 pack: orch-code-pack
 depends_on: []
 bound: 20 tool calls

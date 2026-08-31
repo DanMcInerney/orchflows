@@ -64,30 +64,6 @@ if sys.version_info < MIN_PYTHON:
         f"install.py`."
     )
 
-SCRIPT_NAMES = (
-    "browser_game_validate.py",
-    "cutcheck.py",
-    "doclint.py",
-    "friction.py",
-    "migrate_state.py",
-    "packs.py",
-    "search_plan.py",
-    "state_root.py",
-    "tickets.py",
-    "trace.py",
-    "ui.py",
-    "workspace.py",
-)
-SCRIPT_SUPPORT_PREFIXES = (
-    "tickets",
-    "ui",
-    "cutcheck",
-    "packs",
-    "search_plan",
-    "trace",
-    "workspace",
-    "migrate_state",
-)
 _LOCAL_ROOT = Path(__file__).resolve().parent
 if str(_LOCAL_ROOT) not in sys.path:
     sys.path.insert(0, str(_LOCAL_ROOT))
@@ -100,24 +76,16 @@ if _loaded_installer is not None:
                 del sys.modules[_module_name]
 
 
-def discover_script_names(scripts_dir: Path) -> tuple[str, ...]:
-    """Return entrypoints plus flat helpers owned by compatibility facades."""
-
-    entrypoints = set(SCRIPT_NAMES)
-    support = sorted(
-        path.name
-        for path in scripts_dir.glob("*.py")
-        if path.name not in entrypoints
-        and any(path.stem.startswith(f"{prefix}_") for prefix in SCRIPT_SUPPORT_PREFIXES)
-    )
-    return SCRIPT_NAMES + tuple(support)
-
-
+# Which files are installed is `installer/inventory.py`'s; re-exported here
+# because every caller reaches them through this facade.
+from installer.inventory import (
+    SCRIPT_NAMES, SCRIPT_SUPPORT_PREFIXES, discover_script_names,
+)
 from installer import planning as _planning
 from installer import presentation as _presentation
 from installer import application as _application
 from installer import runtime as _runtime
-from installer.doctor import inspect_installation
+from installer.doctor import inspect_installation, run_quick
 from installer.application import (
     _diverged_role_agents,
     _installed_file,
@@ -133,12 +101,10 @@ from installer.foundation import (
     AUTO_REMOVE_KINDS,
     CANONICAL_DIRS,
     CLAUDE_ADAPTER_SETS,
-    CLAUDE_CLI_CANDIDATES,
-    CLAUDE_MAX_TOOL_USE_CONCURRENCY,
+    CLAUDE_CLI_CANDIDATES, CLAUDE_MAX_TOOL_USE_CONCURRENCY,
     CLAUDE_SETTINGS_SCHEMA,
     CODEX_CLI_CANDIDATES,
-    CODEX_LIMITS_END,
-    CODEX_LIMITS_START,
+    CODEX_LIMITS_END, CODEX_LIMITS_START,
     CODEX_MAX_DEPTH,
     CODEX_MAX_THREADS,
     GROK_CLI_CANDIDATES, GROK_LIMITS_END, GROK_LIMITS_START,
@@ -157,12 +123,10 @@ from installer.foundation import (
     _claude_scope_home,
     _claude_settings_path,
     _claude_user_home,
-    _codex_agents_dir,
-    _codex_agents_path,
+    _codex_agents_dir, _codex_agents_path,
     _codex_config_path,
     _codex_hooks_warnings,
-    _codex_scope_home,
-    _codex_user_home,
+    _codex_scope_home, _codex_user_home,
     _frontend_home,
     _grok_agents_dir, _grok_config_path, _grok_rules_path,
     _grok_skills_dir, _grok_user_home,
@@ -327,7 +291,7 @@ def apply_plan(plan: Plan, keep_role_agents: bool | None = None, *, accepted_sou
         raise ValueError("installation supports user scope only")
     _sync_installer_seams()
     observed = resolve_source_commit() if source_commit is None else source_commit
-    accepted_source_commit(observed, accepted_source)
+    accepted_source_commit(observed, accepted_source, mutating=True)
     return _apply_plan(plan, observed, keep_role_agents)
 
 
@@ -364,6 +328,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Inspect the user installation for bootstrap drift; write nothing.",
     )
+    parser.add_argument("--quick", action="store_true", help="Doctor: compare only the receipt's source commit and host block, then exit; write nothing.")
     parser.add_argument(
         "--claude-adapters",
         choices=CLAUDE_ADAPTER_SETS,
@@ -399,7 +364,7 @@ def _resolve_scope(args) -> tuple[str, Path | None]:
 def main(argv=None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    doctor_requested = args.command == "doctor" or args.doctor
+    doctor_requested = args.command == "doctor" or args.doctor or args.quick
 
     if doctor_requested and args.uninstall:
         print("error: doctor and --uninstall are mutually exclusive", file=sys.stderr)
@@ -433,14 +398,21 @@ def main(argv=None) -> int:
             print(result["note"])
         return 0
 
-    source_commit = None
-    if doctor_requested or not args.dry_run or args.accepted_source is not None:
-        source_commit = resolve_source_commit()
-        try:
-            accepted_source_commit(source_commit, args.accepted_source)
-        except ValueError as error:
-            print(f"error: refusing source identity: {error}", file=sys.stderr)
-            return 1
+    source_commit = resolve_source_commit()
+    # Uninstall has already returned above; what remains that is not a dry
+    # run or a doctor probe consumes the checkout and must name the identity
+    # its gate accepted.  A read-only path grades one only if given one.
+    try:
+        accepted_source_commit(
+            source_commit, args.accepted_source,
+            mutating=not (args.dry_run or doctor_requested),
+        )
+    except ValueError as error:
+        print(f"error: refusing source identity: {error}", file=sys.stderr)
+        return 1
+
+    if args.quick:
+        return run_quick(source_commit)
 
     try:
         plan = build_plan(scope, project_root, args.claude_adapters)
@@ -461,6 +433,9 @@ def main(argv=None) -> int:
     # like a run that had planned the whole install.
     if args.dry_run:
         print_plan(plan)
+        unresolved = source_commit_warning(source_commit)
+        if unresolved:
+            print(unresolved, file=sys.stderr)
         if plan.runtime_action == "refuse":
             print(
                 f"error: refusing install because {private_runtime_home()} is "
@@ -495,10 +470,6 @@ def main(argv=None) -> int:
     drift = source_commit_drift_message(old_receipt, receipt.get("source_commit"))
     if drift:
         print(drift)
-    unresolved = source_commit_warning(receipt.get("source_commit"))
-    if unresolved:
-        print(unresolved, file=sys.stderr)
-
     print_summary(plan)
     return 0
 

@@ -87,8 +87,13 @@ def _identity(block) -> dict:
     return {"count": block.get("count"), "sha256": block.get("sha256")}
 
 
-def regenerate(manifest_path, tests_dir, discover, scan) -> dict:
-    """Rewrite the manifest's derived facts and report what moved."""
+def plan_regeneration(manifest_path, tests_dir, discover, scan):
+    """The bytes on disk, the bytes regeneration would write, and the report.
+
+    Pure: nothing here touches the manifest. `regenerate` writes what this
+    returns and `tools/regen.py --check` compares it without writing, so the
+    freshness gate and the regeneration cannot answer differently.
+    """
     path = Path(manifest_path)
     before_text = path.read_text(encoding="utf-8")
     before = json.loads(before_text)
@@ -98,9 +103,7 @@ def regenerate(manifest_path, tests_dir, discover, scan) -> dict:
     after_text = render(after)
     if sentinels_block(after_text) != sentinels_block(before_text):
         raise ValueError("regeneration would rewrite the sentinel roster")
-    with open(str(path), "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(after_text)
-    return {
+    return before_text, after_text, {
         "manifest": str(path),
         "before": _identity(before.get("discovery")),
         "after": _identity(after["discovery"]),
@@ -110,6 +113,16 @@ def regenerate(manifest_path, tests_dir, discover, scan) -> dict:
         },
         "unruled": unruled(after["mutation_owners"]),
     }
+
+
+def regenerate(manifest_path, tests_dir, discover, scan) -> dict:
+    """Rewrite the manifest's derived facts and report what moved."""
+    _before_text, after_text, report = plan_regeneration(
+        manifest_path, tests_dir, discover, scan
+    )
+    with open(str(Path(manifest_path)), "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(after_text)
+    return report
 
 
 def write_manifest(manifest_path, tests_dir, discover, scan, out=None) -> int:

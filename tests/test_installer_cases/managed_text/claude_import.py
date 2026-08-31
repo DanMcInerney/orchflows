@@ -93,9 +93,9 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             (home / ".claude").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
-                install.apply_plan(plan)
+                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
                 plan2 = install.build_plan("user", None)
-                install.apply_plan(plan2)
+                install.apply_plan(plan2, accepted_source=install.resolve_source_commit())
 
             claude_text = (home / ".claude" / "CLAUDE.md").read_text(encoding="utf-8")
             host_block_path = home / ".orchflows" / "host-block.md"
@@ -115,7 +115,7 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
 
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
-                install.apply_plan(plan)
+                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             claude_text = claude_md.read_text(encoding="utf-8")
             self.assertIn("# personal notes", claude_text)

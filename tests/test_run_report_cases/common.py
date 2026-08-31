@@ -97,7 +97,16 @@ def write_ticket(
 ) -> Path:
     run_dir = sink / "tickets" / run
     run_dir.mkdir(parents=True, exist_ok=True)
-    claimed = "claimed_at: {0}\nclaimed_by: unit_01\n".format(claimed_at) if claimed_at else ""
+    claimed = ""
+    if claimed_at:
+        state = {"protocol": "orchflows.dispatch.v1", "attempts": [{
+            "assignment_seal": "sha256:sealed", "dispatch_id": "D1",
+            "lease_expires_at": "2099-01-01T00:00:00Z",
+            "opened_at": claimed_at,
+            "outcome_record_id": "outcome", "owner": "unit_01",
+            "records": [], "state": "live",
+        }]}
+        claimed = "dispatch_v1: " + json.dumps(state, separators=(",", ":"), sort_keys=True) + "\n"
     path = run_dir / (tid + ".md")
     path.write_text(
         TICKET.format(tid=tid, run=run, status=status, executor=executor, claimed=claimed, verification=verification),
@@ -141,7 +150,7 @@ def build_sink(tmp: Path) -> Path:
         "terminal_at": "2026-08-16T10:30:00Z", "terminal_ticket_id": "00-root",
         "terminal_status": "complete", "elapsed_ms": 5400000,
     })
-    write_ticket(sink, COMPLETE_RUN, "00-root", status="complete", executor="orch-decompose",
+    write_ticket(sink, COMPLETE_RUN, "00-root", status="complete", executor="orch-slice",
                  claimed_at="2026-08-16T09:00:00Z", modified="2026-08-16T09:05:00Z")
     write_ticket(sink, COMPLETE_RUN, "00-root.01", status="complete", executor="orch-tdd",
                  claimed_at="2026-08-16T09:10:00Z", modified="2026-08-16T09:40:00Z",
@@ -154,7 +163,7 @@ def build_sink(tmp: Path) -> Path:
         "terminal_at": "2026-08-17T09:20:00Z", "terminal_ticket_id": "00-root",
         "terminal_status": "blocked", "elapsed_ms": 1200000,
     }, notes="`pnpm test` finished in 60s\n", notes_at="2026-08-17T09:20:00Z")
-    write_ticket(sink, BLOCKED_RUN, "00-root", status="complete", executor="orch-decompose",
+    write_ticket(sink, BLOCKED_RUN, "00-root", status="complete", executor="orch-slice",
                  claimed_at="2026-08-17T09:00:00Z", modified="2026-08-17T09:05:00Z")
     write_ticket(sink, BLOCKED_RUN, "00-root.01", status="pending", executor="orch-tdd",
                  modified="2026-08-17T09:20:00Z")

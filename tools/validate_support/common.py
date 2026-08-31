@@ -16,15 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 # reader can grep the report for every check that did not run.
 SKIPPED = "absent; check skipped"
 
-SKILL_TIERS = ("kernel", "engines", "workflows", "instances", "utilities")
+SKILL_TIERS = ("kernel", "workflows")
 # Words, not lines: a line count is met by widening lines, and was.
 # Markdown link targets are stripped first so a citation costs its label,
 # not its path.
 BODY_BUDGET = {
     "kernel": 300,
-    "instances": 300,
-    "utilities": 300,
-    "engines": 450,
     "workflows": 450,
     "pack": 150,
 }
@@ -33,38 +30,35 @@ LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # units next, every-run units widest. Ceilings only fall.
 SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 230}
 MANIFEST_BUDGET = 250
-# A stub's instruction ceiling is not here: a stub is a ticket before it is
-# issued, and `scripts/tickets.py` refuses an issued one over the same
-# number. `_ticket_law()` reads `INSTRUCTION_BUDGET` and `instruction_words`
-# from there, so the compiler and the sink cannot put the boundary in two
-# places -- this file's own counter charged an excluded action a word for
-# its list marker, and did.
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
 ROLE_VALUES = {"planner", "worker", "none"}
-ROLE_NONE_TIERS = ("engines",)
 PACK_SIGNATURE_CELLS = (
-    "slicing",
-    "workspace",
-    "required_spec_fields",
-    "craft",
     "adapter",
     "stages",
     "assembly",
-    "lens",
-    "evidence",
+    "craft",
 )
 PACK_TYPED_CELLS = ("adapter", "stages", "assembly")
-# The cells whose content is a whole reference file, so the duplication
-# linter compares what they point at rather than the pointer row. `lens`
-# is not among them: it binds a section of `craft`, not a file of its
-# own, and resolving it to craft.md would compare craft's content twice,
-# once under each cell name (REVIEW-2026-08-15
-# T7). Its row is compared as the text it is, which is three words and
-# so sits under CELL_CLAUSE_MIN_WORDS.
-CRAFT_CELLS_BY_POINTER = ("slicing", "evidence", "craft")
-CRAFT_BUDGET = 60
+# The one cell whose content is a whole reference file, so the duplication
+# linter compares what it points at rather than the pointer row — section
+# by section, per contracts/pack-signature.md's craft-section table.
+CRAFT_CELLS_BY_POINTER = ("craft",)
+# The craft sections every pack must carry (contracts/pack-signature.md
+# `## Craft sections`), and the optional two the linter still compares.
+CRAFT_MANDATORY_SECTIONS = (
+    "Vocabulary",
+    "Workspace",
+    "Spec fields",
+    "Outline",
+    "Slicing",
+    "Evidence",
+    "Lens",
+)
+CRAFT_OPTIONAL_SECTIONS = ("Shape", "Stages")
+# The sum of the folded parts at the fold (2026-08-30); only falls.
+CRAFT_BUDGET = 130
 # Cross-pack cell linter. Both figures are normative: with `doclint`'s
 # ratio under them the reported pair set is a function of these two and of
 # `doclint.DISTINCTIVE_MAX`, so moving any of them changes what the check
@@ -129,9 +123,11 @@ TERMINAL_TERM_RE = re.compile(r"stalled|limited|exit|terminal", re.IGNORECASE)
 # instead names the work-item carrier (the ticket) passes, because the
 # ticket's T0 shape carries all three fields -- rule 10's envelope-on-a-
 # named-T0-carrier form.
+# It named orch-frontier until the driver loop stopped being a skill.
+# `orch-execute` is the unit left whose Return leads with the whole envelope,
+# and this keeps that clause from being reworded into prose no join reads.
 ENVELOPE_UNITS = (
-    "orch-loop",
-    "orch-frontier",
+    "orch-execute",
 )
 ENVELOPE_VOCAB_RES = (
     ("status", re.compile(
@@ -148,7 +144,7 @@ ENVELOPE_VOCAB_RES = (
 
 # --- Ticket templates (contracts/work-item.md, Template and stub) ----
 #
-# A template is a directory `compositions/<name>/` holding `template.md`
+# A template is a directory `example-workflows/<name>/` holding `template.md`
 # plus one ticket stub per other `*.md` file; a stub is a ticket per
 # contracts/work-item.md missing only `run`, `status` and `claimed_*`,
 # with `{{placeholder}}` where instantiation fills a value. These checks
@@ -192,10 +188,10 @@ CARRIAGE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 CARRIAGE_DASH_SPLIT_RE = re.compile(r"[–—]")  # en dash, em dash
 # Rule 10(c) / pack-signature.md's sharing constraint: "the executor's and
 # assembly's Return files per work-item.md's filing law -- the ticket, or
-# the store the packet names."
+# the store the assignment names."
 # That law's two filing destinations -- "the ticket -- or the store the
-# packet names" -- are this check's two pass conditions: the bound skill's
-# own body names the ticket/work-item filing, or the pack's workspace cell
+# assignment names" -- are this check's two pass conditions: the bound skill's
+# own body names the ticket/work-item filing, or the pack's workspace
 # names a store; kernel-tier primitives stay domain-blind per the redteam
 # critique's Move 7 and rely on the second, rather than hardcoding
 # pack-specific filing language).
@@ -238,9 +234,10 @@ __all__ = (
     'json', 're', 'sys', 'Path',
     'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
     'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
-    'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES', 'ROLE_NONE_TIERS',
+    'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
-    'CRAFT_CELLS_BY_POINTER', 'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
+    'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
+    'CRAFT_BUDGET', 'CELL_SIMILARITY_THRESHOLD',
     'CELL_CLAUSE_MIN_WORDS', 'CALL_TOKEN_RE', 'REQUIRE_RE', 'NEVER_RE',
     'RETURN_RE', 'PACK_TABLE_CELL_RE', 'PACK_CELL_ROW_RE', 'CRAFT_ROW_RE',
     'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',

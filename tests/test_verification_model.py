@@ -73,15 +73,15 @@ class GoalEvidenceContractTest(unittest.TestCase):
         semantic = contract.split("## System-owned metadata", 1)[0]
         self.assertEqual(1, semantic.count("`## Goal`"))
         self.assertEqual(1, semantic.count("`## Context`"))
-        self.assertEqual(1, semantic.count("`## Suggested files`"))
+        self.assertEqual(1, semantic.count("`## Details`"))
         self.assertNotIn("## Done When", contract)
         self.assertNotIn("## Completion test", contract)
         self.assertNotIn("named oracle", contract)
 
-    def test_execute_consumes_pack_cells_and_records_post_work_evidence(self):
+    def test_execute_consumes_pack_craft_and_records_post_work_evidence(self):
         execute = read("skills/kernel/orch-execute/SKILL.md")
-        self.assertIn("pack's execute projection", execute)
-        self.assertRegex(execute, r"choose implementation,\s*tests, and verification")
+        self.assertIn("whole craft document", execute)
+        self.assertRegex(execute, r"Details prescribes[\s\S]*deviate and\s+report")
         self.assertRegex(execute, r"Stream the\s+executor record")
         self.assertIn("reserved outcome", execute)
         result_contract = " ".join(read("contracts/result.md").split())
@@ -95,14 +95,17 @@ class GoalEvidenceContractTest(unittest.TestCase):
         }
         for pack, anchors in expected.items():
             with self.subTest(pack=pack):
-                body = read(f"packs/orch-{pack}-pack/references/evidence.md")
+                craft = read(f"packs/orch-{pack}-pack/references/craft.md")
+                match = re.search(r"(?ms)^## Evidence\s*$(.*?)(?=^## |\Z)", craft)
+                self.assertIsNotNone(match, f"{pack} craft has no ## Evidence section")
+                body = match.group(1)
                 self.assertTrue(all(anchor in body for anchor in anchors))
                 self.assertNotIn("code tests are required", body.lower())
-        spec = read("skills/workflows/orch-spec/SKILL.md")
+        spec = read("skills/workflows/orch-outline/SKILL.md")
         self.assertIn("consistency observations", spec)
 
     def test_spec_distills_evidence_into_one_executable_semantic_root(self):
-        spec = read("skills/workflows/orch-spec/SKILL.md")
+        spec = read("skills/workflows/orch-outline/SKILL.md")
         match = re.search(r"(?s)Semantic root policy:\n\n(.*?)\n\nLifecycle:", spec)
         self.assertIsNotNone(match)
         fields = {}
@@ -140,7 +143,7 @@ class GoalEvidenceContractTest(unittest.TestCase):
 
 class SpecSuccessorLifecycleTest(unittest.TestCase):
     def test_topology_references_resolve_to_current_numbered_clauses(self):
-        spec = read("skills/workflows/orch-spec/SKILL.md")
+        spec = read("skills/workflows/orch-outline/SKILL.md")
         topology = read("rules/topology.md")
         clauses = set(re.findall(r"(?m)^(\d+)\.", topology))
         references = re.findall(
@@ -149,22 +152,20 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
             spec,
             flags=re.IGNORECASE,
         )
-        self.assertTrue(references, "orch-spec must cite the topology owner")
+        self.assertTrue(references, "orch-outline must cite the topology owner")
         self.assertEqual(
             [],
             [reference for reference in references if reference not in clauses],
-            "orch-spec cites a topology clause that does not exist",
+            "orch-outline cites a topology clause that does not exist",
         )
 
     def test_successor_trigger_has_a_fresh_authorized_materialization_path(self):
-        spec = " ".join(read("skills/workflows/orch-spec/SKILL.md").split())
+        spec = " ".join(read("skills/workflows/orch-outline/SKILL.md").split())
         required = (
             "materialization run",
             "planner ticket bound to this exact skill",
             "`tickets.py dispatch`",
-            "`tickets.py dispatch-receive`",
-            "durable accepted receipt",
-            "accepted predecessor `## Result` identity",
+            "accepted predecessor `## Report` identity",
             "fresh successor run",
             "`root_generation` ordinal `1`",
             "`tickets.py new`",
@@ -173,8 +174,8 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
             "`tickets.py seal`",
             "`planned` to `opened`",
             "next entry `planned`",
-            "`orch-integrate`",
-            "`orch-frontier`",
+            "`tickets.py land`",
+            "drained frontier",
         )
         for token in required:
             with self.subTest(token=token):
@@ -187,23 +188,23 @@ class SpecSuccessorLifecycleTest(unittest.TestCase):
 class CritiqueContractTest(unittest.TestCase):
     def test_check_owns_blockers_and_verification(self):
         check = read("skills/kernel/orch-check/SKILL.md")
-        self.assertIn("A critique enumerates evidence-backed blockers", check)
-        self.assertIn("smallest repair set", check)
-        self.assertIn("a verification records methods", check)
+        self.assertIn("A critique enumerates evidence-backed findings", check)
+        self.assertIn("one thread per shared cause", check)
+        self.assertIn("extinguishes the class", check)
+        self.assertIn("Write the complete\nseven-field findings array to one JSON file", check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-check/SKILL.md")
         self.assertIn("Never: edit the artifact", check)
         self.assertIn("mix a review stage with another kind", check)
-        self.assertIn("pack's check projection", check)
+        self.assertIn("`## Lens` owns\nthe review criteria", check)
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):
         surfaces = (
             "rules/verification.md",
             "skills/kernel/orch-check/SKILL.md",
-            "skills/engines/orch-frontier/SKILL.md",
             "scripts/tickets_dispatch_gate.py",
-            "scripts/tickets_packet.py",
+            "scripts/tickets_assignment.py",
             "contracts/pack-signature.md",
         )
         forbidden = (
@@ -234,8 +235,6 @@ class SeparateRepairGateTest(unittest.TestCase):
             "depends_on": list(depends_on),
             "isolation": "required" if executor == "orch-execute" else "none",
             "bound": "20m",
-            "claimed_by": "",
-            "claimed_at": "",
             "root_generation": "root:root:1:sha256:test",
         }
         return _render_ticket(fields, [
@@ -247,13 +246,13 @@ class SeparateRepairGateTest(unittest.TestCase):
             ("Risks", "[]"),
         ])
 
-    def test_single_lens_gate_emits_distinct_critique_repair_verify_tickets(self):
+    def test_single_lens_gate_emits_distinct_critique_and_repair_tickets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             run_dir = root / "run"
             run_dir.mkdir()
             (run_dir / "root.md").write_text(
-                self._ticket_text("root", "orch-decompose"), encoding="utf-8"
+                self._ticket_text("root", "orch-slice"), encoding="utf-8"
             )
             (run_dir / "root.01.md").write_text(
                 self._ticket_text("root.01", "orch-execute"), encoding="utf-8"
@@ -268,8 +267,8 @@ class SeparateRepairGateTest(unittest.TestCase):
             self.assertEqual([
                 "root.gate.critique.code",
                 "root.gate.repair",
-                "root.gate.verify",
             ], result["gate"]["tickets"])
+            self.assertFalse((run_dir / "root.gate.verify.md").exists())
             critique = (run_dir / "root.gate.critique.code.md").read_text(encoding="utf-8")
             repair = (run_dir / "root.gate.repair.md").read_text(encoding="utf-8")
             self.assertNotIn("sequence:", critique)
@@ -283,7 +282,7 @@ class SeparateRepairGateTest(unittest.TestCase):
             run_dir = root / "run"
             run_dir.mkdir()
             (run_dir / "root.md").write_text(
-                self._ticket_text("root", "orch-decompose"), encoding="utf-8"
+                self._ticket_text("root", "orch-slice"), encoding="utf-8"
             )
             (run_dir / "root.01.md").write_text(
                 self._ticket_text("root.01", "orch-execute"), encoding="utf-8"

@@ -214,40 +214,109 @@ class TestGuardedSeams(unittest.TestCase):
         self.assertIn("FAILED MODULE: test_fixture (exit 7)", report)
 
 
-class TestCaseTreeReach(unittest.TestCase):
-    """Every `*_cases/` package is reached by something discovery collects.
+def _module_name(path: Path) -> str:
+    """The dotted name `import` would use for one file under the repository."""
 
-    `discover` globs `test*.py` at the top level only, so a case package is
-    reached solely through a module that imports it. Delete that module and
-    the package stops running while every count stays green -- which is how
-    six packages sat unrun for two days after commit 932706a3 removed their
-    drivers and left them behind. A count cannot see this: the tests are not
-    failing, they are absent. So the reach is checked structurally.
+    parts = list(path.relative_to(REPO_ROOT).with_suffix("").parts)
+    if parts[-1] == "__init__":
+        parts.pop()
+    return ".".join(parts)
+
+
+def _import_edges(path: Path, name: str) -> set:
+    """Every module `path` names in an import statement, absolute or relative.
+
+    Read off the syntax tree rather than the text, because a package name
+    appearing in a docstring or a fixture string is not an import and was
+    exactly what let a severed chain read as reached.
     """
 
-    def test_every_case_package_is_imported_by_a_collected_module(self):
-        tests_dir = REPO_ROOT / "tests"
-        packages = sorted(
-            package for package in tests_dir.glob("*_cases")
-            if any(package.glob("*.py"))
+    import ast
+
+    package = name if path.name == "__init__.py" else name.rpartition(".")[0]
+    out = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8", errors="replace"))):
+        if isinstance(node, ast.Import):
+            out.update(alias.name for alias in node.names)
+            continue
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        base = package
+        for _ in range(max(node.level - 1, 0)):
+            base = base.rpartition(".")[0]
+        target = base + "." + node.module if node.level and node.module else (
+            node.module or base
         )
+        out.add(target)
+        out.update(target + "." + alias.name for alias in node.names)
+    return out
+
+
+class TestCaseTreeReach(unittest.TestCase):
+    """Every module of every `*_cases/` package is reached by discovery.
+
+    `discover` globs `test*.py` at the top level only, so a case module is
+    reached solely through the chain of imports that starts at one. Delete a
+    link and the modules behind it stop running while every count stays green
+    -- which is how six packages sat unrun for two days after commit 932706a3
+    removed their drivers, and how nineteen modules of `test_tickets_cases`
+    and seven of `test_workspace_cases` sat unrun behind three deleted links
+    for four days after `2182d018`. A count cannot see either: the tests are
+    not failing, they are absent. So the reach is walked structurally, module
+    by module -- a package whose entry module is imported proves nothing
+    about the modules only its own siblings named.
+    """
+
+    def _reached(self) -> set:
+        tests_dir = REPO_ROOT / "tests"
+        modules = {
+            _module_name(path): path
+            for path in sorted(tests_dir.rglob("*.py"))
+            if "__pycache__" not in path.parts
+        }
+        edges = {
+            name: {edge for edge in _import_edges(path, name) if edge in modules}
+            for name, path in modules.items()
+        }
+        # `discover` collects exactly the top-level `test*.py`; everything
+        # else runs only because one of those reaches it.
+        frontier = [
+            name for name, path in modules.items()
+            if path.parent == tests_dir and path.name.startswith("test")
+        ]
+        self.assertTrue(frontier, "discovery collects nothing")
+        seen = set()
+        while frontier:
+            current = frontier.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            frontier.extend(edges[current] - seen)
+        # importing a submodule imports its package, which no edge records
+        for name in list(seen):
+            parent = name.rpartition(".")[0]
+            while parent and parent in modules:
+                seen.add(parent)
+                parent = parent.rpartition(".")[0]
+        return seen
+
+    def test_every_case_module_is_imported_by_the_chain_discovery_starts(self):
+        tests_dir = REPO_ROOT / "tests"
+        reached = self._reached()
+        modules = [
+            path for package in sorted(tests_dir.glob("*_cases"))
+            for path in sorted(package.rglob("*.py"))
+            if "__pycache__" not in path.parts
+        ]
         # An empty corpus agrees with any rule; say so before comparing.
-        self.assertTrue(packages)
-        unreached = []
-        for package in packages:
-            # An importer names the package; the package's own files are
-            # excluded from being their own witness by the name check below.
-            importers = [
-                path for path in sorted(tests_dir.rglob("*.py"))
-                if package.name not in path.parts
-                and package.name in path.read_text(encoding="utf-8", errors="replace")
-            ]
-            if not importers:
-                unreached.append(
-                    f"{package.name}: nothing outside it names it -- "
-                    f"add tests/{package.name[:-len('_cases')]}.py re-exporting "
-                    f"its cases, or delete the package"
-                )
+        self.assertTrue(modules)
+        unreached = [
+            f"{_module_name(path)}: no collected module's import chain reaches "
+            f"it -- import its cases from the module that re-exports the "
+            f"package, or delete it"
+            for path in modules
+            if _module_name(path) not in reached
+        ]
         self.assertEqual([], unreached, "\n".join(unreached))
 
 
@@ -317,14 +386,15 @@ class TestSchedule(unittest.TestCase):
         )
 
     def test_a_cold_prior_covers_the_long_pole_of_every_matrix_leg(self):
-        """The prior was read off Linux, where these two are cheap. Each was
-        its own leg's longest module, sorted last, and ran alone to the end:
-        141s of macOS's 284s wall, 120s of py3.9's 207s."""
+        """The prior was read off Linux, where a leg's long pole is cheap:
+        a module sorted last by a cold schedule ran alone to the end of
+        its leg's wall clock, so the named prior starts the known poles
+        first."""
         modules = ["tests.test_alpha", "tests.test_serial_compat",
-                   "tests.test_ui", "tests.test_zeta"]
+                   "tests.test_workspace", "tests.test_zeta"]
         self.assertEqual(
-            ["tests.test_serial_compat", "tests.test_ui"],
-            run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR)[:2],
+            ["tests.test_workspace", "tests.test_serial_compat"],
+            sorted(run_tests.schedule(modules, {}, run_tests.DEFAULT_TESTS_DIR)[:2], reverse=True),
         )
 
     def test_shards_partition_the_schedule_exactly(self):
@@ -434,6 +504,42 @@ class TestChildEnv(unittest.TestCase):
         for key, value in os.environ.items():
             if key != "PYTHONIOENCODING":
                 self.assertEqual(value, env.get(key), key)
+
+    def test_a_parallel_dispatch_declares_its_worker_count(self):
+        self.assertEqual("6", run_tests.child_env(6).get("ORCHFLOWS_TEST_PARALLELISM"))
+
+    def test_a_serial_dispatch_declares_nothing_beyond_stdio(self):
+        self.assertEqual(run_tests.child_env(), run_tests.child_env(1))
+
+
+class TestParallelDispatchDeclaresLoad(unittest.TestCase):
+    """The declaration reaches real children of a real parallel dispatch."""
+
+    MODULE = textwrap.dedent(
+        '''\
+        import os
+        import unittest
+
+        class Declared(unittest.TestCase):
+            def test_it(self):
+                self.assertEqual("2", os.environ.get("ORCHFLOWS_TEST_PARALLELISM"))
+        '''
+    )
+
+    def test_children_of_a_two_worker_dispatch_see_two(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for name in ("test_decl_a.py", "test_decl_b.py"):
+                (Path(tmp) / name).write_text(self.MODULE, encoding="utf-8")
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(REPO_ROOT)
+            completed = subprocess.run(
+                [sys.executable, str(RUN_TESTS_PY), "--tests-dir", tmp,
+                 "--no-cache", "-j", "2"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+            )
+        self.assertEqual(0, completed.returncode, completed.stdout)
 
 
 class TestFailureOutputSurvivesTheConsole(unittest.TestCase):

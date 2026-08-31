@@ -739,12 +739,12 @@ C1's disjoint pass. They are marked `GATE-AUTHORED`, each carries the
 weakness the gate found against its own row, and sending them to a
 disjoint context is the first thing a successor run owes A9.
 
-Artifact keys: **PROT** `compositions/references/benchmaker-protocol.md`
+Artifact keys: **PROT** `example-workflows/references/benchmaker-protocol.md`
 · **EVD** `skills/workflows/orch-eval-design/SKILL.md` · **QC**
 `benchmarks/benchmaker/qualification/index.md` (+ the owning law in PROT
 §Qualification) · **MAN**
-`compositions/references/benchmaker-manifest.md` · **RCH**
-`compositions/references/benchmaker-research.md`.
+`example-workflows/references/benchmaker-manifest.md` · **RCH**
+`example-workflows/references/benchmaker-research.md`.
 
 | id | recommendation | artifact changed | failure prevented | evidence | witnesses | cost | verdict | rank |
 |---|---|---|---|---|---|---|---|---|

@@ -1,0 +1,296 @@
+"""The one ring resolver: fixed order, a reserved floor, and never-portable trust."""
+
+from __future__ import annotations
+
+import contextlib
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from scripts import rings, rings_trust
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+@contextlib.contextmanager
+def _world():
+    """A home ring, a project ring and a library, all under one temporary root."""
+
+    with tempfile.TemporaryDirectory(prefix="orchflows-rings-") as tmp:
+        root = Path(tmp).resolve()
+        home = root / "home"
+        project = root / "project"
+        lib = root / "lib"
+        for kind_dir in rings.RING_DIRS.values():
+            (home / kind_dir).mkdir(parents=True, exist_ok=True)
+            (project / ".orchflows" / kind_dir).mkdir(parents=True, exist_ok=True)
+        for kind_dir in rings.LIB_DIRS.values():
+            (lib / kind_dir).mkdir(parents=True, exist_ok=True)
+        with patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(home / "state")}):
+            yield {"root": root, "home": home, "project": project, "lib": lib}
+
+
+def _item(directory: Path, kind: str, name: str, body: str = "body\n") -> Path:
+    path = directory / name / rings.MANIFESTS[kind]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Bytes, not text: a Windows text write would already carry CRLF, and the
+    # line-ending case below would then be testing a mangling rather than a
+    # checkout difference.
+    path.write_bytes(f"---\nname: {name}\n---\n\n{body}".encode("utf-8"))
+    return path
+
+
+class RingOrderTests(unittest.TestCase):
+    def test_the_search_order_is_project_home_imports_then_lib(self):
+        with _world() as world:
+            (world["home"] / rings.IMPORTS_LOCK).write_text(
+                json.dumps({"imports": [{"name": "team", "url": "u", "pin": "p"}]}),
+                encoding="utf-8",
+            )
+            order = rings.item_roots(
+                "pack", project=world["project"], lib=world["lib"],
+            )
+
+            self.assertEqual(
+                ["project", "home", "imports", "lib"], [ring for ring, _ in order]
+            )
+            self.assertEqual(
+                [
+                    world["project"] / ".orchflows" / "packs",
+                    world["home"] / "packs",
+                    world["home"] / "imports" / "team" / ".orchflows" / "packs",
+                    world["lib"] / "packs",
+                ],
+                [path for _, path in order],
+            )
+
+    def test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib(self):
+        with _world() as world:
+            order = dict(
+                (ring, path)
+                for ring, path in rings.item_roots(
+                    "workflow", project=world["project"], lib=world["lib"],
+                )
+            )
+
+            self.assertEqual(world["project"] / ".orchflows" / "workflows", order["project"])
+            self.assertEqual(world["lib"] / "example-workflows", order["lib"])
+
+    def test_lib_skills_expand_one_sublayer(self):
+        with _world() as world:
+            (world["lib"] / "skills" / "kernel").mkdir(parents=True)
+            (world["lib"] / "skills" / "workflows").mkdir(parents=True)
+
+            libs = [
+                path
+                for ring, path in rings.item_roots("skill", project=world["project"], lib=world["lib"])
+                if ring == "lib"
+            ]
+
+            self.assertEqual(
+                [world["lib"] / "skills" / "kernel", world["lib"] / "skills" / "workflows"],
+                libs,
+            )
+
+    def test_a_bare_packs_ancestor_directory_is_not_a_root(self):
+        """The divergence S3 named: `<dir>/packs` used to be checked before
+        `<dir>/.orchflows/packs`, so admission and execution could read two
+        different files as one pack."""
+
+        with _world() as world:
+            _item(world["project"] / "packs", "pack", "loose")
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve(
+                    "pack", "loose", start=world["project"], lib=world["lib"],
+                )
+
+            self.assertEqual("unresolved", raised.exception.code)
+
+    def test_the_home_ring_is_never_read_as_a_project_ring(self):
+        with _world() as world:
+            self.assertIsNone(rings.project_ring(world["home"], world["home"]))
+
+    def test_missing_home_roots_do_not_break_resolution(self):
+        with _world() as world:
+            for kind_dir in rings.RING_DIRS.values():
+                (world["home"] / kind_dir).rmdir()
+            _item(world["lib"] / "packs", "pack", "shipped")
+
+            self.assertEqual(
+                "lib",
+                rings.resolve("pack", "shipped", project=world["project"], lib=world["lib"])["ring"],
+            )
+
+
+class ReservationAndShadowTests(unittest.TestCase):
+    def test_a_reserved_ring_name_refuses_loudly_rather_than_never_running(self):
+        with _world() as world:
+            path = _item(world["home"] / "skills", "skill", "orch-execute")
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve("skill", "orch-execute", project=world["project"], lib=world["lib"])
+
+            self.assertEqual("reserved-name", raised.exception.code)
+            self.assertIn(str(path), raised.exception.detail)
+            self.assertIn("orch-", raised.exception.detail)
+
+    def test_a_reserved_name_refuses_even_when_the_library_also_holds_it(self):
+        with _world() as world:
+            _item(world["lib"] / "packs", "pack", "orch-code-pack")
+            _item(world["project"] / ".orchflows" / "packs", "pack", "orch-code-pack")
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve("pack", "orch-code-pack", project=world["project"], lib=world["lib"])
+
+            self.assertEqual("reserved-name", raised.exception.code)
+
+    def test_the_library_keeps_its_own_reserved_names(self):
+        with _world() as world:
+            _item(world["lib"] / "packs", "pack", "orch-code-pack")
+
+            record = rings.resolve(
+                "pack", "orch-code-pack", project=world["project"], lib=world["lib"],
+            )
+
+            self.assertEqual("lib", record["ring"])
+
+    def test_a_non_reserved_collision_wins_nearest_and_names_both_paths(self):
+        with _world() as world:
+            near = _item(world["home"] / "skills", "skill", "digest")
+            far = _item(world["lib"] / "skills" / "kernel", "skill", "digest")
+
+            record = rings.resolve(
+                "skill", "digest", project=world["project"], lib=world["lib"],
+            )
+
+            self.assertEqual("home", record["ring"])
+            self.assertEqual(str(near), record["path"])
+            self.assertEqual(
+                [f"shadow: skill 'digest' resolves from the home ring at {near} "
+                 f"and shadows lib {far}"],
+                record["notices"],
+            )
+
+
+class TrustTests(unittest.TestCase):
+    def test_a_project_ring_refuses_until_the_user_grants_trust(self):
+        with _world() as world:
+            _item(world["project"] / ".orchflows" / "packs", "pack", "team-pack")
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve("pack", "team-pack", project=world["project"], lib=world["lib"])
+
+            self.assertEqual("bundle-untrusted", raised.exception.code)
+            self.assertIn("orchflows trust", raised.exception.detail)
+
+    def test_the_ledger_never_lives_inside_a_repository(self):
+        with _world() as world:
+            _item(world["project"] / ".orchflows" / "packs", "pack", "team-pack")
+            rings_trust.grant(world["project"] / ".orchflows")
+
+            self.assertEqual(world["home"] / "trust.json", rings_trust.ledger_path())
+            self.assertFalse((world["project"] / "trust.json").exists())
+            self.assertFalse((world["project"] / ".orchflows" / "trust.json").exists())
+
+    def test_a_repo_supplied_ledger_grants_nothing(self):
+        """FM-2: the policy that decides whether to trust a file is never
+        readable from that file."""
+
+        with _world() as world:
+            bundle = world["project"] / ".orchflows"
+            _item(bundle / "packs", "pack", "team-pack")
+            (bundle / "trust.json").write_text(
+                json.dumps({
+                    "version": 1,
+                    "trusted": [{
+                        "bundle": str(bundle),
+                        "digest": rings_trust.bundle_digest(bundle),
+                    }],
+                }),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(rings.RingError) as raised:
+                rings.resolve("pack", "team-pack", project=world["project"], lib=world["lib"])
+
+            self.assertEqual("bundle-untrusted", raised.exception.code)
+
+    def test_an_edit_outside_the_ring_directories_does_not_re_prompt(self):
+        with _world() as world:
+            bundle = world["project"] / ".orchflows"
+            _item(bundle / "packs", "pack", "team-pack")
+            rings_trust.grant(bundle)
+            (world["project"] / "README.md").write_text("changed\n", encoding="utf-8")
+            (bundle / "notes.md").write_text("changed\n", encoding="utf-8")
+
+            record = rings.resolve(
+                "pack", "team-pack", project=world["project"], lib=world["lib"],
+            )
+
+            self.assertEqual("project", record["ring"])
+
+    def test_revoke_drops_both_halves_of_the_two_step(self):
+        with _world() as world:
+            bundle = world["project"] / ".orchflows"
+            _item(bundle / "packs", "pack", "team-pack")
+            rings_trust.grant(bundle, once=True)
+            rings_trust.grant(bundle)
+
+            self.assertTrue(rings_trust.state(bundle)["trusted"])
+            rings_trust.revoke(bundle)
+            self.assertFalse(rings_trust.state(bundle)["trusted"])
+
+    def test_line_endings_do_not_change_a_bundle_digest(self):
+        with _world() as world:
+            bundle = world["project"] / ".orchflows"
+            path = _item(bundle / "packs", "pack", "team-pack")
+            before = rings_trust.bundle_digest(bundle)
+            path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+
+            self.assertEqual(before, rings_trust.bundle_digest(bundle))
+
+
+class InventoryTests(unittest.TestCase):
+    def test_inventory_reports_ring_shadows_and_trust_for_every_kind(self):
+        with _world() as world:
+            _item(world["home"] / "skills", "skill", "digest")
+            _item(world["lib"] / "skills" / "kernel", "skill", "digest")
+            _item(world["project"] / ".orchflows" / "workflows", "workflow", "team-flow")
+
+            records = {
+                (item["kind"], item["name"]): item
+                for item in rings.inventory(project=world["project"], lib=world["lib"])
+            }
+
+            self.assertEqual("home", records[("skill", "digest")]["ring"])
+            self.assertEqual(1, len(records[("skill", "digest")]["shadows"]))
+            self.assertEqual("inherent", records[("skill", "digest")]["trust"])
+            self.assertEqual("untrusted", records[("workflow", "team-flow")]["trust"])
+            rings_trust.grant(world["project"] / ".orchflows")
+            regraded = {
+                (item["kind"], item["name"]): item
+                for item in rings.inventory(project=world["project"], lib=world["lib"])
+            }
+            self.assertEqual("trusted", regraded[("workflow", "team-flow")]["trust"])
+
+    def test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it(self):
+        with _world() as world:
+            _item(world["home"] / "packs", "pack", "orch-code-pack")
+
+            record = next(
+                item
+                for item in rings.inventory(("pack",), project=world["project"], lib=world["lib"])
+                if item["name"] == "orch-code-pack"
+            )
+
+            self.assertTrue(record["reserved"])
+            self.assertIn("reserved", record["refusal"])
+
+
+if __name__ == "__main__":
+    unittest.main()

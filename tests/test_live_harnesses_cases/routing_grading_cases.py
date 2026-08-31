@@ -205,7 +205,7 @@ class TestRoutingGrading(unittest.TestCase):
 
     def test_planner_helper_edges_preserve_primary_skill_single_execution(self):
         events = [
-            _launch("planner-1", "orch-planner", "Apply orch-spec exactly"),
+            _launch("planner-1", "orch-planner", "Apply orch-outline exactly"),
             {
                 "type": "assistant",
                 "parent_tool_use_id": "planner-1",
@@ -215,7 +215,7 @@ class TestRoutingGrading(unittest.TestCase):
                             "type": "tool_use",
                             "id": "primary-1",
                             "name": "Skill",
-                            "input": {"skill": "orch-spec"},
+                            "input": {"skill": "orch-outline"},
                         },
                         {
                             "type": "tool_use",
@@ -231,23 +231,22 @@ class TestRoutingGrading(unittest.TestCase):
             },
             _child_skill("helper-1", "orch-investigate", tool_id="helper-skill"),
         ]
-        graded = self._conformance(events, role="planner", skill="orch-spec")
+        graded = self._conformance(events, role="planner", skill="orch-outline")
         self.assertEqual("passed", graded["status"])
         self.assertEqual(1, graded["primary_skill_executions"])
         self.assertEqual(1, graded["helper_launches"])
 
         redispatched = events + [
-            _child_skill("helper-1", "orch-spec", tool_id="redispatched-primary")
+            _child_skill("helper-1", "orch-outline", tool_id="redispatched-primary")
         ]
-        graded = self._conformance(redispatched, role="planner", skill="orch-spec")
+        graded = self._conformance(redispatched, role="planner", skill="orch-outline")
         self.assertEqual("failed", graded["status"])
         self.assertIn("primary_skill_redispatched", graded["reasons"])
 
     def test_routing_skills_grade_as_their_graph_shapes(self):
         expected = {
-            "orch-frontier": "single",
-            "orch-decompose": "graph",
-            "orch-spec": "spec",
+            "orch-slice": "graph",
+            "orch-outline": "spec",
         }
         for skill, route in expected.items():
             with self.subTest(skill=skill):
@@ -263,13 +262,13 @@ class TestRoutingGrading(unittest.TestCase):
 
     def test_the_removed_fix_name_is_only_a_named_invocation(self):
         self.assertEqual("named:fix", self._observed([_skill_use("fix")]))
-        posix = "tickets.py instantiate ~/.orchflows/lib/compositions/fix --run r"
+        posix = "tickets.py instantiate ~/.orchflows/lib/example-workflows/fix --run r"
         self.assertEqual("named:fix", self._observed([_bash_use(posix)]))
 
     def test_a_windows_rendered_removed_fix_path_stays_named(self):
         # The installed library path is what the host block hands the session,
         # and on Windows it arrives with backslashes.
-        windows = r"tickets.py instantiate C:\Users\x\.orchflows\lib\compositions\fix --run r"
+        windows = r"tickets.py instantiate C:\Users\x\.orchflows\lib\example-workflows\fix --run r"
         self.assertEqual("named:fix", self._observed([_bash_use(windows)]))
 
     def test_any_other_skill_grades_as_that_name(self):
@@ -320,7 +319,7 @@ class TestRoutingGrading(unittest.TestCase):
     def test_instantiating_a_template_grades_as_that_template(self):
         for name, expected in (("renovate", "named:renovate"), ("fix", "named:fix")):
             with self.subTest(name):
-                command = f"tickets.py instantiate ~/.orchflows/lib/compositions/{name} --run r"
+                command = f"tickets.py instantiate ~/.orchflows/lib/example-workflows/{name} --run r"
                 self.assertEqual(expected, self._observed([_bash_use(command)]))
 
     def test_a_transcript_with_nothing_route_bearing_is_unrouted(self):
@@ -354,10 +353,10 @@ class TestRoutingGrading(unittest.TestCase):
     def test_reading_before_routing_does_not_change_the_route(self):
         events = [
             _tool_use("Read", {"file_path": "/repo/scripts/ui.py"}),
-            _skill_use("orch-frontier", tool_id="t2"),
+            _skill_use("orch-slice", tool_id="t2"),
         ]
         graded = routing_live.grade_transcript(_stream(events))
-        self.assertEqual("single", graded["observed"])
+        self.assertEqual("graph", graded["observed"])
         self.assertEqual(2, graded["turns"])
 
     def test_the_first_route_bearing_event_decides_it(self):

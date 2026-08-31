@@ -36,6 +36,7 @@ from installer.models import BlockPlan, ConfigPlan, ImportPlan, Plan, _frontend_
 # in the receipt this test compares or fails the coverage test outright.
 UNEXERCISED_FIELDS = {
     "runtime_action": "the only non-None value builds a real private venv; it records no file",
+    "home_ring": "the user's own ring; the receipt deliberately records none of it",
 }
 
 

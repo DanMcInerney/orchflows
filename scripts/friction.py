@@ -18,6 +18,10 @@ Usage:
     python friction.py "<observed>" "<expected>"
         [--skill S] [--ticket T] [--run R]
 
+``--run`` is an override, not the only route to the field: absent, the run
+is resolved mechanically -- ``$ORCHFLOWS_RUN``, else the candidate
+workspace the caller is standing in. See ``_resolved_run``.
+
 Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
 one user-scope root ``scripts/state_root.py`` resolves —
 ``$ORCHFLOWS_STATE_HOME`` or ``~/.orchflows/state``. One stream for
@@ -50,6 +54,9 @@ FLAG_MAP = {
 # argparse itself uses, so a caller reading exit codes rather than stderr
 # still reads "you called it wrong" and not "the log failed".
 USAGE_EXIT = 2
+# The run a host declares for the process it launched. Read only when the
+# caller named none, so an explicit --run always wins.
+RUN_ENV_VAR = "ORCHFLOWS_RUN"
 SESSION_ENV_VARS = (
     "CLAUDE_SESSION_ID",
     "CLAUDE_CODE_SESSION_ID",
@@ -114,6 +121,22 @@ def _parse_args(argv):
             "flags: {1}".format(len(positional), ", ".join(sorted(FLAG_MAP)))
         )
     return positional[0], positional[1], options
+
+
+def _console():
+    """Import the console discipline, here rather than at module scope.
+
+    The same bar ``_state_root`` records, and for the same reason: nothing
+    outside the standard library may run while this module is imported, so
+    a partial install with no ``console.py`` beside this file costs the
+    UTF-8 console and never the line this logger exists to append.
+    """
+
+    try:  # in-repo; the installed copy sits flat beside console.py
+        from scripts import console
+    except ImportError:  # pragma: no cover - the installed copy's path
+        import console
+    return console
 
 
 def _state_root():
@@ -189,6 +212,43 @@ def _recorded_project(run, identity):
     return project if isinstance(project, dict) else None
 
 
+def _resolved_run(options):
+    """Which run this entry belongs to. Never raises, never blocks.
+
+    Every entry of 2026-08-30 carried ``run: null`` because the flag was
+    the only route to the field and no caller passed it, which left a
+    whole day of friction unqueryable by the run that produced it. So the
+    flag becomes an override over a mechanical answer, in this order:
+
+    1. ``--run`` -- the caller said so, and nothing outranks that.
+    2. ``$ORCHFLOWS_RUN`` -- the host declared it for this process.
+    3. The candidate workspace the caller is standing in. Which run's
+       tree a path is comes from ``state_root.candidate_identity``, the
+       inverse of the one derivation that placed it; the answer counts
+       only when the sink still holds that item's ticket, so a stale or
+       hand-made directory under the worktrees root names no run.
+
+    Nothing else resolves to a run. An unresolved run is ``null``, as it
+    has always been: this widens the field's coverage and never guesses.
+    """
+
+    named = options.get("run")
+    if named:
+        return named
+    declared = os.environ.get(RUN_ENV_VAR, "").strip()
+    if declared:
+        return declared
+    try:
+        root = _state_root()
+        identity = root.candidate_identity(Path.cwd())
+        if not identity:
+            return None
+        ticket = root.tickets_root() / identity["run"] / "{0}.md".format(identity["id"])
+        return identity["run"] if ticket.is_file() else None
+    except Exception:
+        return None
+
+
 def _in_a_repository():
     """Whether the caller is standing in a checkout at all."""
 
@@ -203,8 +263,8 @@ def _provenance(options):
 
     Precedence, and what each guard costs when it trips:
 
-    1. ``--run`` naming a run the sink already holds -> that run's own
-       recorded project, ``project_source: "run"``.
+    1. The resolved run (``_resolved_run``) naming a run the sink already
+       holds -> that run's own recorded project, ``project_source: "run"``.
     2. Otherwise the repository the caller stands in ->
        ``project_source: "cwd"``.
     3. Otherwise ``project: null``, ``project_source: "none"``.
@@ -377,6 +437,14 @@ def _append_line(path: Path, line: str) -> None:
 
 def _run(argv):
     observed, expected, options = _parse_args(argv)
+    # Before `_build_entry`, so the provenance lookup and the recorded
+    # field read the same run. Guarded here as well as inside, on the bar
+    # this file is held to: resolving a run may cost the field, never the
+    # entry.
+    try:
+        options["run"] = _resolved_run(options)
+    except Exception:
+        pass
     now = datetime.now(timezone.utc)
     entry = _build_entry(observed, expected, options, now)
     path = _target_path(now)
@@ -386,6 +454,10 @@ def _run(argv):
 
 
 def main(argv=None):
+    try:
+        _console().harden()
+    except Exception:  # pragma: no cover - the console is not the log
+        pass
     try:
         _run(sys.argv[1:] if argv is None else argv)
         print("friction logged")
@@ -401,5 +473,15 @@ def main(argv=None):
     return 0
 
 
+def _guarded(argv):
+    """``main`` under the console's discipline wherever there is one."""
+
+    try:
+        console = _console()
+    except ImportError:  # pragma: no cover - a partial install
+        return main(argv)
+    return console.run(main, argv)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+    raise SystemExit(_guarded(sys.argv[1:]))

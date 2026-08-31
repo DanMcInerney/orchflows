@@ -9,7 +9,7 @@ class TestDuplicationCorpus(_IsolatedTree):
     """validate_cross_tier_duplication's corpus and its one licensed pair.
 
     The check read packs, skills, rules, contracts and the host block —
-    compositions/ and docs/ were outside it, which is why seven templates
+    example-workflows/ and docs/ were outside it, which is why seven templates
     could copy a reference they were told to link, and two skills could
     carry a byte-identical clause with the linter flagging each of them
     against an innocent third file instead of against each other.
@@ -41,10 +41,10 @@ class TestDuplicationCorpus(_IsolatedTree):
     def test_a_template_stub_restating_a_rule_is_reported(self):
         self._write_skill("orch-real")
         self._write("rules/synthetic.md", "# Rule\n" + self.CLAUSE)
-        self._write("compositions/demo/00-step.md", "# Stub\n" + self.CLAUSE)
+        self._write("example-workflows/demo/00-step.md", "# Stub\n" + self.CLAUSE)
         result = self._run()
         self.assertTrue(
-            self.duplicates(result.stdout, "compositions/demo/00-step.md",
+            self.duplicates(result.stdout, "example-workflows/demo/00-step.md",
                             "rules/synthetic.md"),
             result.stdout,
         )
@@ -67,12 +67,12 @@ class TestDuplicationCorpus(_IsolatedTree):
         flagged against some unrelated pack cell."""
 
         self._write_skill("orch-real", self.CLAUSE)
-        self._write_skill("orch-other", self.CLAUSE, tier="instances")
+        self._write_skill("orch-other", self.CLAUSE, tier="workflows")
         result = self._run()
         self.assertTrue(
             self.duplicates(
                 result.stdout,
-                "skills/instances/orch-other/SKILL.md",
+                "skills/workflows/orch-other/SKILL.md",
                 "skills/kernel/orch-real/SKILL.md",
             ),
             result.stdout,
@@ -115,47 +115,58 @@ class TestLicensedCopies(unittest.TestCase):
         self.assertEqual([], reported, result.stdout)
 
 
-class TestLensAnchor(_IsolatedTree):
-    """validate_lens_anchor: a pack's lens cell anchor lands on a heading.
+class TestCraftSections(_IsolatedTree):
+    """validate_craft_sections: a pack craft carries every mandatory section.
 
-    The lens row is compared as three words of text and deliberately not
-    resolved, so deleting `## Lens` from a craft reference left the
-    validator at exit 0 and the suite green while every gate lane the pack
-    stamps pointed at a section that was not there.
+    Every verb reads the whole craft and acts under its named sections, so
+    deleting a heading once left the validator at exit 0 and the suite
+    green while the machinery pointed at a section that was not there.
     """
 
-    def _write_pack(self, name: str, craft: str):
+    MANDATORY = (
+        "Vocabulary", "Workspace", "Spec fields", "Outline",
+        "Slicing", "Evidence", "Lens",
+    )
+
+    def _write_pack(self, name: str, omit: str = ""):
         pack_dir = self.tmp_path / "packs" / name
         (pack_dir / "references").mkdir(parents=True)
         (pack_dir / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| lens | `orch-critique` with "
-            "[references/craft.md#lens](references/craft.md#lens) |\n",
+            "| adapter | git |\n"
+            "| stages | [stage] |\n"
+            "| assembly | none |\n"
+            "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
+        )
+        craft = "# Craft\n\n" + "".join(
+            "## %s\n\ncontent.\n\n" % section
+            for section in self.MANDATORY
+            if section != omit
         )
         (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
 
-    def test_a_lens_anchor_with_no_heading_is_an_error(self):
-        self._write_pack("orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n")
+    def test_a_craft_without_a_mandatory_heading_is_an_error(self):
+        for omit in ("Lens", "Slicing"):
+            with self.subTest(omit=omit):
+                self._write_pack("orch-synth-%s-pack" % omit.lower(), omit=omit)
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("craft.md#lens", result.stdout)
-        self.assertIn("## Lens", result.stdout)
+        self.assertIn("no `## Lens` heading", result.stdout)
+        self.assertIn("no `## Slicing` heading", result.stdout)
 
-    def test_a_lens_anchor_resolving_to_the_heading_is_clean(self):
-        self._write_pack(
-            "orch-synth-pack", "# Craft\n\n## Vocabulary\n\nterms.\n\n## Lens\n\ncriteria.\n"
-        )
+    def test_a_craft_with_every_mandatory_heading_is_clean(self):
+        self._write_pack("orch-synth-pack")
         result = self._run()
-        self.assertNotIn("craft.md#lens", result.stdout)
+        self.assertNotIn("craft carries no", result.stdout)
 
 
 class TestWordBudgetAndLinks(_IsolatedTree):
     """rules/composition.md §5 counts words with link targets stripped, and
     docs/documentation.md law 5's oracle resolves every markdown link."""
 
-    def _write_skill(self, name, body, tier="instances"):
+    def _write_skill(self, name, body, tier="kernel"):
         skill_dir = self.tmp_path / "skills" / tier / name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
@@ -169,7 +180,7 @@ class TestWordBudgetAndLinks(_IsolatedTree):
         self._write_skill("orch-wide", wide)
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)
-        self.assertIn("words, exceeds the instances budget of 300", result.stdout)
+        self.assertIn("words, exceeds the kernel budget of 300", result.stdout)
 
     def test_link_targets_do_not_count_and_a_narrow_body_under_budget_passes(self):
         links = "\n".join(
@@ -178,7 +189,7 @@ class TestWordBudgetAndLinks(_IsolatedTree):
         )
         self._write_skill("orch-linky", links)
         result = self._run()
-        self.assertNotIn("exceeds the instances budget", result.stdout)
+        self.assertNotIn("exceeds the kernel budget", result.stdout)
 
     def test_a_dangling_markdown_link_in_docs_is_an_error(self):
         for root in validate.LINKED_MD_ROOTS:

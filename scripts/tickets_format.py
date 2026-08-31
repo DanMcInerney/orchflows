@@ -17,54 +17,51 @@ else:
 if __package__:
     from .tickets_adapters import adapter_id
     from .tickets_shapes import (
+        DONE_BINDING_FIELDS, DONE_BINDING_REQUIRED, DONE_BINDING_VALUES,
         TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
         TICKET_FRONTMATTER_VALUES,
     )
     from .tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
-        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
+        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REPORT_SECTION,
+        REQUIRED_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
-        _sections, _set_frontmatter_field, _write_section,
-    )
-    from .tickets_ceiling import (
-        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
-        instruction_breakdown, instruction_words,
+        _sections, _set_frontmatter_field, _write_section, dequote,
+        quote_filed_body, unquote_filed_body,
     )
 else:
     from tickets_adapters import adapter_id
     from tickets_shapes import (
+        DONE_BINDING_FIELDS, DONE_BINDING_REQUIRED, DONE_BINDING_VALUES,
         TICKET_FRONTMATTER_FIELDS, TICKET_FRONTMATTER_REQUIRED,
         TICKET_FRONTMATTER_VALUES,
     )
     from tickets_markdown import (
         CUT_SECTIONS, CUT_SECTIONS_BY_KEY, EXECUTOR_SECTIONS,
-        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REQUIRED_SECTIONS,
+        EXECUTOR_SECTIONS_BY_KEY, OPTIONAL_SECTIONS, REPORT_SECTION,
+        REQUIRED_SECTIONS,
         SECTION_ORDER, SECTION_RANK, TicketFormatError, _body_block,
         _duplicate_frontmatter_keys, _fence_run, _frontmatter_end,
         _frontmatter_line, _heading_lines, _parse_frontmatter,
         _remove_frontmatter_field, _unquote, _scan_sections, _section_body,
-        _sections, _set_frontmatter_field, _write_section,
+        _sections, _set_frontmatter_field, _write_section, dequote,
+        quote_filed_body, unquote_filed_body,
     )
-    from tickets_ceiling import (
-        INSTRUCTION_BUDGET, INSTRUCTION_SECTIONS, LINK_TARGET_RE, ceiling_sentence,
-        instruction_breakdown, instruction_words,
-    )
-# The bound grammar is `tickets_bound`'s and the chain grammar is
-# `tickets_sequence`'s, read here so every holder gets the one spelling.
+# The bound grammar is `tickets_bound`'s, read here so every holder
+# gets the one spelling.
 # Reached by name in the sibling branch: the import census is pinned.
 if __package__:
     from .tickets_bound import DEFAULT_BOUND_MINUTES, _parse_bound_minutes
-    from .tickets_sequence import sequence_defects
 else:
     _bound_module = __import__('tickets_bound')
     DEFAULT_BOUND_MINUTES, _parse_bound_minutes = (_bound_module.DEFAULT_BOUND_MINUTES, _bound_module._parse_bound_minutes)
-    from tickets_sequence import sequence_defects
 VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
-LOOP_EXECUTOR = 'orch-loop'
-DISPATCHING_EXECUTORS = ('orch-frontier', LOOP_EXECUTOR)
+# The one value the `loop` marker takes, read off the declared shape rather
+# than spelled twice.
+LOOP_MARKER = TICKET_FRONTMATTER_VALUES['loop'][0]
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
 REQUIRED_TICKET_KEYS = tuple(
@@ -75,18 +72,35 @@ DURATION_RE = re.compile('^(\\d+)(m|h)$')
 RESULT_TOKEN_SPLIT_RE = re.compile('[\\s`\\"\'<>()\\[\\]{},;|]+')
 RESULT_TOKEN_STRIP = '.:!?*_-'
 SUCCESSOR_CONTEXT_PREFIXES = ('- state:', '- watch:')
-# The instruction ceiling is `tickets_ceiling`'s: one counter, so the lint
-# twin and the issue refusal cannot drift apart. Re-exported here because
-# this module is where the family and the `tickets` facade already read it.
 REQUIRED_ISOLATION = 'required'
-TERMINAL_STATES = ('complete', 'blocked', 'stalled', 'limited', 'failed')
+DELIVERED_STATE = 'complete'
+TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
+# The terminal states that leave a Result behind for a dependent to read.
+# `complete` delivered the whole Goal and `limited` delivered part of it with
+# honest accounting; both file the evidence the next item is written against.
+# `blocked`, `failed` and `stalled` filed no such artifact, so a dependent
+# admitted over them would be reading an absence. Beside the states it is
+# drawn from rather than in one of its two readers: `tickets_admission`
+# grades a sealed assignment against it and `tickets_readiness` answers the
+# reader's promotion question with it, and the two disagreed -- readiness
+# went on requiring `complete` after admission stopped.
+RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
-ROOT_EXECUTOR = 'orch-decompose'
+ROOT_EXECUTOR = 'orch-slice'
 CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
+GATE_CRITIQUE_MARKER = '.gate.critique.'
+CHECKER_STAGE_SUFFIX = '.check'
 TEMPLATE_FILE = 'template.md'
 PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
+ESCAPED_NEWLINE_RE = re.compile('\\\\n')
+# A literal backslash then the letter 'n' -- the two-character escape a
+# shell or a hand can type in place of the one byte it was meant to stand
+# for. A real newline never matches this: it is one byte, not two.
+_PATH_RUN_RE = re.compile('(?:\\\\[^\\s\\\\]*)+')
+_DRIVE_LETTER_RE = re.compile('[A-Za-z]:')
+_INLINE_CODE_RE = re.compile('`[^`]*`')
 class DuplicateJsonKey(ValueError):
     """A canonical JSON object repeated one key."""
 def _json_object(pairs):
@@ -103,9 +117,70 @@ def canonical_json(value) -> str:
 def parse_canonical_json(encoded: str):
     """Parse the portable canonical JSON grammar shared by ticket fields."""
     return json.loads(encoded, object_pairs_hook=_json_object, parse_constant=_nonfinite_json)
+def _windows_path_spans(line: str) -> list:
+    """Character spans in ``line`` that read as a Windows path, not prose.
+
+    A drive letter or a UNC's doubled backslash roots a path outright, so
+    even its first segment counts. Unrooted needs two real (2+ character)
+    segments, so a doubled escape (``\\n\\n``) is never misread as the
+    two one-letter segments of a path nothing names -- the exact shape a
+    collapsed multi-bullet ``--context`` value takes.
+    """
+    spans = []
+    for match in _PATH_RUN_RE.finditer(line):
+        run = match.group()
+        prefix = line[max(0, match.start() - 2):match.start()]
+        rooted = run.startswith('\\\\') or bool(_DRIVE_LETTER_RE.fullmatch(prefix))
+        segments = [part for part in run.split('\\') if part]
+        if rooted and segments:
+            spans.append(match.span())
+        elif not rooted and len(segments) >= 2 and all(len(part) >= 2 for part in segments):
+            spans.append(match.span())
+    return spans
+def _inline_code_spans(line: str) -> list:
+    """Character spans in ``line`` between paired single backticks.
+
+    A fenced block already reads as code, never prose; this is the same
+    exemption for the inline case -- the repository's own idiom for naming
+    a newline in running text, as in `newline=` or "rstrip of a newline".
+    An unpaired backtick protects nothing: only a closed span counts.
+    """
+    return [match.span() for match in _INLINE_CODE_RE.finditer(line)]
+def _section_has_escaped_newline(body) -> bool:
+    """Whether one section body carries a literal backslash-n outside code
+    and outside a Windows path -- fenced lines are read as code, never
+    prose, via the same ``_fence_run`` tracking `_scan_sections` uses to
+    find the next heading. An inline single-backtick span is the same
+    exemption for one unfenced line, the idiom prose uses to name the
+    escape without writing it.
+    """
+    lines, fence = str(body or '').split('\n'), None
+    for line in lines:
+        run = _fence_run(line)
+        if fence is not None:
+            if run is not None and run[0] == fence[0] and len(run) >= len(fence) and not line.strip()[len(run):].strip():
+                fence = None
+            continue
+        if run is not None:
+            fence = run
+            continue
+        protected = _windows_path_spans(line) + _inline_code_spans(line)
+        for match in ESCAPED_NEWLINE_RE.finditer(line):
+            if not any(start <= match.start() < end for start, end in protected):
+                return True
+    return False
 def format_policy_defects(text, data, sections):
-    del data, sections
-    return [f"frontmatter repeats '{key}'" for key in _duplicate_frontmatter_keys(text)]
+    del data
+    defects = [f"frontmatter repeats '{key}'" for key in _duplicate_frontmatter_keys(text)]
+    for key, body in sections.items():
+        if _section_has_escaped_newline(body):
+            name = CUT_SECTIONS_BY_KEY.get(key) or EXECUTOR_SECTIONS_BY_KEY.get(key) or key
+            defects.append(
+                f"'## {name}' carries a literal backslash-n: an escaped newline "
+                "that never reached stored bytes as one (write a real line "
+                "break, or fence the code that needs the literal)"
+            )
+    return defects
 def _read_utf8(path, subject: str='ticket', encoding: str='utf-8'):
     """One file's text as ``(text, None)``, or ``(None, {"error": ...})``.
     Both exceptions in one place because they are one failure to a caller --
@@ -143,7 +218,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         defects.append(f"unknown ticket frontmatter field '{key}'")
     status = data.get('status')
     if isinstance(status, str) and status.strip():
-        normalized = status.strip().strip('`').strip()
+        normalized = dequote(status)
         if normalized not in VALID_STATUSES:
             defects.append(f"status '{normalized}' is not one of {sorted(VALID_STATUSES)}")
     executor = _executor_of(data)
@@ -155,7 +230,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
                 f"executor-pack-required: {executor} consumes resolved pack cells and "
                 "requires a stamped pack"
             )
-    review_kind = str(data.get('review_kind') or '').strip().strip('`')
+    review_kind = dequote(data.get('review_kind'))
     if review_kind and review_kind not in REVIEW_KINDS:
         defects.append(
             f"review_kind '{review_kind}' is not one of {list(REVIEW_KINDS)}"
@@ -174,9 +249,120 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if not sections.get('context', '').strip():
         defects.append("Context must be present; use [] when no exceptional facts apply")
     defects.extend(format_policy_defects(text, data, sections))
-    defects.extend(sequence_defects(
-        data.get('sequence'), _executor_of(data), data.get('pack')
-    ))
+    defects.extend(loop_defects(data.get('loop'), _executor_of(data), data.get('done')))
+    defects.extend(done_defects(data.get('done')))
+    return defects
+def lease_of(data):
+    """(owner, opened_at) of the ticket's current dispatch attempt.
+
+    The dispatch record owns the lease (contracts/dispatch.md); the ticket
+    carries no claimed_by/claimed_at projection beside it. This is the
+    light display/ordering read: the live attempt if one exists, else the
+    latest attempt, else ('', ''). Lease-law decisions read the validated
+    window in tickets_dispatch_schema instead.
+    """
+    raw = str(data.get('dispatch_v1') or '').strip()
+    if not raw:
+        return '', ''
+    try:
+        state = json.loads(raw)
+    except ValueError:
+        return '', ''
+    attempts = state.get('attempts') if isinstance(state, dict) else None
+    if not isinstance(attempts, list) or not attempts:
+        return '', ''
+    attempt = next(
+        (item for item in reversed(attempts)
+         if isinstance(item, dict) and item.get('state') == 'live'),
+        attempts[-1],
+    )
+    if not isinstance(attempt, dict):
+        return '', ''
+    return str(attempt.get('owner') or ''), str(attempt.get('opened_at') or '')
+def is_loop_stub(data) -> bool:
+    """Whether this ticket's ``loop`` marker makes it a loop stub.
+
+    ``loop`` is a marker, not an object. It says one thing -- read this
+    ticket's own ``done`` predicate once per iteration instead of once at
+    landing -- so it is spelled the one way a marker can be spelled.
+    """
+    return dequote(data.get('loop')) == LOOP_MARKER
+def parse_done(data):
+    """The parsed frontmatter ``done`` predicate of one ticket, or None.
+
+    One home and one grammar for both readings: `tickets.py land` runs it
+    over the integrated tree, and a loop stub's `loop-evaluate` runs the
+    same binding after each iteration.
+    """
+    raw = str(data.get('done') or '').strip()
+    if not raw:
+        return None
+    try:
+        done = json.loads(raw)
+    except ValueError:
+        return None
+    return done if isinstance(done, dict) else None
+def done_binding_defects(done, subject: str) -> list:
+    """Shape defects for one ``{form, value}`` done binding, or [].
+
+    contracts/work-item.md's done_binding shape, and the sole owner of that
+    grammar. One field, two readings -- `tickets.py land` over the
+    integrated tree, `loop-evaluate` after an iteration -- and one owner: a
+    second copy is how the two spellings of a closed form drift.
+    """
+    if not isinstance(done, dict):
+        return [f'{subject} must be one JSON object']
+    defects = []
+    for key in sorted(set(done) - set(DONE_BINDING_FIELDS)):
+        defects.append(f"{subject} carries unknown field '{key}'")
+    for key in sorted(DONE_BINDING_REQUIRED):
+        if key not in done:
+            defects.append(f"{subject} is missing required field '{key}'")
+    form = str(done.get('form') or '')
+    if 'form' in done and form not in DONE_BINDING_VALUES['form']:
+        defects.append(
+            f'{subject} form must be one of '
+            + ', '.join(DONE_BINDING_VALUES['form']) + f": got '{form}'"
+        )
+    if 'value' in done and not str(done.get('value') or '').strip():
+        defects.append(f'{subject} value is empty')
+    return defects
+def done_defects(value) -> list:
+    """Shape defects for one frontmatter ``done`` value, or []."""
+    raw = str(value or '').strip()
+    if not raw:
+        return []
+    try:
+        done = json.loads(raw)
+    except ValueError:
+        return ['done is not canonical JSON']
+    return done_binding_defects(done, 'done')
+def loop_defects(value, executor, done) -> list:
+    """Shape defects for one frontmatter ``loop`` marker, or [].
+
+    The marker takes exactly one value. What it marks is which reader
+    evaluates this ticket's own ``done`` predicate, so a stub without one
+    marks nothing, and the stub's ``executor`` is the iteration body's verb.
+    """
+    raw = dequote(value)
+    if not raw:
+        return []
+    defects = []
+    if raw != LOOP_MARKER:
+        defects.append(
+            f"loop is the marker `{LOOP_MARKER}` and takes no other value: got '{raw}'"
+        )
+    if not str(done or '').strip():
+        defects.append(
+            'a loop stub carries the `done` predicate its iterations are read '
+            'against'
+        )
+    verb = dequote(executor)
+    if not defects and not executor_registered(verb):
+        defects.append(
+            f"loop stub executor '{verb}' is not a registered callable; "
+            "the stub's executor is the iteration body's verb"
+        )
     return defects
 def _parse_iso(value):
     if not isinstance(value, str) or not value.strip():
@@ -213,4 +399,25 @@ def _split_commas(value) -> list:
     """One comma-separated flag value as a list, empty entries dropped."""
     return [part.strip() for part in str(value or '').split(',') if part.strip()]
 def _executor_of(item: dict) -> str:
-    return str(item.get('executor') or '').strip().strip('`').strip()
+    return dequote(item.get('executor'))
+def is_review_stage_id(ticket_id) -> bool:
+    """Whether an id names a derived review stage rather than executor work.
+
+    The composite gate spells it `<root>.gate.<kind>` and the ordinary
+    checker spells it `<target>.check`; both are the protocol's, never an
+    author's, and both are read off the id because the id is what a caller
+    has before the ticket is loaded. Nine sites open-coded the two
+    substrings, and the two that spelled only half of it read a checker
+    stage as ordinary work.
+    """
+    text = str(ticket_id or '')
+    return GATE_ID_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)
+def is_critique_stage_id(ticket_id) -> bool:
+    """`is_review_stage_id` narrowed to the stages that file findings.
+
+    A repair and a verification stage are review stages that do not: only a
+    critique lens and the ordinary checker produce the findings array the
+    schema grades and the join adjudicates.
+    """
+    text = str(ticket_id or '')
+    return GATE_CRITIQUE_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)

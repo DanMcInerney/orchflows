@@ -10,14 +10,13 @@ from collections import namedtuple
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from .tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import TERMINAL_STATES, VALID_STATUSES
+    from tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
 
-PENDING, READY, CLAIMED, SUSPENDED, COMPLETE = "pending", "ready", "claimed", "suspended", "complete"
+PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
 STATUSES = tuple(sorted(VALID_STATUSES))
-LEASE_FIELDS = ("claimed_by", "claimed_at")
 CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})
 ADMISSION_OWNED_TARGETS = (READY, CLAIMED)
 Row = namedtuple("Row", ("command", "sources", "target", "sets", "blanks", "remedy"))
@@ -46,10 +45,10 @@ def set_status_command(target: str) -> str:
 
 
 _ROWS = (
-    Row("claim", (PENDING, READY), CLAIMED, ("admission", "status") + LEASE_FIELDS, (), "claim it"),
+    Row("claim", (PENDING, READY), CLAIMED, ("admission", "status"), (), "claim it"),
     Row("check", tuple(sorted(CHECKABLE_STATUSES)), None, ("checked_by",), (), "check it"),
-    Row("join-noop-repair", (READY,), COMPLETE, ("status",) + LEASE_FIELDS, (), "complete the clean repair at its join"),
-    Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), LEASE_FIELDS, "release it to pending"),
+    Row("join-noop-repair", (READY,), COMPLETE, ("status",), (), "complete the clean repair at its join"),
+    Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), (), "release it to pending"),
     Row(set_status_command(SUSPENDED), STATUSES, SUSPENDED, ("status",), (), "suspend it"),
 ) + tuple(
     Row(set_status_command(state), STATUSES, state, ("status",), (), f"set status {state}")
@@ -57,8 +56,8 @@ _ROWS = (
 )
 COMMANDS = tuple(sorted({row.command for row in _ROWS}))
 STAMPS = {
-    "stamp": Stamp(PENDING, ADMISSION_PENDING, LEASE_FIELDS, (PENDING, READY)),
-    "draft-validate": Stamp(PENDING, ADMISSION_PENDING, LEASE_FIELDS, (PENDING, READY, SUSPENDED)),
+    "stamp": Stamp(PENDING, ADMISSION_PENDING, (), (PENDING, READY)),
+    "draft-validate": Stamp(PENDING, ADMISSION_PENDING, (), (PENDING, READY, SUSPENDED)),
 }
 
 # This is executable metadata beside the guards that own the transitions.
@@ -71,18 +70,17 @@ _LIFECYCLE_SPECS = (
     LifecycleSpec("claim", (PENDING, READY, CLAIMED), CLAIMED, "caller", "admission receipt; stale-claim proof when already claimed", "contracts/work-item.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-open", ("ready / no dispatch state", "ready / ended attempts", "claimed / ended attempts", "suspended / ended attempts"), "claimed / live attempt", "caller", "assignment seal and admission receipt", "contracts/dispatch.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-commit", ("claimed / live attempt",), "claimed / live attempt + generic record", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-packet", ("claimed / live attempt",), "claimed / packet committed", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-receive", ("claimed / packet committed",), "claimed / receipt accepted", "established worker or planner", "committed dispatch-packet record", "contracts/dispatch.md", "rules/roles.md"),
-    LifecycleSpec("result", ("claimed / receipt accepted",), "claimed / receipt accepted + result record", "accepted receiver", "accepted dispatch-receipt record", "contracts/result.md", "rules/verification.md"),
-    LifecycleSpec("dispatch-outcome", ("claimed / receipt accepted", "claimed / receipt accepted + result records"), "claimed / outcome committed", "accepted receiver or relaying caller", "accepted dispatch-receipt record", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch", ("ready / no dispatch state", "ready / ended attempts", "claimed / live attempt", "claimed / ended attempts", "suspended / ended attempts"), "claimed / launched", "caller", "assignment seal, admission receipt, and the established workspace", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("result", ("claimed / launched",), "claimed / launched + result record", "dispatched child", "committed launch record and the attempt's seal, dispatch id, and owner", "contracts/result.md", "rules/verification.md"),
+    LifecycleSpec("dispatch-outcome", ("claimed / launched", "claimed / launched + result records"), "claimed / outcome committed", "dispatched child or relaying caller", "committed launch record and the attempt's seal, dispatch id, and owner", "contracts/dispatch.md", "rules/delegation.md"),
     LifecycleSpec("dispatch-retire", ("claimed / live attempt",), "claimed / retired attempt", "caller", "live dispatch attempt record", "contracts/dispatch.md", "rules/delegation.md"),
-    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "live predecessor attempt and assignment seal", "contracts/dispatch.md", "rules/delegation.md"),
+    LifecycleSpec("dispatch-replace", ("claimed / live or expired attempt",), "claimed / replaced attempt + new live attempt", "caller", "predecessor attempt and assignment seal; a declared supersession inside its lease", "contracts/dispatch.md", "rules/delegation.md"),
 ) + tuple(
     LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
 ) + (
     LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
-    LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Result", "contracts/verdict.md", "rules/verification.md"),
+    LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Report", "contracts/verdict.md", "rules/verification.md"),
 ) + tuple(
     # Not a legacy path, though an earlier rendering called it one: these are
     # the only transitions a ticket that was never dispatched can take, and

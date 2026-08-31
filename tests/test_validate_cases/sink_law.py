@@ -53,7 +53,7 @@ SINK_TERMS = ("tracker", "friction log", "run state")
 # run-local `.orch/bin/` landing zone is rules/token-economy.md §4's to
 # state, and a skill body no longer restates it.
 CANARY_AND_BIN_MENTIONS = {
-    "compositions/drift-canary/00-run.md": 1,
+    "example-workflows/drift-canary/00-run.md": 1,
 }
 CANARY_PATH = "`.orch/canary/`"
 

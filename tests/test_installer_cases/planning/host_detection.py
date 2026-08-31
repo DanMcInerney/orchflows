@@ -83,7 +83,10 @@ class TestHostAutoDetection(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis(
                 "claude"
             ), patch.object(Path, "mkdir", autospec=True, side_effect=reject_codex_writes):
-                result = install.main(["--user", "--yes"])
+                result = install.main([
+                    "--user", "--yes",
+                    "--accepted-source", install.resolve_source_commit(),
+                ])
 
             self.assertEqual(0, result)
             self.assertFalse((stale_codex / "prompts").exists())
@@ -95,7 +98,10 @@ class TestHostAutoDetection(unittest.TestCase):
             with patch.object(install.Path, "home", return_value=home), mock_host_clis():
                 buffer = io.StringIO()
                 with redirect_stdout(buffer):
-                    result = install.main(["--user", "--yes"])
+                    result = install.main([
+                    "--user", "--yes",
+                    "--accepted-source", install.resolve_source_commit(),
+                ])
 
             self.assertEqual(0, result)
             self.assertIn("warning:", buffer.getvalue())
@@ -354,6 +360,9 @@ class DryRunOracleTest(unittest.TestCase):
             ):
                 buffer = io.StringIO()
                 with redirect_stdout(buffer):
-                    install.main(["--user", "--yes"])
+                    install.main([
+                    "--user", "--yes",
+                    "--accepted-source", install.resolve_source_commit(),
+                ])
 
             self.assertNotEqual(before, snapshot(home))

@@ -38,14 +38,14 @@ class TestBenchmarkArchitecture(unittest.TestCase):
     )
 
     EVOLVE_GRAPH = {
-        "00-eval": ("orch-spec", []),
+        "00-eval": ("orch-outline", []),
         "01-eligibility": ("orch-check", ["00-eval"]),
-        "02-campaign": ("orch-loop", ["01-eligibility"]),
+        "02-campaign": ("orch-execute", ["01-eligibility"]),
         "03-result": ("orch-check", ["02-campaign"]),
     }
     TOURNAMENT_GRAPH = {
-        "00-benchmark": ("orch-frontier", []),
-        "01-campaign": ("orch-frontier", ["00-benchmark"]),
+        "00-benchmark": ("orch-execute", []),
+        "01-campaign": ("orch-execute", ["00-benchmark"]),
     }
     DEMOTED = (
         "orch-bench", "orch-benchmaker", "orch-judge", "orch-delegate",

@@ -13,6 +13,7 @@ import sys
 _SIBLING = str(Path(__file__).resolve().parent)
 if _SIBLING not in sys.path:
     sys.path.append(_SIBLING)
+import console
 import state_root
 from tickets_format import _parse_frontmatter, ticket_defects
 
@@ -49,6 +50,7 @@ def graph_findings(texts: dict) -> list:
 
 
 def main(argv=None):
+    console.harden()
     parser = argparse.ArgumentParser(prog="cutcheck.py", description=__doc__)
     parser.add_argument("run")
     parser.add_argument("--baseline", required=False, help="host routing value; structural validation is revision-independent")
@@ -73,4 +75,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(console.run(main))

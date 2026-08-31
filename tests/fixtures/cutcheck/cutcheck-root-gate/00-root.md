@@ -2,7 +2,7 @@
 id: 00-root
 run: cutcheck-root-gate
 status: pending
-executor: orch-decompose
+executor: orch-slice
 pack: orch-code-pack
 depends_on: []
 bound: 20 tool calls

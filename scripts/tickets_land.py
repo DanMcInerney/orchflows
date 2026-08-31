@@ -1,0 +1,353 @@
+"""One caller-side landing operation over the public return steps.
+
+`dispatch` completes the launch; this completes the return. What a caller
+used to sequence by hand -- import the outcome, merge the candidate by
+hand, join it, remove the derived worktree, then ask what became ready --
+is one command here, and the state acts are one critical section rather
+than several, so no other writer can move the run between them.
+
+Order, and the reason for it: the outcome import closes the attempt; the
+candidate is merged into the tree the run's checkout stands on, because the
+question the predicate answers is what the repository does with those
+commits in it; the ticket's `done` predicate is evaluated there, and it is
+the one outside execution; only then does the join record what the item
+became. The child's own word for that is gone -- `land` records a checked
+condition, or the driver's grade for a ticket that declares none.
+
+Every step is one of the public operations and every one of them replays,
+so this composition replays too: a `land` that died between the join and the
+retirement lands the same way when it is run again, and says which of its
+steps it found already done. The established granular commands remain the
+recovery seam; nothing here is a second protocol.
+
+The frontier is read after the lock, not inside it. The dependents this
+join just unblocked are exactly what `ready` promotes, and that promotion
+takes the run lock for itself -- asking for it under our own would be a
+caller waiting on itself.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+if __package__:
+    from . import tickets_done
+    from .tickets_format import (
+        REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
+        _extract_flag, _parse_frontmatter, _read_utf8,
+    )
+    from .tickets_adapters import derived_isolation
+    from .tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
+    from .tickets_join import _cmd_dispatch_join
+    from .tickets_outcome import _cmd_dispatch_outcome
+    from .tickets_lifecycle import _cmd_ready
+    from .tickets_store import (
+        NO_SINK_ERROR, _run_lock, _tickets_root,
+        segment_refusal,
+    )
+else:  # pragma: no cover - direct/installed flat script path
+    import tickets_done
+    from tickets_format import (
+        REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
+        _extract_flag, _parse_frontmatter, _read_utf8,
+    )
+    from tickets_adapters import derived_isolation
+    from tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
+    from tickets_join import _cmd_dispatch_join
+    from tickets_outcome import _cmd_dispatch_outcome
+    from tickets_lifecycle import _cmd_ready
+    from tickets_store import (
+        NO_SINK_ERROR, _run_lock, _tickets_root,
+        segment_refusal,
+    )
+
+LAND_USAGE = (
+    "land <run> <id> --assignment-seal <seal> --dispatch-id <id> "
+    "--outcome-record-id outcome --by <join-name> [--status <disposition>] "
+    "[--outcome-file <path|->] [--findings-file <path|->] "
+    "[--accepted-file <path|->] [--artifact <fixed-identity>]"
+)
+JOIN_RECORD_PREFIX = "join:"
+COMMITTED = "committed"
+REPLAYED = "replayed"
+SKIPPED = "skipped"
+# The dispositions whose evidence is worth merging. A ticket that delivered
+# nothing has nothing for the integrated tree to carry, and merging its
+# branch anyway is how a refused item's half-work reaches a checkout the
+# next reader trusts.
+INTEGRABLE = frozenset(RESULT_BEARING_STATES)
+
+
+def _prior_records(run: str, ticket_id: str, dispatch_id: str) -> dict:
+    """Which of this dispatch's two return records the ticket already holds.
+
+    Read for the report alone: each step below decides for itself whether it
+    commits or replays, and this only lets the caller be told which happened
+    without asking it to diff the ticket.
+    """
+
+    absent = {"outcome": False, "join": False}
+    root = _tickets_root()
+    if root is None:
+        return absent
+    text, failure = _read_utf8(root / run / f"{ticket_id}.md")
+    if failure is not None:
+        return absent
+    state, failure = stored_state(_parse_frontmatter(text))
+    if failure is not None or state is None:
+        return absent
+    attempt = next(
+        (item for item in state["attempts"] if item.get("dispatch_id") == dispatch_id),
+        None,
+    )
+    if attempt is None:
+        return absent
+    identities = {str(record.get("record_id")) for record in attempt.get("records") or []}
+    return {
+        "outcome": OUTCOME_RECORD_ID in identities,
+        "join": any(name.startswith(JOIN_RECORD_PREFIX) for name in identities),
+    }
+
+
+def _ticket(run: str, ticket_id: str):
+    """`(path, data)` for the ticket being landed, or `(None, {})`."""
+
+    root = _tickets_root()
+    if root is None:
+        return None, {}
+    path = root / run / f"{ticket_id}.md"
+    text, failure = _read_utf8(path)
+    if failure is not None:
+        return None, {}
+    return path, _parse_frontmatter(text)
+
+
+def _derived_isolation(data: dict) -> bool:
+    """Whether this item was given a derived worktree to integrate and retire."""
+
+    return derived_isolation(
+        data.get("isolation"), data.get("pack")
+    ) == REQUIRED_ISOLATION
+
+
+def _candidate(run: str, ticket_id: str):
+    """`workspace_candidate`, imported at call time.
+
+    The flat installed layout fixes no import order between the ticket and
+    workspace families, and this is the one call `land` makes into the
+    second one that writes no ticket of its own.
+    """
+
+    if __package__:
+        from . import workspace_candidate
+    else:  # pragma: no cover - the flat installed layout
+        import workspace_candidate
+    return workspace_candidate
+
+
+def _recorded_workspace(data: dict):
+    """The tree the establishment recorded on this attempt, or ``None``."""
+
+    if __package__:
+        from . import workspace_record
+    else:  # pragma: no cover - the flat installed layout
+        import workspace_record
+    return workspace_record.attempt_workspace(data)
+
+
+def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
+    """Merge the candidate into the tree the run stands on, or say why not.
+
+    This is the step `land` used to leave for hand git, and leaving it there
+    is what produced a run that reported an item landed while its commits
+    reached no checkout anybody read. It happens before the predicate
+    because the predicate's whole claim is about the integrated tree, and
+    before the retirement because the retirement removes the tree that names
+    the branch.
+
+    A disposition that delivered nothing is not merged: `blocked`, `failed`
+    and `stalled` have no result for the tree to carry. A ticket whose `done`
+    predicate decides the disposition has no status yet, and it integrates --
+    that is the tree the predicate is about to be run in.
+    """
+
+    if status is not None and status not in INTEGRABLE:
+        return {"step": "workspace-integrate", "outcome": SKIPPED, "reason": status}
+    if not _derived_isolation(data):
+        return {"step": "workspace-integrate", "outcome": SKIPPED, "reason": "not isolated"}
+    try:
+        candidate = _candidate(run, ticket_id)
+        response, _code = candidate.integrate(
+            run, ticket_id, _recorded_workspace(data), data.get("workspace_branch"),
+        )
+    except Exception as error:  # `Refused`, and anything git surprised us with
+        return {"step": "workspace-integrate", "outcome": "refused", "error": str(error)}
+    body = response.get("integrate") if isinstance(response, dict) else None
+    if not isinstance(body, dict):
+        return {"step": "workspace-integrate", "outcome": "refused", "response": response}
+    return {"step": "workspace-integrate", "outcome": body["outcome"], "response": body}
+
+
+def _retire_workspace(run: str, ticket_id: str, status: str, data: dict) -> dict:
+    """Remove the derived worktree, or say exactly why it was not removed.
+
+    Only a terminal join retires. Suspension keeps its claimant observations
+    for a handoff, and the tree holds the work that handoff resumes. Nothing
+    here forces: `git worktree remove` refuses a tree with uncommitted bytes,
+    and that refusal is reported rather than overridden, because the bytes it
+    is protecting are the only copy of somebody's work.
+    """
+
+    if status not in TERMINAL_STATES:
+        return {"step": "workspace-retire", "outcome": SKIPPED, "reason": status}
+    if not _derived_isolation(data):
+        return {"step": "workspace-retire", "outcome": SKIPPED, "reason": "not isolated"}
+    script = Path(__file__).with_name("workspace.py").resolve()
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(script), "retire", run, ticket_id],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+    except (OSError, ValueError) as error:
+        return {"step": "workspace-retire", "outcome": "refused",
+                "error": f"workspace retire failed: {error}"}
+    try:
+        response = json.loads(completed.stdout)
+    except (TypeError, ValueError) as error:
+        return {"step": "workspace-retire", "outcome": "refused",
+                "error": f"workspace retire returned invalid JSON: {error}"}
+    if not isinstance(response, dict) or "error" in response or completed.returncode:
+        return {"step": "workspace-retire", "outcome": "refused", "response": response}
+    return {"step": "workspace-retire", "outcome": "removed", "response": response}
+
+
+def _done_outcome(decision: dict) -> str:
+    """What the predicate step did, in the one word the step report carries."""
+
+    if decision.get("form") is None:
+        return "graded"
+    return decision.get("action") or "checked"
+
+
+def _land_transaction(run, ticket_id, identity, outcome_file, findings_file,
+                      accepted_file, artifact, driver_status):
+    """The state acts, in order, under the caller's one run lock."""
+
+    prior = _prior_records(run, ticket_id, identity["dispatch_id"])
+    steps = []
+    if outcome_file is None:
+        steps.append({"step": "dispatch-outcome", "outcome": SKIPPED})
+    else:
+        imported = _cmd_dispatch_outcome(
+            [run, ticket_id, "--file", outcome_file], _lock_held=True,
+        )
+        if "error" in imported:
+            return imported
+        steps.append({
+            "step": "dispatch-outcome",
+            "outcome": REPLAYED if prior["outcome"] else COMMITTED,
+        })
+    path, data = _ticket(run, ticket_id)
+    if path is None:
+        return {"error": f"unreadable ticket for landing: {run}/{ticket_id}"}
+    integrated = _integrate_workspace(run, ticket_id, data, driver_status)
+    steps.append(integrated)
+    if integrated["outcome"] == "refused":
+        return {"error": integrated.get("error") or "candidate integration refused",
+                "steps": steps}
+    tree = (integrated.get("response") or {}).get("main_root")
+    decision, refusal = tickets_done.resolve(
+        run, ticket_id, path.parent, path, data, tree, driver_status,
+        identity["by"],
+    )
+    if refusal is not None:
+        return refusal
+    steps.append({"step": "done", "outcome": _done_outcome(decision), **{
+        key: value for key, value in decision.items()
+        if key not in ("reading", "action")
+    }})
+    if decision["status"] is None:
+        # Nothing to join: a minted check is still out, or a repair round was
+        # just armed. The attempt stays open, and landing again once that
+        # round is in re-runs the predicate against the further-integrated
+        # tree. That is the round-two slot the composite gate never had.
+        return {"land": {
+            "run": run, "id": ticket_id, "status": None,
+            "done": decision.get("reading"), "steps": steps,
+        }}
+    arguments = [
+        run, ticket_id,
+        "--assignment-seal", identity["assignment_seal"],
+        "--dispatch-id", identity["dispatch_id"],
+        "--outcome-record-id", identity["outcome_record_id"],
+        "--by", identity["by"],
+        "--status", decision["status"],
+    ]
+    if findings_file is not None:
+        arguments.extend(("--findings-file", findings_file))
+    if accepted_file is not None:
+        arguments.extend(("--accepted-file", accepted_file))
+    if artifact is not None:
+        arguments.extend(("--artifact", artifact))
+    joined = _cmd_dispatch_join(arguments, _lock_held=True)
+    if "error" in joined:
+        return joined
+    steps.append({
+        "step": "dispatch-join",
+        "outcome": REPLAYED if prior["join"] else COMMITTED,
+    })
+    steps.append(_retire_workspace(run, ticket_id, joined["join"]["status"], data))
+    return {"land": {
+        "run": run,
+        "id": ticket_id,
+        "status": joined["join"]["status"],
+        "done": decision.get("reading"),
+        "join": joined["join"],
+        "steps": steps,
+    }}
+
+
+def _cmd_land(rest):
+    """Import the outcome, integrate, check done, join, retire, report."""
+
+    args = list(rest)
+    identity = {
+        "assignment_seal": _extract_flag(args, "--assignment-seal"),
+        "dispatch_id": _extract_flag(args, "--dispatch-id"),
+        "outcome_record_id": _extract_flag(args, "--outcome-record-id"),
+        "by": _extract_flag(args, "--by"),
+    }
+    outcome_file = _extract_flag(args, "--outcome-file")
+    findings_file = _extract_flag(args, "--findings-file")
+    accepted_file = _extract_flag(args, "--accepted-file")
+    artifact = _extract_flag(args, "--artifact")
+    driver_status = _extract_flag(args, "--status")
+    if len(args) != 2 or not all(identity.values()):
+        return {"error": f"usage: {LAND_USAGE}"}
+    run, ticket_id = args
+    invalid = segment_refusal(run, ticket_id)
+    if invalid is not None:
+        return invalid
+    if _tickets_root() is None:
+        return {"error": NO_SINK_ERROR}
+    try:
+        with _run_lock(run):
+            landed = _land_transaction(
+                run, ticket_id, identity, outcome_file, findings_file,
+                accepted_file, artifact, driver_status,
+            )
+    except OSError as error:
+        return {"error": f"unable to land {run}/{ticket_id}: {error}"}
+    if "error" in landed:
+        return landed
+    # After the lock, and deliberately: this is the same promotion the caller
+    # would run next, and the dependents it promotes are the ones this join
+    # unblocked.
+    landed["land"]["frontier"] = _cmd_ready(["--run", run])
+    return landed
+
+
+__all__ = ("LAND_USAGE", "_cmd_land")

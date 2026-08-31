@@ -3,26 +3,26 @@ from __future__ import annotations
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from .tickets_format import REPORT_SECTION, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
     from .tickets_generations import assignment_digest, seal_findings
     from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
     from .tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
-    from .tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from .tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID
     from .tickets_review import ReviewError, review_records, state_from_text
-    from .tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
+    from .tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, ticket_defects
+    from tickets_format import REPORT_SECTION, ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _sections, _set_frontmatter_field, _split_commas, dequote, ticket_defects
     from tickets_generations import assignment_digest, seal_findings
     from tickets_dispatch_schema import state as _dispatch_state
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
     from tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
-    from tickets_packet import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID
     from tickets_review import ReviewError, review_records, state_from_text
-    from tickets_store import NO_SINK_ERROR, _create_text_exclusively, _load_ticket, _run_lock, _segment_error, _tickets_root
+    from tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 
 GATE_USAGE = "gate <run> <root-or-checked-id> [--lens <name>[,<name>] | --ordered-lens-bundle <name>[,<name>]]"
 CHECKER_STAGE_USAGE = "checker-stage <run> <id>"
@@ -46,41 +46,45 @@ def _listed_items(values) -> str:
     return "\n".join(f"- {value}" for value in values) if values else "[]"
 
 
-def _gate_body(kind: str, root_id: str, lens: str = "", units=None,
-               repaired_by=None):
+def _gate_body(kind: str, root_id: str, lens: str = "", units=None):
+    """The two lanes a composite gate still materializes.
+
+    There is no third. The fresh outside check the gate used to dispatch is
+    the root's own `done` predicate, run by `tickets.py land` in the
+    integrated tree (contracts/work-item.md, rules/verification.md Section
+    6): an exit code no child has to be paid to wrap.
+    """
+
     units = list(units or [])
     if kind == "critique":
         return [
             ("Goal", f"Review `{root_id}` and its delivered members under the `{lens or 'default'}` lens; enumerate every evidence-backed material blocker to the root Goal, then synthesize the smallest architectural repair set covering the most blockers."),
-            ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Critique is read-only; Suggested files do not define review authority."])),
-        ]
-    if kind == "repair":
-        return [
-            ("Goal", f"Resolve accepted blockers for `{root_id}`, mechanically detect actual overlapping candidate diffs and ordinary Git conflicts, resolve them, and regenerate shared derived artifacts once."),
-            ("Context", _listed_items([*(f"critique ticket: {item}" for item in units), "The integrator may edit or create any repository file needed for the root Goal."])),
+            ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Critique is read-only."])),
         ]
     return [
-        ("Goal", f"Verify `{root_id}`'s Goal on the integrated tip after `{repaired_by or GATE_REPAIR_ID.format(root=root_id)}` and report the repository-global deterministic gate result."),
-        ("Context", _listed_items([f"root ticket: {root_id}", f"integrated result ticket: {repaired_by or GATE_REPAIR_ID.format(root=root_id)}", "Verification chooses checks from Goal and repository law; no authored test list limits it."])),
+        ("Goal", f"Resolve accepted blockers for `{root_id}`, mechanically detect actual overlapping candidate diffs and ordinary Git conflicts, resolve them, and regenerate shared derived artifacts once."),
+        ("Context", _listed_items([*(f"critique ticket: {item}" for item in units), "The integrator may edit or create any repository file needed for the root Goal."])),
     ]
 
 
 def _gate_sections(*args, **kwargs):
-    return _gate_body(*args, **kwargs) + [("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")]
+    return _gate_body(*args, **kwargs) + [(REPORT_SECTION, "")]
 
 
 def _gate_stub(run: str, ticket_id: str, executor: str, depends_on: list,
                _suggested=None, sections=None, pack=None, **metadata) -> str:
+    # The gate inherits the pin rather than retaking it: a stage cut to
+    # review one target has to read the pack that target was admitted
+    # under, not whatever resolves when the stage is written.
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
-        "sequence": metadata.get("sequence"), "pack": pack,
+        "pack": pack, "pack_digest": metadata.get("pack_digest"),
         "independence": metadata.get("independence") or "gate",
         "depends_on": list(depends_on),
         "isolation": metadata.get("isolation"), "bound": NEW_DEFAULT_BOUND,
         "review_order": metadata.get("review_order"),
         "review_kind": metadata.get("review_kind"),
-        "claimed_by": "", "claimed_at": "",
         "root_generation": metadata.get("root_generation"),
     }
     return _render_ticket(fields, sections or [])
@@ -90,26 +94,30 @@ def _cmd_gate(rest):
     probe = list(rest)
     for flag in ("--lens", "--ordered-lens-bundle"):
         _extract_flag(probe, flag)
-    if len(probe) != 2 or _segment_error("run id", probe[0]) is not None:
-        return _gate_under_run_lock(rest)
+    if len(probe) != 2:
+        return {"error": f"usage: {GATE_USAGE}"}
     try:
-        with _run_lock(probe[0]):
+        with locked_ticket_write(probe[0], probe[1]):
             return _gate_under_run_lock(rest)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {"error": f"unable to create gate: {error}"}
 
 
 def _cmd_checker_stage(rest):
-    if len(rest) != 2 or _segment_error("run id", rest[0]) is not None:
-        return _checker_stage_under_run_lock(rest)
+    if len(rest) != 2:
+        return {"error": f"usage: {CHECKER_STAGE_USAGE}"}
     try:
-        with _run_lock(rest[0]):
-            return _checker_stage_under_run_lock(rest)
+        with locked_ticket_write(rest[0], rest[1]) as target_path:
+            return _checker_stage_under_run_lock(rest, target_path=target_path)
+    except TicketWriteRefused as refused:
+        return refused.payload
     except OSError as error:
         return {"error": f"unable to create checker stage: {error}"}
 
 
-def _checker_stage_under_run_lock(rest):
+def _checker_stage_under_run_lock(rest, *, target_path=None):
     if len(rest) != 2:
         return {"error": f"usage: {CHECKER_STAGE_USAGE}"}
     run, target_id = rest
@@ -121,7 +129,8 @@ def _checker_stage_under_run_lock(rest):
     if root is None:
         return {"error": NO_SINK_ERROR}
     directory = root / run
-    target_path = directory / f"{target_id}.md"
+    if target_path is None:
+        target_path = directory / f"{target_id}.md"
     if not target_path.is_file():
         return {"error": f"checker target not found: {run}/{target_id}"}
     target = _load_ticket(target_path)
@@ -131,7 +140,7 @@ def _checker_stage_under_run_lock(rest):
         return {"error": f"ticket {run}/{target_id} defers independence to its downstream gate"}
     if str(target.get("checked_by") or "").strip():
         return {"error": f"ticket {run}/{target_id} is already checked"}
-    if not str(target.get("pack") or "").strip().strip("`"):
+    if not dequote(target.get("pack")):
         return {"error": "checker-stage requires target pack authority"}
     root_generation = str(target.get("root_generation") or "")
     if not root_generation:
@@ -158,7 +167,8 @@ def _checker_stage_under_run_lock(rest):
     text = _gate_stub(
         run, stage_id, "orch-check", [target_id],
         sections=sections, root_generation=root_generation,
-        pack=target.get("pack"), isolation="none", review_order=0,
+        pack=target.get("pack"), pack_digest=target.get("pack_digest"),
+        isolation="none", review_order=0,
         independence="gate", review_kind="critique",
     )
     cut_generation = str(target.get("cut_generation") or "")
@@ -317,6 +327,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
     rendered = []
     critique_ids = []
     gate_pack = root_ticket.get("pack")
+    gate_pack_digest = root_ticket.get("pack_digest")
     for review_order, lens in enumerate(lenses):
         critique_id = GATE_CRITIQUE_ID.format(root=root_id, lens=lens)
         critique_ids.append(critique_id)
@@ -324,6 +335,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
         rendered.append((critique_id, _gate_stub(
             run, critique_id, "orch-check", units,
             sections=sections, root_generation=root_generation, pack=gate_pack,
+            pack_digest=gate_pack_digest,
             isolation="none", review_order=review_order, review_kind="critique",
         )))
     repaired_by = GATE_REPAIR_ID.format(root=root_id)
@@ -331,14 +343,7 @@ def _gate_under_run_lock(rest, _head_probe=None):
     rendered.append((repaired_by, _gate_stub(
         run, repaired_by, "orch-execute", critique_ids,
         sections=sections, root_generation=root_generation, pack=gate_pack,
-        isolation="none", review_kind="repair",
-    )))
-    verify_id = GATE_VERIFY_ID.format(root=root_id)
-    sections = _gate_sections("verify", root_id, units=units, repaired_by=repaired_by)
-    rendered.append((verify_id, _gate_stub(
-        run, verify_id, "orch-check", [repaired_by],
-        sections=sections, root_generation=root_generation, pack=gate_pack,
-        isolation="none", review_kind="verify",
+        pack_digest=gate_pack_digest, isolation="none", review_kind="repair",
     )))
     for ticket_id, text in rendered:
         defects = ticket_defects(text)

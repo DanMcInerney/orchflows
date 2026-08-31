@@ -16,7 +16,7 @@ from scripts import tickets
 
 
 ROOT = Path(__file__).resolve().parents[1]
-COMPOSITION = ROOT / "compositions" / "browser-game"
+COMPOSITION = ROOT / "example-workflows" / "browser-game"
 LEGACY_INPUTS = (
     "29DF4D680E47A8162AE94BBD7C9BCD1FA9A2DFC3E7EE4D26025933B2C5D79653",
     "3C5EB92FB148C4177FA8CE4CE88B4EE9576D457F6C47F1B9762407843ACC8F48",
@@ -71,8 +71,8 @@ class BrowserGameCompositionTests(unittest.TestCase):
         self.assertEqual(
             {
                 "00-record": "orch-execute",
-                "01-evidence": "orch-spec",
-                "02-checkpoint": "orch-spec",
+                "01-evidence": "orch-outline",
+                "02-checkpoint": "orch-outline",
             },
             {name: fields["executor"] for name, fields in stubs.items()},
         )
@@ -123,7 +123,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
     def test_checkpoint_consumes_the_kind_separated_successor_plan_contract(self):
         checkpoint = (COMPOSITION / "02-checkpoint.md").read_text(encoding="utf-8")
         self.assertIn(
-            "compositions/references/browser-game-program-record.schema.json"
+            "example-workflows/references/browser-game-program-record.schema.json"
             "#/$defs/successorPlanRevision",
             checkpoint,
         )

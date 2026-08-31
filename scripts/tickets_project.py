@@ -5,7 +5,7 @@ every project on the host.  That is the architecture the host block
 mandates, and its one exposure is that a run is reachable from checkouts
 that have nothing to do with it.  Nothing mechanical asserted the
 boundary, so three separable failures all arrived through it -- a
-packet-less fork scavenged the sink and matched another project's
+prompt-less fork scavenged the sink and matched another project's
 pending ticket, a claim was attempted from the sibling checkout of the
 project holding the run's baseline, and a run was attributed to whichever
 session wrote to the sink first while its tickets named a different
@@ -18,96 +18,24 @@ workspace's project against the recorded one and refuses a mismatch, so
 a context standing in the wrong checkout is stopped at the door rather
 than discovered later by a baseline that will not resolve.
 
-The claim path itself lives here for the same reason: admission is where
-the boundary is enforced, and ``scripts/tickets_lifecycle.py`` sat six
-lines under its ceiling.  Splitting the seam out is what made the law
-affordable to add, so the two arrived together.
+The claim path lived here too, for the same reason, until the dispatch-v1
+cutover made ``dispatch-open`` the one door that takes a ticket. What
+remains is the law both doors read.
 """
 
 from __future__ import annotations
 from pathlib import Path
-from datetime import datetime, timezone
 try:
     from scripts import state_root
 except ImportError:
     import state_root
 if __package__:
-    from .tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
-    from .tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
-    from .tickets_context import graded_admission
-    from .tickets_packet import _claim_is_stale
-    from .tickets_transitions import refusal
+    from .tickets_store import RUN_IDENTITY_NAME, _origin_url, _project_key, _read_identity, _runs_root, _same_project, _writer_identity
 else:
-    from tickets_format import ROOT_EXECUTOR, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _set_frontmatter_field
-    from tickets_store import NO_SINK_ERROR, RUN_IDENTITY_NAME, UTC_STAMP, _load_ticket, _origin_url, _project_key, _read_identity, _run_lock, _runs_root, _same_project, _segment_error, _tickets_root, _writer_identity
-    from tickets_context import graded_admission
-    from tickets_packet import _claim_is_stale
-    from tickets_transitions import refusal
-CLAIM_USAGE = 'claim <run> <id> --by <name>'
+    from tickets_store import RUN_IDENTITY_NAME, _origin_url, _project_key, _read_identity, _runs_root, _same_project, _writer_identity
 CLAIM_REMEDY = 'Claim it from a workspace of {theirs}'
 TERMINAL_REMEDY = 'Record it from a workspace of {theirs}'
 CREATE_REMEDY = 'Use a different run id, or write from a workspace of {theirs}'
-def _lifecycle():
-    """The lifecycle module, resolved at call time rather than bound at import.
-
-    Three names are reached through it: the two run-snapshot readers, which
-    stayed where ``ready`` also reads them so a caller that swaps one swaps
-    the one both paths use, and the atomic writer, which ``tickets.py``'s
-    seam sync re-points on that module whenever the facade's is replaced.
-    A claim holding import-time copies would write through bindings the
-    sync cannot reach, and an injected write failure would land on nothing.
-
-    The import is local because it runs the other way at load: lifecycle
-    imports this module for the claim seam.
-    """
-    if __package__:
-        from . import tickets_lifecycle
-    else:
-        import tickets_lifecycle
-    return tickets_lifecycle
-def _snapshots():
-    """The run-snapshot pair, as ``ready`` currently sees them."""
-    lifecycle = _lifecycle()
-    return lifecycle._run_snapshot, lifecycle._snapshot_matches
-def _project_at(location):
-    """The project a directory belongs to, or ``None`` when it names none.
-
-    ``find_repo_root`` owns *which project*, here as everywhere: a linked
-    worktree resolves to the checkout it points at, so a run named by one
-    worktree admits every worktree of the same repository.  A path that
-    is not on this host walks to the filesystem root and answers ``None``,
-    which reads as "this ticket names no project I can see" rather than
-    as a refusal -- the host holding the run is not always the host the
-    cut was written on.
-    """
-    root = state_root.find_repo_root(Path(str(location).strip()))
-    if root is None:
-        return None
-    return {'root': str(root), 'origin': _origin_url(root), 'name': root.name}
-def _root_ticket_text(run: str):
-    """The run's root ticket, read from the sink, or ``None``.
-
-    One physical run has one root, so the first item carrying the root
-    executor is it; an unreadable sibling is skipped rather than allowed
-    to decide the run's identity by its absence.
-    """
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return None
-    run_dir = tickets_root / run
-    if not run_dir.is_dir():
-        return None
-    for path in sorted(run_dir.glob('*.md')):
-        text, failure = _read_utf8(path)
-        if failure is not None:
-            continue
-        try:
-            data = _parse_frontmatter(text)
-        except Exception:
-            continue
-        if _executor_of(data) == ROOT_EXECUTOR:
-            return text
-    return None
 def root_ticket_project(run: str):
     """Return no semantic override; issuance records the writer's project.
 
@@ -165,124 +93,3 @@ def binding_refusal(run: str, remedy: str):
     if _same_project(recorded, writing):
         return None
     return held_by(run, recorded, writing, remedy)
-def _do_claim(ticket_path: Path, prior_text: str, claimed_by: str, now: datetime, receipt=None) -> dict:
-    current_text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return failure
-    if current_text != prior_text:
-        return {'error': 'ticket changed since read; lost the claim race, retry'}
-    data = _load_ticket(ticket_path)
-    if 'error' in data:
-        return {'error': data['error']}
-    status = data.get('status')
-    skipped = []
-    if status == 'claimed':
-        stale, unreadable = _claim_is_stale(ticket_path, prior_text, data, now)
-        if not stale:
-            return {'error': f'ticket already claimed and not stale: {ticket_path.stem}'}
-        if unreadable:
-            skipped.append({'id': data['id'], 'reason': 'claim taken as stale without a full look at its motion: ' + '; '.join(unreadable)})
-    elif status == 'pending' and receipt is not None:
-        pass
-    elif status != 'ready':
-        return {'error': f"ticket is not claimable in status '{status}': {ticket_path.stem}"}
-    timestamp = now.strftime(UTC_STAMP)
-    updated = prior_text
-    if receipt is not None:
-        updated = _set_frontmatter_field(updated, 'admission', receipt)
-    updated = _set_frontmatter_field(updated, 'status', 'claimed')
-    updated = _set_frontmatter_field(updated, 'claimed_by', claimed_by)
-    updated = _set_frontmatter_field(updated, 'claimed_at', timestamp)
-    _lifecycle()._write_text_atomically(ticket_path, updated)
-    claimed = {'id': ticket_path.stem, 'claimed_by': claimed_by, 'claimed_at': timestamp}
-    return {'claimed': claimed, 'skipped': skipped} if skipped else {'claimed': claimed}
-def _cmd_claim(rest):
-    probe = list(rest)
-    _extract_flag(probe, '--by')
-    if len(probe) != 2 or _segment_error('run id', probe[0]) is not None:
-        return _claim_under_run_lock(rest)
-    run, ticket_id = probe
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    held = binding_refusal(run, CLAIM_REMEDY)
-    if held is not None:
-        return {'error': held}
-    run_dir = tickets_root / run
-    _run_snapshot, _ = _snapshots()
-    snapshot, failures = _run_snapshot(run_dir)
-    if failures:
-        return {'error': 'run snapshot is not closed', 'failures': failures}
-    prior_text = snapshot.get(ticket_id)
-    grade = None
-    if prior_text is not None:
-        data = _parse_frontmatter(prior_text)
-        status = str(data.get('status') or '')
-        if status in ('pending', 'ready'):
-            grade = graded_admission(ticket_id, prior_text, snapshot, run)
-            if grade['findings']:
-                return {'error': 'admission refused', 'findings': grade['findings']}
-    try:
-        with _run_lock(run):
-            return _claim_under_run_lock(rest, prior_text=prior_text, snapshot=snapshot, grade=grade)
-    except OSError as error:
-        return {'error': f'unwritable ticket: {error}'}
-def _claim_under_run_lock(rest, prior_text=None, snapshot=None, grade=None):
-    """The claim half of grade-then-swap: compare-and-swap one graded snapshot into a
-    live claim, landing only while that exact snapshot still matches, so a moved ticket,
-    dependency loses the race instead of claiming on a stale receipt. `ready`
-    grades on the same `graded_admission` and swaps the same way in `_admit_ready_cas`.
-
-    The project binding is graded before any of that, and before the ticket
-    is read at all: a claim from another project's workspace is refused for
-    what the caller is, not for what the ticket says, so no ticket state can
-    argue its way past it."""
-    args = list(rest)
-    claimed_by = _extract_flag(args, '--by')
-    if claimed_by is None:
-        return {'error': 'claim requires --by <name>'}
-    if len(args) != 2:
-        return {'error': f'usage: {CLAIM_USAGE}'}
-    run, ticket_id = args
-    held = binding_refusal(run, CLAIM_REMEDY)
-    if held is not None:
-        return {'error': held}
-    tickets_root = _tickets_root()
-    if tickets_root is None:
-        return {'error': NO_SINK_ERROR}
-    ticket_path = tickets_root / run / f'{ticket_id}.md'
-    if not ticket_path.is_file():
-        return {'error': f'ticket not found: {run}/{ticket_id}'}
-    loaded = _load_ticket(ticket_path)
-    if 'error' in loaded:
-        return {'error': loaded['error']}
-    if prior_text is None:
-        prior_text, failure = _read_utf8(ticket_path)
-        if failure is not None:
-            return failure
-    data = _parse_frontmatter(prior_text)
-    status = str(data.get('status') or '')
-    if status in ('pending', 'ready'):
-        _run_snapshot, _snapshot_matches = _snapshots()
-        if snapshot is None:
-            snapshot, failures = _run_snapshot(ticket_path.parent)
-            if failures:
-                return {'error': 'run snapshot is not closed', 'failures': failures}
-        if grade is None:
-            grade = graded_admission(ticket_id, prior_text, snapshot, run)
-        if grade['findings']:
-            return {'error': 'admission refused', 'findings': grade['findings']}
-        if not _snapshot_matches(ticket_path.parent, snapshot, grade.get('snapshot_ids') or [ticket_id]):
-            return {'error': 'ticket or dependencies changed since admission grade; lost the claim race'}
-    elif status == 'claimed':
-        return {'error': refusal('a claim is live on this ticket', 'claim', 'claimed')}
-    now = datetime.now(timezone.utc)
-    result = _do_claim(ticket_path, prior_text, claimed_by, now, grade['receipt'] if grade is not None else None)
-    if 'error' in result:
-        return result
-    claimed = dict(result['claimed'])
-    claimed['run'] = run
-    payload = {'claimed': claimed}
-    if result.get('skipped'):
-        payload['skipped'] = result['skipped']
-    return payload

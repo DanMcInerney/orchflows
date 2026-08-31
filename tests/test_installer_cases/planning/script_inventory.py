@@ -89,7 +89,7 @@ class TestScriptNames(unittest.TestCase):
         shipping without a single check going red."""
 
         named = set()
-        for path in sorted((install.REPO_ROOT / "compositions").rglob("*.md")):
+        for path in sorted((install.REPO_ROOT / "example-workflows").rglob("*.md")):
             named.update(BARE_SCRIPT_RE.findall(path.read_text(encoding="utf-8")))
         self.assertTrue(named, "no template stub names a bare script; the grep is wrong")
         missing = sorted(name for name in named if name not in install.SCRIPT_NAMES)
@@ -110,7 +110,7 @@ class TestScriptNames(unittest.TestCase):
             (home / ".claude").mkdir(parents=True)
             with patch.object(install.Path, "home", return_value=home), mock_host_clis("claude"):
                 plan = install.build_plan("user", None)
-                install.apply_plan(plan)
+                install.apply_plan(plan, accepted_source=install.resolve_source_commit())
 
             sink = home / "sink"
             elsewhere = home / "not-a-repo"

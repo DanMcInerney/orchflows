@@ -2,9 +2,8 @@
   "schema_version": 1,
   "constants": {
     "dispatch_protocol": "orchflows.dispatch.v1",
+    "launch_record_id": "launch",
     "outcome_record_id": "outcome",
-    "packet_record_id": "dispatch-packet",
-    "receipt_record_id": "dispatch-receipt",
     "review_protocol": "orchflows.review.v1"
   },
   "shapes": [
@@ -20,7 +19,8 @@
       "contract": "dispatch.md",
       "fields": [
         "assignment_seal", "dispatch_id", "lease_expires_at", "opened_at",
-        "outcome_record_id", "owner", "records", "state", "retired_at",
+        "outcome_record_id", "owner", "records", "state", "workspace_path",
+        "retired_at",
         "retirement", "replaced_at", "replaced_by", "replacement", "replaces"
       ],
       "required": [
@@ -37,7 +37,7 @@
       "contract": "dispatch.md",
       "fields": ["committed_at", "content", "kind", "record_id", "success"],
       "required": ["committed_at", "content", "kind", "record_id", "success"],
-      "values": {"kind": ["generic", "packet", "receipt", "result", "outcome", "join", "lifecycle"]}
+      "values": {"kind": ["generic", "launch", "result", "outcome", "join", "lifecycle"]}
     },
     {
       "name": "dispatch_stored_success",
@@ -48,26 +48,20 @@
     {
       "name": "dispatch_committed_record",
       "contract": "dispatch.md",
-      "fields": ["protocol", "run", "id", "dispatch_id", "record_id", "content"],
-      "required": ["protocol", "run", "id", "dispatch_id", "record_id", "content"]
+      "fields": ["protocol", "run", "id", "dispatch_id", "record_id"],
+      "required": ["protocol", "run", "id", "dispatch_id", "record_id"]
     },
     {
-      "name": "dispatch_packet_record",
+      "name": "dispatch_launch_record",
       "contract": "dispatch.md",
-      "fields": ["packet"],
-      "required": ["packet"]
-    },
-    {
-      "name": "dispatch_receipt_record",
-      "contract": "dispatch.md",
-      "fields": ["packet", "receipt"],
-      "required": ["packet", "receipt"]
+      "fields": ["launch"],
+      "required": ["launch"]
     },
     {
       "name": "dispatch_result_record",
       "contract": "dispatch.md",
-      "fields": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
-      "required": ["assignment_seal", "body", "mode", "operation", "section", "writer"]
+      "fields": ["assignment_seal", "body", "operation", "writer"],
+      "required": ["assignment_seal", "body", "operation", "writer"]
     },
     {
       "name": "dispatch_result_success",
@@ -78,8 +72,8 @@
     {
       "name": "dispatch_result_projection",
       "contract": "dispatch.md",
-      "fields": ["protocol", "run", "id", "path", "section", "mode", "by", "assignment_seal", "dispatch_id", "record_id"],
-      "required": ["protocol", "run", "id", "path", "section", "mode", "by", "assignment_seal", "dispatch_id", "record_id"]
+      "fields": ["protocol", "run", "id", "path", "by", "assignment_seal", "dispatch_id", "record_id"],
+      "required": ["protocol", "run", "id", "path", "by", "assignment_seal", "dispatch_id", "record_id"]
     },
     {
       "name": "dispatch_transition_success",
@@ -100,18 +94,6 @@
       "fields": ["protocol", "outcome", "run", "id", "dispatch_id", "record_id", "replaces", "assignment_seal", "lease_expires_at", "opened_at", "state"],
       "required": ["protocol", "outcome", "run", "id", "dispatch_id", "record_id", "replaces", "assignment_seal", "lease_expires_at", "opened_at", "state"],
       "values": {"outcome": ["replaced"], "state": ["live"]}
-    },
-    {
-      "name": "dispatch_packet_reference",
-      "contract": "dispatch.md",
-      "fields": ["id", "run"],
-      "required": ["id", "run"]
-    },
-    {
-      "name": "dispatch_inline_snapshot",
-      "contract": "dispatch.md",
-      "fields": ["assignment", "envelope_seal"],
-      "required": ["assignment", "envelope_seal"]
     },
     {
       "name": "dispatch_join_content",
@@ -137,65 +119,26 @@
       "name": "dispatch_join_success",
       "contract": "dispatch.md",
       "fields": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at", "review_identity"],
-      "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"]
+      "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"],
+      "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
     },
     {
-      "name": "dispatch_packet",
+      "name": "dispatch_launch",
       "contract": "dispatch.md",
-      "fields": [
-        "protocol", "source", "dispatch_id", "assignment_seal",
-        "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
-        "assigned_name", "reply_to", "workspace", "pack", "independence",
-        "isolation", "admission", "prompt", "review_kind", "form", "durability",
-        "reference", "inline"
-      ],
-      "required": [
-        "protocol", "source", "dispatch_id", "assignment_seal",
-        "outcome_record_id", "lease_expires_at", "executor", "role", "profile",
-        "assigned_name", "reply_to", "workspace", "pack", "independence",
-        "isolation", "admission", "prompt", "review_kind", "form", "durability"
-      ],
-      "values": {
-        "form": ["reference", "inline"],
-        "durability": ["ticket", "ephemeral"],
-        "review_kind": ["critique", "repair", "verify", "null"]
-      }
-    },
-    {
-      "name": "dispatch_receipt",
-      "contract": "dispatch.md",
-      "fields": [
-        "protocol", "outcome", "dispatch_id", "assignment_seal",
-        "form", "durability", "state_sink_checked"
-      ],
-      "required": [
-        "protocol", "outcome", "dispatch_id", "assignment_seal",
-        "form", "durability", "state_sink_checked"
-      ],
-      "values": {
-        "protocol": ["orchflows.dispatch.v1"],
-        "outcome": ["accepted"],
-        "durability": ["ticket"]
-      }
+      "fields": ["host", "verb", "agent", "model", "effort", "fields", "prompt"],
+      "required": ["host", "verb", "agent", "model", "effort", "fields", "prompt"]
     },
     {
       "name": "dispatch_outcome",
       "contract": "dispatch.md",
       "fields": [
         "protocol", "run", "id", "assignment_seal", "dispatch_id",
-        "outcome_record_id", "by", "status", "evidence"
+        "outcome_record_id", "by", "evidence"
       ],
       "required": [
         "protocol", "run", "id", "assignment_seal", "dispatch_id",
-        "outcome_record_id", "by", "status", "evidence"
-      ],
-      "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
-    },
-    {
-      "name": "dispatch_outcome_evidence",
-      "contract": "dispatch.md",
-      "fields": ["Result", "Verification", "Feedback", "Risks", "Handoff"],
-      "required": ["Result", "Verification", "Feedback", "Risks", "Handoff"]
+        "outcome_record_id", "by", "evidence"
+      ]
     },
     {
       "name": "review_state",
@@ -209,7 +152,7 @@
       "contract": "work-item.md",
       "fields": ["identity", "kind", "predecessor", "protocol"],
       "required": ["identity", "kind", "predecessor", "protocol"],
-      "values": {"kind": ["GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification"]}
+      "values": {"kind": ["GatePlan", "CritiqueAdjudication", "RepairOutcome"]}
     },
     {
       "name": "review_gate_plan",
@@ -249,40 +192,42 @@
       "required": ["accepted", "artifact", "by", "input_artifact", "no_op", "result"]
     },
     {
-      "name": "review_verification",
-      "contract": "work-item.md",
-      "fields": ["artifact", "by", "evidence", "verdict", "covers"],
-      "required": ["artifact", "by", "evidence", "verdict"],
-      "values": {"verdict": ["PASS", "FAIL", "UNVERIFIED"]}
-    },
-    {
       "name": "ticket_assignment_sections",
       "contract": "work-item.md",
-      "fields": ["Goal", "Context", "Suggested files"],
+      "fields": ["Goal", "Context", "Details"],
       "required": ["Goal", "Context"]
     },
     {
       "name": "ticket_frontmatter",
       "contract": "work-item.md",
       "fields": [
-        "id", "run", "status", "admission", "executor", "sequence", "pack",
-        "profile", "independence", "depends_on", "isolation", "bound", "claimed_by",
-        "claimed_at", "checked_by", "root_generation", "cut_generation", "assignment_seal",
-        "workspace_branch", "workspace_baseline", "workspace_path", "dispatch_v1",
+        "id", "run", "status", "admission", "executor", "pack",
+        "pack_digest", "profile", "independence", "depends_on", "isolation", "bound", "loop",
+        "done",
+        "checked_by", "root_generation", "cut_generation", "assignment_seal",
+        "workspace_branch", "workspace_baseline", "dispatch_v1",
         "review_order", "review_v1", "review_stage", "review_kind"
       ],
       "required": ["id", "run", "status", "executor", "depends_on", "bound"],
       "values": {
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
-        "review_kind": ["critique", "repair", "verify", "null"]
+        "loop": ["true"],
+        "review_kind": ["critique", "repair", "null"]
       }
+    },
+    {
+      "name": "done_binding",
+      "contract": "work-item.md",
+      "fields": ["form", "value"],
+      "required": ["form", "value"],
+      "values": {"form": ["command", "check"]}
     },
     {
       "name": "executor_result",
       "contract": "result.md",
-      "fields": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
-      "required": ["assignment_seal", "body", "mode", "operation", "section", "writer"],
-      "values": {"operation": ["result"], "mode": ["write", "append", "replace"]}
+      "fields": ["assignment_seal", "body", "operation", "writer"],
+      "required": ["assignment_seal", "body", "operation", "writer"],
+      "values": {"operation": ["result"]}
     },
     {
       "name": "verdict_criterion",
@@ -303,14 +248,8 @@
     {
       "name": "pack_cells",
       "contract": "pack-signature.md",
-      "fields": [
-        "slicing", "workspace", "required_spec_fields", "craft", "adapter",
-        "stages", "assembly", "lens", "evidence"
-      ],
-      "required": [
-        "slicing", "workspace", "required_spec_fields", "craft", "adapter",
-        "stages", "assembly", "lens", "evidence"
-      ],
+      "fields": ["adapter", "stages", "assembly", "craft"],
+      "required": ["adapter", "stages", "assembly", "craft"],
       "values": {"assembly": ["none", "stage name"]}
     }
   ]

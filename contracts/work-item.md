@@ -13,39 +13,79 @@ The author-facing payload has exactly these sections, in order:
 
 - `## Goal` — one observable end result. It is not an implementation plan.
   There is no separate done-when or completion-test section.
-- `## Context` — relevant facts, prior decisions, and exceptional constraints
-  the executor cannot infer from the repository. Write `[]` when none apply.
-- `## Suggested files` — optional, non-binding starting points. The executor
-  may ignore them and may change or create any files needed to achieve Goal.
+- `## Context` — the evidence behind Goal, cited by identity: the facts, prior
+  decisions, and exceptional constraints the executor cannot infer from the
+  repository, as pointers rather than inlined copies. A graph member's Context
+  names its root ticket path, because verdict-bearing clauses live there and
+  nowhere else. Write `[]` when none apply.
+- `## Details` — optional and free-form, authored by whoever cuts the ticket
+  for this one executor: read-lists, file anchors, prescribed steps, do-nots,
+  definition-of-done commands, and what the closing report should cover. A
+  planner that investigated may prescribe as hard as its evidence reaches,
+  and every prescription carries the evidence that earned it plus its escape
+  hatch: deviation is pre-authorized where following Details would break Goal,
+  reported with the observation that forced it.
 
-The executor chooses implementation, tests, and verification. A test-oriented
-executor derives its tests from Goal. Repository-global deterministic gates
-still apply at the integrated tip. The assignment carries no authored file
-path restrictions, prescribed actions, named checks, or prescribed tests.
+Goal, Context, and Details are one sealed assignment, and Goal is what the
+`done` predicate and the join answer to. Repository-global deterministic gates
+still apply at the integrated tip.
 
 ## System-owned metadata
 
 Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
-- `executor`, optional `sequence`, `profile`, and `pack` — exact dispatch and
-  role binding. Callable executors are the seven registered verbs
-  `orch-execute`, `orch-check`, `orch-decompose`, `orch-integrate`,
-  `orch-frontier`, `orch-loop`, and `orch-spec`; `script:<repo-relative path>`
-  is the only other executable form. Skill substitution is not allowed.
+- `executor`, optional `profile`, and `pack` — exact dispatch and
+  role binding. Callable executors are the four registered verbs
+  `orch-execute`, `orch-check`, `orch-slice`, and `orch-outline`;
+  `script:<repo-relative path>`
+  is the only other executable form. Skill substitution is not allowed, and a
+  superseded name is refused naming its successor rather than aliased.
+- optional `pack_digest` — the stamped pack's content digest, taken at issue
+  time and never afterwards. Every later door resolves the named pack and
+  refuses when the two differ, so a pack that changed under a sealed
+  assignment, or a nearer ring that came to shadow it, is a refusal rather
+  than a substitution. A ticket naming no pack pins nothing.
+- optional `done` — the canonical JSON done predicate, `{"form", "value"}`:
+  form `command`, a deterministic command whose exit 0 is the verdict, or
+  form `check`, a criterion no oracle covers, judged by one minted
+  `orch-check` ticket. On an ordinary ticket `tickets.py land` is the only
+  evaluator: it runs the
+  command in the integrated tree, and that run is the one outside execution
+  ([verification.md](../rules/verification.md) §6). A refused command arms
+  the next `<id>.repair.NN` round rather than closing the ticket; two rounds
+  with no result delta close it `stalled`. A ticket carrying no predicate is
+  graded by the driver at the join instead.
+- optional `loop` — the marker `true`, and no other value. It moves the
+  reading of this ticket's own `done`: once per iteration instead of once at
+  landing. The stub's own `executor` is the
+  iteration body's verb. A loop
+  stub is never dispatched: `scripts/tickets_loop.py` arms iteration
+  `<id>.iter.NN` tickets, evaluates the done-check, and advances — re-arm, or
+  terminal `complete` | `limited` | `stalled` — with the worklog as the state
+  and `bound` reused as the loop's operational bound. A marker with no `done`
+  beside it marks nothing and is refused.
 - `depends_on` — ticket ids that must complete first.
 - `bound` — operational effort bound.
-- `independence`, `isolation` — checker/gate and workspace mechanics.
+- `independence`, `isolation` — checker/gate mechanics, and the rare
+  explicit workspace override; an absent `isolation` derives its effective
+  value from the stamped pack's adapter (`establishes_isolation`), read
+  through one derivation everywhere.
 - `review_order` — the sealed zero-based order of a composite-gate lens.
-- `review_kind` — optional typed review lane: `critique`, `repair`, or
-  `verify`; its value selects the mechanical checker or repair projection.
+- `review_kind` — optional typed review lane: `critique` or `repair`; its
+  value selects the mechanical checker or repair projection. There is no
+  standing verification lane: the fresh outside check is the root's own
+  `done` predicate, run by land.
 - `admission`, `root_generation`, `cut_generation`, `assignment_seal` — the
   deterministic generation, validation, seal, and admission records.
-- `claimed_by`, `claimed_at`, `checked_by`, `review_stage`, `workspace_path`,
+- `checked_by`, `review_stage`,
   `workspace_branch`, and `workspace_baseline` — lifecycle observations written
-  by their owning tools. `workspace_path` names the pre-dispatch candidate or
-  canonical run-scoped evidence store; the Git-only fields fix its branch and
-  starting revision.
+  by their owning tools. The claim lease — owner and opened time — and the
+  established tree both live in the `dispatch_v1` attempt alone; the ticket
+  carries no projection of either. `workspace.py establish` is the mechanical owner of the
+  candidate an isolated item runs in: it derives, creates, and records that tree
+  on the live attempt, and re-establishing it never restamps the baseline. The
+  Git-only fields fix that candidate's branch and starting revision.
 - `review_stage` names the completed derived `<id>.check` ticket whose
   protocol-owned join authenticates `checked_by`; it is never a caller's
   findings payload.
@@ -56,32 +96,33 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 `status` is `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`,
 `stalled`, `failed`, or `limited`. Admission alone creates `ready`; claim alone
-creates `claimed`; the join alone records terminal status.
+creates `claimed`; the join alone records terminal status, off the ticket's
+evaluated `done` predicate or the driver's own grade — never off a
+disposition the executor claimed for itself.
 
-Sealing fingerprints Goal, Context, optional Suggested files, exact executor,
-dependencies, and necessary system identity. It never creates file authority
-or a prescribed test oracle. Accepted generation identity is immutable;
-compare-and-swap sealing refuses a stale snapshot.
+Sealing fingerprints Goal, Context, optional Details, exact executor,
+dependencies, and necessary system identity. Accepted generation identity is
+immutable; compare-and-swap sealing refuses a stale snapshot.
 
 ## Dispatch-v1 attempt state
 
 The ticket's `dispatch_v1` frontmatter value binds the complete closed
 [dispatch contract](dispatch.md). That contract solely owns attempts, records,
-packets, receipts, outcomes, joins, precedence, and cutover. Ticket lifecycle
+launches, outcomes, joins, precedence, and cutover. Ticket lifecycle
 projects its accepted mutations: open creates `claimed`; once a dispatch record
 exists, only the outcome-fenced join creates `suspended` or a terminal state,
 and raw status writes are refused as `dispatch-join-required`. Before any
 dispatch record exists, `set-status` is the caller's only route to `suspended`
 or a terminal state — it is the pre-dispatch surface, not a legacy one — and
-`ready` and `claimed` remain the admission boundary's alone. A suspended ticket retains claimant
-observations for its Handoff, but its joined dispatch attempt is retired.
+`ready` and `claimed` remain the admission boundary's alone. A suspended ticket
+retains claimant observations for whoever resumes it, but its joined dispatch
+attempt is retired.
 
-## Dispatch-v1 packet projection and receipt
+## Dispatch-v1 launch
 
-Packet projection and receipt are the [dispatch contract](dispatch.md)'s wire
-boundary. Reference is the normal projection. Inline seals the whole routing
-envelope for an offline receiver and returns the same reserved outcome envelope
-for atomic coordinator relay; it never creates a second ticket truth.
+The [dispatch contract](dispatch.md) owns the launch and its generated prompt.
+This ticket is the assignment that prompt points at, and nothing copies it, so
+there is no second ticket truth.
 
 ## Review-stage ledger
 
@@ -91,35 +132,37 @@ exact prior record identity as `predecessor`. `GatePlan` fixes the artifact,
 pack, normalized isolation, and ordered lens assignment identities;
 `CritiqueAdjudication` fixes complete findings and their accepted subset;
 `RepairOutcome` fixes the resulting artifact or proves no-op from an empty
-accepted set; `Verification` fixes its artifact, verdict, and evidence.
+accepted set, and closes the chain.
 
-Composite gate packets copy only the validated predecessor chain. Critique,
-repair, and verification joins append their stage atomically with the lifecycle
+A composite gate lane consumes only the validated predecessor chain. Critique
+and repair joins append their stage atomically with the lifecycle
 join. The ordinary distinct checker writes the same `GatePlan` and
 `CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
-artifact, complete canonical findings, and accepted subset.
+artifact, complete canonical findings, and accepted subset. Those two arrays
+are the findings' one durable home: they reach the join as files, never as
+prose a consumer would have to read out of a report.
 
 ## Executor records
 
-After the semantic sections, tickets carry executor-owned `## Result`,
-`## Verification`, `## Feedback`, and `## Risks`; `## Handoff` is optional.
-They are append-only after seal and are excluded from assignment fingerprints.
-The executor files them as work is produced through `tickets.py result` under
-[result.md](result.md), naming the packet's `assignment_seal`, `dispatch_id`,
-a unique `record_id`, and recorded writer. Reference packet
-prompts carry the first three fixed identities and a `RECORD_ID` placeholder;
+After the semantic sections, a ticket carries one executor-owned `## Report`.
+It is append-only after seal and is excluded from assignment fingerprints, and
+its form is the executor's: the protocol reads nothing out of it, so it
+prescribes no headings inside it. The executor files as work is produced
+through `tickets.py result` under
+[result.md](result.md), naming the attempt's `assignment_seal`, `dispatch_id`,
+a unique `record_id`, and recorded writer. The launch prompt carries the first
+three fixed identities and a `RECORD_ID` placeholder;
 the executor chooses a fresh record id for each streamed write. At closing,
 every executor commits or returns the reserved
-[dispatch outcome](dispatch.md#outcome-and-join). `Feedback` and `Risks` use
-`[]` when empty. Outcome evidence is a closing delta: it contains only evidence
-not already materialized by streamed result records, and every item is appended
-exactly once.
+[dispatch outcome](dispatch.md#outcome-and-join), whose evidence is one closing
+note appended here like any other filing. `land` appends its `done` predicate's
+reading to the same section, attributed to the driver that ran it.
 
 ## Roots, decomposition, and integration
 
 A root is the ticket named by a `root_generation`. A direct root may bind any
 lawful registered executor and owns the whole artifact. A decomposed root binds
-`orch-decompose`; every member and gate ticket uses this same semantic shape.
+`orch-slice`; every member and gate ticket uses this same semantic shape.
 
 Each physical run has one root identity. Its `root_generation` uses ordinal
 `1`; only cut drafts can advance before seal. A semantic change after seal is
@@ -127,13 +170,14 @@ not an in-run amendment: after the accepted predecessor result identity
 resolves, it opens a successor run whose root `## Context` cites that identity.
 The predecessor ticket and run remain historical state and are not rewritten.
 
-Decomposition may suggest files, but it does not grant exclusive predicted
-scope and parallel tickets need not predict disjoint paths. Isolated candidates
-receive repository/workspace write authority by default. At integration, the
+Details may name files, but naming them grants no exclusive scope and parallel
+tickets need not predict disjoint paths. Isolated candidates receive
+repository/workspace write authority by default. At integration, the
 integrator mechanically inspects actual diffs and ordinary Git conflicts,
-resolves overlaps, regenerates shared derived artifacts once, and runs the
-final deterministic gate. An actual diff differing from Suggested files is
-never by itself a rejection.
+resolves overlaps, and regenerates shared derived artifacts once; `land`
+merges the candidate into the tree the run stands on and runs the root's
+`done` predicate there. An actual diff wider than Details predicted is
+never by itself a rejection: Goal is the acceptance boundary.
 
 ## Template and executor form
 
@@ -142,12 +186,10 @@ substitutes placeholders, validates one acyclic graph with one terminal, seals
 the exact snapshot, and writes all tickets or none.
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
-Optional `sequence` is an ordered chain of stage names declared by the stamped
-pack's execute-side `stages` cell; stage names are pack data, not skill
-bindings. A sequence is one child, established once at the role resolved from
-its callable executor. `orch-execute` resolves the pack's execute cells and
-`orch-check` resolves its check cells; neither may import a superseded skill
-body or invent a second pack parser. Anything needing a fresh role or
+A multi-stage pack runs its declared `stages` in order through that one
+child and one role ([roles.md](../rules/roles.md) §4); `orch-execute` and
+`orch-check` read the stamped pack's craft and may not import a superseded
+skill body or invent a second pack parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to
 Context but do not replace the semantic sections.
 
@@ -168,7 +210,7 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | field | required | declared values |
 | --- | --- | --- |
 | `identity` | yes | — |
-| `kind` | yes | `GatePlan`, `CritiqueAdjudication`, `RepairOutcome`, `Verification` |
+| `kind` | yes | `GatePlan`, `CritiqueAdjudication`, `RepairOutcome` |
 | `predecessor` | yes | — |
 | `protocol` | yes | — |
 
@@ -237,23 +279,13 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `no_op` | yes | — |
 | `result` | yes | — |
 
-### `review_verification`
-
-| field | required | declared values |
-| --- | --- | --- |
-| `artifact` | yes | — |
-| `by` | yes | — |
-| `evidence` | yes | — |
-| `verdict` | yes | `PASS`, `FAIL`, `UNVERIFIED` |
-| `covers` | no | — |
-
 ### `ticket_assignment_sections`
 
 | field | required | declared values |
 | --- | --- | --- |
 | `Goal` | yes | — |
 | `Context` | yes | — |
-| `Suggested files` | no | — |
+| `Details` | no | — |
 
 ### `ticket_frontmatter`
 
@@ -264,27 +296,33 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `status` | yes | `pending`, `ready`, `claimed`, `suspended`, `complete`, `blocked`, `stalled`, `failed`, `limited` |
 | `admission` | no | — |
 | `executor` | yes | — |
-| `sequence` | no | — |
 | `pack` | no | — |
+| `pack_digest` | no | — |
 | `profile` | no | — |
 | `independence` | no | — |
 | `depends_on` | yes | — |
 | `isolation` | no | — |
 | `bound` | yes | — |
-| `claimed_by` | no | — |
-| `claimed_at` | no | — |
+| `loop` | no | `true` |
+| `done` | no | — |
 | `checked_by` | no | — |
 | `root_generation` | no | — |
 | `cut_generation` | no | — |
 | `assignment_seal` | no | — |
 | `workspace_branch` | no | — |
 | `workspace_baseline` | no | — |
-| `workspace_path` | no | — |
 | `dispatch_v1` | no | — |
 | `review_order` | no | — |
 | `review_v1` | no | — |
 | `review_stage` | no | — |
-| `review_kind` | no | `critique`, `repair`, `verify`, `null` |
+| `review_kind` | no | `critique`, `repair`, `null` |
+
+### `done_binding`
+
+| field | required | declared values |
+| --- | --- | --- |
+| `form` | yes | `command`, `check` |
+| `value` | yes | — |
 
 <!-- END GENERATED T0 SHAPES -->
 
@@ -293,6 +331,8 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 A named-field change to this contract is an explicit T0 supersession. There is
 one current reader and writer: no compatibility aliases, dual parsing, or
 migration mode. Historical user state is not rewritten.
+
+T0 supersession record sha256:87f5ac04bab1a5a2f9f86089cd4a15bcf7feea02f4e550becebe1605ea4bb361: `pack_digest` pins the stamped pack's content at issue time, and every later door verifies the resolved pack against it.
 
 T0 supersession record sha256:b2d5d570a37764b9c83f305eaf90a98f604ce98c5d479ecbd7abb1059b9c94aa: executor records now enter through the attributed result writer.
 
@@ -345,3 +385,90 @@ remaining a deterministic declaration-to-consumer gate.
 
 T0 supersession record sha256:2d090e77139a186a035e1ca293cc9a9ae53863f4c876ac983812ec77559e6d49:
 the generated T0 section now uses declaration-specific wording.
+
+T0 supersession record sha256:8926075889cc5c2614bb77dd16958956c028162ec8e1a31f8a63f9dbe588d63b:
+the intake verb orch-spec is renamed orch-outline in the seven-verb registry.
+The noun spec — a run's frozen statement — keeps its name, and so does the
+pack's required_spec_fields cell. A dispatch naming the old verb refuses and
+names the successor; nothing aliases it.
+
+T0 supersession record sha256:60cec4c556056d0e2b903ec93fa9c06d994cf25d761215529567df7cd02e5594:
+the loop engine is absorbed into the driver. The ticket gains the optional
+loop object (loop_stub/loop_done shapes) and orch-loop leaves the callable
+registry — six verbs remain; a dispatch naming it refuses toward the loop
+field. No LLM holds loop state: scripts/tickets_loop.py arms, evaluates,
+and advances, and the worklog is the state.
+
+T0 supersession record sha256:e462edd95fa2a58bcb4836dffd9a23120b46dfca70dc0d0c904ae1e5e277e755:
+the ticket diet: claimed_by and claimed_at leave the frontmatter — the
+dispatch_v1 attempt's owner and opened_at were already the lease, and the
+pair was a projection with a second owner; sequence retires — a multi-stage
+pack's stages run in order at the head's one role, and the orch- prefix
+wedge that classified chain entries goes with it; isolation becomes the
+rare explicit override over the value derived from the stamped pack's
+adapter.
+
+T0 supersession record sha256:0fc272b985dbceb3b1cbcd3309109e254ee85fdee485fbc522262a68f64e2443:
+`workspace_path` leaves the frontmatter. The dispatch attempt establishes
+the tree and is now its sole owner, so the ticket's projection of the same
+path — the second home that let a packet name a tree the establishment had
+not created — is gone, and lint refuses the field. The Git-only
+`workspace_branch` and `workspace_baseline` observations stay where they
+were. Packet projection keeps its own section, without the receipt half the
+dispatch contract retired.
+
+T0 supersession record sha256:3f22969c019c621ea83e4e6d630ff1ddadc9ff4cce7a5ccbfc7da874a0419f37:
+the packet projection section becomes the launch section. This ticket is the
+assignment the dispatch contract's generated prompt points at, and nothing
+copies it; the executor-record identities are the attempt's, carried into
+that prompt with a `RECORD_ID` placeholder the child fills per write.
+
+T0 supersession record sha256:b569907384410354a1abdd66c60a6a0264536243db41103f202b297853b27678:
+the ticket gains the optional `done` predicate. It is the binding the loop
+object already carried, promoted to the frontmatter and renamed
+`done_binding` because it now has two homes and one grammar, and it joins
+the sealed assignment fields: a changed `done` is a changed assignment.
+`tickets.py land` is its only evaluator -- it merges the candidate into the
+tree the run stands on, runs the command there, and files the exit as
+system-written Verification -- and a refused command arms the next
+`<id>.repair.NN` round rather than closing the item. Terminal status is that
+predicate's reading or the driver's grade at the join, never the executor's
+claim. `review_kind` loses `verify`, the review ledger ends at
+`RepairOutcome`, and the `Verification` record and its shape are removed
+with the standing verification lane they served.
+
+T0 supersession record sha256:ae7a127d5d67fb0eb6cdbfde042427e17dba588a4c80cdd67baedf98f532f291:
+the semantic ticket diet. `## Suggested files` becomes `## Details`, and what
+it may hold stops being a non-binding path list: it is the planner's free-form
+guidance for this one child -- read-lists, anchors, prescribed steps, do-nots,
+definition-of-done commands, and what the closing report should carry. The
+clauses that forbade all of it go with the section they qualified: the
+assignment may now carry authored file paths, prescribed actions, named checks
+and prescribed tests, and the executor no longer "chooses implementation, tests,
+and verification" by law. What replaces the prohibition is the escape hatch --
+follow Details and say so, or deviate where following it would miss Goal and
+report the deviation -- because a planner that investigated should prescribe
+and a planner that did not should leave the choice.
+
+The five executor sections become one `## Report`. `Result`, `Verification`,
+`Feedback`, `Risks` and `Handoff` are gone, with the `[]` prefill, the
+`--section`, `--append` and `--replace` flags, and the `mode` and `section`
+fields of the result record: there is one section, one mode, and no consumer
+that reads which heading a fact arrived under. Outcome evidence is one closing
+note appended there like any other filing, and the delta law is gone with the
+five keys it policed. A critique's findings, the one thing a machine does read,
+cross to the join as a file -- `--findings-file <path|->`, beside
+`--accepted-file` -- and live in the `CritiqueAdjudication` that was always
+their durable home. `land` appends its predicate reading to `Report`. No
+instruction ceiling bounds any of it: `tickets.py new` and `lint` grade a
+ticket's shape, never its length.
+
+T0 supersession record sha256:53406f681678ca1134b5e418980d4b736e4a865b1b0d3a4806ba27922d3fbe89:
+`loop` is a marker, not an object. Since the ticket gained its own top-level
+`done`, the loop object has carried exactly one field -- a second copy of
+that same binding, in a second home, under the same grammar -- so the
+`loop_stub` shape is removed and the field's one declared value is `true`.
+A loop stub is a ticket carrying `loop: true` beside the `done` its
+iterations are read against; the marker with no `done` beside it marks
+nothing and is refused, and every reader that asked whether the object
+parsed now asks whether the marker is set.

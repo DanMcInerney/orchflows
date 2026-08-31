@@ -10,8 +10,8 @@ the shape, [rules/verification.md](rules/verification.md) owns review,
 ## One file is the whole work order
 
 A ticket is one markdown file holding the durable assignment, lifecycle,
-result, and verification truth for one job. A role-bearing child receives a
-committed packet projection, not merely this file path. Tickets live in the
+result, and verification truth for one job. A role-bearing child is pointed at
+this file by its launch prompt, and reads it whole. Tickets live in the
 per-user state sink, outside every repository
 ([rules/visibility.md](rules/visibility.md) §6), which is why a fresh
 context in any checkout resumes a run mid-flight.
@@ -22,16 +22,13 @@ context in any checkout resumes a run mid-flight.
     │ executor: orch-execute    pack: orch-code-pack              │
     │ depends_on: [00-root.01]  <- graph edge                     │
     │ bound: 45m                <- time budget                    │
-    │ claimed_by / claimed_at / checked_by                        │
+    │ checked_by (the lease lives in dispatch_v1)                 │
     │ ---                                                         │
     │ ## Goal              observable result             ┐        │
     │ ## Context           facts and constraints          │ seal   │
-    │ ## Suggested files  optional, non-binding          ┘        │
-    │ ## Result            ┐                                      │
-    │ ## Verification      │ executor-written,                    │
-    │ ## Feedback          │ streamed while the                   │
-    │ ## Risks             │ work happens                         │
-    │ ## Handoff           ┘                                      │
+    │ ## Details           optional planner guidance     ┘        │
+    │ ## Report            executor-written, streamed while       │
+    │                      the work happens                       │
     └─────────────────────────────────────────────────────────────┘
 
 The semantic assignment is sealed before dispatch. A later semantic change
@@ -45,48 +42,46 @@ candidate that `tickets.py new <run> [<id>] --file <path>` would project.
 After issue, `tickets.py show <run> <id>` inspects one ticket's parsed identity
 and sections without mutation.
 
-Once a packet has been accepted, `tickets.py dispatch-receipt <run> <id>
---dispatch-id <id>` inspects that attempt's durable receipt without exposing
-raw dispatch frontmatter or changing ticket state. A missing attempt, missing
-receipt, inaccessible sink, or malformed closed state remains a named
-structured refusal.
-
 ## Dispatch protocol
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
 delivery. The caller invokes `tickets.py dispatch`, which promotes readiness,
-establishes the workspace, opens one attempt, and commits its immutable
-reference or inline projection atomically. The granular `dispatch-open` and
-`dispatch-packet` operations remain public for recovery. Pass the response `.packet` value—not the response wrapper
-or a reconstructed shell literal—to `dispatch-receive` through `--file <path>`
-or UTF-8 standard input with `--file -`. The established child supplies its
-actual assigned name, role, profile, reply target, and workspace authority;
-only a durable accepted receipt permits the exact named executor to run.
+establishes the workspace, opens one attempt, and commits one immutable
+`launch` atomically — the agent, model, effort, and the whole prompt the child
+is given, so the caller invokes a `launch` object rather than
+transcribing a model, an agent, or a set of instructions by hand. The granular
+`dispatch-open`, `dispatch-retire`, and `dispatch-replace` operations remain
+public for recovery, and replaying the same `dispatch` call hands back the same
+launch. There is no
+accept step: the child's first filed record is its acceptance, and every record
+it files carries the attempt's dispatch id, seal, and owner.
 
 The assignment seal identifies semantic generation. The dispatch id identifies
 one attempt and remains fixed across exact delivery retries. Transport silence
-replays the stored projection to the same child; it never creates a second live
+replays the stored launch to the same child; it never creates a second live
 child. Retirement precedes replacement, and `dispatch-replace` performs both
-sides atomically. The packet carries one reserved `outcome` identity. The
+sides atomically. The attempt reserves one `outcome` identity. The
 child commits its unstreamed closing evidence delta with `dispatch-outcome`.
-`dispatch-join` consumes only that durable outcome after the committed
-`dispatch-receipt`, so recovery never guesses
+The join consumes only that durable outcome, so recovery never guesses
 which streamed write closed the attempt. Fixed record ids replay identically
 and conflicting or unseen stale traffic refuses.
 
-Reference packets are normal. Inline packets carry the sealed ticket snapshot,
-but the authoritative sink must still authenticate receipt; self-carried
-offline material cannot authorize role-bearing execution. A ticket projection
-cannot be downgraded to ephemeral. A pre-v1 live claim without an attempt refuses
-`legacy-live-claim`: its existing owner must complete or abandon it before v1
-installation. The normative shapes and precedence live in
+`tickets.py land` is the return in one command: it imports the outcome, joins
+it, retires the derived worktree, and reports the frontier that join made
+ready — one lock around all three, and it says which steps it found already
+done. `dispatch-outcome` and `dispatch-join` remain public for recovery.
+
+A launch prompt names its ticket and never copies it, so the sink is always the
+authority a child reads its assignment from. A claimed ticket without an attempt refuses
+`claim-without-dispatch`: a live claim exists only as a dispatch-v1 attempt,
+whose owner and opened time are the lease. The normative shapes and precedence live in
 [contracts/dispatch.md](contracts/dispatch.md).
 
 ## A run is a directory of tickets
 
 A delivery run holds one **root ticket** for the whole request. A direct
 root binds its complete work to one executor. A genuinely decomposed root is
-frozen by `orch-spec`, cut by `orch-decompose`, and joined by pre-issued
+frozen by `orch-outline`, cut by `orch-slice`, and joined by pre-issued
 **gate stubs** for the end-of-run review:
 
     <state sink>/tickets/<run>/
@@ -94,9 +89,8 @@ frozen by `orch-spec`, cut by `orch-decompose`, and joined by pre-issued
     ├── 00-root.01.md   ┐
     ├── 00-root.02.md   │ unit tickets, one bounded work item each
     ├── 00-root.03.md   ┘
-    ├── 00-root.gate.critique.code.md  ┐
-    ├── 00-root.gate.repair.md         │ the composite gate, run last
-    └── 00-root.gate.verify.md         ┘
+    ├── 00-root.gate.critique.code.md  ┐ the composite gate, run last
+    └── 00-root.gate.repair.md         ┘
 
 Cut shape — what a unit may be, who owns what — is
 [rules/topology.md](rules/topology.md)'s.
@@ -105,10 +99,12 @@ Cut shape — what a unit may be, who owns what — is
 
 The frontmatter carries two related mechanisms:
 
-- **`depends_on`** is the dependency graph. A ticket is admitted only
-  when every dependency is `complete`; `orch-frontier` dispatches every
-  ticket whose dependencies are done, all in parallel — the rolling
-  frontier, no phase barriers.
+- **`depends_on`** is the dependency graph. A ticket is admitted only once
+  every dependency has landed a report — `complete`, or `limited` where the
+  work stopped short but still delivered one; `blocked` and `failed` do not
+  satisfy it. `tickets.py land` prints every
+  ticket whose dependencies are done, and they go out in parallel — the
+  rolling frontier, no phase barriers.
 - **`root_generation`, `cut_generation`, and `assignment_seal`** bind every
   member to one validated immutable snapshot. Direct and decomposed roots use
   the same generation and seal commands. Deterministic cut correction happens
@@ -122,7 +118,7 @@ The frontmatter carries two related mechanisms:
      pending ─────────────────▶ ready ────────────────▶ claimed
                                                            │ outcome,
                                                            ▼ join
-                                                     dispatch-join
+                                                    tickets.py land
                                                            │
                                                ┌───────────────────┤
                                                ▼                   ▼
@@ -133,22 +129,22 @@ The frontmatter carries two related mechanisms:
 against a snapshot of the whole run — dependencies complete, executor
 bound by the stamped pack, workspace policy, inputs resolvable — and
 stamps a hash **receipt** of the frozen cut. `dispatch-open` atomically records
-the claim and absolute lease. `dispatch-packet` commits the delivery projection;
-`dispatch-receive` re-grades its seal and actual receiver authority. After an
+the claim and absolute lease, and `dispatch` commits the launch
+against that same seal. After an
 attempt opens, the assignment is a fixed target
 ([rules/verification.md](rules/verification.md) §3).
 Every joined disposition retires the attempt. A suspended ticket retains its
-claimant observations and `## Handoff`, but it has no live attempt.
+claimant observations and its `## Report`, but it has no live attempt.
 
 ## Review
 
 Three moments use readers who did not produce the fixed artifact
 ([rules/verification.md](rules/verification.md) §7):
 
-    decompose ─▶ CUT CHECK ─▶ rolling frontier ─▶ GATE
-                 before units      one outside path    critique
-                                                      -> repair
-                                                      -> verify
+    decompose ─▶ CUT CHECK ─▶ rolling frontier ─▶ GATE ─▶ LAND
+                 before units      one outside path    critique   runs the
+                                                      -> repair   done
+                                                                  predicate
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
    issued ticket set as data and returns blockers to the decomposer before a
@@ -160,8 +156,8 @@ Three moments use readers who did not produce the fixed artifact
    composite gate. Both use fresh read-only `orch-check`; neither repairs
    its own target. `tickets.py checker-stage <run> <id>` derives one explicit
    `<id>.check` review ticket from the sealed target. That stage uses the same
-   `dispatch-packet` → accepted `dispatch-receive` → `dispatch-outcome` →
-   `dispatch-join` carrier as every role-bearing execution. Only
+   `dispatch` → `land` carrier as every
+   role-bearing execution. Only
    `tickets.py check <run> <id> --stage <id>.check` may attach the joined,
    identity-anchored adjudication to `checked_by`; callers cannot write trusted
    findings directly.
@@ -169,28 +165,29 @@ Three moments use readers who did not produce the fixed artifact
    normalized established workspace, root pack, isolation `none`, and stable ordered lens
    identities. Independent critiques remain parallel. `CritiqueAdjudication`
    binds the full findings and accepted blocker set; `RepairOutcome` binds the
-   repaired identity or proves that set empty; fresh `Verification` evaluates
-   exactly that predecessor identity. Each append-only stage names the prior
+   repaired identity or proves that set empty, and the chain ends there — the
+   fresh outside check is the root's own `done` predicate, run by `land`.
+   Each append-only stage names the prior
    stage digest, forming one predecessor-linked `orchflows.review.v1` chain.
 
 ## Errors and feedback
 
-- **Refusals are named, never silent.** Packet receipt documents
-  `packet-invalid`, `state-inaccessible`, `assignment-divergent`,
-  `stale-attempt`, `identity-mismatch`, `role-mismatch`, `profile-mismatch`,
-  `authority-mismatch`, `dispatch-mismatch`, `dispatch-record-invalid`, and
-  `idempotency-conflict`; unseen execution records additionally refuse
-  `receipt-required`. Other command families expose their closed codes in
+- **Refusals are named, never silent.** The dispatch protocol documents
+  `state-inaccessible`, `stale-attempt`, `live-attempt`, `identity-mismatch`,
+  `assignment-mismatch`, `dispatch-mismatch`, `claim-without-dispatch`,
+  `dispatch-record-invalid`, and
+  `idempotency-conflict`. Other command families expose their closed codes in
   `--help` and their owning contracts instead of doing something approximate.
 - **The join rules on everything.** No returned result is trusted until
-  `orch-integrate` adjudicates it. For v1, only `dispatch-join` sets suspended or terminal
+  `tickets.py land` adjudicates it. For v1, only the join sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
-- **Silence is explicit.** Findings go to `## Feedback`, hazards to
-  `## Risks`; `[]` fills an empty section so nothing is ambiguous.
-  Work that cannot finish within its bound suspends through the join with a
-  concise `## Handoff` rather than improvising.
-- **The absolute lease does not move.** Packet replay, transport activity, and
+- **Structure only where a machine reads it.** A critique's findings are a
+  JSON file the join reads; everything else a child has to say goes to
+  `## Report` in whatever form it judges useful. Work that cannot finish
+  within its bound suspends through the join, reporting what a resumer needs
+  rather than improvising.
+- **The absolute lease does not move.** Launch replay, transport activity, and
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a
   retired attempt, never a live predecessor.

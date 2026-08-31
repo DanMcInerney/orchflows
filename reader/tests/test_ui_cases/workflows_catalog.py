@@ -21,11 +21,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: {{executor}}\n"
                 "depends_on: []\nbound: {{bound}}\n---\n",
             )
@@ -39,22 +39,26 @@ class WorkflowCatalogTests(unittest.TestCase):
         self.assertEqual([], detail["edges"])
         self.assertEqual([], detail["diagnostics"])
 
-    def test_canonical_sequence_is_projected_in_declared_order(self):
+    def test_a_stub_projects_its_one_executor_and_no_retired_sequence(self):
+        """`sequence` was retired with the multi-stage chain: a stub runs its
+        one `executor`, and a pack's stages run inside that one child. A stub
+        still carrying the key gets no second executor edge from it."""
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-tdd\n"
                 "sequence: [orch-tdd, orch-verify]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
             for name in ("orch-tdd", "orch-verify"):
                 self._write(
-                    root / "skills" / "instances" / name / "SKILL.md",
+                    root / "skills" / "workflows" / name / "SKILL.md",
                     f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
                 )
 
@@ -64,44 +68,31 @@ class WorkflowCatalogTests(unittest.TestCase):
             edge for edge in detail["edges"] if edge["kind"] == "executor"
         ]
         self.assertEqual(
-            ["skill:orch-tdd", "skill:orch-verify"],
+            ["skill:orch-tdd"],
             [edge["to"] for edge in executor_edges],
         )
         self.assertEqual(executor_edges, [
             edge for edge in detail["relations"] if edge["kind"] == "executor"
         ])
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "compositions" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: orch-tdd\n"
-                "sequence: [orch-verify, orch-tdd]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-
-            with self.assertRaises(compositions.WorkflowCompositionError):
-                compositions.project_composition(root, "demo")
+        self.assertNotIn(
+            "skill:orch-verify", {node["id"] for node in detail["nodes"]}
+        )
 
     def test_pack_cell_sequence_projects_only_its_bound_executor(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: orch-draft\n"
                 "pack: orch-content-pack\nsequence: [draft, edit]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
             self._write(
-                root / "skills" / "instances" / "orch-draft" / "SKILL.md",
+                root / "skills" / "workflows" / "orch-draft" / "SKILL.md",
                 "---\nname: orch-draft\ndescription: Execute draft.\nrole: worker\n---\n",
             )
 
@@ -117,11 +108,11 @@ class WorkflowCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._write(
-                root / "compositions" / "demo" / "template.md",
+                root / "example-workflows" / "demo" / "template.md",
                 "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
             )
             self._write(
-                root / "compositions" / "demo" / "00-deliver.md",
+                root / "example-workflows" / "demo" / "00-deliver.md",
                 "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-verify]\n"
                 "depends_on: []\nbound: 30m\n---\n",
             )
@@ -140,7 +131,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                     "---\nname: demo\ndescription: EXTERNAL_SECRET\nentry: named\n---\n",
                     encoding="utf-8",
                 )
-                composition = root / "compositions" / "demo"
+                composition = root / "example-workflows" / "demo"
                 composition.parent.mkdir(parents=True)
                 try:
                     if link_kind == "directory":
@@ -160,10 +151,9 @@ class WorkflowCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                "benchmaker", "browser-game", "drift-canary", "evolve", "fix", "renovate",
+                "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament",
-                "orch-check", "orch-decompose", "orch-execute", "orch-frontier",
-                "orch-integrate", "orch-loop", "orch-spec",
+                "orch-check", "orch-execute", "orch-outline", "orch-slice",
             ],
             [workflow["id"] for workflow in projected],
         )
@@ -172,14 +162,14 @@ class WorkflowCatalogTests(unittest.TestCase):
             for workflow in projected
         ))
         by_id = {workflow["id"]: workflow for workflow in projected}
-        self.assertEqual("composition", by_id["fix"]["type"])
-        self.assertEqual("routed", by_id["fix"]["entry"])
+        self.assertEqual("composition", by_id["browser-game"]["type"])
+        self.assertEqual("named", by_id["browser-game"]["entry"])
         self.assertEqual(
-            "Take a failure to a proven, regression-guarded repair. Use for any bug or defect with an unknown or unverified cause.",
-            by_id["fix"]["description"],
+            "Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.",
+            by_id["browser-game"]["description"],
         )
-        self.assertEqual("workflow-skill", by_id["orch-spec"]["type"])
-        self.assertEqual("callable", by_id["orch-spec"]["entry"])
+        self.assertEqual("workflow-skill", by_id["orch-outline"]["type"])
+        self.assertEqual("callable", by_id["orch-outline"]["entry"])
 
     def test_validated_summary_is_joined_by_canonical_id(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)
@@ -222,7 +212,7 @@ class WorkflowCatalogTests(unittest.TestCase):
 
     @staticmethod
     def _write_owner(root: Path, *, name: str, entry: str = "named") -> None:
-        template = root / "compositions" / "demo" / "template.md"
+        template = root / "example-workflows" / "demo" / "template.md"
         template.parent.mkdir(parents=True)
         template.write_text(
             f"---\nname: {name}\ndescription: Demonstrate one flow.\nentry: {entry}\n---\n",

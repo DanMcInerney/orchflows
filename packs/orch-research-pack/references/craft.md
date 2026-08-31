@@ -22,6 +22,57 @@ The shape principles every domain shares are
 ## Shape
 
 - Date every claim; undated evidence ages silently.
+- Quantify: a magnitude with a unit beats a directional adjective;
+  mark what resists quantification as such.
+- Spend as much search on the disconfirming source as the confirming
+  one; its absence is a recorded search, not an assumption.
+
+## Workspace
+
+evidence store: identities are evidence packets; isolation is a
+run-scoped lane directory; synthesis compares actual lane packets.
+
+## Spec fields
+
+evidence store root; the question; source policy; rigor bar — the
+confidence each load-bearing claim must reach, stated as the evidence
+that must exist for it
+
+## Outline
+
+### What a frozen research root carries
+
+- One question rather than a topic, plus the sub-questions its answer has to
+  reach before coverage can be claimed.
+- Source policy and rigor bar together; the bar is the evidence a load-bearing
+  claim must have, never an adjective.
+- The recency window that policy admits, and the store its packets land in.
+
+### Worth asking at intake
+
+- What decision moves if the answer comes back the other way?
+- Which sources are admissible, and which are known echoes of one upstream?
+- How thin may an answer be before a declared gap is the better return?
+- Is the question answerable at all inside the stated policy and bound?
+
+### Exemplar policy
+
+Give a prior evidence packet by identity and say what about it is the target:
+source count, independence, dating. Naming a conclusion to arrive at is not an
+exemplar; it is contamination of the lane.
+
+## Slicing
+
+A lane is one independently answerable sub-question, with its source-policy
+facts and a source/tool bound in Context. Lane stores are isolated; synthesis
+compares their actual evidence packets and cites the root's criteria by
+identity, never verbatim.
+
+## Evidence
+
+Identify the evidence packet. Record resolving sources for load-bearing
+claims, contradiction and upstream-independence readings, calibrated
+confidence, uncertainty, dead ends, and unanswered parts of Goal.
 
 ## Lens
 
@@ -39,7 +90,7 @@ The shape principles every domain shares are
 - Rigor: does each load-bearing claim reach the confidence the spec's
   rigor bar demands?
 
-## Execute stages
+## Stages
 
 - Investigate one bounded question with primary sources inside the fixed
   source policy; log search paths, dead ends and contradictions.

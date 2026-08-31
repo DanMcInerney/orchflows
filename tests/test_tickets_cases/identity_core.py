@@ -1,6 +1,6 @@
 """Behavioral ticket regression cases."""
 
-from .packet_execution import *  # noqa: F401,F403
+from .common import *  # noqa: F401,F403
 
 def identity_of(run: str = "testrun") -> Path:
     return run_dir_of(run) / "run.json"
@@ -84,9 +84,9 @@ class TestRunIdentity(unittest.TestCase):
                 identity_doc("from-state")["orchflows"],
             )
             run_cmd(
-                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-investigate",
-                "--objective", "one", "--criterion",
-                "x | oracle: y | oracle_class: deterministic",
+                tmp / "repo", "new", "from-new", "T1", "--executor", "orch-execute",
+                "--pack", "orch-code-pack", "--isolation", "required",
+                "--goal", "one", "--context", "the sealed run snapshot",
             )
             self.assertEqual(
                 {"receipt_version": 4, "source_commit": commit},
@@ -119,10 +119,9 @@ class TestRunIdentity(unittest.TestCase):
         # graded before the constant is named, so a revision that has no
         # `UTC_STAMP` reads as the wrong shape rather than a missing attribute
         self.assertEqual(1, source.count("%Y-%m-%dT%H:%M:%SZ"), "shape restated")
-        # a census of the sites that stamp, not a bound on them: `claim`,
-        # `grant`, run opening and terminal transition, each through the one
-        # constant
-        self.assertEqual(4, source.count("strftime(UTC_STAMP)"), "stamped elsewhere")
+        # every stamping site reaches the shape through the one constant, so
+        # the count of sites is free to move while the ownership does not
+        self.assertGreaterEqual(source.count("strftime(UTC_STAMP)"), 1, "nothing stamps")
         self.assertEqual("%Y-%m-%dT%H:%M:%SZ", tickets_mod.UTC_STAMP)
 
     def test_an_existing_run_directory_without_an_identity_gains_one(self):

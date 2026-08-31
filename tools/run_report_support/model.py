@@ -30,7 +30,7 @@ from tools.run_report_support import friction as friction_support  # noqa: E402
 
 DEFAULT_TOP = 40
 LONGEST_TICKETS = 40
-DECOMPOSE_EXECUTOR = "orch-decompose"
+SLICE_EXECUTOR = "orch-slice"
 COMPLETE_STATUS = "complete"
 FAILED_STATUS = "failed"
 TERMINAL_STATUSES = ("complete", "blocked", "stalled", "limited", "failed")
@@ -191,7 +191,7 @@ def read_runs(root: Path) -> tuple:
         observed = None
         if opened is not None and last_write is not None:
             observed = max(int((last_write - opened).total_seconds() * 1000), 0)
-        work = [ticket for ticket in tickets if ticket["executor"] != DECOMPOSE_EXECUTOR]
+        work = [ticket for ticket in tickets if ticket["executor"] != SLICE_EXECUTOR]
         rows.append({
             "run": run,
             "family": family_of(run),

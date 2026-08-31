@@ -154,7 +154,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-UgRZLqam.js",
+    "file": "assets/index-B6viqfuD.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -259,7 +259,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-lYm150vh.js",
+    "file": "assets/SessionGraphView-BZO5fzSj.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -279,7 +279,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-CwctgnW-.js",
+    "file": "assets/SessionsView-CiImFFzN.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
@@ -297,7 +297,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowCatalogView.tsx": {
-    "file": "assets/WorkflowCatalogView-7bT-4cTW.js",
+    "file": "assets/WorkflowCatalogView-COcretOT.js",
     "name": "WorkflowCatalogView",
     "src": "src/features/workflows/view/WorkflowCatalogView.tsx",
     "isDynamicEntry": true,
@@ -313,7 +313,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowDetailView.tsx": {
-    "file": "assets/WorkflowDetailView-Bz_u9gBu.js",
+    "file": "assets/WorkflowDetailView-CuPYa0mN.js",
     "name": "WorkflowDetailView",
     "src": "src/features/workflows/view/WorkflowDetailView.tsx",
     "isDynamicEntry": true,
@@ -332,7 +332,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowSourceView.tsx": {
-    "file": "assets/WorkflowSourceView-sL6_8ZyY.js",
+    "file": "assets/WorkflowSourceView-BpIF5ZHc.js",
     "name": "WorkflowSourceView",
     "src": "src/features/workflows/view/WorkflowSourceView.tsx",
     "isDynamicEntry": true,

@@ -11,9 +11,9 @@ json = _common.json
 re = _common.re
 SKIPPED = _common.SKIPPED
 
-TRACEABILITY_RELATIVE = Path("compositions/browser-game/traceability.json")
-INTAKE_POLICY_RELATIVE = Path("compositions/references/browser-game-intake-policy.json")
-INSTANCE_FIXTURES_RELATIVE = Path("compositions/references/browser-game-instance-fixtures.json")
+TRACEABILITY_RELATIVE = Path("example-workflows/browser-game/traceability.json")
+INTAKE_POLICY_RELATIVE = Path("example-workflows/references/browser-game-intake-policy.json")
+INSTANCE_FIXTURES_RELATIVE = Path("example-workflows/references/browser-game-instance-fixtures.json")
 SPECIFICATION_IDENTITY = (
     "document:sha256:e147d8609f74d25cf913b313d360c6fc1692dff2ed0f989d8f1168adee9a52e8"
 )
@@ -27,12 +27,12 @@ MARKER_RE = re.compile(
 SURFACES = ("implementation", "test", "help")
 INVENTORY_GLOBS = {
     "implementation": (
-        "compositions/browser-game/*.md",
-        "compositions/browser-game/*.json",
+        "example-workflows/browser-game/*.md",
+        "example-workflows/browser-game/*.json",
         "scripts/browser_game_validate.py",
     ),
     "test": ("tests/test_browser_game*.py",),
-    "help": ("compositions/browser-game/*.md",),
+    "help": ("example-workflows/browser-game/*.md",),
 }
 
 
@@ -45,7 +45,7 @@ def _label(path: Path, root: Path) -> str:
 
 def _load_json(path: Path, root: Path, diag):
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         diag.error(_label(path, root), f"cannot read structural JSON: {exc}")
         return None

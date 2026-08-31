@@ -105,6 +105,83 @@ class TestMainWritesEntry(_IsolatedRepoTestCase):
         self._run_main(["o", "e"])
         entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
         self.assertEqual(str(self.repo), entry["cwd"])
+
+
+class TestRunIsResolvedWhenNoFlagNamesIt(_IsolatedRepoTestCase):
+    """`--run` is an override over a mechanical answer, not the only route.
+
+    Thirteen of thirteen entries on 2026-08-30 carried `run: null` because
+    the flag was the whole mechanism and no caller passed it, which left a
+    day of friction unqueryable by the run that produced it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # the derived root is a sibling of the sink unless a host moved it,
+        # and every tree this case makes must land under the temporary one
+        os.environ.pop("ORCHFLOWS_WORKTREES_HOME", None)
+
+    def _candidate(self, run="20260830T231500Z-u6-proof", ticket_id="T1", ticket=True):
+        """A derived candidate workspace, and the sink ticket that owns it."""
+
+        path = friction._state_root().candidate_paths(run, ticket_id)["path"]
+        path.mkdir(parents=True)
+        if ticket:
+            owner = self.sink / "tickets" / run
+            owner.mkdir(parents=True)
+            (owner / f"{ticket_id}.md").write_text("---\nid: T1\n---\n", encoding="utf-8")
+        os.chdir(path)
+        return run
+
+    def _logged_run(self, argv=("o", "e")):
+        self.assertEqual(0, self._run_main(list(argv))[0])
+        lines = self._log_path().read_text(encoding="utf-8").splitlines()
+        return json.loads(lines[-1])["run"]
+
+    def test_the_flag_still_wins_over_every_mechanical_answer(self):
+        self._candidate()
+        os.environ[friction.RUN_ENV_VAR] = "from-the-environment"
+        self.assertEqual(
+            "named-by-the-caller",
+            self._logged_run(["o", "e", "--run", "named-by-the-caller"]),
+        )
+
+    def test_the_environment_answers_when_the_caller_named_no_run(self):
+        os.environ[friction.RUN_ENV_VAR] = "20260830T234500Z-workspace-derivation"
+        self.assertEqual("20260830T234500Z-workspace-derivation", self._logged_run())
+
+    def test_the_environment_outranks_the_workspace_the_caller_stands_in(self):
+        self._candidate()
+        os.environ[friction.RUN_ENV_VAR] = "declared-by-the-host"
+        self.assertEqual("declared-by-the-host", self._logged_run())
+
+    def test_the_candidate_workspace_the_caller_stands_in_answers(self):
+        run = self._candidate()
+        self.assertEqual(run, self._logged_run())
+
+    def test_a_worktree_the_sink_holds_no_ticket_for_names_no_run(self):
+        """Path shape alone is not an established item: a stale or
+        hand-made directory under the worktrees root resolves to null
+        rather than to a run that does not exist."""
+
+        self._candidate(ticket=False)
+        self.assertIsNone(self._logged_run())
+
+    def test_an_ordinary_repository_still_logs_an_unresolved_run(self):
+        self.assertIsNone(self._logged_run())
+
+    def test_a_broken_resolver_costs_the_field_and_never_the_entry(self):
+        with mock.patch(
+            "scripts.state_root.candidate_identity",
+            side_effect=RuntimeError("unreadable"),
+        ):
+            rc, out = self._run_main(["o", "e"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out.strip(), "friction logged")
+        entry = json.loads(self._log_path().read_text(encoding="utf-8").splitlines()[-1])
+        self.assertIsNone(entry["run"])
+
+
 def _imported_modules(node):
     """The top-level module names one import statement reaches for."""
 

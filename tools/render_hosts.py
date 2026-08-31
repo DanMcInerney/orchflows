@@ -33,7 +33,7 @@ REQUIRED_FIELDS = frozenset(
 
 def _read_json(path: Path) -> dict:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"{path}: unreadable host data: {error}") from error
     if not isinstance(value, dict):

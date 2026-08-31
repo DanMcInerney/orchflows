@@ -8,18 +8,24 @@ from .foundation import READER_ROOT, REPO_ROOT
 
 
 SHARED_READER_MODULES = (
+    # `console.py` before its dependents alphabetically and in fact: every
+    # entrypoint here imports it, and the reader payload is a `scripts`
+    # package rather than the flat bin layout, so a module missing from this
+    # list is an `ImportError` at the reader's first import rather than a
+    # missing file anyone notices.
+    "console.py",
     "packs.py",
     "packs_support.py",
+    "rings.py",
+    "rings_trust.py",
     "state_root.py",
     "tickets_adapters.py",
     "tickets_bound.py",
-    "tickets_ceiling.py",
     "tickets_format.py",
     "tickets_lifecycle.py",
     "tickets_markdown.py",
     "tickets_readiness.py",
     "tickets_registry.py",
-    "tickets_sequence.py",
     "tickets_shapes.py",
 )
 

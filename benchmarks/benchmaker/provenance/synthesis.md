@@ -1,7 +1,7 @@
 # Synthesis — benchmaker recursion acquire join
 Run: 20260807T060439Z-benchmaker-recursion. Date: 2026-08-07.
 Inputs (all at target revision e66f3b6): lane-a-packet.md (LA), lane-b-packet.md (LB),
-compositions/references/benchmaker-research.md (charter; artifact contract).
+example-workflows/references/benchmaker-research.md (charter; artifact contract).
 Citation convention: LA:<line> / LB:<line> = packet line numbers. Claim row N in §2
 cites LA line 15+N. Doc aliases (COMP/PROT/MAN/CHART/DOCS/B0/EV) as defined at LA:6-10.
 

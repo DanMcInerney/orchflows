@@ -112,7 +112,7 @@ class HostAdapterRenderingTest(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("../../../../hosts/", profiles)
+        self.assertIn("host records beside this file", profiles)
         self.assertNotIn("| Profile |", profiles)
         for binding in ("gpt-5.6-sol", "claude-opus-5", "grok-4.6"):
             self.assertNotIn(binding, profiles)
@@ -393,7 +393,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 if dest.parent.name in template_names:
                     self.assertNotIn("@", body)
                     self.assertIn("tickets.py instantiate", body)
-                    self.assertIn("orch-frontier", body)
+                    self.assertIn("tickets.py land", body)
                 elif dest.parent.name in role_bearing:
                     # A role-bearing adapter forks, so its body opens with the
                     # fork-arrival clause and then the `@`-include; the clause
@@ -426,13 +426,13 @@ class TestScopedHostConfiguration(unittest.TestCase):
 
     def test_discover_templates_requires_a_manifest_with_entry(self):
         """A name surface is a template directory whose manifest declares an
-        `entry`. Everything else under `compositions/` is library data: the
+        `entry`. Everything else under `example-workflows/` is library data: the
         shared `references/` tree, a directory mid-authoring, and — the case
         this replaces — any stray top-level `*.md`, which was the second
         grammar's whole surface until P4-3 deleted it."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            comps = root / "compositions"
+            comps = root / "example-workflows"
             (comps / "fix").mkdir(parents=True)
             (comps / "fix" / "template.md").write_text(
                 "---\nname: fix\ndescription: routed fix chain\nentry: routed\n"
@@ -485,7 +485,7 @@ class TestScopedHostConfiguration(unittest.TestCase):
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
             prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
             by_name_names = {dest.parent.name for dest, _ in plan.by_name}
-            lib_comps = (home / ".orchflows" / "lib" / "compositions").resolve()
+            lib_comps = (home / ".orchflows" / "lib" / "example-workflows").resolve()
             for directory, frontmatter, _ in templates:
                 name = directory.name
                 self.assertIn(name, adapter_names)

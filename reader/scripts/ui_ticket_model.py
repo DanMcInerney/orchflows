@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from scripts.tickets_format import _parse_frontmatter
+from scripts.tickets_format import _parse_frontmatter, lease_of
 
 SECTION_RE = re.compile(r"^## +(.+?)[ \t]*$", re.MULTILINE)
 FENCE_RE = re.compile(r"^[ \t]{0,3}(?P<marker>`{3,}|~{3,})(?P<info>.*)$")
@@ -75,21 +75,20 @@ def read_ticket(path: Path) -> dict:
         text, unreadable = "", True
     front = _parse_frontmatter(text)
     sections = split_sections(text)
-    suggested = [
-        line[2:].strip()
-        for line in sections.get("Suggested files", "").splitlines()
-        if line.strip().startswith("- ")
-    ]
     return {
         "id": _scalar(front.get("id")) or path.stem,
         "file_id": path.stem,
         "status": _scalar(front.get("status")),
         "executor": _scalar(front.get("executor")),
         "bound": _scalar(front.get("bound")),
-        "claimed_at": _scalar(front.get("claimed_at")),
-        "claimed_by": _scalar(front.get("claimed_by")),
+        # The lease lives in the dispatch record; the record keys keep the
+        # reader's own vocabulary.
+        "claimed_at": lease_of(front)[1],
+        "claimed_by": lease_of(front)[0],
         "depends_on": _sequence(front.get("depends_on")),
-        "suggested_files": suggested,
+        # The planner's free-form guidance for this one child: prose, not a
+        # path list, so nothing here parses it into items.
+        "details": sections.get("Details", ""),
         "pack": _scalar(front.get("pack")),
         "goal": sections.get("Goal", ""),
         "sections": sections,

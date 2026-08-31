@@ -42,7 +42,7 @@ def _workflow_type(root: Path, workflow_id: object) -> str | None:
     except identity.WorkflowIdentityError:
         return None
     if identity.contained_file(
-        root, root / "compositions" / workflow_id / "template.md"
+        root, root / "example-workflows" / workflow_id / "template.md"
     ):
         return "composition"
     if skills.workflow_skill_path(root, workflow_id) is not None:
@@ -53,12 +53,12 @@ def _workflow_type(root: Path, workflow_id: object) -> str | None:
 def _composition_paths(root: Path, workflow_id: str) -> set[str]:
     detail = compositions.project_composition(root, workflow_id)
     installed_skills, _ = skills.skill_index(root)
-    installed = {f"lib/compositions/{workflow_id}/template.md"}
+    installed = {f"lib/example-workflows/{workflow_id}/template.md"}
     for node in detail["nodes"]:
         if "source_id" not in node:
             continue
         if node["kind"] == "work":
-            installed.add(f"lib/compositions/{workflow_id}/{node['label']}.md")
+            installed.add(f"lib/example-workflows/{workflow_id}/{node['label']}.md")
         elif node["kind"] == "skill":
             path = installed_skills.get(node["label"])
             if path is None:

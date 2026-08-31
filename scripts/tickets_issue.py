@@ -7,38 +7,34 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
+        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
-        _set_frontmatter_field, _split_commas, ticket_defects,
+        _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
-    from .tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
+    from .tickets_issue_render import _frontmatter_list, _render_ticket
     from .tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
-        _run_lock, _runs_root, _segment_error, _tickets_root,
-        _write_identity, _write_text_atomically,
+        _run_lock, _segment_error, _tickets_root, _write_identity,
     )
-    from .tickets_root_reservation import reserve as _reserve_root
 else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_emission import grade_run_emission
     from tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REQUIRED_ISOLATION,
-        ROOT_EXECUTOR, _executor_of, _extract_all, _extract_flag,
+        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
-        _set_frontmatter_field, _split_commas, ticket_defects,
+        _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
-    from tickets_issue_render import _ceiling_error, _frontmatter_list, _render_ticket
+    from tickets_issue_render import _frontmatter_list, _render_ticket
     from tickets_store import (
         NO_SINK_ERROR, _create_text_exclusively, _identity_update,
-        _run_lock, _runs_root, _segment_error, _tickets_root,
-        _write_identity, _write_text_atomically,
+        _run_lock, _segment_error, _tickets_root, _write_identity,
     )
-    from tickets_root_reservation import reserve as _reserve_root
 
 NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
-    "[--suggested-file PATH ...] [--sequence E[,E...]] [--depends-on a,b] "
+    "[--details TEXT] [--depends-on a,b] "
     "[--bound B] [--pack P] [--profile P] [--independence gate|checker] "
     "[--isolation required|none] | new <run> [<id>] --file <path>"
 )
@@ -50,6 +46,29 @@ ISOLATION_VALUES = (REQUIRED_ISOLATION, "none")
 def _pending_admission(data=None):
     del data
     return ADMISSION_PENDING
+
+
+def pinned_pack_digest(pack):
+    """``(digest, refusal)`` for one stamped pack name at issue time.
+
+    Issue time is where the pin is taken, because that is the last moment
+    the assignment is still a draft: from the seal onward the digest is
+    what every later door compares against, so taking it later would be
+    pinning whatever the pack had already become. A ticket with no pack
+    pins nothing.
+    """
+
+    name = dequote(pack)
+    if not name:
+        return None, None
+    if __package__:
+        from .tickets_adapters import AdapterError, pack_digest
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_adapters import AdapterError, pack_digest
+    try:
+        return pack_digest(name), None
+    except AdapterError as error:
+        return None, {"error": f"pack '{name}' cannot be pinned: {error.detail}"}
 
 
 def _invalidate_assignment(text):
@@ -80,10 +99,9 @@ def _cmd_new(rest):
     args = list(rest)
     file_arg = _extract_flag(args, "--file")
     executor = _extract_flag(args, "--executor")
-    sequence = _extract_flag(args, "--sequence")
     goal = _extract_flag(args, "--goal")
     context = _extract_flag(args, "--context")
-    suggested = _extract_all(args, "--suggested-file")
+    details = _extract_flag(args, "--details")
     depends_on = _extract_flag(args, "--depends-on")
     bound = _extract_flag(args, "--bound")
     pack = _extract_flag(args, "--pack")
@@ -94,8 +112,8 @@ def _cmd_new(rest):
     if stray is not None:
         return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
     supplied = (
-        ("--executor", executor), ("--sequence", sequence), ("--goal", goal),
-        ("--context", context), ("--suggested-file", suggested or None),
+        ("--executor", executor), ("--goal", goal),
+        ("--context", context), ("--details", details),
         ("--depends-on", depends_on), ("--bound", bound), ("--pack", pack),
         ("--profile", profile), ("--independence", independence),
         ("--isolation", isolation),
@@ -120,18 +138,26 @@ def _cmd_new(rest):
     for flag, value, allowed in (("--independence", independence, INDEPENDENCE_VALUES), ("--isolation", isolation, ISOLATION_VALUES)):
         if value is not None and value.strip() not in allowed:
             return {"error": f"{flag} '{value}' is not one of {list(allowed)}"}
+    # Sorted here, at the one door that authors the list from a flag. Two
+    # orderings of one edge set are two assignment digests, and the digest
+    # cannot absorb the difference without invalidating every historical
+    # seal, so the canonical order is established where the list is written.
+    pinned, refusal = pinned_pack_digest(pack)
+    if refusal is not None:
+        return refusal
     fields = {
         "id": ticket_id, "run": run, "status": "pending",
         "admission": ADMISSION_PENDING, "executor": executor,
-        "sequence": _split_commas(sequence) or None, "pack": pack,
-        "independence": independence, "depends_on": _split_commas(depends_on),
+        "pack": pack, "pack_digest": pinned,
+        "independence": independence,
+        "depends_on": sorted(_split_commas(depends_on)),
         "isolation": isolation, "bound": bound or NEW_DEFAULT_BOUND,
-        "claimed_by": "", "claimed_at": "", "profile": profile,
+        "profile": profile,
     }
     sections = [("Goal", goal), ("Context", context)]
-    if suggested:
-        sections.append(("Suggested files", "\n".join(f"- {path}" for path in suggested)))
-    sections.extend((("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")))
+    if details:
+        sections.append(("Details", details))
+    sections.append((REPORT_SECTION, ""))
     return _issue_ticket(run, ticket_id, _render_ticket(fields, sections))
 
 
@@ -165,8 +191,17 @@ def _project_file_ticket(
     text = _set_frontmatter_field(text, "run", run)
     text = _set_frontmatter_field(text, "status", "pending")
     text = _invalidate_assignment(text)
-    text = _set_frontmatter_field(text, "claimed_by", "")
-    text = _set_frontmatter_field(text, "claimed_at", "")
+    # Issue time takes the pin, whatever the file said: a placed ticket that
+    # carried its own digest would be pinning the author's claim about the
+    # pack rather than the pack.
+    pinned, refusal = pinned_pack_digest(data.get("pack"))
+    if refusal is not None:
+        return None, refusal
+    text = (
+        _set_frontmatter_field(text, "pack_digest", pinned)
+        if pinned
+        else _remove_frontmatter_field(text, "pack_digest")
+    )
     return (ticket_id, text), None
 
 
@@ -188,7 +223,7 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
     data = _parse_frontmatter(text)
     if not data:
         return defects
-    independence = str(data.get("independence") or "checker").strip().strip("`")
+    independence = dequote(data.get("independence") or "checker")
     if independence not in INDEPENDENCE_VALUES:
         defects.append(f"independence '{independence}' is not one of {list(INDEPENDENCE_VALUES)}")
     checked_by = str(data.get("checked_by") or "").strip()
@@ -205,7 +240,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
     if GATE_ID_MARKER in ticket_id:
-        return {"error": f"ticket id '{ticket_id}' is reserved for tickets.py gate"}
+        return {"error": f"ticket id '{ticket_id}' is reserved for `tickets.py gate`"}
     root = _tickets_root()
     if root is None:
         return {"error": NO_SINK_ERROR}
@@ -214,28 +249,8 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
         with _run_lock(run):
             if path.exists():
                 return {"error": f"ticket id '{ticket_id}' is already issued in run '{run}': {path}"}
-            existing = list(path.parent.glob("*.md")) if path.parent.is_dir() else []
-            strict_over = _ceiling_error(
-                f"ticket {run}/{ticket_id}", ticket_id, text,
-                pre_generation_root=False,
-            )
-            over = _ceiling_error(
-                f"ticket {run}/{ticket_id}", ticket_id, text,
-                pre_generation_root=not existing,
-            )
-            if over is not None:
-                return over
             if (held := grade_run_emission("new", run, path.parent, {ticket_id: text})) is not None:
                 return held
-            if not existing and strict_over is not None:
-                runs_root = _runs_root()
-                if runs_root is None:
-                    return {"error": NO_SINK_ERROR}
-                _, reservation_error = _reserve_root(
-                    runs_root, run, ticket_id, _write_text_atomically,
-                )
-                if reservation_error is not None:
-                    return {"error": reservation_error}
             identity_dir, identity, held = _identity_update(run, datetime.now(timezone.utc))
             if held is not None:
                 return held
@@ -256,4 +271,5 @@ __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
     "_cmd_new", "_distinct_gate_lenses", "_frontmatter_list", "_issue_defects",
     "_issue_ticket", "_place_ticket", "_project_file_ticket", "_render_ticket",
+    "pinned_pack_digest",
 )
