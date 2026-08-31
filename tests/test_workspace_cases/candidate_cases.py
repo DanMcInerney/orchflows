@@ -15,7 +15,11 @@ from scripts import (  # noqa: F401
     state_root, tickets_dispatch_facade, tickets_store, workspace_candidate,
 )
 
-# long enough that a child which was going to stamp would have stamped
+# a loaded host stretches `git worktree add` past any fixed window, so the
+# cut is waited for by condition under this deadline, never by a sleep
+CUT_DEADLINE = 120.0
+# counted from the observed cut: long enough that a child which was going
+# to stamp without the lock would have stamped
 LOCK_WAIT = 2.0
 
 
@@ -300,9 +304,13 @@ class TestEstablishCreatesTheDerivedCandidate(unittest.TestCase):
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                     encoding="utf-8", errors="replace", cwd=str(tmp), env=git_env(),
                 )
+                deadline = time.monotonic() + CUT_DEADLINE
+                while (not derived["path"].is_dir() and child.poll() is None
+                       and time.monotonic() < deadline):
+                    time.sleep(0.05)
+                cut = derived["path"].is_dir()
                 time.sleep(LOCK_WAIT)
                 early = child.poll()
-                cut = derived["path"].is_dir()
                 stamped = workspace.PATH_KEY in ticket.read_text(encoding="utf-8")
             out, err = child.communicate(timeout=120)
 
