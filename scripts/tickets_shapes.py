@@ -42,16 +42,16 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                       'joined_at',
                                       'review_identity'),
                            'required': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'status', 'joined_at'),
-                           'values': {}},
+                           'values': {'status': ('complete', 'blocked', 'stalled', 'limited', 'failed', 'suspended')}},
  'dispatch_launch': {'contract': 'dispatch.md',
                      'fields': ('host', 'verb', 'agent', 'model', 'effort', 'fields', 'prompt'),
                      'required': ('host', 'verb', 'agent', 'model', 'effort', 'fields', 'prompt'),
                      'values': {}},
  'dispatch_launch_record': {'contract': 'dispatch.md', 'fields': ('launch',), 'required': ('launch',), 'values': {}},
  'dispatch_outcome': {'contract': 'dispatch.md',
-                      'fields': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'status', 'evidence'),
-                      'required': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'status', 'evidence'),
-                      'values': {'status': ('complete', 'blocked', 'stalled', 'limited', 'failed', 'suspended')}},
+                      'fields': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'evidence'),
+                      'required': ('protocol', 'run', 'id', 'assignment_seal', 'dispatch_id', 'outcome_record_id', 'by', 'evidence'),
+                      'values': {}},
  'dispatch_outcome_evidence': {'contract': 'dispatch.md',
                                'fields': ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff'),
                                'required': ('Result', 'Verification', 'Feedback', 'Risks', 'Handoff'),
@@ -111,11 +111,11 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                     'values': {'protocol': ('orchflows.dispatch.v1',)}},
  'dispatch_stored_success': {'contract': 'dispatch.md', 'fields': ('committed_record',), 'required': ('committed_record',), 'values': {}},
  'dispatch_transition_success': {'contract': 'dispatch.md', 'fields': ('dispatch',), 'required': ('dispatch',), 'values': {}},
+ 'done_binding': {'contract': 'work-item.md', 'fields': ('form', 'value'), 'required': ('form', 'value'), 'values': {'form': ('command', 'check')}},
  'executor_result': {'contract': 'result.md',
                      'fields': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
                      'required': ('assignment_seal', 'body', 'mode', 'operation', 'section', 'writer'),
                      'values': {'mode': ('write', 'append', 'replace'), 'operation': ('result',)}},
- 'loop_done': {'contract': 'work-item.md', 'fields': ('form', 'value'), 'required': ('form', 'value'), 'values': {'form': ('command', 'check')}},
  'loop_stub': {'contract': 'work-item.md', 'fields': ('done',), 'required': ('done',), 'values': {}},
  'pack_cells': {'contract': 'pack-signature.md',
                 'fields': ('adapter', 'stages', 'assembly', 'craft'),
@@ -144,7 +144,7 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
  'review_record_common': {'contract': 'work-item.md',
                           'fields': ('identity', 'kind', 'predecessor', 'protocol'),
                           'required': ('identity', 'kind', 'predecessor', 'protocol'),
-                          'values': {'kind': ('GatePlan', 'CritiqueAdjudication', 'RepairOutcome', 'Verification')}},
+                          'values': {'kind': ('GatePlan', 'CritiqueAdjudication', 'RepairOutcome')}},
  'review_repair': {'contract': 'work-item.md',
                    'fields': ('accepted', 'artifact', 'by', 'input_artifact', 'no_op', 'result'),
                    'required': ('accepted', 'artifact', 'by', 'input_artifact', 'no_op', 'result'),
@@ -153,10 +153,6 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                   'fields': ('protocol', 'records'),
                   'required': ('protocol', 'records'),
                   'values': {'protocol': ('orchflows.review.v1',)}},
- 'review_verification': {'contract': 'work-item.md',
-                         'fields': ('artifact', 'by', 'evidence', 'verdict', 'covers'),
-                         'required': ('artifact', 'by', 'evidence', 'verdict'),
-                         'values': {'verdict': ('PASS', 'FAIL', 'UNVERIFIED')}},
  'ticket_assignment_sections': {'contract': 'work-item.md', 'fields': ('Goal', 'Context', 'Suggested files'), 'required': ('Goal', 'Context'), 'values': {}},
  'ticket_frontmatter': {'contract': 'work-item.md',
                         'fields': ('id',
@@ -171,6 +167,7 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                    'isolation',
                                    'bound',
                                    'loop',
+                                   'done',
                                    'checked_by',
                                    'root_generation',
                                    'cut_generation',
@@ -183,7 +180,7 @@ SHAPES = {'dispatch_attempt': {'contract': 'dispatch.md',
                                    'review_stage',
                                    'review_kind'),
                         'required': ('id', 'run', 'status', 'executor', 'depends_on', 'bound'),
-                        'values': {'review_kind': ('critique', 'repair', 'verify', 'null'),
+                        'values': {'review_kind': ('critique', 'repair', 'null'),
                                    'status': ('pending', 'ready', 'claimed', 'suspended', 'complete', 'blocked', 'stalled', 'failed', 'limited')}},
  'verdict_criterion': {'contract': 'verdict.md',
                        'fields': ('verdict', 'oracle', 'oracle_class', 'evidence', 'covers'),
@@ -307,10 +304,6 @@ REVIEW_REPAIR_FIELDS = tuple(SHAPES['review_repair']['fields'])
 REVIEW_REPAIR_REQUIRED = frozenset(SHAPES['review_repair']['required'])
 REVIEW_REPAIR_VALUES = SHAPES['review_repair']['values']
 
-REVIEW_VERIFICATION_FIELDS = tuple(SHAPES['review_verification']['fields'])
-REVIEW_VERIFICATION_REQUIRED = frozenset(SHAPES['review_verification']['required'])
-REVIEW_VERIFICATION_VALUES = SHAPES['review_verification']['values']
-
 TICKET_ASSIGNMENT_SECTIONS_FIELDS = tuple(SHAPES['ticket_assignment_sections']['fields'])
 TICKET_ASSIGNMENT_SECTIONS_REQUIRED = frozenset(SHAPES['ticket_assignment_sections']['required'])
 TICKET_ASSIGNMENT_SECTIONS_VALUES = SHAPES['ticket_assignment_sections']['values']
@@ -323,9 +316,9 @@ LOOP_STUB_FIELDS = tuple(SHAPES['loop_stub']['fields'])
 LOOP_STUB_REQUIRED = frozenset(SHAPES['loop_stub']['required'])
 LOOP_STUB_VALUES = SHAPES['loop_stub']['values']
 
-LOOP_DONE_FIELDS = tuple(SHAPES['loop_done']['fields'])
-LOOP_DONE_REQUIRED = frozenset(SHAPES['loop_done']['required'])
-LOOP_DONE_VALUES = SHAPES['loop_done']['values']
+DONE_BINDING_FIELDS = tuple(SHAPES['done_binding']['fields'])
+DONE_BINDING_REQUIRED = frozenset(SHAPES['done_binding']['required'])
+DONE_BINDING_VALUES = SHAPES['done_binding']['values']
 
 EXECUTOR_RESULT_FIELDS = tuple(SHAPES['executor_result']['fields'])
 EXECUTOR_RESULT_REQUIRED = frozenset(SHAPES['executor_result']['required'])

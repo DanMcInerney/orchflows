@@ -51,7 +51,6 @@ else:
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
 GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
 GATE_REPAIR_ID = "{root}.gate.repair"
-GATE_VERIFY_ID = "{root}.gate.verify"
 GATE_EXECUTOR_SECTIONS = [("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]")]
 GATE_MARKER = ".gate."
 CHECK_SUFFIX = ".check"
@@ -312,6 +311,6 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
 __all__ = (
     "ASSIGNMENT_SECTIONS", "CHECK_SUFFIX", "GATE_CRITIQUE_ID",
     "GATE_EXECUTOR_SECTIONS", "GATE_MARKER", "GATE_REPAIR_ID",
-    "GATE_VERIFY_ID", "_claim_is_stale", "dispatch_assignment",
+    "_claim_is_stale", "dispatch_assignment",
     "review_root_id", "workspace_establishment_finding",
 )

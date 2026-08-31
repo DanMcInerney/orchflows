@@ -9,7 +9,7 @@ if __package__:
     from .tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from .tickets_issue_render import _render_ticket
     from .tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
-    from .tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from .tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID
     from .tickets_review import ReviewError, review_records, state_from_text
     from .tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 else:
@@ -20,7 +20,7 @@ else:
     from tickets_issue import NEW_DEFAULT_BOUND, _distinct_gate_lenses
     from tickets_issue_render import _render_ticket
     from tickets_ordinary_review import ordinary_stage_matches, ordinary_stages
-    from tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID, GATE_VERIFY_ID
+    from tickets_assignment import GATE_CRITIQUE_ID, GATE_REPAIR_ID
     from tickets_review import ReviewError, review_records, state_from_text
     from tickets_store import NO_SINK_ERROR, TicketWriteRefused, _create_text_exclusively, _load_ticket, _segment_error, _tickets_root, locked_ticket_write
 
@@ -46,22 +46,24 @@ def _listed_items(values) -> str:
     return "\n".join(f"- {value}" for value in values) if values else "[]"
 
 
-def _gate_body(kind: str, root_id: str, lens: str = "", units=None,
-               repaired_by=None):
+def _gate_body(kind: str, root_id: str, lens: str = "", units=None):
+    """The two lanes a composite gate still materializes.
+
+    There is no third. The fresh outside check the gate used to dispatch is
+    the root's own `done` predicate, run by `tickets.py land` in the
+    integrated tree (contracts/work-item.md, rules/verification.md Section
+    6): an exit code no child has to be paid to wrap.
+    """
+
     units = list(units or [])
     if kind == "critique":
         return [
             ("Goal", f"Review `{root_id}` and its delivered members under the `{lens or 'default'}` lens; enumerate every evidence-backed material blocker to the root Goal, then synthesize the smallest architectural repair set covering the most blockers."),
             ("Context", _listed_items([f"root ticket: {root_id}", *(f"member ticket: {item}" for item in units), "Critique is read-only; Suggested files do not define review authority."])),
         ]
-    if kind == "repair":
-        return [
-            ("Goal", f"Resolve accepted blockers for `{root_id}`, mechanically detect actual overlapping candidate diffs and ordinary Git conflicts, resolve them, and regenerate shared derived artifacts once."),
-            ("Context", _listed_items([*(f"critique ticket: {item}" for item in units), "The integrator may edit or create any repository file needed for the root Goal."])),
-        ]
     return [
-        ("Goal", f"Verify `{root_id}`'s Goal on the integrated tip after `{repaired_by or GATE_REPAIR_ID.format(root=root_id)}` and report the repository-global deterministic gate result."),
-        ("Context", _listed_items([f"root ticket: {root_id}", f"integrated result ticket: {repaired_by or GATE_REPAIR_ID.format(root=root_id)}", "Verification chooses checks from Goal and repository law; no authored test list limits it."])),
+        ("Goal", f"Resolve accepted blockers for `{root_id}`, mechanically detect actual overlapping candidate diffs and ordinary Git conflicts, resolve them, and regenerate shared derived artifacts once."),
+        ("Context", _listed_items([*(f"critique ticket: {item}" for item in units), "The integrator may edit or create any repository file needed for the root Goal."])),
     ]
 
 
@@ -336,13 +338,6 @@ def _gate_under_run_lock(rest, _head_probe=None):
         run, repaired_by, "orch-execute", critique_ids,
         sections=sections, root_generation=root_generation, pack=gate_pack,
         isolation="none", review_kind="repair",
-    )))
-    verify_id = GATE_VERIFY_ID.format(root=root_id)
-    sections = _gate_sections("verify", root_id, units=units, repaired_by=repaired_by)
-    rendered.append((verify_id, _gate_stub(
-        run, verify_id, "orch-check", [repaired_by],
-        sections=sections, root_generation=root_generation, pack=gate_pack,
-        isolation="none", review_kind="verify",
     )))
     for ticket_id, text in rendered:
         defects = ticket_defects(text)

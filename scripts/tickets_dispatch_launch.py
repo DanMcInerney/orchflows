@@ -280,14 +280,6 @@ def _lane_lines(assignment: dict) -> list:
             "one complete seven-field JSON findings array in Result or Feedback; "
             "never rewrite Result or Verification.",
         ]
-    if review_kind == "verify":
-        return [
-            "Independently challenge the fixed artifact and the executor's evidence "
-            "against Goal, Context, and pack evidence. File the verdict and "
-            "observations in Verification without editing the artifact. Begin "
-            "ordinary verdict evidence with exactly `PASS:`, `FAIL:`, or "
-            "`UNVERIFIED:` so the join can bind the verdict to the artifact.",
-        ]
     if review_kind == "repair":
         return [
             "Resolve only the accepted blockers, preserving the fixed pack and "

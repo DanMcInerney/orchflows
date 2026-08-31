@@ -119,7 +119,8 @@
       "name": "dispatch_join_success",
       "contract": "dispatch.md",
       "fields": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at", "review_identity"],
-      "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"]
+      "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"],
+      "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
     },
     {
       "name": "dispatch_launch",
@@ -132,13 +133,12 @@
       "contract": "dispatch.md",
       "fields": [
         "protocol", "run", "id", "assignment_seal", "dispatch_id",
-        "outcome_record_id", "by", "status", "evidence"
+        "outcome_record_id", "by", "evidence"
       ],
       "required": [
         "protocol", "run", "id", "assignment_seal", "dispatch_id",
-        "outcome_record_id", "by", "status", "evidence"
-      ],
-      "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
+        "outcome_record_id", "by", "evidence"
+      ]
     },
     {
       "name": "dispatch_outcome_evidence",
@@ -158,7 +158,7 @@
       "contract": "work-item.md",
       "fields": ["identity", "kind", "predecessor", "protocol"],
       "required": ["identity", "kind", "predecessor", "protocol"],
-      "values": {"kind": ["GatePlan", "CritiqueAdjudication", "RepairOutcome", "Verification"]}
+      "values": {"kind": ["GatePlan", "CritiqueAdjudication", "RepairOutcome"]}
     },
     {
       "name": "review_gate_plan",
@@ -198,13 +198,6 @@
       "required": ["accepted", "artifact", "by", "input_artifact", "no_op", "result"]
     },
     {
-      "name": "review_verification",
-      "contract": "work-item.md",
-      "fields": ["artifact", "by", "evidence", "verdict", "covers"],
-      "required": ["artifact", "by", "evidence", "verdict"],
-      "values": {"verdict": ["PASS", "FAIL", "UNVERIFIED"]}
-    },
-    {
       "name": "ticket_assignment_sections",
       "contract": "work-item.md",
       "fields": ["Goal", "Context", "Suggested files"],
@@ -216,6 +209,7 @@
       "fields": [
         "id", "run", "status", "admission", "executor", "pack",
         "profile", "independence", "depends_on", "isolation", "bound", "loop",
+        "done",
         "checked_by", "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1",
         "review_order", "review_v1", "review_stage", "review_kind"
@@ -223,7 +217,7 @@
       "required": ["id", "run", "status", "executor", "depends_on", "bound"],
       "values": {
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
-        "review_kind": ["critique", "repair", "verify", "null"]
+        "review_kind": ["critique", "repair", "null"]
       }
     },
     {
@@ -233,7 +227,7 @@
       "required": ["done"]
     },
     {
-      "name": "loop_done",
+      "name": "done_binding",
       "contract": "work-item.md",
       "fields": ["form", "value"],
       "required": ["form", "value"],

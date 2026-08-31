@@ -162,16 +162,10 @@ def _ordinary_review_target(ticket_id: str, data: dict, dependencies, siblings):
         ticket_id[:-len(".check")]
     ]:
         return dependencies[0], None
-    target_id = None
-    kind = None
-    if ticket_id.endswith(".gate.repair"):
-        target_id = ticket_id[:-len(".gate.repair")]
-        kind = "repair"
-    elif ticket_id.endswith(".gate.verify"):
-        target_id = ticket_id[:-len(".gate.verify")]
-        kind = "verify"
-    else:
+    if not ticket_id.endswith(".gate.repair"):
         return None
+    target_id = ticket_id[:-len(".gate.repair")]
+    kind = "repair"
     target_text = siblings.get(target_id)
     checker_text = siblings.get(f"{target_id}.check")
     if target_text is None or checker_text is None:

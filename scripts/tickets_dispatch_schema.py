@@ -16,7 +16,7 @@ if __package__:
         DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
-        DISPATCH_OUTCOME_VALUES,
+        DISPATCH_JOIN_SUCCESS_VALUES,
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
         EXECUTOR_RESULT_VALUES,
@@ -43,7 +43,7 @@ else:
         DISPATCH_REPLACE_REQUEST_FIELDS, DISPATCH_RETIRE_REQUEST_FIELDS,
         DISPATCH_STORED_SUCCESS_FIELDS, DISPATCH_TRANSITION_SUCCESS_FIELDS,
         DISPATCH_STATE_VALUES, DISPATCH_ATTEMPT_VALUES,
-        DISPATCH_OUTCOME_VALUES,
+        DISPATCH_JOIN_SUCCESS_VALUES,
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_FIELDS,
         DISPATCH_RECORD_FIELDS, DISPATCH_RECORD_VALUES,
         EXECUTOR_RESULT_VALUES,
@@ -67,7 +67,7 @@ RECORD_KINDS = frozenset(DISPATCH_RECORD_VALUES["kind"])
 OUTCOME_SECTIONS = frozenset(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 RESULT_OPERATION = EXECUTOR_RESULT_VALUES["operation"][0]
 RESULT_MODES = frozenset(EXECUTOR_RESULT_VALUES["mode"])
-JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
+JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 
 
 def _invalid(detail: str):
@@ -105,8 +105,6 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
     }
     if any(content.get(key) != value for key, value in expected.items()):
         return "outcome envelope differs from its attempt or ticket origin"
-    if content.get("status") not in JOIN_STATUSES:
-        return "outcome status is not a join disposition"
     evidence = content.get("evidence")
     if not _closed(evidence, OUTCOME_SECTIONS):
         return "outcome evidence does not close the five executor sections"
@@ -114,8 +112,6 @@ def _outcome_failure(content, *, run, ticket_id, attempt):
         return "outcome evidence bodies are not strings"
     if any(not evidence[section].strip() for section in OUTCOME_SECTIONS - {"Handoff"}):
         return "outcome evidence is incomplete"
-    if (content["status"] == "suspended") != bool(evidence["Handoff"].strip()):
-        return "outcome Handoff does not match its disposition"
     if is_critique_stage_id(ticket_id):
         try:
             if __package__:
@@ -289,18 +285,18 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             "review-identity", joined.get("review_identity"),
         ) is not None:
             return _invalid(f"join record '{record_id}' has invalid review identity")
-        outcome_content = parse_canonical_json(outcome["content"])
-        outcome_status = (
-            outcome_content.get("status") if isinstance(outcome_content, dict) else None
-        )
-        if outcome_status not in JOIN_STATUSES:
-            return _invalid(f"join record '{record_id}' consumes an invalid outcome")
+        # The disposition is the join's own. The outcome is still required
+        # to exist -- its existence is what closed the attempt -- but it no
+        # longer carries a status for this to check itself against, so the
+        # grade is that the joining authority recorded a lawful one.
+        if joined.get("status") not in JOIN_STATUSES:
+            return _invalid(f"join record '{record_id}' records an invalid disposition")
         expected_join = {
             "protocol": PROTOCOL, "run": run, "id": ticket_id,
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
             "outcome_record_id": OUTCOME_RECORD_ID, "by": content["joined_by"],
-            "status": outcome_status,
+            "status": joined["status"],
             "joined_at": attempt.get("retired_at"),
         }
         if review_stage:

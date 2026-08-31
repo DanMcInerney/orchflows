@@ -10,7 +10,7 @@ if __package__:
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
-    from .tickets_shapes import DISPATCH_OUTCOME_VALUES
+    from .tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
     from .tickets_format import (
         GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
         _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
@@ -22,14 +22,14 @@ if __package__:
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
     from .tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
-        state_from_text, verification_outcome,
+        state_from_text,
     )
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
-    from tickets_shapes import DISPATCH_OUTCOME_VALUES
+    from tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
     from tickets_format import (
         GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
         _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
@@ -41,13 +41,13 @@ else:
     from tickets_project import TERMINAL_REMEDY, binding_refusal
     from tickets_review import (
         REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
-        state_from_text, verification_outcome,
+        state_from_text,
     )
 
-JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
+JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
-    "--outcome-record-id outcome --by <join-name> "
+    "--outcome-record-id outcome --by <join-name> --status <disposition> "
     "[--accepted-file <path|->] [--artifact <fixed-identity>]"
 )
 
@@ -197,12 +197,19 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
     dispatch_id = _extract_flag(args, "--dispatch-id")
     outcome_record_id = _extract_flag(args, "--outcome-record-id")
     joined_by = _extract_flag(args, "--by")
+    disposition = _extract_flag(args, "--status")
     accepted_file = _extract_flag(args, "--accepted-file")
     artifact = _extract_flag(args, "--artifact")
     if len(args) != 2 or not all((
-        assignment_seal, dispatch_id, outcome_record_id, joined_by,
+        assignment_seal, dispatch_id, outcome_record_id, joined_by, disposition,
     )):
         return {"error": f"usage: {DISPATCH_JOIN_USAGE}"}
+    if disposition not in JOIN_STATUSES:
+        return _classification(
+            "join-invalid",
+            "the join records the disposition and it must be one of "
+            + ", ".join(sorted(JOIN_STATUSES)),
+        )
     run, ticket_id = args
     for kind, value in (("run id", run), ("ticket id", ticket_id)):
         invalid = _segment_error(kind, value)
@@ -269,7 +276,11 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             return text, None, _classification(
                 "outcome-record-mismatch", "committed outcome belongs to another dispatch"
             )
-        status = outcome["status"]
+        # The outcome's existence closes the attempt; it does not say what
+        # the ticket became. `land` supplies the disposition its `done`
+        # predicate read, and a ticket with no predicate gets the driver's
+        # grade -- neither is the child's word for itself.
+        status = disposition
         try:
             review = state_from_text(text, allow_legacy=True)
             if is_critique_stage_id(ticket_id):
@@ -289,13 +300,6 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
                 review = repair_outcome(
                     review, artifact or "", outcome["evidence"]["Result"],
                     joined_by, workspace=_attempt_workspace(attempt),
-                )
-            elif ticket_id.endswith(".gate.verify"):
-                if accepted is not None:
-                    raise ReviewError("verification join does not accept --accepted-file")
-                review = verification_outcome(
-                    review, artifact, outcome["evidence"]["Verification"],
-                    joined_by,
                 )
             elif accepted is not None or artifact is not None:
                 raise ReviewError("review flags apply only to gate-stage joins")

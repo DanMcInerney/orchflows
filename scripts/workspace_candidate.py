@@ -395,6 +395,55 @@ def prepare(run: str, ticket_id: str):
     }, EXIT_OK
 
 
+def integrate(run: str, ticket_id: str):
+    """Merge this item's candidate branch into the tree the run stands in.
+
+    The step `land` used to leave for hand git, which is how a run once
+    reported a landed item whose commits never reached the checkout anyone
+    read. One merge, in the main checkout the candidate was cut from, before
+    the worktree is retired: after retirement the branch survives but the
+    tree that named it does not, and the ordering is the whole reason this
+    lives beside `retire` rather than after it.
+
+    A conflict is refused, not resolved and not left half-applied: the merge
+    is aborted so the run's own checkout is never handed back mid-merge, and
+    the refusal names the conflicted paths and the one remedy -- resolve
+    them in the candidate, then land again. Replaying is free: git answers
+    an already-merged branch with an unchanged HEAD, which is reported as a
+    replay rather than as a second merge.
+    """
+
+    candidate = state_root.candidate_paths(run, ticket_id)
+    target, branch = candidate["path"], candidate["branch"]
+    body = {"run": run, "id": ticket_id, PATH_KEY: str(target), BRANCH_KEY: branch}
+    main = state_root.main_checkout_root(target / ".git") if target.exists() else None
+    if main is None or _branch_tip(main, branch) is None:
+        return {"integrate": dict(body, outcome="absent")}, EXIT_OK
+    read_main = _git_out(main)
+    before = read_main("rev-parse", "HEAD")
+    into = workspace_git._current_branch(read_main)
+    code, _, err = workspace_git._git(
+        str(main), "merge", "--no-ff", "--no-edit", branch
+    )
+    if code != 0:
+        _, conflicted, _ = workspace_git._git(
+            str(main), "diff", "--name-only", "--diff-filter=U"
+        )
+        workspace_git._git(str(main), "merge", "--abort")
+        paths = sorted(name for name in conflicted.splitlines() if name.strip())
+        raise Refused(
+            f"git merge {branch} into {into!r} at {main} refused: "
+            + (", ".join(paths) if paths else err.strip())
+            + f". Resolve them in the candidate at {target}, commit there, then "
+            f"land {run}/{ticket_id} again"
+        )
+    after = read_main("rev-parse", "HEAD")
+    return {"integrate": dict(
+        body, outcome="replayed" if after == before else "merged",
+        into=into, main_root=str(main), revision=after,
+    )}, EXIT_OK
+
+
 def retire(run: str, ticket_id: str, *, force: bool = False):
     """Remove the derived tree, leaving every stamp that names it in place.
 
@@ -434,5 +483,6 @@ def retire(run: str, ticket_id: str, *, force: bool = False):
 
 
 __all__ = (
-    "ESTABLISH_KEY", "START_KEY", "establish", "observe", "prepare", "retire",
+    "ESTABLISH_KEY", "START_KEY", "establish", "integrate", "observe",
+    "prepare", "retire",
 )

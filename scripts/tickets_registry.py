@@ -45,7 +45,7 @@ SUPERSEDED_EXECUTORS = {
     "orch-loop": "the ticket `loop` field, driven by tickets.py loop-arm | loop-evaluate | loop-advance",
 }
 
-REVIEW_KINDS = ("critique", "repair", "verify")
+REVIEW_KINDS = ("critique", "repair")
 
 
 def executor_registered(executor: str) -> bool:

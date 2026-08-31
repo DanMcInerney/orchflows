@@ -23,8 +23,8 @@ import subprocess
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
-        RESULT_BEARING_STATES, TERMINAL_STATES, _executor_of, _sections,
-        _set_frontmatter_field, dequote, loop_defects, parse_loop,
+        DELIVERED_STATE, RESULT_BEARING_STATES, TERMINAL_STATES, _executor_of,
+        _sections, _set_frontmatter_field, dequote, loop_defects, parse_loop,
         ticket_defects,
     )
     from .tickets_generations import assignment_digest
@@ -36,8 +36,8 @@ if __package__:
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
-        RESULT_BEARING_STATES, TERMINAL_STATES, _executor_of, _sections,
-        _set_frontmatter_field, dequote, loop_defects, parse_loop,
+        DELIVERED_STATE, RESULT_BEARING_STATES, TERMINAL_STATES, _executor_of,
+        _sections, _set_frontmatter_field, dequote, loop_defects, parse_loop,
         ticket_defects,
     )
     from tickets_generations import assignment_digest
@@ -50,18 +50,31 @@ else:  # pragma: no cover - direct/installed flat script path
 LOOP_ARM_USAGE = "loop-arm <run> <id>"
 LOOP_EVALUATE_USAGE = "loop-evaluate <run> <id>"
 LOOP_ADVANCE_USAGE = "loop-advance <run> <id>"
-ITERATION_RE = re.compile(r"\.iter\.(\d+)$")
 DONE_TICKET_SUFFIX = ".done"
+# The two iteration markers this machinery arms under. A loop's body is an
+# `.iter.NN` ticket; a landing whose `done` command refused arms its round
+# two as a `.repair.NN` ticket through the same three rules below, because
+# the question -- is there anything left to build on, and has it moved? --
+# is the same question in both places.
+ITERATION_MARKER = "iter"
+REPAIR_MARKER = "repair"
+ITERATION_RE = re.compile(r"\.(?:iter|repair)\.(\d+)$")
 # Two consecutive terminal iterations with no result delta exit stalled
 # (rules/loops.md).
 STALL_WINDOW = 2
 
 
-def _iterations(run_dir, loop_id):
-    """(number, id, data) for every iteration ticket, ordered by number."""
+def iterations(run_dir, parent_id, marker: str = ITERATION_MARKER):
+    """(number, id, data) for every iteration ticket, ordered by number.
+
+    One reader for both markers: a loop's `<id>.iter.NN` bodies and the
+    `<id>.repair.NN` rounds a failed `done` command arms. The `.done` check
+    tickets minted beside them are skipped -- they judge an iteration and
+    are not one.
+    """
 
     found = []
-    for path in sorted(run_dir.glob(f"{loop_id}.iter.*.md")):
+    for path in sorted(run_dir.glob(f"{parent_id}.{marker}.*.md")):
         stem = path.stem
         if stem.endswith(DONE_TICKET_SUFFIX):
             continue
@@ -73,6 +86,10 @@ def _iterations(run_dir, loop_id):
             continue
         found.append((int(match.group(1)), stem, loaded))
     return sorted(found)
+
+
+def _iterations(run_dir, loop_id):
+    return iterations(run_dir, loop_id, ITERATION_MARKER)
 
 
 def _loop_parent(run, loop_id):
@@ -225,66 +242,109 @@ def _evaluate(run, loop_id, run_dir, data, text, loop):
             "output_sha256": reading,
         }}
     check_id = f"{iteration_id}{DONE_TICKET_SUFFIX}"
-    check_path = run_dir / f"{check_id}.md"
-    if not check_path.is_file():
-        fields = {
-            "id": check_id, "run": run, "status": "pending",
-            "admission": ADMISSION_PENDING, "executor": "orch-check",
-            "pack": dequote(data.get("pack")) or None,
-            "independence": "gate", "depends_on": [iteration_id],
-            "isolation": "none", "bound": data.get("bound"),
-            "root_generation": data.get("root_generation"),
-            "review_kind": "verify", "review_order": 0,
-        }
-        goal = (
-            f"Judge the loop done-check for `{loop_id}` after iteration {number}: "
-            f"{done['value']} Verify against the loop Goal and `{iteration_id}`'s "
-            "recorded result; begin the verdict with exactly `PASS:`, `FAIL:`, or `UNVERIFIED:`."
-        )
-        sections = [
-            ("Goal", goal),
-            ("Context", f"- loop stub: {loop_id}\n- iteration: {iteration_id}"),
-            ("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]"),
-        ]
-        rendered = _render_ticket(fields, sections)
-        cut_generation = str(data.get("cut_generation") or "").strip()
-        if cut_generation:
-            rendered = _set_frontmatter_field(rendered, "cut_generation", cut_generation)
-        rendered = _set_frontmatter_field(
-            rendered, "assignment_seal", assignment_digest(check_id, rendered)
-        )
-        defects = ticket_defects(rendered)
-        if defects:
-            return {"error": f"done-check {check_id} is off contract: " + "; ".join(defects)}
-        try:
-            with locked_ticket_write(run, check_id):
-                if not check_path.exists():
-                    _create_text_exclusively(check_path, rendered)
-        except TicketWriteRefused as refused:
-            return refused.payload
-        except OSError as error:
-            return {"error": f"unable to create done-check: {error}"}
-        return {"loop_evaluate": {"run": run, "id": loop_id, "iteration": number,
-                                  "form": "check", "pending": check_id, "outcome": "created"}}
-    check = _load_ticket(check_path)
-    if "error" in check:
-        return {"error": check["error"]}
-    if str(check.get("status")) not in TERMINAL_STATES:
-        return {"loop_evaluate": {"run": run, "id": loop_id, "iteration": number,
-                                  "form": "check", "pending": check_id, "outcome": "live"}}
+    goal = (
+        f"Judge the loop done-check for `{loop_id}` after iteration {number}: "
+        f"{done['value']} Verify against the loop Goal and `{iteration_id}`'s "
+        "recorded result, and file every blocker you find with its evidence."
+    )
+    reading, refusal = check_reading(
+        run, run_dir, check_id, data, goal,
+        [f"loop stub: {loop_id}", f"iteration: {iteration_id}"],
+        depends_on=iteration_id,
+    )
+    if refusal is not None:
+        return refusal
+    return {"loop_evaluate": {
+        "run": run, "id": loop_id, "iteration": number, "form": "check", **reading,
+    }}
+
+
+def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
+               context, *, depends_on: str, lock_held: bool = False):
+    """Create -- or replay -- the one `orch-check` ticket judging a criterion.
+
+    The single minter for both homes of the `check` done form: a loop's
+    per-iteration done-check and a landing whose predicate names a criterion
+    no oracle covers. A second minter would be a second place the check's
+    shape could drift from contracts/work-item.md, and the check is the
+    surface whose measured yield bought this form its place.
+
+    It carries no `review_kind`: it is ordinary judging work, not a lane of
+    the composite gate's immutable ledger, and its verdict is the status its
+    join records rather than a token in its prose.
+    """
+
+    path = run_dir / f"{check_id}.md"
+    fields = {
+        "id": check_id, "run": run, "status": "pending",
+        "admission": ADMISSION_PENDING, "executor": "orch-check",
+        "pack": dequote(source.get("pack")) or None,
+        "independence": "gate", "depends_on": [depends_on],
+        "isolation": "none", "bound": source.get("bound"),
+        "root_generation": source.get("root_generation"),
+    }
+    rendered = _render_ticket(fields, [
+        ("Goal", goal),
+        ("Context", "\n".join(f"- {line}" for line in context)),
+        ("Result", ""), ("Verification", ""), ("Feedback", "[]"), ("Risks", "[]"),
+    ])
+    cut_generation = str(source.get("cut_generation") or "").strip()
+    if cut_generation:
+        rendered = _set_frontmatter_field(rendered, "cut_generation", cut_generation)
+    rendered = _set_frontmatter_field(
+        rendered, "assignment_seal", assignment_digest(check_id, rendered)
+    )
+    defects = ticket_defects(rendered)
+    if defects:
+        return {"error": f"done-check {check_id} is off contract: " + "; ".join(defects)}
     try:
-        verdict_text = _sections(check_path.read_text(encoding="utf-8")).get("Verification", "")
-    except (OSError, UnicodeDecodeError) as error:
-        return {"error": f"unreadable done-check: {error}"}
-    stripped = verdict_text.strip()
-    if stripped.startswith("PASS"):
-        verdict = True
-    elif stripped.startswith("FAIL"):
-        verdict = False
-    else:
-        return {"error": f"done-check {check_id} closed without a PASS/FAIL verdict; the loop cannot read done off it"}
-    return {"loop_evaluate": {"run": run, "id": loop_id, "iteration": number,
-                              "form": "check", "done": verdict, "verdict_ticket": check_id}}
+        if lock_held:
+            # `land` already holds this run's lock across its whole return,
+            # and the lock is one process byte rather than a counter: taking
+            # it again here would be a caller waiting on itself.
+            if not path.exists():
+                _create_text_exclusively(path, rendered)
+        else:
+            with locked_ticket_write(run, check_id):
+                if not path.exists():
+                    _create_text_exclusively(path, rendered)
+    except TicketWriteRefused as refused:
+        return refused.payload
+    except OSError as error:
+        return {"error": f"unable to create done-check: {error}"}
+    return None
+
+
+def check_reading(run: str, run_dir, check_id: str, source: dict, goal: str,
+                  context, *, depends_on: str, lock_held: bool = False):
+    """`(reading, refusal)` for the `check` done form's minted judge.
+
+    A verdict here is the check ticket's own joined status: `complete` is
+    met and any other terminal state is not. Nothing parses a token out of
+    prose -- the child files findings, and the authority that joins the
+    check is what records the disposition.
+    """
+
+    path = run_dir / f"{check_id}.md"
+    if not path.is_file():
+        refusal = mint_check(
+            run, run_dir, check_id, source, goal, context,
+            depends_on=depends_on, lock_held=lock_held,
+        )
+        if refusal is not None:
+            return None, refusal
+        return {"pending": check_id, "outcome": "created"}, None
+    check = _load_ticket(path)
+    if "error" in check:
+        return None, {"error": check["error"]}
+    status = str(check.get("status"))
+    if status not in TERMINAL_STATES:
+        return {"pending": check_id, "outcome": "live"}, None
+    return {
+        "done": status == DELIVERED_STATE,
+        "status": status,
+        "verdict_ticket": check_id,
+    }, None
 
 
 def _cmd_loop_evaluate(rest):
@@ -329,24 +389,48 @@ def _cmd_loop_advance(rest):
     if "pending" in reading:
         return {"loop_advance": {"run": run, "id": loop_id, "action": "await-done-check",
                                  "pending": reading["pending"]}}
-    iterations = _iterations(run_dir, loop_id)
-    if reading["done"]:
-        return _close(run, loop_id, "complete", reading)
-    delivered = [item for item in iterations if str(item[2].get("status")) in TERMINAL_STATES]
+    action = advance_action(run_dir, loop_id, ITERATION_MARKER, reading["done"])
+    if action["action"] == "close":
+        return _close(run, loop_id, action["status"], reading)
+    return {"loop_advance": {"run": run, "id": loop_id, "action": "arm",
+                             "next": action["next"]}}
+
+
+def advance_action(run_dir, parent_id: str, marker: str, done: bool) -> dict:
+    """The advance decision for one done reading, over one iteration marker.
+
+    Three rules and no scheduler, and they are the rules `rules/loops.md`
+    Section 3 already states: a met done closes `complete`; two consecutive
+    delivered iterations with no result delta converge on nothing and close
+    `stalled`, as does a latest iteration that left no result to build on;
+    anything else arms the next round. The bound is the dispatching
+    caller's -- an effort-shaped bound is not a clock this can read.
+
+    A landing whose `done` command refused asks the same question of its
+    `.repair.NN` rounds, so this answers for both markers rather than
+    growing a second copy under a second name. The one seam between them is
+    the first round: a loop only evaluates after an iteration exists, while
+    a landing's first refusal has no prior round, and no prior round is a
+    reason to arm rather than a reason to give up.
+    """
+
+    numbered = iterations(run_dir, parent_id, marker)
+    if done:
+        return {"action": "close", "status": "complete"}
+    delivered = [
+        item for item in numbered if str(item[2].get("status")) in TERMINAL_STATES
+    ]
     if len(delivered) >= STALL_WINDOW:
         tail = [_result_reading(run_dir, item[1]) for item in delivered[-STALL_WINDOW:]]
         if all(entry is not None for entry in tail) and (
             all(not entry for entry in tail) or len(set(tail)) == 1
         ):
-            return _close(run, loop_id, "stalled", reading)
-    if not any(
+            return {"action": "close", "status": "stalled"}
+    if delivered and not any(
         str(item[2].get("status")) in RESULT_BEARING_STATES for item in delivered[-1:]
     ):
-        # The latest iteration closed without a result to build on; a loop
-        # over blocked/failed iterations converges on nothing.
-        return _close(run, loop_id, "stalled", reading)
-    return {"loop_advance": {"run": run, "id": loop_id, "action": "arm",
-                             "next": iterations[-1][0] + 1 if iterations else 1}}
+        return {"action": "close", "status": "stalled"}
+    return {"action": "arm", "next": numbered[-1][0] + 1 if numbered else 1}
 
 
 def _close(run, loop_id, status, reading):
@@ -362,6 +446,8 @@ def _close(run, loop_id, status, reading):
 
 
 __all__ = (
+    "DONE_TICKET_SUFFIX", "ITERATION_MARKER", "REPAIR_MARKER", "STALL_WINDOW",
     "LOOP_ARM_USAGE", "LOOP_EVALUATE_USAGE", "LOOP_ADVANCE_USAGE",
+    "advance_action", "check_reading", "iterations", "mint_check",
     "_cmd_loop_arm", "_cmd_loop_evaluate", "_cmd_loop_advance",
 )

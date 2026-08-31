@@ -26,7 +26,6 @@ if __package__:
     from .tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
     from .tickets_shapes import (
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
-        DISPATCH_OUTCOME_VALUES,
     )
 else:
     from tickets_attempts import (
@@ -44,11 +43,9 @@ else:
     from tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
     from tickets_shapes import (
         DISPATCH_OUTCOME_EVIDENCE_FIELDS, DISPATCH_OUTCOME_REQUIRED,
-        DISPATCH_OUTCOME_VALUES,
     )
 
 
-JOIN_STATUSES = frozenset(DISPATCH_OUTCOME_VALUES["status"])
 OUTCOME_SECTIONS = tuple(DISPATCH_OUTCOME_EVIDENCE_FIELDS)
 OUTCOME_FILE_FLAGS = {
     "Result": "--result-file",
@@ -58,7 +55,7 @@ OUTCOME_FILE_FLAGS = {
     "Handoff": "--handoff-file",
 }
 DISPATCH_OUTCOME_USAGE = (
-    "dispatch-outcome <run> <id> --status <complete|blocked|stalled|limited|failed|suspended> "
+    "dispatch-outcome <run> <id> "
     "[--result-file <path>] [--verification-file <path>] [--feedback-file <path>] "
     "[--risks-file <path>] [--handoff-file <path>] | --file <canonical-outcome-path|->"
 )
@@ -176,20 +173,25 @@ def _outcome_attempt_match(content: dict, run: str, ticket_id: str, attempt: dic
 
 
 def _outcome_content(args: list):
-    """Parse typed close inputs, or a complete inline-relay carrier."""
+    """Parse typed close inputs, or a complete inline-relay carrier.
 
-    status_present = "--status" in args
+    The typed form is the default one: an envelope with no `--file` closes
+    the attempt out of the evidence flags and the records already streamed.
+    It used to be `--status` that selected it, and `--status` is gone --
+    a child no longer names its own disposition, so the note it files says
+    only what it did.
+    """
+
     source_present = "--file" in args
     file_present = {
         section: flag in args for section, flag in OUTCOME_FILE_FLAGS.items()
     }
-    status = _extract_flag(args, "--status")
     source_file = _extract_flag(args, "--file")
     file_args = {
         section: _extract_flag(args, flag)
         for section, flag in OUTCOME_FILE_FLAGS.items()
     }
-    if (status_present and status is None) or (source_present and source_file is None):
+    if source_present and source_file is None:
         return None, {
             "error": "dispatch-outcome flags require a value",
             "code": "outcome-invalid", "protocol": PROTOCOL,
@@ -206,23 +208,13 @@ def _outcome_content(args: list):
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
     if source_file is not None:
-        if status is not None or any(value is not None for value in file_args.values()):
+        if any(value is not None for value in file_args.values()):
             return None, {
                 "error": "--file carries the complete outcome and cannot be combined with typed inputs",
                 "code": "outcome-invalid", "protocol": PROTOCOL,
             }
         return _outcome_file(source_file)
-    if status is None:
-        return None, {
-            "error": f"dispatch-outcome requires --status or --file; usage: {DISPATCH_OUTCOME_USAGE}",
-            "code": "outcome-invalid", "protocol": PROTOCOL,
-        }
-    if status not in JOIN_STATUSES:
-        return None, {
-            "error": "outcome status is not a join disposition",
-            "code": "outcome-invalid", "protocol": PROTOCOL,
-        }
-    return {"status": status, "_files": file_args}, None
+    return {"_files": file_args}, None
 
 
 def _outcome_failure(run: str, ticket_id: str, content):
@@ -233,8 +225,6 @@ def _outcome_failure(run: str, ticket_id: str, content):
         return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
     if content.get("outcome_record_id") != OUTCOME_RECORD_ID:
         return _classification("outcome-invalid", "outcome envelope does not use the reserved identity")
-    if content.get("status") not in JOIN_STATUSES:
-        return _classification("outcome-invalid", "outcome status is not a join disposition")
     for kind, value in (("owner", content.get("by")), ("dispatch-id", content.get("dispatch_id"))):
         failure = _identity_failure(kind, value)
         if failure is not None:
@@ -246,11 +236,11 @@ def _outcome_failure(run: str, ticket_id: str, content):
         return _classification("outcome-invalid", "outcome evidence bodies must be strings")
     required_sections = ("Result", "Verification", "Feedback", "Risks")
     if any(not evidence[section].strip() for section in required_sections):
-        return _classification("outcome-invalid", "terminal outcome evidence is incomplete")
-    if content["status"] == "suspended" and not evidence["Handoff"].strip():
-        return _classification("handoff-required", "suspension requires Handoff evidence")
-    if content["status"] != "suspended" and evidence["Handoff"].strip():
-        return _classification("outcome-invalid", "terminal outcome cannot carry a Handoff")
+        return _classification("outcome-invalid", "closing outcome evidence is incomplete")
+    # Handoff is optional and uncoupled: the envelope no longer names a
+    # disposition, so nothing here can require or forbid a handoff on the
+    # strength of one. A child that has work to hand over writes it, and
+    # the join that reads the note decides what the ticket became.
     if is_critique_stage_id(ticket_id):
         # Critique Result and Feedback are generated finding carriers, not
         # arbitrary prose.  Keep the import lazy because tickets_review
@@ -325,7 +315,6 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
             "dispatch_id": attempt["dispatch_id"],
             "outcome_record_id": OUTCOME_RECORD_ID,
             "by": attempt["owner"],
-            "status": carrier["status"],
             "evidence": evidence,
         }
     else:
@@ -383,7 +372,7 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
     )
 
 __all__ = (
-    "DISPATCH_OUTCOME_USAGE", "JOIN_STATUSES", "OUTCOME_FILE_FLAGS",
+    "DISPATCH_OUTCOME_USAGE", "OUTCOME_FILE_FLAGS",
     "OUTCOME_SECTIONS", "_cmd_dispatch_outcome", "_outcome_attempt",
     "_outcome_attempt_match", "_outcome_content", "_outcome_failure",
     "_prior_result_body",
