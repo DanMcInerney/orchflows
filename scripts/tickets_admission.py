@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 
 if __package__:
+    from . import _bootstrap
     from .tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from .tickets_adapters import AdapterError, adapter_spec, pack_digest
     from .tickets_format import (
@@ -16,6 +17,7 @@ if __package__:
         _parse_frontmatter, _set_frontmatter_field,
     )
 else:
+    import _bootstrap
     from tickets_registry import EXECUTOR_REGISTRY, executor_refusal, executor_registered
     from tickets_adapters import AdapterError, adapter_spec, pack_digest
     from tickets_format import (
@@ -103,7 +105,7 @@ def binding_findings(ticket_id: str, data: dict) -> list:
     unbound = executor.startswith(SCRIPT_EXECUTOR_PREFIX)
     if executor.startswith(SCRIPT_EXECUTOR_PREFIX):
         target = executor[len(SCRIPT_EXECUTOR_PREFIX):].strip()
-        if not (Path(__file__).resolve().parents[1] / target).is_file():
+        if not (_bootstrap.ROOT / target).is_file():
             findings.append(finding(
                 "script-executor-unresolved", "executor",
                 f"executor names script '{target or '<missing>'}', which does not resolve in the tree",

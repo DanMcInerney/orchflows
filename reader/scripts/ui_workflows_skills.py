@@ -5,11 +5,16 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from scripts._bootstrap import ROOT
 from scripts.tickets_format import _parse_frontmatter
 from reader.scripts import ui_workflows_identity as identity
 
-
-ROOT = Path(__file__).resolve().parents[2]
+# ``ROOT`` reads the same directory ``_bootstrap.ROOT`` names in both the
+# checkout and the installed-library layout: this file ships alongside
+# ``scripts/_bootstrap.py`` at a fixed relative depth in the reader
+# payload (installer/planning_support.py's lib_copies), and every caller
+# here already imports ``scripts.*`` unconditionally, so ``scripts`` is
+# always importable by the time this module loads.
 DETAIL_SCHEMA = "orchflows.workflow-detail.v1"
 NODE_KIND_ORDER = {"workflow": 0, "work": 1, "skill": 2, "script": 3}
 INLINE_CODE_RE = re.compile(r"(?<!`)`([^`]+)`(?!`)", re.DOTALL)

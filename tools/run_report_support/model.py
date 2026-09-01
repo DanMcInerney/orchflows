@@ -18,7 +18,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-_REPORT_ROOT = Path(__file__).resolve().parent.parent.parent
+# tools/run_report.py, this module's one importer, has already put the
+# repository (and scripts/) on sys.path before reaching this import, so
+# the fact is read from the leaf rather than re-walked here; the loop
+# below stays only to keep this module import-safe on its own.
+from scripts._bootstrap import ROOT as _REPORT_ROOT
 for _import_root in (_REPORT_ROOT, _REPORT_ROOT / "scripts"):
     if str(_import_root) not in sys.path:
         sys.path.insert(0, str(_import_root))

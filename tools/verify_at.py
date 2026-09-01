@@ -51,6 +51,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
+# This is the walk that makes `scripts/state_root` (below) importable at
+# all, so it cannot itself come from `scripts._bootstrap.ROOT`.
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

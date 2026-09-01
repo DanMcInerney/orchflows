@@ -30,6 +30,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+# Run directly (`python tools/preflight.py`), so `scripts/` is not yet
+# on sys.path here; reading `scripts._bootstrap.ROOT` would need this
+# same walk to seed the import first, for no fact this file otherwise
+# needs from `scripts/`.
 ROOT = Path(__file__).resolve().parent.parent
 RUNNER = ROOT / "tools" / "run_tests.py"
 WORKFLOW = ROOT / ".github" / "workflows" / "checks.yml"

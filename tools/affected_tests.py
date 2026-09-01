@@ -47,6 +47,11 @@ import sys
 import tempfile
 from pathlib import Path
 
+# Run directly (`python tools/affected_tests.py`) or imported as
+# `tools.affected_tests` before the repository is necessarily on
+# sys.path; reading `scripts._bootstrap.ROOT` would need this same walk
+# to seed the import first, for no fact this file otherwise needs from
+# `scripts/`.
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = "orchflows.affected-tests.v1"
 # The record's shape is in its kind and its kind is in the cache key, so a

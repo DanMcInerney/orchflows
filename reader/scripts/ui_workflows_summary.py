@@ -7,8 +7,15 @@ import re
 from collections.abc import Collection
 from pathlib import Path
 
+# ``ROOT`` reads the same directory ``_bootstrap.ROOT`` names in both the
+# checkout and the installed-library layout: this file ships alongside
+# ``scripts/_bootstrap.py`` at a fixed relative depth in the reader
+# payload (installer/planning_support.py's lib_copies), and this
+# module's one production importer, ``ui_workflows_catalog``, already
+# requires ``scripts.*`` to be importable before reaching it, so
+# ``scripts`` is always available by the time this module loads.
+from scripts._bootstrap import ROOT
 
-ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 SUMMARY_SCHEMA = "orchflows.workflow-summary.v1"
 CANONICAL_WORKFLOW_IDS = frozenset({

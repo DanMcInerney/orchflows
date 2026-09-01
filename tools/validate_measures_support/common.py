@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 import re
 from collections import namedtuple
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# tools/validate_measures.py, this module's only importer, already binds
+# the repository root onto sys.path (as the ``tools`` namespace package)
+# before reaching this import, so the fact is read from the leaf rather
+# than re-walked here.
+from scripts._bootstrap import ROOT as REPO_ROOT
 DEFAULT_RECORD = REPO_ROOT / "benchmarks" / "measures" / "benchmaker.md"
 DEFAULT_CASES_DIR = REPO_ROOT / "benchmarks" / "benchmaker" / "cases"
 
