@@ -25,6 +25,12 @@ invented for this library.
   contract in Require / procedure / Never / Return anatomy.
 - **body** — a skill's procedure text: the always-paid part of its
   `SKILL.md`, budgeted by `rules/token-economy.md`.
+- **surface** — a text a reader loads automatically, never fetched on
+  demand: the host block, `AGENTS.md`, a role agent file, a kernel
+  body, a pack's craft. `rules/token-economy.md` §11 orders every
+  surface by load frequency; each ceiling is owned by the dev-only
+  tools/validate_support/common.py (`SURFACE_BUDGET`,
+  `ROUTING_BLOCK_BUDGET`, `ROLE_AGENT_BUDGET`, `BODY_BUDGET`).
 - **kernel** — the primitive skills under `skills/kernel/`; a kernel
   skill calls no skill.
 - **workflow skill** — an assembled T1 skill calling primitives or other
@@ -81,6 +87,11 @@ invented for this library.
   retired verbs collapsed into.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
+- **adapter** — a pack-declared workspace mechanism key from a closed
+  registry (git candidate, evidence store, …); it fixes the identity
+  form and artifact-line prefix a pack's children print
+  (`contracts/pack-signature.md`'s `adapter` cell,
+  `scripts/tickets_adapters.py`'s registry).
 - **workflow** — a skill whose prose calls callables or other skills: a
   `SKILL.md` under `example-workflows/` (the library's gallery) or a ring's
   workflows directory (yours), invoked only when named and admitted under
@@ -98,6 +109,22 @@ invented for this library.
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
   their scope; bounds per `docs/custom-workflow-authoring.md`.
+- **ring** — one of four fixed lookup roots a custom skill, pack, or
+  workflow resolves through — project, home, imports, lib — nearest
+  ring wins on a same name; `scripts/rings.py` is the sole resolver.
+- **bundle** — one ring's directory tree of skill/pack/workflow items:
+  the unit `imports.lock` pins and the trust ledger (below) grants or
+  refuses by content digest (`scripts/rings.py`, `scripts/rings_trust.py`).
+- **trust ledger** — `~/.orchflows/trust.json`, outside every repository
+  so a repo can never grant itself trust: which project-ring bundles
+  the user allowed and at which content digest, `once` or `trusted`
+  (`scripts/rings_trust.py`).
+- **shadow notice** — the one-line warning printed when a name resolves
+  in more than one ring: names the winner and what it shadows, never a
+  silent first-hit (`scripts/rings.py`'s `shadow_notice`).
+- **pin** — the exact revision `imports.lock` records for one bundle;
+  the lock is the pin, so an unreadable or partial lock resolves to no
+  imports rather than a guess (`scripts/rings.py`'s `read_imports`).
 - **rule** — a clause of cross-cutting law in `rules/`; what any other
   file may do with one is `rules/visibility.md` §3's.
 - **call edge** — a resolved backticked skill name in a skill body; the call
@@ -195,6 +222,11 @@ invented for this library.
   candidate results into the final artifact before its frame closes.
 - **decision gap** — a planning return naming a Goal portion the stamped
   slicing cannot cover.
+- **emission** — the moment a ticket-writing command creates or rewrites
+  a ticket, distinct from claim time; `scripts/tickets_emission.py`
+  grades it against the one admission check, deferring findings a
+  fresh cut cannot yet satisfy (a dangling dependency, an unsealed
+  assignment).
 - **workspace** — where results live and what identities mean there (git
   revisions, doc slots, evidence store), per the pack craft's `## Workspace`
   section.
@@ -205,10 +237,22 @@ invented for this library.
   `scripts/workspace.py`'s. `establish` creates and records it inside the
   dispatch transaction; `prepare` installs what the recorded workspace declares,
   lock-free, afterwards; `retire` removes it at the join. Each replays.
+- **shared-workspace** — `scripts/workspace.py`'s `start` exit 7:
+  another claimed item of the run already recorded this same tree, so
+  it is not this item's alone. `start` records before it flags, so the
+  join still reads what the item actually executed in.
 - **standards owner** — the workspace's own canonical statement of its
   conventions (linter config, style doc, CI); named by pointer, never
   restated.
-- **baseline** — the proven clean starting state of a workspace.
+- **baseline** — the workspace's starting revision, stamped once at
+  `start`: the head revision plus `clean` or `dirty: <paths>`, honestly
+  recorded either way rather than assumed clean, and never re-derived
+  (`scripts/workspace_git.py`'s `_baseline`).
+- **vantage** — the exact revision and place a check runs from; a
+  verdict is only as good as its vantage. `scripts/workspace.py`'s
+  `check` exit 6 refuses when the caller stands in the workspace
+  itself; the dev-only tools/verify_at.py fixes vantage by running
+  detached, outside the temp root.
 
 ## Verification
 
@@ -239,11 +283,25 @@ invented for this library.
   `RepairOutcome` ledger this pair once wrote through has retired with the
   command that built it; `rules/verification.md` §9 and
   `contracts/work-item.md`'s Review-stage ledger own that history.
-- **judge** — scoring one fixed candidate against frozen criteria, blind to
-  other candidates: an `orch-judge` ticket whose criteria carry a score
-  scale, blindness being a property of the assignment's `inputs`, not of a
-  skill. Distinct from the callable `orch-judge` itself, which this noun
-  predates; the collision is a naming debt for the full vocabulary sweep.
+- **gate** — two live senses, the rest retired. (1) The deterministic
+  close gate: `land`'s repository-wide required checks, the one every
+  ticket now answers to (`rules/verification.md` §7's "gate-deferred"
+  independence, run without caching by the dev-only
+  tools/run_required.py). (2) The
+  gate's-row verification clause: `CRAFT_SCOPE_ANCHOR`'s "the full
+  suite is the gate's row, never a unit's," naming that same close
+  gate as the full suite's one owner. Retired: the composite-gate /
+  `GatePlan` review-stage topology and its `.gate.critique.<lens>` /
+  `.gate.repair` ids (**critique**, above) — no live command builds
+  that chain, and any other "gate" sighted in prose is one of these
+  two, informally put.
+- **judge** — scoring one fixed candidate against frozen criteria, blind
+  to other candidates when several are scored in one round: a
+  `judge`-executor ticket whose criteria carry a score scale, blindness
+  a property of the assignment's `inputs`, not of a skill. Common noun
+  for the evaluation, not the skill: `orch-judge` (**callable**, above)
+  is the one skill that runs every `judge` ticket, scoring or not — a
+  common-noun/proper-name split, not a fact collision.
 
 The benchmark pipeline's artifacts are named here and defined by their
 producers, never restated: **evaluation design** (the execute lane's
@@ -252,6 +310,21 @@ Return), **benchmark** and its manifest field set
  (the judging check's Return where the criteria carry a scale), **evolution
 result**, **evaluation mode** and **incumbent** (the `evolve`
 workflow).
+
+- **seam** — a boundary where behavior can differ or leak and must be
+  checked explicitly: a public code boundary (each pack's craft
+  narrows this per domain, e.g. `packs/orch-code-pack/references/craft.md`)
+  or a process boundary state can cross — the dev-only
+  tools/run_serial_compat.py's closed seam set (cwd, environment,
+  import-path, …).
+- **sentinel** — one committed test case selected into the serial
+  compatibility manifest for the routine same-process lane, proving
+  exact discovery identity stays sound; the roster is chosen, not
+  derived (the dev-only tools/serial-compat-policy.md).
+- **shard** — one process-isolated slice of the suite: a module run
+  alone (the dev-only tools/run_tests.py's one-process-per-module
+  runner) or a `--shard K-of-N` slice of the scheduled order across a
+  CI matrix leg.
 
 ## Delegation
 
@@ -296,7 +369,15 @@ workflow).
 - **ladder / rung** — the ordered execution vehicles for one dispatch:
   tested script (the `script:` executor, `contracts/work-item.md`), worker,
   planner; role rungs per `rules/roles.md` §4. Inline is no rung:
-  `rules/delegation.md` §2 forbids it for role-bearing skills.
+  `rules/delegation.md` §2 forbids it for role-bearing skills. The
+  benchmark family reuses the bare word for its own, unrelated
+  measured-configuration record (the dev-only
+  tools/validate_measures_support/'s `RUNG_KEYS` schema,
+  `example-workflows/references/benchmaker-protocol.md`'s "rung pair" —
+  that file's own **Measurement pass** section names the stage, not
+  this entry's word); read "rung" here as the dispatch-escalation
+  sense only. Renaming the benchmark family's own use is a separate
+  pass: this entry only keeps the two senses from being read as one.
 - **role** — planner (judgment) or worker (execution); law in
   `rules/roles.md`.
 - **profile** — a role's concrete model and effort binding on one host,
