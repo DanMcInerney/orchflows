@@ -26,7 +26,7 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 | `cache.py` | one run's TTL memory of reads it already made |
 | `normalize.py` | native pages to immutable records; grouping and provenance edges |
 | `project.py` | a pure bounded subset of one artifact |
-| `probes.py` | the nineteen liveness probe declarations |
+| `probes.py` | the twenty-five liveness probe declarations |
 | `smoke.py` | one probe's read, and the standing it leaves an adapter at |
 | `cli.py` | three operations, and everything an operator reads |
 | `adapters/__init__.py` | `AdapterDescriptor`, `NativeRecord`, `NativePage`, `fetch_one_page` |

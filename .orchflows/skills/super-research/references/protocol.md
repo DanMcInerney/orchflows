@@ -214,10 +214,11 @@ construction, and why no lawful `K5` shape exists — is in
 
 ## Adapter roster
 
-Twenty adapters, nineteen live plus `fake`; thirty-six route surfaces, because
-ten adapters reach more than one — `bluesky`, `x_guest` and `youtube_innertube`
-among them, each pairing a second endpoint to its first. Thirty-five of the
-thirty-six are read;
+Twenty-six adapters, twenty-five live plus `fake`; fifty route surfaces, because
+thirteen adapters reach more than one — `bluesky`, `x_guest` and `youtube_innertube`
+among them, each pairing a second endpoint to its first, and `oembed` reaching
+six. Forty-nine of the
+fifty are read;
 `x_guest`'s activation is spent rather than read, so it carries a budget and
 never a record. Read back off `runner.surface_descriptors`.
 
@@ -242,6 +243,12 @@ never a record. Read back off `runner.surface_descriptors`.
 | `rss_atom` | `K0` | `youtube_channel_feed` | one generic RSS 2.0 and Atom parser: identity, dates, enclosures, transcript links |
 | `prediction_markets` | `K0` | `polymarket_gamma`, `kalshi_markets`, `manifold_markets` | the odds on a question with a date: Polymarket search, events and markets, Kalshi's open markets and events, Manifold search. Prices and volumes are decimals and ride as the exact strings each API wrote |
 | `stocktwits` | `K0` | `stocktwits_symbol_stream`, `stocktwits_symbol_search` | one ticker's message stream with `likes.total` and the poster's own `Bullish`/`Bearish` label, and symbol lookup. The roster's one finance-native surface |
+| `gdelt` | `K4` | `gdelt_doc` | GDELT DOC 2.0's global news index: article hits with `url`, `title`, `seendate` and `domain`, bounded at the origin by `startdatetime`/`enddatetime`. Measured 2026-09-01 answering keyless over plain HTTP while port 443 timed out from this host — the transport admits https only, so here the smoke reports `unreachable` and concludes nothing; declared on the documentation, the way the Bluesky search surface is |
+| `stack_exchange` | `K0` | `stackexchange_search_advanced` | `search/advanced` over a named site: questions with `score`, `answer_count` and `view_count`, bounded at the origin by `fromdate`/`todate` unix seconds, under a 300/day anonymous quota the answer itself reports |
+| `wikimedia_pageviews` | `K0` | `wikimedia_pageviews_per_article` | one article's daily view counts over a date range spelled as two path segments — attention over time, the keyless substitute for a trends surface. The one route whose origin serves nothing but a windowed read: a step here with no window is refused rather than defaulted |
+| `scholarly` | `K0` | `openalex_works`, `crossref_works`, `arxiv_query` | scholarly works over three origins a caller names one of: OpenAlex with `cited_by_count`, Crossref DOI-anchored with `is-referenced-by-count`, arXiv preprints as Atom. Each bounds publication time at the origin in its own grammar; the documented `mailto` etiquette is deliberately not sent, because this package attaches no identity a route constant does not spell |
+| `tiktok_public` | `K2` | `tiktok_video_page`, `tiktok_profile_page` | the web client's own rehydration JSON out of a public page's `__UNIVERSAL_DATA_FOR_REHYDRATION__` script tag, no script run: a video with `createTime`, its `statsV2` counts, author and hashtags, and a profile with its own counts. A profile page embeds no recent-video list — that is a signed client-side call this package does not perform — and comments need the signed mobile API, refused by policy |
+| `oembed` | `K0` | `youtube_oembed`, `vimeo_oembed`, `spotify_oembed`, `soundcloud_oembed`, `tiktok_oembed`, `x_publish_oembed` | one platform URL hydrated into the item's own author, title and thumbnail through the platform's own documented oEmbed endpoint — the universal hydration layer for the long tail of discovered links no richer route owns. No date and no counts ride on any of the six, and both absences are typed |
 | `fake` | `offline` | `fake_offline` | deterministic fixture pages. Never live evidence, and the one adapter with no smoke |
 
 `rss_atom` is a generic feed parser bound to one declared route. A second feed is

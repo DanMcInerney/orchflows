@@ -242,8 +242,11 @@ class RedditFeedDescriptorTest(unittest.TestCase):
 
         self.assertEqual(ranked[0], (transport.REDDIT_FEED_ROUTE, 3))
         # Unique, and not merely equal-lowest: the runner-up admits at least
-        # seven times as many reads in the same minute.
-        self.assertGreaterEqual(ranked[1][1], ranked[0][1] * 7)
+        # four times as many reads in the same minute. It was seven until
+        # 2026-09-01, when GDELT joined with the origin's own stated ceiling
+        # of one read per five seconds — thirteen a minute — and became the
+        # runner-up this margin is measured against.
+        self.assertGreaterEqual(ranked[1][1], ranked[0][1] * 4)
         self.assertGreater(ranked[1][1], ranked[0][1])
 
     def test_it_declares_neither_engagement_metric_because_the_route_reports_none(self):

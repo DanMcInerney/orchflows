@@ -115,7 +115,7 @@ class UnrecognizedContainerIsNeverAnEmptySuccessTest(unittest.TestCase):
 
 
 class RosterIsCompleteTest(unittest.TestCase):
-    """Nineteen live adapters plus `fake`, and every one reachable four ways.
+    """Twenty-five live adapters plus `fake`, and every one reachable four ways.
 
     This is the revision the roster closes at. An adapter is only really in it
     when the core can name it, describe it, call it, see every surface it can
@@ -126,14 +126,14 @@ class RosterIsCompleteTest(unittest.TestCase):
 
     def test_the_core_lists_exactly_the_roster_the_spec_names(self):
         self.assertEqual(sorted(runner.ADAPTER_IDS), sorted(ROSTER))
-        self.assertEqual(len(runner.ADAPTER_IDS), 20)
-        # Nineteen live, and the twentieth is the offline fixture.
+        self.assertEqual(len(runner.ADAPTER_IDS), 26)
+        # Twenty-five live, and the twenty-sixth is the offline fixture.
         live = [
             adapter_id
             for adapter_id, access_class in ROSTER.items()
             if access_class != "offline"
         ]
-        self.assertEqual(len(live), 19)
+        self.assertEqual(len(live), 25)
 
     def test_every_adapter_declares_the_class_the_measured_ladder_gives_it(self):
         for adapter_id, access_class in sorted(ROSTER.items()):

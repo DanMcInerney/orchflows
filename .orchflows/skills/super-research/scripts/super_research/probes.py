@@ -1,6 +1,6 @@
 """Probe table: the one liveness read each live adapter is smoked on.
 
-Nineteen probes, one per live adapter, and the offline adapter deliberately has
+Twenty-five probes, one per live adapter, and the offline adapter deliberately has
 none — a smoke for ``fake`` would report this suite's health as a platform's.
 Each probe names the step its read is made as, the route it leaves by, and the
 field set that adapter's row in the spec's adapter roster promises. Nothing
@@ -73,7 +73,7 @@ class SmokeProbe:
     window_days: int = 0
 
 
-# Nineteen probes, one per live adapter, each asserting the field set its row
+# Twenty-five probes, one per live adapter, each asserting the field set its row
 # in the spec's adapter roster names. Two rows name a field the artifact
 # contract cannot carry and are noted where they occur; nothing else is
 # omitted, and nothing is asserted that the row does not name.
@@ -495,6 +495,131 @@ SMOKE_PROBES = (
             ),
         ),
         target_recovery="Any listed ticker; symbols:<name> resolves one.",
+    ),
+    SmokeProbe(
+        adapter_id="gdelt",
+        kind="discovery",
+        target="climate",
+        route_id=transport.GDELT_DOC_ROUTE,
+        field_sets=(
+            (
+                "web_hit",
+                (
+                    "title",
+                    "canonical_locator",
+                    "published_at",
+                    ATTRIBUTE_PREFIX + "domain",
+                ),
+            ),
+        ),
+        # A windowed probe on purpose: the whole reason this route is in the
+        # roster is its origin-side time bound.
+        window_days=3,
+    ),
+    SmokeProbe(
+        adapter_id="stack_exchange",
+        kind="discovery",
+        target="python",
+        route_id=transport.STACKEXCHANGE_SEARCH_ROUTE,
+        field_sets=(
+            (
+                "question",
+                (
+                    "native_item_id",
+                    "title",
+                    "author",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "score",
+                    ENGAGEMENT_PREFIX + "answer_count",
+                ),
+            ),
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="wikimedia_pageviews",
+        kind="hydration",
+        target="Python_(programming_language)",
+        route_id=transport.WIKIMEDIA_PAGEVIEWS_ROUTE,
+        field_sets=(
+            (
+                "pageview_count",
+                (
+                    "native_item_id",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "views",
+                ),
+            ),
+        ),
+        target_recovery=(
+            "Any article title en.wikipedia serves, spelled with underscores;"
+            " the public_page article route names the same space."
+        ),
+        # This origin serves nothing but a dated range: the window is two path
+        # segments, so an unwindowed read has no path to leave on.
+        window_days=10,
+    ),
+    SmokeProbe(
+        adapter_id="scholarly",
+        kind="discovery",
+        target="openalex:machine learning",
+        route_id=transport.OPENALEX_WORKS_ROUTE,
+        field_sets=(
+            (
+                "article",
+                (
+                    "native_item_id",
+                    "title",
+                    "author",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "cited_by_count",
+                ),
+            ),
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="tiktok_public",
+        kind="hydration",
+        target="video:nba/7606907506589207838",
+        route_id=transport.TIKTOK_VIDEO_PAGE_ROUTE,
+        field_sets=(
+            (
+                "video",
+                (
+                    "native_item_id",
+                    "body",
+                    "author",
+                    "canonical_locator",
+                    "published_at",
+                    ENGAGEMENT_PREFIX + "diggCount",
+                    ENGAGEMENT_PREFIX + "playCount",
+                    ENGAGEMENT_PREFIX + "commentCount",
+                ),
+            ),
+        ),
+        target_recovery=(
+            "Any public video page: the address spells @handle/video/<id>, and"
+            " the pair rides here as handle/<id>."
+        ),
+    ),
+    SmokeProbe(
+        adapter_id="oembed",
+        kind="hydration",
+        # The x surface rather than youtube's: an item URL under most providers
+        # lives on a host a route already declares, which the route-ownership
+        # law reserves for the modules that own routes — and x.com item
+        # addresses are not the publish.x.com origin the route spells, so this
+        # is the surface whose target carries no owned host literal. The item
+        # is the platform's oldest public post, chosen to outlive any probe.
+        target="x:https://x.com/jack/status/20",
+        route_id=transport.X_PUBLISH_OEMBED_ROUTE,
+        field_sets=(("rich", ("author", "canonical_locator")),),
+        target_recovery=(
+            "Any public item URL under a declared provider prefix; the item"
+            " kind each provider reports is its oEmbed `type`."
+        ),
     ),
 )
 

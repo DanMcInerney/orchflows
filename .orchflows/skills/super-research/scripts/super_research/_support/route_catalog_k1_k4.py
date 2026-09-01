@@ -12,6 +12,7 @@ from .route_contracts import (
     DDG_HTML_ROUTE,
     FAKE_OFFLINE_ROUTE,
     FXTWITTER_API_ROUTE,
+    GDELT_DOC_ROUTE,
     GOOGLE_NEWS_RSS_ROUTE,
     INSTAGRAM_WEB_APP_ID,
     INSTAGRAM_WEB_PROFILE_ROUTE,
@@ -22,6 +23,8 @@ from .route_contracts import (
     REDDIT_SHREDDIT_SEARCH_ROUTE,
     REDDIT_SHREDDIT_SUBREDDIT_SEARCH_ROUTE,
     REDDIT_SITE_ORIGIN,
+    TIKTOK_PROFILE_PAGE_ROUTE,
+    TIKTOK_VIDEO_PAGE_ROUTE,
     X_GUEST_ACTIVATE_ROUTE,
     X_GUEST_GRAPHQL_ROUTE,
     X_GUEST_PUBLIC_BEARER,
@@ -303,6 +306,54 @@ K1_K4_ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         accept=JSON_CONTENT_TYPE,
         operator_identity="instagram",
         credential_id=INSTAGRAM_WEB_APP_ID,
+    ),
+    # GDELT DOC 2.0, a global news index with an origin-side time bound
+    # (`startdatetime`/`enddatetime`, `timespan`), measured 2026-09-01
+    # answering keyless with `mode=artlist&format=json` rows carrying `url`,
+    # `title`, `seendate` and `domain`, and asking one request per five
+    # seconds in a plain-text 429 body. The measurement was over plain HTTP:
+    # port 443 to this origin timed out from this host on every attempt,
+    # curl and this package's own opener alike, while port 80 answered — and
+    # the transport admits https only, so from this host the smoke reports
+    # `unreachable` rather than a platform fact. Declared on the
+    # documentation; the smoke stays the per-host oracle, exactly as the
+    # Bluesky search surface is.
+    GDELT_DOC_ROUTE: RouteConstant(
+        route_id=GDELT_DOC_ROUTE,
+        access_class="K4",
+        method="GET",
+        origin="https://api.gdeltproject.org",
+        path="/api/v2/doc/doc",
+        accept=JSON_CONTENT_TYPE,
+        operator_identity="gdelt",
+    ),
+    # TikTok's public video and profile pages, each embedding the web
+    # client's own rehydration JSON in a `__UNIVERSAL_DATA_FOR_REHYDRATION__`
+    # script tag. Measured 2026-09-01 from this host with no cookie and no
+    # script run: a video page answered 200 with id, `createTime`, the
+    # `statsV2` counts, author and hashtags; a profile page answered 200 with
+    # the profile's own counts and an **empty** `itemList` — the recent-video
+    # list is fetched by a signed client-side call this package does not
+    # perform, so the profile surface carries the profile alone.
+    TIKTOK_VIDEO_PAGE_ROUTE: RouteConstant(
+        route_id=TIKTOK_VIDEO_PAGE_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin="https://www.tiktok.com",
+        path="",
+        accept="text/html",
+        operator_identity="tiktok",
+        path_params=("handle", "resource", "video_id"),
+    ),
+    TIKTOK_PROFILE_PAGE_ROUTE: RouteConstant(
+        route_id=TIKTOK_PROFILE_PAGE_ROUTE,
+        access_class="K2",
+        method="GET",
+        origin="https://www.tiktok.com",
+        path="",
+        accept="text/html",
+        operator_identity="tiktok",
+        path_params=("handle",),
     ),
 }
 

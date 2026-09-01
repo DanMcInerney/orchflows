@@ -56,11 +56,11 @@ class KeylessCapabilityTest(unittest.TestCase):
 
     def test_the_roster_the_law_reads_is_every_surface_the_core_can_reach(self):
         # The law is only as wide as its input, so the input is pinned: the
-        # twenty adapters' thirty-six distinct routes, which is now every route
+        # twenty-six adapters' fifty distinct routes, which is now every route
         # in the table. One of them is the guest-token activation, which
         # used to sit outside the roster on the reasoning that the opener
         # minted for itself — and sat outside every budget with it.
-        self.assertEqual(len(self.roster), 36)
+        self.assertEqual(len(self.roster), 50)
         self.assertEqual(
             sorted({surface.route_id for surface in self.roster}),
             sorted(transport.ROUTE_CONSTANTS),

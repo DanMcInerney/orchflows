@@ -6,17 +6,17 @@ exposes, and the one bounded read each adapter's smoke makes.
 ## CLI surface
 
 `python3 -m super_research.cli`, with this item's `scripts/` on `PYTHONPATH`.
-Three operations, one argument, twenty-one reachable invocations. The parser is built
+Three operations, one argument, twenty-seven reachable invocations. The parser is built
 from the `OPERATIONS` table, so the enumeration a reader checks is the one the
 parser was made from.
 
 | operation | argument | reaches an origin | writes | exit |
 | --- | --- | --- | --- | --- |
 | `adapters` | none | no | nothing | 0 |
-| `smoke` | `--adapter <one of nineteen>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
+| `smoke` | `--adapter <one of twenty-five>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
 | `status` | none | no | nothing | 0 always |
 
-`python3 -m super_research.cli adapters` prints the nineteen live adapters, the
+`python3 -m super_research.cli adapters` prints the twenty-five live adapters, the
 access class each declares, and the field set its smoke asserts; the offline
 `fake` adapter has no smoke and is not on that list. The roster's routes were
 measured from one host on 2026-08-10, two sweeps on 2026-08-12 read them
@@ -29,7 +29,7 @@ that adapter's row: the smoke ledger lives in a tempdir and never travels with a
 checkout.
 
 No operation takes an address, a route, a path, a manifest, or a command;
-`--adapter` is a closed `choices` list of the nineteen live ids. `fake` is refused
+`--adapter` is a closed `choices` list of the twenty-five live ids. `fake` is refused
 with everything else: reading a fixture and printing it as liveness is the one
 result this surface must never produce. The carrier, clock, moment, ledger path
 and output stream are parameters of `main` with the real defaults and are
@@ -146,18 +146,26 @@ name the two places a route's own vocabulary lands.
 | `stocktwits` | `stocktwits_symbol_stream` | discovery `stream:AAPL` | post: native_item_id, body, author, canonical_locator, published_at |
 | `bluesky` | `bluesky_author_feed` | discovery `author:bsky.app` | post: body, author, canonical_locator, published_at, engagement:likeCount, engagement:replyCount, attribute:did, attribute:cid |
 | `x_fxtwitter` | `fxtwitter_api` | discovery `search:spacex` | post: body, author, canonical_locator, published_at, engagement:likes, engagement:reposts, engagement:replies, attribute:lang, attribute:created_at |
+| `gdelt` | `gdelt_doc` | discovery `climate`, windowed three days | web_hit: title, canonical_locator, published_at, attribute:domain |
+| `stack_exchange` | `stackexchange_search_advanced` | discovery `python` | question: native_item_id, title, author, canonical_locator, published_at, engagement:score, engagement:answer_count |
+| `wikimedia_pageviews` | `wikimedia_pageviews_per_article` | hydration `Python_(programming_language)`, windowed ten days | pageview_count: native_item_id, canonical_locator, published_at, engagement:views |
+| `scholarly` | `openalex_works` | discovery `openalex:machine learning` | article: native_item_id, title, author, canonical_locator, published_at, engagement:cited_by_count |
+| `tiktok_public` | `tiktok_video_page` | hydration `video:nba/7606907506589207838` | video: native_item_id, body, author, canonical_locator, published_at, engagement:diggCount, engagement:playCount, engagement:commentCount |
+| `oembed` | `x_publish_oembed` | hydration `x:<post url>` | rich: author, canonical_locator |
 
 Instagram's is the only row describing two content kinds, which is why a field set
 is declared per kind at all: no single record carries both the profile's follower
-count and a post's like count. Ten adapters read more than one surface and a smoke
+count and a post's like count. Thirteen adapters read more than one surface and a smoke
 makes one call, so each probe names the surface it takes — Algolia search for
 `hacker_news`, the repository surface for `github_rest`, the article surface for
 `public_page`, DuckDuckGo for `web_search`, the subreddit listing for
 `reddit_shreddit` (the one surface that names both counts as its own
 attributes), Polymarket for `prediction_markets`, the symbol stream for
 `stocktwits`, the author feed for `bluesky` (its search method answered 403
-from this host), the GraphQL read for `x_guest`, and the InnerTube route for
-`youtube_innertube`.
+from this host), the GraphQL read for `x_guest`, the InnerTube route for
+`youtube_innertube`, OpenAlex for `scholarly`, the video page for
+`tiktok_public`, and the X publish endpoint for `oembed` — the one provider
+whose item addresses live on no host a route declares.
 
 Three probes are worth reading twice. `bluesky`'s names the **author feed**
 rather than the search its primary descriptor declares: the search method

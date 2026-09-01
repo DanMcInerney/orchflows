@@ -32,8 +32,8 @@ class KeylessRosterTest(unittest.TestCase):
             self.by_adapter.setdefault(record.adapter_id, []).append(record)
 
     def test_the_live_adapters_are_what_the_run_is_about(self):
-        self.assertEqual(len(self.LIVE), 19)
-        self.assertEqual(len(runner.ADAPTER_IDS), 20)
+        self.assertEqual(len(self.LIVE), 25)
+        self.assertEqual(len(runner.ADAPTER_IDS), 26)
 
     def test_the_dispatch_read_every_route_the_roster_can_reach(self):
         # One step, one read and one distinct route per readable surface: the

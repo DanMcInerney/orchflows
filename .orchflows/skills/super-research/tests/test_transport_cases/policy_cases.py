@@ -390,15 +390,21 @@ class RefusalThreatTest(unittest.TestCase):
             if surface.representation_kind == "index"
         )
 
-        # One adapter, four index surfaces since 2026-08-17: DuckDuckGo answers
+        # Two adapters, five index surfaces since 2026-09-01: DuckDuckGo answers
         # 202 to every identity, so Bing's two RSS forms and Google News's join
-        # it as parallel planned routes rather than as fallbacks. They are one
-        # adapter because an index hit is one kind of record whoever indexed it.
-        self.assertEqual(sorted(set(indexes)), ["web_search"])
-        self.assertEqual(len(indexes), 4)
-        for surface in runner.surface_descriptors("web_search"):
-            with self.subTest(route=surface.route_id):
-                self.assertEqual(surface.access_class, "K4")
+        # it as parallel planned routes rather than as fallbacks — one adapter,
+        # because an index hit is one kind of record whoever indexed it — and
+        # GDELT joins beside them as its own adapter rather than a fifth route,
+        # because its origin takes a window bound and a budget of its own where
+        # the four web indexes take neither. The threat stays the same either
+        # way: an index surface that stopped declaring itself would let a hit
+        # masquerade as the thing it points at.
+        self.assertEqual(sorted(set(indexes)), ["gdelt", "web_search"])
+        self.assertEqual(len(indexes), 5)
+        for adapter_id in ("gdelt", "web_search"):
+            for surface in runner.surface_descriptors(adapter_id):
+                with self.subTest(route=surface.route_id):
+                    self.assertEqual(surface.access_class, "K4")
 
     def test_t13_every_row_a_k4_read_produces_is_marked_an_index(self):
         _, artifact, _, _ = injected_run()

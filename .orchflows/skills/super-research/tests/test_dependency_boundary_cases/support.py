@@ -129,7 +129,8 @@ CORE_IMPORT_EDGES = {
 # what is spelled out beneath it, and nothing would read it.
 # `concurrent` and `threading` joined on 2026-08-17 with the fused
 # lanes; `test_pipeline.CONCURRENCY_OWNERS` names the modules that may import
-# them.
+# them. `gzip` and `io` joined on 2026-09-01 with the transport's stated-
+# encoding decode: Stack Exchange compresses every answer unasked.
 STANDARD_LIBRARY_IMPORTS = (
     "__future__",
     "argparse",
@@ -138,8 +139,10 @@ STANDARD_LIBRARY_IMPORTS = (
     "dataclasses",
     "datetime",
     "email",
+    "gzip",
     "hashlib",
     "html",
+    "io",
     "json",
     "pathlib",
     "tempfile",

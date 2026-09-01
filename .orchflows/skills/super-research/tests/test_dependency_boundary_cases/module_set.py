@@ -29,7 +29,7 @@ class ModuleSetTest(unittest.TestCase):
         on_disk = {path.stem for path in ADAPTER_DIR.glob("*.py")} - {"__init__"}
 
         self.assertEqual(sorted(on_disk), sorted(runner.ADAPTER_IDS))
-        self.assertEqual(len(runner.ADAPTER_IDS), 20)
+        self.assertEqual(len(runner.ADAPTER_IDS), 26)
 
 
 class PrivateSupportOwnershipTest(unittest.TestCase):

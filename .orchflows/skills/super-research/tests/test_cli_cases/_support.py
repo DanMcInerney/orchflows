@@ -88,6 +88,16 @@ PROBE_PAYLOADS = {
     "stocktwits_symbol_stream": ("stocktwits/stream.json", "application/json; charset=utf-8"),
     "bluesky_author_feed": ("bluesky/author_feed.json", "application/json; charset=utf-8"),
     "fxtwitter_api": ("x_fxtwitter/search.json", "application/json"),
+    "gdelt_doc": ("gdelt/doc_artlist.json", "application/json; charset=utf-8"),
+    "stackexchange_search_advanced": (
+        "stack_exchange/search_advanced.json", "application/json; charset=utf-8",
+    ),
+    "wikimedia_pageviews_per_article": (
+        "wikimedia_pageviews/per_article_daily.json", "application/json; charset=utf-8",
+    ),
+    "openalex_works": ("scholarly/openalex_works.json", "application/json; charset=utf-8"),
+    "tiktok_video_page": ("tiktok_public/video_page.html", "text/html; charset=utf-8"),
+    "x_publish_oembed": ("oembed/x_status.json", "application/json"),
 }
 
 # The one route whose adapter reads the answering address. It answers from

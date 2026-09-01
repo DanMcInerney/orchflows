@@ -112,7 +112,7 @@ class WrongImplementationsAreRejectedTest(unittest.TestCase):
 
 
 class SmokeSubcommandTest(LedgerHoldingCase):
-    """What one `smoke --adapter <id>` does, offline, for each of the nineteen."""
+    """What one `smoke --adapter <id>` does, offline, for each of the twenty-five."""
 
     def test_a_satisfied_smoke_reports_verified_and_records_its_stamp(self):
         code, printed, opener = run_cli(self, ["smoke", "--adapter", ADAPTER])
