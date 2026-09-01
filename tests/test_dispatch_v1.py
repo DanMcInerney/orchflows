@@ -25,8 +25,18 @@ from scripts.tickets_format import (
 class DispatchV1Test(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
+        # ORCHFLOWS_WORKTREES_HOME rides beside the sink: unset, a derived
+        # candidate would hang off the parent of a bare tempdir -- the
+        # machine-shared system temp root -- instead of staying inside
+        # this fixture's own tree.
         self.environment = mock.patch.dict(
-            os.environ, {"ORCHFLOWS_STATE_HOME": self.temporary.name}
+            os.environ,
+            {
+                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                "ORCHFLOWS_WORKTREES_HOME": str(
+                    Path(self.temporary.name) / "worktrees"
+                ),
+            },
         )
         self.environment.start()
         self.dispatch(

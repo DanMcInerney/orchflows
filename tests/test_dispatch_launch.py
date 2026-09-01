@@ -163,10 +163,20 @@ class DispatchLaunchTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         # the host is pinned as well as the sink: the default this suite
-        # asserts is the absent-environment default, not this machine's
+        # asserts is the absent-environment default, not this machine's.
+        # ORCHFLOWS_WORKTREES_HOME rides beside the sink for a third
+        # reason: unset, a derived candidate would hang off the parent of
+        # a bare tempdir -- the machine-shared system temp root -- instead
+        # of staying inside this fixture's own tree.
         self.environment = mock.patch.dict(
             os.environ,
-            {"ORCHFLOWS_STATE_HOME": self.temporary.name, launch.HOST_ENV_VAR: ""},
+            {
+                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                "ORCHFLOWS_WORKTREES_HOME": str(
+                    Path(self.temporary.name) / "worktrees"
+                ),
+                launch.HOST_ENV_VAR: "",
+            },
         )
         self.environment.start()
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
@@ -428,8 +438,18 @@ class LandTest(unittest.TestCase):
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
+        # ORCHFLOWS_WORKTREES_HOME rides beside the sink: unset, a derived
+        # candidate would hang off the parent of a bare tempdir -- the
+        # machine-shared system temp root -- instead of staying inside
+        # this fixture's own tree.
         self.environment = mock.patch.dict(
-            os.environ, {"ORCHFLOWS_STATE_HOME": self.temporary.name}
+            os.environ,
+            {
+                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                "ORCHFLOWS_WORKTREES_HOME": str(
+                    Path(self.temporary.name) / "worktrees"
+                ),
+            },
         )
         self.environment.start()
         self.run_command(
