@@ -213,6 +213,11 @@ def make_repo(tmp: Path):
     main = tmp / "main"
     main.mkdir()
     git(main, "init", "--quiet")
+    # Repo-local identity: in-process merges (workspace_return.integrate)
+    # run git with the ambient environment, which on a CI runner carries
+    # no committer identity; worktrees inherit this config.
+    git(main, "config", "user.name", "t")
+    git(main, "config", "user.email", "t@example.invalid")
     (main / ".gitignore").write_text(".orch/\n", encoding="utf-8")
     (main / "README.md").write_text("baseline\n", encoding="utf-8")
     git(main, "add", ".gitignore", "README.md")
