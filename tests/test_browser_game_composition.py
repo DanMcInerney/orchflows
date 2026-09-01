@@ -57,7 +57,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
         for disposition in DISPOSITIONS:
             self.assertIn(f"`{disposition}`", text)
 
-    def test_the_workflow_is_discoverable_and_calls_a_frame_and_bricks(self):
+    def test_the_workflow_is_discoverable_and_calls_a_frame_and_callables(self):
         discovered = {
             path.name: (path, frontmatter, body)
             for path, frontmatter, body in discover_workflow_skills(ROOT)

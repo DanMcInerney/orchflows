@@ -11,6 +11,9 @@
 .claude/skills/no/
 .codex/
 
+# Executor scratch: the reserved notes directory the join never grades.
+.orch-notes/
+
 # Python bytecode, environments, test output, and tool caches.
 __pycache__/
 *.py[cod]

@@ -197,7 +197,7 @@ class CallableSinkWorktreeIsolationTest(CallableSinkTest):
 class CallableIdGrammarTest(CallableSinkTest):
     """Ids are minted, and the mint is what the run lock arbitrates."""
 
-    def test_a_parentless_brick_roots_its_own_tree_and_seals_itself(self):
+    def test_a_parentless_callable_roots_its_own_tree_and_seals_itself(self):
         answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
 
         self.assertEqual("B1", answer["do"]["id"])
@@ -346,7 +346,7 @@ class CallableAdmissionTest(CallableSinkTest):
 class CallablePromptTest(CallableSinkTest):
     """The three lines the launch gained, and the adapter that types them."""
 
-    def test_a_git_brick_is_told_to_commit_and_to_print_a_git_line(self):
+    def test_a_git_callable_is_told_to_commit_and_to_print_a_git_line(self):
         answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
 
         prompt = self.prompt(answer)
@@ -354,7 +354,7 @@ class CallablePromptTest(CallableSinkTest):
         self.assertIn("artifact: git:<full-commit-id>", prompt)
         self.assertNotIn("findings: <path>", prompt)
 
-    def test_a_document_brick_is_told_to_print_a_doc_line(self):
+    def test_a_document_callable_is_told_to_print_a_doc_line(self):
         answer = self.callable("do", "--pack", DOC_PACK)
 
         prompt = self.prompt(answer)
@@ -516,7 +516,7 @@ class CallableLandingTest(CallableSinkTest):
         self.assertIn(artifact_form, prompt)
         self.assertEqual(findings, "findings: <path>" in prompt)
 
-    def test_a_git_brick_runs_its_done_predicate_at_the_landing(self):
+    def test_a_git_callable_runs_its_done_predicate_at_the_landing(self):
         import sys
 
         done = json.dumps(
@@ -538,7 +538,7 @@ class CallableLandingTest(CallableSinkTest):
             self.ticket_text("B1")
         )["Report"])
 
-    def test_a_document_brick_lands_on_the_drivers_grade(self):
+    def test_a_document_callable_lands_on_the_drivers_grade(self):
         answer = self.callable("do", "--pack", DOC_PACK)
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", False,
@@ -551,7 +551,7 @@ class CallableLandingTest(CallableSinkTest):
         self.assertNotIn("error", landed, landed)
         self.assertEqual("complete", landed["land"]["status"])
 
-    def test_a_judge_under_a_landed_brick_carries_both_machine_lines(self):
+    def test_a_judge_under_a_landed_callable_carries_both_machine_lines(self):
         self.callable("do", "--pack", DOC_PACK)
 
         answer = self.callable(
