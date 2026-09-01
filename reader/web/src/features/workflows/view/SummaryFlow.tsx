@@ -14,20 +14,32 @@ export interface SummaryFlowProps {
   summary: WorkflowSummary;
   /** Optional exact state per node id; absent ids stay unstated rather than guessed. */
   nodeStates?: Record<string, string>;
+  /**
+   * Optional per-node drill-down destination. When given, that node's chip becomes a
+   * real, keyboard-focusable link (and the decorative wrapper stops being aria-hidden,
+   * since it would otherwise hide a focusable control) instead of a purely decorative
+   * span; a node without a returned href stays a plain span.
+   */
+  nodeHref?: (nodeId: string) => string | undefined;
 }
 
-export function SummaryFlow({ workflowId, summary, nodeStates }: SummaryFlowProps) {
+export function SummaryFlow({ workflowId, summary, nodeStates, nodeHref }: SummaryFlowProps) {
   const labels = new Map(summary.nodes.map((node) => [node.id, node.label]));
+  const interactive = Boolean(nodeHref);
   return (
     <figure className="workflow-summary" aria-label={`Summary flow for ${workflowId}`}>
-      <div className="workflow-summary__visual" aria-hidden="true">
+      <div className="workflow-summary__visual" aria-hidden={interactive ? undefined : "true"}>
         <div className="workflow-summary__nodes" style={{ flexWrap: "wrap" }}>
-          {summary.nodes.map((node, index) => (
-            <span className="workflow-summary__node" data-state={nodeStates?.[node.id]} key={node.id}>
-              {index > 0 && <i>→</i>}
-              <b>{node.label}</b>
-            </span>
-          ))}
+          {summary.nodes.map((node, index) => {
+            const href = nodeHref?.(node.id);
+            const chip = <>{index > 0 && <i>→</i>}<b>{node.label}</b></>;
+            return href ? (
+              <a className="workflow-summary__node" data-state={nodeStates?.[node.id]} key={node.id}
+                href={href} aria-label={`Open ${node.label} in the run map`}>{chip}</a>
+            ) : (
+              <span className="workflow-summary__node" data-state={nodeStates?.[node.id]} key={node.id}>{chip}</span>
+            );
+          })}
         </div>
         {summary.edges.some((edge) => edge.kind !== "sequence") && (
           <div className="workflow-summary__turns">

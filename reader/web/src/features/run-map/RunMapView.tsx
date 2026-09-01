@@ -347,6 +347,11 @@ export function RunMapView({ route, state }: RunMapViewProps) {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [causal, setCausal] = useState<CausalFocus | null>(null);
   const [compact, setCompact] = useState(compactWorkspace);
+  const [groupScopeApplied, setGroupScopeApplied] = useState(false);
+  const groupIds = useMemo(
+    () => (route.group ? route.group.split(",").map((id) => id.trim()).filter(Boolean) : null),
+    [route.group]
+  );
 
   const projectedIncoming = useMemo(
     () => route.fixture ? runForIdentity(incoming, identity, route.run) : incoming,
@@ -382,6 +387,21 @@ export function RunMapView({ route, state }: RunMapViewProps) {
     setSelectedTicket(waiting.id);
     setCausal(authoritativeCausalFocus(waiting.id, run.tickets));
   }, [identity, run, selectedTicket]);
+
+  /** A Now-page group link expands straight to the full graph, focused on exactly its ticket ids; applied once so later node clicks are free to replace or clear it. */
+  useEffect(() => {
+    if (!groupIds || !run || groupScopeApplied) return;
+    setGroupScopeApplied(true);
+    setExpanded(true);
+    setLevel(2);
+    setCausal({
+      ticketIds: groupIds,
+      edgeIds: [],
+      kind: "none",
+      summary: `Scoped from Now: ${groupIds.length === 1 ? groupIds[0] : `${groupIds.length} linked tickets`}.`,
+      evidence: "Opened from the Now page's summary chip for this ticket group; the rest of the canonical graph stays visible, dimmed.",
+    });
+  }, [groupIds, run, groupScopeApplied]);
 
   function openTicket(id: string) {
     if (!run) return;

@@ -88,7 +88,10 @@
 .workflow-summary { min-width: 0; margin: 0; }
 .workflow-summary__visual { display: grid; gap: var(--space-3); }
 .workflow-summary__nodes { display: flex; flex-wrap: wrap; align-items: center; min-width: 0; }
-.workflow-summary__node { min-width: 0; display: flex; align-items: center; flex: 1 1 0; color: var(--text-strong); }
+.workflow-summary__node { min-width: 0; display: flex; align-items: center; flex: 1 1 0; color: var(--text-strong); text-decoration: none; }
+.workflow-summary__node[href] { cursor: pointer; }
+.workflow-summary__node[href]:hover b { border-color: var(--accent); color: var(--accent); }
+.workflow-summary__node[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-control); }
 .workflow-summary__node i { width: 24px; flex: 0 0 24px; color: var(--accent); font-style: normal; text-align: center; }
 .workflow-summary__node b { min-width: 0; width: 100%; padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-control); background: var(--surface-raised); font-size: var(--type-xs); font-weight: 700; text-align: center; }
 .workflow-summary__turns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
