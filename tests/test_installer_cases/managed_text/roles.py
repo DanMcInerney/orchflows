@@ -80,10 +80,19 @@ class TestRoleAgentInstructions(unittest.TestCase):
             "launch-stated ordered sequence",
             "dispatch id, seal, and assigned name",
             "first record is your acceptance",
-            "directly",
-            "never redispatch",
+            "never hand your ticket or role to another agent",
         ):
             self.assertIn(anchor, install.ROLE_INSTRUCTIONS)
+
+    def test_role_instructions_name_the_mechanism_not_the_old_word(self):
+        """U13(b), 2026-09-01: "never redispatch" named no mechanism -- three
+        children in run 20260901T155911Z fanned out background agents
+        without ever handing off their own ticket. Reworded at the same
+        word count (44); `directly` is dropped as redundant with the new,
+        explicit clause rather than kept as a second anchor for it."""
+
+        self.assertNotIn("never redispatch", install.ROLE_INSTRUCTIONS)
+        self.assertEqual(44, validate.body_words(install.ROLE_INSTRUCTIONS))
 
     def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
         profile = install.load_role_profiles()["orch-worker"]

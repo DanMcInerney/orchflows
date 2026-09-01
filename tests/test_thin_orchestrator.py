@@ -199,8 +199,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "exact primary skill",
             "each exact member",
             "launch-stated ordered sequence",
-            "directly",
-            "never redispatch",
+            "never hand your ticket or role to another agent",
         ):
             self.assertIn(anchor, role_agent)
 
@@ -274,8 +273,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "exact primary skill",
             "each exact member",
             "launch-stated ordered sequence",
-            "directly",
-            "never redispatch",
+            "never hand your ticket or role to another agent",
             "mismatched",
         ):
             self.assertIn(anchor, role_agent)

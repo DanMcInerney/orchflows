@@ -319,6 +319,37 @@ def _craft_lines(assignment: dict) -> list:
     return lines
 
 
+def _friction_lines() -> list:
+    """The host block's always-on friction law, restated for a forked child.
+
+    U13(c), 2026-09-01: a forked child's context carries this
+    repository's AGENTS.md (a project-scope CLAUDE.md import Claude
+    Code does expand), which names the friction command, but not
+    `templates/host-block.md`'s "Friction law (always on)" paragraph
+    that states when to use it -- the user-scope CLAUDE.md import that
+    carries the installed host block is not expanded into a fork's
+    context (confirmed directly: a forked child's own transcript shows
+    the unexpanded `@`-line where that host block's text should be,
+    beside the sibling project import that did expand). Evidence run
+    20260901T155911Z's five dispatched children hit at least four
+    log-worthy walls -- two causal-order refusals, a no-commit
+    deviation, an agent-name collision -- and logged none, while the
+    root coordinator, whose interactive session does receive the
+    expansion, logged all six of the run's entries (friction entry
+    2026-09-01T17:53:59Z). This is the one line that earns its budget
+    line by naming the law those four walls never reached.
+    """
+
+    script = Path(__file__).with_name("friction.py").resolve()
+    return [
+        "After two attempts, missing input/tool/document, surprising "
+        "output, skill/rule/contract gap, or workaround: log friction, "
+        "then continue:",
+        _command(sys.executable, script, "<what happened>",
+                 "<what was expected or missing>"),
+    ]
+
+
 ARTIFACT_LINE_FORMS = {
     "git": "artifact: git:<full-commit-id>",
     "doc": "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>",
@@ -407,6 +438,7 @@ def launch_prompt(assignment: dict) -> str:
         *_craft_lines(assignment),
         "Run every check to completion in the turn it starts; never background "
         "a gate or a test run, and never report a check you did not watch finish.",
+        *_friction_lines(),
         f"Your assigned name is `{assignment['assigned_name']}`; use exactly it "
         "wherever a command takes --by.",
         f"Your lease expires at {assignment['lease_expires_at']}; it is absolute "
