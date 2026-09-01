@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
+from ... import schema
 from .. import NativeRecord
 
 # Where a message and a symbol page live. It is Stocktwits' own site and not
@@ -44,6 +45,7 @@ MESSAGE_ROW_KEYS = (ID_KEY, BODY_KEY, CREATED_AT_KEY, USERNAME_KEY)
 SYMBOL_ROW_KEYS = (SYMBOL_KEY, TITLE_KEY)
 
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 FIELD_OMITTED = "field_omitted"
 
 
@@ -92,7 +94,7 @@ def route_instant_to_utc_iso(created_at: Any) -> str:
         moment = datetime.strptime(created_at.strip(), ROUTE_INSTANT_FORMAT)
     except ValueError:
         return ""
-    return moment.replace(tzinfo=timezone.utc).strftime(ROUTE_INSTANT_FORMAT)
+    return moment.replace(tzinfo=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
 
 
 def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:

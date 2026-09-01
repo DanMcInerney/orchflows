@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
+from ... import schema
 from .. import NativeRecord
 
 
@@ -45,6 +46,7 @@ ISSUE_ROW_KEYS = (ID_KEY, TITLE_KEY, USER_KEY, CREATED_AT_KEY, HTML_URL_KEY)
 RELEASE_ROW_KEYS = (ID_KEY, TAG_NAME_KEY, AUTHOR_KEY, PUBLISHED_AT_KEY, HTML_URL_KEY)
 
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 def _text(value: Any) -> str:
@@ -90,7 +92,7 @@ def route_instant_to_utc_iso(stamped: Any) -> str:
         moment = datetime.strptime(stamped.strip(), ROUTE_INSTANT_FORMAT)
     except ValueError:
         return ""
-    return moment.replace(tzinfo=timezone.utc).strftime(ROUTE_INSTANT_FORMAT)
+    return moment.replace(tzinfo=timezone.utc).strftime(RECORD_INSTANT_FORMAT)
 
 
 def _missing(row: Mapping[str, Any], keys: Sequence[str]) -> Tuple[str, ...]:

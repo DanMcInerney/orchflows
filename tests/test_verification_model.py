@@ -62,17 +62,19 @@ class GoalEvidenceContractTest(unittest.TestCase):
 class CritiqueContractTest(unittest.TestCase):
     def test_check_owns_blockers_and_verification(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
+        normalized_check = " ".join(check.split())
         self.assertIn("A critique enumerates evidence-backed findings", check)
         self.assertIn("one thread per shared cause", check)
         self.assertIn("extinguishes the class", check)
-        self.assertIn("Write the findings to one\nJSON file", check)
+        self.assertIn("Write the findings to one JSON file", normalized_check)
         self.assertIn("print `findings: <path>` in the report", check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
+        normalized_check = " ".join(check.split())
         self.assertIn("Never: edit the artifact", check)
         self.assertIn("mix a review stage with another kind", check)
-        self.assertIn("`## Lens` owns\nthe review criteria", check)
+        self.assertIn("`## Lens` owns the review criteria", normalized_check)
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):
         surfaces = (
