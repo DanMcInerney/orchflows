@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Callable, NamedTuple
 
+from scripts import orchflows_home
+
 from .application import _load_json, _prune_empty_dirs, _sha256_file
 from .foundation import (
     AUTO_REMOVE_KINDS,
@@ -178,7 +180,7 @@ def _auto_remove_path_is_safe(
 
 def run_uninstall(scope: str, project_root: Path | None, dry_run: bool) -> dict:
     scope_home = _scope_home(scope, project_root)
-    receipt_path = scope_home / "receipt.json"
+    receipt_path = scope_home / orchflows_home.RECEIPT_FILENAME
     receipt = _load_json(receipt_path)
     if receipt is None:
         return {

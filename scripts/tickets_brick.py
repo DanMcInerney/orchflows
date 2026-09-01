@@ -225,7 +225,7 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
     if refusal is not None:
         return None, refusal
     fields = {
-        "run": run, "status": "pending",
+        "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
         "pack": pack, "pack_digest": pinned,
         "independence": BRICK_INDEPENDENCE,

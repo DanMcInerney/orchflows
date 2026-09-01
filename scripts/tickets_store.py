@@ -10,6 +10,7 @@ try:
 except ImportError:
     import state_root
 if __package__:
+    from .orchflows_home import RECEIPT_FILENAME
     from .tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, dequote
     from .tickets_store_writes import (
         REPLACE_BUDGET_SECONDS, REPLACE_RETRY_SECONDS, RUN_IDENTITY_NAME,
@@ -18,6 +19,7 @@ if __package__:
         _waiting_out_windows, _write_identity, _write_text_atomically,
     )
 else:
+    from orchflows_home import RECEIPT_FILENAME
     from tickets_format import SCRIPT_EXECUTOR_PREFIX, _parse_frontmatter, _read_utf8, dequote
     from tickets_store_writes import (
         REPLACE_BUDGET_SECONDS, REPLACE_RETRY_SECONDS, RUN_IDENTITY_NAME,
@@ -253,7 +255,7 @@ def _installed_orchflows_metadata() -> dict:
     """
     missing = {'receipt_version': None, 'source_commit': None}
     try:
-        receipt_path = state_root.state_root().parent / 'receipt.json'
+        receipt_path = state_root.state_root().parent / RECEIPT_FILENAME
         receipt = json.loads(receipt_path.read_text(encoding='utf-8-sig'))
     except (OSError, UnicodeDecodeError, ValueError):
         return missing

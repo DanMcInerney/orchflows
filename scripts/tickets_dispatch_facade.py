@@ -18,7 +18,7 @@ if __package__:
     )
     from .tickets_commands import DISPATCH_USAGE
     from .tickets_dispatch_launch import launch_spec, precheck, selected_host
-    from .tickets_dispatch_schema import stored_state
+    from .tickets_dispatch_schema import LIFECYCLE_RECORD_PREFIX, stored_state
     from .tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         parse_canonical_json,
@@ -26,6 +26,8 @@ if __package__:
     from .tickets_generations import seal_findings
     from .tickets_lifecycle import _cmd_ready
     from .tickets_store import _run_lock, _segment_error, _tickets_root
+    from .tickets_transitions import CLAIMED, SUSPENDED
+    from .workspace_record import PATH_KEY
 else:
     from tickets_assignment import dispatch_assignment, workspace_establishment_finding
     from tickets_attempts import (
@@ -34,7 +36,7 @@ else:
     )
     from tickets_commands import DISPATCH_USAGE
     from tickets_dispatch_launch import launch_spec, precheck, selected_host
-    from tickets_dispatch_schema import stored_state
+    from tickets_dispatch_schema import LIFECYCLE_RECORD_PREFIX, stored_state
     from tickets_format import (
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
         parse_canonical_json,
@@ -42,6 +44,8 @@ else:
     from tickets_generations import seal_findings
     from tickets_lifecycle import _cmd_ready
     from tickets_store import _run_lock, _segment_error, _tickets_root
+    from tickets_transitions import CLAIMED, SUSPENDED
+    from workspace_record import PATH_KEY
 
 
 def _workspace(source: Path, verb: str, arguments: list):
@@ -120,7 +124,7 @@ def _workspace_establish(run: str, ticket_id: str, workspace: str | None):
         return failure
     established = response.get("establish")
     if not isinstance(established, dict) or not str(
-        established.get("workspace_path") or ""
+        established.get(PATH_KEY) or ""
     ).strip():
         return {"error": "workspace establish did not record workspace_path"}
     return response
@@ -218,7 +222,7 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
         # from that instead has named another item's workspace
         candidate = established.get("establish")
         workspace_path = (
-            candidate.get("workspace_path") if isinstance(candidate, dict) else None
+            candidate.get(PATH_KEY) if isinstance(candidate, dict) else None
         )
         if not str(workspace_path or "").strip():
             launched = {"error": "workspace establish did not record workspace_path"}
@@ -233,7 +237,7 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
         retirement = _cmd_dispatch_retire([
             run, ticket_id, "--assignment-seal", dispatch["assignment_seal"],
             "--dispatch-id", dispatch_id,
-            "--record-id", f"lifecycle:dispatch-facade-{dispatch_id}",
+            "--record-id", f"{LIFECYCLE_RECORD_PREFIX}dispatch-facade-{dispatch_id}",
         ], _lock_held=True)
         if not isinstance(retirement, dict) or "error" in retirement:
             return {
@@ -255,7 +259,7 @@ def _attempt(data: dict, dispatch_id: str, *, stored_only: bool = False):
         return None, failure
     if state is None:
         status = str(data.get("status") or "")
-        if status in ("claimed", "suspended"):
+        if status in (CLAIMED, SUSPENDED):
             return None, _classification(
                 "legacy-live-claim", "pre-v1 live claim has no dispatch record",
             )

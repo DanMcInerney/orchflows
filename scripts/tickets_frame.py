@@ -102,7 +102,7 @@ def _frame_fields(run: str, parent, done, bound: str) -> dict:
     """The frontmatter one frame carries: the marker, and no craft binding."""
 
     return {
-        "run": run, "status": "pending", "admission": ADMISSION_PENDING,
+        "run": run, "status": ADMISSION_PENDING, "admission": ADMISSION_PENDING,
         "frame": FRAME_MARKER,
         "independence": BRICK_INDEPENDENCE,
         "parent": parent or None,

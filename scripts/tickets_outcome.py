@@ -24,6 +24,7 @@ if __package__:
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
     from .tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
     from .tickets_shapes import DISPATCH_OUTCOME_REQUIRED
+    from .tickets_transitions import CLAIMED, SUSPENDED
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
@@ -38,6 +39,7 @@ else:
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
     from tickets_store import NO_SINK_ERROR, _segment_error, _tickets_root
     from tickets_shapes import DISPATCH_OUTCOME_REQUIRED
+    from tickets_transitions import CLAIMED, SUSPENDED
 
 
 DISPATCH_OUTCOME_USAGE = (
@@ -72,7 +74,7 @@ def _outcome_attempt(run: str, ticket_id: str):
         return None, failure
     if state is None:
         status = str(data.get("status") or "")
-        if status in {"claimed", "suspended"}:
+        if status in {CLAIMED, SUSPENDED}:
             return None, {
                 "error": "pre-v1 live claim has no dispatch record; its existing owner must complete or abandon it",
                 "code": "legacy-live-claim", "protocol": PROTOCOL,

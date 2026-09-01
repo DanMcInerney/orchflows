@@ -31,6 +31,7 @@ if __package__:
     from .tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
     )
+    from .workspace_git import BASELINE_KEY, BRANCH_KEY
 else:
     from tickets_adapters import (
         AdapterError, adapter_spec, craft_path, derived_isolation,
@@ -45,6 +46,7 @@ else:
     from tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
     )
+    from workspace_git import BASELINE_KEY, BRANCH_KEY
 
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
 # The craft owns its verification scope; this finds the sentence rather than
@@ -97,7 +99,7 @@ def workspace_establishment_finding(data: dict, workspace):
         )
     if adapter.workspace_strategy == "git" and any(
         not str(data.get(key) or "").strip()
-        for key in ("workspace_branch", "workspace_baseline")
+        for key in (BRANCH_KEY, BASELINE_KEY)
     ):
         return (
             "workspace-unestablished",
