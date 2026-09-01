@@ -117,7 +117,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertIsNone(failure, failure)
         committed = facade._launched_under_run_lock(
             "run", "T", host, dispatch_id=dispatch_id,
-            workspace=str(self.candidate), artifact=None, review_kind=None,
+            workspace=str(self.candidate), artifact=None,
         )
         self.assertNotIn("error", committed, committed)
         return committed["launch"]

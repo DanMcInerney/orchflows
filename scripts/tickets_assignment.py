@@ -226,13 +226,8 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
     args = list(rest)
     dispatched_name = _extract_flag(args, "--by")
     workspace = _extract_flag(args, "--workspace")
-    requested_review_kind = _extract_flag(args, "--review-kind")
     if len(args) != 2:
         return {"error": "assignment reading takes one <run> and one <id>"}
-    if requested_review_kind is not None:
-        requested_review_kind = dequote(requested_review_kind)
-        if requested_review_kind not in REVIEW_KINDS:
-            return {"error": f"--review-kind takes one of {list(REVIEW_KINDS)}, not '{requested_review_kind}'"}
     run, ticket_id = args
     root = _tickets_root()
     if root is None:
@@ -273,9 +268,7 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
     declared_review_kind = dequote(loaded.get("review_kind"))
     if declared_review_kind and declared_review_kind not in REVIEW_KINDS:
         return {"error": f"ticket {run}/{ticket_id} has an invalid review_kind '{declared_review_kind}'"}
-    if requested_review_kind is not None and declared_review_kind and requested_review_kind != declared_review_kind:
-        return {"error": f"ticket {run}/{ticket_id} review_kind differs from the sealed assignment"}
-    review_kind = requested_review_kind or declared_review_kind or None
+    review_kind = declared_review_kind or None
     if review_kind == "critique" and str(loaded.get(CHECKED_BY_KEY) or "").strip():
         return {"error": f"ticket {run}/{ticket_id} already has its one checker"}
     assigned_name = str(dispatched_name or lease_of(loaded)[0] or "").strip() or None
