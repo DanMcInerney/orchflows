@@ -35,7 +35,10 @@ places this evidence law in the ticket lifecycle.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
-    candidate's own changes through `scripts/workspace.py check`.
+    candidate's own changes through `scripts/workspace.py check`. That same
+    coverage bounds which checks a unit answers for — only the ones its own
+    change reaches; confirming everything else in the repository happens
+    once, at `land`, never inside a unit's own work.
 9. `review_v1`, the immutable `orchflows.review.v1` `GatePlan` →
    `CritiqueAdjudication` → `RepairOutcome` chain it carried, and the
    derived `<id>.check` stage that wrote it are retired: no live door ever
