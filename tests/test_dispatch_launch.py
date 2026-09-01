@@ -160,18 +160,28 @@ class LaunchResolutionTest(unittest.TestCase):
 
 
 class ReturnLineConditionalTest(unittest.TestCase):
-    """U2a: the commit clause is conditional on the adapter's git candidate.
+    """U2a: the commit clause answers two questions, not one (finding F4).
 
-    An adapter that establishes one (git, git-plus-render) still gets told
-    to commit; one that establishes none (evidence-store, document-tree)
-    gets its own craft's `## Workspace` sentence instead -- never both, never
-    neither.
+    `commits_in_place` decides whether the clause renders at all -- true for
+    every adapter whose identity is a commit or a document revision one
+    records (git, git-plus-render, document-tree), false only for
+    evidence-store, which alone gets its own craft's `## Workspace` sentence
+    instead. `git_candidate` decides whether the clause's branch-merge
+    sentence renders -- true only where the adapter establishes isolation
+    over git (git, git-plus-render); a document-tree child commits, onto
+    the coordinator's own branch, so it keeps the clause without that
+    sentence. Never both facts contradicted, never the clause and the
+    workspace line together.
     """
 
-    def assignment(self, *, pack: str, artifact_kind, git_candidate: bool, workspace_line):
+    def assignment(
+        self, *, pack: str, artifact_kind, commits_in_place: bool,
+        git_candidate: bool, workspace_line,
+    ):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
-            "artifact_kind": artifact_kind, "craft": None, "craft_scope": None,
+            "artifact_kind": artifact_kind, "commits_in_place": commits_in_place,
+            "craft": None, "craft_scope": None,
             "dependencies": [], "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "git_candidate": git_candidate, "id": "T",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": pack,
@@ -180,35 +190,68 @@ class ReturnLineConditionalTest(unittest.TestCase):
         }
 
     def test_a_research_pack_do_launch_carries_no_commit_clause(self):
-        from scripts.tickets_assignment import _workspace_line, git_candidate
+        from scripts.tickets_assignment import _workspace_line, commits_in_place
 
         craft = ROOT / "packs" / "orch-research-pack" / "references" / "craft.md"
         research_line = _workspace_line(craft)
         self.assertIsNotNone(research_line)
-        self.assertFalse(git_candidate("orch-research-pack"))
+        self.assertFalse(commits_in_place("orch-research-pack"))
 
         prompt = launch.launch_prompt(self.assignment(
             pack="orch-research-pack", artifact_kind="evidence",
-            git_candidate=False, workspace_line=research_line,
+            commits_in_place=False, git_candidate=False, workspace_line=research_line,
         ))
 
         self.assertNotIn("Commit your work inside this candidate", prompt)
         self.assertIn(research_line, prompt)
 
     def test_a_code_pack_do_launch_still_commits(self):
-        from scripts.tickets_assignment import git_candidate
+        from scripts.tickets_assignment import commits_in_place, git_candidate
 
+        self.assertTrue(commits_in_place("orch-code-pack"))
         self.assertTrue(git_candidate("orch-code-pack"))
 
         prompt = launch.launch_prompt(self.assignment(
             pack="orch-code-pack", artifact_kind="git",
-            git_candidate=True, workspace_line=None,
+            commits_in_place=True, git_candidate=True, workspace_line=None,
         ))
 
         self.assertIn(
             "Commit your work inside this candidate before you close", prompt,
         )
+        self.assertIn(
+            "the landing merges the candidate, not your working tree.", prompt,
+        )
         self.assertIn("artifact: git:<full-commit-id>", prompt)
+
+    def test_a_content_pack_do_launch_commits_without_a_merge_sentence(self):
+        """The document-tree adapter commits in place but establishes no git
+        candidate to merge: the launch keeps the commit clause and drops the
+        sentence that would claim a candidate branch nothing isolated
+        (finding F4 -- U2's original condition told this child its pack
+        commits nothing, which is false: run 20260901T181410Z's B1.1
+        committed 89b23e3d in exactly this shape under the old prompt)."""
+
+        from scripts.tickets_assignment import commits_in_place, git_candidate
+
+        self.assertTrue(commits_in_place("orch-content-pack"))
+        self.assertFalse(git_candidate("orch-content-pack"))
+
+        prompt = launch.launch_prompt(self.assignment(
+            pack="orch-content-pack", artifact_kind="doc",
+            commits_in_place=True, git_candidate=False, workspace_line=None,
+        ))
+
+        self.assertIn(
+            "Commit your work inside this candidate before you close", prompt,
+        )
+        self.assertNotIn(
+            "the landing merges the candidate, not your working tree.", prompt,
+        )
+        self.assertNotIn("Your stamped pack commits nothing", prompt)
+        self.assertIn(
+            "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", prompt,
+        )
 
 
 class DispatchLaunchTest(unittest.TestCase):

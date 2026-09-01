@@ -4,10 +4,11 @@ Every case fires on a step a caller used to run by hand between `new` and
 `dispatch`. The id is minted under the run lock rather than authored; a
 child's seal comes through its parent rather than through a cut that closed
 before it existed; and the launch carries the three lines a parent needs to
-relay a child's answer without paraphrasing it -- a git adapter's commit
-instruction (the one two of four workers skipped on 2026-08-31; an adapter
-that establishes no git candidate gets its own craft's workspace line
-instead), the typed artifact line, and the judge's findings line.
+relay a child's answer without paraphrasing it -- a commit instruction for
+every adapter whose identity commits in place (the one two of four workers
+skipped on 2026-08-31; evidence-store alone gets its own craft's workspace
+line instead, having no commit behind its identity), the typed artifact
+line, and the judge's findings line.
 
 This module's `do`/`judge` cases assert against `orch-do`/`orch-judge`,
 the registry names W2b (verbs-rename) minted from `orch-execute` and
@@ -37,7 +38,7 @@ from scripts import state_root
 from scripts import tickets
 from scripts import tickets_mint
 from scripts.tickets_adapters import craft_path
-from scripts.tickets_assignment import _workspace_line, git_candidate
+from scripts.tickets_assignment import _workspace_line, commits_in_place, git_candidate
 from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
 
 CODE_PACK = "orch-code-pack"
@@ -363,19 +364,26 @@ class CallablePromptTest(CallableSinkTest):
         )
         self.assertNotIn("artifact: git:", prompt)
 
-    def test_a_non_git_adapter_carries_its_own_workspace_line_not_a_commit(self):
-        """The document-tree adapter establishes no git candidate: the
-        launch drops the commit clause and carries the craft's own
-        `## Workspace` sentence instead (unit U2a)."""
+    def test_a_document_tree_adapter_commits_without_a_branch_merge_sentence(self):
+        """The document-tree adapter commits in place but establishes no
+        git candidate to merge: the launch keeps the commit clause and
+        drops the sentence naming a candidate branch nothing was isolated
+        to merge (finding F4; the prior law here was wrong -- it told this
+        child its pack commits nothing)."""
 
+        self.assertTrue(commits_in_place(DOC_PACK))
         self.assertFalse(git_candidate(DOC_PACK))
+        self.assertTrue(commits_in_place(CODE_PACK))
         self.assertTrue(git_candidate(CODE_PACK))
 
         answer = self.callable("do", "--pack", DOC_PACK)
 
         prompt = self.prompt(answer)
-        self.assertNotIn("Commit your work inside this candidate", prompt)
-        self.assertIn(_workspace_line(craft_path(DOC_PACK)), prompt)
+        self.assertIn("Commit your work inside this candidate before you close", prompt)
+        self.assertNotIn(
+            "the landing merges the candidate, not your working tree.", prompt,
+        )
+        self.assertNotIn("Your stamped pack commits nothing", prompt)
 
     def test_a_judge_prints_the_findings_line_beside_its_artifact_line(self):
         self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
@@ -506,7 +514,7 @@ class CallableLandingTest(CallableSinkTest):
         self, answer: dict, artifact_form: str, findings: bool, *, pack: str = CODE_PACK,
     ):
         prompt = self.prompt(answer)
-        if git_candidate(pack):
+        if commits_in_place(pack):
             self.assertIn(
                 "Commit your work inside this candidate before you close", prompt,
             )

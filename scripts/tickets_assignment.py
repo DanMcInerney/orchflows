@@ -199,20 +199,42 @@ def _craft(pack):
 
 
 def git_candidate(pack) -> bool:
-    """Whether the stamped pack's adapter establishes a git candidate to
-    commit into.
+    """Whether the landing merges a candidate branch this pack's child
+    committed into.
 
     The same fact `workspace_establishment_finding` already checks a
     recorded workspace's branch and baseline against
-    (``workspace_strategy == "git"``): a launch with no git candidate has
-    nothing to commit, so the prompt asks this once more to decide what its
-    return line names instead.
+    (``workspace_strategy == "git"``): only there does an isolated branch
+    exist for `land` to merge. This answers a narrower question than "did
+    the child commit" -- a document-tree child commits too
+    (`commits_in_place`), straight onto the coordinator's own branch, and
+    nothing is merged for it because nothing was isolated to merge from.
     """
 
     if not str(pack or "").strip():
         return False
     try:
         return adapter_spec(pack).workspace_strategy == "git"
+    except AdapterError:
+        return False
+
+
+def commits_in_place(pack) -> bool:
+    """Whether this pack's child must commit in the tree it stands in for
+    its bytes to survive.
+
+    True for every adapter whose identity is a commit or a document
+    revision one records (git, git-plus-render, document-tree); false only
+    for evidence-store, whose identity is a lane packet with no commit
+    behind it. Kept separate from `git_candidate`: a document-tree child
+    commits but the landing merges no branch for it, so the launch's
+    return line reads both facts to decide what it renders (finding F4).
+    """
+
+    if not str(pack or "").strip():
+        return False
+    try:
+        return adapter_spec(pack).commits_in_place
     except AdapterError:
         return False
 
@@ -293,6 +315,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "artifact_kind": artifact_kind(pack),
         "assigned_name": assigned_name,
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
+        "commits_in_place": commits_in_place(pack),
         "craft": craft,
         "craft_scope": scope,
         "dependencies": _dependency_paths(loaded, ticket_path),
@@ -313,6 +336,6 @@ def dispatch_assignment(rest, *, attempt=None):
 
 __all__ = (
     "ASSIGNMENT_SECTIONS",
-    "_claim_is_stale", "artifact_kind", "dispatch_assignment",
+    "_claim_is_stale", "artifact_kind", "commits_in_place", "dispatch_assignment",
     "git_candidate", "workspace_establishment_finding",
 )
