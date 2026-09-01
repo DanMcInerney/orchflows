@@ -4536,7 +4536,7 @@
   },
   {
    "module": "tests.test_ticket_bricks",
-   "owner": "BrickSinkTest.brick",
+   "owner": "BrickSinkTest._stubbed_establishment",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
@@ -4549,14 +4549,6 @@
    "seams": [
     "environment",
     "threads"
-   ]
-  },
-  {
-   "module": "tests.test_ticket_bricks",
-   "owner": "RepairRoundAdmissionTest._issue",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
    ]
   },
   {

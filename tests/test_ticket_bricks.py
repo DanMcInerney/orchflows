@@ -19,8 +19,10 @@ and that one-site constant flip lands with them.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
@@ -66,6 +68,21 @@ class BrickSinkTest(unittest.TestCase):
         )
         self.environment.start()
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
+        # The candidate is the git surface every `do`/`judge` mint below is
+        # pinned to (`brick` passes it as ``--workspace``): repo-local
+        # identity because a CI runner's ambient git carries none, and one
+        # baseline commit so a branch can be cut from HEAD if the real
+        # establishment ever runs against it.
+        for arguments in (
+            ("config", "user.name", "brick fixture"),
+            ("config", "user.email", "brick@example.invalid"),
+            ("commit", "--quiet", "--allow-empty", "-m", "baseline"),
+        ):
+            completed = subprocess.run(
+                ["git", *arguments], cwd=str(self.candidate),
+                capture_output=True, text=True,
+            )
+            self.assertEqual(0, completed.returncode, completed.stderr)
         self.goal_file = Path(self.temporary.name) / "goal.md"
         self.goal_file.write_text(GOAL, encoding="utf-8")
         self.details_file = Path(self.temporary.name) / "details.md"
@@ -100,16 +117,47 @@ class BrickSinkTest(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return {"establish": {"workspace_path": str(self.candidate)}}
 
-    def brick(self, verb, *arguments, expect_error=False):
+    @contextlib.contextmanager
+    def _stubbed_establishment(self):
+        """The two facade stubs, entered once per straight-line stretch.
+
+        ``mock.patch.object`` swaps one shared module attribute, so a
+        caller that dispatches on threads must hold this context around
+        all of them: entered and exited per call, the first thread's exit
+        restores the real ``_workspace_establish`` under the second
+        thread's feet, and the real establishment runs against whatever
+        repository ``Path.cwd()`` resolves to.
+        """
+
         facade = tickets._tickets_dispatch_facade_module
         with mock.patch.object(
             facade, "_workspace_establish", side_effect=self._establish,
         ), mock.patch.object(
             facade, "_workspace_prepare", return_value={"outcome": "skipped"},
         ):
-            answer = tickets._dispatch([
-                verb, self.RUN, "--goal-file", str(self.goal_file), *arguments,
-            ])
+            yield
+
+    def brick_arguments(self, verb, *arguments) -> list:
+        """One brick door's argv, its establish source pinned to the fixture.
+
+        ``do``/``judge`` carry ``--workspace`` naming the fixture's own
+        candidate: left off, the facade's establishment falls back to
+        ``Path.cwd()`` -- the developer's checkout -- and any path that
+        reaches it for real cuts a ``wt/<run>/<id>`` branch there.
+        """
+
+        pinned = (
+            ("--workspace", str(self.candidate))
+            if verb in ("do", "judge") else ()
+        )
+        return [
+            verb, self.RUN, "--goal-file", str(self.goal_file),
+            *pinned, *arguments,
+        ]
+
+    def brick(self, verb, *arguments, expect_error=False):
+        with self._stubbed_establishment():
+            answer = tickets._dispatch(self.brick_arguments(verb, *arguments))
         if expect_error:
             self.assertIn("error", answer, answer)
         else:
@@ -193,24 +241,34 @@ class BrickIdGrammarTest(BrickSinkTest):
         )
 
     def test_two_concurrent_calls_under_one_parent_mint_distinct_ids(self):
-        """The run lock the door holds at the mint is the whole arbiter."""
+        """The run lock the door holds at the mint is the whole arbiter.
+
+        The stubs go on once, around both threads. Each thread patching
+        for itself is what leaked: the first exit restored the real
+        establishment mid-flight, which resolved the developer's checkout
+        through ``Path.cwd()`` and left a real ``wt/brickrun/B1.2`` branch
+        standing there after every suite run -- failing the next one.
+        """
 
         self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
         answers, start = [], threading.Barrier(2)
 
         def call():
             start.wait()
-            answers.append(self.brick(
+            answers.append(tickets._dispatch(self.brick_arguments(
                 "do", "--pack", CODE_PACK, "--parent", "B1",
                 "--isolation", "required",
-            ))
+            )))
 
         threads = [threading.Thread(target=call) for _ in range(2)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+        with self._stubbed_establishment():
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
 
+        for answer in answers:
+            self.assertNotIn("error", answer, answer)
         minted = sorted(answer["do"]["id"] for answer in answers)
         self.assertEqual(["B1.1", "B1.2"], minted)
 
@@ -348,12 +406,7 @@ class RepairRoundAdmissionTest(BrickSinkTest):
     def _issue(self, verb, *arguments) -> dict:
         """One non-brick door, under the same establishment stub `brick` uses."""
 
-        facade = tickets._tickets_dispatch_facade_module
-        with mock.patch.object(
-            facade, "_workspace_establish", side_effect=self._establish,
-        ), mock.patch.object(
-            facade, "_workspace_prepare", return_value={"outcome": "skipped"},
-        ):
+        with self._stubbed_establishment():
             return tickets._dispatch([verb, self.RUN, *arguments])
 
     def _lease(self) -> str:
