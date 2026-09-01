@@ -5,7 +5,7 @@ import type { FeatureState } from "../../shared/transport/types";
 import { SummaryFlow } from "../workflows/view/SummaryFlow";
 import { nowFixture } from "./fixtures";
 import {
-  bandLabel, projectFleet, projectFolders, projectWork, runSummary,
+  bandLabel, blockedBadge, projectFleet, projectFolders, projectWork, runSummary,
   type FleetRun, type NowFolder, type NowModel, type NowTicket,
 } from "./model";
 import type { NowRoute } from "./route";
@@ -53,6 +53,23 @@ function TaskLine({ run, fixture }: { run: FleetRun; fixture: string }) {
   </p>;
 }
 
+/** A run-map href scoped to one Now group's exact ticket ids; undefined when the group is unknown. */
+function groupHref(run: FleetRun, groupId: string, fixture: string): string | undefined {
+  const group = run.groups.find((candidate) => candidate.id === groupId);
+  if (!group) return undefined;
+  const base = executionRunRoute.build({ run: run.id, fixture });
+  return `${base}${base.includes("?") ? "&" : "?"}group=${encodeURIComponent(group.ticketIds.join(","))}`;
+}
+
+function CausalBanner({ run }: { run: FleetRun }) {
+  const badge = blockedBadge(run.tickets);
+  if (!badge) return null;
+  return <p className="now-run-card__causal" role="status" data-cause={badge.cause}>
+    <AlertTriangle aria-hidden="true" />
+    <span><strong>{badge.ticketId}</strong> is {badge.reason} on <strong>{badge.blockingTicket}</strong>.</span>
+  </p>;
+}
+
 function RunCard({ run, fixture }: { run: FleetRun; fixture: string }) {
   const href = executionRunRoute.build({ run: run.id, fixture });
   const unknown = run.unreadable || projectWork(run.tickets).unknown.length > 0;
@@ -67,6 +84,7 @@ function RunCard({ run, fixture }: { run: FleetRun; fixture: string }) {
         <a href={href} aria-label={`Open run: ${run.objective}`}>{run.objective}</a>
       </h4>
       <TaskLine run={run} fixture={fixture} />
+      <CausalBanner run={run} />
       <details className="now-objective-details"><summary>Full objective</summary><p>{run.objective}</p></details>
       <a className="now-run-card__open" href={href}
         aria-label={`${finished(run) ? "Open full run" : "Open live workflow"} for ${run.objective}`}>
@@ -75,7 +93,8 @@ function RunCard({ run, fixture }: { run: FleetRun; fixture: string }) {
     </div>
     {unknown ? <div className="now-unknown" role="status">
       <ShieldAlert aria-hidden="true" /><span><strong>Unknown progress</strong>Canonical ticket data is unavailable; no progress was inferred.</span>
-    </div> : <SummaryFlow workflowId={run.id} summary={flow.summary} nodeStates={flow.nodeStates} />}
+    </div> : <SummaryFlow workflowId={run.id} summary={flow.summary} nodeStates={flow.nodeStates}
+      nodeHref={(id) => groupHref(run, id, fixture)} />}
   </li>;
 }
 

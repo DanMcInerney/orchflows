@@ -62,6 +62,12 @@ describe("Now folder hierarchy", () => {
     expect(within(flow).getByLabelText("Nonvisual summary for 20260819-ui-experience").textContent)
       .toContain("Step: Work ×3; running");
 
+    const workChip = within(flow).getByRole("link", { name: "Open Work ×3 in the run map" });
+    expect(workChip.getAttribute("href")).toBe("/runs/20260819-ui-experience?fixture=mixed-live&group=02-now%2C03-workflows%2C04-sessions");
+    expect(flow.querySelector(".workflow-summary__visual")?.getAttribute("aria-hidden")).toBeNull();
+    workChip.focus();
+    expect(document.activeElement).toBe(workChip);
+
     expect(live.querySelector(".now-run-card__task")?.textContent)
       .toBe("Working on Render the live fleet, Render dependency maps");
     expect(within(live).getByRole("link", { name: "Open ticket: Render dependency maps" }).getAttribute("href"))
@@ -80,6 +86,14 @@ describe("Now folder hierarchy", () => {
     expect(within(running).getByRole("link", { name: "Open run: Run metadata could not be safely projected" })
       .getAttribute("href")).toBe("/runs/unreadable-run?fixture=unreadable-data");
     expect(within(running).queryByLabelText(/Summary flow for unreadable-run/)).toBeNull();
+  });
+
+  it("names the stuck reason and the blocking ticket on a card whose current work is blocked", () => {
+    render(<NowView state={empty} route={{ fixture: "needs-attention" }} />);
+    const blocked = card("20260819-portability-repair");
+    const badge = within(blocked).getByRole("status");
+    expect(badge.textContent).toBe("01-repair is blocked by upstream work on 00-scope.");
+    expect(card("20260818-ui-platform").querySelector(".now-run-card__causal")).toBeNull();
   });
 
   it("counts the visible fleet in one hero summary and folds a past-only fleet below", () => {

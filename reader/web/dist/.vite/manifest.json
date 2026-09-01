@@ -1,12 +1,12 @@
 {
-  "_SummaryFlow-CVkFirrA.js": {
-    "file": "assets/SummaryFlow-CVkFirrA.js",
+  "_SummaryFlow-CWejObCw.js": {
+    "file": "assets/SummaryFlow-CWejObCw.js",
     "name": "SummaryFlow",
     "imports": [
       "_createLucideIcon-Ct0G_dhG.js"
     ],
     "css": [
-      "assets/styles-CdSuMJxw.css"
+      "assets/styles-CXjzkzui.css"
     ]
   },
   "_arrow-left-Dp5AE850.js": {
@@ -134,9 +134,9 @@
       "_createLucideIcon-Ct0G_dhG.js"
     ]
   },
-  "_styles-CdSuMJxw.css": {
-    "file": "assets/styles-CdSuMJxw.css",
-    "src": "_styles-CdSuMJxw.css"
+  "_styles-CXjzkzui.css": {
+    "file": "assets/styles-CXjzkzui.css",
+    "src": "_styles-CXjzkzui.css"
   },
   "_triangle-alert-BtUBX7nb.js": {
     "file": "assets/triangle-alert-BtUBX7nb.js",
@@ -146,7 +146,7 @@
     ]
   },
   "index.html": {
-    "file": "assets/index-RzZkL-TN.js",
+    "file": "assets/index-BS_ZtwaL.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -193,7 +193,7 @@
     ]
   },
   "src/features/inspector/Inspector.tsx": {
-    "file": "assets/Inspector-DL1TeWK5.js",
+    "file": "assets/Inspector-DiMK5iEe.js",
     "name": "Inspector",
     "src": "src/features/inspector/Inspector.tsx",
     "isDynamicEntry": true,
@@ -212,7 +212,7 @@
     ]
   },
   "src/features/now/NowView.tsx": {
-    "file": "assets/NowView-DIpUoo12.js",
+    "file": "assets/NowView-Bnv8rx-q.js",
     "name": "NowView",
     "src": "src/features/now/NowView.tsx",
     "isDynamicEntry": true,
@@ -224,14 +224,14 @@
       "_radio-nz6-ow8o.js",
       "_triangle-alert-BtUBX7nb.js",
       "_executionRoutes-DvI61L8d.js",
-      "_SummaryFlow-CVkFirrA.js"
+      "_SummaryFlow-CWejObCw.js"
     ],
     "css": [
-      "assets/NowView-DMGYwLRL.css"
+      "assets/NowView-DY0rAuDz.css"
     ]
   },
   "src/features/run-map/RunMapView.tsx": {
-    "file": "assets/RunMapView-CfiJqEJr.js",
+    "file": "assets/RunMapView-EBRdQnKt.js",
     "name": "RunMapView",
     "src": "src/features/run-map/RunMapView.tsx",
     "isDynamicEntry": true,
@@ -250,7 +250,7 @@
     ]
   },
   "src/features/session-graph/SessionGraphView.tsx": {
-    "file": "assets/SessionGraphView-L5xCMduw.js",
+    "file": "assets/SessionGraphView-DUIDhqeo.js",
     "name": "SessionGraphView",
     "src": "src/features/session-graph/SessionGraphView.tsx",
     "isDynamicEntry": true,
@@ -270,7 +270,7 @@
     ]
   },
   "src/features/sessions/SessionsView.tsx": {
-    "file": "assets/SessionsView-d3AV5lOF.js",
+    "file": "assets/SessionsView-D3HhrT2_.js",
     "name": "SessionsView",
     "src": "src/features/sessions/SessionsView.tsx",
     "isDynamicEntry": true,
@@ -288,7 +288,7 @@
     ]
   },
   "src/features/workflows/view/WorkflowCatalogView.tsx": {
-    "file": "assets/WorkflowCatalogView-Bt0W2l88.js",
+    "file": "assets/WorkflowCatalogView-BPL8BaiB.js",
     "name": "WorkflowCatalogView",
     "src": "src/features/workflows/view/WorkflowCatalogView.tsx",
     "isDynamicEntry": true,
@@ -297,14 +297,14 @@
       "_git-branch-Oc79H51m.js",
       "_search-x-_EkLKMuR.js",
       "index.html",
-      "_SummaryFlow-CVkFirrA.js"
+      "_SummaryFlow-CWejObCw.js"
     ],
     "css": [
-      "assets/styles-CdSuMJxw.css"
+      "assets/styles-CXjzkzui.css"
     ]
   },
   "src/features/workflows/view/WorkflowDetailView.tsx": {
-    "file": "assets/WorkflowDetailView-D3JCZaqu.js",
+    "file": "assets/WorkflowDetailView-D3u3pamR.js",
     "name": "WorkflowDetailView",
     "src": "src/features/workflows/view/WorkflowDetailView.tsx",
     "isDynamicEntry": true,
@@ -319,11 +319,11 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-CdSuMJxw.css"
+      "assets/styles-CXjzkzui.css"
     ]
   },
   "src/features/workflows/view/WorkflowSourceView.tsx": {
-    "file": "assets/WorkflowSourceView-1BOGnOhn.js",
+    "file": "assets/WorkflowSourceView-8yJwsGX7.js",
     "name": "WorkflowSourceView",
     "src": "src/features/workflows/view/WorkflowSourceView.tsx",
     "isDynamicEntry": true,
@@ -336,7 +336,7 @@
       "index.html"
     ],
     "css": [
-      "assets/styles-CdSuMJxw.css"
+      "assets/styles-CXjzkzui.css"
     ]
   }
 }

@@ -97,6 +97,40 @@ export function projectWork(tickets: NowTicket[]): NowWork {
   };
 }
 
+export interface CausalBadge {
+  ticketId: string;
+  cause: Exclude<ReadinessCause, "none">;
+  reason: string;
+  blockingTicket: string;
+}
+
+const BLOCK_REASON: Record<Exclude<ReadinessCause, "none">, string> = {
+  pending_dependency: "waiting on a pending dependency",
+  suspended_handoff: "waiting on a suspended handoff",
+  failed_upstream: "blocked by failed upstream work",
+  blocked_upstream: "blocked by upstream work",
+  stale_claim: "waiting on a stale claim",
+  malformed_topology: "blocked by a malformed dependency",
+};
+
+/**
+ * The run's one-line stuck reason, read off the same readiness `cause`/`causal_chain`
+ * fields the run-map's causal focus reads (no cross-feature import; the fields are
+ * mirrored data, not borrowed code). Null when nothing in the current work names a cause.
+ */
+export function blockedBadge(tickets: NowTicket[]): CausalBadge | null {
+  const stuck = projectWork(tickets).current.find((ticket) => ticket.readiness.state === "attention"
+    && ticket.readiness.cause !== "none");
+  if (!stuck) return null;
+  const cause = stuck.readiness.cause as Exclude<ReadinessCause, "none">;
+  return {
+    ticketId: stuck.id,
+    cause,
+    reason: BLOCK_REASON[cause],
+    blockingTicket: stuck.readiness.causal_chain.at(-1) ?? stuck.id,
+  };
+}
+
 function countsFor(tickets: NowTicket[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const ticket of tickets) counts[ticket.status] = (counts[ticket.status] ?? 0) + 1;
@@ -277,8 +311,28 @@ export function projectFolders(fleet: FleetRun[]): NowFolders {
   return { running, past };
 }
 
+/**
+ * The real relation between two adjacent groups, from the tickets' own `depends_on`
+ * edges crossing the boundary -- never assumed. Multiple sources or multiple targets
+ * at the crossing means parallel work (branch); exactly one of each is a plain chain
+ * (sequence). A dependency-depth projection cannot produce a backward edge (a cycle is
+ * already diverted to the malformed/unknown layer before groups are built), so "loop"
+ * is not reachable here; the return type stays a `WorkflowSummary` edge kind regardless.
+ */
+function groupEdgeKind(byId: Map<string, NowTicket>, previous: NowGroup, next: NowGroup): "sequence" | "branch" {
+  const previousIds = new Set(previous.ticketIds);
+  const crossings = next.ticketIds.flatMap((targetId) => (byId.get(targetId)?.depends_on ?? [])
+    .filter((dependency) => previousIds.has(dependency))
+    .map((dependency) => ({ source: dependency, target: targetId })));
+  if (!crossings.length) return "sequence";
+  const sources = new Set(crossings.map((edge) => edge.source));
+  const targets = new Set(crossings.map((edge) => edge.target));
+  return sources.size > 1 || targets.size > 1 ? "branch" : "sequence";
+}
+
 /** The run's group chain as the shared summary flow reads it, with each group's exact state. */
 export function runSummary(run: FleetRun): { summary: WorkflowSummary; nodeStates: Record<string, string> } {
+  const byId = new Map(run.tickets.map((ticket) => [ticket.id, ticket]));
   const nodes = run.groups.map((group) => ({
     id: group.id,
     label: group.ticketIds.length > 1 ? `${group.label} ×${group.ticketIds.length}` : group.label,
@@ -286,7 +340,7 @@ export function runSummary(run: FleetRun): { summary: WorkflowSummary; nodeState
   const edges = run.groups.slice(1).map((group, index) => ({
     source: run.groups[index].id,
     target: group.id,
-    kind: "sequence" as const,
+    kind: groupEdgeKind(byId, run.groups[index], group),
   }));
   const nodeStates: Record<string, string> = {};
   for (const group of run.groups) nodeStates[group.id] = group.state;
@@ -295,5 +349,5 @@ export function runSummary(run: FleetRun): { summary: WorkflowSummary; nodeState
 
 export const model = {
   dependencyLayers, groupState, projectGroups, projectFleet, projectWork, projectFolders,
-  runSummary, folderLabel, isPast, bandLabel,
+  runSummary, folderLabel, isPast, bandLabel, blockedBadge,
 };
