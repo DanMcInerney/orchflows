@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ... import transport
+from ... import schema, transport
 from .. import AdapterDescriptor
 
 # Where an HN item lives. It is HN's own site and not either route's origin, so
@@ -223,7 +223,7 @@ DEFAULT_TREE_ROW_KEYS = (ITEM_ID_KEY, ITEM_TYPE_KEY, AUTHOR_KEY, CREATED_AT_KEY,
 # The stamps these routes emit, and the one an artifact record holds. Algolia
 # writes an ISO instant with milliseconds; Firebase writes epoch seconds.
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 SCHEMA_DRIFT = "schema_drift"
 MALFORMED_JSON = "malformed_json"

@@ -1,6 +1,6 @@
 """Stable route contract for the YouTube InnerTube adapter."""
 
-from ... import transport
+from ... import schema, transport
 from .. import AdapterDescriptor, VolatileIdentifier
 
 
@@ -211,7 +211,7 @@ COMMENT_ENTITY_ROW_KEYS = (
 
 ROUTE_DATE_FORMAT = "%Y-%m-%d"
 ROUTE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 DATE_PRECISION_ONLY = "date_precision_only"
 
 STALE_IDENTIFIER_STATUS = 400
