@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2059,
+  "count": 2058,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -569,7 +569,7 @@
    "test_migrate_state_cases.apply.TestMigrationApply.test_a_record_already_at_the_destination_is_never_overwritten",
    "test_migrate_state_cases.apply.TestMigrationApply.test_a_record_appearing_after_the_plan_is_refused_not_overwritten",
    "test_migrate_state_cases.apply.TestMigrationApply.test_an_unrecognised_directory_is_named_and_not_copied",
-   "test_migrate_state_cases.apply.TestMigrationApply.test_canary_and_bin_stay_in_the_repository_and_are_reported",
+   "test_migrate_state_cases.apply.TestMigrationApply.test_bin_stays_in_the_repository_and_is_reported",
    "test_migrate_state_cases.apply.TestMigrationApply.test_each_coverage_line_gains_the_project_it_arose_in",
    "test_migrate_state_cases.apply.TestMigrationApply.test_each_stream_lands_where_the_sink_layout_fixes_it",
    "test_migrate_state_cases.apply.TestMigrationIdempotent.test_a_read_only_source_still_migrates",
@@ -1701,10 +1701,9 @@
    "tests.test_validate_cases.sink_contracts.TestWorklogStatesRunIdentity.test_the_contract_names_no_field_run_json_does_not_carry",
    "tests.test_validate_cases.sink_law.TestFrictionFallbackNamesTheSink.test_a_blocked_agent_is_sent_to_the_sink_not_to_a_repository",
    "tests.test_validate_cases.sink_law.TestOneProseOwnerForThePath.test_exactly_one_markdown_file_states_the_root_literally",
-   "tests.test_validate_cases.sink_law.TestOnlyCanaryAndBinMentionsSurvive.test_every_surviving_mention_names_canary_or_bin",
-   "tests.test_validate_cases.sink_law.TestOnlyCanaryAndBinMentionsSurvive.test_the_out_of_scope_files_name_the_canary_path_and_nothing_else",
-   "tests.test_validate_cases.sink_law.TestRepositoryKeepsTwoSubdirectories.test_the_bullet_names_canary_and_bin_and_no_third_subdirectory",
-   "tests.test_validate_cases.sink_law.TestRepositoryKeepsTwoSubdirectories.test_the_sink_has_its_own_bullet",
+   "tests.test_validate_cases.sink_law.TestOnlyTheGeneratedBinMentionSurvives.test_every_surviving_mention_names_the_generated_bin",
+   "tests.test_validate_cases.sink_law.TestRepositoryKeepsOneSubdirectory.test_the_bullet_names_bin_and_no_second_subdirectory",
+   "tests.test_validate_cases.sink_law.TestRepositoryKeepsOneSubdirectory.test_the_sink_has_its_own_bullet",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_law_names_the_resolver_rather_than_restating_its_rule",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_law_no_longer_points_into_a_repository",
    "tests.test_validate_cases.sink_law.TestTheLawNamesTheSinkRoot.test_the_root_the_law_names_is_the_sink",
@@ -2062,7 +2061,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4c39a86b68642a6d3ac10b06f32deab928c5ef5591a8a7acbd5f574447183316"
+  "sha256": "cf641b6fb56d4d97a1287330b51e75921e9fb32dd47afc1c157d927fa2cdfde9"
  },
  "mutation_owners": [
   {

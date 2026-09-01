@@ -429,11 +429,13 @@ class OrchTreesTest(unittest.TestCase):
             self.assertFalse((main / ".orch").exists())
 
     def test_every_addressed_tree_is_gitignored_runtime_state(self):
-        """`.gitignore` line 3 is `.orch/*`: every tree this subcommand
+        """`.gitignore` ignores `.orch/` whole: every tree this subcommand
         writes is runtime state, never tracked content. A tree added to the
-        closed set that escaped that line would commit run output."""
+        closed set that escaped that line would commit run output. The line
+        was `.orch/*` while the canary fixture was re-admitted beneath it;
+        with the fixture deleted there is nothing to re-admit."""
 
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
-        self.assertIn(".orch/*", ignore)
+        self.assertIn(".orch/", ignore)
         for tree in tickets_mod.RUN_STATE_TREES:
             self.assertNotIn(f"!.orch/{tree}/", ignore, tree)

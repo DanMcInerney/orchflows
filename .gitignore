@@ -8,12 +8,11 @@ research/
 # one the product, the tests, or CI reads directly, named so that a new
 # file lands ignored by default rather than published by accident.
 
-# Runtime state: everything in .orch/ except the tracked canary fixture.
-# Canary scratch is a run-output area; only its .gitkeep is tracked.
-.orch/*
-!.orch/canary/
-.orch/canary/scratch/*
-!.orch/canary/scratch/.gitkeep
+# Runtime state only: run output, tool caches, and the legacy bin/ an
+# install generates. Nothing here is tracked, so there is no re-admission
+# to make -- a file that belongs to the library belongs in a tier
+# ARCHITECTURE.md names, never here.
+.orch/
 
 # Project-scope skills ship to whoever clones; AGENTS.md names the
 # super-research path, so validate's documented-path check reads it on

@@ -127,8 +127,8 @@ readiness facts and causal explanations.
   failure behavior: [visibility §6](rules/visibility.md). Resolver:
   [`scripts/state_root.py`](scripts/state_root.py). Research evidence lives in
   the sink's `research/` tree.
-- `.orch/` holds tracked `canary/` fixtures and legacy generated `bin/`
-  scripts named by project receipts; cleanup stays receipt-driven through
+- `.orch/` is generated, never tracked: legacy `bin/` scripts named by
+  project receipts, whose cleanup stays receipt-driven through
   uninstall.
 
 ## Dependency direction

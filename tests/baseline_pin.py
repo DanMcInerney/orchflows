@@ -1,12 +1,17 @@
 """How the cutcheck tests invoke cutcheck: the revision, and the invocation.
 
 Two facts and one owner, because both are properties of the invocation rather
-than of either module that makes one. ``tests/test_cutcheck.py`` and
-``tests/test_canary_host.py`` read them and hold no copy of either, and
-neither imports the other: a test module's verdict may not depend on a sibling
-test module's state, which is the objection the duplicated copy in
-``tests/test_canary_host.py`` was made to honour and which a shared non-test
-owner answers outright.
+than of either module that makes one: a test module's verdict may not depend
+on a sibling test module's state, which is the objection a second copy in a
+test module was made to honour and which a shared non-test owner answers
+outright.
+
+No module imports it as this is written. Both readers went at 932706a3
+(2026-08-26): ``tests/test_canary_host.py`` was deleted outright and
+``tests/test_cutcheck.py`` cut to its graph cases, which invoke nothing. The
+pinned fixture corpus under ``tests/fixtures/cutcheck/`` pins the same
+``BASELINE`` and is orphaned with it. Restore a reader or delete the three
+together; do not give this module a new fact to carry so that it has a job.
 
 Not a test module. Nothing here is collected, and the state it does keep -- one
 scratch root and one report per graded pair -- is a cache of the tool's own

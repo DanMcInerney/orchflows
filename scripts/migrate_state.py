@@ -28,7 +28,7 @@ Three properties the whole design serves:
   that executes.
 
 Only ``runs/``, ``tickets/``, ``friction/`` and ``improvement/`` migrate.
-``canary/`` and ``bin/`` belong to the repository and stay there;
+``bin/`` is the legacy per-project install's own output and stays there;
 anything else is reported by name and left alone rather than copied
 blind.
 

@@ -21,9 +21,9 @@ from tests.test_validate_cases.sink_contracts import (
 )
 from tests.test_validate_cases.sink_law import (
     TestFrictionFallbackNamesTheSink,
-    TestOnlyCanaryAndBinMentionsSurvive,
     TestOneProseOwnerForThePath,
-    TestRepositoryKeepsTwoSubdirectories,
+    TestOnlyTheGeneratedBinMentionSurvives,
+    TestRepositoryKeepsOneSubdirectory,
     TestTheLawNamesTheSinkRoot,
     TestVocabularyResolvesToTheSink,
 )

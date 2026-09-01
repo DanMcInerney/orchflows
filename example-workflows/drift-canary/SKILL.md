@@ -22,8 +22,8 @@ append the wave's decision with `tickets.py result <run> <frame> --by
       --goal-file <rerun-goal> --bound "<= 60 tool calls"
 
 Its goal: one `tickets.py new --file` copy of every item in the read-only
-`canary_set`, under a nested run of its own beneath `.orch/canary/`, each
-copy carrying its own result at one recorded model id, effort level and host
+`canary_set` the caller named, under a nested run of its own, each copy
+carrying its own result at one recorded model id, effort level and host
 binding — and the golden set byte-identical to its input identity when the
 call closes.
 

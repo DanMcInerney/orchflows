@@ -227,7 +227,6 @@ class TestMigrationApply(MigrationCase):
         write(root / "improvement" / "proposals" / "2026-02-01-p.md", "# p\n")
         write(root / "improvement" / "covered.jsonl",
               json.dumps({"cluster": "c2"}) + "\n")
-        write(root / "canary" / "golden" / "spec.md", "# canary\n")
         write(root / "bin" / "tickets.py", "# installed\n")
         write(root / "events" / "2026-02.log", "event\n")
         return root
@@ -248,14 +247,12 @@ class TestMigrationApply(MigrationCase):
                 self.assertTrue((self.sink / relative).is_file(),
                                 f"{relative} is missing from the sink")
 
-    def test_canary_and_bin_stay_in_the_repository_and_are_reported(self):
+    def test_bin_stays_in_the_repository_and_is_reported(self):
         root = self.build_source()
         report = self.migrate(root)
 
-        self.assertEqual(sorted(report["sources"][0]["retained"]), ["bin/", "canary/"])
-        self.assertFalse((self.sink / "canary").exists())
+        self.assertEqual(sorted(report["sources"][0]["retained"]), ["bin/"])
         self.assertFalse((self.sink / "bin").exists())
-        self.assertTrue((root / "canary" / "golden" / "spec.md").is_file())
         self.assertTrue((root / "bin" / "tickets.py").is_file())
 
     def test_an_unrecognised_directory_is_named_and_not_copied(self):

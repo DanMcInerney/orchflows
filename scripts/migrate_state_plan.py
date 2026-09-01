@@ -32,7 +32,12 @@ except ImportError:  # pragma: no cover - the installed copy's path
 # What migrates and what stays. The stream names are the sink layout's,
 # so a source written under that layout maps onto it by name.
 MIGRATED_STREAMS = ("runs", "tickets", "friction", "improvement")
-RETAINED_DIRS = ("canary", "bin")
+# `bin/` is the legacy per-project landing zone `installer/foundation.py`
+# places, so it is recognised and deliberately left where it stands --
+# reporting it as unrecognised would say the migration does not know what it
+# is. The sink-itself branch below is the second thing named retained, so
+# one entry here is a truthful set and not a vestige of a two-entry concept.
+RETAINED_DIRS = ("bin",)
 
 
 class _Plan:
