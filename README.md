@@ -75,13 +75,17 @@ Nothing marks "done" except an external check passing.
 
 ## More ways to use it
 
-Routing projects four shapes: `answer` when evidence already decides,
-`single` for one ordinary ticket, `graph` for work whose frame drives
-more than one brick, and `outline` when the root must first be settled — a
-planning `orch-do` freezes and seals it. Known-cause
-work enters the smallest of those shapes; an unknown-cause failure uses fix,
-which is a disambiguation between two of them rather than a fifth shape.
-Everything else runs only when you name it, so the routing table never
+Routing projects four lanes, smallest need first: `act` when evidence
+already decides and a change this session can make, check narrowly, and
+record in its own medium's history; `brick` — one `tickets.py do` or
+`judge`, for work wanting isolation or a checked landing; `frame` for
+work needing parallel children, resume, or an audit trail; and
+`outline` when the goal itself is unresolved — a planning `orch-do`
+freezes and seals the root before `frame` drives it. Tripwires promote
+on evidence, never prediction: a second concern mid-`act` enters
+`brick`, a child's scope splitting enters `frame`, and an unknown or
+unverified cause investigates before anything edits. Everything else
+runs only when you name it, so the routing table never
 grows as the library does. The table is installed at
 `~/.orchflows/host-block.md`, the one surface every turn already pays
 for; `rules/topology.md` §2 owns what may enter it. If routing gets in
@@ -247,7 +251,8 @@ agent, model and effort, and carrying the whole prompt the child is given
 filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
 half: import the result, adjudicate it at the join, retire the worktree,
 and report what became ready to dispatch next. A ticket you wrote by hand
-takes `new --file` and then `dispatch`, the same launch by another door.
+takes the same `do --goal-file` (and `--details-file`) door — there is no
+second door for hand-authored work.
 
 That split is the honest line between mechanical and judgment. Both
 commands are pure bookkeeping — replayable, refusing before they touch

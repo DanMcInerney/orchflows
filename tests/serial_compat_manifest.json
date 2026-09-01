@@ -987,8 +987,8 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_grades_the_projected_file_candidate",
+   "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_refuses_a_file_identity_mismatch",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_prompt_filing_command_carries_claimant_and_writes_the_ticket",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
@@ -1575,8 +1575,8 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_frontier_guidance_distinguishes_all_three_review_states",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_goal_context_only_direct_root_lifecycle",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_live_protocol_surfaces_exclude_removed_schema",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_grades_the_projected_file_candidate",
+   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_refuses_a_file_identity_mismatch",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_prompt_filing_command_carries_claimant_and_writes_the_ticket",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
@@ -2063,7 +2063,11 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
+<<<<<<< HEAD
   "sha256": "defd6d34b9e457d7b2147da0a1004e4af7e7e1a43de974a955fe694dbcb10c10"
+=======
+  "sha256": "915aadc71212361d91f2832a39817e3bf19cf887446fe28b10764cf6c8c88a32"
+>>>>>>> claude/implement-orchflows-routing-384e7e
  },
  "mutation_owners": [
   {
