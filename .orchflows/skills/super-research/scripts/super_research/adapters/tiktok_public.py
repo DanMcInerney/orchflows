@@ -24,7 +24,7 @@ example — chosen because none of them appears anywhere in an ordinary
 answered page, including its own ``webapp.i18n-translation`` dictionary,
 which repeats the literal text "Log in" dozens of times on every healthy
 page and is therefore useless as a signal by itself. See
-``references/_drafts/tiktok_public.md`` for the reopen condition.
+``references/route-notes/tiktok_public.md`` for the reopen condition.
 
 Counts travel under TikTok's own key names — ``diggCount`` stays
 ``diggCount`` — for the same reason ``instagram_public`` keeps

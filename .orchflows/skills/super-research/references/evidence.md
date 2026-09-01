@@ -238,7 +238,7 @@ roughly ten reads in fifteen minutes the origin began serving a degraded
 never-touched ones, with no wall marker. The identity the first read was
 refused nothing on was throttled by velocity shortly after, which is a fact
 about pacing rather than about the `User-Agent` string; the per-adapter
-measurement records behind this sweep are in `_drafts/`, one file per
+measurement records behind this sweep are in `route-notes/`, one file per
 adapter added. Stack Exchange compressed its answer only when asked
 (`Accept-Encoding` sent: gzip; not sent: identity), which is why
 `transport.decoded_body` honors a stated encoding rather than assuming one.

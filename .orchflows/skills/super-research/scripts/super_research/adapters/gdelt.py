@@ -39,7 +39,7 @@ carries.
 **mode=timelinevol and mode=context are deliberately not shipped.** Neither
 is this module's ``mode``; `mode=context` answered 200 with an empty
 ``articles`` list on every query tried 2026-09-01 and `timelinevol` was not
-tried. See ``references/_drafts/gdelt.md`` for the reopen condition.
+tried. See ``references/route-notes/gdelt.md`` for the reopen condition.
 
 Every record stands on the same three losses `web_search` attaches to an
 index hit, minus the one GDELT does not deserve: this surface states a

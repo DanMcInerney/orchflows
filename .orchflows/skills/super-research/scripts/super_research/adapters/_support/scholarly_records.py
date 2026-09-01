@@ -184,7 +184,7 @@ CR_PUBLISHER_KEY = "publisher"
 # date-parts array, joined by the character Crossref itself never uses in a
 # component, for the record that carries no `published_at` because the
 # origin gave no day. Documented rather than silently omitted — see
-# `references/_drafts/scholarly.md` "Crossref month precision".
+# `references/route-notes/scholarly.md` "Crossref month precision".
 CR_DATE_PARTS_ATTRIBUTE = "published_date_parts"
 CR_CONTAINER_TITLE_ATTRIBUTE = "container-title"
 CR_PUBLISHER_ATTRIBUTE = "publisher"
