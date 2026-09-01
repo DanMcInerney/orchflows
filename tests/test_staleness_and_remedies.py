@@ -750,6 +750,58 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
                 self.assertIn("does not accept", refused["error"])
 
 
+class TestARelayedEnvelopeRefusalTeachesItsShape(SealedRunTest):
+    """The launch prompt no longer spells the relay envelope out for every
+    child; the refusals a relaying coordinator actually meets carry the
+    recipe instead, so each one must name what a retry needs -- a vague
+    refusal here re-creates the guessing the prompt line existed to end.
+    """
+
+    def accept(self):
+        """Commit the launch every record below enters behind."""
+
+        return self.launch()
+
+    def envelope(self, **overrides) -> dict:
+        filled = {
+            "protocol": "orchflows.dispatch.v1", "run": "run", "id": "T",
+            "assignment_seal": self.frontmatter("T")["assignment_seal"],
+            "dispatch_id": "D1", "outcome_record_id": "outcome",
+            "by": "worker", "evidence": "delivered and verified",
+        }
+        filled.update(overrides)
+        return filled
+
+    def relay(self, body: str):
+        path = self.home / "envelope.json"
+        path.write_text(body, encoding="utf-8")
+        return retired_doors.run([
+            "dispatch-outcome", "run", "T", "--file", str(path),
+        ])
+
+    def test_a_non_canonical_file_names_the_dump_that_writes_one(self):
+        self.accept()
+        refused = self.relay(json.dumps(self.envelope(), indent=2))
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("json.dump(envelope", refused["error"])
+
+    def test_a_wrong_identity_names_the_field_and_the_expected_value(self):
+        self.accept()
+        refused = self.relay(canonical_json(
+            self.envelope(assignment_seal="sha256:" + "0" * 64)
+        ))
+        self.assertEqual("outcome-invalid", refused["code"])
+        self.assertIn("assignment_seal", refused["error"])
+        self.assertIn(self.frontmatter("T")["assignment_seal"], refused["error"])
+
+    def test_an_extra_field_names_the_exact_required_set(self):
+        self.accept()
+        refused = self.relay(canonical_json(self.envelope(status="complete")))
+        self.assertEqual("outcome-invalid", refused["code"])
+        for field in ("assignment_seal", "dispatch_id", "evidence", "by"):
+            self.assertIn(field, refused["error"])
+
+
 class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):
     """Three refusals share one code, `idempotency-conflict`, and until now
     one message: a reopened dispatch id, a recommitted record, and a reused

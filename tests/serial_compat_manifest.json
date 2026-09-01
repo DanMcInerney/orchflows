@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2051,
+  "count": 2055,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -875,6 +875,9 @@
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_an_invented_command_is_caught",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_every_named_command_is_routed",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_the_guard_reads_the_messages_it_is_for",
+   "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_a_non_canonical_file_names_the_dump_that_writes_one",
+   "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_a_wrong_identity_names_the_field_and_the_expected_value",
+   "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_an_extra_field_names_the_exact_required_set",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_complete_and_limited_carry_a_result",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_result_bearing_set_is_stated_once",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_states_that_filed_nothing_still_refuse",
@@ -1967,6 +1970,7 @@
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_beside_real_dirt_leaves_only_the_dirt_in_the_refusal",
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_outside_a_pycache_directory_is_still_emission",
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_the_baseline_itself_tracks_is_still_emission",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_the_reserved_notes_directory_is_emission",
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_untracked_bytecode_does_not_fail_the_grade",
    "tests.test_workspace_cases.grade_cases.RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_already_on_the_callers_head_exits_isolation_missing",
@@ -2054,7 +2058,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4b01c058eb59365cd9d58d15d361aca260f656b93ae1cd4cb60137545c82b183"
+  "sha256": "14c1d76244e77db1f368662cc140de6924217d87494cc42b364ec675fded8c13"
  },
  "mutation_owners": [
   {

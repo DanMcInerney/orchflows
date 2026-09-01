@@ -168,6 +168,9 @@ def dirty_paths(cwd, git=_git) -> list:
     return found
 
 
+NOTES_DIR = ".orch-notes"
+
+
 def emission_split(dirty):
     """``(the item's uncommitted paths, the bytes a run emitted)``.
 
@@ -175,6 +178,12 @@ def emission_split(dirty):
     bytecode beside it, so counting those bytes holds an item against
     having been verified. By path shape, never by tracked status -- the
     verdict this replaced fired on bytecode a frozen baseline tracked.
+    The reserved ``NOTES_DIR`` is exhaust the same way: the launch prompt
+    hands every child that one directory for the note files its filing
+    and closing commands read, written because the protocol asked and
+    never part of the delivery -- before it was reserved, each worker
+    improvised its own note names in the workspace root and the leftovers
+    read as an uncommitted delivery at replay.
     Two callers grade a candidate's dirty set, `check` at the join and
     `workspace_return.integrate` at the landing, and one rule decides for
     both what is the item's work and what is exhaust.
@@ -183,6 +192,7 @@ def emission_split(dirty):
     emitted = sorted(
         name for name in dirty
         if name.endswith((".pyc", ".pyo")) or "__pycache__" in name.split("/")
+        or name == NOTES_DIR or name.startswith(NOTES_DIR + "/")
     )
     return sorted(set(dirty) - set(emitted)), emitted
 

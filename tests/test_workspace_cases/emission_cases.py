@@ -145,6 +145,28 @@ class TestBytecodeIsEmissionNotBreach(unittest.TestCase):
             self.assertEqual(["scratch/__pycache__/"], body["check"]["emission"],
                              "the emitted bytes were classified but not reported")
 
+    def test_the_reserved_notes_directory_is_emission(self):
+        """The launch prompt hands every child ``.orch-notes/`` for the note
+        files its filing and closing commands read. Before it was reserved,
+        each worker improvised its own note names in the workspace root, and
+        the leftovers graded as uncommitted work."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            main, run_dir, base, worktree = _isolated(tmp)
+            self._ticket(run_dir, "T1")
+            notes = worktree / workspace_git.NOTES_DIR
+            notes.mkdir()
+            (notes / "outcome.md").write_text("closing note\n", encoding="utf-8")
+
+            done = _graded_check(main, base)
+
+            body = payload_of(done)
+            self.assertEqual(0, done.returncode, f"{done.stdout}{done.stderr}")
+            self.assertEqual("pass", body["check"]["verdict"])
+            self.assertEqual([workspace_git.NOTES_DIR + "/"],
+                             body["check"]["emission"])
+
     def test_bytecode_outside_a_pycache_directory_is_still_emission(self):
         """Carrier census: every other case here is caught by the
         ``__pycache__`` segment *and* by the extension, so deleting the

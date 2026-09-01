@@ -28,9 +28,7 @@ from pathlib import Path
 
 if __package__:
     from . import state_root
-    from .tickets_dispatch_schema import (
-        OUTCOME_RECORD_ID, PROTOCOL, classification,
-    )
+    from .tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from .tickets_format import (
         REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
@@ -38,7 +36,7 @@ if __package__:
     from .tickets_store import NO_SINK_ERROR, _tickets_root
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
-    from tickets_dispatch_schema import OUTCOME_RECORD_ID, PROTOCOL, classification
+    from tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from tickets_format import (
         REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
@@ -58,13 +56,6 @@ AGENT_FIELD_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 EFFORT_SUFFIX = "_effort"
 EFFORT_KEY = "effort"
 SHELL_SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_./:\\=-]+$")
-# The canonical encoding `dispatch-outcome` admits, named as the call that
-# produces it: the refusal used to say "canonical JSON" and leave the child to
-# guess which of the four knobs it meant.
-CANONICAL_DUMP = (
-    'json.dump(envelope, handle, ensure_ascii=True, sort_keys=True, '
-    'separators=(",", ":"))'
-)
 
 
 def declared_role(executor: str):
@@ -280,11 +271,10 @@ def _lane_lines(assignment: dict) -> list:
             "stdout and its exit status.",
         ]
     return [
-        "Goal, Context, and any Details are the sealed assignment: Goal is the "
-        "end result you answer for, Context is the evidence behind it, and "
-        "Details is the planner's guidance for this assignment. Where Details "
-        "prescribes, follow it and say so; where following it would break Goal, "
-        "deviate and report the deviation with its evidence.",
+        "Goal is the end result you answer for, Context is the evidence behind "
+        "it, and Details is the planner's guidance: where it prescribes, follow "
+        "it and say so; where following it would break Goal, deviate and report "
+        "the deviation with its evidence.",
     ]
 
 
@@ -302,10 +292,17 @@ def _reading_lines(assignment: dict) -> list:
 
 
 def _craft_lines(assignment: dict) -> list:
-    """The pack's craft, handed as a path, and how far its checks reach."""
+    """The pack's craft, handed as a path, and how far its checks reach.
+
+    One scope statement, whichever owns it: the craft's own quoted sentence
+    where the craft declares one, else the standing gate line -- the two said
+    the same law twice on every code dispatch until the quote was made the
+    answer.
+    """
 
     lines = []
     craft = assignment.get("craft")
+    scope = None
     if craft is not None:
         lines.append(
             f"Read your stamped pack's craft at {craft} and run its declared "
@@ -314,10 +311,11 @@ def _craft_lines(assignment: dict) -> list:
         scope = assignment.get("craft_scope")
         if scope is not None:
             lines.append(f'That craft sets your verification scope: "{scope}"')
-    lines.append(
-        "The full required suite is the gate's row, never a unit's: run it here "
-        "only if this ticket is the gate."
-    )
+    if scope is None:
+        lines.append(
+            "The full required suite is the gate's row, never a unit's: run it "
+            "here only if this ticket is the gate."
+        )
     return lines
 
 
@@ -371,6 +369,12 @@ def launch_prompt(assignment: dict) -> str:
     validates the same three on every write.
     """
 
+    # Deferred like every tickets->workspace import: a flat `tickets.py`
+    # call that never dispatches must not require the workspace family.
+    if __package__:
+        from .workspace_git import NOTES_DIR
+    else:  # pragma: no cover - direct/installed flat script path
+        from workspace_git import NOTES_DIR
     script = Path(__file__).with_name("tickets.py").resolve()
     run, ticket_id = assignment["run"], assignment["id"]
     identity = [
@@ -398,10 +402,10 @@ def launch_prompt(assignment: dict) -> str:
         "and is never extended.",
         f"File as you go into `## {REPORT_SECTION}`, the one channel: every "
         "write appends there, in whatever form you judge useful. RECORD_ID is a "
-        "fresh identity of your own for each record, and PATH is a file in this "
-        "workspace:",
-        _command(sys.executable, script, "result", run, ticket_id, *identity,
-                 "--file", "PATH"),
+        "fresh identity of your own for each record, and PATH -- here and in "
+        f"the close below -- is a file you write under {NOTES_DIR}/ in this "
+        "workspace, the reserved scratch directory the join never grades. "
+        "`--file PATH` in place of `--text TEXT` files a whole note:",
         _command(sys.executable, script, "result", run, ticket_id, *identity,
                  "--text", "TEXT"),
         *_return_lines(assignment),
@@ -415,11 +419,8 @@ def launch_prompt(assignment: dict) -> str:
         _command(sys.executable, script, "dispatch-outcome", run, ticket_id,
                  "--note-file", "PATH"),
         "A coordinator relaying a whole canonical envelope for you passes it "
-        f"through `--file` instead; that envelope names protocol {PROTOCOL}, run "
-        f"{run}, id {ticket_id}, assignment_seal {assignment['assignment_seal']}, "
-        f"dispatch_id {assignment['dispatch_id']}, outcome_record_id "
-        f"{OUTCOME_RECORD_ID}, by {assignment['assigned_name']}, and evidence as "
-        f"one string, written with {CANONICAL_DUMP}.",
+        "through `--file` instead; a wrong or non-canonical envelope is "
+        "refused with the exact fields and encoding it needs named.",
     ]
     return "\n".join(lines)
 
@@ -470,7 +471,7 @@ def precheck(run: str, ticket_id: str, host):
 
 
 __all__ = (
-    "ARTIFACT_LINE_FORMS", "CANONICAL_DUMP", "DEFAULT_HOST", "FINDINGS_LINE",
+    "ARTIFACT_LINE_FORMS", "DEFAULT_HOST", "FINDINGS_LINE",
     "HOST_ENV_VAR", "PROFILE_ROLES",
     "ROLE_PROFILES", "binding_failure", "declared_role", "host_names",
     "hosts_dir", "launch_prompt", "launch_spec", "precheck", "resolve_host",
