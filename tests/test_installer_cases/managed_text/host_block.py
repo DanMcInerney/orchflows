@@ -29,17 +29,6 @@ class TestHostBlockRendering(unittest.TestCase):
         self.assertNotIn("{{PYTHON}}", rendered)
         self.assertNotIn("{{ORCH_LIB}}", rendered)
 
-    def test_resolved_python_interpreter_refuses_a_bare_name(self):
-        # The rendered host block hands every agent this command. A bare
-        # "python" is a Windows Store stub on this host and several like it,
-        # so a plan built without a real interpreter path is worth refusing
-        # rather than shipping (F F9).
-        with patch.object(install.sys, "executable", ""):
-            with self.assertRaises(ValueError):
-                install.resolved_python_interpreter()
-        with patch.object(install.sys, "executable", "/usr/bin/python3"):
-            self.assertEqual("/usr/bin/python3", install.resolved_python_interpreter())
-
     def test_rendered_block_contains_name_to_path_map(self):
         # Only phrases that depend on a substituted placeholder belong here;
         # static template prose (e.g. "tier is not inferable from the name")

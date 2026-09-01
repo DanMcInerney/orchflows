@@ -1,12 +1,13 @@
 """The grade every ticket-emitting command runs before it writes.
 
-`lint`, `ready`, `claim` and `dispatch` grade a ticket they are handed.
-`new`, `amend`, `recut`, `instantiate` and `gate` write one. Those two
-halves ran different grades, so a command could spend the run's time
-writing what the next command then refused: a template instantiated two
-stubs and `ready` skipped both, `new` accepted a locator `claim` refused,
-and a gate wrote unsealed stubs under a sealed root. In each the flag that
-was wrong was still in the caller's hand at emission and nobody looked.
+`lint`, dispatch-v1's admission guards -- the retired `claim` door's
+replacement -- and the internal readiness pass `dispatch`, `frame-open`
+and `land` each run before promoting a pending ticket -- the retired
+`ready` door's replacement -- grade a ticket they are handed. `new`, `do`,
+`judge` and `stamp-generation` write one. Those two halves used to run
+different grades, so a command could spend the run's time writing what
+the next grading door then refused, the flag that was wrong still in the
+caller's hand at emission with nobody looking there.
 
 The one grade is `tickets_context.graded_admission`, and this module is
 the emitting half's route to it. What it adds is the partition, because an
@@ -118,19 +119,20 @@ def grade_emission(command: str, run, incoming: dict, siblings=None, prior=None)
     """``None`` if this emission introduces nothing refusable, else a refusal.
 
     All incoming tickets are graded before any is reported, so a command
-    writing more than one -- `instantiate` -- refuses with the whole grade
-    rather than with whichever stub happened to be graded first. The
-    findings carry their ticket, since a template's refusal naming no stub
-    is one a caller cannot act on.
+    writing more than one -- `stamp-generation`, over a root and every
+    member its generation covers -- refuses with the whole grade rather
+    than with whichever member happened to be graded first. The findings
+    carry their ticket, since a refusal naming no member is one a caller
+    cannot act on.
 
     ``prior`` makes the grade a delta, and the commands that repair an
-    existing ticket pass it. `amend` and `recut` exist to repair a cut, so
+    existing ticket pass it. `stamp-generation` exists to repair a cut, so
     holding a repair hostage to a defect it did not introduce would refuse
     the one mechanism for fixing that defect -- and often refuse the first
     of the several repairs that together clear it. A ticket already
     carrying a finding keeps carrying it; `lint` is what reports it, and
-    `ready` is what refuses to dispatch it. What this command owns is only
-    what crossing it added.
+    the readiness pass is what refuses to dispatch it. What this command
+    owns is only what crossing it added.
     """
     prospective = dict(siblings or {})
     prospective.update(incoming)
@@ -163,16 +165,10 @@ def grade_run_emission(command: str, run, run_dir, incoming, *, repairs: bool=Fa
     the first ticket of a cut is emitted into nothing.
 
     ``repairs`` marks a command that rewrites tickets already in the run --
-    `amend`, `recut`, `stamp-generation` -- and takes their current text
-    off the same disk as the prior grade, so the refusal covers what the
-    rewrite introduced and not what it inherited. A command that creates
-    tickets leaves it false: nothing was there to inherit from.
-
-    `amend` and `recut` reach this through the one writer they share,
-    ``tickets_issue._replace_and_invalidate``, rather than each calling it
-    for itself: a replacement graded in one caller and not in the other is
-    the asymmetry that family keeps growing back, and one writer can only
-    be given one grade.
+    today only `stamp-generation` -- and takes their current text off the
+    same disk as the prior grade, so the refusal covers what the rewrite
+    introduced and not what it inherited. A command that creates tickets
+    leaves it false: nothing was there to inherit from.
 
     An unreadable sibling is passed over rather than raised on. Every
     command that reaches here has already taken its own exact snapshot and

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 from .foundation import HOST_ADAPTERS_DIR, PROFILE_ROLES, REPO_ROOT
@@ -290,32 +289,6 @@ def render_claude_agent(name: str, profile: dict) -> str:
     )
     lines.extend(["---", "", ROLE_INSTRUCTIONS + claude_transport])
     return "\n".join(lines) + "\n"
-
-
-# --- managed marker blocks ----------------------------------------------
-
-
-def template_markers(template_text: str):
-    lines = [line.strip() for line in template_text.splitlines() if line.strip()]
-    if not lines:
-        raise ValueError("empty host-block template")
-    return lines[0], lines[-1]
-
-
-def resolved_python_interpreter() -> str:
-    """The interpreter install.py verified itself running under
-    (``sys.executable``). Refuses when the platform reports none rather than
-    rendering a bare ``python`` into every command the host block hands an
-    agent: on Windows that name is commonly the Store stub, so the fallback
-    shipped a command that fails on first use."""
-
-    if not sys.executable:
-        raise ValueError(
-            "this platform reports no sys.executable, so no interpreter path "
-            "can be rendered into the host block; rerun install.py with an "
-            "interpreter that reports one"
-        )
-    return sys.executable
 
 
 def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:

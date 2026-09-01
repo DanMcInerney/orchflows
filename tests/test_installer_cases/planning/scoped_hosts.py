@@ -646,9 +646,8 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertIn(f"name: {dest.stem}", content)
                 self.assertIn("effort:", content)
 
-            start, end = install.template_markers(
-                install.HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
-            )
+            grok_spec = install.marker("grok", "host_instructions")
+            start, end = grok_spec["start"], grok_spec["end"]
             self.assertEqual(grok_home / "rules" / "orchflows.md", plan.grok_rules.dest)
             rendered = plan.grok_rules.content
             self.assertTrue(rendered.startswith(start), rendered[:120])

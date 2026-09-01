@@ -27,6 +27,10 @@ DEFAULT_BOUND_MINUTES = 60
 # conversion that lets a tool-call bound be aged at all, named so a reader
 # who disagrees with it can see the number they are disagreeing with.
 TOOL_CALL_MINUTES = 2
+# An iteration is not a duration either, and its conversion is its own fact,
+# not a reuse of the unparsed-bound substitute above -- the two happen to
+# share a value today, and nothing ties them together if one changes.
+ITERATION_MINUTES = 60
 DURATION_KIND = 'duration'
 TOOL_CALLS_KIND = 'tool-calls'
 ITERATIONS_KIND = 'iterations'
@@ -60,7 +64,7 @@ def parse_bound(bound) -> tuple:
         return (int(match.group(1)) * TOOL_CALL_MINUTES, TOOL_CALLS_KIND)
     match = ITERATIONS_RE.match(text)
     if match:
-        return (int(match.group(1)) * DEFAULT_BOUND_MINUTES, ITERATIONS_KIND)
+        return (int(match.group(1)) * ITERATION_MINUTES, ITERATIONS_KIND)
     return (DEFAULT_BOUND_MINUTES, OTHER_BOUND_KIND)
 
 

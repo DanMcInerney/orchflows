@@ -331,10 +331,11 @@ def apply_plan(
         written_files.append(_installed_file(destination, "frontend-asset", action))
 
     # Everything below writes into ``.claude``/``.codex`` (adapters, prompts,
-    # redirect skills, role agents, host configs). Thin project plans set
-    # ``manage_host_surfaces`` False and skip all of it — no writes, no
-    # receipt-driven removals — so reinstalling over a project never touches
-    # a legacy fat project install's ``.claude``/``.codex`` files.
+    # redirect skills, role agents, host configs). ``build_plan`` supports
+    # user scope only (project-scope installs are refused before planning),
+    # so no plan it produces ever sets ``manage_host_surfaces`` False; a
+    # hand-built ``Plan`` still can, to isolate frontend-application testing
+    # from every write below.
     if plan.manage_host_surfaces:
         # A module dropped from ``scripts/`` (or renamed out of the flat
         # support-prefix census) stops appearing in ``plan.scripts``, but the

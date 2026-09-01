@@ -1,6 +1,6 @@
 # Reader UI fixture corpus
 
-Flat by run: `<run>/<id>.md`. `tests/test_ui.py` copies these into a
+Flat by run: `<run>/<id>.md`. `reader/tests/test_ui_cases/_base.py` copies these into a
 temporary `<tmp>/.orch/tickets/<run>/` at run time, so no `.orch/`
 directory is tracked here and no test can mutate repository state. The
 real ticket corpus is gitignored and uncommittable, so these are authored

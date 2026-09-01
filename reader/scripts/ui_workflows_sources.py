@@ -10,6 +10,7 @@ from reader.scripts import (
     ui_workflows_identity as identity,
     ui_workflows_skills as skills,
 )
+from reader.scripts.ui_model import REDACTED_HOST_PATH
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,7 +22,6 @@ WINDOWS_HOST_PATH_RE = re.compile(
 POSIX_HOST_PATH_RE = re.compile(
     r"(?<![:/A-Za-z0-9_])/(?!/)[^`\"'<>\r\n]+"
 )
-REDACTED_HOST_PATH = "[redacted-host-path]"
 NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
 UNREADABLE = {
     "error": {

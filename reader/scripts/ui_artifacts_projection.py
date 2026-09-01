@@ -9,6 +9,7 @@ import re
 from pathlib import Path, PurePosixPath
 
 from reader.scripts import ui_workflows_identity as contained
+from reader.scripts.ui_model import REDACTED_HOST_PATH
 
 
 ROUTE_SPECS = (
@@ -25,7 +26,6 @@ ROUTE_SPECS = (
 )
 INVENTORY_SCHEMA = "orchflows.ticket-artifacts.v1"
 ARTIFACT_SCHEMA = "orchflows.ticket-artifact.v1"
-NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 ARTIFACT_ID_RE = re.compile(r"art_[A-Za-z0-9_-]{43}\Z")
 REPORT_HEADING_RE = re.compile(r"^## Report[ \t]*\r?$", re.MULTILINE)
@@ -34,7 +34,6 @@ WINDOWS_HOST_PATH_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^`\"'<>\r\n]+"
 )
 POSIX_HOST_PATH_RE = re.compile(r"(?<![:/A-Za-z0-9_])/(?!/)[^`\"'<>\r\n]+")
-REDACTED_HOST_PATH = "[redacted-host-path]"
 NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
 UNAVAILABLE = {
     "error": {
@@ -49,7 +48,7 @@ class ArtifactIdentityError(ValueError):
 
 
 def _name(value: object) -> str:
-    if not isinstance(value, str) or NAME_RE.fullmatch(value) is None:
+    if not isinstance(value, str) or contained.NAME_RE.fullmatch(value) is None:
         raise ArtifactIdentityError("run or ticket identity is not canonical")
     return value
 

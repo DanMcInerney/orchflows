@@ -1,9 +1,7 @@
 """Shared live-repository and isolated-tree validator fixtures."""
 import contextlib
 import io
-import json
 import shutil
-import subprocess
 import sys
 import tempfile
 import unittest

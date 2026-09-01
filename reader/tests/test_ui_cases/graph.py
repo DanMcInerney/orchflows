@@ -8,12 +8,6 @@ from reader.scripts import ui_layout, ui_runs_projection
 from reader.tests.test_ui_cases import _base as fixture
 
 
-def coordinates(layout):
-    return tuple(
-        (node.id, node.layer, node.order, node.x, node.y) for node in layout["nodes"]
-    )
-
-
 def fan_graph(width):
     ids = ("R",) + tuple("M{0}".format(index) for index in range(width)) + ("S",)
     edges = tuple(("R", "M{0}".format(index)) for index in range(width))
@@ -28,27 +22,23 @@ class TestGraphLayout(unittest.TestCase):
     def test_equal_input_is_byte_deterministic(self):
         first = ui_layout.graph_layout(self.IDS, self.EDGES)
         second = ui_layout.graph_layout(self.IDS, self.EDGES)
-        self.assertEqual(coordinates(first), coordinates(second))
-        self.assertTrue(coordinates(first))
+        self.assertEqual(first, second)
+        self.assertTrue(first["edges"])
 
-    def test_input_order_does_not_change_coordinates(self):
+    def test_input_order_does_not_change_the_kept_edges(self):
         first = ui_layout.graph_layout(self.IDS, self.EDGES)
         second = ui_layout.graph_layout(tuple(reversed(self.IDS)), tuple(reversed(self.EDGES)))
-        self.assertEqual(coordinates(first), coordinates(second))
+        self.assertEqual(first, second)
 
-    def test_edges_point_upward_and_layer_width_is_bounded(self):
+    def test_edges_survive_a_wide_acyclic_graph_undiagnosed(self):
         ids, edges = fan_graph(9)
         layout = ui_layout.graph_layout(ids, edges)
-        layer = {node.id: node.layer for node in layout["nodes"]}
         self.assertEqual([], layout["diagnostics"])
-        self.assertTrue(all(layer[source] < layer[target] for source, target in layout["edges"]))
-        self.assertTrue(all(count <= ui_layout.LAYER_WIDTH for count in {
-            level: list(layer.values()).count(level) for level in set(layer.values())
-        }.values()))
+        self.assertEqual(sorted(edges), sorted(layout["edges"]))
 
     def test_empty_graph_is_a_valid_empty_shape(self):
         self.assertEqual(
-            {"nodes": [], "edges": [], "diagnostics": [], "width": 32, "height": 32},
+            {"edges": [], "diagnostics": []},
             ui_layout.graph_layout((), ()),
         )
 
