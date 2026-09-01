@@ -38,8 +38,8 @@ it never rewrites this run or invents an in-run root generation. The result sect
 executor, written as the work happens, never in one write at the end.
 Field-by-field meaning: [contracts/work-item.md](contracts/work-item.md).
 
-Before issue, `tickets.py lint <run> [<id>] --file <path>` grades the exact
-candidate that `tickets.py new <run> [<id>] --file <path>` would project.
+Before issue, `tickets.py lint <run> [<id>] --file <path>` grades a
+hand-authored ticket file's exact pre-issue shape without writing it anywhere.
 After issue, `tickets.py show <run> <id>` inspects one ticket's parsed identity
 and sections without mutation.
 

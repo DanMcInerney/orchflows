@@ -10,7 +10,7 @@ if __package__:
     from .tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
         REQUIRED_ISOLATION, _extract_flag,
-        _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
+        _parse_frontmatter, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
     from .tickets_issue_render import _frontmatter_list, _render_ticket
@@ -24,7 +24,7 @@ else:
     from tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
         REQUIRED_ISOLATION, _extract_flag,
-        _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
+        _parse_frontmatter, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
     from tickets_issue_render import _frontmatter_list, _render_ticket
@@ -37,7 +37,7 @@ NEW_USAGE = (
     "new <run> <id> --executor E --goal TEXT --context TEXT "
     "[--details TEXT] [--depends-on a,b] "
     "[--bound B] [--pack P] [--profile P] [--independence gate|checker] "
-    "[--isolation required|none] | new <run> [<id>] --file <path>"
+    "[--isolation required|none]"
 )
 NEW_DEFAULT_BOUND = f"{DEFAULT_BOUND_MINUTES}m"
 INDEPENDENCE_VALUES = ("gate", "checker")
@@ -84,9 +84,8 @@ def _invalidate_assignment(text):
 
 
 def _cmd_new(rest):
-    """Create one current-format ticket, or place an already-written one."""
+    """Create one current-format ticket."""
     args = list(rest)
-    file_arg = _extract_flag(args, "--file")
     executor = _extract_flag(args, "--executor")
     goal = _extract_flag(args, "--goal")
     context = _extract_flag(args, "--context")
@@ -100,20 +99,6 @@ def _cmd_new(rest):
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"new does not accept {stray}. usage: {NEW_USAGE}"}
-    supplied = (
-        ("--executor", executor), ("--goal", goal),
-        ("--context", context), ("--details", details),
-        ("--depends-on", depends_on), ("--bound", bound), ("--pack", pack),
-        ("--profile", profile), ("--independence", independence),
-        ("--isolation", isolation),
-    )
-    if file_arg is not None:
-        mixed = [name for name, value in supplied if value is not None]
-        if mixed:
-            return {"error": f"--file takes none of {mixed}. usage: {NEW_USAGE}"}
-        if not 1 <= len(args) <= 2:
-            return {"error": f"usage: {NEW_USAGE}"}
-        return _place_ticket(args[0], file_arg, args[1] if len(args) == 2 else None)
     if len(args) != 2:
         return {"error": f"usage: {NEW_USAGE}"}
     run, ticket_id = args
@@ -153,7 +138,14 @@ def _cmd_new(rest):
 def _project_file_ticket(
     run: str, text: str, declared_id=None, *, source="ticket file"
 ):
-    """Project one unissued file exactly as ``new --file`` would persist it."""
+    """Project one hand-authored file exactly as issuing it would persist it.
+
+    The one remaining caller is ``lint --file``: grading the exact pre-issue
+    shape of a ticket a person wrote by hand, without writing it anywhere.
+    Issuing a file this way is no longer a door -- ``new`` mints from
+    flags and ``do``/``judge`` mint from a goal file -- so this projection is
+    now read-only in every live path.
+    """
     invalid = _segment_error("run id", run)
     if invalid is not None:
         return None, invalid
@@ -192,19 +184,6 @@ def _project_file_ticket(
         else _remove_frontmatter_field(text, "pack_digest")
     )
     return (ticket_id, text), None
-
-
-def _place_ticket(run: str, source: str, declared_id=None):
-    text, failure = _read_utf8(source, "ticket file")
-    if failure is not None:
-        return failure
-    projected, failure = _project_file_ticket(
-        run, text, declared_id, source=source
-    )
-    if failure is not None:
-        return failure
-    ticket_id, text = projected
-    return _issue_ticket(run, ticket_id, text)
 
 
 def _issue_defects(text: str, *, issued: bool=False) -> list:
@@ -271,6 +250,6 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
 __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
     "_cmd_new", "_frontmatter_list", "_issue_defects",
-    "_issue_ticket", "_place_ticket", "_project_file_ticket", "_render_ticket",
+    "_issue_ticket", "_project_file_ticket", "_render_ticket",
     "pinned_pack_digest",
 )

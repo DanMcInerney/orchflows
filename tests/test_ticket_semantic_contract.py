@@ -352,7 +352,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
         self.assertEqual({"Goal", "Context", "Report"}, set(_sections(text)))
 
-    def test_preissue_lint_and_new_grade_the_same_projected_file_candidate(self):
+    def test_preissue_lint_grades_the_projected_file_candidate(self):
+        """`new --file` retired (routing-design M3): lint is the one reader
+
+        left projecting a hand-authored file's pre-issue shape; a caller
+        wanting it actually minted now uses `new`'s flags or a `do`/`judge`
+        goal file instead.
+        """
         source = Path(self.temporary.name) / "R1.md"
         draft = assignment("R1", "orch-do")
         draft = _remove_frontmatter_field(draft, "admission")
@@ -367,18 +373,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(before, source.read_bytes())
         self.assertFalse((Path(self.temporary.name) / "tickets" / "issued-run").exists())
 
-        created = self.dispatch("new", "issued-run", "R1", "--file", str(source))
-        self.assertEqual("R1", created["new"]["id"])
-        issued = (
-            Path(self.temporary.name) / "tickets" / "issued-run" / "R1.md"
-        ).read_text(encoding="utf-8")
-        data = _parse_frontmatter(issued)
-        self.assertEqual("issued-run", data["run"])
-        self.assertEqual("pending", data["status"])
-        self.assertEqual("pending", data["admission"])
-        self.assertNotIn("claimed_by", data)
-
-    def test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch(self):
+    def test_preissue_lint_refuses_a_file_identity_mismatch(self):
         source = Path(self.temporary.name) / "R1.md"
         draft = _remove_frontmatter_field(
             assignment("R1", "orch-do"), "admission"
@@ -389,11 +384,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         linted = retired_doors.run(
             ["lint", "other-run", "R9", "--file", str(source)]
         )
-        issued = retired_doors.run(
-            ["new", "other-run", "R9", "--file", str(source)]
-        )
         self.assertIn("placed as 'R9', but ticket file names 'R1'", linted["error"])
-        self.assertEqual(linted["error"], issued["error"])
         self.assertEqual(before, source.read_bytes())
 
     def test_show_inspects_one_ticket_without_mutating_the_sink(self):

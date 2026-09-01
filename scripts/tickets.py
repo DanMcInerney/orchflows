@@ -201,7 +201,6 @@ NEW_USAGE = _tickets_issue_module.NEW_USAGE
 _cmd_new = _tickets_issue_module._cmd_new
 _frontmatter_list = _tickets_issue_module._frontmatter_list
 _issue_ticket = _tickets_issue_module._issue_ticket
-_place_ticket = _tickets_issue_module._place_ticket
 _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
 CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE

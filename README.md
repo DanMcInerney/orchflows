@@ -247,7 +247,8 @@ agent, model and effort, and carrying the whole prompt the child is given
 filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
 half: import the result, adjudicate it at the join, retire the worktree,
 and report what became ready to dispatch next. A ticket you wrote by hand
-takes `new --file` and then `dispatch`, the same launch by another door.
+takes the same `do --goal-file` (and `--details-file`) door — there is no
+second door for hand-authored work.
 
 That split is the honest line between mechanical and judgment. Both
 commands are pure bookkeeping — replayable, refusing before they touch
