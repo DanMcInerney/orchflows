@@ -227,7 +227,7 @@ Review the fixed artifact independently against these owners:
   [pack signature](../contracts/pack-signature.md);
 - vocabulary: [vocabulary](vocabulary.md), using its meanings and no others;
 - implemented enforcement and non-normative illustrations:
-  [documentation](documentation.md) laws 5–6.
+  [documentation](documentation.md) laws 6, 9.
 
 Record the item and adapter paths, deterministic admission evidence, boundary
 findings, and verification observations. Failure handling follows

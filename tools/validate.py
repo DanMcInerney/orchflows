@@ -121,6 +121,17 @@ def validate_markdown_links(diag: Diagnostics) -> None:
         _restore_support(state)
 
 
+def validate_section_citations(diag: Diagnostics) -> None:
+    """Grade the root currently exposed by this compatibility facade."""
+
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        _lint_module.validate_section_citations(diag)
+    finally:
+        _restore_support(state)
+
+
 def validate_regenerated_artifacts(diag: Diagnostics, names=None) -> None:
     """Refuse any derived artifact whose generator would change its bytes.
 
@@ -308,6 +319,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_names(packages, diag)
     validate_craft_sections(packages, diag)
     validate_markdown_links(diag)
+    validate_section_citations(diag)
     validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)

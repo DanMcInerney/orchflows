@@ -33,13 +33,19 @@ RESTORABLE_SEAMS = frozenset(
 ALL_SEAMS = RESTORABLE_SEAMS | {"threads"}
 # The rulings a reviewer may give a mutation owner; the policy says what each means.
 RESTORATIONS = frozenset({"selected-module-boundary", "sharded-module-guard"})
-EXPECTED_SENTINELS = 14
 REQUIRED_CATEGORIES = frozenset({
     "boundary-restoration", "cutcheck-corpus", "cutcheck-process", "cwd", "discovery",
     "environment", "git-process", "hash-contract", "health-contract", "installer-fidelity",
     "process", "real-hashed-runtime", "receipt-state", "state-sink", "thread-server",
     "ticket-contention", "workspace-state",
 })
+def _canonical_sentinel_count(canonical: Path = MANIFEST_PATH) -> int:
+    """The committed manifest's own sentinel count, read fresh -- never a
+    literal restated here for a future add/remove to drift against unseen."""
+
+    return len(json.loads(Path(canonical).read_text(encoding="utf-8"))["sentinels"])
+
+
 def load_manifest(path: Path = MANIFEST_PATH) -> dict:
     """Load the committed identity, sentinel, and mutation-owner contract."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -64,8 +70,9 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict:
         raise ValueError("serial compatibility sentinel identities must be unique")
     if not REQUIRED_CATEGORIES.issubset(categories):
         raise ValueError("serial compatibility sentinel categories are incomplete")
-    if len(entries) != EXPECTED_SENTINELS:
-        raise ValueError("serial compatibility manifest must contain exactly 14 sentinels")
+    expected = _canonical_sentinel_count()
+    if len(entries) != expected:
+        raise ValueError(f"serial compatibility manifest must contain exactly {expected} sentinels")
     if not allowed.issubset(RESTORABLE_SEAMS):
         raise ValueError("serial compatibility manifest allows an unrestorable seam")
     owners = data.get("mutation_owners")

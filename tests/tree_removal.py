@@ -14,8 +14,8 @@ def remove_repo_tree(root):
 
     `git commit` writes its loose objects read-only, and Windows refuses to
     unlink a read-only file, so a bare `shutil.rmtree` leaves every such tree
-    behind and errors the test that built it -- twelve of them, on all three
-    Windows legs and on none of the other six. The mode is cleared first and
+    behind and errors the test that built it -- twelve of them,
+    <!-- BEGIN GENERATED CI TOPOLOGY -->on both Windows legs and on none of the other three<!-- END GENERATED CI TOPOLOGY -->. The mode is cleared first and
     the removal stays strict, which is how `scripts/cutcheck.py` removes the
     scratch roots the tool itself owns.
 

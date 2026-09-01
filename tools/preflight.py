@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the suite under every locally installed interpreter CI uses.
 
-The matrix has five active CI legs: three Ubuntu, one macOS, and one Windows.
+The matrix has <!-- BEGIN GENERATED CI TOPOLOGY -->five active CI legs: two Ubuntu, one macOS, and two Windows<!-- END GENERATED CI TOPOLOGY -->.
 A local green covers at most one OS/interpreter pair, so AGENTS.md calls
 it provisional. Preflight reruns the suite under each locally installed
 CI interpreter and names missing versions and other operating systems.
