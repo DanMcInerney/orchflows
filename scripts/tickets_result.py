@@ -1,20 +1,31 @@
 """Ticket result support."""
 
 from __future__ import annotations
+import json
+import os
+import sys
 from pathlib import Path
 from datetime import datetime, timezone
 try:
     import msvcrt
 except ImportError:
     msvcrt = None
+try:  # in-repo; the installed copy sits flat beside state_root.py
+    from scripts import state_root
+except ImportError:  # pragma: no cover - the installed copy's path
+    import state_root
 if __package__:
     from .tickets_format import REPORT_SECTION, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _write_section, dequote, lease_of
 else:
     from tickets_format import REPORT_SECTION, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _write_section, dequote, lease_of
 if __package__:
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, SINK_CONVENTION, UTC_STAMP, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, _writer_identity, locked_run_write
 else:
-    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, locked_run_write
+    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, SINK_CONVENTION, UTC_STAMP, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, _writer_identity, locked_run_write
+if __package__:
+    from .tickets_project import recorded_project
+else:
+    from tickets_project import recorded_project
 if __package__:
     from .tickets_attempts import PROTOCOL, _commit_record
     from .tickets_shapes import (
@@ -35,6 +46,13 @@ RUN_STATE_USAGE = 'run-state <run> [--tree <name>] (--note <line> | (--artifact 
 IMPROVEMENT_USAGE = 'improvement (--proposal <name> (--file <path> | --text <string>) | --covered <line>)'
 PROPOSALS_DIR = 'proposals'
 COVERAGE_RECORD_NAME = 'covered.jsonl'
+# rules/visibility.md §6: the sink channel `frame-open`, `frame-close`,
+# `land` and `stalled` append one line each to, sharded the same way
+# `friction/<yyyy-mm>.jsonl` is.
+EVENTS_SUBDIR = 'events'
+_EVENT_SESSION_ENV_VARS = (
+    'CLAUDE_SESSION_ID', 'CLAUDE_CODE_SESSION_ID', 'CODEX_SESSION_ID', 'SESSION_ID',
+)
 
 
 def _cmd_result(rest):
@@ -184,6 +202,74 @@ def _append_one_line(path: Path, block: str) -> None:
         finally:
             handle.seek(0)
             msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+def _event_host() -> str:
+    """Which host this process runs under, by the same env-var reading
+    ``scripts/friction.py:_detect_host`` uses. Kept as its own small copy
+    rather than an import: the two streams' provenance heads differ (no
+    ``project_source``, ``workspace``, ``cwd`` or ``skill`` here), and the
+    identity plumbing worth sharing -- project resolution -- already is,
+    through ``tickets_project.recorded_project``.
+    """
+    env = os.environ
+    if env.get('CLAUDECODE') or any(key.startswith('CLAUDE_') for key in env):
+        return 'claude-code'
+    if any(key.startswith('CODEX_') for key in env):
+        return 'codex'
+    return 'unknown'
+
+
+def _event_session():
+    for var in _EVENT_SESSION_ENV_VARS:
+        value = os.environ.get(var)
+        if value:
+            return value
+    return None
+
+
+def _event_project(run: str) -> dict:
+    """The project an event's ``run`` belongs to: recorded first, the
+    caller's own checkout otherwise -- ``friction.py:_provenance``'s
+    precedence, read through the tickets modules' own identity plumbing
+    rather than a second copy of it.
+    """
+    return recorded_project(run) or _writer_identity()[0]
+
+
+def _append_event(run: str, ticket_id: str, event: str, fields: dict) -> None:
+    """Append one terminal machine event to ``<sink>/events/<yyyy-mm>.jsonl``.
+
+    Best-effort and silent to its caller: a write that cannot reach the sink
+    costs the event, never the transition that produced it. ``friction.py``
+    holds this exact bar (its module docstring: "must NEVER block, prompt,
+    or raise") and this mirrors its remedy too -- swallow, then name the
+    failure on stderr, so a host reading only stdout's one JSON document
+    never sees it and a human watching the terminal does.
+
+    The provenance head matches ``friction.py``'s: ``sink_convention``,
+    ``ts``, ``project``, ``run``, ``ticket``, ``host``, ``session`` --
+    the fields a reader needs to slice one workflow's events from every
+    other project's, kept identical across both sink streams on purpose.
+    """
+    try:
+        now = datetime.now(timezone.utc)
+        entry = {
+            'sink_convention': SINK_CONVENTION,
+            'ts': now.strftime(UTC_STAMP),
+            'project': _event_project(run),
+            'run': run,
+            'ticket': ticket_id,
+            'host': _event_host(),
+            'session': _event_session(),
+            'event': event,
+        }
+        entry.update(fields)
+        path = state_root.state_root() / EVENTS_SUBDIR / f"{now.strftime('%Y-%m')}.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _append_one_line(path, json.dumps(entry, ensure_ascii=False) + '\n')
+    except Exception as error:  # the reliability bar above: never the transition
+        print(f'events: not logged: {error}', file=sys.stderr)
+
+
 def _notes_terminal(path: Path):
     """``(state, error)``: the state a run's notes closed with, ``None``
     while open, and the read failure when that could not be told.

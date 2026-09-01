@@ -50,6 +50,7 @@ if __package__:
     from .tickets_lifecycle import _cmd_ready
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_project import recorded_project
+    from .tickets_result import _append_event
     from .tickets_store import (
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _same_project, _segment_error,
         _tickets_root, _writer_identity, segment_refusal,
@@ -73,6 +74,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_lifecycle import _cmd_ready
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_project import recorded_project
+    from tickets_result import _append_event
     from tickets_store import (
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _same_project, _segment_error,
         _tickets_root, _writer_identity, segment_refusal,
@@ -80,7 +82,7 @@ else:  # pragma: no cover - direct/installed flat script path
 
 FRAME_OPEN_USAGE = (
     "frame-open <run> --goal-file F [--details-file D] [--parent ID] "
-    "[--done <canonical-json>] [--bound B]"
+    "[--done <canonical-json>] [--bound B] [--workflow NAME]"
 )
 FRAME_CLOSE_USAGE = (
     "frame-close <run> <id> [--status S] [--done <canonical-json>]"
@@ -123,6 +125,7 @@ def _cmd_frame_open(rest):
     parent = _extract_flag(args, "--parent")
     done = _extract_flag(args, "--done")
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
+    workflow = _extract_flag(args, "--workflow")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"frame-open does not accept {stray}. usage: {FRAME_OPEN_USAGE}"}
@@ -167,6 +170,10 @@ def _cmd_frame_open(rest):
     opened = _opened(run, frame_id, bound)
     if "error" in opened:
         return {**opened, "id": frame_id}
+    goal_lines = goal.strip().splitlines()
+    _append_event(run, frame_id, "frame-open", {
+        "workflow": workflow, "goal_head": (goal_lines[0].strip() if goal_lines else "")[:200],
+    })
     return {"frame_open": {
         "run": run, "id": frame_id, "parent": parent,
         "path": str(run_dir / f"{frame_id}.md"),
@@ -384,10 +391,21 @@ def _cmd_frame_close(rest):
     if refusal is not None:
         return refusal
     with _run_lock(run):
-        return _closed_under_run_lock(
+        closed = _closed_under_run_lock(
             run, frame_id, path, attempt, census, reason,
             status=status, done=done or sealed or None,
         )
+    if "frame_close" in closed:
+        result = closed["frame_close"]
+        done_reading = result.get("done")
+        _append_event(run, frame_id, "frame-close", {
+            "children": len(result["do_children"]) + len(result["judges"]),
+            "judged": result["unjudged"] is None,
+            "unjudged_reason": result["unjudged"],
+            "done_exit": (done_reading or {}).get("exit"),
+            "status": result["status"],
+        })
+    return closed
 
 
 def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2055,
+  "count": 2108,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -213,6 +213,17 @@
    "test_doclint.ValidateLinkCheckTest.test_a_dangling_link_in_a_graded_tier_is_an_error",
    "test_doclint.ValidateLinkCheckTest.test_a_link_that_resolves_is_not",
    "test_doclint.ValidateLinkCheckTest.test_an_external_url_is_not_the_repositorys_to_resolve",
+   "test_events.AppendEventUsesTheLockedIdiomTest.test_append_event_calls_the_shared_locked_writer",
+   "test_events.EventFailureIsSwallowedTest.test_a_broken_append_does_not_fail_the_frame_close",
+   "test_events.FrameCloseEventTest.test_a_judged_close_names_its_children_and_no_reason",
+   "test_events.FrameCloseEventTest.test_a_refused_close_writes_no_event",
+   "test_events.FrameCloseEventTest.test_an_unjudged_close_names_the_journals_reason",
+   "test_events.FrameOpenEventTest.test_a_long_goal_first_line_is_truncated_to_200_chars",
+   "test_events.FrameOpenEventTest.test_frame_open_names_its_workflow_and_goal_head",
+   "test_events.FrameOpenEventTest.test_frame_open_without_workflow_names_none",
+   "test_events.LandEventFailureIsSwallowedTest.test_a_broken_append_does_not_fail_the_land",
+   "test_events.LandEventTest.test_a_completed_predicate_names_its_exit_and_dispatch_cost",
+   "test_events.LandEventTest.test_a_driver_graded_land_carries_no_done_exit",
    "test_fact_registry.TestOneDequotingPrimitive.test_no_script_spells_the_idiom_beside_its_owner",
    "test_fact_registry.TestOneDequotingPrimitive.test_the_owner_is_reached_by_its_public_name",
    "test_fact_registry.TestOneDequotingPrimitive.test_the_primitive_removes_padding_inside_the_backticks_too",
@@ -225,6 +236,48 @@
    "test_fact_registry.TestTheGeneratedEnumRatchet.test_the_real_tree_carries_no_restatement",
    "test_fact_registry.TestTheUnreachableIsGone.test_no_module_still_defines_the_deleted_names",
    "test_fact_registry.TestTheUnreachableIsGone.test_the_motion_reader_takes_only_the_path_it_reads",
+   "test_harvest.TestCliUsageErrors.test_bad_since_is_a_usage_error",
+   "test_harvest.TestCliUsageErrors.test_bad_until_is_a_usage_error",
+   "test_harvest.TestCliUsageErrors.test_out_is_required_unless_list_runs",
+   "test_harvest.TestClusterDeterminism.test_same_input_yields_the_same_digest_modulo_generated_at",
+   "test_harvest.TestClusteringAndRecurrence.test_clusters_are_ranked_by_member_count_descending",
+   "test_harvest.TestClusteringAndRecurrence.test_dissimilar_entries_land_in_separate_clusters",
+   "test_harvest.TestClusteringAndRecurrence.test_matcher_draft_regexes_match_the_entries_that_produced_them",
+   "test_harvest.TestClusteringAndRecurrence.test_members_beyond_the_cap_are_omitted_and_counted",
+   "test_harvest.TestClusteringAndRecurrence.test_paths_normalize_regardless_of_slash_direction",
+   "test_harvest.TestClusteringAndRecurrence.test_three_members_alone_qualify_recurrence",
+   "test_harvest.TestClusteringAndRecurrence.test_two_distinct_run_host_pairs_without_session_qualify",
+   "test_harvest.TestClusteringAndRecurrence.test_two_distinct_sessions_qualify_with_two_members",
+   "test_harvest.TestClusteringAndRecurrence.test_two_members_one_session_does_not_qualify",
+   "test_harvest.TestCoveredMatcherExclusion.test_at_or_before_watermark_is_dropped_after_survives",
+   "test_harvest.TestCoveredMatcherExclusion.test_non_matching_pattern_never_drops_anything",
+   "test_harvest.TestDefaultSinceFromCoveredWatermark.test_no_covered_file_at_all_means_everything",
+   "test_harvest.TestDefaultSinceFromCoveredWatermark.test_no_selector_defaults_since_to_the_newest_watermark",
+   "test_harvest.TestDefaultSinceFromCoveredWatermark.test_one_explicit_selector_suppresses_the_default",
+   "test_harvest.TestDigestWatermark.test_empty_selection_with_a_bounded_until_uses_the_window_end",
+   "test_harvest.TestDigestWatermark.test_empty_selection_with_an_on_day_uses_the_days_end",
+   "test_harvest.TestDigestWatermark.test_empty_selection_with_an_unbounded_window_is_null",
+   "test_harvest.TestDigestWatermark.test_watermark_counts_a_selected_entry_even_when_covered_drops_it",
+   "test_harvest.TestDigestWatermark.test_watermark_is_the_newest_selected_entry",
+   "test_harvest.TestEmptySinkAndWindow.test_empty_sink_writes_a_zeroed_digest",
+   "test_harvest.TestEmptySinkAndWindow.test_list_runs_over_empty_sink_prints_nothing",
+   "test_harvest.TestEmptySinkAndWindow.test_missing_events_directory_is_tolerated_not_fatal",
+   "test_harvest.TestEmptySinkAndWindow.test_window_matching_nothing_still_reports_totals",
+   "test_harvest.TestListRuns.test_list_runs_rejects_out",
+   "test_harvest.TestListRuns.test_newest_run_by_latest_timestamp_lists_first",
+   "test_harvest.TestListRuns.test_run_with_frame_open_reports_workflow_and_goal",
+   "test_harvest.TestListRuns.test_run_without_frame_open_reports_null_workflow_and_goal",
+   "test_harvest.TestOnDaysDisjointUnion.test_bad_on_date_is_a_usage_error",
+   "test_harvest.TestOnDaysDisjointUnion.test_two_on_days_select_nothing_between_them",
+   "test_harvest.TestSelectorComposition.test_different_selector_kinds_and_together",
+   "test_harvest.TestSelectorComposition.test_repeated_run_flag_ors_together",
+   "test_harvest.TestSelectorComposition.test_workflow_selector_resolves_through_frame_open_events",
+   "test_harvest.TestSinceUntilEdges.test_before_since_is_excluded",
+   "test_harvest.TestSinceUntilEdges.test_since_is_inclusive_and_until_is_exclusive",
+   "test_harvest.TestSinceUntilEdges.test_since_relative_days_measures_from_now",
+   "test_harvest.TestWindowsPathHandling.test_out_path_several_directories_deep_is_created",
+   "test_harvest.TestWindowsPathHandling.test_sink_directories_resolve_under_a_windows_style_state_home",
+   "test_harvest.TestWriterReaderSeam.test_real_writer_and_reader_agree_on_workflow_and_goal",
    "test_install_doctor.TestInstallDoctor.test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was",
    "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
@@ -2058,7 +2111,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "14c1d76244e77db1f368662cc140de6924217d87494cc42b364ec675fded8c13"
+  "sha256": "5312b260e64cff67021a277d5c04d4af7bd51e7572ce7bdf04d40961bdbd5c50"
  },
  "mutation_owners": [
   {
@@ -2335,6 +2388,31 @@
    ]
   },
   {
+   "module": "tests.test_events",
+   "owner": "_EventSinkTestCase.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_events",
+   "owner": "_FrameEventTestCase.call",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_events",
+   "owner": "_LandEventTestCase.stand_up",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
    "module": "tests.test_friction_cases.cli",
    "owner": "TestMainWritesEntry.test_a_worktree_and_its_main_checkout_append_to_one_stream",
    "restoration": "sharded-module-guard",
@@ -2545,6 +2623,40 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_harvest",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_harvest",
+   "owner": "TestWriterReaderSeam._real_frame_open",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_harvest",
+   "owner": "TestWriterReaderSeam.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
+   ]
+  },
+  {
+   "module": "tests.test_harvest",
+   "owner": "_HarvestTestCase.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {
