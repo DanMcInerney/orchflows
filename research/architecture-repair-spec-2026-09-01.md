@@ -60,18 +60,22 @@ time: branch `claude/orchflows-architecture-review-0f5268`, even with
 
 ## Phase 1 — live wrong instructions (smallest, most urgent)
 
-**U1. Fix `orch-judge`'s Return-path sentence.**
-Report P1/T1, verified in source. `skills/kernel/orch-judge/SKILL.md:15-17`
-instructs a "seven-field findings array" that "the join reads... and
-binds in the ledger." Contracts say five fields
-(`contracts/shapes.json:179-187`) and the join binds nothing
-(`contracts/dispatch.md`'s supersession log, `contracts/result.md:42-51`).
-Keep what is still live law: findings written to one file, its path
-named in the report (the `findings:` launch line rides
-`tickets_registry.py:35`'s `files_findings`). Delete the field count and
-the join-binds claim; align wording with the contracts it cites.
-Acceptance: the sentence contradicts no contract; body ≤ 300 words;
-`tools/validate.py` green.
+**U1. Fix both kernel bodies' contract-drifted clauses.**
+Report P1/T1, verified in source, widened by the raw-findings residue
+read. (a) `skills/kernel/orch-judge/SKILL.md:15-17` instructs a
+"seven-field findings array" that "the join reads... and binds in the
+ledger." Contracts say five fields (`contracts/shapes.json:179-187`)
+and the join binds nothing (`contracts/dispatch.md`'s supersession log,
+`contracts/result.md:42-51`). Keep what is still live law: findings
+written to one file, its path named in the report (the `findings:`
+launch line rides `tickets_registry.py:35`'s `files_findings`). Delete
+the field count and the join-binds claim. (b) `orch-do`'s Return clause
+("status, result identity, verification, and the pack evidence record",
+`skills/kernel/orch-do/SKILL.md:25-26`) names a `verification` envelope
+field the same supersession log documents as removed — B1.4's raw
+packet caught this and the report's dedup dropped it; verify against
+the current envelope shape and align. Acceptance: neither body
+contradicts a contract; both ≤ 300 words; `tools/validate.py` green.
 
 **U2. Two conditional fixes to the generated launch prompt.**
 Both answer friction logged in run `20260901T155911Z`; find the prompt
@@ -117,6 +121,12 @@ the 12+ env-var redeclarations and ~20 root-walk re-derivations
 exactly one witness: `tests/test_state_root_cases/` pins the literal
 value once; every other test imports. `tools/suite_check.py:206-207`'s
 bootstrap-ordering workaround dissolves — delete its comment and copy.
+Two residue sites the report's count missed:
+`scripts/tickets_store.py:31`'s `NO_SINK_ERROR` spells the env-var name
+inside a live runtime error string (build it from the constant), and
+`scripts/orchflows_home.py:43-57`'s `MANAGED_IGNORES` hand-spells six
+sink-subdirectory names, several with no named root in `state_root.py`
+— give the subdirectory names owners there and derive the ignore list.
 Acceptance: repo-wide grep finds the env-var string literal in exactly
 three places — the bootstrap leaf, `rules/visibility.md` §6, and the
 one witness test; suite green.
@@ -208,7 +218,12 @@ unconnected senses, P6/Q3 — worst term found); disambiguate the
 "judge" noun vs `orch-judge` callable collision the file already
 self-acknowledges at `docs/vocabulary.md:235-239` (open friction entry
 2026-08-31). Benchmark-family "rung"/"tier" senses get their own words
-per the report's ladder/rung row. Acceptance: every term the review
+per the report's ladder/rung row. Residue addition: correct the
+**baseline** entry (`docs/vocabulary.md:204`) — it says "proven clean
+starting state" but the owning code stamps a recorded-dirty state by
+design (`scripts/workspace_git.py:308-322`, whose own docstring states
+the divergence); redefine as the recorded starting state, clean or
+recorded-dirty. Acceptance: every term the review
 found load-bearing resolves to exactly one entry; the self-acknowledged
 "naming debt" sentence is gone because the debt is paid.
 
@@ -229,7 +244,39 @@ subcommand or delete it. Reader duplicates (P11): drop the dead
 server-side layout constants (`reader/scripts/ui_layout.py`) the
 browser recomputes, dedupe `NAME_RE` and the three `REDACTED_HOST_PATH`
 copies. Fix the two fixture READMEs citing nonexistent
-`tests/test_ui.py`. Acceptance: each deletion's suite lane green; no
+`tests/test_ui.py`.
+Residue additions from the raw packets (each verified by its lane, all
+stale/dead classes the report's pattern-dedup dropped):
+`scripts/tickets_worklog.py:28`'s `ITERATION_ID_RE` still matches the
+retired `.iter.` round-id spelling while `tickets_format.py:100-104`
+owns the live `.repair.` grammar — a behavior drift, not just prose
+(and `tickets_format.py:324`'s docstring example has the same stale
+spelling); `scripts/tickets_emission.py:3,126,166` name doors that no
+longer exist (amend/recut/gate/instantiate) and `:172` cites a function
+(`tickets_issue._replace_and_invalidate`) that exists nowhere in the
+tree; `scripts/tickets_context.py:3-7` treats retired `ready`/`claim`
+as live doors; `scripts/tickets_worklog.py:24,32,41` dead
+`_packs_root`/`_upstream`/`PACKS_DIR` and `tickets_format.py:90-91`
+dead `PACK_NAME_*` constants; `scripts/tickets_bound.py:63` reuses
+`DEFAULT_BOUND_MINUTES` as an unrelated minutes-per-iteration factor —
+split into two named facts; `scripts/rings.py` duplicates its
+shadows/notice/reserved logic between `resolve()` and `inventory()`
+(:329-341 vs :394-403) — factor once;
+`tests/test_script_executors.py:32-77` builds fixture tickets with
+pre-migration section headings (Objective/Fixed inputs/...) that no
+longer match the sealed Goal/Context/Details schema; dead installer
+surface — `installer/packages.py:289,296` (`template_markers`,
+`resolved_python_interpreter`), `installer/application.py:25` unused
+import, the unreachable `manage_host_surfaces=False` branch
+(`application.py:333`, `presentation.py:124`) and the project-scope
+generality `planning.py:466-467` can no longer produce;
+`installer/hosts.py:16`'s `GROK_MODEL_CENSUS` allows a model nothing
+binds; dead tools items — `run_report_support/model.py:32`
+`LONGEST_TICKETS`, the vestigial `SLICE_EXECUTOR` filter (`model.py:33`,
+plus `render.py:114`'s retired "decompose" wording),
+`live_routing_bench.py:77`'s permanently-empty `ROLE_SKILL_ROUTES`
+branch, `validate_support/common.py:172` `TEMPLATE_ENTRY_VALUES`.
+Acceptance: each deletion's suite lane green; no
 new helper added anywhere.
 
 **U11. Tombstone dating and expiry policy.**
@@ -239,6 +286,25 @@ refusal has not fired within its horizon is deleted, registry and
 tests together — at the registry itself, the fact's one owner. This
 unit writes the policy and the dates; the first deletions are a later
 run's call. Acceptance: every entry dated; policy stated once.
+
+**U12. Law-text corrections and the ring's one timestamp owner.**
+Two residue items outside the earlier units' shapes. (a)
+`rules/visibility.md:45` attributes the events-channel write solely to
+`scripts/tickets_frame.py` and `scripts/tickets_land.py`, but the
+writing function `_append_event` is defined in
+`scripts/tickets_result.py:238` — a false fact in a law file; correct
+the attribution (and decide whether the function should move to match
+the law instead). (b) The project ring's super-research package
+declares its output-timestamp literal at least sixteen independent
+times through three different mechanisms (per-adapter
+`RECORD_INSTANT_FORMAT` redeclarations, an inline `strftime`, a
+hand-built `format()` — B1.4 supplement's site list), while
+`references/protocol.md:99` claims `schema.INSTANT_FORMAT` is the one
+definition; make it so — one shared constant in the package's
+`_support`, every adapter importing it, `open_page.py:108`'s aliasing
+pattern as the model. Distinct upstream wire-format grammars (X's, RFC
+3339) keep their own constants; only the one output convention
+consolidates. Acceptance: the protocol.md claim is true by grep.
 
 ## Deferred — named, not scoped here
 
@@ -254,13 +320,37 @@ run's call. Acceptance: every entry dated; policy stated once.
   drift-canary, renovate, skill-tournament) are migration debt by
   standing instruction; nothing in this spec edits them except U8's
   three self-improve sites.
+- The `write_scope` frontmatter key: `scripts/workspace_candidate.py:69-84`
+  enforces a schema whose refusal text cites `contracts/work-item.md`,
+  but the contract's generated frontmatter table declares no such field
+  — the code is the schema's only definition. Declaring it in the
+  contract is a T0 shape change (supersession PR); dropping the stale
+  citation is trivial but leaves the field undocumented. User decision.
+- The search-plan schemas (five closed, hash-pinned shapes) live in
+  `docs/search-plan-protocol.md` + `scripts/search_plan_protocol.py`
+  rather than `contracts/` — they match the vocabulary's own contract
+  definition and arguably belong at T0. A placement decision, not a
+  mechanical move.
 
 ## Suggested execution shape
 
 U1+U2+U3 are one day of small, independent wording units — worker
 lane each, or one team wave. U4 and U5 are independent of each other
 and of phase 3. U6/U7 land before U8 so the rename commit is checked
-by the new lint. U9-U11 are cheap and parallel after U8. Every unit is
+by the new lint. U9-U12 are cheap and parallel after U8. Every unit is
 sized for one child context; none needs a sub-agent fan-out — the
 review already did the enumeration, and U2's own evidence says a child
 that fans out and closes early strands its findings.
+
+## Provenance of the residue items
+
+After the report shipped, the coordinator read all ~1,700 raw lane
+findings end to end (the report's dedup had read them once; this was
+the independent second read). The dedup held: no report claim was
+contradicted. It had, however, dropped the specific items now stitched
+into U1(b), U4, U9-U10's residue lists, U12, and the two new deferred
+entries — mostly stale-fact and dead-code singletons that fit no
+twelve-pattern bucket. Raw evidence: the lanes' packets in the run's
+research workspace (B1.1/B1.2/B1.4/B1.5 findings files and
+supplements) and ticket B1.3's six Report records, all committed in the
+state sink.
