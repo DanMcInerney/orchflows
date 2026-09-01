@@ -81,7 +81,7 @@ def discover_packages():
     return packages
 
 
-TEMPLATE_MANIFEST = "SKILL.md"
+WORKFLOW_SKILL_FILE = "SKILL.md"
 # Every workflow adapter is manual-invocation-only, whatever the source
 # declares. A workflow's prose executes as orchestrator reasoning rather
 # than inside a sealed child prompt (the lego design's A5 containment), so
@@ -92,7 +92,7 @@ TEMPLATE_MANIFEST = "SKILL.md"
 MANUAL_ONLY = "disable-model-invocation: true"
 
 
-def discover_templates(root: Path = REPO_ROOT):
+def discover_workflow_skills(root: Path = REPO_ROOT):
     """Every invocable workflow: a directory ``example-workflows/<name>/``
     whose ``SKILL.md`` is a workflow skill -- prose that calls bricks.
 
@@ -101,12 +101,12 @@ def discover_templates(root: Path = REPO_ROOT):
     data rather than a name surface and is skipped -- it still reaches the
     installed lib copy. ``example-workflows/references/`` is exactly that."""
 
-    templates = []
+    workflows = []
     comps_root = root / "example-workflows"
     if not comps_root.is_dir():
-        return templates
+        return workflows
     for directory in sorted(p for p in comps_root.iterdir() if p.is_dir()):
-        manifest = directory / TEMPLATE_MANIFEST
+        manifest = directory / WORKFLOW_SKILL_FILE
         if not manifest.is_file():
             continue
         try:
@@ -115,8 +115,8 @@ def discover_templates(root: Path = REPO_ROOT):
             continue
         if not frontmatter_field(frontmatter, "name"):
             continue
-        templates.append((directory, frontmatter, body))
-    return templates
+        workflows.append((directory, frontmatter, body))
+    return workflows
 
 
 def manual_only_frontmatter(frontmatter: str, host: str = "claude") -> str:
@@ -130,7 +130,7 @@ def manual_only_frontmatter(frontmatter: str, host: str = "claude") -> str:
     return "".join(lines)
 
 
-def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -> str:
+def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -> str:
     """The Claude adapter stub's body for a workflow.
 
     A workflow is a skill whose prose calls bricks, so the adapter says
@@ -141,7 +141,7 @@ def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -
 
     return (
         f"`{name}` is a workflow skill: prose that opens a frame and calls\n"
-        f"bricks. Its one body is {lib_template_dir / TEMPLATE_MANIFEST}.\n\n"
+        f"bricks. Its one body is {lib_workflow_dir / WORKFLOW_SKILL_FILE}.\n\n"
         "Read that file whole and invoke the skill by following it exactly:\n"
         "its Require names what the caller supplies, its call lines are the\n"
         "commands to run, and its Return is the close. A workflow is only\n"

@@ -99,9 +99,9 @@ def _dispatch_facade():
 
 def _stamp_generation():
     if __package__:
-        from .tickets_instantiate import _cmd_stamp_generation
+        from .tickets_stamp_generation import _cmd_stamp_generation
     else:  # pragma: no cover - direct/installed flat script path
-        from tickets_instantiate import _cmd_stamp_generation
+        from tickets_stamp_generation import _cmd_stamp_generation
     return _cmd_stamp_generation
 
 

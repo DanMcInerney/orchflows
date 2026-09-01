@@ -12,13 +12,13 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import ROOT_EXECUTOR, is_review_stage_id
+    from .tickets_format import is_review_stage_id
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import ROOT_EXECUTOR, is_review_stage_id
+    from tickets_format import is_review_stage_id
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -122,20 +122,10 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         raise GradeError(f"root ticket has no readable frontmatter: {root_id}")
     if str(root_data.get("id") or root_id).strip() != root_id:
         raise GradeError(f"root ticket id differs from requested id: {root_id}")
-    root_executor = _executor(root_value)
     members = _member_ids(root_id, snapshot)
-    if root_executor == ROOT_EXECUTOR:
-        if dequote(root_data.get("independence")) == "checker":
-            raise GradeError(f"decomposed root {root_id} must declare independence=gate")
-        if len(members) == 1:
-            raise GradeError(f"root {root_id} is over-decomposition: one executor result member")
-        if not members:
-            raise GradeError(f"root {root_id} has no executor result members")
-        shape, width = "graph", len(members)
-    else:
-        if members:
-            raise GradeError(f"root {root_id} is a direct root with executor-result members")
-        shape, width = "single", 1
+    if members:
+        raise GradeError(f"root {root_id} is a direct root with executor-result members")
+    shape, width = "single", 1
     pack = dequote(root_data.get("pack"))
     if not pack:
         raise GradeError(f"root {root_id} names no pack")
@@ -156,7 +146,6 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         "shape": shape,
         "unmentioned_spec_fields": unmentioned,
         "deterministic_gate": deterministic_gate,
-        "over_decomposed": False,
     }
 
 

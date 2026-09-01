@@ -7,7 +7,6 @@ from pathlib import Path
 
 from reader.scripts import (
     ui_workflows_catalog as catalog,
-    ui_workflows_compositions as compositions,
     ui_workflows_skills as skills,
     ui_workflows_sources as sources,
 )
@@ -64,12 +63,9 @@ def project_workflow(root=LIBRARY_ROOT, workflow_id: str = ""):
     )
     if owner is None:
         return None
-    if owner["type"] == "composition":
-        detail = compositions.project_composition(root, workflow_id)
-    elif owner["type"] == "workflow-skill":
-        detail = skills.project_workflow_skill(root, workflow_id)
-    else:
+    if owner["type"] != "workflow-skill":
         raise WorkflowProjectionError("workflow owner has an unknown type")
+    detail = skills.project_workflow_skill(root, workflow_id)
     inventory = set(sources.source_inventory(root, workflow_id))
     projected = {node["source_id"] for node in detail["nodes"] if "source_id" in node}
     if inventory != projected:

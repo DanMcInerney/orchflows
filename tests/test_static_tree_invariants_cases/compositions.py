@@ -1,12 +1,13 @@
 """Static invariants owned by the library's workflow skills."""
 import unittest
 
+from scripts.tickets_registry import CALLABLE_EXECUTORS
+
 from ._support import (
     COMPOSITIONS,
     LINK_RE,
     WORKFLOW_FILE,
     split_document,
-    validate,
     workflow_directories,
 )
 
@@ -66,7 +67,7 @@ class TestWorkflowSkills(unittest.TestCase):
         nests another workflow's frame under its own; `skill-tournament` is
         the second shape, and packs bind per brick, never per workflow."""
 
-        registered = set(validate._ticket_law().CALLABLE_EXECUTORS)
+        registered = set(CALLABLE_EXECUTORS)
         for directory in workflow_directories():
             with self.subTest(workflow=directory.name):
                 body = (directory / WORKFLOW_FILE).read_text(encoding="utf-8")

@@ -42,7 +42,6 @@ if __package__:
     from . import tickets_join as _tickets_join_module
     from . import tickets_outcome as _tickets_outcome_module
     from . import tickets_land as _tickets_land_module
-    from . import tickets_instantiate as _tickets_instantiate_module
     from . import tickets_registry as _tickets_registry_module
     from . import tickets_grade as _tickets_grade_module
 else:
@@ -67,7 +66,6 @@ else:
     import tickets_join as _tickets_join_module
     import tickets_outcome as _tickets_outcome_module
     import tickets_land as _tickets_land_module
-    import tickets_instantiate as _tickets_instantiate_module
     _tickets_registry_module = __import__('tickets_registry')
     _tickets_grade_module = __import__('tickets_grade')
 
@@ -87,14 +85,12 @@ OPTIONAL_SECTIONS = _tickets_format_module.OPTIONAL_SECTIONS
 PACKS_DIR = _tickets_worklog_module.PACKS_DIR
 PACK_NAME_PREFIX = _tickets_format_module.PACK_NAME_PREFIX
 PACK_NAME_SUFFIX = _tickets_format_module.PACK_NAME_SUFFIX
-PLACEHOLDER_RE = _tickets_format_module.PLACEHOLDER_RE
 REQUIRED_ISOLATION = _tickets_format_module.REQUIRED_ISOLATION
 REQUIRED_LIFECYCLE_KEYS = _tickets_format_module.REQUIRED_LIFECYCLE_KEYS
 REQUIRED_SECTIONS = _tickets_format_module.REQUIRED_SECTIONS
 REQUIRED_TICKET_KEYS = _tickets_format_module.REQUIRED_TICKET_KEYS
 RESULT_TOKEN_SPLIT_RE = _tickets_format_module.RESULT_TOKEN_SPLIT_RE
 RESULT_TOKEN_STRIP = _tickets_format_module.RESULT_TOKEN_STRIP
-ROOT_EXECUTOR = _tickets_format_module.ROOT_EXECUTOR
 CHECKED_BY_KEY = _tickets_format_module.CHECKED_BY_KEY
 CALLABLE_EXECUTORS = _tickets_registry_module.CALLABLE_EXECUTORS
 EXECUTOR_REGISTRY = _tickets_registry_module.EXECUTOR_REGISTRY
@@ -103,7 +99,6 @@ GATE_ID_MARKER = _tickets_format_module.GATE_ID_MARKER
 SCRIPT_EXECUTOR_PREFIX = _tickets_format_module.SCRIPT_EXECUTOR_PREFIX
 SECTION_ORDER = _tickets_format_module.SECTION_ORDER
 SECTION_RANK = _tickets_format_module.SECTION_RANK
-TEMPLATE_FILE = _tickets_format_module.TEMPLATE_FILE
 TERMINAL_STATES = _tickets_format_module.TERMINAL_STATES
 TicketFormatError = _tickets_format_module.TicketFormatError
 VALID_STATUSES = _tickets_format_module.VALID_STATUSES
@@ -136,7 +131,6 @@ adapter_id = _tickets_adapters_module.adapter_id
 adapter_spec = _tickets_adapters_module.adapter_spec
 derived_isolation = _tickets_adapters_module.derived_isolation
 binding_findings = _tickets_admission_module.binding_findings
-graph_findings = _tickets_admission_module.graph_findings
 grade_admission = _tickets_admission_module.grade_admission
 is_receipt = _tickets_admission_module.is_receipt
 _GENERATION_EXPORTS = frozenset({
@@ -211,7 +205,6 @@ _place_ticket = _tickets_issue_module._place_ticket
 _render_ticket = _tickets_issue_module._render_ticket
 CHECKABLE_STATUSES = _tickets_lifecycle_module.CHECKABLE_STATUSES
 CHECK_USAGE = _tickets_lifecycle_module.CHECK_USAGE
-JOIN_NOOP_REPAIR_USAGE = _tickets_lifecycle_module.JOIN_NOOP_REPAIR_USAGE
 SET_STATUS_USAGE = _tickets_lifecycle_module.SET_STATUS_USAGE
 _check_under_run_lock = _tickets_lifecycle_module._check_under_run_lock
 _claim_is_stale = _tickets_assignment_module._claim_is_stale
@@ -224,12 +217,10 @@ _cmd_dispatch_join = _tickets_join_module._cmd_dispatch_join
 _cmd_dispatch_outcome = _tickets_outcome_module._cmd_dispatch_outcome
 LAND_USAGE = _tickets_land_module.LAND_USAGE
 _cmd_land = _tickets_land_module._cmd_land
-_cmd_join_noop_repair = _tickets_lifecycle_module._cmd_join_noop_repair
 _cmd_list = _tickets_lifecycle_module._cmd_list
 _cmd_ready = _tickets_lifecycle_module._cmd_ready
 _cmd_set_status = _tickets_lifecycle_module._cmd_set_status
 _cmd_show = _tickets_lifecycle_module._cmd_show
-_join_noop_repair_under_run_lock = _tickets_lifecycle_module._join_noop_repair_under_run_lock
 _set_status_under_run_lock = _tickets_lifecycle_module._set_status_under_run_lock
 ASSIGNMENT_SECTIONS = _tickets_assignment_module.ASSIGNMENT_SECTIONS
 dispatch_assignment = _tickets_assignment_module.dispatch_assignment
@@ -258,15 +249,12 @@ _quoted = _tickets_worklog_module._quoted
 _render_worklog = _tickets_worklog_module._render_worklog
 _run_goal = _tickets_worklog_module._run_goal
 _run_tickets = _tickets_worklog_module._run_tickets
-_template_order = _tickets_worklog_module._template_order
 _upstream = _tickets_worklog_module._upstream
 _write_rendered_worklog = _tickets_worklog_module._write_rendered_worklog
-template_defects = _tickets_worklog_module.template_defects
 GRADE_USAGE = _tickets_commands_module.GRADE_USAGE
 DISPATCH_USAGE = _tickets_commands_module.DISPATCH_USAGE
 HELP_COMMANDS = _tickets_commands_module.HELP_COMMANDS
 HELP_FLAGS = _tickets_commands_module.HELP_FLAGS
-INSTANTIATE_USAGE = _tickets_commands_module.INSTANTIATE_USAGE
 SUBCOMMAND_SUMMARY = _tickets_commands_module.SUBCOMMAND_SUMMARY
 SUBCOMMAND_USAGE = _tickets_commands_module.SUBCOMMAND_USAGE
 VALUE_FLAGS = _tickets_commands_module.VALUE_FLAGS
@@ -280,10 +268,8 @@ _cmd_grade = _tickets_dispatch_module._cmd_grade
 _cmd_dispatch = _tickets_dispatch_module._cmd_dispatch
 _cmd_help = _tickets_dispatch_module._cmd_help
 _cmd_improvement = _tickets_dispatch_module._cmd_improvement
-_cmd_instantiate = _tickets_dispatch_module._cmd_instantiate
 _dispatch = _tickets_dispatch_module._dispatch
 _help_requested = _tickets_dispatch_module._help_requested
-_template_stubs = _tickets_dispatch_module._template_stubs
 main = _tickets_dispatch_module.main
 console = _tickets_dispatch_module.console
 state_root = _tickets_store_module.state_root
@@ -308,7 +294,6 @@ def _sync_seams():
     _tickets_issue_module.datetime = datetime
     _tickets_result_module.datetime = datetime
     _tickets_dispatch_module.datetime = datetime
-    _tickets_instantiate_module.datetime = datetime
     _tickets_store_writes_module.msvcrt = msvcrt
     _tickets_result_module.msvcrt = msvcrt
     _tickets_store_module._write_identity = _write_identity
@@ -316,8 +301,6 @@ def _sync_seams():
     _tickets_lifecycle_module._write_identity = _write_identity
     _tickets_result_module._write_identity = _write_identity
     _tickets_dispatch_module._write_identity = _write_identity
-    _tickets_instantiate_module._write_identity = _write_identity
-    _tickets_instantiate_module._write_text_atomically = _write_text_atomically
     _tickets_store_module._write_text_atomically = _write_text_atomically
     _tickets_lifecycle_module._write_text_atomically = _write_text_atomically
     _tickets_result_module._write_text_atomically = _write_text_atomically
@@ -339,7 +322,6 @@ def _sync_seams():
     _tickets_dispatch_module._cmd_show = _cmd_show
     _tickets_dispatch_module._cmd_check = _cmd_check
     _tickets_dispatch_module._cmd_set_status = _cmd_set_status
-    _tickets_dispatch_module._cmd_join_noop_repair = _cmd_join_noop_repair
     _tickets_dispatch_module._cmd_result = _cmd_result
     _tickets_dispatch_module._cmd_worklog = _cmd_worklog
     _tickets_dispatch_module._cmd_run_state = _cmd_run_state

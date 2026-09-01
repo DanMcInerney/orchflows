@@ -43,7 +43,6 @@ def _skill_path(name: str) -> str:
 class ThinOrchestratorContractTests(unittest.TestCase):
     WORKFLOW_ROLES = {
         "orch-judge": "planner",
-        "orch-slice": "planner",
         "orch-do": "worker",
     }
 
@@ -96,8 +95,6 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             collapsed_host,
             re.compile(r"Skill/workflow/pack/contract/router work carries .*custom-workflow-authoring\.md` in Context"),
         )
-        decompose = (ROOT / "skills/kernel/orch-slice/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Context: pointers by identity", decompose)
         self.assertNotIn("**errand**", collapsed_host)
         self.assertNotIn("sequence: [orch-outline, orch-slice]", host)
         self.assertLessEqual(validate.body_words(host), 400)
@@ -247,7 +244,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 self.assertNotIn("root guard", prompt)
                 self.assertNotIn("hook", prompt.lower())
 
-        for name in {"orch-judge", "orch-slice", "orch-do"}:
+        for name in {"orch-judge", "orch-do"}:
             with self.subTest(redirect=name):
                 content = redirects[name]
                 role = self.WORKFLOW_ROLES[name]

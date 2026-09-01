@@ -7,10 +7,10 @@ from pathlib import Path
 
 from installer.packages import (
     MANUAL_ONLY,
-    discover_templates,
+    discover_workflow_skills,
     manual_only_frontmatter,
     split_frontmatter,
-    template_adapter_body,
+    workflow_adapter_body,
 )
 from scripts import tickets
 
@@ -60,7 +60,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
     def test_the_workflow_is_discoverable_and_calls_a_frame_and_bricks(self):
         discovered = {
             path.name: (path, frontmatter, body)
-            for path, frontmatter, body in discover_templates(ROOT)
+            for path, frontmatter, body in discover_workflow_skills(ROOT)
         }
         self.assertIn("browser-game", discovered)
 
@@ -82,7 +82,7 @@ class BrowserGameCompositionTests(unittest.TestCase):
     def test_installer_adapter_points_at_the_body_and_forces_manual_only(self):
         path, text, _ = self._workflow()
         frontmatter, _ = split_frontmatter(text)
-        adapter = template_adapter_body("browser-game", path.parent, frontmatter)
+        adapter = workflow_adapter_body("browser-game", path.parent, frontmatter)
         rendered = manual_only_frontmatter(frontmatter) + adapter
 
         self.assertIn(str(path.parent / "SKILL.md"), adapter)

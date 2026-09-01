@@ -9,7 +9,7 @@ if __package__:
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
-        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
+        REQUIRED_ISOLATION, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -23,7 +23,7 @@ else:
     from tickets_emission import grade_run_emission
     from tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
-        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
+        REQUIRED_ISOLATION, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -217,8 +217,8 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
         defects.append(f"independence '{independence}' is not one of {list(INDEPENDENCE_VALUES)}")
     checked_by = str(data.get("checked_by") or "").strip()
     if checked_by:
-        if independence == "gate" and _executor_of(data) != ROOT_EXECUTOR:
-            defects.append("a non-root gate-deferred ticket cannot carry checked_by")
+        if independence == "gate":
+            defects.append("a gate-deferred ticket cannot carry checked_by")
         elif not issued:
             defects.append("an unissued ticket cannot carry checked_by")
     return defects

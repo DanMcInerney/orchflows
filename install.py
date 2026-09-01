@@ -161,13 +161,13 @@ from installer.packages import (
     accepted_source_commit,
     FORK_ARRIVAL_CLAUSE,
     ROLE_INSTRUCTIONS,
-    TEMPLATE_MANIFEST,
+    WORKFLOW_SKILL_FILE,
     _git_dirs,
     _role_description,
     by_name_pointer_text,
     claude_role_adapter_text,
     discover_packages,
-    discover_templates,
+    discover_workflow_skills,
     frontmatter_field,
     host_legal_frontmatter,
     load_role_profiles,
@@ -179,8 +179,8 @@ from installer.packages import (
     source_commit_drift_message,
     source_commit_warning,
     split_frontmatter,
-    template_adapter_body,
     template_markers,
+    workflow_adapter_body,
 )
 from installer.hosts import HOSTS_DIR, HOST_ADAPTERS_DIR, load_host_adapters
 from installer.planning import _mints_claude_adapter, detect_hosts, plan_entry_count

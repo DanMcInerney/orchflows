@@ -9,7 +9,7 @@ if __package__:
     from .tickets_brick import DO_USAGE, JUDGE_USAGE
     from .tickets_frame import FRAME_CLOSE_USAGE, FRAME_OPEN_USAGE
     from .tickets_issue import NEW_USAGE
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
+    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from .tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
@@ -24,7 +24,7 @@ else:
     _frame = __import__('tickets_frame')
     FRAME_CLOSE_USAGE, FRAME_OPEN_USAGE = (_frame.FRAME_CLOSE_USAGE, _frame.FRAME_OPEN_USAGE)
     from tickets_issue import NEW_USAGE
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE, JOIN_NOOP_REPAIR_USAGE
+    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE
@@ -38,7 +38,6 @@ else:
     LAND_USAGE = __import__('tickets_land').LAND_USAGE
 
 LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
-INSTANTIATE_USAGE = "instantiate <workflow-name|template-dir> --run <run> [--set k=v ...]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> "
@@ -54,7 +53,6 @@ SUBCOMMAND_USAGE = {
     "judge": JUDGE_USAGE,
     "frame-open": FRAME_OPEN_USAGE,
     "frame-close": FRAME_CLOSE_USAGE,
-    "instantiate": INSTANTIATE_USAGE,
     "grade": GRADE_USAGE,
     "list": "list [--run R]",
     "show": "show <run> <id>",
@@ -68,7 +66,6 @@ SUBCOMMAND_USAGE = {
     "dispatch-join": DISPATCH_JOIN_USAGE,
     "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
-    "join-noop-repair": JOIN_NOOP_REPAIR_USAGE,
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
     "run-state": RUN_STATE_USAGE,
@@ -83,8 +80,7 @@ SUBCOMMAND_SUMMARY = {
     "judge": "Mint, seal, establish, and launch one read-only brick over the typed artifacts it is handed.",
     "frame-open": "Open one call-stack frame for a workflow invocation: sealed goal, parent link, and the journal its driver appends to.",
     "frame-close": "Record what one frame's invocation became, refusing a close over two or more do-children nobody judged.",
-    "instantiate": "Instantiate, validate, and seal one current-format template graph all or none.",
-    "grade": "Report deterministic width, shape, pack coverage, adapter capability, and decomposition state.",
+    "grade": "Report deterministic width, shape, pack coverage, and adapter capability.",
     "list": "List tickets.",
     "show": "Inspect one ticket's parsed identity and sections without mutation.",
     "dispatch": "Atomically ready, establish, open, and emit the one launch that starts this ticket's child.",
@@ -97,7 +93,6 @@ SUBCOMMAND_SUMMARY = {
     "dispatch-join": "Commit or replay one outcome-fenced join and its lifecycle transition.",
     "check": "Anchor one completed durable checker stage to its target's checked_by field.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
-    "join-noop-repair": "Atomically attribute and complete a clean repair at the join without dispatch.",
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
     "worklog": "Render the run worklog.",
     "run-state": f"Write run state under {list(RUN_STATE_TREES)} (default {DEFAULT_RUN_STATE_TREE}).",
@@ -111,7 +106,7 @@ HELP_COMMANDS = HELP_FLAGS | {"help"}
 VALUE_FLAGS = frozenset({
     "--run", "--by", "--executor", "--goal", "--context", "--details",
     "--depends-on", "--bound", "--pack",
-    "--profile", "--independence", "--isolation", "--set",
+    "--profile", "--independence", "--isolation",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--workspace", "--proposal", "--covered",
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",

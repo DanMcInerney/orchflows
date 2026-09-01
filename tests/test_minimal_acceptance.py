@@ -29,7 +29,8 @@ def _gaps(verification: str, profiles: str) -> list[str]:
         # the target's own predicate in the integrated tree
         "checked done": "the ticket's `done` predicate, in the tree land has just merged",
         "no standing child": "never from a standing verification",
-        "empty set skips the repair": "join-noop-repair",
+        # `join-noop-repair` retired in W4a with the `.gate.` id family it
+        # discriminated; the empty-set-skip anchor retired with it.
         "terminal profile": "Running the terminal required checks",
         "driver context": "driving session's own context",
         "recorded revision": "accepted terminal identity's revision",

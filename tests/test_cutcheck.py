@@ -7,7 +7,7 @@ __all__ = ("graph_findings", "_render_ticket", "item")
 
 
 def item(ticket_id, dependencies=()):
-    return _render_ticket({"id": ticket_id, "run": "r", "status": "pending", "executor": "orch-slice", "depends_on": list(dependencies), "bound": "60m"}, [("Goal", "done"), ("Context", "fact"), ("Report", "")])
+    return _render_ticket({"id": ticket_id, "run": "r", "status": "pending", "executor": "orch-do", "pack": "orch-code-pack", "depends_on": list(dependencies), "bound": "60m"}, [("Goal", "done"), ("Context", "fact"), ("Report", "")])
 
 
 class CutcheckTest(unittest.TestCase):

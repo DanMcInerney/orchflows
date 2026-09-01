@@ -185,17 +185,6 @@ def validate_envelope(packages, diag: Diagnostics) -> None:
                        "Return does not lead with structured result-envelope fields per contracts/result.md")
 
 
-def discover_templates(manifest_name: str):
-    """Every `example-workflows/<name>/` directory holding the manifest."""
-    comps_dir = ROOT / "example-workflows"
-    if not comps_dir.is_dir():
-        return []
-    return sorted(
-        d for d in comps_dir.iterdir()
-        if d.is_dir() and (d / manifest_name).is_file()
-    )
-
-
 def _composition_artifact_kind(path: Path):
     """The forbidden protocol class carried by ``path``, if any."""
 
@@ -279,7 +268,7 @@ def validate_composition_admission(
         diag.error(
             rel(path),
             f"workflow '{composition}' carries forbidden {kind}; "
-            "a workflow contains only its manifest, ticket stubs, and placeholders",
+            "a workflow contains only its SKILL.md body and reference prose",
         )
     for composition in sorted(excepted):
         date = allowlist[composition]
@@ -296,33 +285,16 @@ def _doclint():
     of the near-duplicate method (ARCHITECTURE.md). This compiler is one of
     its two callers; a project running the script is the other.
 
-    Imported on first use for `_ticket_law`'s reason, one line below:
-    `--pin` and every isolated fixture that carries no `scripts/` still has
-    to run, and only the checks that ask these two questions need the
-    owner. ROOT goes first on the path so a tree grades against its own
-    copy.
+    Imported on first use: `--pin` and every isolated fixture that carries
+    no `scripts/` still has to run, and only the checks that ask this
+    question need the owner. ROOT goes first on the path so a tree grades
+    against its own copy.
     """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     from scripts import doclint
 
     return doclint
-
-
-def _ticket_law():
-    """`scripts/tickets.py`, the one owner of ticket-shape and
-    template-graph law.
-
-    Imported here rather than at module scope: `--pin` and every isolated
-    fixture that carries no `scripts/` still has to run, and this is the
-    only check that needs the owner. ROOT goes first on the path so a tree
-    grades against its own copy.
-    """
-    if str(ROOT) not in sys.path:
-        sys.path.insert(0, str(ROOT))
-    from scripts import tickets
-
-    return tickets
 
 
 def validate_templates(diag: Diagnostics) -> None:
@@ -392,7 +364,7 @@ __all__ = (
     'validate_craft_budget', 'validate_reference_links', 'build_call_graph', 'find_cycle',
     'validate_call_graph', 'validate_domain_blindness', '_envelope_first_clause', '_envelope_missing',
     'validate_envelope', 'COMPOSITION_PROTOCOL_ALLOWLIST', 'COMPOSITION_SCRIPT_SUFFIXES',
-    'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE', 'discover_templates',
+    'COMPOSITION_SCHEMA_RE', 'COMPOSITION_FIXTURE_RE',
     '_composition_artifact_kind', '_reference_owner', '_script_owner', 'validate_composition_admission',
-    '_doclint', '_ticket_law', 'validate_templates',
+    '_doclint', 'validate_templates',
 )

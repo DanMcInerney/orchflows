@@ -89,7 +89,6 @@ TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
-ROOT_EXECUTOR = 'orch-slice'
 CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
 GATE_CRITIQUE_MARKER = '.gate.critique.'
@@ -115,8 +114,6 @@ ROUND_ID_RE = re.compile(
 # calls under one parent disagree about nothing.
 BRICK_ROOT_ID_RE = re.compile('^B(?P<number>\\d+)$')
 BRICK_CHILD_ID_RE = re.compile('^(?P<parent>.+)\\.(?P<number>\\d+)$')
-TEMPLATE_FILE = 'template.md'
-PLACEHOLDER_RE = re.compile('\\{\\{\\s*([^{}]*?)\\s*\\}\\}')
 ESCAPED_NEWLINE_RE = re.compile('\\\\n')
 # A literal backslash then the letter 'n' -- the two-character escape a
 # shell or a hand can type in place of the one byte it was meant to stand
@@ -219,12 +216,8 @@ def _read_utf8(path, subject: str='ticket', encoding: str='utf-8'):
         return (reader.read_text(encoding=encoding), None)
     except (OSError, UnicodeDecodeError) as error:
         return (None, {'error': f'unreadable {subject}: {error}'})
-def ticket_defects(text: str, stub: bool=False) -> list:
+def ticket_defects(text: str) -> list:
     """Every way ``text`` is not a ticket per contracts/work-item.md.
-    ``stub=True`` grades a template's stub: a ticket missing only ``run``,
-    ``status`` and ``claimed_*``, which instantiation adds. Everything else
-    is graded identically, so a stub admitted into a template is a ticket
-    the moment it is instantiated.
     A file with no frontmatter is that one defect and no other: every check
     below reads the frontmatter or the body it heads, so listing what a
     non-ticket also lacks says nothing a reader can act on.
@@ -233,7 +226,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
     if not data:
         return ["no frontmatter: a ticket opens with a '---' block (contracts/work-item.md)"]
     defects = []
-    required = REQUIRED_TICKET_KEYS if stub else REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
+    required = REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
     # `executor` is required of every ticket a door may dispatch, and a frame
     # is the one kind no door may: its driver is the session that opened it.
     # Exempted here rather than dropped from the declared shape, because
@@ -251,7 +244,7 @@ def ticket_defects(text: str, stub: bool=False) -> list:
         if normalized not in VALID_STATUSES:
             defects.append(f"status '{normalized}' is not one of {sorted(VALID_STATUSES)}")
     executor = _executor_of(data)
-    if executor and not PLACEHOLDER_RE.search(executor):
+    if executor:
         if not executor.startswith(SCRIPT_EXECUTOR_PREFIX) and not executor_registered(executor):
             defects.append(executor_refusal(executor))
         elif EXECUTOR_REGISTRY.get(executor, {}).get("requires_pack") and not str(data.get("pack") or "").strip():

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2069,
+  "count": 2059,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -460,7 +460,7 @@
    "test_installer.TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
    "test_installer.TestScopedHostConfiguration.test_codex_limit_merge_handles_dotted_agent_keys",
    "test_installer.TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
-   "test_installer.TestScopedHostConfiguration.test_discover_templates_requires_a_named_workflow_body",
+   "test_installer.TestScopedHostConfiguration.test_discover_workflow_skills_requires_a_named_workflow_body",
    "test_installer.TestScopedHostConfiguration.test_existing_marker_collision_is_refused_while_building_the_plan",
    "test_installer.TestScopedHostConfiguration.test_invalid_codex_agent_type_is_rejected",
    "test_installer.TestScopedHostConfiguration.test_the_planned_grok_surface_hangs_off_grok_home",
@@ -665,13 +665,13 @@
    "test_regen.TestValidateGate.test_a_reconciled_tree_draws_no_error_from_the_same_gate",
    "test_regen.TestValidateGate.test_a_stale_serial_manifest_fails_validate_and_names_the_command",
    "test_registry_census.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
-   "test_registry_census.CallableRegistryTests.test_callable_registry_is_the_two_bricks_plus_the_temporary_decomposer",
+   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_two_bricks",
    "test_registry_census.CallableRegistryTests.test_do_and_judge_require_pack_authority",
    "test_registry_census.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
    "test_registry_census.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
-   "test_registry_census.CallableRegistryTests.test_the_outline_doorway_and_its_predecessor_collapse_to_one_remedy",
+   "test_registry_census.CallableRegistryTests.test_the_outline_and_slice_doorways_collapse_to_one_remedy",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
    "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
    "test_ring_adapters.BodyTests.test_a_workflow_adapter_points_at_its_body_and_is_manual_only",
@@ -681,7 +681,6 @@
    "test_ring_adapters.CommittedProofTests.test_the_committed_claude_shim_is_what_the_machinery_renders",
    "test_ring_adapters.CommittedProofTests.test_the_committed_shim_holds_no_machine_specific_path",
    "test_ring_adapters.CommittedProofTests.test_the_committed_shim_keeps_its_manual_invocation_flag",
-   "test_ring_adapters.InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
    "test_ring_adapters.PortabilityTests.test_super_research_copies_out_as_a_skill_and_a_workflow_together",
    "test_ring_adapters.ScopeTests.test_a_hand_written_neighbour_is_never_removed",
    "test_ring_adapters.ScopeTests.test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations",
@@ -912,8 +911,6 @@
    "test_super_research_runner.SuperResearchRunnerTests.test_propagates_unsuccessful_exit_status",
    "test_super_research_runner.SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "test_super_research_suite.SuperResearchSuiteTest.test_the_skill_suite_exits_zero",
-   "test_templates.TemplateTest.test_all_routed_compositions_have_current_ticket_shape",
-   "test_templates.TemplateTest.test_every_routed_composition_instantiates",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_canonical_role_map_and_glue_only_contract",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
@@ -981,7 +978,6 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_content_pack_preserves_whole_artifact_direct_route",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_finding_contract_publishes_closed_shape_and_carriage",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_join_normalizes_findings_and_accepted_json",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_details_do_not_limit_candidate_paths",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
@@ -993,7 +989,6 @@
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_prompt_filing_command_carries_claimant_and_writes_the_ticket",
-   "test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
@@ -1029,7 +1024,7 @@
    "test_tickets_bound.BoundGrammarTest.test_the_viewer_measures_every_kind_but_the_one_with_no_number",
    "test_tickets_grade.GradeCommandTest.test_grade_command_reads_one_exact_run_snapshot",
    "test_tickets_grade.GradeSnapshotTest.test_a_direct_root_has_one_result_width",
-   "test_tickets_grade.GradeSnapshotTest.test_graph_grade_counts_executor_members_and_reports_pack_fields",
+   "test_tickets_grade.GradeSnapshotTest.test_a_root_with_executor_result_members_is_refused",
    "test_tickets_grade.GradeSnapshotTest.test_no_reader_reconstructs_a_verdict_out_of_a_report",
    "test_tickets_grade.GradeSnapshotTest.test_one_member_decomposition_is_refused",
    "test_tickets_grade.GradeSnapshotTest.test_the_ledger_ends_at_the_repair_and_admits_no_verification_record",
@@ -1513,13 +1508,10 @@
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_declares_its_name_and_manual_invocation",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_directory_holds_exactly_one_body",
    "tests.test_static_tree_invariants_cases.compositions.TestWorkflowSkills.test_every_workflow_opens_a_frame_calls_or_nests_and_closes",
-   "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_decomposer_states_the_goal_by_anchor",
-   "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_join_skips_the_repair_on_an_empty_accepted_set",
    "tests.test_static_tree_invariants_cases.cut_rules.TestCutGoalAnchors.test_the_slicing_sections_put_proven_seams_on_the_first_frontier",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_no_cut_states_a_superseded_overlap_rule",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_reserves_the_tracer_for_the_unproven_seam",
    "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_code_cut_uses_the_current_unit_assignment_shape",
-   "tests.test_static_tree_invariants_cases.cut_rules.TestDependencyOrderedOverlap.test_the_owner_does_not_turn_suggested_paths_into_cut_authority",
    "tests.test_static_tree_invariants_cases.repository_shape.TestEveryCaseClassIsRegistered.test_every_case_class_its_package_defines_is_collected_by_its_family",
    "tests.test_static_tree_invariants_cases.repository_shape.TestEveryCaseClassIsRegistered.test_every_exemption_still_names_a_live_base_with_no_test_of_its_own",
    "tests.test_static_tree_invariants_cases.repository_shape.TestNoTempTreeIsDeletedWhileItIsTheCwd.test_no_chdir_inside_a_temporary_directory_block_defers_its_restore",
@@ -1574,7 +1566,6 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_content_pack_preserves_whole_artifact_direct_route",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_finding_contract_publishes_closed_shape_and_carriage",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_critique_join_normalizes_findings_and_accepted_json",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_decomposed_root_uses_same_semantic_shape",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_details_do_not_limit_candidate_paths",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_distinct_checker_records_the_same_immutable_adjudication_carrier",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_downstream_waits_for_checker_but_checker_stage_can_start",
@@ -1586,7 +1577,6 @@
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_grade_the_same_projected_file_candidate",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_prompt_filing_command_carries_claimant_and_writes_the_ticket",
-   "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_removed_fix_composition_has_no_instantiation_alias",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_result_contract_binds_records_to_the_current_claim_writer",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_review_schemas_reject_field_deletion_and_noop_bypass",
    "tests.test_ticket_semantic_contract.SemanticTicketContractTest.test_show_inspects_one_ticket_without_mutating_the_sink",
@@ -2072,7 +2062,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e26fcac0b9c4fad929f9d1a0a68a49fcca8672f5eb600ff3fa7fd696a6c135b0"
+  "sha256": "f5ec8fbc444e6e6bfb38192f68970e8fd7ef8dfde26e23cc63dea78dd14da58c"
  },
  "mutation_owners": [
   {
@@ -3876,14 +3866,6 @@
   },
   {
    "module": "tests.test_ring_adapters",
-   "owner": "InstantiateResolutionTests.test_a_workflow_name_resolves_and_a_bare_path_still_works",
-   "restoration": "selected-module-boundary",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_ring_adapters",
    "owner": "PortabilityTests.test_super_research_copies_out_as_a_skill_and_a_workflow_together",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -4441,14 +4423,6 @@
    "module": "tests.test_super_research_runner",
    "owner": "SuperResearchRunnerTests.test_runner_itself_does_not_access_network",
    "restoration": "sharded-module-guard",
-   "seams": [
-    "environment"
-   ]
-  },
-  {
-   "module": "tests.test_templates",
-   "owner": "TemplateTest.test_every_routed_composition_instantiates",
-   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]

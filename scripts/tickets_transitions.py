@@ -47,7 +47,6 @@ def set_status_command(target: str) -> str:
 _ROWS = (
     Row("claim", (PENDING, READY), CLAIMED, ("admission", "status"), (), "claim it"),
     Row("check", tuple(sorted(CHECKABLE_STATUSES)), None, ("checked_by",), (), "check it"),
-    Row("join-noop-repair", (READY,), COMPLETE, ("status",), (), "complete the clean repair at its join"),
     Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), (), "release it to pending"),
     Row(set_status_command(SUSPENDED), STATUSES, SUSPENDED, ("status",), (), "suspend it"),
 ) + tuple(
@@ -80,7 +79,6 @@ _LIFECYCLE_SPECS = (
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
 ) + (
     LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
-    LifecycleSpec("join-noop-repair", (READY,), COMPLETE, "caller", "completed critique dependencies and empty Report", "contracts/verdict.md", "rules/verification.md"),
 ) + tuple(
     # Not a legacy path, though an earlier rendering called it one: these are
     # the only transitions a ticket that was never dispatched can take, and

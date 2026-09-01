@@ -9,7 +9,6 @@ SKILL_TIERS = ("kernel", "workflows")
 # removing, or renaming a skill requires a role decision here.
 ROLE_TABLE = {
     "orch-judge": "planner",
-    "orch-slice": "planner",
     "orch-do": "worker",
 }
 

@@ -19,7 +19,6 @@ EXPECTED_WORKFLOWS = {
     "evolve",
     "orch-do",
     "orch-judge",
-    "orch-slice",
     "renovate",
     "self-improve",
     "skill-tournament",

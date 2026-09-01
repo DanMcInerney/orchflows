@@ -11,12 +11,10 @@ reconstructable from them by observation. Free notes a run appends
 through `tickets.py run-state --note` land in `runs/<run>/notes.md`
 beside the view and are not the view.
 
-A decomposed root-ticket run is one physical run with one root and one
-composite gate. Answer and direct-single work keep their ordinary independence
-path. A successor has its own run view after its predecessor result is fixed.
+Each physical run has one root ticket (contracts/work-item.md). A successor
+has its own run view after its predecessor result is fixed.
 
-- `goal` — the root ticket's `## Goal` and `## Context` verbatim; for a loop
-  run the loop ticket's, and for a template run its terminal ticket's.
+- `goal` — the root ticket's `## Goal` and `## Context` verbatim.
 - `iterations` — every ticket ordered by its dispatch attempt's
   `opened_at` (the lease the record owns), each with its
   `## Verification` entries.
@@ -27,8 +25,7 @@ path. A successor has its own run view after its predecessor result is fixed.
 - `queued_scope` — the tickets that `depends_on` the run's gate:
   discovered work, queued behind the frozen goal and never merged into
   it.
-- `terminal` — empty until the run exits, then the root ticket's
-  `status` — for a loop or template run the loop or terminal ticket's —
+- `terminal` — empty until the run exits, then the root ticket's `status`,
   read in the terminal set
   [work-item.md](work-item.md) owns: `complete` | `blocked` | `stalled` |
   `limited` | `failed`. A parked-only pause is not an exit: no
@@ -75,3 +72,10 @@ remaining a deterministic declaration-to-consumer gate.
 
 T0 supersession record sha256:2b2a1fa42cff8a65430981ab12af652ff5d85725f4f8ba321498366cf1945fbb:
 the generated T0 section now uses declaration-specific wording.
+
+T0 supersession record sha256:948b8e6d97d47067d3132594109081ffdefc19823232e9218daf5dea12c95c8a:
+the decomposed-root-run and loop/template exceptions on `goal` and
+`terminal` retire with those concepts (W4a): every run has one root, so
+each field states its one case rather than an exception list. No named
+field or enum actually changed; the prior wording's incidental `` `status` ``
+line-start happened to match the same heuristic that flags a real one.
