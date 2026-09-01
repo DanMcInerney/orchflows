@@ -43,11 +43,12 @@ A read-only critique never rewrites the reviewed executor's Report. It is a
 `judge` brick like any other now: its enumerated blockers are this same one
 free-text `## Report`, and the repair answering it is a `do` brick the
 calling workflow opens against them, sequenced by prose rather than a
-mechanical selector. The `orchflows.review.v1` ledger's own closed record
-shapes -- `GatePlan`, `CritiqueAdjudication`, `RepairOutcome` -- are declared
-in [work-item.md](work-item.md#review-stage-ledger) for whatever still reads
-one; `dispatch-join` no longer writes that chain or binds a findings array,
-an accepted subset, or a fixed artifact identity of its own.
+mechanical selector. The `orchflows.review.v1` ledger -- `GatePlan`,
+`CritiqueAdjudication`, `RepairOutcome`, and the `checked_by`/`review_stage`
+fields and `tickets.py check` reader it carried -- retired with the door
+that used to build it; see [work-item.md](work-item.md#review-stage-ledger).
+`dispatch-join` writes no such chain and binds no findings array, accepted
+subset, or fixed artifact identity of its own.
 
 The join checks the returning name against the claim. The reserved durable
 return and its lifecycle consumption belong to the

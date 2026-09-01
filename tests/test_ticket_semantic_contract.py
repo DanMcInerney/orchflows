@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
-import subprocess
 from unittest import mock
 
 from scripts import cutcheck
@@ -19,10 +17,7 @@ from tests import _retired_doors as retired_doors
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
-from scripts import tickets_review
 from scripts import tickets_shapes
-from scripts import tickets_lifecycle
-from scripts import tickets_readiness
 from scripts.tickets_format import (
     _parse_frontmatter, _remove_frontmatter_field, _sections, canonical_json,
 )
@@ -425,92 +420,18 @@ class SemanticTicketContractTest(unittest.TestCase):
             "the composite-gate topology grader outlived its door",
         )
 
-    def test_frontier_guidance_distinguishes_all_three_review_states(self):
-        # The guidance moved with the driver: the engine is gone and
-        # rules/verification.md 7 owns the three states the driver reads.
-        law = " ".join(
-            (ROOT / "rules" / "verification.md").read_text(encoding="utf-8").split()
-        )
-        for phrase in (
-            "An accepted checked target",
-            "a clean one closes with no repair",
-            "a gate-deferred root",
-        ):
-            self.assertIn(phrase, law)
-        self.assertNotIn("Gate-deferred and checked tickets do not", law)
+    def test_a_checker_independence_dependency_no_longer_waits_on_anything(self):
+        """The checker-stage apparatus that survived the `review_kind`
+        deletion is gone: no live door ever built the `review_v1` chain
+        `tickets.py check` required, so `checked_by` had no live producer.
+        `independence: checker` no longer differs from the default in
+        readiness -- both read the same status-only completeness.
+        """
+        from scripts import tickets_readiness
 
-    def test_review_schemas_reject_field_deletion(self):
-        artifact = "git:" + subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
-            capture_output=True, check=True,
-        ).stdout.strip()
-        plan = tickets_review._record(
-            "GatePlan", None, artifact=artifact,
-            criteria=[{
-                "identity": "sha256:criterion", "lens": "code",
-                "order": 0, "ticket": "R.check",
-            }],
-            isolation="none", mode="checker", pack="orch-code-pack",
-            root="R", workspace=str(ROOT.resolve()),
-        )
-        finding = {
-            "blocking": True, "class": "correctness",
-            "evidence": ["test-x failed"],
-            "goal_impact": "The Goal is false.", "id": "B1",
-            "repair": "Repair test-x.", "summary": "test-x is red.",
-        }
-        member = tickets_review._record(
-            "CritiqueAdjudication", plan["identity"], accepted=[finding],
-            adjudicated_by="checker-a", artifact=artifact,
-            findings=[finding], lens="code",
-        )
-        aggregate = tickets_review._record(
-            "CritiqueAdjudication", plan["identity"], accepted=[finding],
-            adjudicated_by="system:aggregate", adjudications=[member],
-            artifact=artifact, findings=[finding], lens="*",
-        )
-        state = {"protocol": "orchflows.review.v1", "records": [plan, aggregate]}
-        tickets_review.review_records(state)
-
-        missing_authority = json.loads(tickets_review.canonical_json(state))
-        del missing_authority["records"][1]["adjudicated_by"]
-        record = missing_authority["records"][1]
-        record["identity"] = tickets_review._digest({
-            key: value for key, value in record.items() if key != "identity"
-        })
-        with self.assertRaises(tickets_review.ReviewError):
-            tickets_review.review_records(missing_authority)
-
-        rewritten_accepted = json.loads(tickets_review.canonical_json(state))
-        record = rewritten_accepted["records"][1]
-        record["accepted"] = []
-        record["identity"] = tickets_review._digest({
-            key: value for key, value in record.items() if key != "identity"
-        })
-        with self.assertRaises(tickets_review.ReviewError):
-            tickets_review.review_records(rewritten_accepted)
-
-    def test_downstream_waits_for_checker_but_checker_stage_can_start(self):
-        self.assertIs(tickets_lifecycle.readiness_facts, tickets_readiness.readiness_facts)
-        target = {
-            "id": "R", "status": "complete", "independence": "checker",
-            "checked_by": "",
-        }
-        stage = {"id": "R.check", "status": "pending", "depends_on": ["R"]}
+        target = {"id": "R", "status": "complete", "independence": "checker"}
         downstream = {"id": "R.next", "status": "pending", "depends_on": ["R"]}
-        tickets_by_id = {"R": target, "R.check": stage, "R.next": downstream}
-
-        self.assertTrue(
-            tickets_readiness.readiness_facts(stage, tickets_by_id)[
-                "dependencies_complete"
-            ]
-        )
-        self.assertFalse(
-            tickets_readiness.readiness_facts(downstream, tickets_by_id)[
-                "dependencies_complete"
-            ]
-        )
-        target["checked_by"] = "checker-a"
+        tickets_by_id = {"R": target, "R.next": downstream}
         self.assertTrue(
             tickets_readiness.readiness_facts(downstream, tickets_by_id)[
                 "dependencies_complete"

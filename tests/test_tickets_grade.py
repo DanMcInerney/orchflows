@@ -11,7 +11,6 @@ from unittest import mock
 from scripts import tickets
 from scripts import tickets_grade
 from scripts.tickets_grade import grade_snapshot, GradeError
-from scripts import tickets_review
 
 
 def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", context: str = "The repository is fixed.", loop: str = "", done: str = "") -> str:
@@ -76,49 +75,20 @@ class GradeSnapshotTest(unittest.TestCase):
         self.assertEqual("single", grade_snapshot("R", with_done)["shape"])
         self.assertEqual(1, grade_snapshot("R", with_done)["width"])
 
-    def test_the_ledger_ends_at_the_repair_and_admits_no_verification_record(self):
-        """The chain's last link is `RepairOutcome`.
+    def test_the_review_ledger_module_is_gone(self):
+        """`review_v1`'s own construction and schema retired whole.
 
-        A `Verification` record carried a prose verdict a join parsed out of
-        a child's evidence. There is no such verdict: land runs the ticket's
-        `done` predicate and an exit code answers, so the record kind is not
-        one the schema knows and a ledger appending one is refused.
+        The checker-stage apparatus that survived the `review_kind`
+        deletion is censused and resolved: no live door ever built a
+        `GatePlan`-then-`CritiqueAdjudication` chain, so `tickets_review.py`
+        and `tickets_review_schema.py` -- the ledger's sole writer and
+        schema -- are deleted rather than kept reachable as an import.
         """
 
-        plan = tickets_review._record(
-            "GatePlan", None, artifact="artifact", criteria=[{
-                "identity": "sha256:criterion", "lens": "code",
-                "order": 0, "ticket": "R.gate.critique.code",
-            }], isolation="none", mode="gate", pack="orch-code-pack",
-            root="R", workspace=str(Path.cwd()),
-        )
-        finding = {
-            "blocking": False, "class": "correctness", "evidence": ["e"],
-            "goal_impact": "none", "id": "B1", "repair": "none",
-            "summary": "none",
-        }
-        adjudication = tickets_review._record(
-            "CritiqueAdjudication", plan["identity"], accepted=[],
-            adjudicated_by="agent", artifact="artifact", findings=[finding],
-            lens="code",
-        )
-        repair = tickets_review._record(
-            "RepairOutcome", adjudication["identity"], accepted=[],
-            artifact="artifact", by="agent", input_artifact="artifact",
-            no_op=True, result="none",
-        )
-        closed = tickets_review._review_state([plan, adjudication, repair])
-        self.assertEqual(repair, closed["records"][-1])
-        self.assertFalse(hasattr(tickets_review, "verification_outcome"))
-
-        with self.assertRaises(tickets_review.ReviewError):
-            tickets_review._review_state([
-                plan, adjudication, repair,
-                tickets_review._record(
-                    "Verification", repair["identity"], artifact="artifact",
-                    by="agent", evidence="PASS: unchanged", verdict="PASS",
-                ),
-            ])
+        import importlib
+        for name in ("tickets_review", "tickets_review_schema"):
+            with self.assertRaises(ModuleNotFoundError):
+                importlib.import_module(f"scripts.{name}")
 
     def test_no_reader_reconstructs_a_verdict_out_of_a_report(self):
         """The fixed-result probe is gone, not repointed.

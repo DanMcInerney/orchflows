@@ -22,13 +22,14 @@ def _gaps(verification: str, profiles: str) -> list[str]:
     verification = " ".join(verification.split())
     profiles = " ".join(profiles.split())
     required = {
-        "read-only checker": "distinct read-only `orch-judge` dispatch",
-        "separate repair": "one separate\nrepair ticket",
-        "clean closes unrepaired": "closes with no repair at all",
+        # The checker/repair three-state path retired with the door that
+        # built its ledger (`review_v1`'s `GatePlan`-then-`CritiqueAdjudication`
+        # chain): independence is the caller's own join now, one path for
+        # every ticket, never a standing verification child.
+        "single independence path": "no longer names a distinct path",
         # the fresh outside check, which is no longer a child: `land` runs
         # the target's own predicate in the integrated tree
         "checked done": "the ticket's `done` predicate, in the tree land has just merged",
-        "no standing child": "never from a standing verification",
         # `join-noop-repair` retired in W4a with the `.gate.` id family it
         # discriminated; the empty-set-skip anchor retired with it.
         "terminal profile": "Running the terminal required checks",
@@ -69,17 +70,11 @@ class MinimalAcceptanceTests(unittest.TestCase):
     def test_acceptance_contract_discriminates_extra_or_self_acceptance(self):
         verification, profiles = self.owners()
         mutants = {
-            "checker mutates": (
+            "independence path revived as distinct": (
                 verification.replace(
-                    "distinct read-only `orch-judge` dispatch",
-                    "correcting `orch-judge` dispatch",
+                    "no longer names a distinct path",
+                    "still names a distinct path",
                     1,
-                ),
-                profiles,
-            ),
-            "clean target pays for a repair": (
-                verification.replace(
-                    "closes with no repair at all", "closes with one repair", 1
                 ),
                 profiles,
             ),
