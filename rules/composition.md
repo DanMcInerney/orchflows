@@ -16,11 +16,13 @@
    by an engine's bounded iteration, never by a call cycle.
 4. Every callable skill ends with `Return` naming its output fields,
    `[]` for empty collections. A change to a Return shape is breaking.
-5. Anatomy: frontmatter (`name` = folder name, `description` ≤140
-   chars, `role` ∈ {planner, worker, none} — pack SKILL.md carries no
-   `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
-   budgets and their counting are [token-economy.md](token-economy.md)
-   §11's; what the body holds is its §6's.
+5. Anatomy: frontmatter (`name` = folder name, `description` within
+   the character budget `common.py`'s `DESCRIPTION_BUDGET` already
+   enforces, `role` ∈ {planner, worker, none} — pack SKILL.md carries
+   no `role`), then `Require:`, procedure, `Never:`, `Return:`. Body
+   budgets and their counting are
+   [token-economy.md](token-economy.md) §11's; what the body holds is
+   its §6's.
 6. Admission: a new skill's contract must be expressible from existing
    skill contracts; otherwise it is a kernel candidate and must show
    that omitting it forces another skill to inline its judgment. Two

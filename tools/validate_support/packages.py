@@ -25,6 +25,7 @@ REQUIRE_RE = __dep_common.REQUIRE_RE
 RETURN_RE = __dep_common.RETURN_RE
 ROLE_VALUES = __dep_common.ROLE_VALUES
 ROOT = __dep_common.ROOT
+ROUTING_BLOCK_BUDGET = __dep_common.ROUTING_BLOCK_BUDGET
 SENTENCE_END_RE = __dep_common.SENTENCE_END_RE
 SIGNATURE_CELL_POINTER_RE = __dep_common.SIGNATURE_CELL_POINTER_RE
 SKILL_TIERS = __dep_common.SKILL_TIERS
@@ -248,6 +249,27 @@ def validate_surface_budgets(diag: Diagnostics) -> None:
             diag.error(name, f"surface has {n} words, exceeds the every-turn budget of {limit}")
 
 
+def validate_routing_block(text: str, label: str, diag: Diagnostics, limit: int = ROUTING_BLOCK_BUDGET) -> None:
+    """A project's router file (routing + friction law, the project
+    instance of docs/documentation.md's router factory row) against its
+    default every-turn ceiling -- rules/token-economy.md §11,
+    `ROUTING_BLOCK_BUDGET`.
+
+    No renderer or sync mechanism installs a project-scope routing block in
+    this tree today (`ROUTING_BLOCK_BUDGET`'s own comment, common.py, has
+    the verified evidence), so this check has no live file of its own to
+    scan here -- it is exercised directly, by synthetic text, the same way
+    tests/test_architecture_owners.py's `CEILING_RE` exercises its
+    can-fail direction against a padded copy rather than a second tree
+    (rules/verification.md Section 8). It is the reusable, tested checker a
+    project's own tooling -- or a future project-scope renderer -- wires in
+    at that surface once one exists."""
+
+    n = body_words(text)
+    if n > limit:
+        diag.error(label, f"routing block has {n} words, exceeds the every-turn budget of {limit}")
+
+
 def validate_budget(body: str, pkg: dict, diag: Diagnostics) -> None:
     file_label = rel(pkg["skill_md"])
     n = body_words(body)
@@ -393,6 +415,7 @@ __all__ = (
     'CONTRACTS_DIR', 'PINS_FILE', 'PIN_MESSAGE', 'rel',
     '_read_source', 'Diagnostics', 'discover_packages', 'parse_frontmatter',
     'validate_frontmatter', 'validate_role', 'validate_anatomy', 'body_words',
-    '_split_frontmatter', 'validate_surface_budgets', 'validate_budget', 'validate_pack_signature',
+    '_split_frontmatter', 'validate_surface_budgets', 'validate_routing_block',
+    'validate_budget', 'validate_pack_signature',
     'assembly_form_ok', 'cell_clauses',
 )

@@ -187,9 +187,10 @@ Why this shape:
   vocabulary is to judged verdicts what hash pins are to contracts —
   what makes independent readings converge.
 
-Craft is bounded — a 60-non-empty-line budget the validator enforces,
-and a closed consumer test that makes an unconsumed term a defect,
-both owned by the cell's definition in
+Craft is bounded — a non-empty-line budget the validator enforces
+(`common.py`'s `CRAFT_BUDGET`), and a closed
+consumer test that makes an unconsumed term a defect, both owned by
+the cell's definition in
 [contracts/pack-signature.md](contracts/pack-signature.md) — because
 reference material that grows without consumers is exactly the
 diluted-attention failure the body budgets exist to prevent.

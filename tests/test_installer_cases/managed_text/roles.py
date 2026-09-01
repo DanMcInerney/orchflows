@@ -49,7 +49,13 @@ class TestRoleAgentInstructions(unittest.TestCase):
     the dispatcher and every child alike -- on every turn, so a contract
     pointer left there is still a roles.md read the file names."""
 
-    BODY_CEILING = 80
+    # One fact, not two: installer/packages.py's ROLE_INSTRUCTIONS is the
+    # only content a role agent file ever carries (no separate un-rendered
+    # source, unlike a SKILL.md body), so this ceiling and
+    # rules/token-economy.md §11's "role agent file" number are the same
+    # fact. Imported, not restated -- common.py is the owner
+    # (tools/validate_support/common.py's ROLE_AGENT_BUDGET comment).
+    BODY_CEILING = validate.ROLE_AGENT_BUDGET
 
     # A snake_case key -- `subagent_type`, `model_reasoning_effort` -- is the
     # exact mistake this catches: it is what the profile row and the Codex

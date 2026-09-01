@@ -29,7 +29,25 @@ LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
 # units next, every-run units widest. Ceilings only fall.
 SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 230}
-MANIFEST_BUDGET = 250
+# The default ceiling a project's own router file (routing + friction law,
+# outside managed blocks -- docs/custom-workflow-authoring.md's project-tier
+# row) is held to when it states no stricter number of its own. No renderer
+# or sync mechanism installs a project-scope routing block in this tree
+# today (install.py: "Installation has one scope: user"; the legacy
+# project-scope path `_codex_agents_path` still carries is unreachable from
+# its CLI; scripts/orchflows_scaffold.py scaffolds skills/packs/workflows,
+# never a project's day-zero router) -- this repository is itself one
+# project instance and states its own stricter number at
+# SURFACE_BUDGET["AGENTS.md"] instead of this default.
+ROUTING_BLOCK_BUDGET = 400
+# rules/token-economy.md §11's "role agent file" and tests/
+# test_installer_cases/managed_text/roles.py's rendered-body `BODY_CEILING`
+# are one fact, not two: `installer/packages.py`'s `ROLE_INSTRUCTIONS` is
+# the only content a role agent file ever carries (there is no separate
+# un-rendered source file for it, unlike a SKILL.md body), so "the role
+# agent file" and "the rendered Claude/Codex agent body" name the same
+# artifact. roles.py imports this rather than restating the literal.
+ROLE_AGENT_BUDGET = 80
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
@@ -233,7 +251,8 @@ __all__ = (
     'annotations', 'argparse', 'ast', 'hashlib',
     'json', 're', 'sys', 'Path',
     'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
-    'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
+    'LINK_TARGET_RE', 'SURFACE_BUDGET', 'ROUTING_BLOCK_BUDGET', 'ROLE_AGENT_BUDGET',
+    'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
