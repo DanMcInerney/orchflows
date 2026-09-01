@@ -335,6 +335,7 @@ class DispatchLaunchTest(unittest.TestCase):
         )
         state = parse_canonical_json(attempt["dispatch_v1"])["attempts"][0]
         craft = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
+        friction = ROOT / "scripts" / "friction.py"
 
         for fact in (
             str(self.ticket_path()), str(self.candidate), sys.executable,
@@ -343,6 +344,10 @@ class DispatchLaunchTest(unittest.TestCase):
             "the gate's row", "to completion in the turn it starts",
             workspace_git.NOTES_DIR + "/",
             "Close only after everything you dispatched has returned.",
+            # U13(c): a forked child does not receive the host block's
+            # friction law (rules/token-economy.md's prompt-budget escape
+            # hatch), so the prompt is its only carrier.
+            "log friction, then continue", str(friction),
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
@@ -351,6 +356,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(1, prompt.count(state["lease_expires_at"]))
         self.assertEqual(1, prompt.count(str(craft)))
         self.assertEqual(1, prompt.count(state["assignment_seal"]))
+        self.assertEqual(1, prompt.count(str(friction)))
         # the craft's quoted scope is the one scope statement: the standing
         # gate line yields to it rather than restating the same law
         self.assertNotIn("run it here only if this ticket is the gate", prompt)

@@ -4,18 +4,13 @@ The canonical `orchflows` source: a four-tier library for orchestrator >
 subagent work. `ARCHITECTURE.md` maps boundaries, ownership, dependency
 direction; `docs/vocabulary.md` owns every library term and a pack's
 craft cell its domain's; `rules/` owns cross-cutting law, under
-`rules/visibility.md` §3. The Constitution in `docs/library-review.md`
-requires every sentence here.
+`rules/visibility.md` §3.
 
 Routing, the state sink and the friction law are the host block's —
 `templates/host-block.md`, installed at `~/.orchflows/host-block.md`.
 From this checkout the friction command is `python scripts/friction.py
 "<what happened>" "<what was expected or missing>"`, same sink, same
 flags.
-
-- Project-scope custom item `super-research` — manual invocation only,
-  keyless read-only acquisition — at
-  `.orchflows/skills/super-research/SKILL.md`.
 
 ## Required checks
 

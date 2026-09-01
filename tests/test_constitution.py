@@ -1,4 +1,4 @@
-"""The Constitution's amended principles, and the two pointers to it.
+"""The Constitution's amended principles, and the one pointer to it.
 
 `docs/library-review.md`'s Constitution is the only place the library
 states what every sentence in it must be required by, and until this
@@ -6,8 +6,12 @@ run no file outside it named it at all: an agent writing library text
 could finish without meeting it. Pinned here are the three principles
 this run amended -- 6 trimmed to the value it buys, 8 in the trunk form
 that keeps domain out of control flow, and the new scaffolding
-principle that decides when a guard expires -- and the two pointers
-that put the file on the write-time path.
+principle that decides when a guard expires -- and the one pointer
+that puts the file on the write-time path. `AGENTS.md` carried a
+second pointer until U13 (2026-09-01) deleted it: the sentence failed
+token-economy.md §1's own test (no executor acted differently for it),
+and `docs/documentation.md`'s Bootstrap section remains the write-time
+path an agent actually starts from.
 
 Anchors, not sentences
 (`packs/orch-code-pack/references/craft.md`): each principle is read by
@@ -24,7 +28,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REVIEW = ROOT / "docs" / "library-review.md"
-AGENTS = ROOT / "AGENTS.md"
 DOCUMENTATION = ROOT / "docs" / "documentation.md"
 
 CONSTITUTION = "## Constitution"
@@ -177,40 +180,20 @@ def section(text, heading):
     return re.sub(r"\s+", " ", text.split(heading, 1)[-1].split("\n## ", 1)[0])
 
 
-def preamble(text):
-    """AGENTS.md's write-time path: what precedes its first heading."""
+def missing_pointers(documentation_text):
+    """Every anchor the write-time surface no longer carries.
 
-    return text.split("\n## ", 1)[0]
-
-
-def missing_pointers(agents_text, documentation_text):
-    """Every anchor a write-time surface no longer carries.
-
-    Both pointer checks and their can-fail mutant read through this one
-    reader, so a surface mutated beside the tree is answered by exactly
-    the code the green checks trust.
+    The pointer check and its can-fail mutant read through this one
+    reader, so the surface mutated beside the tree is answered by exactly
+    the code the green check trusts.
     """
 
-    surfaces = (
-        (
-            "AGENTS.md",
-            preamble(agents_text),
-            ("docs/library-review.md", "constitution"),
-        ),
-        (
-            "docs/documentation.md 6",
-            section(documentation_text, BOOTSTRAP),
-            ("library-review.md", "constitution"),
-        ),
-    )
-    missing = []
-    for label, body, anchors in surfaces:
-        missing.extend(
-            "{0}: {1}".format(label, anchor)
-            for anchor in anchors
-            if anchor not in body.lower()
-        )
-    return missing
+    body = section(documentation_text, BOOTSTRAP)
+    return [
+        anchor
+        for anchor in ("library-review.md", "constitution")
+        if anchor not in body.lower()
+    ]
 
 
 class AmendedPrinciplesTest(unittest.TestCase):
@@ -316,57 +299,33 @@ class NetLinesTest(unittest.TestCase):
 
 
 class WriteTimePointerTest(unittest.TestCase):
-    """Both write-time surfaces name the Constitution."""
+    """The write-time surface names the Constitution.
+
+    `AGENTS.md` carried a second, redundant pointer until U13
+    (2026-09-01) deleted it -- a fact this check no longer asserts, once
+    `docs/documentation.md`'s Bootstrap section was confirmed the
+    surviving write-time path. See the module docstring.
+    """
 
     def setUp(self):
-        self.agents = AGENTS.read_text(encoding="utf-8")
         self.documentation = DOCUMENTATION.read_text(encoding="utf-8")
 
-    def missing_for(self, label):
-        """One surface's missing anchors, off the shared reader."""
-
-        return [
-            entry
-            for entry in missing_pointers(self.agents, self.documentation)
-            if entry.startswith(label + ":")
-        ]
-
-    def test_agents_md_points_at_the_constitution(self):
-        """The standards owner an agent loads before writing names it."""
-
-        self.assertEqual([], self.missing_for("AGENTS.md"))
-
     def test_documentation_lists_it_among_the_day_zero_artifacts(self):
-        self.assertEqual([], self.missing_for("docs/documentation.md 6"))
+        self.assertEqual([], missing_pointers(self.documentation))
 
-    def test_a_copy_without_either_pointer_fails_the_check(self):
-        """The can-fail direction drops the path from each surface.
+    def test_a_copy_without_the_pointer_fails_the_check(self):
+        """The can-fail direction drops the path from the surface.
 
         Asserting only that a deleted substring is gone would hold
         against any text at all -- this repository included, before
-        either pointer existed. The mutant is answered by
-        `missing_pointers`, the same reader both checks above assert
-        through, so a reader that stopped seeing a surface fails here.
+        the pointer existed. The mutant is answered by
+        `missing_pointers`, the same reader the check above asserts
+        through, so a reader that stopped seeing the surface fails here.
         """
 
-        self.assertEqual([], missing_pointers(self.agents, self.documentation))
-        blinded = self.agents.replace("docs/library-review.md", "")
-        self.assertEqual(
-            ["AGENTS.md: docs/library-review.md"],
-            missing_pointers(blinded, self.documentation),
-        )
+        self.assertEqual([], missing_pointers(self.documentation))
         dropped = self.documentation.replace("library-review.md", "")
-        self.assertEqual(
-            ["docs/documentation.md 6: library-review.md"],
-            missing_pointers(self.agents, dropped),
-        )
-        self.assertEqual(
-            [
-                "AGENTS.md: docs/library-review.md",
-                "docs/documentation.md 6: library-review.md",
-            ],
-            missing_pointers(blinded, dropped),
-        )
+        self.assertEqual(["library-review.md"], missing_pointers(dropped))
 
 
 if __name__ == "__main__":
