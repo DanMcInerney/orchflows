@@ -75,15 +75,15 @@ Nothing marks "done" except an external check passing.
 
 ## More ways to use it
 
-Routing projects four lanes, smallest need first: `act` when evidence
+Routing projects four lanes, smallest need first: `direct` when evidence
 already decides and a change this session can make, check narrowly, and
-record in its own medium's history; `brick` — one `tickets.py do` or
-`judge`, for work wanting isolation or a checked landing; `frame` for
+record in its own medium's history; `worker` — one `tickets.py do` or
+`judge`, for work wanting isolation or a checked landing; `team` for
 work needing parallel children, resume, or an audit trail; and
-`outline` when the goal itself is unresolved — a planning `orch-do`
-freezes and seals the root before `frame` drives it. Tripwires promote
-on evidence, never prediction: a second concern mid-`act` enters
-`brick`, a child's scope splitting enters `frame`, and an unknown or
+`plan` when the goal itself is unresolved — a planning `orch-do`
+freezes and seals the root before `team` drives it. Tripwires promote
+on evidence, never prediction: a second concern mid-`direct` enters
+`worker`, a child's scope splitting enters `team`, and an unknown or
 unverified cause investigates before anything edits. Everything else
 runs only when you name it, so the routing table never
 grows as the library does. The table is installed at
@@ -183,8 +183,8 @@ details:
 
 ```mermaid
 flowchart TD
-    frame["tickets.py frame-open — the invocation's journal"] --> outline["orch-do (planning) — freeze one root ticket"]
-    outline --> pack{"stamp a domain pack per call"}
+    frame["tickets.py frame-open — the invocation's journal"] --> plan["orch-do (planning) — freeze one root ticket"]
+    plan --> pack{"stamp a domain pack per call"}
     pack --> brick["tickets.py do / judge — one launch per call"]
     brick --> exec["the child"]
     exec --> join["tickets.py land — each return crosses once"]

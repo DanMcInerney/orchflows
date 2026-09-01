@@ -58,9 +58,9 @@ that needs a different meaning needs a different word.
   planning `orch-do`, which freezes and seals a semantic root at intake;
   orch-slice retired with the decomposed root itself, its craft surviving
   as the planning sections below. No dispatch revives any of them; the noun
-  **spec** (below) is unrenamed,
-  and **outline** survives only as the routing shape (below) that reaches a
-  planning `orch-do`.
+  **spec** (below) is unrenamed, and **outline** has now fully retired too —
+  its one remaining live use, naming the routing shape's planning lane
+  (below), is superseded by **plan**.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature: `adapter`, `stages`, and
@@ -167,17 +167,18 @@ that needs a different meaning needs a different word.
 - **routing shape** — the host projection selected before execution, four
   lanes routed smallest-first and normatively defined by the host block's
   routes paragraph (`templates/host-block.md`, installed at
-  `~/.orchflows/host-block.md`): **act** — context evidence decides, and a
+  `~/.orchflows/host-block.md`): **direct** — context evidence decides, and a
   change this session can make, check narrowly, and record in the medium's
-  own history it makes itself; **brick** — one `do` (or `judge` over handed
+  own history it makes itself; **worker** — one `do` (or `judge` over handed
   artifacts), wanting isolation, a fresh context, or a checked landing;
-  **frame** — parallel children, resume, or an audit trail; **outline** — the
+  **team** — parallel children, resume, or an audit trail; **plan** — the
   goal itself is unresolved, so a planning `orch-do` seals the root before
-  `frame` drives it. Named tripwires promote on evidence, never prediction,
+  `team` drives it. Named tripwires promote on evidence, never prediction,
   and live only in the host block — this entry names the lanes, not their
-  triggers. `answer`, `single`, `graph`, and `fix` are the retired names for
-  this shape; `brick` and `frame` double as lane name and noun, the same
-  benign metonymy `graph` was.
+  triggers. `act`, `brick`, `frame`, `outline`, `answer`, `single`, `graph`,
+  and `fix` are the retired names for this shape; `brick` and `frame` no
+  longer double as lane name and noun — the words stay for the ticket-tree
+  nouns below, and the lane took `worker` and `team` instead.
   Small, medium and large are explanatory mappings, never ticket fields.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
