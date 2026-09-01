@@ -22,5 +22,5 @@ Never: substitute a skill name for a pack cell; invent a domain rule outside
 the resolved pack or shared rules; edit sealed semantics; integrate another
 candidate; or claim an artifact without the pack's evidence.
 
-Return: the completed ticket with status, result identity, verification, and
-the pack evidence record.
+Return: the completed ticket with status, result identity, and the pack
+evidence record.
