@@ -300,7 +300,7 @@ def _doclint():
 def validate_templates(diag: Diagnostics) -> None:
     """Every `example-workflows/<name>/` entry is one workflow skill.
 
-    A workflow is a skill whose prose calls bricks, so the checks are a
+    A workflow is a skill whose prose calls callables, so the checks are a
     skill's: the name matches its directory, the description is present and
     inside the shared budget, the body is inside the workflow tier's word
     budget, and the manual-invocation flag is declared. The last is the one
@@ -308,7 +308,7 @@ def validate_templates(diag: Diagnostics) -> None:
     reasoning rather than inside a sealed child prompt, so a host firing one
     on its own reading of a description opens that surface uninvited.
 
-    What a brick call is, and whether one is well formed, is `scripts/
+    What a callable call is, and whether one is well formed, is `scripts/
     tickets.py`'s and is reported there; nothing in a body is graded here.
     """
     comps_dir = ROOT / "example-workflows"

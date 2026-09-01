@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic harvest door. Stdlib-only, cross-platform (Windows + POSIX).
+"""Deterministic harvest command. Stdlib-only, cross-platform (Windows + POSIX).
 
 The read sibling of ``scripts/friction.py``: read-only over the state sink
 except the one digest file it writes at ``--out``. Sink resolution goes

@@ -16,7 +16,7 @@ the same reason -- its driver is singular by construction, so there is
 nobody to arbitrate against, and an expiry could only end a journal
 somebody is still writing. What ends a frame's attempt is `frame-close`.
 The attempt exists at all because the journal rides the ordinary `result`
-door, which is fenced to one, and because that is the seam a recovering
+command, which is fenced to one, and because that is the seam a recovering
 reader already knows how to read.
 
 `frame-close` is a recording act rather than a launch, and it refuses one
@@ -35,8 +35,8 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_attempts import OUTCOME_RECORD_ID
     from .tickets_bound import parse_bound
-    from .tickets_brick import (
-        BRICK_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
+    from .tickets_mint import (
+        MINT_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
         _run_dir, _sealed_root,
     )
     from .tickets_format import (
@@ -59,8 +59,8 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_attempts import OUTCOME_RECORD_ID
     from tickets_bound import parse_bound
-    from tickets_brick import (
-        BRICK_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
+    from tickets_mint import (
+        MINT_INDEPENDENCE, DO_EXECUTOR, JUDGE_EXECUTOR, _context, _mint,
         _run_dir, _sealed_root,
     )
     from tickets_format import (
@@ -104,7 +104,7 @@ def _frame_fields(run: str, parent, done, bound: str) -> dict:
     return {
         "run": run, "status": ADMISSION_PENDING, "admission": ADMISSION_PENDING,
         "frame": FRAME_MARKER,
-        "independence": BRICK_INDEPENDENCE,
+        "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": "none", "bound": bound,
         "done": done,
@@ -225,7 +225,7 @@ def _done_refusal(done):
         return {"error": (
             "a frame's done is a command: exit 0 is the verdict, run in the "
             "checkout the driver is standing in. A criterion no command "
-            "covers is a `tickets.py judge` brick under this frame, which "
+            "covers is a `tickets.py judge` ticket under this frame, which "
             "brings the pack a frame does not have"
         )}
     return None
@@ -351,7 +351,7 @@ def _cmd_frame_close(rest):
     if not is_frame(data):
         return {"error": (
             f"{run}/{frame_id} is not a frame; `tickets.py land` closes a "
-            "brick, and it is the door that integrates and retires a candidate"
+            "callable, and it is the command that integrates and retires a candidate"
         )}
     sealed = str(data.get("done") or "").strip()
     if sealed and (status is not None or done is not None):
@@ -413,7 +413,7 @@ def _closed_under_run_lock(run, frame_id, path, attempt, census, reason,
     """Evaluate the gate, file the close, and join -- in that order.
 
     The gate runs before anything is written, which is the one place this
-    differs from `land`: a brick's predicate is about the tree its candidate
+    differs from `land`: a callable's predicate is about the tree its candidate
     was merged into, so the merge has to precede it, while a frame merges
     nothing and a refused gate should leave the ledger exactly as it found
     it. A frame whose gate refuses stays open, and closing it again after
@@ -500,7 +500,7 @@ def _project_runs(tickets_root):
     """The run directories the invoking project owns, by the admission law.
 
     Origin first, then main-checkout root -- `_same_project`, the predicate
-    the write doors refuse a foreign caller with -- so two worktrees of one
+    the write commands refuse a foreign caller with -- so two worktrees of one
     project see one another's runs and two projects never see each other's.
     A run whose identity records no project is not listed: there is no
     recorded fact to match it on, and guessing is the confusion the run

@@ -64,7 +64,7 @@
     blind recuts instead of shorter assignments. What degrades adherence is the count of
     standing demands and tension between them, not length at a fixed
     count — so a surface earns each demand by §1 and carries no two in
-    tension, and complexity buys structure, never width: more bricks and
+    tension, and complexity buys structure, never width: more callables and
     frames, each one launch, each re-paying the every-turn floor, which
     is why that floor is the tightest ceiling. A ceiling only falls, and
     falls on evidence — a tournament in which the shorter candidate

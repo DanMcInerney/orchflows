@@ -173,7 +173,7 @@ class TestTheGeneratedEnumRatchet(unittest.TestCase):
 
 
 class TestTheUnreachableIsGone(unittest.TestCase):
-    """What no door reaches is deleted, not left reachable as an import."""
+    """What no command reaches is deleted, not left reachable as an import."""
 
     GONE = {
         "tickets_project.py": ("_cmd_claim", "_do_claim", "_claim_under_run_lock",
@@ -187,7 +187,7 @@ class TestTheUnreachableIsGone(unittest.TestCase):
                                   "_packet_under_run_lock"),
         "workspace_git.py": ("_checkouts",),
         # The checker-stage apparatus that survived the `review_kind`
-        # deletion: no live door ever minted a `.check` ticket or built the
+        # deletion: no live command ever minted a `.check` ticket or built the
         # `review_v1` chain `tickets.py check` required, so its one input
         # was always hand-edited state -- test-only reachability, not
         # liveness. `tickets_review.py` and `tickets_review_schema.py`

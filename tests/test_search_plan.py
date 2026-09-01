@@ -21,7 +21,7 @@ sys.modules.setdefault("tests.test_search_plan", sys.modules[__name__])
 
 ROOT = Path(__file__).resolve().parents[1]
 # Both campaigns are workflow skills: one `SKILL.md` whose prose opens a
-# frame and writes the brick calls that used to be stubs. The text graded
+# frame and writes the callable calls that used to be stubs. The text graded
 # below is that whole body, because the law that was spread across a
 # directory of stubs is back in one place.
 EVOLVE = ROOT / "example-workflows" / "evolve"
@@ -39,8 +39,8 @@ SEARCH_PROTOCOL = ROOT / "docs" / "search-plan-protocol.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
-# One brick call as the prose writes it: the verb, then the pack it stamps.
-BRICK_CALL_RE = re.compile(r"\b(do|judge)(?: <run>)? --pack ")
+# One callable call as the prose writes it: the verb, then the pack it stamps.
+CALLABLE_CALL_RE = re.compile(r"\b(do|judge)(?: <run>)? --pack ")
 
 
 def canonical_bytes(value):
@@ -319,7 +319,7 @@ def read(path: Path) -> str:
 
 def template_text(directory: Path) -> str:
     """One workflow as one string. A workflow is a skill whose prose calls
-    bricks, so its whole surface is the one body -- there are no stubs
+    callables, so its whole surface is the one body -- there are no stubs
     beside it to concatenate."""
     return read(directory / "SKILL.md")
 
@@ -428,7 +428,7 @@ def recursive_target_errors(evolve: str, generation: str, tournament: str):
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
-    # Who runs each step is the pack the brick call stamps, read off the
+    # Who runs each step is the pack the callable call stamps, read off the
     # call line the prose writes. `judge` twice: eligibility opens the
     # campaign, the final score card closes it; `do` twice: the frozen
     # evaluation, then the per-candidate write. Since P3 the *scorer* was
@@ -438,7 +438,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
     # rules/delegation.md, `orch-worklog` into the `tickets.py` view -- and
     # since P4 `orch-panel` too, judging being N blind verify lanes plus the
     # loop body's reduce. None of those three demoted names may reappear.
-    calls = Counter(BRICK_CALL_RE.findall(evolve))
+    calls = Counter(CALLABLE_CALL_RE.findall(evolve))
     required = Counter({"do": 2, "judge": 2})
     if calls != required:
         errors.append("evolve-call-graph")
@@ -460,7 +460,7 @@ def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str
         if demoted in combined_evolve:
             errors.append("judge-owner")
             break
-    # A workflow binds its executor in the brick call's `--pack`; a
+    # A workflow binds its executor in the callable call's `--pack`; a
     # backticked callable name in the prose is the second grammar P4 removed.
     if set(CALL_EDGE_RE.findall(combined_evolve)):
         errors.append("evolve-call-edge")

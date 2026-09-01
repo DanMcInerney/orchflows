@@ -333,7 +333,7 @@ def _return_lines(assignment: dict) -> list:
 
     Two of four workers on 2026-08-31 closed without committing inside the
     candidate, so the tree the landing merged held nothing; and the artifact
-    a parent passed to the next brick rode through paraphrase because the
+    a parent passed to the next callable rode through paraphrase because the
     child never printed one exact form. Both are said here, once, in the one
     surface a child is guaranteed to read. Three of five research children
     on 2026-09-01 skipped that same commit line for a workspace with nothing

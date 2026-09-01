@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
@@ -211,18 +211,18 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     # fixture needs an actual checkout rather than a bare `.git` directory.
     git_checkout(tmp)
     sink = use_sink(tmp)
-    retired_doors.run([
+    retired_commands.run([
         "new", "testrun", "T1", "--executor", "orch-do",
         "--goal", "Test result attribution.", "--context", "[]",
         "--pack", "orch-code-pack", "--isolation", "required",
     ])
-    retired_doors.run(["stamp-generation", "testrun", "T1"])
-    validated = retired_doors.run(["draft-validate", "testrun", "T1"])
-    retired_doors.run([
+    retired_commands.run(["stamp-generation", "testrun", "T1"])
+    validated = retired_commands.run(["draft-validate", "testrun", "T1"])
+    retired_commands.run([
         "seal", "testrun", "T1", "--cut-generation",
         validated["draft_validation"]["cut_generation"],
     ])
-    retired_doors.run(["ready", "--run", "testrun"])
+    retired_commands.run(["ready", "--run", "testrun"])
     ticket = sink / "tickets" / "testrun" / "T1.md"
     established = ticket.read_text(encoding="utf-8")
     for key, value in (
@@ -232,7 +232,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         established = tickets_mod._set_frontmatter_field(established, key, value)
     ticket.write_text(established, encoding="utf-8")
     lease = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    opened = retired_doors.run([
+    opened = retired_commands.run([
         "dispatch-open", "testrun", "T1", "--by", by,
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]
@@ -379,8 +379,8 @@ class PackPinTest(unittest.TestCase):
                 if item["code"] == "pack-digest-mismatch"
             )
             self.assertIn("changed under the seal", detail)
-            # The remedy names a living door: the generation stamp retired
-            # into the brick fold, so a caller is sent to `do` or `judge`.
+            # The remedy names a living command: the generation stamp retired
+            # into the callable fold, so a caller is sent to `do` or `judge`.
             self.assertIn("tickets.py do | judge", detail)
             self.assertNotIn("stamp-generation", detail)
 

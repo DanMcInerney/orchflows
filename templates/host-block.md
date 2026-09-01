@@ -3,7 +3,7 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, launches what a door emits, and lands
+- Root routes, launches what a command emits, and lands
   returns; relay `kind: user-only` questions verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile work refuses;
   `role: none` only orchestrates. `orch-off` suspends routing; named

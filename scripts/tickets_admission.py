@@ -63,7 +63,7 @@ def pinned_digest_finding(pack: str, pinned: str):
     """Refuse a stamped pack whose content is no longer what was sealed.
 
     The seal is the lockfile: it records the pack's digest at slice time,
-    and every later door compares the resolved pack against it. Without
+    and every later command compares the resolved pack against it. Without
     this the ticket carried the pack's *name*, and a name resolves to
     whatever bytes happen to be nearest -- which is how a project ring
     would have shadowed the pack a run was admitted under.
@@ -79,7 +79,7 @@ def pinned_digest_finding(pack: str, pinned: str):
         "pack-digest-mismatch", "pack_digest",
         f"pack '{pack}' resolves to {current}, but this sealed assignment "
         f"pinned {pinned}: the pack changed under the seal, or another ring "
-        "now shadows it. Restore the pinned pack, or open a fresh brick "
+        "now shadows it. Restore the pinned pack, or open a fresh callable "
         "(tickets.py do | judge) against the pack you mean to run.",
     )
 
@@ -148,8 +148,8 @@ def landing_round_parent(ticket_id: str, siblings) -> str | None:
 def post_seal_parent(ticket_id: str, data: dict, siblings) -> str | None:
     """The sealed ticket whose machinery minted this one after the cut, or None.
 
-    Two spellings of one fact, because the second arrived first. A brick names
-    its caller outright in `parent`; a landing's round names its parent
+    Two spellings of one fact, because the second arrived first. A callable
+    names its caller outright in `parent`; a landing's round names its parent
     through the id grammar `round_parent` owns. Both were minted after the cut
     that sealed the parent, so neither can be a member of it, and both bind
     their admission through the parent instead.
@@ -173,14 +173,14 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignm
     it descends from that parent unaltered: the parent's own
     `root_generation` and `cut_generation`, and a self-seal that still matches
     the child's current bytes.  A child whose bytes moved after it was minted
-    fails that last reading and falls through to the sealed-set door, which
+    fails that last reading and falls through to the sealed-set command, which
     has never named it and refuses it.
 
     A one-hop reading of that rule stops at whatever `post_seal_parent`
     returns even when that parent is itself a runtime child the cut never
-    named -- a `do`/`judge` brick's own repair round, whose grammar-derived
-    parent is the brick, not the frame the brick was minted under. That
-    parent admits exactly the way the brick it repairs admitted, so the walk
+    named -- a `do`/`judge` callable's own repair round, whose grammar-derived
+    parent is the callable, not the frame the callable was minted under. That
+    parent admits exactly the way the callable it repairs admitted, so the walk
     continues past it: each hop is validated the same way (generations agree,
     self-seal matches current bytes) and the chain keeps climbing through
     every un-sealed ancestor until one already named in `sealed_assignments`
@@ -188,10 +188,10 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignm
     an ancestor it already crossed -- which lawful minting cannot produce,
     but a hand-edited `parent:` field could claim -- never grounds, and
     returns ``None`` exactly as a chain of one always has: the caller's
-    sealed-set door then refuses the leaf directly.
+    sealed-set command then refuses the leaf directly.
 
     Written for a landing's repair rounds and generalized to every runtime
-    child by the brick doors: `do` and `judge` mint under a sealed parent for
+    child by the minting commands: `do` and `judge` mint under a sealed parent for
     the same reason a round does, and the parentage the id used to imply is
     now declared.
     """
@@ -299,7 +299,7 @@ def dependency_order_findings(ticket_id: str, data: dict) -> list:
     Two orderings of one edge set are two assignment digests, so the same
     cut authored twice seals as two different generations. The digest is not
     changed to absorb that -- doing so would invalidate every historical
-    seal -- the authoring door refuses it instead, while the list is still a
+    seal -- the authoring command refuses it instead, while the list is still a
     draft nobody has been dispatched against.
     """
 

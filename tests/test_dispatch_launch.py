@@ -27,7 +27,7 @@ from unittest import mock
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
 from scripts import state_root
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch
@@ -278,7 +278,7 @@ class DispatchLaunchTest(unittest.TestCase):
         return Path(self.temporary.name) / "tickets" / run / "T.md"
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -305,7 +305,7 @@ class DispatchLaunchTest(unittest.TestCase):
  "--workspace", str(self.candidate), *extra,
         ]
         with self.established():
-            return retired_doors.run(arguments)
+            return retired_commands.run(arguments)
 
     def test_the_dispatch_carries_the_launch_its_host_record_declares(self):
         result = self.dispatch()
@@ -471,7 +471,7 @@ class DispatchLaunchTest(unittest.TestCase):
         ):
             self.assertIn(token, prompt)
 
-        filed = retired_doors.run([
+        filed = retired_commands.run([
             "result", "run", "T", "--assignment-seal", state["assignment_seal"],
             "--dispatch-id", state["dispatch_id"], "--record-id", "R1",
             "--by", state["owner"],
@@ -566,7 +566,7 @@ class LandTest(unittest.TestCase):
         return Path(self.temporary.name) / "tickets" / "run" / "T.md"
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -582,7 +582,7 @@ class LandTest(unittest.TestCase):
 
     def land(self, *extra, status="complete"):
         graded = ["--status", status] if status is not None else []
-        return retired_doors.run([
+        return retired_commands.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *graded, *extra,
@@ -678,7 +678,7 @@ class LandTest(unittest.TestCase):
     def test_land_refuses_a_malformed_identity_without_writing(self):
         before = self.ticket_path().read_text(encoding="utf-8")
 
-        refusal = retired_doors.run([
+        refusal = retired_commands.run([
             "land", "..", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--status", "complete",

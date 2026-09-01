@@ -1,5 +1,5 @@
 """Checks for scripts/harvest.py (and its scripts/harvest_cluster.py seam):
-the deterministic harvest door -- window/selector slicing, covered-matcher
+the deterministic harvest command -- window/selector slicing, covered-matcher
 exclusion, greedy-union clustering, the improvement law rule 4 arithmetic,
 the digest's own covered ``watermark``, and the ``--list-runs`` resolver
 (including the writer/reader seam it crosses -- ``TestWriterReaderSeam``

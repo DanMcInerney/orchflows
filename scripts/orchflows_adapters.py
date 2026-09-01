@@ -129,7 +129,7 @@ def body_for(kind: str, name: str, pointer: str) -> str:
     if kind == "workflow":
         return (
             f"`{name}` is a workflow skill: prose that opens a frame and calls "
-            f"bricks. Its one body is {pointer}.\n\n"
+            f"callables. Its one body is {pointer}.\n\n"
             "Read that file whole and invoke the skill by following it "
             "exactly: its Require names what the caller supplies, its call "
             "lines are the commands to run, and its Return is the close. A "

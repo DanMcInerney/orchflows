@@ -18,7 +18,7 @@ connects this law to the admission-owned state transition.
    [work-item.md](../contracts/work-item.md)'s.
 5. A graph is the mechanically observable shape of two or more executor
    results, sequential or parallel. Its run opens one frame per invocation
-   and hangs each brick under the frame that called it, so the ticket tree is
+   and hangs each callable under the frame that called it, so the ticket tree is
    the call tree; a read-only blocker critique feeds at most one repair, and
    the root's own `done` predicate is the fresh
    outside check. A root with one lawful executor keeps its ordinary path.
@@ -33,7 +33,7 @@ connects this law to the admission-owned state transition.
    rewritten. Sequential successors open after dependencies complete; parallel
    successors are joined by a later integrator.
 8. An assignment advances only through draft, validated, and sealed, inside
-   the one door that opens the work. Validation
+   the one command that opens the work. Validation
    records one exact snapshot; compare-and-swap sealing refuses changed bytes.
    Within a physical run the `root_generation` ordinal is `1`; cut generations
    may advance only for deterministic correction before seal. A child minted

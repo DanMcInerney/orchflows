@@ -58,8 +58,8 @@ class WorkflowCatalogTests(unittest.TestCase):
             for workflow in projected
         ))
         by_id = {workflow["id"]: workflow for workflow in projected}
-        # Both homes carry the same kind now: a library workflow and a brick
-        # are alike skills, differing only in what their prose calls.
+        # Both homes carry the same kind now: a library workflow and a
+        # callable are alike skills, differing only in what their prose calls.
         self.assertEqual("workflow-skill", by_id["browser-game"]["type"])
         self.assertEqual("callable", by_id["browser-game"]["entry"])
         self.assertEqual(

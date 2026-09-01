@@ -79,7 +79,7 @@ def _run_goal(items: list) -> tuple:
     A run has one root identity (contracts/work-item.md), and a runtime
     child's id carries its whole call path (`<parent>.<n>`), so the one
     top-level id (no `.`) is that root whenever it is unique -- true of
-    every brick tree, decomposed or not, regardless of what a descendant's
+    every callable tree, decomposed or not, regardless of what a descendant's
     own `depends_on` says. The rare shape with more than one top-level id
     (parallel manually-issued tickets, one `depends_on` the other) falls
     back to the free ticket nobody depends on; a run with neither shape

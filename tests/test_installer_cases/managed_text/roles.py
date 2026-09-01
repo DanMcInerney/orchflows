@@ -8,7 +8,7 @@ from installer import managed_text, packages
 
 # This module declares exactly one class, and every case below is a method of
 # it. `test_installer_cases/managed_text/*.py` is collected by nothing: the one
-# door is the explicit class-name import block at `tests/test_installer_managed
+# route is the explicit class-name import block at `tests/test_installer_managed
 # .py`, which is outside this ticket's write scope, so a second top-level
 # `TestCase` here would be imported by no shard and would report green without
 # ever running. A mixin folded into the imported class is not the way out

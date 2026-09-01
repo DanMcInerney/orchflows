@@ -40,12 +40,12 @@ An unseen result requires the attempt's committed launch, and carries the
 triple is the writer's whole authority, on this write and on every other.
 
 A read-only critique never rewrites the reviewed executor's Report. It is a
-`judge` brick like any other now: its enumerated blockers are this same one
-free-text `## Report`, and the repair answering it is a `do` brick the
+`judge` ticket like any other now: its enumerated blockers are this same one
+free-text `## Report`, and the repair answering it is a `do` ticket the
 calling workflow opens against them, sequenced by prose rather than a
 mechanical selector. The `orchflows.review.v1` ledger -- `GatePlan`,
 `CritiqueAdjudication`, `RepairOutcome`, and the `checked_by`/`review_stage`
-fields and `tickets.py check` reader it carried -- retired with the door
+fields and `tickets.py check` reader it carried -- retired with the command
 that used to build it; see [work-item.md](work-item.md#review-stage-ledger).
 `dispatch-join` writes no such chain and binds no findings array, accepted
 subset, or fixed artifact identity of its own.

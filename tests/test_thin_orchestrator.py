@@ -108,7 +108,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         journal, run children at scoped checks, and close. Each anchor is a
         step a driver cannot supply from its own reading, and the journal
         re-read is the one that survives a compaction nothing else notices.
-        The per-child invocation itself is the worker door's own text, so the
+        The per-child invocation itself is the worker command's own text, so the
         team lane does not re-teach it -- see
         test_host_and_frontier_establish_the_workspace_before_dispatch."""
         host = re.sub(
@@ -129,7 +129,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, team)
         # The facade owns each of these; the route may not re-teach a manual
-        # spelling of a step a worker door or `land` already performs.
+        # spelling of a step a worker command or `land` already performs.
         for absent in (
             "tickets.py claim",
             "tickets.py packet",

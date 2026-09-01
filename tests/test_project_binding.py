@@ -41,7 +41,7 @@ from scripts import state_root  # noqa: E402
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
 STATE_HOME_ENV_VAR = state_root.ENV_VAR
 RUN = "testrun"
-# The one phrase every binding refusal carries, whichever door refused.  A
+# The one phrase every binding refusal carries, whichever command refused.  A
 # case that must tell "this law refused me" from "some other law did" reads
 # for this and not for the presence of an error.
 HELD = "is held by project"
@@ -315,16 +315,16 @@ class TestLegacyRuns(ProjectBindingFixture):
 class TestTheSeamIsGone(unittest.TestCase):
     """The claim seam this module was split out to carry no longer exists.
 
-    `dispatch-open` is the one door that takes a ticket, and the claim
+    `dispatch-open` is the one command that takes a ticket, and the claim
     command it superseded stopped being routed at the dispatch-v1 cutover.
     Its plumbing sat here reachable only as an import until it was deleted;
-    what is pinned now is that no door reaches a name that has none, and
-    that the law both remaining doors do read is still this module's.
+    what is pinned now is that no command reaches a name that has none, and
+    that the law both remaining commands do read is still this module's.
     """
 
     GONE = ("_do_claim", "_cmd_claim", "_claim_under_run_lock", "CLAIM_USAGE")
 
-    def test_no_door_still_reaches_the_deleted_claim_plumbing(self):
+    def test_no_command_still_reaches_the_deleted_claim_plumbing(self):
         from scripts import tickets, tickets_lifecycle, tickets_project
 
         for name in self.GONE:
@@ -343,8 +343,8 @@ class TestTheSeamIsGone(unittest.TestCase):
         self.assertTrue(callable(tickets_project.binding_refusal))
         self.assertTrue(callable(tickets_project.root_ticket_project))
 
-    def test_both_remaining_doors_refuse_through_that_one_law(self):
-        """The remedies differ, the sentence does not: one law, three doors,
+    def test_both_remaining_commands_refuse_through_that_one_law(self):
+        """The remedies differ, the sentence does not: one law, three commands,
         and `CLAIM_REMEDY` survives because `dispatch-open` still names it."""
 
         from scripts import tickets_attempts, tickets_join, tickets_project
