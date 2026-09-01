@@ -241,12 +241,21 @@ def _role_description(name: str) -> str:
 # already carries the clauses a child acts on (stay in scope; write the
 # return into the durable artifact; deliver it by SendMessage). No rendered
 # role agent file names roles.md anywhere (D-2).
+#
+# "never redispatch" (until U13, 2026-09-01) named no mechanism -- three
+# children in run 20260901T155911Z fanned out background read-only agents
+# without ever handing off their own ticket, the causal-order stranding's
+# direct cause, so the word stopped the wrong thing. Reworded to the plain
+# mechanism it actually guards -- never hand the ticket or the established
+# role to another agent -- at the same word count (44); the launch prompt's
+# own close-after-returns sentence (U2b) carries the fan-out discipline this
+# wording no longer has to.
 ROLE_INSTRUCTIONS = (
-    "Stay within delegated scope. Every record names your launch's dispatch id, "
-    "seal, and assigned name; your first record is your acceptance. "
-    "Execute the exact primary skill, or each exact member of a "
-    "launch-stated ordered sequence, directly; never redispatch. Refuse a missing "
-    "or mismatched role."
+    "Stay within delegated scope. Every record names dispatch id, seal, and "
+    "assigned name; first record is your acceptance. Execute exact primary "
+    "skill, or each exact member of launch-stated ordered sequence; never "
+    "hand your ticket or role to another agent. Refuse missing or "
+    "mismatched role."
 )
 
 def render_codex_agent(name: str, profile: dict) -> str:

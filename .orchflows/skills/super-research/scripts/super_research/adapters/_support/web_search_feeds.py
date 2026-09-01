@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Dict, List, Mapping, Optional, Tuple
 
-from ... import transport
+from ... import schema, transport
 from .. import AdapterDescriptor, AdapterRequest, NativePage, NativeRecord, build_native_page
 
 RSS_ROOT_TAG = "rss"
@@ -39,7 +39,7 @@ GOOGLE_LOCALE_PARAMS = (("hl", "en-US"), ("gl", "US"), ("ceid", "US:en"))
 GOOGLE_WHEN_OPERATOR = "when:"
 GOOGLE_WHEN_UNIT = "d"
 SECONDS_PER_DAY = 86400
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 @dataclass(frozen=True)

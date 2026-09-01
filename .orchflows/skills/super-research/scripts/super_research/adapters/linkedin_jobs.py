@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Dict, List, Optional, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -99,7 +99,7 @@ ROSTER_FIELDS = ("urn_id", "title", "company", "posted_date")
 
 # The stamp this route emits, and the one an artifact record holds.
 ROUTE_DATE_FORMAT = "%Y-%m-%d"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 class _JobCardParser(HTMLParser):

@@ -1,6 +1,6 @@
 """Provider declarations for the prediction-markets adapter."""
 
-from ... import transport
+from ... import schema, transport
 from .. import AdapterDescriptor
 
 # Where a Polymarket event or market lives, and where a Kalshi market lives.
@@ -333,7 +333,7 @@ MANIFOLD_MARKET_ROW_KEYS = (ID_KEY, QUESTION_KEY, URL_KEY, CREATOR_USERNAME_KEY,
 # Polymarket writes an ISO instant with a fraction of varying length, Kalshi
 # writes one with none, and Manifold writes epoch milliseconds.
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 MILLISECONDS_PER_SECOND = 1000
 
 # The page a Polymarket search starts on when the core hands back no cursor.

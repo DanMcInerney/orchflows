@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Mapping, Optional, Tuple
 
+from .. import schema
 from ..routes import X_GUEST_ACTIVATE_ROUTE, YOUTUBE_INNERTUBE_ROUTE, RouteConstant
 
 
@@ -19,7 +20,7 @@ RETRY_AFTER_HEADER = "Retry-After"
 RATE_LIMIT_RESET_HEADER = "X-RateLimit-Reset"
 SECONDARY_RATE_LIMITED_STATUS = 403
 SECONDARY_RATE_LIMIT_MARKERS = ("secondary rate limit",)
-OBSERVED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+OBSERVED_AT_FORMAT = schema.INSTANT_FORMAT
 
 AnsweredHeaders = Tuple[Tuple[str, str], ...]
 

@@ -99,8 +99,7 @@
    "test_constitution.NetLinesTest.test_every_principle_is_numbered_without_a_gap",
    "test_constitution.NetLinesTest.test_padding_a_copy_past_the_budget_fails_the_check",
    "test_constitution.NetLinesTest.test_the_block_stays_inside_the_near_zero_budget",
-   "test_constitution.WriteTimePointerTest.test_a_copy_without_either_pointer_fails_the_check",
-   "test_constitution.WriteTimePointerTest.test_agents_md_points_at_the_constitution",
+   "test_constitution.WriteTimePointerTest.test_a_copy_without_the_pointer_fails_the_check",
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
    "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
@@ -501,6 +500,7 @@
    "test_installer.TestRoleAgentInstructions.test_reinstalling_over_a_codex_config_leaves_the_block_byte_stable",
    "test_installer.TestRoleAgentInstructions.test_rendering_grok_leaves_the_claude_and_codex_agents_alone",
    "test_installer.TestRoleAgentInstructions.test_role_description_is_the_role_name_and_nothing_to_follow",
+   "test_installer.TestRoleAgentInstructions.test_role_instructions_name_the_mechanism_not_the_old_word",
    "test_installer.TestRoleAgentInstructions.test_role_instructions_send_no_child_to_read_the_role_contract",
    "test_installer.TestRoleAgentInstructions.test_the_codex_agent_limits_block_is_untouched_by_the_grok_one",
    "test_installer.TestRoleAgentInstructions.test_the_role_bearing_grok_body_states_the_explicit_dispatch_gate",
@@ -2117,7 +2117,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "ce9999108cd840da28caa4051a5d4aa6e21feb04182554bbd6ae9f065213d13b"
+  "sha256": "beb26783bc11370810e2302de84df8eee09448bf9d7c4f371fae0dd04fdd9594"
  },
  "mutation_owners": [
   {

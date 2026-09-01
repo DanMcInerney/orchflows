@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from ... import transport
+from ... import schema, transport
 from .. import NativeRecord
 
 
@@ -74,7 +74,7 @@ BODY_TRUNCATED_ATTRIBUTE = "body_truncated"
 # not a better answer than a record that states its own cut.
 MAX_BODY_CHARACTERS = 200000
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 DATE_ONLY_LENGTH = 10
 FIELD_OMITTED = "field_omitted"
 DATE_PRECISION_ONLY = "date_precision_only"

@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Dict, List, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -118,7 +118,7 @@ AUTHOR_PATH_PREFIX = "/u/"
 
 # The stamp this feed emits, and the one an artifact record holds.
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 SCHEMA_DRIFT = "schema_drift"
 HTTP_STATUS = "http_status"

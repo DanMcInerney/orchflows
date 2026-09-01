@@ -37,7 +37,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
-from .. import transport
+from .. import schema, transport
 from ._support.github_rest_records import (
     ID_KEY,
     id_text,
@@ -135,7 +135,7 @@ ITEMS_KEY = "items"
 # The manifest's own instant spelling, parsed here rather than imported from
 # `ordering`: each origin-adjacent adapter module owns its own tiny parser of
 # the same name, rather than reaching into a shared one.
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 # GitHub's search qualifiers read a day, never a finer instant — measured live
 # 2026-08-31: `created:>=2026-08-24` and `created:2026-08-01..2026-08-15` both
 # answered with every `created_at` inside the named day boundary.

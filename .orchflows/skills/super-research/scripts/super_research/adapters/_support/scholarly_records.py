@@ -13,9 +13,10 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from ... import schema
 from .. import NativeRecord
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 # The kinds this module emits. OpenAlex's and Crossref's are the origin's own
 # `type` string, verbatim — never a closed enum this module invents. arXiv
