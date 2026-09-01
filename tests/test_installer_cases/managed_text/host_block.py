@@ -52,8 +52,11 @@ class TestHostBlockRendering(unittest.TestCase):
             rendered,
         )
         # The block names only the library directories it actually uses; a
-        # composition path is intentionally not a routing fallback.
-        for sibling in ("contracts/", "rules/"):
+        # composition path is intentionally not a routing fallback. The
+        # brick lane's `tickets.py do` example dropped the sole
+        # contracts/work-item.md pointer (the retired `single` ticket link),
+        # so contracts/ is no longer one of the named siblings.
+        for sibling in ("rules/",):
             self.assertIn(f"/lib/{sibling}", rendered)
         self.assertIn("/lib/docs/", rendered)
 
@@ -72,7 +75,7 @@ class TestHostBlockRendering(unittest.TestCase):
         rendered = self._rendered()
 
         for branch in (
-            "**answer**", "**single**", "**graph**", "**outline**", "**fix**",
+            "**act**", "**brick**", "**frame**", "**outline**",
         ):
             self.assertEqual(
                 1,
@@ -80,19 +83,16 @@ class TestHostBlockRendering(unittest.TestCase):
                 f"the block states {branch} {rendered.count(branch)} times, not once",
             )
         for lane in (
-            "smallest-first",
+            "smallest first",
             "evidence decides",
-            "Goal",
             "Context",
-            "Details",
             "`launch`",
             "`tickets.py land`",
             "`tickets.py frame-open <run>",
             "`tickets.py do <run>",
             "`frame-close`",
             "`orchflows resume`",
-            "cause enters single",
-            "cause enters outline",
+            "cause investigates before any edit",
             "doctor",
         ):
             self.assertIn(lane, rendered)
@@ -137,13 +137,12 @@ _HOST_BLOCK_DEMANDS = {
         "`orch-off`",
         "named items still run only when named",
     ),
-    "route smallest-first through the four canonical shapes": (
-        "smallest-first",
-        "**answer**",
-        "**single**",
-        "**graph**",
+    "route by need through the four canonical lanes": (
+        "smallest first",
+        "**act**",
+        "**brick**",
+        "**frame**",
         "**outline**",
-        "**fix**",
         "`orch-do`",
         "`tickets.py frame-open <run>",
         "`tickets.py do <run>",
@@ -151,7 +150,6 @@ _HOST_BLOCK_DEMANDS = {
         "`orchflows resume`",
         "`tickets.py land`",
         "`land --status`",
-        "{{ORCH_LIB}}/contracts/work-item.md",
         "`install.py doctor`",
         "`evolve` and `benchmaker` run only when named",
     ),
@@ -293,7 +291,7 @@ class TestHostBlockDemands(unittest.TestCase):
 # read the same way it is written, by bracket depth -- `[...]` is optional,
 # bare is required.
 _FLAG_RE = re.compile(r"--[a-z][a-z-]*")
-_GRAPH_EXAMPLE_RE = re.compile(r"`(tickets\.py do <run>[^`]*)`")
+_BRICK_EXAMPLE_RE = re.compile(r"`(tickets\.py do <run>[^`]*)`")
 
 
 def _flags_by_bracket_depth(text: str) -> tuple:
@@ -312,20 +310,20 @@ def _flags_by_bracket_depth(text: str) -> tuple:
     return frozenset(required), frozenset(optional)
 
 
-def _graph_brick_example() -> str:
+def _brick_example() -> str:
     """The routed `tickets.py do <run> ...` command, verbatim, off the
     collapsed (unrendered) template -- `{{...}}` placeholders never appear in
     this command, so rendering is not needed to read it."""
-    match = _GRAPH_EXAMPLE_RE.search(_collapsed_block())
+    match = _BRICK_EXAMPLE_RE.search(_collapsed_block())
     return match.group(1) if match else ""
 
 
 class TestHostBlockBrickFlags(unittest.TestCase):
-    """The graph-route brick example and `tickets.py do`'s own required flags
+    """The brick-route example and `tickets.py do`'s own required flags
     cannot diverge unobserved."""
 
     def test_brick_example_names_exactly_the_required_flags(self):
-        example = _graph_brick_example()
+        example = _brick_example()
         self.assertTrue(example, "no `tickets.py do <run>` example found")
         example_required, _ = _flags_by_bracket_depth(example)
         usage_required, _ = _flags_by_bracket_depth(DO_USAGE)
@@ -345,7 +343,7 @@ class TestHostBlockBrickFlags(unittest.TestCase):
         (the exact shape of the friction this closes, before `--host` was
         bracketed) each leave the check above red.
         """
-        example = _graph_brick_example()
+        example = _brick_example()
         usage_required, _ = _flags_by_bracket_depth(DO_USAGE)
         example_required, _ = _flags_by_bracket_depth(example)
         self.assertEqual(usage_required, example_required)  # green on arrival

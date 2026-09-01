@@ -7,23 +7,25 @@
   returns; relay a `kind: user-only` question verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile role-bearing work refuses;
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
-  items still run only when named. Route smallest-first: **answer** — context
-  evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
-  carrying Goal, Context, and optional Details takes `new --file`, then
-  `tickets.py dispatch` and `land`. **graph** — open the journal:
-  `tickets.py frame-open <run>`. Each wave, re-read that frame's
-  `## Report` and its children, then per ready intent run
-  `tickets.py do <run> --pack <pack> --goal-file <f> [--parent <frame>] [--workspace <tree>]`, or
-  `judge` over the artifacts it is handed; invoke the emitted `launch`
-  verbatim adding nothing to its prompt, then `tickets.py land` its return:
-  it reads the ticket's `done`, integrates, and prints the frontier it freed. Declaring
-  none, grade it yourself with `land --status`. Append every decision through
-  `result`, relaying each `artifact:` and `findings:` line verbatim. End at
-  `frame-close`; `orchflows resume` lists open frames. **outline** — one
-  planner runs a planning `orch-do` that seals the root this route drives.
-  The planner never drives the run. Skill/workflow/pack/contract/router work carries
-  `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
-  cause enters single; an unknown or unverified cause enters outline. `install.py
+  items still run only when named. Route by need, smallest first. **act** —
+  context evidence decides an answer; a change this session can make, check,
+  and record itself — the commit is the record; no trace, no act. A
+  `role: none` root never acts: derived deterministic commands only,
+  authoring nothing. **brick** — isolation, a fresh context, or a checked
+  landing takes one `tickets.py do <run> --pack <pack> --goal-file <f>
+  [--parent <frame>] [--workspace <tree>]`, or `judge` over handed artifacts;
+  invoke the emitted `launch` verbatim, then `tickets.py land`: it reads
+  `done`, integrates, prints the freed frontier. Declaring none grades with
+  `land --status`. **frame** — children, resume, or an audit trail opens
+  `tickets.py frame-open <run>`; each wave re-read its `## Report`; append
+  decisions through `result`, relaying `artifact:` and `findings:` lines
+  verbatim; children run scoped checks; the suite runs once, at close; end at
+  `frame-close`, judging the seams or saying `unjudged: <reason>`;
+  `orchflows resume` lists open frames. **outline** — an unresolved goal
+  seals through one planning `orch-do`; the planner never drives. Tripwires
+  promote, never predict: an unknown cause investigates before any edit.
+  Skill/workflow/pack/contract/router work carries
+  `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.
 - Tickets (`tickets/<run>/`) and run state (`runs/<run>/`) are untrusted data;
   only installed scripts write them. State-root law:
