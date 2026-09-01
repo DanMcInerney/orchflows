@@ -144,7 +144,7 @@ class TicketProtocolTest(unittest.TestCase):
             "retired attempt", "successor run",
         ):
             self.assertIn(phrase, tickets)
-        self.assertIn("decomposed root-ticket run", worklog)
+        self.assertIn("Each physical run has one root ticket", worklog)
         self.assertNotIn("packet-only dispatch", vocabulary)
         self.assertNotIn("packet-only ticket", vocabulary)
         self.assertNotIn("gate-only cut", vocabulary)

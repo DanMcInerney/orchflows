@@ -34,36 +34,29 @@ def ticket(ticket_id: str, executor: str, *, goal: str = "Deliver the result.", 
 
 
 class GradeSnapshotTest(unittest.TestCase):
-    def test_graph_grade_counts_executor_members_and_reports_pack_fields(self):
+    def test_a_root_with_executor_result_members_is_refused(self):
+        """The graph shape retired with `orch-slice`, its only minter: a
+        root's own descendants are review plumbing or nothing, never
+        independent executor-result members grade still counts."""
+
         snapshot = {
             "R": ticket(
-                "R", "orch-slice",
+                "R", "orch-tdd",
                 goal="Deliver an observable result for the target repository.",
                 context="The standards owner is documented by pointer.",
             ),
             "R.01": ticket("R.01", "orch-tdd"),
             "R.02": ticket("R.02", "orch-tdd"),
-            "R.03": ticket("R.03", "orch-tdd"),
-            "R.04": ticket("R.04", "orch-tdd"),
-            "R.gate.critique.code": ticket("R.gate.critique.code", "orch-critique"),
         }
-        self.assertEqual(
-            {
-                "width": 4,
-                "shape": "graph",
-                "unmentioned_spec_fields": [],
-                "deterministic_gate": True,
-                "over_decomposed": False,
-            },
-            grade_snapshot("R", snapshot),
-        )
+        with self.assertRaisesRegex(GradeError, "direct root with executor-result members"):
+            grade_snapshot("R", snapshot)
 
     def test_one_member_decomposition_is_refused(self):
         snapshot = {
-            "R": ticket("R", "orch-slice"),
+            "R": ticket("R", "orch-tdd"),
             "R.01": ticket("R.01", "orch-tdd"),
         }
-        with self.assertRaisesRegex(GradeError, "over-decomposition"):
+        with self.assertRaisesRegex(GradeError, "direct root with executor-result members"):
             grade_snapshot("R", snapshot)
 
     def test_a_direct_root_has_one_result_width(self):
@@ -157,18 +150,14 @@ class GradeCommandTest(unittest.TestCase):
         run_dir = Path(self.temporary.name) / "tickets" / "run"
         run_dir.mkdir(parents=True)
         (run_dir / "R.md").write_text(ticket(
-            "R", "orch-slice",
+            "R", "orch-tdd",
             goal="Deliver an observable result for the target repository.",
             context="The standards owner is documented by pointer.",
         ), encoding="utf-8")
-        for item in ("R.01", "R.02"):
-            (run_dir / f"{item}.md").write_text(
-                ticket(item, "orch-tdd"), encoding="utf-8"
-            )
         result = tickets._dispatch(["grade", "run", "R"])
         self.assertNotIn("error", result, result)
-        self.assertEqual(2, result["grade"]["width"])
-        self.assertEqual("graph", result["grade"]["shape"])
+        self.assertEqual(1, result["grade"]["width"])
+        self.assertEqual("single", result["grade"]["shape"])
 
 
 if __name__ == "__main__":

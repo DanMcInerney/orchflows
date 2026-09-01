@@ -36,8 +36,8 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
 - `executor`, optional `profile`, and `pack` — exact dispatch and
-  role binding. Callable executors are the three registered verbs
-  `orch-do`, `orch-judge`, and `orch-slice`;
+  role binding. Callable executors are the two registered verbs
+  `orch-do` and `orch-judge`;
   `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
@@ -174,9 +174,11 @@ reading to the same section, attributed to the driver that ran it.
 
 ## Roots, decomposition, and integration
 
-A root is the ticket named by a `root_generation`. A direct root may bind any
-lawful registered executor and owns the whole artifact. A decomposed root binds
-`orch-slice`; every member and gate ticket uses this same semantic shape.
+A root is the ticket named by a `root_generation` and may bind any lawful
+registered executor; it owns the whole artifact. Decomposition retired with
+orch-slice, its only minter (W4a): every root is direct now, and a runtime
+child declares its `parent` and binds through that parent's seal rather than
+through a cut a decomposer wrote.
 
 Each physical run has one root identity. Its `root_generation` uses ordinal
 `1`; only cut drafts can advance before seal. A semantic change after seal is
@@ -195,9 +197,10 @@ never by itself a rejection: Goal is the acceptance boundary.
 
 ## Template and executor form
 
-A composition is `template.md` plus ticket stubs. `tickets.py instantiate`
-substitutes placeholders, validates one acyclic graph with one terminal, seals
-the exact snapshot, and writes all tickets or none.
+A workflow is a skill whose prose opens a frame and calls bricks
+([vocabulary.md](../docs/vocabulary.md#structure)); `tickets.py instantiate`
+and the `template.md`-plus-stubs shape it used to substitute and seal
+retired with the decomposed-root concept they served (W4a).
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
 A multi-stage pack runs its declared `stages` in order through that one

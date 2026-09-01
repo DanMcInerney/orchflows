@@ -306,7 +306,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         goal = " ".join(["word"] * 400)
         created = retired_doors.run([
             "new", "unit-length", "R.01", "--executor", "orch-judge",
-            "--goal", goal, "--context", "[]",
+            "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
         ])
         self.assertNotIn("error", created, created)
 
@@ -489,7 +489,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
     def test_complete_code_cut_keeps_one_root_generation_before_and_after_seal(self):
-        initial = {"R": assignment("R", "orch-slice")}
+        initial = {"R": assignment("R", "orch-do")}
         root_draft = tickets_generations.draft_snapshot("R", initial)
         root_receipt = tickets_generations.validate_draft("R", initial, root_draft)
         rooted = tickets_generations.seal_assignments("R", initial, root_draft, root_receipt)
@@ -521,7 +521,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual([], cutcheck.graph_findings(sealed))
 
         later_cut = tickets_generations.draft_snapshot(
-            "S", {"S": assignment("S", "orch-slice")}, ordinal=2
+            "S", {"S": assignment("S", "orch-do")}, ordinal=2
         )
         self.assertIn("root:S:1:", later_cut["root_generation"])
         self.assertIn("cut:S:2:", later_cut["cut_generation"])
@@ -561,7 +561,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         """
 
         snapshot = {
-            "R": assignment("R", "orch-slice"),
+            "R": assignment("R", "orch-do"),
             "R.01": assignment("R.01", "orch-do"),
             "R.02": assignment("R.02", "orch-do"),
         }
@@ -815,15 +815,6 @@ class SemanticTicketContractTest(unittest.TestCase):
                 "dependencies_complete"
             ]
         )
-
-    def test_removed_fix_composition_has_no_instantiation_alias(self):
-        result = retired_doors.run([
-            "instantiate", str(ROOT / "example-workflows" / "fix"), "--run", "fix",
-            "--set", "failure=boom", "--set", "workspace=.",
-        ])
-        self.assertIn("template directory not found", result["error"])
-        self.assertNotIn("executor-unregistered", result["error"])
-        self.assertFalse((ROOT / "example-workflows" / "fix").exists())
 
     def test_execute_owns_test_choice(self):
         self.dispatch(

@@ -72,3 +72,10 @@ remaining a deterministic declaration-to-consumer gate.
 
 T0 supersession record sha256:2b2a1fa42cff8a65430981ab12af652ff5d85725f4f8ba321498366cf1945fbb:
 the generated T0 section now uses declaration-specific wording.
+
+T0 supersession record sha256:948b8e6d97d47067d3132594109081ffdefc19823232e9218daf5dea12c95c8a:
+the decomposed-root-run and loop/template exceptions on `goal` and
+`terminal` retire with those concepts (W4a): every run has one root, so
+each field states its one case rather than an exception list. No named
+field or enum actually changed; the prior wording's incidental `` `status` ``
+line-start happened to match the same heuristic that flags a real one.

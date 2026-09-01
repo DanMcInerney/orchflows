@@ -76,12 +76,19 @@ def _run_tickets(run: str):
 def _run_goal(items: list) -> tuple:
     """The one root or terminal a run's worklog and status transitions read.
 
-    A run has one root identity (contracts/work-item.md); with the
-    decomposed-root concept gone, the free ticket nobody depends on is
-    always that one goal, and any run without a single free ticket falls
-    back to the earliest id as its root.
+    A run has one root identity (contracts/work-item.md), and a runtime
+    child's id carries its whole call path (`<parent>.<n>`), so the one
+    top-level id (no `.`) is that root whenever it is unique -- true of
+    every brick tree, decomposed or not, regardless of what a descendant's
+    own `depends_on` says. The rare shape with more than one top-level id
+    (parallel manually-issued tickets, one `depends_on` the other) falls
+    back to the free ticket nobody depends on; a run with neither shape
+    falls back to the earliest id.
     """
     ordered = sorted(items, key=lambda item: item["id"])
+    top_level = [item for item in ordered if "." not in item["id"]]
+    if len(top_level) == 1:
+        return top_level[0], "root"
     depended = {dependency for item in ordered for dependency in item.get("depends_on") or []}
     free = [item for item in ordered if item["id"] not in depended]
     if len(free) == 1:
