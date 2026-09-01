@@ -102,7 +102,10 @@ class ManifestFixture:
 class TestDeclaration(unittest.TestCase):
     def test_the_manifest_covers_every_artifact_the_spec_names(self):
         self.assertEqual(
-            {"t0-shapes", "lifecycle", "host-adapters", "serial-compat-manifest"},
+            {
+                "t0-shapes", "lifecycle", "ci-topology", "host-adapters",
+                "serial-compat-manifest",
+            },
             set(regen.NAMES),
         )
         self.assertEqual(len(regen.NAMES), len(set(regen.NAMES)))
