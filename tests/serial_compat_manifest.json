@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2051,
+  "count": 2087,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -225,6 +225,42 @@
    "test_fact_registry.TestTheGeneratedEnumRatchet.test_the_real_tree_carries_no_restatement",
    "test_fact_registry.TestTheUnreachableIsGone.test_no_module_still_defines_the_deleted_names",
    "test_fact_registry.TestTheUnreachableIsGone.test_the_motion_reader_takes_only_the_path_it_reads",
+   "test_harvest.TestCliUsageErrors.test_bad_since_is_a_usage_error",
+   "test_harvest.TestCliUsageErrors.test_bad_until_is_a_usage_error",
+   "test_harvest.TestCliUsageErrors.test_out_is_required_unless_list_runs",
+   "test_harvest.TestClusterDeterminism.test_same_input_yields_the_same_digest_modulo_generated_at",
+   "test_harvest.TestClusteringAndRecurrence.test_clusters_are_ranked_by_member_count_descending",
+   "test_harvest.TestClusteringAndRecurrence.test_dissimilar_entries_land_in_separate_clusters",
+   "test_harvest.TestClusteringAndRecurrence.test_matcher_draft_regexes_match_the_entries_that_produced_them",
+   "test_harvest.TestClusteringAndRecurrence.test_members_beyond_the_cap_are_omitted_and_counted",
+   "test_harvest.TestClusteringAndRecurrence.test_paths_normalize_regardless_of_slash_direction",
+   "test_harvest.TestClusteringAndRecurrence.test_three_members_alone_qualify_recurrence",
+   "test_harvest.TestClusteringAndRecurrence.test_two_distinct_run_host_pairs_without_session_qualify",
+   "test_harvest.TestClusteringAndRecurrence.test_two_distinct_sessions_qualify_with_two_members",
+   "test_harvest.TestClusteringAndRecurrence.test_two_members_one_session_does_not_qualify",
+   "test_harvest.TestCoveredMatcherExclusion.test_at_or_before_watermark_is_dropped_after_survives",
+   "test_harvest.TestCoveredMatcherExclusion.test_non_matching_pattern_never_drops_anything",
+   "test_harvest.TestDefaultSinceFromCoveredWatermark.test_no_covered_file_at_all_means_everything",
+   "test_harvest.TestDefaultSinceFromCoveredWatermark.test_no_selector_defaults_since_to_the_newest_watermark",
+   "test_harvest.TestDefaultSinceFromCoveredWatermark.test_one_explicit_selector_suppresses_the_default",
+   "test_harvest.TestEmptySinkAndWindow.test_empty_sink_writes_a_zeroed_digest",
+   "test_harvest.TestEmptySinkAndWindow.test_list_runs_over_empty_sink_prints_nothing",
+   "test_harvest.TestEmptySinkAndWindow.test_missing_events_directory_is_tolerated_not_fatal",
+   "test_harvest.TestEmptySinkAndWindow.test_window_matching_nothing_still_reports_totals",
+   "test_harvest.TestListRuns.test_list_runs_rejects_out",
+   "test_harvest.TestListRuns.test_newest_run_by_latest_timestamp_lists_first",
+   "test_harvest.TestListRuns.test_run_with_frame_open_reports_workflow_and_goal",
+   "test_harvest.TestListRuns.test_run_without_frame_open_reports_null_workflow_and_goal",
+   "test_harvest.TestOnDaysDisjointUnion.test_bad_on_date_is_a_usage_error",
+   "test_harvest.TestOnDaysDisjointUnion.test_two_on_days_select_nothing_between_them",
+   "test_harvest.TestSelectorComposition.test_different_selector_kinds_and_together",
+   "test_harvest.TestSelectorComposition.test_repeated_run_flag_ors_together",
+   "test_harvest.TestSelectorComposition.test_workflow_selector_resolves_through_frame_open_events",
+   "test_harvest.TestSinceUntilEdges.test_before_since_is_excluded",
+   "test_harvest.TestSinceUntilEdges.test_since_is_inclusive_and_until_is_exclusive",
+   "test_harvest.TestSinceUntilEdges.test_since_relative_days_measures_from_now",
+   "test_harvest.TestWindowsPathHandling.test_out_path_several_directories_deep_is_created",
+   "test_harvest.TestWindowsPathHandling.test_sink_directories_resolve_under_a_windows_style_state_home",
    "test_install_doctor.TestInstallDoctor.test_an_uninstalled_grok_leaves_the_report_exactly_as_it_was",
    "test_install_doctor.TestInstallDoctor.test_both_cli_forms_print_the_same_report_and_exit_by_status",
    "test_install_doctor.TestInstallDoctor.test_coherent_installation_is_deterministic_and_read_only",
@@ -2054,7 +2090,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "d91a083562ae59f2563064eb4a67e043b6c6a5c0da732c4c7bf33f6dd39301bd"
+  "sha256": "739588071225981b8821bbc5f2380763fbaadc6a898c6b49d626968476ec295e"
  },
  "mutation_owners": [
   {
@@ -2541,6 +2577,23 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_harvest",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_harvest",
+   "owner": "_HarvestTestCase.setUp",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {
