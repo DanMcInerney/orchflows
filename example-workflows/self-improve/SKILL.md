@@ -1,60 +1,69 @@
 ---
 name: self-improve
-description: Mine the state sink's friction and run evidence into one qualified proposal and land it in its owner. Use on demand or closing a run.
+description: Harvest the sink's friction and events, mine what qualifies, and land the top proposal at its causal owner. Use on demand or closing a run.
 disable-model-invocation: true
 ---
 
-Require: a `window` — the sessions, runs, projects or period this cycle
-mines — and a `workspace`, the repository holding the proposal's causal
-owner. Mining is read-only; only the delivery writes.
+Require: a window — the harvest's flags — and, when delivering, a
+`workspace`: the repository holding the proposal's causal owner.
 
-    tickets.py frame-open <run> --goal-file <cycle-goal>
+**Harvest**, deterministic, zero agents:
 
-The frame's `## Report` is the cycle's working memory. Re-read it and every
-child's state from the sink before each decision, then append that decision
-with `tickets.py result <run> <frame> --by <frame>`. Keep every returned
-`artifact:` and `findings:` line verbatim; the next call is handed the line.
+    python harvest.py --out <digest> [--since <ts|7d>] [--until <ts>]
+      [--on <date>]... [--session <id>]... [--run <id>]...
+      [--project <name>] [--workflow <name>] [--skill <orch-name>]
 
-**Mine**, one read-only call:
+A fuzzy window — "this last workflow", "the scraper run" — resolves
+first: `harvest.py --list-runs` prints the candidate runs (id,
+workflow, goal, counts); then pass exact flags. One command slices
+friction and events by the window, drops what a covered matcher
+already answers, clusters, and marks each cluster meeting
+[the improvement law](../../rules/improvement.md) §4's recurrence
+arithmetic. The digest is the only evidence later steps read; raw
+streams are never handed to a child. An empty digest ends the cycle
+here — say so and stop: no frame, no ticket.
+
+**Mine.** A digest at or under 40 entries you mine yourself — the
+act lane: assign each qualifying cluster one causal owner, check any
+claimed contradiction against the owner's current text, and write
+ranked proposals through `tickets.py improvement --proposal`,
+carrying the digest's cluster_key, matcher and watermark verbatim.
+Larger, or when independent eyes are wanted, spend one brick, which
+opens the frame:
 
     tickets.py do <run> --pack orch-content-pack --parent <frame>
-      --goal-file <mine-goal> --bound "<= 60 tool calls"
+      --goal-file <mine-goal> --bound "<= 40 tool calls"
 
-Its goal: ranked proposals for the window, each written to the sink's
-`improvement/` through `tickets.py improvement --proposal` with one causal
-owner, its scope, the exact change and every evidence entry verbatim — and
-the top-ranked proposal named as this cycle's delivery target, or the
-finding that nothing qualified. The goal hands the child
-[the improvement law](../../rules/improvement.md), whose §4 states the
-qualification and ranking it applies.
+Its goal: the digest path, the same owner/contradiction/proposal
+obligations, and §4 as the ranking law. Either way the result names
+the top proposal — or the finding that nothing qualified, which
+closes the cycle.
 
-**Qualify**, one judge over what the mine returned:
-
-    tickets.py judge <run> --pack orch-content-pack --parent <frame>
-      --artifacts <artifact-line> --goal-file <qualify-goal>
-
-It asks whether the top-ranked proposal qualifies on §4's terms: evidence
-no covered watermark already answers, one causal owner, and a change stated
-exactly enough to land. That PASS is what opens the delivery and nothing
-else does. On FAIL the cycle closes here, the ranked proposals its result.
-
-**Deliver**, once, and only then:
+**Deliver**, unless invoked mine-only — one brick in `workspace`:
 
     tickets.py do <run> --pack orch-code-pack --parent <frame>
-      --isolation required --goal-file <land-goal> --bound "<= 120 tool calls"
+      --isolation required --goal-file <deliver-goal>
+      --bound "<= 120 tool calls"
 
-Its goal: the proposal's exact change landed in `workspace` at its causal
-owner, the owner's dependents still holding, the owner's required checks
-green at the landed revision, and — as the delivery's last act — the covered
-line appended through `tickets.py improvement --covered`, citing that
-revision. Then one `judge` over the landed artifact under the same law,
-which is the frame's second judge and its A2 witness.
+Its goal: the top proposal's exact change at its causal owner, its
+dependents holding, replay per §5 where the cluster holds a
+replayable item, `done` the owner's required gate at the landed
+revision — and, the last act, `tickets.py improvement --covered`
+with the digest-supplied line citing that revision.
 
-Never: land a proposal the mine did not rank first, edit an owner outside
-the proposal's scope, edit a friction entry or a prior covered line, rank on
-evidence a covered watermark already answers, or mark a criterion complete
-on the delivering child's own claim.
+Frame law: re-read `## Report` before each decision, append through
+`result`, relay `artifact:` and `findings:` lines verbatim. Close
+with `frame-close`. With two or more do-children the judge reads the
+seam: the delivered change equals the top proposal, nothing edited
+outside its scope, the covered line present with a sane watermark. A
+single-child cycle closes `unjudged: single child; the owner's gate
+and the human-reviewed merge are the review`.
 
-Return: `tickets.py frame-close <run> <frame> --done <gate>`, whose done is
-the owner's own required gate at the landed revision — an exit code read
-outside the delivery, never a claim inside it.
+Never: land a proposal the mine did not rank first, deliver more
+than one proposal per cycle, edit a friction entry, an event, or a
+prior covered line, rank on evidence the harvest excluded, or mark
+a criterion complete on the delivering child's own claim.
+
+Return: `tickets.py frame-close <run> <frame> --done <gate>`, the
+owner's required gate at the landed revision, read outside the
+delivery.
