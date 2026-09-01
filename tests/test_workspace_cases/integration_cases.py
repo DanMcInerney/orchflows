@@ -26,6 +26,19 @@ def established(case, tmp, *, ticket_id="T1", repo=None):
     return main, ticket, state_root.candidate_paths("testrun", ticket_id)
 
 
+def baseline_of(ticket_path) -> str:
+    """The `workspace_baseline` `establish` stamped, read back off the ticket.
+
+    Write-once and never corrected: every call this module makes to
+    `workspace_return.integrate` after establishment reads the same value
+    `_refuse_uncommitted_delivery` grades the branch tip against.
+    """
+
+    return tickets._parse_frontmatter(
+        Path(ticket_path).read_text(encoding="utf-8")
+    ).get(workspace_git.BASELINE_KEY)
+
+
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")
 class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
     """A run's commits belong on the branch the run was established from.
@@ -65,7 +78,7 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
     def test_a_checkout_that_moved_off_the_recorded_branch_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            main, _ticket, derived = established(self, tmp)
+            main, ticket, derived = established(self, tmp)
             commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
             recorded = tickets_store.integration_target("testrun")
             git(main, "checkout", "--quiet", "-b", "codex/somebody-elses-branch")
@@ -74,6 +87,7 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
             with self.assertRaises(workspace_return.Refused) as refused:
                 workspace_return.integrate(
                     "testrun", "T1", derived["path"], derived["branch"],
+                    baseline_of(ticket),
                 )
 
             self.assertIn("codex/somebody-elses-branch", str(refused.exception))
@@ -84,12 +98,13 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
     def test_the_recorded_branch_is_merged_and_reported_as_the_target(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            main, _ticket, derived = established(self, tmp)
+            main, ticket, derived = established(self, tmp)
             commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
             recorded = tickets_store.integration_target("testrun")
 
             body, code = workspace_return.integrate(
                 "testrun", "T1", derived["path"], derived["branch"],
+                baseline_of(ticket),
             )
 
             self.assertEqual(0, code)
@@ -101,7 +116,7 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
     def test_a_run_that_recorded_no_target_is_refused_with_the_establishment(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            _main, _ticket, derived = established(self, tmp)
+            _main, ticket, derived = established(self, tmp)
             identity = state_root.runs_root() / "testrun" / "run.json"
             document = json.loads(identity.read_text(encoding="utf-8"))
             document.pop(tickets_store.INTEGRATION_KEY)
@@ -110,6 +125,7 @@ class TestTheRunOwnsWhereItsWorkIsIntegrated(unittest.TestCase):
             with self.assertRaises(workspace_return.Refused) as refused:
                 workspace_return.integrate(
                     "testrun", "T1", derived["path"], derived["branch"],
+                    baseline_of(ticket),
                 )
 
             self.assertIn("records no integration target", str(refused.exception))
@@ -128,7 +144,7 @@ class TestAnUncommittedDeliveryIsNotAReplay(unittest.TestCase):
     def test_a_dirty_candidate_carrying_no_commits_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            _main, _ticket, derived = established(self, tmp)
+            _main, ticket, derived = established(self, tmp)
             (derived["path"] / "delivery.txt").write_text(
                 "the whole thing, uncommitted\n", encoding="utf-8",
             )
@@ -136,6 +152,7 @@ class TestAnUncommittedDeliveryIsNotAReplay(unittest.TestCase):
             with self.assertRaises(workspace_return.Refused) as refused:
                 workspace_return.integrate(
                     "testrun", "T1", derived["path"], derived["branch"],
+                    baseline_of(ticket),
                 )
 
             message = str(refused.exception)
@@ -146,10 +163,11 @@ class TestAnUncommittedDeliveryIsNotAReplay(unittest.TestCase):
     def test_a_clean_candidate_carrying_no_commits_still_replays(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            _main, _ticket, derived = established(self, tmp)
+            _main, ticket, derived = established(self, tmp)
 
             body, code = workspace_return.integrate(
                 "testrun", "T1", derived["path"], derived["branch"],
+                baseline_of(ticket),
             )
 
             self.assertEqual(0, code)
@@ -158,13 +176,14 @@ class TestAnUncommittedDeliveryIsNotAReplay(unittest.TestCase):
     def test_bytecode_beside_a_replay_is_emission_and_not_a_delivery(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            _main, _ticket, derived = established(self, tmp)
+            _main, ticket, derived = established(self, tmp)
             cache = derived["path"] / "__pycache__"
             cache.mkdir(parents=True)
             (cache / "oracle.cpython-39.pyc").write_bytes(b"\x00")
 
             body, code = workspace_return.integrate(
                 "testrun", "T1", derived["path"], derived["branch"],
+                baseline_of(ticket),
             )
 
             self.assertEqual(0, code)
@@ -173,16 +192,82 @@ class TestAnUncommittedDeliveryIsNotAReplay(unittest.TestCase):
     def test_a_dirty_candidate_that_does_carry_commits_still_merges(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            _main, _ticket, derived = established(self, tmp)
+            _main, ticket, derived = established(self, tmp)
             commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
             (derived["path"] / "notes.txt").write_text("scratch\n", encoding="utf-8")
 
             body, code = workspace_return.integrate(
                 "testrun", "T1", derived["path"], derived["branch"],
+                baseline_of(ticket),
             )
 
             self.assertEqual(0, code)
             self.assertEqual("merged", body["integrate"]["outcome"])
+
+    def test_a_replayed_landing_ignores_leftover_scratch_once_commits_are_carried(self):
+        """The 2026-09-01 replay-refusal defect, at its own seam.
+
+        Two members of this run's own root landed `complete` on branches
+        the merge had already fully absorbed, and each had left its own
+        compliant note scratch behind -- `.orch-outcome-B1.2.md` for one
+        worker, `outcome-note-B1.3.txt` for the other, no filename pattern
+        shared between them. `_refuse_uncommitted_delivery` used to grade
+        that by ancestry -- whether the branch tip was already merged into
+        the checkout's HEAD -- and a branch replayed after a real delivery
+        is just as merged as one that never delivered anything. The
+        discriminator is the branch's own `workspace_baseline` now: once it
+        has carried a real commit past that baseline, arbitrarily-named
+        scratch beside it is the worker's business, not a reason to refuse.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, ticket, derived = established(self, tmp)
+            commit_in(derived["path"], {"scratch/work.txt": "delivered\n"}, "the work")
+            baseline = baseline_of(ticket)
+
+            first, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"], baseline,
+            )
+            self.assertEqual(0, code)
+            self.assertEqual("merged", first["integrate"]["outcome"])
+
+            (derived["path"] / ".orch-outcome-B1.2.md").write_text(
+                "closing note\n", encoding="utf-8",
+            )
+            (derived["path"] / "outcome-note-B1.3.txt").write_text(
+                "a different worker's own name for the same kind of file\n",
+                encoding="utf-8",
+            )
+
+            replayed, code = workspace_return.integrate(
+                "testrun", "T1", derived["path"], derived["branch"], baseline,
+            )
+
+            self.assertEqual(0, code)
+            self.assertEqual("replayed", replayed["integrate"]["outcome"])
+
+    def test_a_zero_commit_branch_still_refuses_with_the_baseline_discriminator(self):
+        """The other half of the same fix: a branch that never advanced past
+        its own established baseline is still refused while its candidate
+        holds uncommitted work, whatever that scratch happens to be named."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            _main, ticket, derived = established(self, tmp)
+            (derived["path"] / "outcome-note-B1.3.txt").write_text(
+                "a worker's own differently-named note file\n", encoding="utf-8",
+            )
+
+            with self.assertRaises(workspace_return.Refused) as refused:
+                workspace_return.integrate(
+                    "testrun", "T1", derived["path"], derived["branch"],
+                    baseline_of(ticket),
+                )
+
+            message = str(refused.exception)
+            self.assertIn("outcome-note-B1.3.txt", message)
+            self.assertIn("never committed", message)
 
 
 @unittest.skipUnless(git_available(), "git is required for a real worktree fixture")

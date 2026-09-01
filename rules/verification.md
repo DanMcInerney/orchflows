@@ -1,7 +1,7 @@
 # Verification
 
-The generated [result and check cells](../docs/lifecycle.md#ticket-lifecycle)
-place this evidence law in the ticket lifecycle.
+The generated [result cell](../docs/lifecycle.md#ticket-lifecycle)
+places this evidence law in the ticket lifecycle.
 
 1. Ticket Goal defines success. Executor evidence demonstrates it; the check
    challenges the fixed artifact and evidence under factual Context. The sealed
@@ -22,29 +22,24 @@ place this evidence law in the ticket lifecycle.
    them: the ticket's `done` predicate, in the tree land has just merged that
    candidate into, is the one outside execution. Done is a checked condition,
    never a disposition an executor recorded for itself.
-7. Each ticket takes one independence path: a blocker-only `orch-judge`
-   checker recorded by `checked_by`, or none at all. A gate-deferred ticket
-   does not use `checked_by`; `independence: gate` hands that reading to the
-   caller's own join. Independence comes from that checker
-   or from the predicate, never from a standing verification child. The
-   checker path is the driver's to walk: author `<id>.check` against the
-   sealed target,
-   spend one distinct read-only `orch-judge` dispatch on it, land that
-   return, then anchor the joined stage through
-   `check <run> <id> --stage <id>.check`. An accepted checked target takes
-   one separate
-   repair ticket, opened as a `do` brick against the blockers it accepted;
-   a clean one closes with no repair at all; a gate-deferred root takes no
-   stage, because no door emits a review family for it.
+7. Independence is the caller's own join: `land` reads Goal and Context
+   against the fixed artifact and evidence, and the disposition it records
+   is never the executor's own claim. `independence: checker`
+   no longer names a distinct path: the derived `<id>.check` `orch-judge`
+   stage and the `checked_by` field it anchored retired with the door that
+   built the ledger the retired `check` subcommand required, so every
+   ticket is graded the `gate`-deferred way now. A driver that wants a
+   second, adversarial review dispatches one as an ordinary `judge` brick
+   and answers its findings with a `do` brick under the same parent,
+   sequenced by prose rather than a distinct independence value.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
     candidate's own changes through `scripts/workspace.py check`.
-9. Every review writes one immutable `orchflows.review.v1`
-   chain. `GatePlan` freezes criteria plus artifact/workspace; Git requires
-   equality with that workspace's HEAD. `CritiqueAdjudication` carries all
-   observations and only the chosen blockers. `RepairOutcome` repeats those
-   blockers, identifies the successor artifact, and closes the chain; only an
-   empty set permits `no_op`. Checks are derived tickets crossing the
-   dispatch lifecycle; callers cannot inject findings. Which tickets carry
-   the chain is [work-item.md](../contracts/work-item.md)'s.
+9. `review_v1`, the immutable `orchflows.review.v1` `GatePlan` →
+   `CritiqueAdjudication` → `RepairOutcome` chain it carried, and the
+   derived `<id>.check` stage that wrote it are retired: no live door ever
+   built that chain, so its one reader (the retired `check` subcommand) had
+   nothing but hand-edited state to read. A critique's findings and a
+   repair's result live in the ordinary `## Report` and the joined
+   disposition instead.

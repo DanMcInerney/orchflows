@@ -150,8 +150,8 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
     place the check's shape could drift from contracts/work-item.md, and the
     check is the surface whose measured yield bought this form its place.
 
-    It carries no `review_kind`: it is ordinary judging work, and its verdict
-    is the status its join records rather than a token in its prose.
+    It binds no typed review lane: it is ordinary judging work, and its
+    verdict is the status its join records rather than a token in its prose.
     """
 
     path = run_dir / f"{check_id}.md"

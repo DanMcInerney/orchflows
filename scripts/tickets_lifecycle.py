@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
-    from .tickets_format import CHECKED_BY_KEY, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _sections, _set_frontmatter_field, dequote
+    from .tickets_format import TERMINAL_STATES, VALID_STATUSES, _extract_flag, _parse_frontmatter, _read_utf8, _sections, _set_frontmatter_field, dequote
 else:
-    from tickets_format import CHECKED_BY_KEY, TERMINAL_STATES, VALID_STATUSES, _executor_of, _extract_flag, _parse_frontmatter, _read_utf8, _sections, _set_frontmatter_field, dequote
+    from tickets_format import TERMINAL_STATES, VALID_STATUSES, _extract_flag, _parse_frontmatter, _read_utf8, _sections, _set_frontmatter_field, dequote
 if __package__:
     from .tickets_store import NO_SINK_ERROR, UTC_STAMP, TicketWriteRefused, _iter_run_dirs, _load_ticket, _run_lock, _segment_error, _terminal_identity_update, _tickets_root, _write_identity, _write_text_atomically, locked_ticket_write
 else:
@@ -24,9 +24,9 @@ if __package__:
 else:
     from tickets_assignment import _claim_is_stale
 if __package__:
-    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
+    from .tickets_transitions import ADMISSION_OWNED_TARGETS, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 else:
-    from tickets_transitions import ADMISSION_OWNED_TARGETS, CHECKABLE_STATUSES, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
+    from tickets_transitions import ADMISSION_OWNED_TARGETS, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 # The claim-admission seam lives in `tickets_project`, where the project
 # binding it now grades also lives.
 if __package__:
@@ -42,15 +42,10 @@ if __package__:
 else:
     from tickets_readiness import readiness_facts
 if __package__:
-    from .tickets_review import ReviewError, review_records, state_from_text
-    from .tickets_dispatch_schema import state as _dispatch_state
     from .tickets_dispatch_schema import status_ownership_returned
 else:
-    from tickets_review import ReviewError, review_records, state_from_text
-    from tickets_dispatch_schema import state as _dispatch_state
     from tickets_dispatch_schema import status_ownership_returned
 SET_STATUS_USAGE = 'set-status <run> <id> <status>'
-CHECK_USAGE = 'check <run> <id> --stage <id.check>'
 
 
 def lifecycle_rows() -> tuple:
@@ -194,90 +189,6 @@ def _cmd_ready(rest):
             if eligible:
                 ready_items.append(data['summary'])
     return {'ready': ready_items, 'skipped': skipped}
-def _cmd_check(rest):
-    probe = list(rest)
-    _extract_flag(probe, '--stage')
-    if len(probe) != 2:
-        return {'error': f'usage: {CHECK_USAGE}'}
-    try:
-        with locked_ticket_write(probe[0], probe[1]) as ticket_path:
-            return _check_under_run_lock(rest, ticket_path=ticket_path)
-    except TicketWriteRefused as refused:
-        return refused.payload
-    except OSError as error:
-        return {'error': f'unable to record check: {error}'}
-def _check_under_run_lock(rest, *, ticket_path=None):
-    args = list(rest)
-    stage_id = _extract_flag(args, '--stage')
-    if len(args) != 2 or not (stage_id or '').strip():
-        return {'error': f'usage: {CHECK_USAGE}'}
-    run, ticket_id = args
-    if ticket_path is None:
-        tickets_root = _tickets_root()
-        if tickets_root is None:
-            return {'error': NO_SINK_ERROR}
-        ticket_path = tickets_root / run / f'{ticket_id}.md'
-    if not ticket_path.is_file():
-        return {'error': f'ticket not found: {run}/{ticket_id}'}
-    text, failure = _read_utf8(ticket_path)
-    if failure is not None:
-        return failure
-    data = _parse_frontmatter(text)
-    status = dequote(data.get('status'))
-    if status != 'complete':
-        return {'error': f"check requires the target executor outcome to be joined complete (status '{status}')"}
-    independence = dequote(data.get('independence') or 'checker')
-    if independence == 'gate':
-        return {'error': f'ticket {run}/{ticket_id} defers independence to its caller: a gate-deferred ticket has no checker path and cannot carry checked_by'}
-    prior_checker = dequote(data.get(CHECKED_BY_KEY))
-    if prior_checker:
-        return {'error': f"ticket {run}/{ticket_id} is already checked by '{prior_checker}': one ticket has one checker identity. An additional adversarial reviewer must be a distinctly named root-gate lens"}
-    stage_id = stage_id.strip()
-    if stage_id != f'{ticket_id}.check':
-        return {'error': f"check stage must be the target's explicit review ticket {ticket_id}.check"}
-    stage_path = ticket_path.with_name(f'{stage_id}.md')
-    stage_text, failure = _read_utf8(stage_path)
-    if failure is not None:
-        return failure
-    stage = _parse_frontmatter(stage_text)
-    if (str(stage.get('status') or '') != 'complete'
-            or _executor_of(stage) != 'orch-judge'
-            or str(stage.get('review_kind') or '') != 'critique'
-            or list(stage.get('depends_on') or []) != [ticket_id]):
-        return {'error': f'checker stage is not a completed review of {ticket_id}: {stage_id}'}
-    dispatch_state, dispatch_failure = _dispatch_state(stage)
-    if dispatch_failure is not None:
-        return dispatch_failure
-    try:
-        review = state_from_text(stage_text, required=True)
-        records = review_records(review)
-        if [record['kind'] for record in records] != ['GatePlan', 'CritiqueAdjudication']:
-            raise ReviewError('checker stage has no closed adjudication')
-        plan, adjudication = records
-        if (plan['mode'] != 'checker' or plan['root'] != ticket_id
-                or [item['ticket'] for item in plan['criteria']] != [stage_id]
-                or adjudication['lens'] != 'checker'):
-            raise ReviewError('checker stage ledger names a different target or lens')
-        checked_by = adjudication['adjudicated_by']
-        attempts = dispatch_state['attempts']
-        joined = next((
-            attempt for attempt in attempts
-            if any(record.get('kind') == 'join' for record in attempt['records'])
-        ), None)
-        if joined is None or joined['owner'] != checked_by:
-            raise ReviewError('checker adjudication is not owned by the accepted receiver')
-    except ReviewError as error:
-        return _classification('review-invalid', str(error))
-    try:
-        updated = _set_frontmatter_field(text, CHECKED_BY_KEY, checked_by)
-        updated = _set_frontmatter_field(updated, 'review_stage', stage_id)
-    except ValueError as error:
-        return {'error': str(error)}
-    try:
-        _write_text_atomically(ticket_path, updated)
-    except OSError as error:
-        return {'error': f'unwritable ticket: {error}'}
-    return {'check': {'run': data.get('run') or run, 'id': data.get('id') or ticket_id, 'checked_by': checked_by, 'stage': stage_id}}
 def _cmd_set_status(rest):
     if len(rest) != 3:
         return {'error': f'usage: {SET_STATUS_USAGE}'}

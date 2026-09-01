@@ -6,12 +6,12 @@ from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
     from .tickets_registry import (
-        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY, REVIEW_KINDS,
+        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY,
         executor_refusal, executor_registered,
     )
 else:
     from tickets_registry import (
-        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY, REVIEW_KINDS,
+        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY,
         executor_refusal, executor_registered,
     )
 if __package__:
@@ -89,10 +89,6 @@ TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
 PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
-CHECKED_BY_KEY = 'checked_by'
-GATE_ID_MARKER = '.gate.'
-GATE_CRITIQUE_MARKER = '.gate.critique.'
-CHECKER_STAGE_SUFFIX = '.check'
 # The ids the round machinery mints after a cut is already sealed, and the
 # one grammar that names them. A landing whose `done` command refused arms
 # its `<id>.repair.NN` round, and the `check` done form mints a
@@ -252,11 +248,6 @@ def ticket_defects(text: str) -> list:
                 f"executor-pack-required: {executor} consumes resolved pack cells and "
                 "requires a stamped pack"
             )
-    review_kind = dequote(data.get('review_kind'))
-    if review_kind and review_kind not in REVIEW_KINDS:
-        defects.append(
-            f"review_kind '{review_kind}' is not one of {list(REVIEW_KINDS)}"
-        )
     parsed_sections = _sections(text)
     sections = {name.strip().lower(): body for name, body in parsed_sections.items()}
     for name in REQUIRED_SECTIONS:
@@ -498,24 +489,3 @@ def _split_commas(value) -> list:
     return [part.strip() for part in str(value or '').split(',') if part.strip()]
 def _executor_of(item: dict) -> str:
     return dequote(item.get('executor'))
-def is_review_stage_id(ticket_id) -> bool:
-    """Whether an id names a derived review stage rather than executor work.
-
-    The composite gate spells it `<root>.gate.<kind>` and the ordinary
-    checker spells it `<target>.check`; both are the protocol's, never an
-    author's, and both are read off the id because the id is what a caller
-    has before the ticket is loaded. Nine sites open-coded the two
-    substrings, and the two that spelled only half of it read a checker
-    stage as ordinary work.
-    """
-    text = str(ticket_id or '')
-    return GATE_ID_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)
-def is_critique_stage_id(ticket_id) -> bool:
-    """`is_review_stage_id` narrowed to the stages that file findings.
-
-    A repair and a verification stage are review stages that do not: only a
-    critique lens and the ordinary checker produce the findings array the
-    schema grades and the join adjudicates.
-    """
-    text = str(ticket_id or '')
-    return GATE_CRITIQUE_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)

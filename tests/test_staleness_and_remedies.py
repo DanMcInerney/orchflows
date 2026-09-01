@@ -44,8 +44,16 @@ class SinkTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.home = Path(self.temporary.name)
+        # ORCHFLOWS_WORKTREES_HOME rides beside the sink: unset, a derived
+        # candidate would hang off the parent of a bare tempdir -- the
+        # machine-shared system temp root -- instead of staying inside
+        # this fixture's own tree.
         self.environment = mock.patch.dict(
-            os.environ, {"ORCHFLOWS_STATE_HOME": str(self.home)}
+            os.environ,
+            {
+                "ORCHFLOWS_STATE_HOME": str(self.home),
+                "ORCHFLOWS_WORKTREES_HOME": str(self.home / "worktrees"),
+            },
         )
         self.environment.start()
 
@@ -155,7 +163,7 @@ class SealedRunTest(SinkTest):
         self.assertIsNone(failure, failure)
         return facade._launched_under_run_lock(
             "run", "T", host, dispatch_id="D1",
-            workspace=str(self.candidate), artifact=None, review_kind=None,
+            workspace=str(self.candidate),
         )
 
 

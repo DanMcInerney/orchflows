@@ -53,7 +53,6 @@ import scripts.rings_trust as rings_trust
 import scripts.tickets as tickets_mod
 import scripts.tickets_assignment as tickets_assignment
 import scripts.tickets_dispatch_launch as launch_module
-import scripts.tickets_review as tickets_review
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -164,20 +163,11 @@ class AdapterRegistryTest(unittest.TestCase):
             conflict_semantics="synthetic-overlap",
             workspace_strategy="git",
         )
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            with mock.patch.object(tickets_assignment, "adapter_spec", return_value=adapter):
-                finding = tickets_assignment.workspace_establishment_finding(
-                    {"pack": "widget-pack", "isolation": "required"}, None,
-                )
-            self.assertEqual("workspace-unestablished", finding[0])
-
-            with mock.patch.object(tickets_review, "adapter_spec", return_value=adapter):
-                with self.assertRaises(tickets_review.ReviewError) as caught:
-                    tickets_review.validate_fixed_artifact(
-                        "widget-pack", "not-a-git-identity", str(root),
-                    )
-            self.assertIn("git:<full-commit-id>", str(caught.exception))
+        with mock.patch.object(tickets_assignment, "adapter_spec", return_value=adapter):
+            finding = tickets_assignment.workspace_establishment_finding(
+                {"pack": "widget-pack", "isolation": "required"}, None,
+            )
+        self.assertEqual("workspace-unestablished", finding[0])
 
 
 def _result_ticket(tmp: Path, *, status="claimed", claimed_by="agent-a"):
@@ -252,7 +242,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     assert failure is None, failure
     launched = tickets_mod._tickets_dispatch_facade_module._launched_under_run_lock(
         "testrun", "T1", host, dispatch_id="D1",
-        workspace=str(tmp.resolve()), artifact=None, review_kind=None,
+        workspace=str(tmp.resolve()),
     )
     assert "error" not in launched, launched
     return ticket, opened["assignment_seal"]

@@ -21,13 +21,16 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_brick
 from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
@@ -45,8 +48,21 @@ class BrickSinkTest(unittest.TestCase):
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
+        # ``ORCHFLOWS_WORKTREES_HOME`` rides beside the sink: left unset,
+        # ``worktrees_root()`` hangs off the *parent* of a bare tempdir --
+        # this process's shared system temp root -- so a derived candidate
+        # would land at machine scope instead of inside this fixture's own
+        # tree (`tests/test_state_root_cases`'s `worktrees_root` proves the
+        # derivation; `BrickSinkWorktreeIsolationTest` below proves this
+        # fixture stays clear of it).
         self.environment = mock.patch.dict(
-            os.environ, {"ORCHFLOWS_STATE_HOME": self.temporary.name}
+            os.environ,
+            {
+                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                "ORCHFLOWS_WORKTREES_HOME": str(
+                    Path(self.temporary.name) / "worktrees"
+                ),
+            },
         )
         self.environment.start()
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
@@ -102,6 +118,29 @@ class BrickSinkTest(unittest.TestCase):
 
     def prompt(self, answer: dict) -> str:
         return answer[next(iter(answer))]["launch"]["prompt"]
+
+
+class BrickSinkWorktreeIsolationTest(BrickSinkTest):
+    """The sink this fixture builds must keep derived worktrees inside it.
+
+    ``worktrees_root()`` hangs off ``orchflows_home()``, the *parent* of
+    the sink -- real hosts keep ``state/`` and ``worktrees/`` as siblings
+    under ``~/.orchflows``. A sink pointed straight at a bare tempdir, with
+    no ``ORCHFLOWS_WORKTREES_HOME`` of its own, puts that parent at the
+    machine-shared system temp root instead: two checkouts (or two
+    parallel CI shards) running this fixture at once would then hand a
+    candidate to one worktree tree neither of them owns.
+    """
+
+    def test_worktrees_root_stays_inside_the_sinks_own_tempdir(self):
+        sink_root = Path(self.temporary.name).resolve()
+        worktrees_root = state_root.worktrees_root().resolve()
+        self.assertEqual(
+            str(sink_root),
+            os.path.commonpath([str(sink_root), str(worktrees_root)]),
+            f"worktrees_root() {worktrees_root} escaped this test's own "
+            f"tempdir {sink_root}",
+        )
 
 
 class BrickIdGrammarTest(BrickSinkTest):
@@ -294,6 +333,70 @@ class BrickPromptTest(BrickSinkTest):
         self.assertFalse((self.run_dir() / "B1.1.md").exists())
 
 
+class RepairRoundAdmissionTest(BrickSinkTest):
+    """A `do` brick's repair round binds through the brick, not the frame.
+
+    The wedge run 20260901T021739Z hit: the sealed record for a frame-rooted
+    run names only the frame in `assignment_seals`, but a repair round's
+    grammar-derived parent (`landing_round_parent`) is the brick it repairs,
+    which is itself a runtime-minted child the cut never named. Grading the
+    round's admission through one hop found a parent absent from the sealed
+    set and refused `sealed-parent-mismatch` -- every repair round of every
+    `do`/`judge` brick, unconditionally.
+    """
+
+    def _issue(self, verb, *arguments) -> dict:
+        """One non-brick door, under the same establishment stub `brick` uses."""
+
+        facade = tickets._tickets_dispatch_facade_module
+        with mock.patch.object(
+            facade, "_workspace_establish", side_effect=self._establish,
+        ), mock.patch.object(
+            facade, "_workspace_prepare", return_value={"outcome": "skipped"},
+        ):
+            return tickets._dispatch([verb, self.RUN, *arguments])
+
+    def _lease(self) -> str:
+        return (
+            datetime.now(timezone.utc) + timedelta(hours=1)
+        ).isoformat().replace("+00:00", "Z")
+
+    def test_a_runtime_bricks_repair_round_admits_and_dispatches(self):
+        frame_id = self.brick("frame-open")["frame_open"]["id"]
+        command = f'"{sys.executable}" -c "raise SystemExit(3)"'
+        done = json.dumps({"form": "command", "value": command}, sort_keys=True)
+
+        brick_id = self.brick(
+            "do", "--pack", CODE_PACK, "--parent", frame_id,
+            "--isolation", "none", "--done", done,
+        )["do"]["id"]
+        seal = parse_canonical_json(
+            _parse_frontmatter(self.ticket_text(brick_id))["dispatch_v1"]
+        )["attempts"][0]["assignment_seal"]
+
+        self._issue(
+            "dispatch-outcome", brick_id, "--note", "delivered and verified",
+        )
+        landed = self._issue(
+            "land", brick_id, "--assignment-seal", seal,
+            "--dispatch-id", f"{brick_id}:d1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        )
+        self.assertNotIn("error", landed, landed)
+        self.assertIsNone(landed["land"]["status"])
+        repair_id = landed["land"]["steps"][-1]["repair"]
+        self.assertEqual(f"{brick_id}.repair.1", repair_id)
+
+        dispatched = self._issue(
+            "dispatch", repair_id, "--by", repair_id,
+            "--dispatch-id", f"{repair_id}:d1",
+            "--lease-expires-at", self._lease(),
+            "--workspace", str(self.candidate),
+        )
+
+        self.assertNotIn("error", dispatched, dispatched)
+
+
 class BrickLandingTest(BrickSinkTest):
     """`do` to `land`, once over a git pack and once over a document tree.
 
@@ -398,20 +501,6 @@ class TypedArtifactGrammarTest(unittest.TestCase):
         self.assertEqual(
             tickets_brick.ARTIFACT_KINDS, set(ARTIFACT_LINE_FORMS),
         )
-
-    def test_a_non_git_join_refuses_an_untyped_identity(self):
-        from scripts import tickets_review
-
-        with tempfile.TemporaryDirectory() as raw:
-            with self.assertRaises(tickets_review.ReviewError) as caught:
-                tickets_review.validate_fixed_artifact(DOC_PACK, "revision 4", raw)
-            self.assertIn("must be doc:<fixed-identity>", str(caught.exception))
-            self.assertEqual(
-                ("doc:notes.md@sha256:" + "c" * 64, str(Path(raw).resolve())),
-                tickets_review.validate_fixed_artifact(
-                    DOC_PACK, "doc:notes.md@sha256:" + "c" * 64, raw,
-                ),
-            )
 
 
 if __name__ == "__main__":

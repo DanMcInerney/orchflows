@@ -1,8 +1,5 @@
 # Verdict contract
 
-The generated [check lifecycle cell](../docs/lifecycle.md#ticket-lifecycle)
-places a completed critique adjudication before its recorded check.
-
 The grammar used when a benchmark or other structured evaluation needs
 per-criterion verdicts. Ticket success remains its Goal; this contract does
 not add authored ticket criteria. Vocabulary:

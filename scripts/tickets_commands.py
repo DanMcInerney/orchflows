@@ -9,7 +9,6 @@ if __package__:
     from .tickets_brick import DO_USAGE, JUDGE_USAGE
     from .tickets_frame import FRAME_CLOSE_USAGE, FRAME_OPEN_USAGE
     from .tickets_issue import NEW_USAGE
-    from .tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE
     from .tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from .tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from .tickets_worklog import WORKLOG_USAGE
@@ -24,7 +23,6 @@ else:
     _frame = __import__('tickets_frame')
     FRAME_CLOSE_USAGE, FRAME_OPEN_USAGE = (_frame.FRAME_CLOSE_USAGE, _frame.FRAME_OPEN_USAGE)
     from tickets_issue import NEW_USAGE
-    from tickets_lifecycle import CHECKABLE_STATUSES, CHECK_USAGE
     from tickets_result import IMPROVEMENT_USAGE, RESULT_USAGE, RUN_STATE_USAGE
     from tickets_store import DEFAULT_RUN_STATE_TREE, REPAIR_RUN_IDENTITY_USAGE, RUN_STATE_TREES
     from tickets_worklog import WORKLOG_USAGE
@@ -41,9 +39,7 @@ LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> "
-    "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
-    "[--review-kind critique|repair|verify] "
-    "[--host <name>]"
+    "[--workspace <source-tree-to-cut-from>] [--host <name>]"
 )
 GRADE_USAGE = "grade <run> <root>"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
@@ -64,7 +60,6 @@ SUBCOMMAND_USAGE = {
     "dispatch-replace": DISPATCH_REPLACE_USAGE,
     "dispatch-outcome": DISPATCH_OUTCOME_USAGE,
     "dispatch-join": DISPATCH_JOIN_USAGE,
-    "check": CHECK_USAGE,
     "set-status": "set-status <run> <id> <status>",
     "result": RESULT_USAGE,
     "worklog": WORKLOG_USAGE,
@@ -91,7 +86,6 @@ SUBCOMMAND_SUMMARY = {
     "dispatch-replace": "Atomically replace one live dispatch-v1 attempt with a unique successor.",
     "dispatch-outcome": "Commit or replay the attempt's one reserved executor outcome envelope.",
     "dispatch-join": "Commit or replay one outcome-fenced join and its lifecycle transition.",
-    "check": "Anchor one completed durable checker stage to its target's checked_by field.",
     "set-status": f"Set lifecycle status to one of {sorted(VALID_STATUSES)}.",
     "result": f"Append one executor-owned record section {list(EXECUTOR_SECTIONS)}.",
     "worklog": "Render the run worklog.",
@@ -112,9 +106,9 @@ VALUE_FLAGS = frozenset({
     "--cut-generation", "--correction-bound", "--now", "--dispatch-id",
     "--assignment-seal",
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
-    "--outcome-record-id", "--status", "--stage",
+    "--outcome-record-id", "--status",
     "--goal-file", "--details-file", "--parent", "--done", "--artifacts",
-    "--accepted-file", "--review-kind", "--result-file", "--verification-file",
+    "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
     "--host", "--outcome-file",
 })

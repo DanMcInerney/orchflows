@@ -3,8 +3,7 @@
   "constants": {
     "dispatch_protocol": "orchflows.dispatch.v1",
     "launch_record_id": "launch",
-    "outcome_record_id": "outcome",
-    "review_protocol": "orchflows.review.v1"
+    "outcome_record_id": "outcome"
   },
   "shapes": [
     {
@@ -98,7 +97,7 @@
     {
       "name": "dispatch_join_content",
       "contract": "dispatch.md",
-      "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id", "review"],
+      "fields": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id"],
       "required": ["assignment_seal", "dispatch_id", "joined_by", "operation", "outcome_record_id"]
     },
     {
@@ -118,7 +117,7 @@
     {
       "name": "dispatch_join_success",
       "contract": "dispatch.md",
-      "fields": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at", "review_identity"],
+      "fields": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"],
       "required": ["protocol", "run", "id", "assignment_seal", "dispatch_id", "outcome_record_id", "by", "status", "joined_at"],
       "values": {"status": ["complete", "blocked", "stalled", "limited", "failed", "suspended"]}
     },
@@ -141,57 +140,6 @@
       ]
     },
     {
-      "name": "review_state",
-      "contract": "work-item.md",
-      "fields": ["protocol", "records"],
-      "required": ["protocol", "records"],
-      "values": {"protocol": ["orchflows.review.v1"]}
-    },
-    {
-      "name": "review_record_common",
-      "contract": "work-item.md",
-      "fields": ["identity", "kind", "predecessor", "protocol"],
-      "required": ["identity", "kind", "predecessor", "protocol"],
-      "values": {"kind": ["GatePlan", "CritiqueAdjudication", "RepairOutcome"]}
-    },
-    {
-      "name": "review_gate_plan",
-      "contract": "work-item.md",
-      "fields": ["artifact", "criteria", "isolation", "mode", "pack", "root", "workspace"],
-      "required": ["artifact", "criteria", "isolation", "mode", "pack", "root", "workspace"],
-      "values": {"mode": ["gate", "checker"]}
-    },
-    {
-      "name": "review_criterion",
-      "contract": "work-item.md",
-      "fields": ["identity", "lens", "order", "ticket"],
-      "required": ["identity", "lens", "order", "ticket"]
-    },
-    {
-      "name": "review_finding",
-      "contract": "work-item.md",
-      "fields": ["blocking", "class", "evidence", "goal_impact", "id", "repair", "summary"],
-      "required": ["blocking", "class", "evidence", "goal_impact", "id", "repair", "summary"]
-    },
-    {
-      "name": "review_critique",
-      "contract": "work-item.md",
-      "fields": ["accepted", "adjudicated_by", "artifact", "findings", "lens"],
-      "required": ["accepted", "adjudicated_by", "artifact", "findings", "lens"]
-    },
-    {
-      "name": "review_aggregate_critique",
-      "contract": "work-item.md",
-      "fields": ["accepted", "adjudicated_by", "adjudications", "artifact", "findings", "lens"],
-      "required": ["accepted", "adjudicated_by", "adjudications", "artifact", "findings", "lens"]
-    },
-    {
-      "name": "review_repair",
-      "contract": "work-item.md",
-      "fields": ["accepted", "artifact", "by", "input_artifact", "no_op", "result"],
-      "required": ["accepted", "artifact", "by", "input_artifact", "no_op", "result"]
-    },
-    {
       "name": "ticket_assignment_sections",
       "contract": "work-item.md",
       "fields": ["Goal", "Context", "Details"],
@@ -204,15 +152,13 @@
         "id", "run", "status", "admission", "executor", "pack",
         "pack_digest", "profile", "independence", "parent", "depends_on", "isolation", "bound",
         "frame", "done",
-        "checked_by", "root_generation", "cut_generation", "assignment_seal",
-        "workspace_branch", "workspace_baseline", "dispatch_v1",
-        "review_v1", "review_stage", "review_kind"
+        "root_generation", "cut_generation", "assignment_seal",
+        "workspace_branch", "workspace_baseline", "dispatch_v1"
       ],
       "required": ["id", "run", "status", "executor", "bound"],
       "values": {
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
-        "frame": ["true"],
-        "review_kind": ["critique", "repair", "null"]
+        "frame": ["true"]
       }
     },
     {

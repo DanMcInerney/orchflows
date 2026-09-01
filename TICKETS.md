@@ -23,7 +23,7 @@ context in any checkout resumes a run mid-flight.
     │ parent: B1                <- the call edge                  │
     │ depends_on: [B1.1]        <- optional graph edge            │
     │ bound: 45m                <- time budget                    │
-    │ checked_by (the lease lives in dispatch_v1)                 │
+    │ (the claim lease lives in dispatch_v1, not here)            │
     │ ---                                                         │
     │ ## Goal              observable result             ┐        │
     │ ## Context           facts and constraints          │ seal   │
@@ -38,8 +38,8 @@ it never rewrites this run or invents an in-run root generation. The result sect
 executor, written as the work happens, never in one write at the end.
 Field-by-field meaning: [contracts/work-item.md](contracts/work-item.md).
 
-Before issue, `tickets.py lint <run> [<id>] --file <path>` grades the exact
-candidate that `tickets.py new <run> [<id>] --file <path>` would project.
+Before issue, `tickets.py lint <run> [<id>] --file <path>` grades a
+hand-authored ticket file's exact pre-issue shape without writing it anywhere.
 After issue, `tickets.py show <run> <id>` inspects one ticket's parsed identity
 and sections without mutation.
 
@@ -165,27 +165,19 @@ Three moments use readers who did not produce the fixed artifact
    replacement generation is sealed. It is
    accepted when [scripts/cutcheck.py](scripts/cutcheck.py) exits 0.
    Once a unit dispatch opens, cut correction is refused.
-2. **Ticket independence** — each result takes one outside-independence path:
-   the ordinary durable evaluator/adjudication carrier, or none. It uses a
-   fresh read-only `orch-judge`, and it never repairs its own target. The
-   `<id>.check` review ticket is authored against the sealed target and
-   uses the same launch → `land` carrier as every
-   role-bearing execution. Only
-   `tickets.py check <run> <id> --stage <id>.check` may attach the joined,
-   identity-anchored adjudication to `checked_by`; callers cannot write trusted
-   findings directly.
+2. **Ticket independence** — the caller's own join (`tickets.py land`) reads
+   Goal and Context against the fixed artifact and evidence; that is now
+   the ordinary outside-independence path's one shape. The distinct
+   `<id>.check` review ticket, its `orch-judge` dispatch, and `tickets.py
+   check <run> <id> --stage <id>.check`'s anchor onto `checked_by` retired:
+   no live door ever built the ledger that reader required.
 3. **Critique and repair** — a critique is a `judge` brick over the artifacts
    it is handed and the repair answering it a `do` brick, sequenced by the
-   calling workflow's prose; no door emits a lensed family for either.
-   `GatePlan` fixes the resolvable artifact, normalized established
-   workspace, pack and isolation `none`. `CritiqueAdjudication`
-   binds the full findings and accepted blocker set; `RepairOutcome` binds the
-   repaired identity or proves that set empty, and the chain ends there — the
-   fresh outside check is the root's own `done` predicate, run by `land`.
-   Each append-only stage names the prior
-   stage digest, forming one predecessor-linked `orchflows.review.v1` chain.
-   Closing a frame over two or more `do` children refuses unless the tree
-   holds a judging child or the journal says `unjudged: <reason>`.
+   calling workflow's prose; no door emits a lensed family for either, and
+   each returns the ordinary way — the executor's `## Report` and the
+   joined disposition `land` records. Closing a frame over two or more `do`
+   children refuses unless the tree holds a judging child or the journal
+   says `unjudged: <reason>`.
 
 ## Errors and feedback
 
@@ -199,11 +191,11 @@ Three moments use readers who did not produce the fixed artifact
   `tickets.py land` adjudicates it. For v1, only the join sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
-- **Structure only where a machine reads it.** A critique's findings are a
-  JSON file the join reads; everything else a child has to say goes to
-  `## Report` in whatever form it judges useful. Work that cannot finish
-  within its bound suspends through the join, reporting what a resumer needs
-  rather than improvising.
+- **Structure only where a machine reads it.** Nothing on the return side is
+  machine-parsed any more: a critique's findings live in its own `## Report`,
+  like anything else a child has to say, in whatever form it judges useful.
+  Work that cannot finish within its bound suspends through the join,
+  reporting what a resumer needs rather than improvising.
 - **The absolute lease does not move.** Launch replay, transport activity, and
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a

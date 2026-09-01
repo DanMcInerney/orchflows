@@ -72,9 +72,9 @@ def sink_listing() -> list:
 class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
     """Both halves of a ticket's identity are graded before anything opens.
 
-    `tickets.py check ".." X --stage X.check` used to skip the lock *because*
-    the run id was malformed, then run the unlocked handler with it. The grade
-    is now the primitive's first act, and it raises rather than returning.
+    A malformed run or ticket id used to skip the lock and run the unlocked
+    handler with it. The grade is now the primitive's first act, and it
+    raises rather than returning.
     """
 
     def setUp(self):
@@ -96,7 +96,6 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
         """
 
         return (
-            ("check", run, tid, "--stage", f"{tid}.check"),
             ("set-status", run, tid, "complete"),
             ("dispatch", run, tid, "--by", "worker", "--dispatch-id", "D1",
              "--lease-expires-at", "2099-01-01T00:00:00Z"),
@@ -150,7 +149,6 @@ class TestTheOneLockedWritePrimitive(unittest.TestCase):
     """One primitive holds refusal, lock, and path; nothing holds two of them."""
 
     SUBJECTS = (
-        tickets_lifecycle._cmd_check,
         tickets_lifecycle._cmd_set_status,
     )
     RUN_ONLY_SUBJECTS = (tickets_result._cmd_run_state,)

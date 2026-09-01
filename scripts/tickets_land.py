@@ -41,7 +41,7 @@ if __package__:
     )
     from .tickets_adapters import derived_isolation
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
-    from .tickets_join import _cmd_dispatch_join
+    from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_lifecycle import _cmd_ready
     from .tickets_store import (
@@ -56,7 +56,7 @@ else:  # pragma: no cover - direct/installed flat script path
     )
     from tickets_adapters import derived_isolation
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
-    from tickets_join import _cmd_dispatch_join
+    from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_lifecycle import _cmd_ready
     from tickets_store import (
@@ -67,8 +67,7 @@ else:  # pragma: no cover - direct/installed flat script path
 LAND_USAGE = (
     "land <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> [--status <disposition>] "
-    "[--outcome-file <path|->] [--findings-file <path|->] "
-    "[--accepted-file <path|->] [--artifact <fixed-identity>]"
+    "[--outcome-file <path|->]"
 )
 JOIN_RECORD_PREFIX = "join:"
 COMMITTED = "committed"
@@ -182,6 +181,7 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
         candidate = _candidate(run, ticket_id)
         response, _code = candidate.integrate(
             run, ticket_id, _recorded_workspace(data), data.get("workspace_branch"),
+            data.get("workspace_baseline"),
         )
     except Exception as error:  # `Refused`, and anything git surprised us with
         return {"step": "workspace-integrate", "outcome": "refused", "error": str(error)}
@@ -232,8 +232,7 @@ def _done_outcome(decision: dict) -> str:
     return decision.get("action") or "checked"
 
 
-def _land_transaction(run, ticket_id, identity, outcome_file, findings_file,
-                      accepted_file, artifact, driver_status):
+def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
     """The state acts, in order, under the caller's one run lock."""
 
     prior = _prior_records(run, ticket_id, identity["dispatch_id"])
@@ -286,12 +285,6 @@ def _land_transaction(run, ticket_id, identity, outcome_file, findings_file,
         "--by", identity["by"],
         "--status", decision["status"],
     ]
-    if findings_file is not None:
-        arguments.extend(("--findings-file", findings_file))
-    if accepted_file is not None:
-        arguments.extend(("--accepted-file", accepted_file))
-    if artifact is not None:
-        arguments.extend(("--artifact", artifact))
     joined = _cmd_dispatch_join(arguments, _lock_held=True)
     if "error" in joined:
         return joined
@@ -321,9 +314,6 @@ def _cmd_land(rest):
         "by": _extract_flag(args, "--by"),
     }
     outcome_file = _extract_flag(args, "--outcome-file")
-    findings_file = _extract_flag(args, "--findings-file")
-    accepted_file = _extract_flag(args, "--accepted-file")
-    artifact = _extract_flag(args, "--artifact")
     driver_status = _extract_flag(args, "--status")
     if len(args) != 2 or not all(identity.values()):
         return {"error": f"usage: {LAND_USAGE}"}
@@ -331,13 +321,21 @@ def _cmd_land(rest):
     invalid = segment_refusal(run, ticket_id)
     if invalid is not None:
         return invalid
+    # The same argument-shape refusals `dispatch-join` itself raises, checked
+    # here before anything is merged: `_land_transaction` calls the join last,
+    # after `workspace-integrate`, and a malformed identity refusing only
+    # there is a refusal that already mutated the tree.
+    invalid = dispatch_join_identity_defects(
+        identity["outcome_record_id"], identity["dispatch_id"], identity["by"],
+    )
+    if invalid is not None:
+        return invalid
     if _tickets_root() is None:
         return {"error": NO_SINK_ERROR}
     try:
         with _run_lock(run):
             landed = _land_transaction(
-                run, ticket_id, identity, outcome_file, findings_file,
-                accepted_file, artifact, driver_status,
+                run, ticket_id, identity, outcome_file, driver_status,
             )
     except OSError as error:
         return {"error": f"unable to land {run}/{ticket_id}: {error}"}

@@ -36,12 +36,10 @@ connect this law to each authorized dispatch event and predecessor record.
    states a parallel prose join. The disposition is the landed ticket's
    `done` reading, or the caller's `land --status` grade where the ticket
    declares no predicate, and never the child's own word for it. Grading
-   it: read Goal and Context at the fixed artifact identity; a `checker`
-   item is accepted only over [work-item.md](../contracts/work-item.md)'s
-   `checked_by`, `independence: gate` defers that reading to this join
-   itself, and a Goal claim no evidence covers is needs-check rather than
-   accepted. Suspension parks the attempt and resumes from the ticket's
-   `## Report`. What the join grades --
+   it: read Goal and Context at the fixed artifact identity; this join is
+   independence's one path now, and a Goal claim no evidence covers is
+   blocked rather than accepted. Suspension parks the attempt and
+   resumes from the ticket's `## Report`. What the join grades --
    candidate write authority, actual diffs and conflicts, and what a path
    named in Details is worth -- is [work-item.md](../contracts/work-item.md)'s.
 6. Every join applies the [result contract](../contracts/result.md).
@@ -55,7 +53,7 @@ connect this law to each authorized dispatch event and predecessor record.
    never revived or aliased: the dispatch refuses, naming its successor. No verb
    is split into a generic shell plus a method file.
 9. The caller retires a child the moment its result crosses the join
-   (rule 5) — accepted, rejected, needs-check, or suspended — or the
+   (rule 5) — accepted, rejected, blocked, or suspended — or the
    dispatch is abandoned; retirement is the dispatching caller's own
    action, never a separate watchdog. `tickets.py land` crosses it and
    retires the derived worktree in the same transaction.

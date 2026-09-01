@@ -24,10 +24,9 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_format import (
-        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of,
+        REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
-    from .tickets_registry import REVIEW_KINDS
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
@@ -39,18 +38,15 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_format import (
-        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of,
+        REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
-    from tickets_registry import REVIEW_KINDS
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
         NO_SINK_ERROR, _executor_script, _load_ticket, _tickets_root,
     )
 
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-GATE_MARKER = ".gate."
-CHECK_SUFFIX = ".check"
 # The craft owns its verification scope; this finds the sentence rather than
 # restating it. `## Stages` (or `## Lens`) is where a craft declares how far a
 # unit's checks reach, and the gate's row is the anchor that says so.
@@ -141,22 +137,6 @@ def _dependency_paths(loaded: dict, ticket_path: Path) -> list:
     ]
 
 
-def review_root_id(ticket_id: str):
-    """The root a review stage was cut from, read off its own identity.
-
-    A gate stub's id is generated from its root (`{root}.gate.critique.{lens}`)
-    and an ordinary checker's from its target, so the id is where that fact
-    already lives. Naming it again in the stub body would be a second home for
-    the one context three proven verdicts turned on.
-    """
-
-    if GATE_MARKER in ticket_id:
-        return ticket_id.split(GATE_MARKER, 1)[0] or None
-    if ticket_id.endswith(CHECK_SUFFIX):
-        return ticket_id[: -len(CHECK_SUFFIX)] or None
-    return None
-
-
 def _craft_scope(path: Path):
     """The craft's own verification-scope sentence, or None.
 
@@ -215,24 +195,19 @@ def artifact_kind(pack):
         return None
 
 
-def dispatch_assignment(rest, *, attempt=None, review_state=None):
+def dispatch_assignment(rest, *, attempt=None):
     """Grade one ticket for dispatch and resolve every fact its launch names.
 
     Read under the caller's run lock, because each of these decides what the
-    launch commits: the admission receipt, the sealed review lane, the
-    established tree, and the identity every record will be filed under.
+    launch commits: the admission receipt, the established tree, and the
+    identity every record will be filed under.
     """
 
     args = list(rest)
     dispatched_name = _extract_flag(args, "--by")
     workspace = _extract_flag(args, "--workspace")
-    requested_review_kind = _extract_flag(args, "--review-kind")
     if len(args) != 2:
         return {"error": "assignment reading takes one <run> and one <id>"}
-    if requested_review_kind is not None:
-        requested_review_kind = dequote(requested_review_kind)
-        if requested_review_kind not in REVIEW_KINDS:
-            return {"error": f"--review-kind takes one of {list(REVIEW_KINDS)}, not '{requested_review_kind}'"}
     run, ticket_id = args
     root = _tickets_root()
     if root is None:
@@ -270,28 +245,12 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
             missing.append(f"{part} (## {heading})")
     if missing:
         return {"error": "assignment incomplete: " + "; ".join(missing)}
-    declared_review_kind = dequote(loaded.get("review_kind"))
-    if declared_review_kind and declared_review_kind not in REVIEW_KINDS:
-        return {"error": f"ticket {run}/{ticket_id} has an invalid review_kind '{declared_review_kind}'"}
-    if requested_review_kind is not None and declared_review_kind and requested_review_kind != declared_review_kind:
-        return {"error": f"ticket {run}/{ticket_id} review_kind differs from the sealed assignment"}
-    review_kind = requested_review_kind or declared_review_kind or None
-    if review_kind == "critique" and str(loaded.get(CHECKED_BY_KEY) or "").strip():
-        return {"error": f"ticket {run}/{ticket_id} already has its one checker"}
     assigned_name = str(dispatched_name or lease_of(loaded)[0] or "").strip() or None
     if assigned_name is None:
         return {"error": "dispatch requires the child identity through --by when it differs from the dispatch attempt owner"}
     role, _profile = resolved_role_profile(executor, loaded.get("profile"))
     pack = loaded.get("pack")
     craft, scope = _craft(pack)
-    tip = None
-    if review_state is not None:
-        tip = (review_state.get("records") or [{}])[-1]
-    root_id = review_root_id(loaded["id"]) if review_kind else None
-    root_path = None
-    if root_id is not None:
-        candidate = ticket_path.with_name(f"{root_id}.md")
-        root_path = str(candidate) if candidate.is_file() else None
     return {"assignment": {
         "artifact_kind": artifact_kind(pack),
         "assigned_name": assigned_name,
@@ -305,10 +264,7 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
         "id": loaded["id"],
         "lease_expires_at": None if attempt is None else attempt["lease_expires_at"],
         "pack": pack,
-        "review_kind": review_kind,
-        "review_tip": tip,
         "role": role,
-        "root_path": root_path,
         "run": str(loaded.get("run") or run),
         "ticket_path": str(ticket_path),
         "workspace": workspace,
@@ -316,7 +272,7 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
 
 
 __all__ = (
-    "ASSIGNMENT_SECTIONS", "CHECK_SUFFIX", "GATE_MARKER",
+    "ASSIGNMENT_SECTIONS",
     "_claim_is_stale", "artifact_kind", "dispatch_assignment",
-    "review_root_id", "workspace_establishment_finding",
+    "workspace_establishment_finding",
 )

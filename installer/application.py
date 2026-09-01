@@ -336,6 +336,11 @@ def apply_plan(
     # receipt-driven removals — so reinstalling over a project never touches
     # a legacy fat project install's ``.claude``/``.codex`` files.
     if plan.manage_host_surfaces:
+        # A module dropped from ``scripts/`` (or renamed out of the flat
+        # support-prefix census) stops appearing in ``plan.scripts``, but the
+        # earlier install's copy stays on disk forever without this sweep --
+        # every other kind below gets one, ``script`` alone did not.
+        _remove_stale(old_receipt, "script", {str(dest) for _, dest in plan.scripts}, plan.bin_dir)
         for src, dest in plan.scripts:
             action = install_action(dest, "script", dest.is_file())
             dest.parent.mkdir(parents=True, exist_ok=True)

@@ -14,7 +14,7 @@ if __package__:
     from . import console
     from .tickets_format import _extract_flag, _read_utf8
     from .tickets_issue import _cmd_new
-    from .tickets_lifecycle import _cmd_check, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
+    from .tickets_lifecycle import _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from .tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from .tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from .tickets_join import _cmd_dispatch_join
@@ -33,7 +33,7 @@ else:  # pragma: no cover - direct/installed flat script path
     import console
     from tickets_format import _extract_flag, _read_utf8
     from tickets_issue import _cmd_new
-    from tickets_lifecycle import _cmd_check, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
+    from tickets_lifecycle import _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from tickets_join import _cmd_dispatch_join
@@ -137,7 +137,7 @@ def _dispatch(argv):
     if _sync_seams is not None:
         _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | do | judge | frame-open | frame-close | lint | bound-check | grade | list | show | dispatch | land | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | result | worklog | run-state | repair-run-identity | improvement'}
+        return {'error': 'missing subcommand: new | do | judge | frame-open | frame-close | lint | bound-check | grade | list | show | dispatch | land | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | set-status | result | worklog | run-state | repair-run-identity | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -175,8 +175,6 @@ def _dispatch(argv):
         return _cmd_dispatch_outcome(rest)
     if command == 'dispatch-join':
         return _cmd_dispatch_join(rest)
-    if command == 'check':
-        return _cmd_check(rest)
     if command == 'set-status':
         return _cmd_set_status(rest)
     if command == 'result':

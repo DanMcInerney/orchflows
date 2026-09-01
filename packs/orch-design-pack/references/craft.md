@@ -118,4 +118,6 @@ relevant build output, and uncovered states.
   record layout, type, contrast and interaction-state deltas.
 - Regenerate only derived captures after a coherent change and keep their
   command, revision and dimensions with the evidence.
+- Run the narrow affected render checks; the full suite is the gate's row,
+  never a unit's.
 - Close with the capture inventory, measured checks, and remaining visual questions.

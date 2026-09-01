@@ -63,13 +63,14 @@ sentence in the library must be required by one of them.
 ## The path walks — does it run?
 
 One realistic request per pack, plus one through the ad-hoc lane
-(single ticket, the checker path, and an ad-hoc set). Walk the exact
-live path hop by hop, carrying the artifacts as concrete data checked
-against their contracts. A hop is a finding when a consumer reads what
-no producer wrote, two skills claim one step, an artifact satisfies
-its contract's letter but not the consumer's need, or the path needs
-knowledge the session would never load. Trace the off-nominal exits: a
-failing oracle, and an excluded action → handoff → resume. Every
+(a lone ad-hoc brick, a critique-then-repair pair, and an ad-hoc
+set). Walk the exact live path hop by hop, carrying the artifacts as
+concrete data checked against their contracts. A hop is a finding
+when a consumer reads what no producer wrote, two skills claim one
+step, an artifact satisfies its contract's letter but not the
+consumer's need, or the path needs knowledge the session would never
+load. Trace the off-nominal exits: a failing oracle, and an excluded
+action → handoff → resume. Every
 failure routes to a named skill or a verdict; anything that silently
 degrades is a finding — this library has no fallback tier.
 

@@ -166,7 +166,7 @@ def discover(tests_dir: Path):
     """Return (import root, module-name prefix, dotted module names).
 
     A package directory is imported through its parent so intra-package
-    imports (``from tests.baseline_pin import ...``) resolve; a plain
+    imports (``from tests.tree_removal import ...``) resolve; a plain
     directory of ``test_*.py`` files is imported as top-level modules.
     """
 

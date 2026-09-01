@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
-import subprocess
 from unittest import mock
 
 from scripts import cutcheck
@@ -19,11 +17,7 @@ from tests import _retired_doors as retired_doors
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
-from scripts import tickets_join
-from scripts import tickets_review
 from scripts import tickets_shapes
-from scripts import tickets_lifecycle
-from scripts import tickets_readiness
 from scripts.tickets_format import (
     _parse_frontmatter, _remove_frontmatter_field, _sections, canonical_json,
 )
@@ -33,7 +27,7 @@ from scripts import workspace
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, review_kind=None):
+def assignment(ticket_id, executor, dependencies=(), *, root_generation=None):
     fields = {
         "id": ticket_id,
         "run": "cut",
@@ -47,8 +41,6 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, re
         "bound": "30m",
         "root_generation": root_generation,
     }
-    if review_kind is not None:
-        fields["review_kind"] = review_kind
     sections = [
         ("Goal", f"Deliver the observable result for {ticket_id}."),
         ("Context", "The root assignment and repository are authoritative."),
@@ -60,7 +52,14 @@ def assignment(ticket_id, executor, dependencies=(), *, root_generation=None, re
 class SemanticTicketContractTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
-        self.environment = mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": self.temporary.name})
+        # ORCHFLOWS_WORKTREES_HOME rides beside the sink: unset, a derived
+        # candidate would hang off the parent of a bare tempdir -- the
+        # machine-shared system temp root -- instead of staying inside
+        # this fixture's own tree.
+        self.environment = mock.patch.dict(os.environ, {
+            "ORCHFLOWS_STATE_HOME": self.temporary.name,
+            "ORCHFLOWS_WORKTREES_HOME": str(Path(self.temporary.name) / "worktrees"),
+        })
         self.environment.start()
 
     def tearDown(self):
@@ -71,135 +70,6 @@ class SemanticTicketContractTest(unittest.TestCase):
         result = retired_doors.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
-
-    def test_critique_finding_contract_publishes_closed_shape_and_carriage(self):
-        result_contract = (ROOT / "contracts" / "result.md").read_text(
-            encoding="utf-8"
-        )
-        for text in (result_contract,):
-            for field in (
-                "`blocking`", "`class`", "`evidence`", "`goal_impact`",
-                "`id`", "`repair`", "`summary`",
-            ):
-                self.assertIn(field, text)
-            self.assertIn("--findings-file", " ".join(text.split()))
-        self.assertIn("has exactly", result_contract)
-        self.assertNotIn("either `Result` or `Feedback`", " ".join(result_contract.split()))
-
-    def test_critique_join_normalizes_findings_and_accepted_json(self):
-        findings = [{
-            "blocking": True,
-            "class": "correctness",
-            "evidence": ["render says ‘game over’"],
-            "goal_impact": "The target Goal is false.",
-            "id": "B1",
-            "repair": "Repair the state transition.",
-            "summary": "The final state is wrong — play cannot finish.",
-        }]
-        streamed = json.dumps(findings, ensure_ascii=False, indent=2)
-        accepted = json.dumps(
-            findings, ensure_ascii=True, sort_keys=True, separators=(",", ":")
-        )
-        # Whatever encoding the file carries, the join normalizes it before
-        # it binds the array in the ledger. Nothing is scraped out of prose.
-        extracted = tickets_review.canonical_finding_array(
-            streamed, "critique findings",
-        )
-        self.assertEqual(tickets_review.canonical_json(findings), extracted)
-
-        artifact = "git:" + subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
-            capture_output=True, check=True,
-        ).stdout.strip()
-        plan = tickets_review._record(
-            "GatePlan", None, artifact=artifact,
-            criteria=[{
-                "identity": "sha256:criterion", "lens": "code",
-                "order": 0, "ticket": "R.gate.critique.code",
-            }],
-            isolation="required", mode="gate", pack="orch-code-pack",
-            root="R", workspace=str(ROOT.resolve()),
-        )
-        adjudicated = tickets_review.adjudicate(
-            {"protocol": "orchflows.review.v1", "records": [plan]},
-            extracted, accepted, "root-join", "code",
-        )
-        self.assertEqual(findings, adjudicated["records"][-1]["findings"])
-        self.assertEqual(findings, adjudicated["records"][-1]["accepted"])
-
-    def test_findings_have_one_carrier_and_a_repeated_id_refuses(self):
-        """One file, one array, and no reconstruction from several carriers.
-
-        The findings used to be flattened out of every streamed result record
-        and the outcome's copy of the same sections, and the flattening then
-        had to collapse the duplicate a child produced by filing the same
-        finding twice. There is one carrier now, so the only thing left to
-        grade is the array itself.
-        """
-
-        finding = {
-            "blocking": True,
-            "class": "correctness",
-            "evidence": ["test-x failed"],
-            "goal_impact": "The target Goal is false.",
-            "id": "B1",
-            "repair": "Repair test-x.",
-            "summary": "test-x is red.",
-        }
-        self.assertFalse(hasattr(tickets_join, "_critique_findings"))
-        self.assertEqual(
-            tickets_review.canonical_json([finding]),
-            tickets_review.canonical_finding_array(
-                json.dumps([finding], indent=2), "critique findings",
-            ),
-        )
-
-        conflicting = dict(finding, summary="test-x is green.")
-        with self.assertRaisesRegex(Exception, "repeats finding id B1"):
-            tickets_review.canonical_finding_array(
-                tickets_review.canonical_json([finding, conflicting]),
-                "critique findings",
-            )
-
-    def checker_stage(self, run, target_id):
-        """Author the `<target>.check` critique stage, and return its id.
-
-        `tickets.py checker-stage` minted it until W3a retired the gate
-        choreography. The stage is not gate machinery -- it is where the
-        findings and accepted arrays land, the flow `land` still carries --
-        so the fixture writes it the way a caller now would: one
-        `orch-judge` ticket depending on its target and sealed through that
-        target's own generation.
-        """
-
-        run_dir = Path(self.temporary.name) / "tickets" / run
-        target = _parse_frontmatter(
-            (run_dir / f"{target_id}.md").read_text(encoding="utf-8")
-        )
-        stage_id = f"{target_id}.check"
-        text = _render_ticket({
-            "id": stage_id, "run": run, "status": "pending",
-            "admission": "pending", "executor": "orch-judge",
-            "pack": target.get("pack"), "pack_digest": target.get("pack_digest"),
-            "independence": "gate", "depends_on": [target_id],
-            "isolation": "none", "bound": "30m",
-            "root_generation": target.get("root_generation"),
-            "review_kind": "critique",
-        }, [
-            ("Goal", f"Review `{target_id}` and enumerate every evidence-backed "
-                     "material blocker to its Goal."),
-            ("Context", f"- target ticket: {target_id}\n- Critique is read-only."),
-            ("Report", ""),
-        ])
-        text = tickets._set_frontmatter_field(
-            text, "cut_generation", target.get("cut_generation"),
-        )
-        text = tickets._set_frontmatter_field(
-            text, "assignment_seal",
-            tickets_generations.assignment_digest(stage_id, text),
-        )
-        (run_dir / f"{stage_id}.md").write_text(text, encoding="utf-8")
-        return stage_id
 
     def seal(self, run, root):
         self.dispatch("stamp-generation", run, root)
@@ -214,8 +84,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--dispatch-id", dispatch_id, "--lease-expires-at", lease,
         )["dispatch"]
 
-    def launch(self, run, ticket_id, dispatch_id, workspace=None,
-               artifact=None, review_kind=None, record=True):
+    def launch(self, run, ticket_id, dispatch_id, workspace=None, record=True):
         """Establish, then commit the launch this child's records enter behind.
 
         Reached at the facade seam that owns it: `dispatch` composes the
@@ -232,28 +101,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         host, failure = launch_module.resolve_host(launch_module.DEFAULT_HOST)
         self.assertIsNone(failure, failure)
         return tickets._tickets_dispatch_facade_module._launched_under_run_lock(
-            run, ticket_id, host, dispatch_id=dispatch_id,
-            workspace=workspace, artifact=artifact, review_kind=review_kind,
+            run, ticket_id, host, dispatch_id=dispatch_id, workspace=workspace,
         )
 
     def committed_launch(self, *arguments, **facts) -> dict:
         committed = self.launch(*arguments, **facts)
         self.assertNotIn("error", committed, committed)
         return committed["launch"]
-
-    def accepted_file(self, ticket_id, findings) -> list:
-        """`dispatch-join --accepted` was removed; the subset crosses as a file."""
-
-        path = Path(self.temporary.name) / f"accepted-{ticket_id}.json"
-        path.write_text(findings, encoding="utf-8")
-        return ["--accepted-file", str(path)]
-
-    def findings_flags(self, ticket_id, findings: str) -> list:
-        """The complete findings cross as a file, like the accepted subset."""
-
-        path = Path(self.temporary.name) / f"findings-{ticket_id}.json"
-        path.write_text(findings, encoding="utf-8")
-        return ["--findings-file", str(path)]
 
     def commit_outcome(self, run, ticket_id, opened, by, dispatch_id):
         """One free-text closing note; the envelope carries nothing typed."""
@@ -352,7 +206,13 @@ class SemanticTicketContractTest(unittest.TestCase):
         text = (Path(self.temporary.name) / "tickets" / "direct" / "R1.md").read_text(encoding="utf-8")
         self.assertEqual({"Goal", "Context", "Report"}, set(_sections(text)))
 
-    def test_preissue_lint_and_new_grade_the_same_projected_file_candidate(self):
+    def test_preissue_lint_grades_the_projected_file_candidate(self):
+        """`new --file` retired (routing-design M3): lint is the one reader
+
+        left projecting a hand-authored file's pre-issue shape; a caller
+        wanting it actually minted now uses `new`'s flags or a `do`/`judge`
+        goal file instead.
+        """
         source = Path(self.temporary.name) / "R1.md"
         draft = assignment("R1", "orch-do")
         draft = _remove_frontmatter_field(draft, "admission")
@@ -367,18 +227,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual(before, source.read_bytes())
         self.assertFalse((Path(self.temporary.name) / "tickets" / "issued-run").exists())
 
-        created = self.dispatch("new", "issued-run", "R1", "--file", str(source))
-        self.assertEqual("R1", created["new"]["id"])
-        issued = (
-            Path(self.temporary.name) / "tickets" / "issued-run" / "R1.md"
-        ).read_text(encoding="utf-8")
-        data = _parse_frontmatter(issued)
-        self.assertEqual("issued-run", data["run"])
-        self.assertEqual("pending", data["status"])
-        self.assertEqual("pending", data["admission"])
-        self.assertNotIn("claimed_by", data)
-
-    def test_preissue_lint_and_new_refuse_the_same_file_identity_mismatch(self):
+    def test_preissue_lint_refuses_a_file_identity_mismatch(self):
         source = Path(self.temporary.name) / "R1.md"
         draft = _remove_frontmatter_field(
             assignment("R1", "orch-do"), "admission"
@@ -389,11 +238,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         linted = retired_doors.run(
             ["lint", "other-run", "R9", "--file", str(source)]
         )
-        issued = retired_doors.run(
-            ["new", "other-run", "R9", "--file", str(source)]
-        )
         self.assertIn("placed as 'R9', but ticket file names 'R1'", linted["error"])
-        self.assertEqual(linted["error"], issued["error"])
         self.assertEqual(before, source.read_bytes())
 
     def test_show_inspects_one_ticket_without_mutating_the_sink(self):
@@ -501,11 +346,11 @@ class SemanticTicketContractTest(unittest.TestCase):
             "R.02": assignment("R.02", "orch-do", root_generation=inherited),
             "R.gate.critique.code": assignment(
                 "R.gate.critique.code", "orch-judge", ("R.01", "R.02"),
-                root_generation=inherited, review_kind="critique",
+                root_generation=inherited,
             ),
             "R.gate.repair": assignment(
                 "R.gate.repair", "orch-do", ("R.gate.critique.code",),
-                root_generation=inherited, review_kind="repair",
+                root_generation=inherited,
             ),
         }
 
@@ -575,241 +420,18 @@ class SemanticTicketContractTest(unittest.TestCase):
             "the composite-gate topology grader outlived its door",
         )
 
-    def test_distinct_checker_records_the_same_immutable_adjudication_carrier(self):
-        self.dispatch(
-            "new", "checker", "R", "--executor", "orch-do",
-            "--goal", "Deliver the checked result.",
-            "--context", "The artifact and evidence are authoritative.",
-            "--pack", "orch-code-pack", "--isolation", "required",
-            "--independence", "checker",
-        )
-        self.seal("checker", "R")
-        self.dispatch("ready", "--run", "checker")
-        ticket = Path(self.temporary.name) / "tickets" / "checker" / "R.md"
-        established = ticket.read_text(encoding="utf-8")
-        for key, value in (
-            ("workspace_branch", "integration"),
-            ("workspace_baseline", "0123456789abcdef clean"),
-        ):
-            established = tickets._set_frontmatter_field(established, key, value)
-        ticket.write_text(established, encoding="utf-8")
-        opened = self.open_attempt("checker", "R", "worker", "worker-D1")
-        self.committed_launch("checker", "R", "worker-D1", workspace=str(ROOT))
-        self.commit_outcome("checker", "R", opened, "worker", "worker-D1")
-        self.dispatch(
-            "dispatch-join", "checker", "R",
-            "--assignment-seal", opened["assignment_seal"],
-            "--dispatch-id", "worker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--status", "complete",
-        )
-        artifact = "git:" + subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
-            capture_output=True, check=True,
-        ).stdout.strip()
-        before = ticket.read_bytes()
-        refused = retired_doors.run([
-            "check", "checker", "R", "--by", "checker-a",
-            "--artifact", artifact, "--findings", "[]", "--accepted", "[]",
-        ])
-        self.assertIn("usage: check", refused["error"])
-        self.assertEqual(before, ticket.read_bytes())
+    def test_a_checker_independence_dependency_no_longer_waits_on_anything(self):
+        """The checker-stage apparatus that survived the `review_kind`
+        deletion is gone: no live door ever built the `review_v1` chain
+        `tickets.py check` required, so `checked_by` had no live producer.
+        `independence: checker` no longer differs from the default in
+        readiness -- both read the same status-only completeness.
+        """
+        from scripts import tickets_readiness
 
-        self.assertEqual("R.check", self.checker_stage("checker", "R"))
-        ready = self.dispatch("ready", "--run", "checker")
-        self.assertIn("R.check", {item["id"] for item in ready["ready"]})
-        stage_opened = self.open_attempt(
-            "checker", "R.check", "checker-a", "checker-D1"
-        )
-        self.committed_launch(
-            "checker", "R.check", "checker-D1", workspace=str(ROOT),
-            artifact=artifact, record=False,
-        )
-        findings = json.dumps([{
-            "blocking": True,
-            "class": "correctness",
-            "evidence": ["test-x failed"],
-            "goal_impact": "The target Goal is false.",
-            "id": "B1",
-            "repair": "Repair test-x.",
-            "summary": "test-x is red — repair required.",
-        }], sort_keys=True, separators=(",", ":"))
-        self.dispatch(
-            "result", "checker", "R.check",
-            "--assignment-seal", stage_opened["assignment_seal"],
-            "--dispatch-id", "checker-D1", "--record-id", "feedback-1",
-            "--by", "checker-a", "--text", "findings are in the file the join reads",
-        )
-        self.commit_outcome(
-            "checker", "R.check", stage_opened, "checker-a", "checker-D1"
-        )
-        first_join = self.dispatch(
-            "dispatch-join", "checker", "R.check",
-            "--assignment-seal", stage_opened["assignment_seal"],
-            "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--status", "complete",
-            *self.findings_flags("R.check", findings),
-            *self.accepted_file("R.check", findings),
-        )
-        equivalent = json.dumps(json.loads(findings), ensure_ascii=False, indent=2)
-        replayed_join = self.dispatch(
-            "dispatch-join", "checker", "R.check",
-            "--assignment-seal", stage_opened["assignment_seal"],
-            "--dispatch-id", "checker-D1", "--outcome-record-id", "outcome",
-            "--by", "root-join", "--status", "complete",
-            *self.findings_flags("R.check-equivalent", equivalent),
-            *self.accepted_file("R.check-equivalent", equivalent),
-        )
-        self.assertEqual(first_join, replayed_join)
-        stage_path = (
-            Path(self.temporary.name) / "tickets" / "checker" / "R.check.md"
-        )
-        anchored_bytes = stage_path.read_bytes()
-        stage_text = anchored_bytes.decode("utf-8")
-        rewritten = json.loads(_parse_frontmatter(stage_text)["review_v1"])
-        rewritten_record = rewritten["records"][-1]
-        rewritten_record["accepted"] = []
-        rewritten_record["identity"] = tickets_review._digest({
-            key: value for key, value in rewritten_record.items() if key != "identity"
-        })
-        stage_path.write_text(
-            tickets._set_frontmatter_field(
-                stage_text, "review_v1", tickets_review.canonical_json(rewritten),
-            ),
-            encoding="utf-8",
-        )
-        unanchored = retired_doors.run([
-            "check", "checker", "R", "--stage", "R.check",
-        ])
-        self.assertEqual("dispatch-record-invalid", unanchored["code"])
-        stage_path.write_bytes(anchored_bytes)
-        checked = self.dispatch(
-            "check", "checker", "R", "--stage", "R.check",
-        )
-        self.assertEqual("checker-a", checked["check"]["checked_by"])
-        data = _parse_frontmatter(ticket.read_text(encoding="utf-8"))
-        self.assertEqual("R.check", data["review_stage"])
-        self.assertNotIn("review_v1", data)
-        stage_text = stage_path.read_text(encoding="utf-8")
-        review = json.loads(_parse_frontmatter(stage_text)["review_v1"])
-        self.assertEqual(
-            ["GatePlan", "CritiqueAdjudication"],
-            [record["kind"] for record in review["records"]],
-        )
-        self.assertEqual("checker", review["records"][0]["mode"])
-        self.assertEqual("orch-code-pack", review["records"][0]["pack"])
-        self.assertEqual(json.loads(findings), review["records"][1]["accepted"])
-        self.assertEqual("checker-a", review["records"][1]["adjudicated_by"])
-        self.assertEqual(
-            review["records"][0]["identity"],
-            review["records"][1]["predecessor"],
-        )
-
-        # The flow ends at the anchored check. The derived repair stage the
-        # acceptance used to materialize is gone with the gate choreography:
-        # a repair is a `do` brick the caller opens against these accepted
-        # blockers, and the fresh outside check is the target's own `done`
-        # predicate, run by land in the integrated tree.
-        self.assertFalse(list(stage_path.parent.glob("R.gate.*.md")))
-        self.assertEqual(
-            {"unknown subcommand: gate", "unknown subcommand: checker-stage"},
-            {
-                retired_doors.run([door, "checker", "R"])["error"]
-                for door in ("gate", "checker-stage")
-            },
-        )
-
-    def test_frontier_guidance_distinguishes_all_three_review_states(self):
-        # The guidance moved with the driver: the engine is gone and
-        # rules/verification.md 7 owns the three states the driver reads.
-        law = " ".join(
-            (ROOT / "rules" / "verification.md").read_text(encoding="utf-8").split()
-        )
-        for phrase in (
-            "An accepted checked target",
-            "a clean one closes with no repair",
-            "a gate-deferred root",
-        ):
-            self.assertIn(phrase, law)
-        self.assertNotIn("Gate-deferred and checked tickets do not", law)
-
-    def test_review_schemas_reject_field_deletion_and_noop_bypass(self):
-        artifact = "git:" + subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
-            capture_output=True, check=True,
-        ).stdout.strip()
-        plan = tickets_review._record(
-            "GatePlan", None, artifact=artifact,
-            criteria=[{
-                "identity": "sha256:criterion", "lens": "code",
-                "order": 0, "ticket": "R.check",
-            }],
-            isolation="none", mode="checker", pack="orch-code-pack",
-            root="R", workspace=str(ROOT.resolve()),
-        )
-        finding = {
-            "blocking": True, "class": "correctness",
-            "evidence": ["test-x failed"],
-            "goal_impact": "The Goal is false.", "id": "B1",
-            "repair": "Repair test-x.", "summary": "test-x is red.",
-        }
-        member = tickets_review._record(
-            "CritiqueAdjudication", plan["identity"], accepted=[finding],
-            adjudicated_by="checker-a", artifact=artifact,
-            findings=[finding], lens="code",
-        )
-        aggregate = tickets_review._record(
-            "CritiqueAdjudication", plan["identity"], accepted=[finding],
-            adjudicated_by="system:aggregate", adjudications=[member],
-            artifact=artifact, findings=[finding], lens="*",
-        )
-        state = {"protocol": "orchflows.review.v1", "records": [plan, aggregate]}
-        tickets_review.review_records(state)
-
-        missing_authority = json.loads(tickets_review.canonical_json(state))
-        del missing_authority["records"][1]["adjudicated_by"]
-        record = missing_authority["records"][1]
-        record["identity"] = tickets_review._digest({
-            key: value for key, value in record.items() if key != "identity"
-        })
-        with self.assertRaises(tickets_review.ReviewError):
-            tickets_review.review_records(missing_authority)
-
-        rewritten_accepted = json.loads(tickets_review.canonical_json(state))
-        record = rewritten_accepted["records"][1]
-        record["accepted"] = []
-        record["identity"] = tickets_review._digest({
-            key: value for key, value in record.items() if key != "identity"
-        })
-        with self.assertRaises(tickets_review.ReviewError):
-            tickets_review.review_records(rewritten_accepted)
-
-        with self.assertRaises(tickets_review.ReviewError):
-            tickets_review.repair_outcome(
-                state, artifact, "no change", "root", no_op=True,
-                workspace=str(ROOT),
-            )
-
-    def test_downstream_waits_for_checker_but_checker_stage_can_start(self):
-        self.assertIs(tickets_lifecycle.readiness_facts, tickets_readiness.readiness_facts)
-        target = {
-            "id": "R", "status": "complete", "independence": "checker",
-            "checked_by": "",
-        }
-        stage = {"id": "R.check", "status": "pending", "depends_on": ["R"]}
+        target = {"id": "R", "status": "complete", "independence": "checker"}
         downstream = {"id": "R.next", "status": "pending", "depends_on": ["R"]}
-        tickets_by_id = {"R": target, "R.check": stage, "R.next": downstream}
-
-        self.assertTrue(
-            tickets_readiness.readiness_facts(stage, tickets_by_id)[
-                "dependencies_complete"
-            ]
-        )
-        self.assertFalse(
-            tickets_readiness.readiness_facts(downstream, tickets_by_id)[
-                "dependencies_complete"
-            ]
-        )
-        target["checked_by"] = "checker-a"
+        tickets_by_id = {"R": target, "R.next": downstream}
         self.assertTrue(
             tickets_readiness.readiness_facts(downstream, tickets_by_id)[
                 "dependencies_complete"

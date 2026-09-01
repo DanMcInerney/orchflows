@@ -132,31 +132,24 @@ retirement, changed join content conflicts, and an unseen join on an ended
 attempt is stale. Only join writes suspended or terminal ticket status. Every
 joined disposition, including suspension, retires its attempt; suspension
 retains claimant observations for handoff but leaves no live dispatch.
-The join reads the tree the item was executed in off the attempt.
-For review-stage tickets the same atomic join also advances the ticket's
-validated `orchflows.review.v1` chain: critique requires the canonical complete
-findings and accepted subset from the file-based `--findings-file <path|->` and
-`--accepted-file <path|->` seams, and repair requires
-the exact output artifact. The chain ends there. Every review kind has one
-closed field schema, and the ledger tip equals the
-protocol-owned join's `review_identity`. A review lane's prompt names that
-ledger by the ticket path holding it and by its tip identity; the chain
-itself is never copied. `GatePlan` seals the normalized
-workspace; a code artifact is a full Git commit that resolves to that
-workspace's exact HEAD before launch and after repair.
+The join reads the tree the item was executed in off the attempt. It
+adjudicates nothing and binds no findings, accepted subset, or fixed
+artifact identity of its own: the mechanical checker/repair selector that
+used to do that on `--findings-file`/`--accepted-file`/`--artifact` retired
+with the gate-stage ids -- `.gate.critique.<lens>`, `.gate.repair`, `.check`
+-- it selected between, minted by no live door. A worker's own fixed
+artifact identity reaches its ticket the same way any other closing fact
+does: printed verbatim in the outcome evidence the launch prompt asks for,
+never through a join flag.
 
-Every fixed artifact identity a join binds is the typed line its adapter
-fixes, and the prefix is graded wherever the Git one was: a `git-commit`
-adapter still takes `git:<full-commit-id>` and still resolves it against the
-sealed workspace HEAD, a `document-revision` adapter takes `doc:` and an
-`evidence-packet` adapter takes `evidence:`, each non-empty after the colon.
-An untyped identity is refused rather than accepted as prose.
-
-The ordinary checker is a derived `<id>.check` review-stage ticket. It uses
-the same committed launch, outcome, and join as gate review.
-Only `check <run> <id> --stage <id>.check` attaches its authenticated receiver
-identity to the target's `checked_by`; direct caller-supplied findings are not
-a protocol operation.
+`review_v1`, its `GatePlan`/`CritiqueAdjudication`/`RepairOutcome` chain,
+`checked_by`/`review_stage`, and `check <run> <id> --stage <id>.check` --
+the one surviving reader the gate-stage census above left standing -- are
+themselves retired: no live door ever built the chain that reader required,
+so its one input was hand-edited state, which the host block forbids. A
+critique is a `judge` brick and its repair a `do` brick, sequenced by the
+calling workflow's prose, and both return the ordinary way -- the
+executor's `## Report` and the disposition this join records.
 
 ## Cutover
 
@@ -188,8 +181,9 @@ review-stage joins bind the accepted blocker subset and exact repair or
 verification artifact through the ticket's predecessor-linked review ledger.
 
 T0 supersession record sha256:fc3cbeefa9b42ca373758739a79cb092ea5512cd850e09bb6d3d6b32e380691b:
-packet projections carry one typed `review_kind`; execute and check routing
-consumes the resolved pack cells for that lane, with no legacy checker aliases.
+packet projections carry one typed review-lane selector; execute and check
+routing consumes the resolved pack cells for that lane, with no legacy
+checker aliases.
 
 T0 supersession record sha256:69b9e37a924419da4aa7a549a611d1ed14c478228b4b702b50f08c1e9a3c7a68:
 the T0 shape is declared in contracts/shapes.json and renders this contract
@@ -261,6 +255,36 @@ the wire. A critique's complete findings reach `dispatch-join` through
 `--findings-file <path|->` beside the accepted subset's `--accepted-file`,
 rather than being read back out of the records the child streamed. The prompt
 names what a report is expected to carry and teaches no filing taxonomy.
+
+T0 supersession record sha256:8fc01dea94eedb0fc5f38751fd986ab6deecabf3b7fdb852cabb652eedfe520d:
+the join stops adjudicating. Its typed review-lane selector chose between a
+composite gate's lensed critique and its repair, and the census behind the
+routing design found every id that selector read -- `.gate.critique.<lens>`,
+`.gate.repair`, `.check` -- minted by no live door: test fixtures hand-built
+them, and test-only reachability was never liveness. `--findings-file`,
+`--accepted-file`, and `--artifact` retire from `dispatch-join` and `land`
+with it, since none had an ordinary-join meaning to fall back to; a caller
+that still passes one now refuses on argument shape, before either command
+reads or mutates a tree. A fixed artifact identity reaches its ticket the
+one way every other closing fact does -- printed verbatim in the outcome
+evidence -- never through a join flag. The predecessor-linked review ledger
+this section otherwise describes, and `check <run> <id> --stage <id>.check`'s
+reading of it, are unchanged; that reachability question is a separate
+census this supersession does not reach. `land` also gains a second, ordinary
+fix here: every argument-shape refusal `dispatch-join` itself would raise --
+a malformed `--dispatch-id` or `--by`, the reserved `--outcome-record-id`
+mismatch -- is checked before `workspace-integrate` merges the candidate, not
+after, so a refused join never leaves the target tree mutated behind it.
+
+T0 supersession record sha256:58f3520506dcaf2f0d113cec1c29e934b65dd6d5e4a6e4ff53730ec85ae04bb5:
+the reachability question the prior supersession left open is answered: no
+live door ever builds a `GatePlan`-then-`CritiqueAdjudication` chain, so the
+predecessor-linked review ledger and `check <run> <id> --stage <id>.check`,
+its one surviving reader, retire together with `checked_by`/`review_stage`.
+A critique is a `judge` brick and its repair a `do` brick, both returning
+the ordinary way -- the executor's `## Report` and the disposition this
+join records -- and `dispatch_join_success` drops the `review_identity`
+field nothing produces any more.
 
 <!-- BEGIN GENERATED T0 SHAPES -->
 ## Generated T0 shape
@@ -398,7 +422,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `joined_by` | yes | — |
 | `operation` | yes | — |
 | `outcome_record_id` | yes | — |
-| `review` | no | — |
 
 ### `dispatch_retire_request`
 
@@ -432,7 +455,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `by` | yes | — |
 | `status` | yes | `complete`, `blocked`, `stalled`, `limited`, `failed`, `suspended` |
 | `joined_at` | yes | — |
-| `review_identity` | no | — |
 
 ### `dispatch_launch`
 
