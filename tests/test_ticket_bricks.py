@@ -30,6 +30,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_brick
 from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
@@ -47,8 +48,21 @@ class BrickSinkTest(unittest.TestCase):
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
+        # ``ORCHFLOWS_WORKTREES_HOME`` rides beside the sink: left unset,
+        # ``worktrees_root()`` hangs off the *parent* of a bare tempdir --
+        # this process's shared system temp root -- so a derived candidate
+        # would land at machine scope instead of inside this fixture's own
+        # tree (`tests/test_state_root_cases`'s `worktrees_root` proves the
+        # derivation; `BrickSinkWorktreeIsolationTest` below proves this
+        # fixture stays clear of it).
         self.environment = mock.patch.dict(
-            os.environ, {"ORCHFLOWS_STATE_HOME": self.temporary.name}
+            os.environ,
+            {
+                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                "ORCHFLOWS_WORKTREES_HOME": str(
+                    Path(self.temporary.name) / "worktrees"
+                ),
+            },
         )
         self.environment.start()
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
@@ -104,6 +118,29 @@ class BrickSinkTest(unittest.TestCase):
 
     def prompt(self, answer: dict) -> str:
         return answer[next(iter(answer))]["launch"]["prompt"]
+
+
+class BrickSinkWorktreeIsolationTest(BrickSinkTest):
+    """The sink this fixture builds must keep derived worktrees inside it.
+
+    ``worktrees_root()`` hangs off ``orchflows_home()``, the *parent* of
+    the sink -- real hosts keep ``state/`` and ``worktrees/`` as siblings
+    under ``~/.orchflows``. A sink pointed straight at a bare tempdir, with
+    no ``ORCHFLOWS_WORKTREES_HOME`` of its own, puts that parent at the
+    machine-shared system temp root instead: two checkouts (or two
+    parallel CI shards) running this fixture at once would then hand a
+    candidate to one worktree tree neither of them owns.
+    """
+
+    def test_worktrees_root_stays_inside_the_sinks_own_tempdir(self):
+        sink_root = Path(self.temporary.name).resolve()
+        worktrees_root = state_root.worktrees_root().resolve()
+        self.assertEqual(
+            str(sink_root),
+            os.path.commonpath([str(sink_root), str(worktrees_root)]),
+            f"worktrees_root() {worktrees_root} escaped this test's own "
+            f"tempdir {sink_root}",
+        )
 
 
 class BrickIdGrammarTest(BrickSinkTest):
