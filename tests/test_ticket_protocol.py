@@ -93,7 +93,12 @@ class TicketProtocolTest(unittest.TestCase):
         host = (root / "templates" / "host-block.md").read_text(encoding="utf-8")
         profiles = (root / "hosts" / "profiles.md").read_text(encoding="utf-8")
         tickets = (root / "TICKETS.md").read_text(encoding="utf-8")
-        self.assertIn("tickets.py dispatch", host)
+        for command in (
+            "tickets.py do", "tickets.py land",
+            "tickets.py frame-open", "frame-close",
+        ):
+            self.assertIn(command, host)
+        self.assertNotIn("tickets.py dispatch", host)
         self.assertNotIn("dispatch-receive", host)
         for surface in (profiles, tickets):
             for command in ("dispatch-open", "dispatch-retire"):
