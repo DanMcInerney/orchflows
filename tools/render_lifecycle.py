@@ -7,6 +7,9 @@ from pathlib import Path
 import sys
 
 
+# This walk locates `scripts/` so it can be put on sys.path for the bare
+# `import tickets_lifecycle` below (the flat-layout import spelling);
+# `scripts._bootstrap.ROOT` is not reachable until that insert has run.
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 TARGET = ROOT / "docs" / "lifecycle.md"

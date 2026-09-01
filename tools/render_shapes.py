@@ -9,6 +9,10 @@ import pprint
 import re
 
 
+# Run directly or lazily imported before the repository is necessarily
+# on sys.path; reading `scripts._bootstrap.ROOT` would need this same
+# walk to seed the import first, for no fact this file otherwise needs
+# from `scripts/`.
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "contracts" / "shapes.json"
 VALIDATOR = ROOT / "scripts" / "tickets_shapes.py"

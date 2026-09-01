@@ -48,7 +48,10 @@ from pathlib import Path
 # carries no such module at all, so it cannot depend on the tree under
 # test having one. `scripts/_bootstrap.py` is this checkout's own fixed
 # sibling, never the target tree's, and it is the one code owner of the
-# env-var name regardless of which tree is under test.
+# env-var name regardless of which tree is under test. This is also why
+# `_OWN_ROOT` stays a local walk rather than reading `_bootstrap.ROOT`:
+# nothing under `scripts/`, `_bootstrap` included, is importable until
+# this walk has put it on sys.path -- the walk is the bootstrap.
 _OWN_ROOT = Path(__file__).resolve().parent.parent
 if str(_OWN_ROOT) not in sys.path:
     sys.path.insert(0, str(_OWN_ROOT))

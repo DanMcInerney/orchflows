@@ -10,6 +10,7 @@ Path = _common.Path
 json = _common.json
 re = _common.re
 SKIPPED = _common.SKIPPED
+ROOT = _common.ROOT
 
 TRACEABILITY_RELATIVE = Path("example-workflows/browser-game/traceability.json")
 INTAKE_POLICY_RELATIVE = Path("example-workflows/references/browser-game-intake-policy.json")
@@ -289,7 +290,7 @@ def _validate_instance_contracts(manifest: dict, manifest_path: Path, root: Path
 def validate_browser_game_traceability(diag, *, root: Path | None = None) -> None:
     """Reject drift between browser-game behaviors, surfaces, and schema rows."""
 
-    root = (root or Path(__file__).resolve().parents[2]).resolve()
+    root = (root or ROOT).resolve()
     manifest_path = root / TRACEABILITY_RELATIVE
     composition = manifest_path.parent
     if not composition.is_dir():

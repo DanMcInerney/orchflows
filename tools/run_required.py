@@ -23,6 +23,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+# This is the entry point that puts the repository on sys.path for the
+# `tools.run_required_support` import below, so it cannot read
+# `scripts._bootstrap.ROOT` for the same fact -- nothing is importable yet.
 _FACADE_ROOT = Path(__file__).resolve().parent.parent
 if str(_FACADE_ROOT) not in sys.path:
     sys.path.insert(0, str(_FACADE_ROOT))

@@ -38,6 +38,9 @@ from pathlib import Path
 # Direct script execution starts with ``tools/`` rather than the repository
 # on sys.path. Bind the namespace package so the same relative imports serve
 # both ``python tools/validate_measures.py`` and normal module imports.
+# This walk cannot instead read ``scripts._bootstrap.ROOT``: it is what
+# puts the repository (and therefore ``scripts/``) on sys.path in the
+# first place.
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     __package__ = "tools"

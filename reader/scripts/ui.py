@@ -9,6 +9,14 @@ import sys
 from pathlib import Path
 
 
+# This is the entry point that makes ``scripts`` and ``reader`` importable
+# at all, so it cannot import ``scripts._bootstrap.ROOT`` to find them --
+# that leaf is only reachable once one of the two candidates below is
+# already on sys.path. Two candidates, not one, because this file's
+# installed location carries no repository at all: an installed reader
+# has only its own library copy (`installer/planning_support.py`'s
+# lib_copies), never a checkout, so `_bootstrap.ROOT`'s single fact
+# could not distinguish them even once it were reachable.
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 INSTALL_LIBRARY_ROOT = Path(__file__).resolve().parents[1] / "lib"
 for _import_root in (REPOSITORY_ROOT, INSTALL_LIBRARY_ROOT):
