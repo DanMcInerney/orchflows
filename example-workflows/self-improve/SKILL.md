@@ -31,6 +31,7 @@ carrying the digest's cluster_key, matcher and watermark verbatim.
 Larger, or when independent eyes are wanted, spend one brick, which
 opens the frame:
 
+    tickets.py frame-open <run> --goal-file <frame-goal>
     tickets.py do <run> --pack orch-content-pack --parent <frame>
       --goal-file <mine-goal> --bound "<= 40 tool calls"
 
@@ -51,9 +52,9 @@ replayable item, `done` the owner's required gate at the landed
 revision — and, the last act, `tickets.py improvement --covered`
 with the digest-supplied line citing that revision.
 
-Frame law: re-read `## Report` before each decision, append through
-`result`, relay `artifact:` and `findings:` lines verbatim. Close
-with `frame-close`. With two or more do-children the judge reads the
+Frame law: reread `## Report` before deciding, log each `result`;
+keep `artifact:` or `findings:` word for word. Close with
+`frame-close`. With two or more do-children the judge reads the
 seam: the delivered change equals the top proposal, nothing edited
 outside its scope, the covered line present with a sane watermark. A
 single-child cycle closes `unjudged: single child; the owner's gate
