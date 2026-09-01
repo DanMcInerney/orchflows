@@ -65,7 +65,11 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
   warning saying so before the read: one call returns the page whatever the
   cap, and the rows past it are dropped at no saving.
 - `window_start` and `window_end` are optional instants in the same spelling as
-  `as_of`, either or both empty, `window_start` not after `window_end`. A record
+  `as_of`, either or both empty, `window_start` not after `window_end`. The
+  caller turns a question's own timeframe words into this pair with
+  `window.parse_phrase(phrase, as_of)` — a closed grammar whose empty phrase
+  is the unbounded window and whose unknown phrase is a typed refusal naming
+  the grammar, so no step ever carries a bound nobody asked for. A record
   the origin dated outside the window is dropped by the core **before the cap
   counts it**, so the cap is spent in-window rather than on an origin's
   all-time-top ordering (X's syndication timeline is the measured case); a
@@ -355,20 +359,20 @@ The retained codes, what each one means, and every module that spells one:
 
 | code | means | named by |
 | --- | --- | --- |
-| `auth_required` | the origin refused over who is asking, or the route needs a credential this package does not supply | `bluesky`, `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `cli` — the router for a K5 route, the four adapters for an origin's own refusal, `cli` reading it |
+| `auth_required` | the origin refused over who is asking, or the route needs a credential this package does not supply | `bluesky`, `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `tiktok_public`, `cli` — the router for a K5 route, the adapters for an origin's own refusal, `cli` reading it |
 | `no_route` | the core declares no such adapter or route | `router`, `runner`, for an adapter or route the core does not declare |
 | `rate_limited` | the origin asked for fewer requests | `adapters`, on HTTP 429 |
-| `schema_drift` | the payload arrived in a shape this parser does not know, so an empty result would have been a lie | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` |
-| `field_omitted` | the answer carried, and one declared field of the roster row was not in it | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` |
-| `malformed_json` | the body did not parse as the JSON the route declares | `bluesky`, `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `stocktwits`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` |
-| `http_status` | the origin answered with a status the route does not read as an answer | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `public_page`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` — seventeen, which is every adapter that reads an origin |
+| `schema_drift` | the payload arrived in a shape this parser does not know, so an empty result would have been a lie | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `stack_exchange`, `wikimedia_pageviews`, `tiktok_public`, `oembed`, `scholarly`, `gdelt` |
+| `field_omitted` | the answer carried, and one declared field of the roster row was not in it | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `wikimedia_pageviews`, `tiktok_public`, `scholarly` |
+| `malformed_json` | the body did not parse as the JSON the route declares | `bluesky`, `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `stocktwits`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `stack_exchange`, `wikimedia_pageviews`, `tiktok_public`, `oembed`, `scholarly`, `gdelt` |
+| `http_status` | the origin answered with a status the route does not read as an answer | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `public_page`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `stack_exchange`, `wikimedia_pageviews`, `tiktok_public`, `oembed`, `scholarly`, `gdelt` — every adapter shipped so far that reads an origin |
 | `withheld` | the origin declined the payload and said nothing this package can class further | `youtube_innertube`, for a playability refusal the evidence did not record |
-| `engagement_unavailable` | this surface publishes no counts at all, so a zero would be a number nobody reported | `reddit_feed`, `web_search` |
-| `date_precision_only` | the origin gave a date and no time, so the instant is the date's | `linkedin_jobs`, `open_page`, `youtube_innertube` |
-| `unselected_target` | this route does not serve the selection it was asked for | `open_page`, for an address its policy refuses; `public_page`, for a selection this route does not serve; `reddit_shreddit`, for a target its grammar does not name |
-| `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search`, standing on every index hit |
-| `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit |
-| `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search`, standing on every index hit |
+| `engagement_unavailable` | this surface publishes no counts at all, so a zero would be a number nobody reported | `reddit_feed`, `web_search`, `oembed`, `gdelt` |
+| `date_precision_only` | the origin gave a date and no time, so the instant is the date's | `linkedin_jobs`, `open_page`, `youtube_innertube`, `wikimedia_pageviews`, `scholarly` |
+| `unselected_target` | this route does not serve the selection it was asked for | `open_page`, for an address its policy refuses; `public_page`, for a selection this route does not serve; `reddit_shreddit`, for a target its grammar does not name; `tiktok_public`, for a video or profile argument that names no address this route can build; `wikimedia_pageviews`, for an unnamed article or a hydration carrying no window start — this route serves nothing but a dated range; `oembed`, for a target naming no provider, an unrecognised one, or a named provider with no item url |
+| `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search` and `gdelt`, standing on every index hit |
+| `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit; `oembed`, standing on every record — no provider in its roster row states one |
+| `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search` and `gdelt`, standing on every index hit |
 | `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated; `coverage`, which reads it |
 | `window_not_honored` | this step carried a window and called an operation `_support.window_reach.WINDOW_REACH` declares unable to bound time at its origin, independent of what the read answered with | `runner`, when a windowed call names such an operation |
 

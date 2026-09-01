@@ -95,7 +95,7 @@ PROBE_PAYLOADS = {
     "wikimedia_pageviews_per_article": (
         "wikimedia_pageviews/per_article_daily.json", "application/json; charset=utf-8",
     ),
-    "openalex_works": ("scholarly/openalex_works.json", "application/json; charset=utf-8"),
+    "openalex_works": ("scholarly/openalex_works.json", "application/json"),
     "tiktok_video_page": ("tiktok_public/video_page.html", "text/html; charset=utf-8"),
     "x_publish_oembed": ("oembed/x_status.json", "application/json"),
 }

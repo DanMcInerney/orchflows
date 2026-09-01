@@ -217,6 +217,13 @@ class RosterIsCompleteTest(unittest.TestCase):
                         step_id="s-roster",
                         query=probe.target if probe.kind == "discovery" else "",
                         target_ids=() if probe.kind == "discovery" else (probe.target,),
+                        # A probe that declares its own window is an adapter
+                        # whose smoke reads windowed, and one of them
+                        # (`wikimedia_pageviews`) has no windowless shape at
+                        # all: what its own smoke asks it includes the bound.
+                        window_start=(
+                            "2026-08-01T00:00:00Z" if probe.window_days else ""
+                        ),
                     )
                     if probe is not None
                     else adapters.AdapterRequest(

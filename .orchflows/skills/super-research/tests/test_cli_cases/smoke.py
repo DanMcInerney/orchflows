@@ -443,7 +443,7 @@ class TheOperationSetIsClosedTest(LedgerHoldingCase):
                 refused(self, argv)
 
     def test_an_adapter_the_roster_does_not_name_is_refused(self):
-        for adapter_id in ("no_such_adapter", "tiktok_public", "", "github_rest "):
+        for adapter_id in ("no_such_adapter", "", "github_rest "):
             with self.subTest(adapter=adapter_id):
                 refused(self, ["smoke", "--adapter", adapter_id])
 

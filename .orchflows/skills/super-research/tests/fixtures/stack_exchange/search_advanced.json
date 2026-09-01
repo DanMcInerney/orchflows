@@ -1,1 +1,830 @@
-{}
+{
+  "items": [
+    {
+      "tags": [
+        "python",
+        "data-structures"
+      ],
+      "owner": {
+        "account_id": 46982984,
+        "reputation": 11,
+        "user_id": 33078084,
+        "user_type": "registered",
+        "profile_image": "https://i.sstatic.net/GsjKyO2Q.jpg?s=256",
+        "display_name": "sai",
+        "link": "https://stackoverflow.com/users/33078084/sai"
+      },
+      "is_answered": false,
+      "view_count": 13,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1788270104,
+      "creation_date": 1788270104,
+      "question_id": 79999908,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999908/how-can-i-improve-the-readability-and-python-style-of-certain-problems",
+      "title": "How can i improve the readability and python style of certain problems?"
+    },
+    {
+      "tags": [
+        "python",
+        "linux",
+        "terminal",
+        "pycharm"
+      ],
+      "owner": {
+        "account_id": 10381566,
+        "reputation": 169,
+        "user_id": 7656164,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/480472bee472ef2d9d440c22e4cc85fd?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Shmuelt",
+        "link": "https://stackoverflow.com/users/7656164/shmuelt"
+      },
+      "is_answered": false,
+      "view_count": 58,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1788261047,
+      "creation_date": 1788260810,
+      "last_edit_date": 1788261047,
+      "question_id": 79999867,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999867/cant-get-virtual-environment-to-activate-from-the-terminal",
+      "title": "Can&#39;t get virtual environment to activate from the terminal"
+    },
+    {
+      "tags": [
+        "python",
+        "python-3.x",
+        "gstreamer"
+      ],
+      "owner": {
+        "account_id": 8291,
+        "reputation": 891388,
+        "user_id": 14860,
+        "user_type": "registered",
+        "accept_rate": 100,
+        "profile_image": "https://i.sstatic.net/vXG1F.png?s=256",
+        "display_name": "paxdiablo",
+        "link": "https://stackoverflow.com/users/14860/paxdiablo"
+      },
+      "is_answered": false,
+      "view_count": 36,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1788260965,
+      "creation_date": 1788247968,
+      "last_edit_date": 1788249689,
+      "question_id": 79999813,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999813/gstreamer-later-version-seems-to-mis-identify-the-prepare-window-handle-message",
+      "title": "GStreamer later version seems to mis-identify the prepare-window-handle message"
+    },
+    {
+      "tags": [
+        "python",
+        "web-scraping"
+      ],
+      "owner": {
+        "account_id": 10192421,
+        "reputation": 5,
+        "user_id": 7525373,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/7243b88d4ee25af7d315c200a501c046?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "ateene",
+        "link": "https://stackoverflow.com/users/7525373/ateene"
+      },
+      "is_answered": true,
+      "view_count": 145,
+      "answer_count": 1,
+      "score": -3,
+      "last_activity_date": 1788236730,
+      "creation_date": 1788226164,
+      "last_edit_date": 1788236730,
+      "question_id": 79999758,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999758/python-script-to-download-barchart-data-is-no-longer-working",
+      "title": "Python script to download Barchart data is no longer working"
+    },
+    {
+      "tags": [
+        "python"
+      ],
+      "owner": {
+        "account_id": 13825598,
+        "reputation": 1,
+        "user_id": 9980006,
+        "user_type": "registered",
+        "profile_image": "https://lh5.googleusercontent.com/-BE3m6eGneL4/AAAAAAAAAAI/AAAAAAAAABY/UTY8NJ8DwDo/s256-rj/photo.jpg",
+        "display_name": "Peter Salisbury",
+        "link": "https://stackoverflow.com/users/9980006/peter-salisbury"
+      },
+      "is_answered": false,
+      "view_count": 134,
+      "closed_date": 1788211495,
+      "answer_count": 0,
+      "score": -5,
+      "last_activity_date": 1788206767,
+      "creation_date": 1788206659,
+      "last_edit_date": 1788206767,
+      "question_id": 79999725,
+      "link": "https://stackoverflow.com/questions/79999725/python-code-to-convert-tdms-to-csv-or-xlsx",
+      "closed_reason": "Needs more focus",
+      "title": "Python code to convert .tdms to .csv or .xlsx"
+    },
+    {
+      "tags": [
+        "python",
+        "immutability",
+        "python-3.15"
+      ],
+      "owner": {
+        "account_id": 1109158,
+        "reputation": 976,
+        "user_id": 1099948,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/8fc4024a8863cf7dea2439ad833b2dea?s=256&d=identicon&r=PG",
+        "display_name": "wensveen",
+        "link": "https://stackoverflow.com/users/1099948/wensveen"
+      },
+      "is_answered": true,
+      "view_count": 126,
+      "accepted_answer_id": 79999682,
+      "answer_count": 3,
+      "score": 4,
+      "last_activity_date": 1788230585,
+      "creation_date": 1788188967,
+      "last_edit_date": 1788189241,
+      "question_id": 79999651,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999651/delete-operation-on-frozendict",
+      "title": "Delete operation on frozendict"
+    },
+    {
+      "tags": [
+        "python",
+        "file-handling"
+      ],
+      "owner": {
+        "account_id": 46817731,
+        "reputation": 1,
+        "user_id": 32991887,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/3383f077e9e668a340e0d39d8f118ef2?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Hiba Naeem",
+        "link": "https://stackoverflow.com/users/32991887/hiba-naeem"
+      },
+      "is_answered": false,
+      "view_count": 50,
+      "closed_date": 1788180925,
+      "answer_count": 0,
+      "score": -10,
+      "last_activity_date": 1788183769,
+      "creation_date": 1788180378,
+      "last_edit_date": 1788183769,
+      "question_id": 79999608,
+      "link": "https://stackoverflow.com/questions/79999608/writing-lines-as-a-single-string-from-other-file",
+      "closed_reason": "Duplicate",
+      "title": "Writing lines as a single string from other file"
+    },
+    {
+      "tags": [
+        "tooling-recommendation",
+        "python",
+        "geospatial",
+        "raster",
+        "sentinel2"
+      ],
+      "owner": {
+        "account_id": 46985795,
+        "reputation": 1,
+        "user_id": 33079542,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/c35d9e379f8ab8fb49b9cd7f1b012e8e?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "MARUDHU B",
+        "link": "https://stackoverflow.com/users/33079542/marudhu-b"
+      },
+      "is_answered": false,
+      "view_count": 63,
+      "closed_date": 1788175177,
+      "answer_count": 0,
+      "score": -3,
+      "last_activity_date": 1788174033,
+      "creation_date": 1788173871,
+      "last_edit_date": 1788174033,
+      "question_id": 79999586,
+      "link": "https://stackoverflow.com/questions/79999586/how-can-i-efficiently-store-and-retrieve-multi-temporal-satellite-raster-data-on",
+      "closed_reason": "Needs more focus",
+      "title": "How can I efficiently store and retrieve multi-temporal satellite raster data on a low-storage offline system?"
+    },
+    {
+      "tags": [
+        "python",
+        "django",
+        "vs-code",
+        "methods",
+        "docstring"
+      ],
+      "owner": {
+        "account_id": 25379095,
+        "reputation": 301,
+        "user_id": 19191756,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/7c6880f54aed4e61decd7250b1d126f4?s=256&d=identicon&r=PG",
+        "display_name": "IgorArnaut",
+        "link": "https://stackoverflow.com/users/19191756/igorarnaut"
+      },
+      "is_answered": false,
+      "view_count": 70,
+      "answer_count": 0,
+      "score": -1,
+      "last_activity_date": 1788259005,
+      "creation_date": 1788173483,
+      "last_edit_date": 1788259005,
+      "question_id": 79999583,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999583/visual-studio-code-does-not-show-descriptions-of-manytomanyfield-set-and-clear",
+      "title": "Visual Studio Code does not show descriptions of ManyToManyField set and clear"
+    },
+    {
+      "tags": [
+        "python",
+        "pyside6"
+      ],
+      "owner": {
+        "account_id": 18100872,
+        "reputation": 33,
+        "user_id": 13158743,
+        "user_type": "registered",
+        "profile_image": "https://lh5.googleusercontent.com/-qGHVCEwBFxc/AAAAAAAAAAI/AAAAAAAAAAA/AAKWJJOiCZd_DcP6aQU3NaGfZxym6eBwzQ/s256-rj/photo.jpg",
+        "display_name": "Reid Litkauo",
+        "link": "https://stackoverflow.com/users/13158743/reid-litkauo"
+      },
+      "is_answered": true,
+      "view_count": 96,
+      "accepted_answer_id": 79999528,
+      "answer_count": 1,
+      "score": 3,
+      "last_activity_date": 1788172382,
+      "creation_date": 1788157072,
+      "last_edit_date": 1788157697,
+      "question_id": 79999518,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999518/how-do-i-make-my-qmainwindows-contents-dynamically-resize-after-floating-a-qdoc",
+      "title": "How do I make my QMainWindow&#39;s contents dynamically resize after floating a QDockWidget?"
+    },
+    {
+      "tags": [
+        "python",
+        "tkinter",
+        "tkinter-canvas"
+      ],
+      "owner": {
+        "account_id": 46979590,
+        "reputation": 7,
+        "user_id": 33076459,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/38c4a1bbd80ade1a686c2fc554da1741?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Jody Barrett",
+        "link": "https://stackoverflow.com/users/33076459/jody-barrett"
+      },
+      "is_answered": true,
+      "view_count": 69,
+      "closed_date": 1788138730,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1788102627,
+      "creation_date": 1788101425,
+      "question_id": 79999392,
+      "link": "https://stackoverflow.com/questions/79999392/tkinter-canvas-create-image-method-not-working",
+      "closed_reason": "Duplicate",
+      "title": "Tkinter Canvas create_image() method not working"
+    },
+    {
+      "tags": [
+        "python",
+        "arrays",
+        "numpy"
+      ],
+      "owner": {
+        "account_id": 45524731,
+        "reputation": 11,
+        "user_id": 32317405,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/4e4ef78a49c2e5ff1fae2eaec9e6e96a?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Arsh Kumar",
+        "link": "https://stackoverflow.com/users/32317405/arsh-kumar"
+      },
+      "is_answered": false,
+      "view_count": 58,
+      "closed_date": 1788082216,
+      "answer_count": 0,
+      "score": -4,
+      "last_activity_date": 1788081138,
+      "creation_date": 1788081138,
+      "question_id": 79999345,
+      "link": "https://stackoverflow.com/questions/79999345/why-does-numpy-slicing-with-a-positive-step-return-an-empty-array-when-start-ind",
+      "closed_reason": "Duplicate",
+      "title": "Why does NumPy slicing with a positive step return an empty array when start index is greater than end index?"
+    },
+    {
+      "tags": [
+        "advice",
+        "python"
+      ],
+      "owner": {
+        "account_id": 46978555,
+        "reputation": 29,
+        "user_id": 33076038,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/738279937a4d592741f7d5b1fd7cf8b6?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Nubspec",
+        "link": "https://stackoverflow.com/users/33076038/nubspec"
+      },
+      "is_answered": false,
+      "view_count": 80,
+      "closed_date": 1788033248,
+      "answer_count": 0,
+      "score": -4,
+      "last_activity_date": 1788033650,
+      "creation_date": 1788032725,
+      "last_edit_date": 1788033650,
+      "question_id": 79999271,
+      "link": "https://stackoverflow.com/questions/79999271/why-does-an-identity-comparison-using-id-evaluate-to-false",
+      "closed_reason": "Duplicate",
+      "title": "Why Does an Identity Comparison Using id() Evaluate to False?"
+    },
+    {
+      "tags": [
+        "python",
+        "asynchronous",
+        "bots"
+      ],
+      "owner": {
+        "account_id": 27645875,
+        "reputation": 79,
+        "user_id": 21101782,
+        "user_type": "registered",
+        "profile_image": "https://lh3.googleusercontent.com/a/AEdFTp4BY4NuMdELiHaGlHoR4rFujGBXfqSnvwI6vDJs=k-s256",
+        "display_name": "Benjamin Tsoumagas",
+        "link": "https://stackoverflow.com/users/21101782/benjamin-tsoumagas"
+      },
+      "is_answered": true,
+      "view_count": 121,
+      "closed_date": 1788178009,
+      "accepted_answer_id": 79999266,
+      "answer_count": 1,
+      "score": 2,
+      "last_activity_date": 1788032853,
+      "creation_date": 1788027976,
+      "last_edit_date": 1788031155,
+      "question_id": 79999259,
+      "link": "https://stackoverflow.com/questions/79999259/how-to-resolve-typeerror-issubclass-arg-1-must-be-a-class-when-issubclass-w",
+      "closed_reason": "Not suitable for this site",
+      "title": "How to resolve TypeError: isSubclass() arg 1 must be a class when issubclass() wasn&#39;t explicitly called?"
+    },
+    {
+      "tags": [
+        "best-practices",
+        "python",
+        "python-ast"
+      ],
+      "owner": {
+        "account_id": 46978180,
+        "reputation": 31,
+        "user_id": 33075864,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/9dfed5227db155c53c754346d683d7dd?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "jason lo",
+        "link": "https://stackoverflow.com/users/33075864/jason-lo"
+      },
+      "is_answered": true,
+      "view_count": 85,
+      "closed_date": 1788177568,
+      "answer_count": 1,
+      "score": 3,
+      "last_activity_date": 1788099537,
+      "creation_date": 1788025684,
+      "last_edit_date": 1788099537,
+      "question_id": 79999255,
+      "link": "https://stackoverflow.com/questions/79999255/using-ast-parse-to-evaluate-arithmetic-expression-safely",
+      "closed_reason": "Needs details or clarity",
+      "title": "Using ast.parse to evaluate arithmetic expression safely"
+    },
+    {
+      "tags": [
+        "python",
+        "asynchronous",
+        "bots"
+      ],
+      "owner": {
+        "account_id": 27645875,
+        "reputation": 79,
+        "user_id": 21101782,
+        "user_type": "registered",
+        "profile_image": "https://lh3.googleusercontent.com/a/AEdFTp4BY4NuMdELiHaGlHoR4rFujGBXfqSnvwI6vDJs=k-s256",
+        "display_name": "Benjamin Tsoumagas",
+        "link": "https://stackoverflow.com/users/21101782/benjamin-tsoumagas"
+      },
+      "is_answered": false,
+      "view_count": 79,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1788023126,
+      "creation_date": 1788022070,
+      "question_id": 79999250,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999250/why-does-my-stoat-py-code-run-without-issues-but-the-bot-doesnt-go-online-respo",
+      "title": "Why does my Stoat.py code run without issues but the bot doesn&#39;t go online/respond to commands?"
+    },
+    {
+      "tags": [
+        "python",
+        "postgresql",
+        "fastapi"
+      ],
+      "owner": {
+        "account_id": 46973347,
+        "reputation": 31,
+        "user_id": 33073447,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/ab2d233bf0fca574fc56d509b0baa62a?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Diventra Labs",
+        "link": "https://stackoverflow.com/users/33073447/diventra-labs"
+      },
+      "is_answered": false,
+      "view_count": 68,
+      "answer_count": 2,
+      "score": 3,
+      "last_activity_date": 1788008520,
+      "creation_date": 1787962370,
+      "question_id": 79999108,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999108/how-can-i-prevent-duplicate-celery-tasks-when-a-fastapi-endpoint-is-retried",
+      "title": "How can I prevent duplicate Celery tasks when a FastAPI endpoint is retried?"
+    },
+    {
+      "tags": [
+        "python",
+        "performance",
+        "optimization",
+        "python-3.10",
+        "structural-pattern-matching"
+      ],
+      "owner": {
+        "account_id": 46968631,
+        "reputation": 166,
+        "user_id": 33070880,
+        "user_type": "registered",
+        "profile_image": "https://i.sstatic.net/Yj8sqePx.png?s=256",
+        "display_name": "lowchess",
+        "link": "https://stackoverflow.com/users/33070880/lowchess"
+      },
+      "is_answered": true,
+      "view_count": 523,
+      "accepted_answer_id": 79999112,
+      "answer_count": 2,
+      "score": 10,
+      "last_activity_date": 1788231435,
+      "creation_date": 1787958593,
+      "last_edit_date": 1788231435,
+      "question_id": 79999095,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999095/python-match-case-vs-dictionary-performance-internals",
+      "title": "Python match-case vs. dictionary performance internals"
+    },
+    {
+      "tags": [
+        "python",
+        "sockets",
+        "raspberry-pi3"
+      ],
+      "owner": {
+        "account_id": 7447337,
+        "reputation": 1267,
+        "user_id": 5663107,
+        "user_type": "registered",
+        "accept_rate": 18,
+        "profile_image": "https://www.gravatar.com/avatar/c257512a8978ca4172e3c468cc07cddb?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Lazaruss",
+        "link": "https://stackoverflow.com/users/5663107/lazaruss"
+      },
+      "is_answered": false,
+      "view_count": 98,
+      "closed_date": 1787956360,
+      "answer_count": 0,
+      "score": -4,
+      "last_activity_date": 1787951904,
+      "creation_date": 1787949085,
+      "question_id": 79999066,
+      "link": "https://stackoverflow.com/questions/79999066/raspberry-pi-robot",
+      "closed_reason": "Not suitable for this site",
+      "title": "Raspberry Pi - robot"
+    },
+    {
+      "tags": [
+        "python",
+        "matplotlib"
+      ],
+      "owner": {
+        "account_id": 46887058,
+        "reputation": 1,
+        "user_id": 33029021,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/393effa06e8f8c90930bdce48d70d0f3?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Hieu M",
+        "link": "https://stackoverflow.com/users/33029021/hieu-m"
+      },
+      "is_answered": false,
+      "view_count": 106,
+      "answer_count": 2,
+      "score": -4,
+      "last_activity_date": 1787988273,
+      "creation_date": 1787946035,
+      "last_edit_date": 1787988273,
+      "question_id": 79999062,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79999062/how-to-plot-specific-data-types-in-matplotlib",
+      "title": "How to plot specific data types in matplotlib"
+    },
+    {
+      "tags": [
+        "python",
+        "tkinter"
+      ],
+      "owner": {
+        "account_id": 46973664,
+        "reputation": 1,
+        "user_id": 33073625,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/84c85ad9cd5985c64ec826165f1e81b3?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Gabriel Oyetade",
+        "link": "https://stackoverflow.com/users/33073625/gabriel-oyetade"
+      },
+      "is_answered": false,
+      "view_count": 84,
+      "closed_date": 1787942699,
+      "answer_count": 0,
+      "score": -6,
+      "last_activity_date": 1787941591,
+      "creation_date": 1787941591,
+      "question_id": 79999041,
+      "link": "https://stackoverflow.com/questions/79999041/how-do-i-make-a-program-with-tkinter-that-lets-me-add-a-word-and-its-meaning",
+      "closed_reason": "Needs more focus",
+      "title": "how do i make a program with tkinter that lets me add a word and its meaning"
+    },
+    {
+      "tags": [
+        "python",
+        "request",
+        "python-decorators",
+        "http-status-code-429"
+      ],
+      "owner": {
+        "account_id": 43039571,
+        "reputation": 19,
+        "user_id": 31043634,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/c14d1cf7ac3a8f3e87bba4ffe03c4944?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Litcoder",
+        "link": "https://stackoverflow.com/users/31043634/litcoder"
+      },
+      "is_answered": false,
+      "view_count": 68,
+      "closed_date": 1787961087,
+      "answer_count": 0,
+      "score": -4,
+      "last_activity_date": 1787926767,
+      "creation_date": 1787926767,
+      "question_id": 79998971,
+      "link": "https://stackoverflow.com/questions/79998971/why-doesnt-tenacitys-retry-decorator-retry-when-requests-get-receives-a-stat",
+      "closed_reason": "Not suitable for this site",
+      "title": "Why doesn&#39;t Tenacity&#39;s retry decorator retry when requests.get() receives a status code?"
+    },
+    {
+      "tags": [
+        "python",
+        "architecture",
+        "backend"
+      ],
+      "owner": {
+        "account_id": 46972363,
+        "reputation": 1,
+        "user_id": 33072945,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/a6d34e2e8cd3dbdac2cf794052495379?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Aryan zope",
+        "link": "https://stackoverflow.com/users/33072945/aryan-zope"
+      },
+      "is_answered": false,
+      "view_count": 62,
+      "closed_date": 1787925650,
+      "answer_count": 0,
+      "score": -4,
+      "last_activity_date": 1787925098,
+      "creation_date": 1787925098,
+      "question_id": 79998964,
+      "link": "https://stackoverflow.com/questions/79998964/sih-hackthon-guidance",
+      "closed_reason": "Needs more focus",
+      "title": "SIH hackthon guidance"
+    },
+    {
+      "tags": [
+        "python",
+        "deployment",
+        "rhel",
+        "ninja",
+        "milvus"
+      ],
+      "owner": {
+        "account_id": 33859809,
+        "reputation": 1,
+        "user_id": 26230645,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/baaf0e75ede18c136ded5b0585953c62?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Satwik kondapalli",
+        "link": "https://stackoverflow.com/users/26230645/satwik-kondapalli"
+      },
+      "is_answered": false,
+      "view_count": 63,
+      "closed_date": 1787924916,
+      "answer_count": 0,
+      "score": -3,
+      "last_activity_date": 1787924821,
+      "creation_date": 1787913724,
+      "last_edit_date": 1787924821,
+      "question_id": 79998931,
+      "link": "https://stackoverflow.com/questions/79998931/fi-fr-python-project-server-deployment-issue",
+      "closed_reason": "Not suitable for this site",
+      "title": "FI/FR Python project server deployment issue"
+    },
+    {
+      "tags": [
+        "python",
+        "json",
+        "windows-11",
+        "frida"
+      ],
+      "owner": {
+        "account_id": 46969104,
+        "reputation": 20,
+        "user_id": 33071102,
+        "user_type": "registered",
+        "profile_image": "https://i.sstatic.net/yr4iFVG0.jpg?s=256",
+        "display_name": "Miasma Baboon",
+        "link": "https://stackoverflow.com/users/33071102/miasma-baboon"
+      },
+      "is_answered": false,
+      "view_count": 76,
+      "answer_count": 1,
+      "score": 2,
+      "last_activity_date": 1787914577,
+      "creation_date": 1787906975,
+      "last_edit_date": 1787914577,
+      "question_id": 79998895,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79998895/running-into-build-wheel-error-installing-specific-version-of-frida-unsure-how",
+      "title": "Running into build wheel error installing specific version of Frida, unsure how to proceed"
+    },
+    {
+      "tags": [
+        "python",
+        "generics",
+        "python-typing",
+        "pyright"
+      ],
+      "owner": {
+        "account_id": 11621611,
+        "reputation": 483,
+        "user_id": 8512755,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/8c145ab1531f3f76a045073a9c375330?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "iamthebull",
+        "link": "https://stackoverflow.com/users/8512755/iamthebull"
+      },
+      "is_answered": false,
+      "view_count": 219,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1787928108,
+      "creation_date": 1787884358,
+      "last_edit_date": 1787928108,
+      "question_id": 79998840,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79998840/why-does-typing-break-when-i-convert-my-classes-to-generic-classes",
+      "title": "Why does typing break when I convert my classes to generic classes?"
+    },
+    {
+      "tags": [
+        "python",
+        "pandas",
+        "dataframe"
+      ],
+      "owner": {
+        "account_id": 2010239,
+        "reputation": 35,
+        "user_id": 1798869,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/a0651521f05b89b8d8b506945967c8ab?s=256&d=identicon&r=PG",
+        "display_name": "Anme",
+        "link": "https://stackoverflow.com/users/1798869/anme"
+      },
+      "is_answered": true,
+      "view_count": 85,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1787906263,
+      "creation_date": 1787879059,
+      "last_edit_date": 1787906263,
+      "question_id": 79998829,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79998829/append-column-from-multiple-pandas-dataframes-while-retaining-filename",
+      "title": "Append column from multiple pandas dataframes while retaining filename"
+    },
+    {
+      "tags": [
+        "python",
+        "scipy",
+        "sparse-matrix"
+      ],
+      "owner": {
+        "account_id": 19618976,
+        "reputation": 67,
+        "user_id": 14359840,
+        "user_type": "registered",
+        "profile_image": "https://lh5.googleusercontent.com/-vwl0E45ls5g/AAAAAAAAAAI/AAAAAAAAAAA/AMZuuckVZpSy3I99lZdpZtZcUUGoywalmg/s256-rj/photo.jpg",
+        "display_name": "Xxlonely",
+        "link": "https://stackoverflow.com/users/14359840/xxlonely"
+      },
+      "is_answered": true,
+      "view_count": 139,
+      "answer_count": 2,
+      "score": 4,
+      "last_activity_date": 1787934125,
+      "creation_date": 1787837214,
+      "last_edit_date": 1787860219,
+      "question_id": 79998676,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79998676/scipy-spsolve-superlu-superlu-malloc-failure-despite-available-ram",
+      "title": "SciPy spsolve / SuperLU SUPERLU_MALLOC failure despite available RAM"
+    },
+    {
+      "tags": [
+        "python",
+        "yolo",
+        "roboflow"
+      ],
+      "owner": {
+        "account_id": 22416064,
+        "reputation": 7,
+        "user_id": 16624117,
+        "user_type": "registered",
+        "profile_image": "https://lh3.googleusercontent.com/a-/AOh14GgirzqpNjlJIJeuBlw7s_SkxxZOvoE6kBpHJha70g=k-s256",
+        "display_name": "Gizmo Hey",
+        "link": "https://stackoverflow.com/users/16624117/gizmo-hey"
+      },
+      "is_answered": false,
+      "view_count": 130,
+      "closed_date": 1787857843,
+      "answer_count": 0,
+      "score": -3,
+      "last_activity_date": 1787883277,
+      "creation_date": 1787831244,
+      "last_edit_date": 1787883277,
+      "question_id": 79998647,
+      "link": "https://stackoverflow.com/questions/79998647/why-are-my-tracker-id-is-labeled-as-1-tracker-id-in-python",
+      "closed_reason": "Not suitable for this site",
+      "title": "Why are my tracker id is labeled as -1, {tracker_id} in python?"
+    },
+    {
+      "tags": [
+        "python",
+        "spotify"
+      ],
+      "owner": {
+        "account_id": 25507747,
+        "reputation": 125,
+        "user_id": 22753836,
+        "user_type": "registered",
+        "profile_image": "https://i.sstatic.net/cWxGjPSg.jpg?s=256",
+        "display_name": "ludovico",
+        "link": "https://stackoverflow.com/users/22753836/ludovico"
+      },
+      "is_answered": false,
+      "view_count": 123,
+      "answer_count": 0,
+      "score": -4,
+      "last_activity_date": 1787829136,
+      "creation_date": 1787823033,
+      "last_edit_date": 1787829136,
+      "question_id": 79998618,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/79998618/how-to-get-authorization-code-for-spotify-api",
+      "title": "How to get authorization code for Spotify API?"
+    }
+  ],
+  "has_more": true,
+  "quota_max": 300,
+  "quota_remaining": 293
+}

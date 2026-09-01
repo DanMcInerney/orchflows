@@ -1,1 +1,1211 @@
-{}
+{
+  "meta": {
+    "count": 5916627,
+    "db_response_time_ms": 407,
+    "page": 1,
+    "per_page": 25,
+    "groups_count": null,
+    "x_query": {
+      "oql": "works where full text has (machine learning)",
+      "oqo": {
+        "get_rows": "works",
+        "filter_rows": [
+          {
+            "column_id": "fulltext.search",
+            "value": "machine learning",
+            "operator": "has"
+          }
+        ]
+      },
+      "url": "/works?filter=fulltext.search:machine learning&per_page=25"
+    },
+    "cost_usd": 0.001
+  },
+  "results": [
+    {
+      "id": "https://openalex.org/W2101234009",
+      "display_name": "Scikit-learn: Machine Learning in Python",
+      "title": "Scikit-learn: Machine Learning in Python",
+      "type": "article",
+      "publication_date": "2012-01-02",
+      "cited_by_count": 64011,
+      "ids": {
+        "openalex": "https://openalex.org/W2101234009",
+        "doi": "https://doi.org/10.48550/arxiv.1201.0490"
+      },
+      "primary_location": {
+        "landing_page_url": "https://orbi.uliege.be/handle/2268/225787"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Fabián Pedregosa"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Gaël Varoquaux"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Alexandre Gramfort"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Vincent Michel"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Bertrand Thirion"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Olivier Grisel"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Mathieu Blondel"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Müller, Andreas"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Nothman, Joel"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Louppe, Gilles"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Peter Prettenhofer"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Ron J. Weiss"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Vincent Dubourg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jake Vanderplas"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Alexandre Passos"
+          }
+        },
+        {
+          "author": {
+            "display_name": "David Cournapeau"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Matthieu Brucher"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Matthieu Perrot"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Édouard Duchesnay"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W3023540311",
+      "display_name": "Genetic algorithms in search, optimization, and machine learning",
+      "title": "Genetic algorithms in search, optimization, and machine learning",
+      "type": "book-review",
+      "publication_date": "1989-10-01",
+      "cited_by_count": 49345,
+      "ids": {
+        "openalex": "https://openalex.org/W3023540311",
+        "doi": "https://doi.org/10.5860/choice.27-0936"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.5860/choice.27-0936"
+      },
+      "authorships": []
+    },
+    {
+      "id": "https://openalex.org/W2125055259",
+      "display_name": "C4.5: Programs for Machine Learning",
+      "title": "C4.5: Programs for Machine Learning",
+      "type": "other",
+      "publication_date": "1992-10-15",
+      "cited_by_count": 23703,
+      "ids": {
+        "openalex": "https://openalex.org/W2125055259"
+      },
+      "primary_location": {
+        "landing_page_url": "http://lib.myilibrary.com?id=677844"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "J. R. Quinlan"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W3120740533",
+      "display_name": "UCI Machine Learning Repository",
+      "title": "UCI Machine Learning Repository",
+      "type": "article",
+      "publication_date": "2007-01-01",
+      "cited_by_count": 24329,
+      "ids": {
+        "openalex": "https://openalex.org/W3120740533"
+      },
+      "primary_location": {
+        "landing_page_url": "http://ci.nii.ac.jp/naid/20001247967"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Arthur Asuncion"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1570448133",
+      "display_name": "Data Mining: Practical Machine Learning Tools and Techniques",
+      "title": "Data Mining: Practical Machine Learning Tools and Techniques",
+      "type": "book",
+      "publication_date": "2011-01-01",
+      "cited_by_count": 25727,
+      "ids": {
+        "openalex": "https://openalex.org/W1570448133",
+        "doi": "https://doi.org/10.1016/c2009-0-19715-5"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1016/c2009-0-19715-5"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Ian H. Witten"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Eibe Frank"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Mark A. Hall"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1663973292",
+      "display_name": "Pattern Recognition and Machine Learning",
+      "title": "Pattern Recognition and Machine Learning",
+      "type": "article",
+      "publication_date": "2007-01-01",
+      "cited_by_count": 22083,
+      "ids": {
+        "openalex": "https://openalex.org/W1663973292",
+        "doi": "https://doi.org/10.1117/1.2819119"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1117/1.2819119"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Nasser M. Nasrabadi"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1639032689",
+      "display_name": "Genetic Algorithms in Search, Optimization and Machine Learning",
+      "title": "Genetic Algorithms in Search, Optimization and Machine Learning",
+      "type": "article",
+      "publication_date": "1988-01-01",
+      "cited_by_count": 17776,
+      "ids": {
+        "openalex": "https://openalex.org/W1639032689"
+      },
+      "primary_location": {
+        "landing_page_url": "http://panmental.de/library/index.php?bibtex|353"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "David E. Goldberg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "David Robson"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1583837637",
+      "display_name": "Proceedings of the 24th international conference on Machine learning",
+      "title": "Proceedings of the 24th international conference on Machine learning",
+      "type": "paratext",
+      "publication_date": "2007-06-20",
+      "cited_by_count": 11738,
+      "ids": {
+        "openalex": "https://openalex.org/W1583837637",
+        "doi": "https://doi.org/10.1145/1273496"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1145/1273496"
+      },
+      "authorships": []
+    },
+    {
+      "id": "https://openalex.org/W1746819321",
+      "display_name": "Gaussian Processes for Machine Learning",
+      "title": "Gaussian Processes for Machine Learning",
+      "type": "book",
+      "publication_date": "2005-11-23",
+      "cited_by_count": 10470,
+      "ids": {
+        "openalex": "https://openalex.org/W1746819321",
+        "doi": "https://doi.org/10.7551/mitpress/3206.001.0001"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.7551/mitpress/3206.001.0001"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Carl Edward Rasmussen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Christopher K. I. Williams"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1901616594",
+      "display_name": "Machine learning: Trends, perspectives, and prospects",
+      "title": "Machine learning: Trends, perspectives, and prospects",
+      "type": "article",
+      "publication_date": "2015-07-16",
+      "cited_by_count": 9936,
+      "ids": {
+        "openalex": "https://openalex.org/W1901616594",
+        "doi": "https://doi.org/10.1126/science.aaa8415"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1126/science.aaa8415"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Michael I. Jordan"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Tom M. Mitchell"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1503398984",
+      "display_name": "Machine learning a probabilistic perspective",
+      "title": "Machine learning a probabilistic perspective",
+      "type": "article",
+      "publication_date": "2012-01-01",
+      "cited_by_count": 9325,
+      "ids": {
+        "openalex": "https://openalex.org/W1503398984"
+      },
+      "primary_location": {
+        "landing_page_url": "http://bvbr.bib-bvb.de:8991/F?func=service&doc_library=BVB01&local_base=BVB01&doc_number=028615309&sequence=000002&line_number=0001&func_code=DB_RECORDS&service_type=MEDIA"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Kevin P. Murphy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W4212863985",
+      "display_name": "Pattern Recognition and Machine Learning",
+      "title": "Pattern Recognition and Machine Learning",
+      "type": "book",
+      "publication_date": "2006-01-01",
+      "cited_by_count": 9990,
+      "ids": {
+        "openalex": "https://openalex.org/W4212863985",
+        "doi": "https://doi.org/10.1007/978-0-387-45528-0"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1007/978-0-387-45528-0"
+      },
+      "authorships": []
+    },
+    {
+      "id": "https://openalex.org/W2997591727",
+      "display_name": "Scikit-learn: Machine Learning in Python",
+      "title": "Scikit-learn: Machine Learning in Python",
+      "type": "article",
+      "publication_date": "2011-11-01",
+      "cited_by_count": 8460,
+      "ids": {
+        "openalex": "https://openalex.org/W2997591727",
+        "doi": "https://doi.org/10.5555/1953048.2078195"
+      },
+      "primary_location": {
+        "landing_page_url": "https://dl.acm.org/citation.cfm?id=1953048.2078195"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "PedregosaFabian"
+          }
+        },
+        {
+          "author": {
+            "display_name": "VaroquauxGaël"
+          }
+        },
+        {
+          "author": {
+            "display_name": "GramfortAlexandre"
+          }
+        },
+        {
+          "author": {
+            "display_name": "MichelVincent"
+          }
+        },
+        {
+          "author": {
+            "display_name": "ThirionBertrand"
+          }
+        },
+        {
+          "author": {
+            "display_name": "GriselOlivier"
+          }
+        },
+        {
+          "author": {
+            "display_name": "BlondelMathieu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "PrettenhoferPeter"
+          }
+        },
+        {
+          "author": {
+            "display_name": "WeissRon"
+          }
+        },
+        {
+          "author": {
+            "display_name": "DubourgVincent"
+          }
+        },
+        {
+          "author": {
+            "display_name": "VanderplasJake"
+          }
+        },
+        {
+          "author": {
+            "display_name": "PassosAlexandre"
+          }
+        },
+        {
+          "author": {
+            "display_name": "CournapeauDavid"
+          }
+        },
+        {
+          "author": {
+            "display_name": "BrucherMatthieu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "PerrotMatthieu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "DuchesnayÉdouard"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W3163993681",
+      "display_name": "Physics-informed machine learning",
+      "title": "Physics-informed machine learning",
+      "type": "article",
+      "publication_date": "2021-05-24",
+      "cited_by_count": 7647,
+      "ids": {
+        "openalex": "https://openalex.org/W3163993681",
+        "doi": "https://doi.org/10.1038/s42254-021-00314-5"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1038/s42254-021-00314-5"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "George Em Karniadakis"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Ioannis G. Kevrekidis"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Lu Lu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paris Perdikaris"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sifan Wang"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Liu Yang"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2084812512",
+      "display_name": "UCI Repository of machine learning databases",
+      "title": "UCI Repository of machine learning databases",
+      "type": "article",
+      "publication_date": "1998-01-01",
+      "cited_by_count": 10546,
+      "ids": {
+        "openalex": "https://openalex.org/W2084812512"
+      },
+      "primary_location": {
+        "landing_page_url": "https://ci.nii.ac.jp/naid/10009005290"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Catherine Blake"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2118020653",
+      "display_name": "Machine learning in automated text categorization",
+      "title": "Machine learning in automated text categorization",
+      "type": "article",
+      "publication_date": "2002-03-01",
+      "cited_by_count": 7944,
+      "ids": {
+        "openalex": "https://openalex.org/W2118020653",
+        "doi": "https://doi.org/10.1145/505282.505283"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1145/505282.505283"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Fabrizio Sebastiani"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2953384591",
+      "display_name": "TensorFlow: A system for large-scale machine learning",
+      "title": "TensorFlow: A system for large-scale machine learning",
+      "type": "preprint",
+      "publication_date": "2016-05-27",
+      "cited_by_count": 8832,
+      "ids": {
+        "openalex": "https://openalex.org/W2953384591",
+        "doi": "https://doi.org/10.48550/arxiv.1605.08695"
+      },
+      "primary_location": {
+        "landing_page_url": "http://arxiv.org/abs/1605.08695"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Martı́n Abadi"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paul Barham"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jianmin Chen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Zhifeng Chen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Andy Davis"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jay B. Dean"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Matthieu Devin"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sanjay Ghemawat"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Geoffrey Irving"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Michael Isard"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Manjunath Kudlur"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Josh Levenberg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Rajat Monga"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sherry Moore"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Derek G. Murray"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Benoit Steiner"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paul A. Tucker"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Vijay Vasudevan"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Pete Warden"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Martin Wicke"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Yuan Yu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Xiaoqiang Zheng"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1534477342",
+      "display_name": "Ensemble Methods in Machine Learning",
+      "title": "Ensemble Methods in Machine Learning",
+      "type": "conference-paper",
+      "publication_date": "2000-01-01",
+      "cited_by_count": 8050,
+      "ids": {
+        "openalex": "https://openalex.org/W1534477342",
+        "doi": "https://doi.org/10.1007/3-540-45014-9_1"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1007/3-540-45014-9_1"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Thomas G. Dietterich"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1504694836",
+      "display_name": "Programs for Machine Learning",
+      "title": "Programs for Machine Learning",
+      "type": "article",
+      "publication_date": "1994-01-01",
+      "cited_by_count": 5808,
+      "ids": {
+        "openalex": "https://openalex.org/W1504694836"
+      },
+      "primary_location": {
+        "landing_page_url": null
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Steven L. Salzberg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Alberto M. Segre"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2271840356",
+      "display_name": "TensorFlow: Large-Scale Machine Learning on Heterogeneous Distributed Systems",
+      "title": "TensorFlow: Large-Scale Machine Learning on Heterogeneous Distributed Systems",
+      "type": "preprint",
+      "publication_date": "2016-03-14",
+      "cited_by_count": 9801,
+      "ids": {
+        "openalex": "https://openalex.org/W2271840356",
+        "doi": "https://doi.org/10.48550/arxiv.1603.04467"
+      },
+      "primary_location": {
+        "landing_page_url": "http://arxiv.org/abs/1603.04467"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Martı́n Abadi"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Ashish Agarwal"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paul Barham"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Eugene Brevdo"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Zhifeng Chen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Craig Citro"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Gregory S. Corrado"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Andy Davis"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jay B. Dean"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Matthieu Devin"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sanjay Ghemawat"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Ian Goodfellow"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Andrew Harp"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Geoffrey Irving"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Michael Isard"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Yangqing Jia"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Rafał Józefowicz"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Łukasz Kaiser"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Manjunath Kudlur"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Josh Levenberg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Dan Mané"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Rajat Monga"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sherry Moore"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Derek G. Murray"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Chris Olah"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Mike Schuster"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jonathon Shlens"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Benoit Steiner"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Ilya Sutskever"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Kunal Talwar"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paul A. Tucker"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Vincent Vanhoucke"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Vijay Vasudevan"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Fernanda Viégas"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Oriol Vinyals"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Pete Warden"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Martin Wattenberg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Martin Wicke"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Yuan Yu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Xiaoqiang Zheng"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W1601795611",
+      "display_name": "Pattern Recognition and Machine Learning",
+      "title": "Pattern Recognition and Machine Learning",
+      "type": "article",
+      "publication_date": "2007-02-20",
+      "cited_by_count": 8431,
+      "ids": {
+        "openalex": "https://openalex.org/W1601795611",
+        "doi": "https://doi.org/10.1108/03684920710743466"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1108/03684920710743466"
+      },
+      "authorships": []
+    },
+    {
+      "id": "https://openalex.org/W2559394418",
+      "display_name": "Quantum machine learning",
+      "title": "Quantum machine learning",
+      "type": "article",
+      "publication_date": "2017-09-01",
+      "cited_by_count": 4711,
+      "ids": {
+        "openalex": "https://openalex.org/W2559394418",
+        "doi": "https://doi.org/10.1038/nature23474"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1038/nature23474"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Jacob Biamonte"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Péter Wittek"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Nicola Pancotti"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Patrick Rebentrost"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Nathan Wiebe"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Seth Lloyd"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2912213068",
+      "display_name": "Federated Machine Learning",
+      "title": "Federated Machine Learning",
+      "type": "article",
+      "publication_date": "2019-01-28",
+      "cited_by_count": 6218,
+      "ids": {
+        "openalex": "https://openalex.org/W2912213068",
+        "doi": "https://doi.org/10.1145/3298981"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1145/3298981"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Qiang Yang"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Yang Liu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Tianjian Chen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Yongxin Tong"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2402144811",
+      "display_name": "TensorFlow: a system for large-scale machine learning",
+      "title": "TensorFlow: a system for large-scale machine learning",
+      "type": "article",
+      "publication_date": "2016-11-02",
+      "cited_by_count": 6368,
+      "ids": {
+        "openalex": "https://openalex.org/W2402144811",
+        "doi": "https://doi.org/10.5555/3026877.3026899"
+      },
+      "primary_location": {
+        "landing_page_url": "https://www.usenix.org/system/files/conference/osdi16/osdi16-abadi.pdf"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Martı́n Abadi"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paul Barham"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jianmin Chen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Zhifeng Chen"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Andy Davis"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Jay B. Dean"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Matthieu Devin"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sanjay Ghemawat"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Geoffrey Irving"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Michael Isard"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Manjunath Kudlur"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Josh Levenberg"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Rajat Monga"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Sherry Moore"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Derek G. Murray"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Benoit Steiner"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Paul A. Tucker"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Vijay Vasudevan"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Pete Warden"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Martin Wicke"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Yuan Yu"
+          }
+        },
+        {
+          "author": {
+            "display_name": "Xiaoqiang Zheng"
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W2155653793",
+      "display_name": "The use of the area under the ROC curve in the evaluation of machine learning algorithms",
+      "title": "The use of the area under the ROC curve in the evaluation of machine learning algorithms",
+      "type": "article",
+      "publication_date": "1997-07-01",
+      "cited_by_count": 7325,
+      "ids": {
+        "openalex": "https://openalex.org/W2155653793",
+        "doi": "https://doi.org/10.1016/s0031-3203(96)00142-2"
+      },
+      "primary_location": {
+        "landing_page_url": "https://doi.org/10.1016/s0031-3203(96)00142-2"
+      },
+      "authorships": [
+        {
+          "author": {
+            "display_name": "Andrew P. Bradley"
+          }
+        }
+      ]
+    }
+  ]
+}

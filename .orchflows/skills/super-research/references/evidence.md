@@ -231,8 +231,15 @@ Context 2.0 answered 200 with an empty article list to six different queries
 and is deferred, not declared. All six oEmbed endpoints answered 200,
 including `publish.x.com` — the survey's 402-from-datacenter report did not
 reproduce from here. A TikTok video page served the full rehydration payload
-to a plain cookieless GET; a profile page served the profile's counts and an
-empty `itemList`. Stack Exchange compressed its answer only when asked
+to a plain cookieless GET under this package's own honest identity; a
+profile page served the profile's counts and an empty `itemList`; and after
+roughly ten reads in fifteen minutes the origin began serving a degraded
+200 shell — same script tag, payload stripped — on every address including
+never-touched ones, with no wall marker. The identity the first read was
+refused nothing on was throttled by velocity shortly after, which is a fact
+about pacing rather than about the `User-Agent` string; the per-adapter
+measurement records behind this sweep are in `_drafts/`, one file per
+adapter added. Stack Exchange compressed its answer only when asked
 (`Accept-Encoding` sent: gzip; not sent: identity), which is why
 `transport.decoded_body` honors a stated encoding rather than assuming one.
 
