@@ -153,7 +153,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
             and Path(line.split()[1]).name == "tickets.py"
             and line.split()[2] == "result"
         ]
-        self.assertEqual(2, len(filing), prompt)
+        self.assertEqual(1, len(filing), prompt)
         for command in filing:
             self.assertNotIn("--section", command)
             self.assertNotIn("--append", command)

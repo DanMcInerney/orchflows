@@ -44,6 +44,16 @@ DISPATCH_OUTCOME_USAGE = (
     "dispatch-outcome <run> <id> "
     "(--note <text> | --note-file <path> | --file <canonical-outcome-path|->)"
 )
+# The canonical encoding `--file` admits, named as the call that produces it.
+# It lives in the refusals rather than the launch prompt: only the rare
+# relaying coordinator ever builds an envelope, and the refusal it meets is
+# the one surface it is guaranteed to read -- the prompt used to carry the
+# whole recipe for every child, and before that the refusal said "canonical
+# JSON" and left the relay to guess which of the four knobs it meant.
+CANONICAL_DUMP = (
+    'json.dump(envelope, handle, ensure_ascii=True, sort_keys=True, '
+    'separators=(",", ":"))'
+)
 
 
 def _outcome_attempt(run: str, ticket_id: str):
@@ -109,12 +119,14 @@ def _outcome_file(path):
         content = parse_canonical_json(raw)
     except (TypeError, ValueError) as error:
         return None, {
-            "error": f"outcome file is not canonical JSON: {error}",
+            "error": f"outcome file is not canonical JSON: {error}; "
+            f"write it with {CANONICAL_DUMP}",
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
     if raw != canonical_json(content):
         return None, {
-            "error": "outcome file is not canonical JSON",
+            "error": "outcome file is not canonical JSON; "
+            f"write it with {CANONICAL_DUMP}",
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
     return content, None
@@ -131,9 +143,15 @@ def _outcome_attempt_match(content: dict, run: str, ticket_id: str, attempt: dic
         "dispatch_id": attempt.get("dispatch_id"),
         "outcome_record_id": OUTCOME_RECORD_ID, "by": attempt.get("owner"),
     }
-    if any(content.get(key) != value for key, value in expected.items()):
+    mismatched = sorted(
+        key for key, value in expected.items() if content.get(key) != value
+    )
+    if mismatched:
         return {
-            "error": "outcome envelope differs from its inferred attempt",
+            "error": "outcome envelope differs from its inferred attempt on "
+            + ", ".join(mismatched) + "; it must carry exactly "
+            + ", ".join(f"{key}={expected[key]}" for key in sorted(expected))
+            + ", and evidence as one string",
             "code": "outcome-invalid", "protocol": PROTOCOL,
         }
     return None
@@ -181,7 +199,11 @@ def _outcome_content(args: list):
 def _outcome_failure(run: str, ticket_id: str, content):
     required = set(DISPATCH_OUTCOME_REQUIRED)
     if not isinstance(content, dict) or set(content) != required:
-        return _classification("outcome-invalid", "outcome envelope has unknown or missing fields")
+        return _classification(
+            "outcome-invalid",
+            "outcome envelope has unknown or missing fields; exactly "
+            + ", ".join(sorted(required)) + " are required",
+        )
     if content.get("protocol") != PROTOCOL or content.get("run") != run or content.get("id") != ticket_id:
         return _classification("outcome-invalid", "outcome envelope origin or protocol differs")
     if content.get("outcome_record_id") != OUTCOME_RECORD_ID:
@@ -277,6 +299,7 @@ def _cmd_dispatch_outcome(rest, *, _lock_held=False):
     )
 
 __all__ = (
-    "DISPATCH_OUTCOME_USAGE", "_cmd_dispatch_outcome", "_outcome_attempt",
-    "_outcome_attempt_match", "_outcome_content", "_outcome_failure",
+    "CANONICAL_DUMP", "DISPATCH_OUTCOME_USAGE", "_cmd_dispatch_outcome",
+    "_outcome_attempt", "_outcome_attempt_match", "_outcome_content",
+    "_outcome_failure",
 )
