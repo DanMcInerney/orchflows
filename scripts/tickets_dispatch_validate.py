@@ -10,6 +10,7 @@ if __package__:
     )
     from .tickets_shapes import DISPATCH_STATE_REQUIRED
     from .tickets_format import _parse_iso, canonical_json, parse_canonical_json
+    from .workspace_record import PATH_KEY
 else:
     from tickets_dispatch_schema import (
         ATTEMPT_KEYS, ATTEMPT_REQUIRED_KEYS, ATTEMPT_STATES, OUTCOME_RECORD_ID,
@@ -18,6 +19,7 @@ else:
     )
     from tickets_shapes import DISPATCH_STATE_REQUIRED
     from tickets_format import _parse_iso, canonical_json, parse_canonical_json
+    from workspace_record import PATH_KEY
 
 
 def validate_state(state: dict, *, run=None, ticket_id=None, frame=False):
@@ -69,7 +71,7 @@ def validate_state(state: dict, *, run=None, ticket_id=None, frame=False):
         # excluded from the transition-field comparison exactly as `replaces`
         # is: it says which tree the item was executed in, not where in the
         # lifecycle the attempt stands.
-        present = set(attempt) - required - {"replaces", "workspace_path"}
+        present = set(attempt) - required - {"replaces", PATH_KEY}
         if present != transition_fields[state_name]:
             return classification("dispatch-record-invalid", f"attempt {ordinal} transition fields do not match state '{state_name}'")
         for time_field in ("retired_at", "replaced_at"):

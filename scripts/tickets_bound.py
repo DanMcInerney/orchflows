@@ -130,14 +130,16 @@ def _bound_support() -> dict:
         from .tickets_commands import BOUND_CHECK_USAGE
         from .tickets_format import _extract_flag, _parse_iso
         from .tickets_store import UTC_STAMP
+        from .tickets_transitions import CLAIMED
         from .tickets_worklog import _run_tickets
     else:
         from tickets_dispatch_schema import attempt_window
         from tickets_commands import BOUND_CHECK_USAGE
         from tickets_format import _extract_flag, _parse_iso
         from tickets_store import UTC_STAMP
+        from tickets_transitions import CLAIMED
         from tickets_worklog import _run_tickets
-    return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'UTC_STAMP': UTC_STAMP, 'attempt_window': attempt_window, '_extract_flag': _extract_flag,
+    return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'CLAIMED': CLAIMED, 'UTC_STAMP': UTC_STAMP, 'attempt_window': attempt_window, '_extract_flag': _extract_flag,
             '_parse_iso': _parse_iso, '_run_tickets': _run_tickets}
 
 
@@ -161,7 +163,7 @@ def _cmd_bound_check(rest):
         return failure
     rows, unreadable = ([], [])
     for item in items:
-        if item.get('status') != 'claimed':
+        if item.get('status') != support['CLAIMED']:
             continue
         row, problems = _bound_row(item, now, support)
         rows.append(row)

@@ -120,7 +120,7 @@ def _cmd_new(rest):
     if refusal is not None:
         return refusal
     fields = {
-        "id": ticket_id, "run": run, "status": "pending",
+        "id": ticket_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
         "pack": pack, "pack_digest": pinned,
         "independence": independence,
@@ -170,7 +170,7 @@ def _project_file_ticket(
             "error": f"ticket file names run '{declared.strip()}', placed into run '{run}'"
         }
     text = _set_frontmatter_field(text, "run", run)
-    text = _set_frontmatter_field(text, "status", "pending")
+    text = _set_frontmatter_field(text, "status", ADMISSION_PENDING)
     text = _invalidate_assignment(text)
     # Issue time takes the pin, whatever the file said: a placed ticket that
     # carried its own digest would be pinning the author's claim about the

@@ -24,9 +24,9 @@ if __package__:
 else:
     from tickets_assignment import _claim_is_stale
 if __package__:
-    from .tickets_transitions import ADMISSION_OWNED_TARGETS, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
+    from .tickets_transitions import ADMISSION_OWNED_TARGETS, CLAIMED, PENDING, READY, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 else:
-    from tickets_transitions import ADMISSION_OWNED_TARGETS, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
+    from tickets_transitions import ADMISSION_OWNED_TARGETS, CLAIMED, PENDING, READY, lifecycle_rows as _declared_lifecycle_rows, refusal, set_status_blanks
 # The claim-admission seam lives in `tickets_project`, where the project
 # binding it now grades also lives.
 if __package__:
@@ -153,17 +153,17 @@ def _cmd_ready(rest):
             ticket_id = str(data.get('id') or '')
             text = snapshot.get(ticket_id)
             status = data.get('status')
-            if dangling and status not in ('pending', 'ready'):
+            if dangling and status not in (PENDING, READY):
                 skipped.append({'id': data['id'], 'reason': 'depends_on names no ticket in this run: ' + ', '.join((str(dep) for dep in dangling))})
                 continue
             if not facts['status_valid']:
                 skipped.append({'id': data['id'], 'reason': f"status '{status}' is none of {sorted(VALID_STATUSES)}, so readiness cannot be graded"})
                 continue
             deps_complete = facts['dependencies_complete']
-            if not deps_complete and status not in ('pending', 'ready'):
+            if not deps_complete and status not in (PENDING, READY):
                 continue
             eligible = False
-            if text is not None and status in ('pending', 'ready'):
+            if text is not None and status in (PENDING, READY):
                 if read_failures:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused: run snapshot is not closed', 'failures': read_failures})
                     continue
@@ -171,7 +171,7 @@ def _cmd_ready(rest):
                 if grade['findings']:
                     skipped.append({'id': ticket_id, 'reason': 'admission refused', 'findings': grade['findings']})
                     continue
-                if status == 'pending' or str(data.get('admission') or '') != grade['receipt']:
+                if status == PENDING or str(data.get('admission') or '') != grade['receipt']:
                     result = _admit_ready_cas(run_dir.name, ticket_id, text, snapshot, grade)
                     if 'error' in result:
                         skipped.append({'id': ticket_id, 'reason': result['error']})
@@ -180,10 +180,10 @@ def _cmd_ready(rest):
                     data['summary']['status'] = 'ready'
                     data['summary']['admission'] = grade['receipt']
                 eligible = True
-            elif text is not None and status == 'claimed':
+            elif text is not None and status == CLAIMED:
                 stale, unreadable = _claim_is_stale(data['path'], text, data, now)
                 if stale:
-                    skipped.append({'id': ticket_id, 'reason': refusal('stale claim', 'claim', 'claimed')})
+                    skipped.append({'id': ticket_id, 'reason': refusal('stale claim', 'claim', CLAIMED)})
                 elif unreadable:
                     skipped.append({'id': ticket_id, 'reason': 'claim graded without a full look at its motion: ' + '; '.join(unreadable)})
             if eligible:

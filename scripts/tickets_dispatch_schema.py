@@ -22,7 +22,8 @@ if __package__:
         EXECUTOR_RESULT_VALUES,
     )
     from .tickets_dispatch_identity import (
-        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        IDENTITY_RE, JOIN_RECORD_PREFIX, LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX,
+        OUTCOME_RECORD_ID, PROTOCOL,
         RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
@@ -49,7 +50,8 @@ else:
         EXECUTOR_RESULT_VALUES,
     )
     from tickets_dispatch_identity import (
-        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        IDENTITY_RE, JOIN_RECORD_PREFIX, LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX,
+        OUTCOME_RECORD_ID, PROTOCOL,
         RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,

@@ -5,6 +5,8 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from scripts import orchflows_home
+
 from .foundation import (
     CANONICAL_DIRS,
     HOST_ADAPTERS_DIR,
@@ -133,7 +135,7 @@ def _build_user_plan(
             lib_home=lib_home,
             scope_home=scope_home,
             bin_dir=bin_dir,
-            receipt_path=scope_home / "receipt.json",
+            receipt_path=scope_home / orchflows_home.RECEIPT_FILENAME,
             warnings=[
                 "warning: no Claude Code CLI, Codex CLI or grok CLI was found "
                 "on PATH; nothing was installed."
@@ -445,7 +447,7 @@ def _build_user_plan(
         host_block=host_block_plan,
         claude_import=claude_import_plan,
         grok_rules=grok_rules_plan,
-        receipt_path=scope_home / "receipt.json",
+        receipt_path=scope_home / orchflows_home.RECEIPT_FILENAME,
         home_ring=scope_home,
         warnings=warnings,
         claude_enabled=claude_enabled,
