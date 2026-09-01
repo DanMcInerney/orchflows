@@ -328,21 +328,32 @@ FINDINGS_LINE = "findings: <path>"
 
 
 def _return_lines(assignment: dict) -> list:
-    """The commit, and the machine lines a parent relays without rewriting.
+    """The commit or workspace line, and the machine lines a parent relays
+    without rewriting.
 
     Two of four workers on 2026-08-31 closed without committing inside the
     candidate, so the tree the landing merged held nothing; and the artifact
     a parent passed to the next brick rode through paraphrase because the
     child never printed one exact form. Both are said here, once, in the one
-    surface a child is guaranteed to read.
+    surface a child is guaranteed to read. Three of five research children
+    on 2026-09-01 skipped that same commit line for a workspace with nothing
+    to commit: an adapter that establishes no git candidate gets its own
+    craft's `## Workspace` sentence instead, never the commit clause.
     """
 
     kind = assignment.get("artifact_kind")
-    lines = [
-        "Commit your work inside this candidate before you close; the closing "
-        "note names that commit. Uncommitted bytes are not evidence, and the "
-        "landing merges the candidate, not your working tree.",
-    ]
+    if assignment.get("git_candidate"):
+        lines = [
+            "Commit your work inside this candidate before you close; the closing "
+            "note names that commit. Uncommitted bytes are not evidence, and the "
+            "landing merges the candidate, not your working tree.",
+        ]
+    else:
+        workspace_line = assignment.get("workspace_line")
+        lines = [
+            "Your stamped pack commits nothing; its workspace channel is: "
+            f'"{workspace_line}"'
+        ] if workspace_line else []
     if kind in ARTIFACT_LINE_FORMS:
         lines.append(
             "Print this line verbatim in your closing note, as its own line, "
@@ -413,6 +424,7 @@ def launch_prompt(assignment: dict) -> str:
         "every command you ran as you observed it, what you changed and why, what "
         "you deliberately did not do and why, and anything the assignment asked "
         "you to cover. The join alone sets terminal status.",
+        "Close only after everything you dispatched has returned.",
         f"Close exactly once with the reserved `{OUTCOME_RECORD_ID}` note, which "
         "names no status because what this ticket became is checked at the join "
         "and never claimed here:",

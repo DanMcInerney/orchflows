@@ -167,16 +167,52 @@ def _craft_scope(path: Path):
     return None
 
 
+def _workspace_line(path: Path):
+    """The craft's own `## Workspace` sentence, collapsed to one line, or None.
+
+    Read the one anchor `contracts/pack-signature.md` fixes for every craft:
+    a launch whose adapter commits nothing still owes the child its
+    workspace's own words for what an identity and a conflict are here,
+    exactly as its craft states them, never paraphrased in this module.
+    """
+
+    text, failure = _read_utf8(path, "pack craft")
+    if failure is not None:
+        return None
+    collapsed = re.sub(r"\s+", " ", _sections(text).get("Workspace", "")).strip()
+    return collapsed or None
+
+
 def _craft(pack):
-    """`(craft_path, scope_sentence)` for the stamped pack, or `(None, None)`."""
+    """`(craft_path, scope_sentence, workspace_line)` for the stamped pack,
+    or `(None, None, None)`."""
 
     if not str(pack or "").strip():
-        return None, None
+        return None, None, None
     try:
         path = craft_path(pack)
     except AdapterError:
-        return None, None
-    return str(path), _craft_scope(path)
+        return None, None, None
+    return str(path), _craft_scope(path), _workspace_line(path)
+
+
+def git_candidate(pack) -> bool:
+    """Whether the stamped pack's adapter establishes a git candidate to
+    commit into.
+
+    The same fact `workspace_establishment_finding` already checks a
+    recorded workspace's branch and baseline against
+    (``workspace_strategy == "git"``): a launch with no git candidate has
+    nothing to commit, so the prompt asks this once more to decide what its
+    return line names instead.
+    """
+
+    if not str(pack or "").strip():
+        return False
+    try:
+        return adapter_spec(pack).workspace_strategy == "git"
+    except AdapterError:
+        return False
 
 
 def artifact_kind(pack):
@@ -250,7 +286,7 @@ def dispatch_assignment(rest, *, attempt=None):
         return {"error": "dispatch requires the child identity through --by when it differs from the dispatch attempt owner"}
     role, _profile = resolved_role_profile(executor, loaded.get("profile"))
     pack = loaded.get("pack")
-    craft, scope = _craft(pack)
+    craft, scope, workspace_line = _craft(pack)
     return {"assignment": {
         "artifact_kind": artifact_kind(pack),
         "assigned_name": assigned_name,
@@ -261,6 +297,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "dispatch_id": None if attempt is None else attempt["dispatch_id"],
         "executor": executor,
         "executor_script": _executor_script(executor),
+        "git_candidate": git_candidate(pack),
         "id": loaded["id"],
         "lease_expires_at": None if attempt is None else attempt["lease_expires_at"],
         "pack": pack,
@@ -268,11 +305,12 @@ def dispatch_assignment(rest, *, attempt=None):
         "run": str(loaded.get("run") or run),
         "ticket_path": str(ticket_path),
         "workspace": workspace,
+        "workspace_line": workspace_line,
     }}
 
 
 __all__ = (
     "ASSIGNMENT_SECTIONS",
     "_claim_is_stale", "artifact_kind", "dispatch_assignment",
-    "workspace_establishment_finding",
+    "git_candidate", "workspace_establishment_finding",
 )

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2108,
+  "count": 2111,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -130,6 +130,8 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
+   "test_dispatch_launch.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
+   "test_dispatch_launch.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
    "test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_after_retirement",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_before_current_resolution",
@@ -986,6 +988,7 @@
    "test_ticket_bricks.BrickPromptTest.test_a_document_brick_is_told_to_print_a_doc_line",
    "test_ticket_bricks.BrickPromptTest.test_a_git_brick_is_told_to_commit_and_to_print_a_git_line",
    "test_ticket_bricks.BrickPromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
+   "test_ticket_bricks.BrickPromptTest.test_a_non_git_adapter_carries_its_own_workspace_line_not_a_commit",
    "test_ticket_bricks.BrickPromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
    "test_ticket_bricks.BrickSinkWorktreeIsolationTest.test_worktrees_root_stays_inside_the_sinks_own_tempdir",
    "test_ticket_bricks.RepairRoundAdmissionTest.test_a_runtime_bricks_repair_round_admits_and_dispatches",
@@ -2111,7 +2114,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5312b260e64cff67021a277d5c04d4af7bd51e7572ce7bdf04d40961bdbd5c50"
+  "sha256": "784055b1a809f5ce5c812a9ff95aa253cf673c2159f4c4bfd7a06ccc5a2ff88b"
  },
  "mutation_owners": [
   {

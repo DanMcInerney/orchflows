@@ -158,6 +158,58 @@ class LaunchResolutionTest(unittest.TestCase):
         )
 
 
+class ReturnLineConditionalTest(unittest.TestCase):
+    """U2a: the commit clause is conditional on the adapter's git candidate.
+
+    An adapter that establishes one (git, git-plus-render) still gets told
+    to commit; one that establishes none (evidence-store, document-tree)
+    gets its own craft's `## Workspace` sentence instead -- never both, never
+    neither.
+    """
+
+    def assignment(self, *, pack: str, artifact_kind, git_candidate: bool, workspace_line):
+        return {
+            "assigned_name": "child-1", "assignment_seal": "sha256:seal",
+            "artifact_kind": artifact_kind, "craft": None, "craft_scope": None,
+            "dependencies": [], "dispatch_id": "D1", "executor": "orch-do",
+            "executor_script": None, "git_candidate": git_candidate, "id": "T",
+            "lease_expires_at": "2099-01-01T00:00:00Z", "pack": pack,
+            "role": "worker", "run": "run", "ticket_path": "/sink/run/T.md",
+            "workspace": "/tree", "workspace_line": workspace_line,
+        }
+
+    def test_a_research_pack_do_launch_carries_no_commit_clause(self):
+        from scripts.tickets_assignment import _workspace_line, git_candidate
+
+        craft = ROOT / "packs" / "orch-research-pack" / "references" / "craft.md"
+        research_line = _workspace_line(craft)
+        self.assertIsNotNone(research_line)
+        self.assertFalse(git_candidate("orch-research-pack"))
+
+        prompt = launch.launch_prompt(self.assignment(
+            pack="orch-research-pack", artifact_kind="evidence",
+            git_candidate=False, workspace_line=research_line,
+        ))
+
+        self.assertNotIn("Commit your work inside this candidate", prompt)
+        self.assertIn(research_line, prompt)
+
+    def test_a_code_pack_do_launch_still_commits(self):
+        from scripts.tickets_assignment import git_candidate
+
+        self.assertTrue(git_candidate("orch-code-pack"))
+
+        prompt = launch.launch_prompt(self.assignment(
+            pack="orch-code-pack", artifact_kind="git",
+            git_candidate=True, workspace_line=None,
+        ))
+
+        self.assertIn(
+            "Commit your work inside this candidate before you close", prompt,
+        )
+        self.assertIn("artifact: git:<full-commit-id>", prompt)
+
+
 class DispatchLaunchTest(unittest.TestCase):
     """The facade emits the one invocation, prompt and all."""
 
@@ -289,6 +341,7 @@ class DispatchLaunchTest(unittest.TestCase):
             state["lease_expires_at"], "outcome",
             "the gate's row", "to completion in the turn it starts",
             workspace_git.NOTES_DIR + "/",
+            "Close only after everything you dispatched has returned.",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
