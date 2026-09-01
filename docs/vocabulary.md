@@ -164,12 +164,20 @@ that needs a different meaning needs a different word.
 - **ad-hoc set** — ad-hoc tickets cut together with dependency edges,
   sharing one run id and ticket directory; the caller names the run
   bound; the ticket files are the whole record — no worklog.
-- **routing shape** — the host projection selected before execution:
-  `answer` when available evidence decides; `single` for one ordinary ticket;
-  `graph` for work whose frame drives more than one brick; `outline` when a
-  planner must first freeze and seal the root that graph then drives.
-  `fix` is no fifth shape: it disambiguates a known cause into `single` and an
-  unknown or unverified one into `outline`.
+- **routing shape** — the host projection selected before execution, four
+  lanes routed smallest-first and normatively defined by the host block's
+  routes paragraph (`templates/host-block.md`, installed at
+  `~/.orchflows/host-block.md`): **act** — context evidence decides, and a
+  change this session can make, check narrowly, and record in the medium's
+  own history it makes itself; **brick** — one `do` (or `judge` over handed
+  artifacts), wanting isolation, a fresh context, or a checked landing;
+  **frame** — parallel children, resume, or an audit trail; **outline** — the
+  goal itself is unresolved, so a planning `orch-do` seals the root before
+  `frame` drives it. Named tripwires promote on evidence, never prediction,
+  and live only in the host block — this entry names the lanes, not their
+  triggers. `answer`, `single`, `graph`, and `fix` are the retired names for
+  this shape; `brick` and `frame` double as lane name and noun, the same
+  benign metonymy `graph` was.
   Small, medium and large are explanatory mappings, never ticket fields.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
