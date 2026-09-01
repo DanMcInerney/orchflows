@@ -57,14 +57,16 @@ the sink, writes exactly one digest file at `--out`.
 
 ```
 python harvest.py --out <digest.json>
-  [--since <ts|7d>] [--until <ts>]
+  [--since <ts|7d>] [--until <ts>] [--on <date>]...
   [--session <id>]... [--run <id>]... [--project <name>]
   [--workflow <name>] [--skill <orch-name>] [--host <host>]
 ```
 
-Selectors compose (AND across kinds, OR within a repeated flag). No
-selector means "everything since the newest covered watermark". What
-it does, in order:
+Selectors compose (AND across kinds, OR within a repeated flag). Time
+composes the same way: each `--on <date>` is one whole day and the
+flag repeats, so "last Wednesday and last Monday, alone" is two flags
+with nothing between them. No selector means "everything since the
+newest covered watermark". What it does, in order:
 
 1. **Slice** `friction/*.jsonl` and `events/*.jsonl` (Move 2) by the
    window, on the provenance fields entries already carry.
@@ -82,6 +84,20 @@ it does, in order:
    runs/hosts where sessions are absent — and mark `recurrence_met`.
    Contradiction and environment-probe qualification stay the mine's
    judgment; the digest only screens.
+
+**`--list-runs` is the resolver mode.** The script is deterministic;
+the *driver* is the natural-language layer — the same division the
+lego design makes everywhere (prose interprets, the trunk guarantees).
+`harvest.py --list-runs [window flags]` prints one line per run in
+the window: run id, workflow name and goal first-line (from the
+frame-open event), open/close timestamps, friction and event counts.
+Fuzzy windows resolve in prose against that listing: "this last
+workflow" is the newest line; "the scraper one from a while back" is
+the line whose goal mentions the scraper; "last Wednesday and Monday"
+is two `--on` dates the driver computes from today. The driver then
+calls harvest with exact selectors. No fuzzy matching ever enters the
+script — and the listing only knows workflow names because Move 2's
+frame-open event records them.
 
 The digest carries a header (window, streams read, totals, covered
 exclusions applied) and clusters ranked by weight, each with:
@@ -143,13 +159,17 @@ Replaces `example-workflows/self-improve/SKILL.md` (workflow tier,
 > **Harvest**, deterministic, zero agents:
 >
 >     python harvest.py --out <digest> [--since <ts|7d>] [--until <ts>]
->       [--session <id>]... [--run <id>]... [--project <name>]
->       [--workflow <name>] [--skill <orch-name>]
+>       [--on <date>]... [--session <id>]... [--run <id>]...
+>       [--project <name>] [--workflow <name>] [--skill <orch-name>]
 >
-> One command slices friction and events by the window, drops what a
-> covered matcher already answers, clusters, and marks each cluster
-> meeting [the improvement law](../../rules/improvement.md) §4's
-> recurrence arithmetic. The digest is the only evidence later steps
+> A fuzzy window — "this last workflow", "the scraper run", "last
+> Wednesday and Monday" — resolves first: `harvest.py --list-runs`
+> prints the candidate runs (id, workflow, goal, counts); pick, then
+> pass exact flags. One command slices friction and events by the
+> window, drops what a covered matcher already answers, clusters, and
+> marks each cluster meeting
+> [the improvement law](../../rules/improvement.md) §4's recurrence
+> arithmetic. The digest is the only evidence later steps
 > read; raw streams are never handed to a child. An empty digest ends
 > the cycle here — say so and stop: no frame, no ticket.
 >
