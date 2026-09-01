@@ -63,8 +63,11 @@ states the law nowhere in prose, so a reader following
 `docs/vocabulary.md` to the file it names as owning unit scope finds
 nothing there.
 
-**P3. `ORCHFLOWS_STATE_HOME` is redeclared as a named constant at least twelve times, only one of which is the owner — "nine" undercounts.**
-`scripts/state_root.py:38` owns `ENV_VAR = "ORCHFLOWS_STATE_HOME"`. Eight
+**P3. The sink env-var name is redeclared as a named constant at least twelve times, only one of which is the owner — "nine" undercounts.**
+(The variable itself is spelled only by its owners — `rules/visibility.md`
+§6 in prose, `scripts/state_root.py:38` in code; this report points rather
+than restates, per the very law this pattern documents.)
+`scripts/state_root.py:38` owns the `ENV_VAR` string. Eight
 independent module-level redeclarations of the identical string exist:
 `tests/__init__.py:36`, `tests/test_harvest.py:41`,
 `tests/test_friction_cases/common.py:42`, `tests/test_project_binding.py:40`,
@@ -80,10 +83,10 @@ forced (B1.5 addendum-2's exact count; corroborated by B1.1, B1.2, B1.3
 independently hitting the same fact from three different surfaces). **The
 count still undercounts.** At least three more independent module-level
 redeclarations exist beyond the nine above — **[verified]** directly:
-`installer/foundation.py:151` (`STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"`),
+`installer/foundation.py:151` (its `STATE_HOME_ENV_VAR` constant),
 `reader/tests/test_ui_cases/root_resolution.py:16`, and
-`reader/tests/test_ui_cases/_base.py:38` (both
-`SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"`) — putting the real total at
+`reader/tests/test_ui_cases/_base.py:38` (both declaring a
+`SINK_ENV_VAR` copy of the same string) — putting the real total at
 twelve-plus, not nine, and correspondingly raising T3's "9 + 20+ = 29
 duplicate sites" fan-out claim by the same three.
 
@@ -823,8 +826,8 @@ table, corrected against P9), super-research's SKILL.md word count and
 `references/` line counts (the custom-skill mechanism section), and the
 env-var and probe-count undercounts folded in by this repair (P3, P12).
 No finding here contradicts a source lane's own reading of the tree;
-where two lanes converged independently on the same fact (e.g.
-`ORCHFLOWS_STATE_HOME` found separately by B1.1, B1.2, B1.3, and B1.5),
+where two lanes converged independently on the same fact (e.g. the
+sink env-var redeclarations found separately by B1.1, B1.2, B1.3, and B1.5),
 that convergence is treated as its own form of verification and noted
 in the relevant pattern above. This review made no changes to any file
 outside itself, per Goal.
