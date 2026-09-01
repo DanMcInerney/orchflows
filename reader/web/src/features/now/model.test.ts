@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { nowFixture } from "./fixtures";
-import { dependencyLayers, groupState, projectFleet, projectGroups, projectWork } from "./model";
+import {
+  blockedBadge, dependencyLayers, groupState, projectFleet, projectGroups, projectWork, runSummary,
+} from "./model";
 
 describe("Now fleet projection", () => {
   it("assigns each run exactly once and orders attention, active, completed", () => {
@@ -51,5 +53,24 @@ describe("Now fleet projection", () => {
 
     const unknown = projectWork(nowFixture("unreadable-data").runs[0].tickets);
     expect(unknown.unknown.map((ticket) => ticket.id)).toEqual(["01-repair"]);
+  });
+
+  it("names the real fan-out/fan-in edge kind between groups instead of hard-coding sequence", () => {
+    const run = projectFleet(nowFixture("mixed-live").runs)
+      .find((candidate) => candidate.id === "20260819-ui-experience")!;
+    const { summary } = runSummary(run);
+    expect(summary.nodes.map((node) => node.label)).toEqual(["Brief", "Plan", "Work ×3", "Review", "Verify"]);
+    expect(summary.edges.map((edge) => edge.kind)).toEqual(["sequence", "branch", "branch", "sequence"]);
+  });
+
+  it("badges only the run whose current work names a live blocking cause and chain", () => {
+    const blocked = nowFixture("needs-attention").runs[0].tickets;
+    const badge = blockedBadge(blocked);
+    expect(badge).toEqual({
+      ticketId: "01-repair", cause: "blocked_upstream",
+      reason: "blocked by upstream work", blockingTicket: "00-scope",
+    });
+    expect(blockedBadge(nowFixture("mixed-live").runs[1].tickets)).toBeNull();
+    expect(blockedBadge(nowFixture("unreadable-data").runs[0].tickets)).toBeNull();
   });
 });

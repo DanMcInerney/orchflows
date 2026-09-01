@@ -15,7 +15,7 @@ class StatusSubcommandTest(LedgerHoldingCase):
     def test_an_adapter_never_smoked_is_unverified_and_not_rejected(self):
         code, printed, _ = run_cli(self, ["status"])
 
-        self.assertEqual(printed.count(cli.UNVERIFIED), 19)
+        self.assertEqual(printed.count(cli.UNVERIFIED), 25)
         self.assertIn(cli.NEVER_SMOKED, printed)
         self.assertNotIn(REJECTED, printed)
 

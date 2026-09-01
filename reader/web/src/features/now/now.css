@@ -60,6 +60,9 @@
 .now-run-card[data-band="completed"] .now-run-card__task > svg { color: var(--status-complete); }
 .now-run-card__task a { color: var(--text); font-weight: 650; }
 .now-run-card__task a:hover { color: var(--accent); }
+.now-run-card__causal { display: flex; align-items: flex-start; gap: var(--space-2); margin: var(--space-2) 0 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--status-border-attention); border-radius: var(--radius-compact); color: var(--attention-text); background: var(--attention-surface); font-size: var(--type-sm); line-height: 1.5; overflow-wrap: anywhere; }
+.now-run-card__causal > svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 2px; color: var(--status-attention); }
+.now-run-card__causal strong { color: var(--attention-text-strong); }
 .now-objective-details { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--type-xs); }
 .now-objective-details summary { width: max-content; color: var(--accent); cursor: pointer; font-weight: 700; }
 .now-objective-details p { max-height: 220px; margin: var(--space-2) 0 0; padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-2); overflow: auto; overflow-wrap: anywhere; }

@@ -16,12 +16,13 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from . import cache, normalize, router, schema, transport
 from .adapters import AdapterDescriptor, AdapterRequest, NativePage, build_native_page
-from .adapters import bluesky, fake, github_rest, hacker_news, instagram_public
-from .adapters import linkedin_jobs, linkedin_public, open_page, prediction_markets
+from .adapters import bluesky, fake, gdelt, github_rest, hacker_news, instagram_public
+from .adapters import linkedin_jobs, linkedin_public, oembed, open_page, prediction_markets
 from .adapters import public_page
 from .adapters import reddit_archive
 from .adapters import reddit_feed, reddit_shreddit
-from .adapters import rss_atom, stocktwits, web_search
+from .adapters import rss_atom, scholarly, stack_exchange, stocktwits, tiktok_public
+from .adapters import web_search, wikimedia_pageviews
 from .adapters import x_fxtwitter, x_guest, x_syndication, youtube_innertube
 from .ledger import (
     ADDITIVE_METRICS,
@@ -77,11 +78,13 @@ _RUN_STEPS_IMPL = runner_schedule.run_steps
 ADAPTER_IDS = (
     "bluesky",
     "fake",
+    "gdelt",
     "github_rest",
     "hacker_news",
     "instagram_public",
     "linkedin_jobs",
     "linkedin_public",
+    "oembed",
     "open_page",
     "prediction_markets",
     "public_page",
@@ -89,8 +92,12 @@ ADAPTER_IDS = (
     "reddit_feed",
     "reddit_shreddit",
     "rss_atom",
+    "scholarly",
+    "stack_exchange",
     "stocktwits",
+    "tiktok_public",
     "web_search",
+    "wikimedia_pageviews",
     "x_fxtwitter",
     "x_guest",
     "x_syndication",
@@ -123,6 +130,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return bluesky.DESCRIPTOR
     if adapter_id == "fake":
         return fake.DESCRIPTOR
+    if adapter_id == "gdelt":
+        return gdelt.DESCRIPTOR
     if adapter_id == "github_rest":
         return github_rest.DESCRIPTOR
     if adapter_id == "hacker_news":
@@ -133,6 +142,8 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return linkedin_jobs.DESCRIPTOR
     if adapter_id == "linkedin_public":
         return linkedin_public.DESCRIPTOR
+    if adapter_id == "oembed":
+        return oembed.DESCRIPTOR
     if adapter_id == "open_page":
         return open_page.DESCRIPTOR
     if adapter_id == "prediction_markets":
@@ -147,10 +158,18 @@ def descriptor_for(adapter_id: str) -> Optional[AdapterDescriptor]:
         return reddit_shreddit.DESCRIPTOR
     if adapter_id == "rss_atom":
         return rss_atom.DESCRIPTOR
+    if adapter_id == "scholarly":
+        return scholarly.DESCRIPTOR
+    if adapter_id == "stack_exchange":
+        return stack_exchange.DESCRIPTOR
     if adapter_id == "stocktwits":
         return stocktwits.DESCRIPTOR
+    if adapter_id == "tiktok_public":
+        return tiktok_public.DESCRIPTOR
     if adapter_id == "web_search":
         return web_search.DESCRIPTOR
+    if adapter_id == "wikimedia_pageviews":
+        return wikimedia_pageviews.DESCRIPTOR
     if adapter_id == "x_fxtwitter":
         return x_fxtwitter.DESCRIPTOR
     if adapter_id == "x_guest":
@@ -171,6 +190,8 @@ def call_adapter(
         return bluesky.fetch_native_page(carrier, request)
     if adapter_id == "fake":
         return fake.fetch_native_page(carrier, request)
+    if adapter_id == "gdelt":
+        return gdelt.fetch_native_page(carrier, request)
     if adapter_id == "github_rest":
         return github_rest.fetch_native_page(carrier, request)
     if adapter_id == "hacker_news":
@@ -181,6 +202,8 @@ def call_adapter(
         return linkedin_jobs.fetch_native_page(carrier, request)
     if adapter_id == "linkedin_public":
         return linkedin_public.fetch_native_page(carrier, request)
+    if adapter_id == "oembed":
+        return oembed.fetch_native_page(carrier, request)
     if adapter_id == "open_page":
         return open_page.fetch_native_page(carrier, request)
     if adapter_id == "prediction_markets":
@@ -195,10 +218,18 @@ def call_adapter(
         return reddit_shreddit.fetch_native_page(carrier, request)
     if adapter_id == "rss_atom":
         return rss_atom.fetch_native_page(carrier, request)
+    if adapter_id == "scholarly":
+        return scholarly.fetch_native_page(carrier, request)
+    if adapter_id == "stack_exchange":
+        return stack_exchange.fetch_native_page(carrier, request)
     if adapter_id == "stocktwits":
         return stocktwits.fetch_native_page(carrier, request)
+    if adapter_id == "tiktok_public":
+        return tiktok_public.fetch_native_page(carrier, request)
     if adapter_id == "web_search":
         return web_search.fetch_native_page(carrier, request)
+    if adapter_id == "wikimedia_pageviews":
+        return wikimedia_pageviews.fetch_native_page(carrier, request)
     if adapter_id == "x_fxtwitter":
         return x_fxtwitter.fetch_native_page(carrier, request)
     if adapter_id == "x_guest":
@@ -213,9 +244,10 @@ def call_adapter(
 def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
     """Every route one adapter can reach, one descriptor each.
 
-    Most adapters read one route and this is its one descriptor. Ten do not.
-    Six read a second route plainly — ``bluesky``, ``prediction_markets``,
-    ``reddit_shreddit``, ``stocktwits``, ``web_search`` and
+    Most adapters read one route and this is its one descriptor. Thirteen do not.
+    Nine read a further route plainly — ``bluesky``, ``oembed``,
+    ``prediction_markets``, ``reddit_shreddit``, ``scholarly``,
+    ``stocktwits``, ``tiktok_public``, ``web_search`` and
     ``youtube_innertube`` — and four are worth a reason each: ``hacker_news``
     reads two origins, ``github_rest`` reads one origin whose anonymous hour is
     counted in two separate buckets, ``public_page`` selects between two
@@ -237,14 +269,20 @@ def surface_descriptors(adapter_id: str) -> Tuple[AdapterDescriptor, ...]:
         return github_rest.SURFACE_DESCRIPTORS
     if adapter_id == "hacker_news":
         return hacker_news.SURFACE_DESCRIPTORS
+    if adapter_id == "oembed":
+        return oembed.SURFACE_DESCRIPTORS
     if adapter_id == "prediction_markets":
         return prediction_markets.SURFACE_DESCRIPTORS
     if adapter_id == "public_page":
         return public_page.SURFACE_DESCRIPTORS
     if adapter_id == "reddit_shreddit":
         return reddit_shreddit.SURFACE_DESCRIPTORS
+    if adapter_id == "scholarly":
+        return scholarly.SURFACE_DESCRIPTORS
     if adapter_id == "stocktwits":
         return stocktwits.SURFACE_DESCRIPTORS
+    if adapter_id == "tiktok_public":
+        return tiktok_public.SURFACE_DESCRIPTORS
     if adapter_id == "web_search":
         return web_search.SURFACE_DESCRIPTORS
     if adapter_id == "x_guest":

@@ -29,11 +29,17 @@ PINNED_FIELD_COUNTS_BY_ADAPTER_AND_KIND = {
     ("x_guest", "profile"): 6,
     ("x_syndication", "post"): 7,
     ("youtube_innertube", "video"): 3,
+    ("gdelt", "web_hit"): 4,
+    ("stack_exchange", "question"): 7,
+    ("wikimedia_pageviews", "pageview_count"): 4,
+    ("scholarly", "article"): 6,
+    ("tiktok_public", "video"): 8,
+    ("oembed", "rich"): 2,
 }
 
 
 class SmokeProbeTableTest(unittest.TestCase):
-    """The enumeration itself: nineteen probes, each naming things that exist."""
+    """The enumeration itself: twenty-five probes, each naming things that exist."""
 
     def test_the_probes_are_exactly_the_live_roster(self):
         # Derived against the core's own roster rather than transcribed beside
@@ -42,7 +48,7 @@ class SmokeProbeTableTest(unittest.TestCase):
         probed = sorted(probe.adapter_id for probe in cli.SMOKE_PROBES)
 
         self.assertEqual(probed, sorted(set(runner.ADAPTER_IDS) - {cli.OFFLINE_ADAPTER}))
-        self.assertEqual(len(cli.SMOKE_PROBES), 19)
+        self.assertEqual(len(cli.SMOKE_PROBES), 25)
 
     def test_the_offline_adapter_has_no_smoke(self):
         # `fake` reads a fixture. A smoke for it would report the suite's own
@@ -153,7 +159,7 @@ def ddg_pages_each_offering_a_new_one():
 
 
 class SmokeAssertsTheRosterFieldSetTest(unittest.TestCase):
-    """Row 1: nineteen smokes, each bounded, against measured bytes."""
+    """Row 1: twenty-five smokes, each bounded, against measured bytes."""
 
     def test_every_smoke_asserts_its_roster_field_set_on_the_reads_it_spends(self):
         for probe in cli.SMOKE_PROBES:
@@ -399,7 +405,7 @@ class TheOperationSetIsClosedTest(LedgerHoldingCase):
                 )
                 reachable += len(operation.choices)
 
-        self.assertEqual(reachable, 21)
+        self.assertEqual(reachable, 27)
 
     def test_every_declared_operation_runs(self):
         for operation in cli.OPERATIONS:
@@ -437,7 +443,7 @@ class TheOperationSetIsClosedTest(LedgerHoldingCase):
                 refused(self, argv)
 
     def test_an_adapter_the_roster_does_not_name_is_refused(self):
-        for adapter_id in ("no_such_adapter", "tiktok_public", "", "github_rest "):
+        for adapter_id in ("no_such_adapter", "", "github_rest "):
             with self.subTest(adapter=adapter_id):
                 refused(self, ["smoke", "--adapter", adapter_id])
 

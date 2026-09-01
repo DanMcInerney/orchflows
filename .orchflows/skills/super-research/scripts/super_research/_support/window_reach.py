@@ -170,6 +170,21 @@ WINDOW_REACH: Dict[str, Dict[str, Optional[bool]]] = {
         "next": False,
         "transcript": False,
     },
+    # Measured 2026-09-01 (the survey validation sweep), each in the origin's
+    # own grammar: GDELT DOC's `startdatetime`/`enddatetime` returned only
+    # in-window `seendate`s; Stack Exchange's `fromdate`/`todate` returned
+    # only in-window `creation_date`s; the Wikimedia pageviews date range is
+    # two path segments and the answer held exactly the days inside them;
+    # OpenAlex, Crossref and arXiv each filtered publication time at the
+    # origin, so `scholarly`'s three operations agree and it declares once.
+    "gdelt": {"": True},
+    "stack_exchange": {"": True},
+    "wikimedia_pageviews": {"": True},
+    "scholarly": {"": True},
+    # Origin accepts none, measured 2026-09-01: a TikTok page read and an
+    # oEmbed lookup each address one item and carry no time concept.
+    "tiktok_public": {"": False},
+    "oembed": {"": False},
     # The offline fixture reader: no origin exists for a bound to reach.
     "fake": {"": False},
 }

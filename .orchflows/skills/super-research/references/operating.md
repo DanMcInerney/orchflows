@@ -6,30 +6,34 @@ exposes, and the one bounded read each adapter's smoke makes.
 ## CLI surface
 
 `python3 -m super_research.cli`, with this item's `scripts/` on `PYTHONPATH`.
-Three operations, one argument, twenty-one reachable invocations. The parser is built
+Three operations, one argument, twenty-seven reachable invocations. The parser is built
 from the `OPERATIONS` table, so the enumeration a reader checks is the one the
 parser was made from.
 
 | operation | argument | reaches an origin | writes | exit |
 | --- | --- | --- | --- | --- |
 | `adapters` | none | no | nothing | 0 |
-| `smoke` | `--adapter <one of nineteen>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
+| `smoke` | `--adapter <one of twenty-five>`, required | one bounded read | one of its two records: the ledger on success, the unmet record on a row the origin answered and did not carry, neither otherwise | 0 / 1 / 3 |
 | `status` | none | no | nothing | 0 always |
 
-`python3 -m super_research.cli adapters` prints the nineteen live adapters, the
+`python3 -m super_research.cli adapters` prints the twenty-five live adapters, the
 access class each declares, and the field set its smoke asserts; the offline
 `fake` adapter has no smoke and is not on that list. The roster's routes were
 measured from one host on 2026-08-10, two sweeps on 2026-08-12 read them
-against real origins, and a third sweep on 2026-08-17 measured the routes this
-revision adds and reversed three earlier findings; what each of those found is
+against real origins, a third sweep on 2026-08-17 measured the routes that
+revision added and reversed three earlier findings, and a fourth on
+2026-09-01 validated the six-adapter expansion's endpoints and re-smoked the
+whole prior roster, finding the keyless X surfaces and anonymous Instagram
+at-risk; what each found is
 in [evidence.md](evidence.md) §"Route measurements of 2026-08-10",
-§"The two liveness sweeps of 2026-08-12" and §"The route sweep of 2026-08-17". `status` still reports every adapter
+§"The two liveness sweeps of 2026-08-12", §"The route sweep of 2026-08-17"
+and §"The route sweep of 2026-09-01". `status` still reports every adapter
 `unverified` until `smoke --adapter <id>` makes one bounded read that carries
 that adapter's row: the smoke ledger lives in a tempdir and never travels with a
 checkout.
 
 No operation takes an address, a route, a path, a manifest, or a command;
-`--adapter` is a closed `choices` list of the nineteen live ids. `fake` is refused
+`--adapter` is a closed `choices` list of the twenty-five live ids. `fake` is refused
 with everything else: reading a fixture and printing it as liveness is the one
 result this surface must never produce. The carrier, clock, moment, ledger path
 and output stream are parameters of `main` with the real defaults and are
@@ -117,6 +121,38 @@ gives the smallest such moment), and rank on topic with
 `relevance.compile_query` / `relevance.rank` / `relevance.partition`, reading
 the dropped list before applying any floor.
 
+## Manifest recipes
+
+Staged-manifest shapes the reference tools wired as code and this package
+authors as steps. Each is a pattern for the caller writing the manifest, not
+a mechanism: nothing below is a fallback, and every step still names its cap.
+
+- **Reddit, four stages.** Discover on `reddit_shreddit` (search or listing,
+  real scores); backfill anything older than the listing reaches by id on
+  `reddit_archive`; select the discussion-heavy hits; hydrate their comment
+  pages on `reddit_shreddit` `comments`. The feed route is the freshness
+  probe beside that, not a stage of it.
+- **X, three lanes.** One `x_fxtwitter` search on the topic words, one on
+  `from:<handle>` for each named principal, one on the principal's handle as
+  a plain term for the conversation *about* them — three discovery steps,
+  fused, because they answer three different questions about one subject.
+- **News with a window.** `gdelt` bounded at the origin plus `web_search`'s
+  `gnews` operation, fused; select; hydrate the article bodies on
+  `open_page`. GDELT's rows carry dates and domains, so the window is spent
+  server-side and the cull is auditable.
+- **Overfetch, then cull.** On a surface whose page is bigger than the
+  question (`hacker_news` search, `stack_exchange`), cap at the page, rank
+  with `relevance`, and hydrate only what survives — the cap buys nothing
+  under the page size, and the dropped list is the audit.
+- **Markets, two passes.** `prediction_markets` search first; where a hit's
+  tags name a family, a second discovery on the tag before hydrating, so the
+  odds quoted come from every market on the question rather than the one the
+  search happened to surface.
+- **The long tail.** A discovered link no richer adapter owns hydrates on
+  `oembed` under its provider prefix, or on `open_page` when no provider
+  serves it; the two cover different failures and neither is a retry of the
+  other.
+
 ## Smoke inventory
 
 One probe per live adapter, in `probes.py`. Each is one ordinary manifest step,
@@ -146,18 +182,26 @@ name the two places a route's own vocabulary lands.
 | `stocktwits` | `stocktwits_symbol_stream` | discovery `stream:AAPL` | post: native_item_id, body, author, canonical_locator, published_at |
 | `bluesky` | `bluesky_author_feed` | discovery `author:bsky.app` | post: body, author, canonical_locator, published_at, engagement:likeCount, engagement:replyCount, attribute:did, attribute:cid |
 | `x_fxtwitter` | `fxtwitter_api` | discovery `search:spacex` | post: body, author, canonical_locator, published_at, engagement:likes, engagement:reposts, engagement:replies, attribute:lang, attribute:created_at |
+| `gdelt` | `gdelt_doc` | discovery `climate`, windowed three days | web_hit: title, canonical_locator, published_at, attribute:domain |
+| `stack_exchange` | `stackexchange_search_advanced` | discovery `python` | question: native_item_id, title, author, canonical_locator, published_at, engagement:score, engagement:answer_count |
+| `wikimedia_pageviews` | `wikimedia_pageviews_per_article` | hydration `Python_(programming_language)`, windowed ten days | pageview_count: native_item_id, canonical_locator, published_at, engagement:views |
+| `scholarly` | `openalex_works` | discovery `openalex:machine learning` | article: native_item_id, title, author, canonical_locator, published_at, engagement:cited_by_count |
+| `tiktok_public` | `tiktok_video_page` | hydration `video:nba/7606907506589207838` | video: native_item_id, body, author, canonical_locator, published_at, engagement:diggCount, engagement:playCount, engagement:commentCount |
+| `oembed` | `x_publish_oembed` | hydration `x:<post url>` | rich: author, canonical_locator |
 
 Instagram's is the only row describing two content kinds, which is why a field set
 is declared per kind at all: no single record carries both the profile's follower
-count and a post's like count. Ten adapters read more than one surface and a smoke
+count and a post's like count. Thirteen adapters read more than one surface and a smoke
 makes one call, so each probe names the surface it takes — Algolia search for
 `hacker_news`, the repository surface for `github_rest`, the article surface for
 `public_page`, DuckDuckGo for `web_search`, the subreddit listing for
 `reddit_shreddit` (the one surface that names both counts as its own
 attributes), Polymarket for `prediction_markets`, the symbol stream for
 `stocktwits`, the author feed for `bluesky` (its search method answered 403
-from this host), the GraphQL read for `x_guest`, and the InnerTube route for
-`youtube_innertube`.
+from this host), the GraphQL read for `x_guest`, the InnerTube route for
+`youtube_innertube`, OpenAlex for `scholarly`, the video page for
+`tiktok_public`, and the X publish endpoint for `oembed` — the one provider
+whose item addresses live on no host a route declares.
 
 Three probes are worth reading twice. `bluesky`'s names the **author feed**
 rather than the search its primary descriptor declares: the search method

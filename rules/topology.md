@@ -21,8 +21,8 @@ connects this law to the admission-owned state transition.
    and hangs each brick under the frame that called it, so the ticket tree is
    the call tree; a read-only blocker critique feeds at most one repair, and
    the root's own `done` predicate is the fresh
-   outside check. A direct root keeps its ordinary path. Additional review
-   is another named lens, never another engine.
+   outside check. A root with one lawful executor keeps its ordinary path.
+   Additional review is another named lens, never another engine.
 6. A pack belongs to a ticket, not a run. Incompatible workspace semantics use
    successor roots rather than pretending to share a candidate. Adapters meet
    only at the join: identities may cross dependency edges, but candidate bytes

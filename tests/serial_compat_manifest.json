@@ -917,9 +917,9 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_frame_lane_emits_the_wave_lifecycle",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_plan_route_consumes_the_root_shape_it_sealed",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_team_lane_emits_the_wave_lifecycle",
    "test_ticket_bricks.BrickAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
    "test_ticket_bricks.BrickAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
    "test_ticket_bricks.BrickAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
@@ -2058,7 +2058,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "13a66a96143e55368c0f8783073ada49143705a5d4f6f81223eb9dad9e60ae26"
+  "sha256": "14c1d76244e77db1f368662cc140de6924217d87494cc42b364ec675fded8c13"
  },
  "mutation_owners": [
   {

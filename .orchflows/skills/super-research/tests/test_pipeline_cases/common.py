@@ -110,9 +110,17 @@ def probe_request_for(adapter_id):
     probe = probes.probe_for(adapter_id)
     if probe is None:
         return PROBE_REQUEST
+    # A probe that declares its own window is an adapter whose smoke reads
+    # windowed, and one of them (`wikimedia_pageviews`) has no windowless
+    # shape at all: what its own smoke asks it includes the bound.
+    window_start = "2026-08-01T00:00:00Z" if probe.window_days else ""
     if probe.kind == "discovery":
-        return adapters.AdapterRequest(step_id="s-probe", query=probe.target)
-    return adapters.AdapterRequest(step_id="s-probe", target_ids=(probe.target,))
+        return adapters.AdapterRequest(
+            step_id="s-probe", query=probe.target, window_start=window_start
+        )
+    return adapters.AdapterRequest(
+        step_id="s-probe", target_ids=(probe.target,), window_start=window_start
+    )
 
 
 def tracer_responses():

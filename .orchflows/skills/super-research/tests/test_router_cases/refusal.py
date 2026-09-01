@@ -245,7 +245,7 @@ class OracleCanFailTest(unittest.TestCase):
     def test_a_twin_on_another_platform_is_not_the_same_capability(self):
         with self.assertRaisesRegex(
             AssertionError,
-            "capability tiktok/tiktok/native is reachable only with a credential",
+            "capability threads/threads/native is reachable only with a credential",
         ):
             assert_no_capability_needs_a_credential(
                 self, self.wrong.CREDENTIALED_TWIN_ON_ANOTHER_PLATFORM

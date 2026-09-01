@@ -80,10 +80,10 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("ad-hoc ticket", delegation)
         self.assertNotRegex(delegation, re.compile(r"inline fallback", re.I))
         for anchor in (
-            "**act**",
-            "**brick**",
-            "**frame**",
-            "**outline**",
+            "**direct**",
+            "**worker**",
+            "**team**",
+            "**plan**",
             "`launch`",
             "`tickets.py do <run>",
             "`tickets.py land`",
@@ -103,20 +103,20 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         self.assertNotIn("sequence: [orch-outline, orch-slice]", host)
         self.assertLessEqual(validate.body_words(host), 400)
 
-    def test_frame_lane_emits_the_wave_lifecycle(self):
-        """The frame lane is the whole wave: open the frame, re-read its
+    def test_team_lane_emits_the_wave_lifecycle(self):
+        """The team lane is the whole wave: open the frame, re-read its
         journal, run children at scoped checks, and close. Each anchor is a
         step a driver cannot supply from its own reading, and the journal
         re-read is the one that survives a compaction nothing else notices.
-        The per-child invocation itself is the brick door's own text, so the
-        frame lane does not re-teach it -- see
+        The per-child invocation itself is the worker door's own text, so the
+        team lane does not re-teach it -- see
         test_host_and_frontier_establish_the_workspace_before_dispatch."""
         host = re.sub(
             r"\s+",
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        frame = host.partition("**frame**")[2].partition("**outline**")[0]
+        team = host.partition("**team**")[2].partition("**plan**")[0]
 
         for anchor in (
             "tickets.py frame-open <run>",
@@ -127,9 +127,9 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "`orchflows resume`",
         ):
             with self.subTest(anchor=anchor):
-                self.assertIn(anchor, frame)
+                self.assertIn(anchor, team)
         # The facade owns each of these; the route may not re-teach a manual
-        # spelling of a step a brick door or `land` already performs.
+        # spelling of a step a worker door or `land` already performs.
         for absent in (
             "tickets.py claim",
             "tickets.py packet",
@@ -140,7 +140,7 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "workspace.py establish",
         ):
             with self.subTest(absent=absent):
-                self.assertNotIn(absent, frame)
+                self.assertNotIn(absent, team)
 
     def test_host_and_frontier_establish_the_workspace_before_dispatch(self):
         host = re.sub(
@@ -148,18 +148,18 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        brick = host.partition("**brick**")[2].partition("**frame**")[0]
+        worker = host.partition("**worker**")[2].partition("**team**")[0]
 
-        self.assertIn("tickets.py do", brick)
+        self.assertIn("tickets.py do", worker)
         self.assertLess(
-            brick.index("tickets.py do"), brick.index("tickets.py land")
+            worker.index("tickets.py do"), worker.index("tickets.py land")
         )
         # Establishment is inside the dispatch transaction, so the contract
         # that owns the transaction states it and the route does not repeat
         # it as a step of its own.
         dispatch_contract = (ROOT / "contracts/dispatch.md").read_text(encoding="utf-8")
         self.assertIn("the established workspace", dispatch_contract)
-        self.assertNotIn("workspace.py establish", brick)
+        self.assertNotIn("workspace.py establish", worker)
 
     def test_claude_role_skills_use_native_fork_and_matching_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -204,13 +204,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
         ):
             self.assertIn(anchor, role_agent)
 
-    def test_outline_route_consumes_the_root_shape_it_sealed(self):
+    def test_plan_route_consumes_the_root_shape_it_sealed(self):
         host = re.sub(
             r"\s+",
             " ",
             (ROOT / "templates/host-block.md").read_text(encoding="utf-8"),
         )
-        spec_route = host.split("**outline**", 1)[1].split("`install.py doctor`", 1)[0]
+        spec_route = host.split("**plan**", 1)[1].split("`install.py doctor`", 1)[0]
 
         for anchor in (
             "an unresolved goal",
@@ -220,8 +220,8 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             # 20260901T021739Z) found cut for budget with no anchor here to
             # catch it; the third (unknown cause) was already pinned via
             # "cause investigates before any edit" below.
-            "a second concern mid-act enters brick",
-            "splitting scope enters frame",
+            "a second concern mid-direct enters worker",
+            "splitting scope enters team",
             "an unknown cause investigates before any edit",
         ):
             with self.subTest(anchor=anchor):
