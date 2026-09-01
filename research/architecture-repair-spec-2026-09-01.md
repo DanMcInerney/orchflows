@@ -306,6 +306,36 @@ pattern as the model. Distinct upstream wire-format grammars (X's, RFC
 3339) keep their own constants; only the one output convention
 consolidates. Acceptance: the protocol.md claim is true by grep.
 
+**U13. Standing-instruction surfaces: buy back headroom, fix two scoping gaps.**
+From the close-out audit of the every-turn surfaces, all three of which
+sit exactly at their ceilings (host block ~400/400, `AGENTS.md`
+230/230, role agent bodies 80/80 — zero headroom anywhere, and
+`rules/token-economy.md` §11 says a ceiling only falls, so growth is
+impossible without deletions). (a) `AGENTS.md`, two delete candidates:
+the Constitution meta-sentence ("The Constitution in
+docs/library-review.md requires every sentence here") fails
+token-economy §1's own test — no executor acts differently for it —
+and the three-line super-research item note duplicates what the
+adapter's manual-only marker already enforces (verify the marker
+actually blocks model invocation before deleting; if it does not, that
+is the bug to fix instead). Both may be phrase-pinned by
+`tests/test_constitution.py`-family tests — adjust the pins through
+their owners, never by retyping. ~35 words of headroom bought.
+(b) Role agent files: "never redispatch" did not stop three children
+from fanning out background read-only agents (the direct cause of the
+causal-order strandings) — the word is doing less than it claims.
+Reword to plain mechanism ("never hand your ticket or role to another
+agent") and rely on U2(b)'s close-sentence for the fan-out discipline;
+same word count. (c) Friction-law reach: all six of this run's
+friction entries were root-logged; children hit four log-worthy walls
+and logged nothing (friction entry 2026-09-01, this run). Investigate
+whether forked children actually receive the host block's friction
+law; if they do, this is behavioral and the entry stands as evidence;
+if they do not, the launch prompt is the only carrier and one pointer
+line there is justified despite the prompt budget. Acceptance: AGENTS.md
+under its ceiling with headroom; role files unchanged in length;
+the reach question answered with evidence, not assumption.
+
 ## Deferred — named, not scoped here
 
 - The browser-game trunk/leaf inversion
@@ -331,6 +361,15 @@ consolidates. Acceptance: the protocol.md claim is true by grep.
   rather than `contracts/` — they match the vocabulary's own contract
   definition and arguably belong at T0. A placement decision, not a
   mechanical move.
+- Host-block root/child split: roughly 250 of the host block's 400
+  words are root-only routing law (the lanes, tripwires, `orch-off`,
+  resume) that every dispatched child also pays every turn, since the
+  block rides the user-scope CLAUDE.md import. Splitting it — routing
+  half loaded by interactive roots, law half (state-sink, friction,
+  worktree discipline) always-on — would roughly halve every child's
+  standing instruction cost, but restructures the installer's
+  managed-block scheme and the eight-demand accounting. A design pass
+  of its own; user decision.
 
 ## Suggested execution shape
 
