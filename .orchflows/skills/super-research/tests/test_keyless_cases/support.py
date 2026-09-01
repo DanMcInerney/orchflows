@@ -90,6 +90,29 @@ ROSTER_PAYLOADS = {
     "bluesky_search_posts": ("bluesky/search_posts.json", "application/json"),
     "bluesky_author_feed": ("bluesky/author_feed.json", "application/json"),
     "fxtwitter_api": ("x_fxtwitter/search.json", "application/json"),
+    # The routes added 2026-09-01, each against the bytes its adapter was
+    # built on. GDELT's were captured over plain HTTP — port 443 to that
+    # origin timed out from the building host, evidence.md §"The route sweep
+    # of 2026-09-01" — and every other payload came off the declared https
+    # route itself.
+    "gdelt_doc": ("gdelt/doc_artlist.json", "application/json"),
+    "stackexchange_search_advanced": (
+        "stack_exchange/search_advanced.json", "application/json",
+    ),
+    "wikimedia_pageviews_per_article": (
+        "wikimedia_pageviews/per_article_daily.json", "application/json",
+    ),
+    "openalex_works": ("scholarly/openalex_works.json", "application/json"),
+    "crossref_works": ("scholarly/crossref_works.json", "application/json"),
+    "arxiv_query": ("scholarly/arxiv_query.xml", "application/atom+xml"),
+    "tiktok_video_page": ("tiktok_public/video_page.html", "text/html"),
+    "tiktok_profile_page": ("tiktok_public/profile_page.html", "text/html"),
+    "youtube_oembed": ("oembed/youtube_video.json", "application/json"),
+    "vimeo_oembed": ("oembed/vimeo_video.json", "application/json"),
+    "spotify_oembed": ("oembed/spotify_track.json", "application/json"),
+    "soundcloud_oembed": ("oembed/soundcloud_track.json", "application/json"),
+    "tiktok_oembed": ("oembed/tiktok_video.json", "application/json"),
+    "x_publish_oembed": ("oembed/x_status.json", "application/json"),
 }
 
 ARCHIVED_POST_ID = "1abc234"
@@ -174,17 +197,23 @@ def roster_seeds():
     }
 
 
-def discovery(step_id, adapter_id, query, max_items=200):
+def discovery(step_id, adapter_id, query, max_items=200, max_pages=0):
+    # `max_pages` is reachable here because this caller builds steps in
+    # process, the same door the smoke uses: the seeded Stack Exchange page
+    # says `has_more` on every read, so its step declares one page as its own bound
+    # and finishes rather than being stopped by the core's backstop.
     return schema.AcquisitionStep(
         step_id=step_id,
         kind="discovery",
         adapter_id=adapter_id,
         query=query,
         max_items=max_items,
+        max_pages=max_pages,
     )
 
 
-def hydration(step_id, adapter_id, locator, target_id, max_items=200):
+def hydration(step_id, adapter_id, locator, target_id, max_items=200,
+              window_start="", window_end=""):
     return schema.AcquisitionStep(
         step_id=step_id,
         kind="hydration",
@@ -193,13 +222,15 @@ def hydration(step_id, adapter_id, locator, target_id, max_items=200):
             schema.SelectedHit(discovery_locator=locator, target_id=target_id),
         ),
         max_items=max_items,
+        window_start=window_start,
+        window_end=window_end,
     )
 
 
 def roster_manifest():
     """One dispatch over every adapter in the roster and every route it reaches.
 
-    Thirty-four steps rather than twenty: ten adapters read more than one
+    Forty-eight steps rather than twenty-six: thirteen adapters read more than one
     surface, and a keyless claim about an adapter that leaves one of its routes
     unread is a keyless claim about half of it.
     """
@@ -293,6 +324,68 @@ def roster_manifest():
             discovery("s32-bluesky-search", "bluesky", "search:local models"),
             discovery("s33-bluesky-author", "bluesky", "author:bsky.app"),
             discovery("s34-fxtwitter", "x_fxtwitter", "search:local models"),
+            # The 2026-09-01 additions, one step per route they added.
+            discovery("s35-gdelt", "gdelt", "local models"),
+            discovery("s36-stack-exchange", "stack_exchange", "local models", max_pages=1),
+            hydration(
+                "s37-pageviews",
+                "wikimedia_pageviews",
+                "https://en.wikipedia.org/wiki/Python_(programming_language)",
+                "Python_(programming_language)",
+                window_start="2026-08-21T00:00:00Z",
+                window_end="2026-09-01T00:00:00Z",
+            ),
+            discovery("s38-openalex", "scholarly", "openalex:machine learning"),
+            discovery("s39-crossref", "scholarly", "crossref:machine learning"),
+            discovery("s40-arxiv", "scholarly", "arxiv:transformers"),
+            hydration(
+                "s41-tiktok-video",
+                "tiktok_public",
+                "https://www.tiktok.com/@nba/video/7606907506589207838",
+                "video:nba/7606907506589207838",
+            ),
+            hydration(
+                "s42-tiktok-profile",
+                "tiktok_public",
+                "https://www.tiktok.com/@nba",
+                "profile:nba",
+            ),
+            hydration(
+                "s43-oembed-youtube",
+                "oembed",
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "youtube:https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            ),
+            hydration(
+                "s44-oembed-vimeo",
+                "oembed",
+                "https://vimeo.com/503166067",
+                "vimeo:https://vimeo.com/503166067",
+            ),
+            hydration(
+                "s45-oembed-spotify",
+                "oembed",
+                "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+                "spotify:https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+            ),
+            hydration(
+                "s46-oembed-soundcloud",
+                "oembed",
+                "https://soundcloud.com/forss/flickermood",
+                "soundcloud:https://soundcloud.com/forss/flickermood",
+            ),
+            hydration(
+                "s47-oembed-tiktok",
+                "oembed",
+                "https://www.tiktok.com/@nba/video/7606907506589207838",
+                "tiktok:https://www.tiktok.com/@nba/video/7606907506589207838",
+            ),
+            hydration(
+                "s48-oembed-x",
+                "oembed",
+                "https://x.com/jack/status/20",
+                "x:https://x.com/jack/status/20",
+            ),
         ),
     )
 

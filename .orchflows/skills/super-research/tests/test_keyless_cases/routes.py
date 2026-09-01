@@ -32,8 +32,8 @@ class KeylessRosterTest(unittest.TestCase):
             self.by_adapter.setdefault(record.adapter_id, []).append(record)
 
     def test_the_live_adapters_are_what_the_run_is_about(self):
-        self.assertEqual(len(self.LIVE), 19)
-        self.assertEqual(len(runner.ADAPTER_IDS), 20)
+        self.assertEqual(len(self.LIVE), 25)
+        self.assertEqual(len(runner.ADAPTER_IDS), 26)
 
     def test_the_dispatch_read_every_route_the_roster_can_reach(self):
         # One step, one read and one distinct route per readable surface: the
@@ -51,7 +51,7 @@ class KeylessRosterTest(unittest.TestCase):
             if surface.route_id not in transport.TOKEN_ACTIVATION_ROUTES
         )
 
-        self.assertEqual(len(roster_manifest().steps), 34)
+        self.assertEqual(len(roster_manifest().steps), 48)
         self.assertEqual(sorted(request.route_id for request in self.opener.opened), readable)
         self.assertEqual(sorted(ROSTER_PAYLOADS), readable)
         self.assertEqual(transport.GUEST_TOKENS._tokens, {})
@@ -62,9 +62,10 @@ class KeylessRosterTest(unittest.TestCase):
         self.assertEqual(
             [step.records_kept for step in self.artifact.steps],
             [6, 1, 3, 2, 1, 1, 100, 1, 10, 1, 2, 13, 4, 1, 1, 2, 2,
-             3, 3, 3, 1, 5, 3, 2, 2, 3, 6, 2, 2, 3, 8, 2, 3, 2],
+             3, 3, 3, 1, 5, 3, 2, 2, 3, 6, 2, 2, 3, 8, 2, 3, 2,
+             75, 30, 11, 25, 20, 10, 1, 1, 1, 1, 1, 1, 1, 1],
         )
-        self.assertEqual(len(self.artifact.records), 204)
+        self.assertEqual(len(self.artifact.records), 383)
         self.assertEqual(self.artifact.outcome, "ok")
         self.assertEqual(self.artifact.loss, ())
 

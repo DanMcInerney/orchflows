@@ -7,6 +7,8 @@ here so every existing caller and monkeypatch still reaches ``transport.*``.
 
 from __future__ import annotations
 
+import gzip
+import io
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -67,8 +69,22 @@ from ._support.transport_request import (
 from .routes import (
     ARCTIC_SHIFT_ORIGIN,
     ARCTIC_SHIFT_POSTS_ROUTE,
+    ARXIV_QUERY_ROUTE,
     BING_NEWS_RSS_ROUTE,
     BING_RSS_ROUTE,
+    CROSSREF_WORKS_ROUTE,
+    GDELT_DOC_ROUTE,
+    OPENALEX_WORKS_ROUTE,
+    SOUNDCLOUD_OEMBED_ROUTE,
+    SPOTIFY_OEMBED_ROUTE,
+    STACKEXCHANGE_SEARCH_ROUTE,
+    TIKTOK_OEMBED_ROUTE,
+    TIKTOK_PROFILE_PAGE_ROUTE,
+    TIKTOK_VIDEO_PAGE_ROUTE,
+    VIMEO_OEMBED_ROUTE,
+    WIKIMEDIA_PAGEVIEWS_ROUTE,
+    X_PUBLISH_OEMBED_ROUTE,
+    YOUTUBE_OEMBED_ROUTE,
     BLUESKY_AUTHOR_FEED_ROUTE,
     BLUESKY_SEARCH_POSTS_ROUTE,
     CREDENTIAL_PLACEMENTS,
@@ -224,6 +240,28 @@ def answered_headers(carried: Any) -> AnsweredHeaders:
     return tuple((str(name), str(value)) for name, value in carried.items())
 
 
+def decoded_body(raw: bytes, headers: Any) -> str:
+    """One answer's bytes as text, gunzipped when the origin says it gzipped.
+
+    Stack Exchange's API compresses every answer whether or not the request
+    asked (measured 2026-09-01: `Content-Encoding: gzip` on a request that
+    sent no `Accept-Encoding` at all), and gzip bytes decoded as UTF-8 are
+    garbage an adapter can only type as `malformed_json` — a wrong reading of
+    an origin that answered correctly. The stated encoding is honored here,
+    bounded by the same byte ceiling the raw read has; a body that claims
+    gzip and is not is decoded raw, so a lying header degrades to the typed
+    parse failure it would have been anyway rather than to a raised read.
+    """
+
+    encoding = headers.get("Content-Encoding", "") if headers else ""
+    if encoding.strip().lower() == "gzip":
+        try:
+            raw = gzip.GzipFile(fileobj=io.BytesIO(raw)).read(MAX_RESPONSE_BYTES)
+        except OSError:
+            pass
+    return raw.decode("utf-8", errors="replace")
+
+
 def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, AnsweredHeaders]:
     """One bounded HTTPS read through urllib on an admitted method."""
 
@@ -256,7 +294,7 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
         with urllib.request.urlopen(outbound, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return (
                 response.status,
-                response.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
+                decoded_body(response.read(MAX_RESPONSE_BYTES), response.headers),
                 response.headers.get("Content-Type", ""),
                 answering_address(response, request),
                 answered_headers(response.headers),
@@ -264,7 +302,7 @@ def urlopen_read(request: TransportRequest) -> Tuple[int, str, str, str, Answere
     except urllib.error.HTTPError as error:
         return (
             error.code,
-            error.read(MAX_RESPONSE_BYTES).decode("utf-8", errors="replace"),
+            decoded_body(error.read(MAX_RESPONSE_BYTES), error.headers),
             error.headers.get("Content-Type", "") if error.headers else "",
             answering_address(error, request),
             answered_headers(error.headers),

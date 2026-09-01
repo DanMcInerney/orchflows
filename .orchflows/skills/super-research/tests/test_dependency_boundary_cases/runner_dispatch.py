@@ -7,14 +7,14 @@ from super_research import runner
 from .support import PACKAGE_DIR, adapter_modules_imported, branch_targets
 
 class RunnerDispatchTest(unittest.TestCase):
-    """Criterion 2, dispatch half: twenty literal branches and no other way in."""
+    """Criterion 2, dispatch half: twenty-six literal branches and no other way in."""
 
     def test_the_core_imports_fake_and_exactly_the_live_modules(self):
         imported = adapter_modules_imported(PACKAGE_DIR / "runner.py")
 
         self.assertEqual(sorted(imported), sorted(runner.ADAPTER_IDS))
         self.assertIn("fake", imported)
-        self.assertEqual(len(imported - {"fake"}), 19)
+        self.assertEqual(len(imported - {"fake"}), 25)
 
     def test_no_other_core_module_imports_an_adapter_module_at_all(self):
         # One module can call an adapter, so there is one module to read to

@@ -215,13 +215,17 @@ OPERATING_PATH = TESTS_DIR.parent / "references" / "operating.md"
 # two paragraphs are written in different voices and are meant to stay that
 # way, so a pin that matched the prose around the number would forbid the
 # rewrite it is supposed to permit.
-MULTI_SURFACE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters rea(?:d|ch) more than one\b")
+MULTI_SURFACE_ANCHOR = re.compile(
+    r"\b([A-Za-z]+(?:-[A-Za-z]+)?) adapters rea(?:d|ch) more than one\b"
+)
 
 # The other two counts that one roster sentence states. Anchored the same way and
 # for the same reason: "seven" went stale for three adapters while a reader was
 # the only thing checking it, and these two were still that reader's. Each phrase
 # is the part of the sentence the count cannot leave, not the sentence.
-ROSTER_SIZE_ANCHOR = re.compile(r"\b([A-Za-z]+) adapters, ([A-Za-z]+) live plus `fake`")
+ROSTER_SIZE_ANCHOR = re.compile(
+    r"\b([A-Za-z]+(?:-[A-Za-z]+)?) adapters, ([A-Za-z]+(?:-[A-Za-z]+)?) live plus `fake`"
+)
 SURFACE_TOTAL_ANCHOR = re.compile(r"\b([A-Za-z]+(?:-[A-Za-z]+)?) route surfaces\b")
 
 # The same paragraph states that total a second time, two lines down, and
@@ -241,7 +245,7 @@ READ_SURFACE_ANCHOR = re.compile(
 # count cannot leave while the sentence still says that some adapters are the
 # exception. A word this cannot read counts as none and fails, the way the
 # document anchors do.
-RESOLVER_COUNT_ANCHOR = re.compile(r"\b([A-Za-z]+) do not\b")
+RESOLVER_COUNT_ANCHOR = re.compile(r"\b([A-Za-z]+(?:-[A-Za-z]+)?) do not\b")
 
 # The two counts `test_keyless`' module docstring states about `auth_required`:
 # how many adapters name the code at all, and how many of those can say it.

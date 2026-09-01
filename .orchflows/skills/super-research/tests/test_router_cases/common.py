@@ -83,6 +83,12 @@ ROSTER = {
     "hacker_news": "K0",
     "github_rest": "K0",
     "rss_atom": "K0",
+    "gdelt": "K4",
+    "stack_exchange": "K0",
+    "wikimedia_pageviews": "K0",
+    "scholarly": "K0",
+    "tiktok_public": "K2",
+    "oembed": "K0",
     "fake": "offline",
 }
 

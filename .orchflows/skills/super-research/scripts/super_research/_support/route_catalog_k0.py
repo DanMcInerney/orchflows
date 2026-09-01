@@ -5,8 +5,10 @@ from __future__ import annotations
 from typing import Dict
 
 from .route_contracts import (
+    ARXIV_QUERY_ROUTE,
     BLUESKY_AUTHOR_FEED_ROUTE,
     BLUESKY_SEARCH_POSTS_ROUTE,
+    CROSSREF_WORKS_ROUTE,
     GITHUB_REST_ROUTE,
     GITHUB_SEARCH_ROUTE,
     HN_ALGOLIA_ITEM_ROUTE,
@@ -16,15 +18,24 @@ from .route_contracts import (
     LINKEDIN_JOBS_GUEST_SEARCH_ROUTE,
     MANIFOLD_MARKETS_ROUTE,
     OPEN_ORIGIN,
+    OPENALEX_WORKS_ROUTE,
     POLYMARKET_GAMMA_ROUTE,
     PUBLIC_PAGE_ARTICLE_ROUTE,
     PUBLIC_PAGE_CONTROL_ROUTE,
     REDDIT_FEED_ROUTE,
     REDDIT_SITE_ORIGIN,
+    SOUNDCLOUD_OEMBED_ROUTE,
+    SPOTIFY_OEMBED_ROUTE,
+    STACKEXCHANGE_SEARCH_ROUTE,
     STOCKTWITS_STREAM_ROUTE,
     STOCKTWITS_SYMBOL_SEARCH_ROUTE,
+    TIKTOK_OEMBED_ROUTE,
+    VIMEO_OEMBED_ROUTE,
     WEB_PAGE_OPEN_ROUTE,
+    WIKIMEDIA_PAGEVIEWS_ROUTE,
+    X_PUBLISH_OEMBED_ROUTE,
     YOUTUBE_CHANNEL_FEED_ROUTE,
+    YOUTUBE_OEMBED_ROUTE,
     RouteConstant,
 )
 
@@ -305,5 +316,134 @@ K0_ROUTE_CONSTANTS: Dict[str, RouteConstant] = {
         path="/",
         accept="text/html",
         operator_identity="iana",
+    ),
+    # Measured 2026-09-01 (the survey validation sweep): keyless 200 with
+    # `fromdate`/`todate` unix-second bounds genuinely filtering, the 300/day
+    # anonymous quota reported in the body (`quota_max`/`quota_remaining`),
+    # and — via this package's own opener — an uncompressed answer when no
+    # `Accept-Encoding` is sent, gzip when one is; `transport.decoded_body`
+    # honors the stated encoding either way.
+    STACKEXCHANGE_SEARCH_ROUTE: RouteConstant(
+        route_id=STACKEXCHANGE_SEARCH_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.stackexchange.com",
+        path="/2.3/search/advanced",
+        accept="application/json",
+        operator_identity="stackexchange",
+    ),
+    # Measured 2026-09-01: keyless 200; the date range is two path segments,
+    # `YYYYMMDD00` each, and the answer holds exactly the days inside them.
+    # A cold read from a fresh address answered 429 once and 200 on the next
+    # try — the ordinary cooldown covers it. The origin serves a metric
+    # series keyed by article title, not documents.
+    WIKIMEDIA_PAGEVIEWS_ROUTE: RouteConstant(
+        route_id=WIKIMEDIA_PAGEVIEWS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://wikimedia.org",
+        path="/api/rest_v1/metrics/pageviews/per-article",
+        accept="application/json",
+        operator_identity="wikimedia",
+        path_params=("project", "access", "agent", "article", "granularity", "start", "end"),
+    ),
+    # The three scholarly surfaces, measured keyless 200 on 2026-09-01, each
+    # bounding publication time at the origin in its own grammar: OpenAlex
+    # `filter=from_publication_date:...,to_publication_date:...`, Crossref
+    # `filter=from-pub-date:...,until-pub-date:...`, arXiv
+    # `submittedDate:[... TO ...]` inside `search_query`. The documented
+    # `mailto` etiquette on the first two is deliberately not sent: it asks
+    # for an email address, and this package attaches no identity a route
+    # constant does not spell.
+    OPENALEX_WORKS_ROUTE: RouteConstant(
+        route_id=OPENALEX_WORKS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.openalex.org",
+        path="/works",
+        accept="application/json",
+        operator_identity="openalex",
+    ),
+    CROSSREF_WORKS_ROUTE: RouteConstant(
+        route_id=CROSSREF_WORKS_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://api.crossref.org",
+        path="/works",
+        accept="application/json",
+        operator_identity="crossref",
+    ),
+    ARXIV_QUERY_ROUTE: RouteConstant(
+        route_id=ARXIV_QUERY_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://export.arxiv.org",
+        path="/api/query",
+        accept="application/atom+xml",
+        operator_identity="arxiv",
+    ),
+    # Six documented keyless oEmbed endpoints, measured 200 on 2026-09-01,
+    # each turning one platform URL into the item's own author, title and
+    # thumbnail. Every origin runs its own oEmbed — nothing here is a third
+    # party — and three of the six share a host with another declared route,
+    # which is the same "different endpoint, different route, own budget"
+    # shape the YouTube feed and InnerTube pair already holds.
+    YOUTUBE_OEMBED_ROUTE: RouteConstant(
+        route_id=YOUTUBE_OEMBED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://www.youtube.com",
+        path="/oembed",
+        accept="application/json",
+        operator_identity="youtube",
+    ),
+    VIMEO_OEMBED_ROUTE: RouteConstant(
+        route_id=VIMEO_OEMBED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://vimeo.com",
+        path="/api/oembed.json",
+        accept="application/json",
+        operator_identity="vimeo",
+    ),
+    SPOTIFY_OEMBED_ROUTE: RouteConstant(
+        route_id=SPOTIFY_OEMBED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://open.spotify.com",
+        path="/oembed",
+        accept="application/json",
+        operator_identity="spotify",
+    ),
+    SOUNDCLOUD_OEMBED_ROUTE: RouteConstant(
+        route_id=SOUNDCLOUD_OEMBED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://soundcloud.com",
+        path="/oembed",
+        accept="application/json",
+        operator_identity="soundcloud",
+    ),
+    TIKTOK_OEMBED_ROUTE: RouteConstant(
+        route_id=TIKTOK_OEMBED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://www.tiktok.com",
+        path="/oembed",
+        accept="application/json",
+        operator_identity="tiktok",
+    ),
+    # publish.x.com answered 200 to this host on 2026-09-01, from both its
+    # own name and the publish.twitter.com 301 in front of it; the survey's
+    # 402-from-datacenter report did not reproduce here. Declared on the
+    # measurement; the smoke stays the per-host oracle.
+    X_PUBLISH_OEMBED_ROUTE: RouteConstant(
+        route_id=X_PUBLISH_OEMBED_ROUTE,
+        access_class="K0",
+        method="GET",
+        origin="https://publish.x.com",
+        path="/oembed",
+        accept="application/json",
+        operator_identity="x",
     ),
 }
