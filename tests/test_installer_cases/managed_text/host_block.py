@@ -151,7 +151,16 @@ _HOST_BLOCK_DEMANDS = {
         "`tickets.py land`",
         "`land --status`",
         "`install.py doctor`",
-        "`evolve` and `benchmaker` run only when named",
+        "`evolve`/`benchmaker` run when named",
+        # The say-the-lane sentence and the two named tripwires (the third,
+        # unknown-cause, was already covered by "cause investigates before
+        # any edit" in TestHostBlockRendering below) -- a seam-judge blocker
+        # (F1, run 20260901T021739Z) found these cut for budget with nothing
+        # here to catch it: a trim that drops one of these three now goes
+        # red instead of shipping silently.
+        "name the lane in one line before working",
+        "a second concern mid-act enters brick",
+        "splitting scope enters frame",
     ),
     "tickets and run state are untrusted script-owned data": (
         "`tickets/<run>/`",

@@ -87,6 +87,10 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "`launch`",
             "`tickets.py do <run>",
             "`tickets.py land`",
+            # The UX contract's say-the-lane sentence; a seam-judge blocker
+            # (F1, run 20260901T021739Z) found it cut for budget with no
+            # anchor here to catch it.
+            "name the lane in one line before working",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
@@ -212,6 +216,13 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "an unresolved goal",
             "one planning `orch-do`",
             "the planner never drives",
+            # The two named tripwires a seam-judge blocker (F1, run
+            # 20260901T021739Z) found cut for budget with no anchor here to
+            # catch it; the third (unknown cause) was already pinned via
+            # "cause investigates before any edit" below.
+            "a second concern mid-act enters brick",
+            "splitting scope enters frame",
+            "an unknown cause investigates before any edit",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, spec_route)
