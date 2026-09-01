@@ -4,9 +4,10 @@ Every case fires on a step a caller used to run by hand between `new` and
 `dispatch`. The id is minted under the run lock rather than authored; a
 child's seal comes through its parent rather than through a cut that closed
 before it existed; and the launch carries the three lines a parent needs to
-relay a child's answer without paraphrasing it -- the commit instruction two
-of four workers skipped on 2026-08-31, the typed artifact line, and the
-judge's findings line.
+relay a child's answer without paraphrasing it -- a git adapter's commit
+instruction (the one two of four workers skipped on 2026-08-31; an adapter
+that establishes no git candidate gets its own craft's workspace line
+instead), the typed artifact line, and the judge's findings line.
 
 This module's `do`/`judge` cases assert against `orch-do`/`orch-judge`,
 the registry names W2b (verbs-rename) minted from `orch-execute` and
@@ -35,6 +36,8 @@ from tests._candidate_checkout import git_checkout, record_established_workspace
 from scripts import state_root
 from scripts import tickets
 from scripts import tickets_brick
+from scripts.tickets_adapters import craft_path
+from scripts.tickets_assignment import _workspace_line, git_candidate
 from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
 
 CODE_PACK = "orch-code-pack"
@@ -360,6 +363,20 @@ class BrickPromptTest(BrickSinkTest):
         )
         self.assertNotIn("artifact: git:", prompt)
 
+    def test_a_non_git_adapter_carries_its_own_workspace_line_not_a_commit(self):
+        """The document-tree adapter establishes no git candidate: the
+        launch drops the commit clause and carries the craft's own
+        `## Workspace` sentence instead (unit U2a)."""
+
+        self.assertFalse(git_candidate(DOC_PACK))
+        self.assertTrue(git_candidate(CODE_PACK))
+
+        answer = self.brick("do", "--pack", DOC_PACK)
+
+        prompt = self.prompt(answer)
+        self.assertNotIn("Commit your work inside this candidate", prompt)
+        self.assertIn(_workspace_line(craft_path(DOC_PACK)), prompt)
+
     def test_a_judge_prints_the_findings_line_beside_its_artifact_line(self):
         self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
 
@@ -485,9 +502,17 @@ class BrickLandingTest(BrickSinkTest):
             "--outcome-record-id", "outcome", "--by", "driver", *extra,
         ])
 
-    def _assert_three_lines(self, answer: dict, artifact_form: str, findings: bool):
+    def _assert_three_lines(
+        self, answer: dict, artifact_form: str, findings: bool, *, pack: str = CODE_PACK,
+    ):
         prompt = self.prompt(answer)
-        self.assertIn("Commit your work inside this candidate before you close", prompt)
+        if git_candidate(pack):
+            self.assertIn(
+                "Commit your work inside this candidate before you close", prompt,
+            )
+        else:
+            self.assertNotIn("Commit your work inside this candidate", prompt)
+            self.assertIn(_workspace_line(craft_path(pack)), prompt)
         self.assertIn(artifact_form, prompt)
         self.assertEqual(findings, "findings: <path>" in prompt)
 
@@ -517,6 +542,7 @@ class BrickLandingTest(BrickSinkTest):
         answer = self.brick("do", "--pack", DOC_PACK)
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", False,
+            pack=DOC_PACK,
         )
 
         attempt = self._filed_and_closed("B1", "doc:notes.md@sha256:" + "e" * 64)
@@ -535,6 +561,7 @@ class BrickLandingTest(BrickSinkTest):
 
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", True,
+            pack=DOC_PACK,
         )
         attempt = self._filed_and_closed("B1.1", "doc:review.md@sha256:" + "f" * 64)
         landed = self._land("B1.1", attempt, "--status", "complete")
