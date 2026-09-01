@@ -41,11 +41,13 @@ GITIGNORE_END = "# END ORCHFLOWS MANAGED IGNORES"
 # lock restores, the trust ledger that must never travel (P2), and the state
 # trees that are heavy or per-run rather than history. `state/friction/` and
 # `state/runs/` are deliberately absent: they are the sync value.
-# The six sink subdirectory names are `state_root.py`'s owner constants,
-# imported rather than restated so a renamed subdirectory there cannot
-# drift silently out of what the home ring ignores.
+# The six sink subdirectory names are `state_root.py`'s owners -- its
+# `tickets_root` function for the one with a root already, its five new
+# `*_SUBPATH` constants for the rest -- imported rather than restated so
+# a renamed subdirectory there cannot drift silently out of what the
+# home ring ignores.
 SINK_MANAGED_SUBPATHS = (
-    state_root.TICKETS_SUBPATH,
+    state_root.tickets_root().name,
     state_root.LOCKS_SUBPATH,
     state_root.SCRATCH_SUBPATH,
     state_root.WORKSPACES_SUBPATH,

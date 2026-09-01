@@ -49,12 +49,10 @@ WORKTREES_SUBPATH = "worktrees"
 WORKTREE_BRANCH_PREFIX = "wt"
 MAX_WALK_UP = 64
 
-# Sink subdirectory names: each an owner constant `orchflows_home.py`'s
-# `MANAGED_IGNORES` and any other reader import rather than restate.
-RUNS_SUBPATH = "runs"
-TICKETS_SUBPATH = "tickets"
-FRICTION_SUBPATH = "friction"
-IMPROVEMENT_SUBPATH = "improvement"
+# Sink subdirectory names with no root above yet -- `runs`, `tickets`,
+# `friction` and `improvement` already have one, their `*_root` function.
+# `orchflows_home.py`'s `MANAGED_IGNORES` imports these five plus
+# `tickets_root().name` rather than restate any of them.
 LOCKS_SUBPATH = "locks"
 SCRATCH_SUBPATH = "scratch"
 WORKSPACES_SUBPATH = "workspaces"
@@ -72,19 +70,23 @@ def state_root() -> Path:
 
 
 def runs_root() -> Path:
-    return state_root() / RUNS_SUBPATH
+    # Literal join, not `RUNS_SUBPATH`: `tools/validate_support/friction.py`
+    # (and any sibling check shaped like it) reads this family's return
+    # expression by AST, matching a `<root> / "name"` join -- a `Name`
+    # reference would read as zero matches instead of one.
+    return state_root() / "runs"
 
 
 def tickets_root() -> Path:
-    return state_root() / TICKETS_SUBPATH
+    return state_root() / "tickets"
 
 
 def friction_root() -> Path:
-    return state_root() / FRICTION_SUBPATH
+    return state_root() / "friction"
 
 
 def improvement_root() -> Path:
-    return state_root() / IMPROVEMENT_SUBPATH
+    return state_root() / "improvement"
 
 
 def orchflows_home() -> Path:

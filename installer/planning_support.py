@@ -12,7 +12,9 @@ SHARED_READER_MODULES = (
     # entrypoint here imports it, and the reader payload is a `scripts`
     # package rather than the flat bin layout, so a module missing from this
     # list is an `ImportError` at the reader's first import rather than a
-    # missing file anyone notices.
+    # missing file anyone notices. `_bootstrap.py` is `state_root.py`'s own
+    # dependency, imported before anything else is safe to import.
+    "_bootstrap.py",
     "console.py",
     "packs.py",
     "packs_support.py",

@@ -44,7 +44,7 @@ class TestHashAndSnapshot(unittest.TestCase):
             (sink / "runs" / "somerun").mkdir(parents=True)
             (sink / "runs" / "somerun" / "worklog.md").write_text("x\n", encoding="utf-8")
             with mock.patch.dict(
-                os.environ, {suite_check.STATE_HOME_ENV_VAR: str(sink)}
+                os.environ, {suite_check._bootstrap.ENV_VAR: str(sink)}
             ):
                 watched = suite_check.collect_snapshot(root, root / "home", watch_home=True)
                 # the sink guard is not part of the home watch, so
@@ -55,28 +55,30 @@ class TestHashAndSnapshot(unittest.TestCase):
         self.assertIn(expected, unwatched["trees"]["state_sink"])
 
     def test_the_sink_root_it_watches_is_the_one_the_scripts_resolve(self):
-        """``suite_check.py`` cannot import ``scripts/state_root.py``: it must
-        watch the sink the suite's interpreter resolves even against a tree
-        that has no such module. That duplication is only safe while the two
-        spellings agree."""
+        """``suite_check.py`` imports ``scripts/_bootstrap.py`` (never
+        ``scripts/state_root.py``: it must watch the sink the suite's
+        interpreter resolves even against a tree that has no such
+        module) for the env-var name; ``STATE_HOME_SUBPATH`` still
+        mirrors ``state_root.DEFAULT_HOME_SUBPATH`` independently, the
+        installer's seeding default duplicated for the same reason."""
 
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         try:
             import state_root
         finally:
             sys.path.pop(0)
-        self.assertEqual(state_root.ENV_VAR, suite_check.STATE_HOME_ENV_VAR)
+        self.assertEqual(state_root.ENV_VAR, suite_check._bootstrap.ENV_VAR)
         self.assertEqual(state_root.DEFAULT_HOME_SUBPATH, suite_check.STATE_HOME_SUBPATH)
         with tempfile.TemporaryDirectory() as td:
             home = Path(td)
             with mock.patch.dict(os.environ, {}, clear=False):
-                os.environ.pop(suite_check.STATE_HOME_ENV_VAR, None)
+                os.environ.pop(suite_check._bootstrap.ENV_VAR, None)
                 self.assertEqual(
                     home / ".orchflows" / "state", suite_check.state_sink_dir(home)
                 )
             for blank in ("", "   "):
                 with mock.patch.dict(
-                    os.environ, {suite_check.STATE_HOME_ENV_VAR: blank}
+                    os.environ, {suite_check._bootstrap.ENV_VAR: blank}
                 ):
                     self.assertEqual(
                         home / ".orchflows" / "state",
@@ -84,7 +86,7 @@ class TestHashAndSnapshot(unittest.TestCase):
                         blank,
                     )
             with mock.patch.dict(
-                os.environ, {suite_check.STATE_HOME_ENV_VAR: "~/redirected"}
+                os.environ, {suite_check._bootstrap.ENV_VAR: "~/redirected"}
             ):
                 self.assertEqual(
                     Path.home() / "redirected", suite_check.state_sink_dir(home)

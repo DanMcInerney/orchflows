@@ -117,6 +117,7 @@ __all__ = [
     "unittest",
     "Path",
     "mock",
+    "state_root",
     "claude_live",
     "codex_live",
     "routing_live",
