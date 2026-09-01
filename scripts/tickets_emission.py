@@ -1,12 +1,12 @@
 """The grade every ticket-emitting command runs before it writes.
 
-`lint`, dispatch-v1's admission guards -- the retired `claim` door's
+`lint`, dispatch-v1's admission guards -- the retired `claim` command's
 replacement -- and the internal readiness pass `dispatch`, `frame-open`
 and `land` each run before promoting a pending ticket -- the retired
-`ready` door's replacement -- grade a ticket they are handed. `new`, `do`,
+`ready` command's replacement -- grade a ticket they are handed. `new`, `do`,
 `judge` and `stamp-generation` write one. Those two halves used to run
 different grades, so a command could spend the run's time writing what
-the next grading door then refused, the flag that was wrong still in the
+the next grading command then refused, the flag that was wrong still in the
 caller's hand at emission with nobody looking there.
 
 The one grade is `tickets_context.graded_admission`, and this module is

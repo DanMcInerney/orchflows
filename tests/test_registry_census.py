@@ -158,7 +158,7 @@ Deliver one result.
         self.assertNotIn("loop-arm", loop_refusal)
         self.assertNotIn("bind '", loop_refusal)
 
-    def test_the_outline_and_slice_doorways_collapse_to_one_remedy(self):
+    def test_the_outline_and_slice_executors_collapse_to_one_remedy(self):
         """`orch-outline` retired as a verb in wave 3; `orch-slice` retires
         in W4a together with the instantiate layer that was its only
         minter of decomposed roots. Both leave their craft behind as the

@@ -1,9 +1,9 @@
 """The grading context every ticket command builds the same way.
 
-`lint`, dispatch-v1's admission guards -- the retired `claim` door's
+`lint`, dispatch-v1's admission guards -- the retired `claim` command's
 replacement -- the internal readiness pass `dispatch`, `frame-open` and
 `land` each run before promoting a pending ticket -- the retired `ready`
-door's replacement -- and the emission commands `tickets_emission` fronts
+command's replacement -- and the emission commands `tickets_emission` fronts
 all grade one ticket against the same two surroundings: the sibling texts
 of its run directory, and the run-state tree the sealed grader resolves
 its generation records from. Each built both for itself, and lint's copy

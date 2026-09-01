@@ -184,7 +184,7 @@ class FrameShapeTest(FrameSinkTest):
 class FrameJournalTest(FrameSinkTest):
     """The journal is the driver's working memory, and it rides `result`."""
 
-    def test_a_wave_appends_through_the_result_door_under_the_frames_identity(self):
+    def test_a_wave_appends_through_the_result_channel_under_the_frames_identity(self):
         frame = self.frame()
 
         self.journal(frame, "wave 1: two drafts out", "wave-1")
@@ -337,7 +337,7 @@ class FrameCloseTest(FrameSinkTest):
             "frame-close", self.RUN, frame["id"],
         )["frame_close"]["status"])
 
-    def test_a_judged_criterion_is_a_judge_brick_rather_than_a_frame_gate(self):
+    def test_a_judged_criterion_is_a_judge_callable_rather_than_a_frame_gate(self):
         refused = self.call(
             "frame-open", self.RUN, "--goal-file", str(self.goal_file),
             "--done", json.dumps(
