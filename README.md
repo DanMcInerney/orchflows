@@ -88,8 +88,9 @@ unverified cause investigates before anything edits. Everything else
 runs only when you name it, so the routing table never
 grows as the library does. The table is installed at
 `~/.orchflows/host-block.md`, the one surface every turn already pays
-for; `rules/topology.md` §2 owns what may enter it. If routing gets in
-the way, the router's off flag stands it down for the session.
+for; [vocabulary.md](docs/vocabulary.md)'s routing-shape entry owns what
+may enter it. If routing gets in the way, the router's off flag stands
+it down for the session.
 
 Name the bricks yourself when you want a specific shape:
 

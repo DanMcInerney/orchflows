@@ -2,13 +2,15 @@
 
 import unittest
 
-from tools import preflight
+from tools import preflight, render_ci_topology
 
 
 class PreflightDocumentationTest(unittest.TestCase):
     def test_module_docstring_names_the_active_ci_topology(self):
-        self.assertIn("five active CI legs", preflight.__doc__)
-        self.assertIn("three Ubuntu, one macOS, and one Windows", preflight.__doc__)
+        # The leg breakdown is generated (tools/render_ci_topology.py), so
+        # this asks the renderer what the truth is instead of hardcoding a
+        # second copy that would only agree with checks.yml by accident.
+        self.assertIn(render_ci_topology.leg_total_clause(), preflight.__doc__)
         self.assertNotIn("nine CI cells", preflight.__doc__)
 
 
