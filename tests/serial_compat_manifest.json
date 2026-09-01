@@ -2100,23 +2100,6 @@
    ]
   },
   {
-   "module": "tests.baseline_pin",
-   "owner": "<module>",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "import-path"
-   ]
-  },
-  {
-   "module": "tests.baseline_pin",
-   "owner": "_grade",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "cwd",
-    "monkeypatch"
-   ]
-  },
-  {
    "module": "tests.test_affected_tests_cases.common",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
