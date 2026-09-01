@@ -27,6 +27,7 @@ from unittest import mock
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
+from tests import _retired_doors as retired_doors
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch
 from scripts.tickets_format import canonical_json, parse_canonical_json
@@ -47,7 +48,7 @@ class LaunchResolutionTest(unittest.TestCase):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "craft": None, "craft_scope": None, "dependencies": [],
-            "dispatch_id": "D1", "executor": "orch-execute",
+            "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "id": "T", "lease_expires_at": "2099-01-01T00:00:00Z",
             "pack": None, "review_kind": None, "review_tip": None, "role": role,
             "root_path": None, "run": "run", "ticket_path": "/sink/run/T.md",
@@ -144,15 +145,15 @@ class LaunchResolutionTest(unittest.TestCase):
 
         self.assertEqual(
             ("worker", "orch-worker"),
-            launch.resolved_role_profile("orch-execute", None),
+            launch.resolved_role_profile("orch-do", None),
         )
         self.assertEqual(
             ("planner", "orch-planner"),
-            launch.resolved_role_profile("orch-execute", "orch-planner"),
+            launch.resolved_role_profile("orch-do", "orch-planner"),
         )
         self.assertEqual(
             ("worker", "house-profile"),
-            launch.resolved_role_profile("orch-execute", "house-profile"),
+            launch.resolved_role_profile("orch-do", "house-profile"),
         )
 
 
@@ -187,7 +188,7 @@ class DispatchLaunchTest(unittest.TestCase):
         """
 
         self.run_command(
-            "new", run, "T", "--executor", "orch-execute",
+            "new", run, "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required", *extra,
@@ -213,7 +214,7 @@ class DispatchLaunchTest(unittest.TestCase):
         return Path(self.temporary.name) / "tickets" / run / "T.md"
 
     def run_command(self, *arguments):
-        result = tickets._dispatch(list(arguments))
+        result = retired_doors.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -240,7 +241,7 @@ class DispatchLaunchTest(unittest.TestCase):
  "--workspace", str(self.candidate), *extra,
         ]
         with self.established():
-            return tickets._dispatch(arguments)
+            return retired_doors.run(arguments)
 
     def test_the_dispatch_carries_the_launch_its_host_record_declares(self):
         result = self.dispatch()
@@ -319,7 +320,7 @@ class DispatchLaunchTest(unittest.TestCase):
         return {
             "assigned_name": "child-1", "assignment_seal": "sha256:seal",
             "craft": None, "craft_scope": None, "dependencies": [],
-            "dispatch_id": "D1", "executor": "orch-check",
+            "dispatch_id": "D1", "executor": "orch-judge",
             "executor_script": None, "id": "R1.gate.critique.code",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": "orch-code-pack",
             "review_kind": None, "review_tip": None, "role": "worker",
@@ -423,7 +424,7 @@ class DispatchLaunchTest(unittest.TestCase):
         ):
             self.assertIn(token, prompt)
 
-        filed = tickets._dispatch([
+        filed = retired_doors.run([
             "result", "run", "T", "--assignment-seal", state["assignment_seal"],
             "--dispatch-id", state["dispatch_id"], "--record-id", "R1",
             "--by", state["owner"],
@@ -455,7 +456,7 @@ class LandTest(unittest.TestCase):
         )
         self.environment.start()
         self.run_command(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -508,7 +509,7 @@ class LandTest(unittest.TestCase):
         return Path(self.temporary.name) / "tickets" / "run" / "T.md"
 
     def run_command(self, *arguments):
-        result = tickets._dispatch(list(arguments))
+        result = retired_doors.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -524,7 +525,7 @@ class LandTest(unittest.TestCase):
 
     def land(self, *extra, status="complete"):
         graded = ["--status", status] if status is not None else []
-        return tickets._dispatch([
+        return retired_doors.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *graded, *extra,
@@ -620,7 +621,7 @@ class LandTest(unittest.TestCase):
     def test_land_refuses_a_malformed_identity_without_writing(self):
         before = self.ticket_path().read_text(encoding="utf-8")
 
-        refusal = tickets._dispatch([
+        refusal = retired_doors.run([
             "land", "..", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--status", "complete",

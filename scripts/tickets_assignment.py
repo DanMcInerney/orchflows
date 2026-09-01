@@ -24,7 +24,7 @@ if __package__:
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_dispatch_launch import resolved_role_profile
     from .tickets_format import (
-        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, is_loop_stub, lease_of,
+        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
     from .tickets_registry import REVIEW_KINDS
@@ -39,7 +39,7 @@ else:
     from tickets_context import graded_admission, run_snapshot
     from tickets_dispatch_launch import resolved_role_profile
     from tickets_format import (
-        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, is_loop_stub, lease_of,
+        CHECKED_BY_KEY, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
     from tickets_registry import REVIEW_KINDS
@@ -49,9 +49,6 @@ else:
     )
 
 ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
-GATE_CRITIQUE_ID = "{root}.gate.critique.{lens}"
-GATE_REPAIR_ID = "{root}.gate.repair"
-GATE_EXECUTOR_SECTIONS = [(REPORT_SECTION, "")]
 GATE_MARKER = ".gate."
 CHECK_SUFFIX = ".check"
 # The craft owns its verification scope; this finds the sentence rather than
@@ -202,6 +199,22 @@ def _craft(pack):
     return str(path), _craft_scope(path)
 
 
+def artifact_kind(pack):
+    """The typed artifact prefix the pack's adapter fixes, or None.
+
+    Resolved here with the rest of what the prompt cannot derive from the
+    ticket, and left None for a ticket that stamps no resolvable pack: a
+    child asked for a line in no grammar would print one nothing grades.
+    """
+
+    if not str(pack or "").strip():
+        return None
+    try:
+        return adapter_spec(pack).artifact_kind
+    except AdapterError:
+        return None
+
+
 def dispatch_assignment(rest, *, attempt=None, review_state=None):
     """Grade one ticket for dispatch and resolve every fact its launch names.
 
@@ -247,13 +260,6 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
         return {"error": f"ticket has no current admission receipt: stored {stored or '<missing>'}, current {grade['receipt']}"}
     sections = _sections(text)
     executor = _executor_of(loaded)
-    if is_loop_stub(loaded):
-        return {"error": (
-            f"ticket {run}/{ticket_id} is a loop stub and is never dispatched: "
-            "the driver arms, evaluates, and advances it through "
-            "tickets.py loop-arm | loop-evaluate | loop-advance, and its "
-            "iterations are what dispatch"
-        )}
     missing = []
     if not executor:
         missing.append("executor (frontmatter)")
@@ -287,6 +293,7 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
         candidate = ticket_path.with_name(f"{root_id}.md")
         root_path = str(candidate) if candidate.is_file() else None
     return {"assignment": {
+        "artifact_kind": artifact_kind(pack),
         "assigned_name": assigned_name,
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
         "craft": craft,
@@ -309,8 +316,7 @@ def dispatch_assignment(rest, *, attempt=None, review_state=None):
 
 
 __all__ = (
-    "ASSIGNMENT_SECTIONS", "CHECK_SUFFIX", "GATE_CRITIQUE_ID",
-    "GATE_EXECUTOR_SECTIONS", "GATE_MARKER", "GATE_REPAIR_ID",
-    "_claim_is_stale", "dispatch_assignment",
+    "ASSIGNMENT_SECTIONS", "CHECK_SUFFIX", "GATE_MARKER",
+    "_claim_is_stale", "artifact_kind", "dispatch_assignment",
     "review_root_id", "workspace_establishment_finding",
 )

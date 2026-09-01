@@ -18,8 +18,8 @@ names the worker-or-planner authority a dispatched child files under.
    the applied skill's declared role — a multi-stage pack's stages run
    in one child at the role resolved from the ticket's `executor`; a
    `none` declaration or a dispatch naming no applied skill takes only a
-   caller-named profile (name `orch-planner` for a dispatched template
-   stub unless judgment says otherwise); absent a caller-named profile
+   caller-named profile (name `orch-planner` for a hand-written ticket
+   unless judgment says otherwise); absent a caller-named profile
    the dispatch is refused, never substituted silently.
 5. An override binds only the dispatch naming it; it never propagates to
    a descendant dispatch.

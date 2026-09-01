@@ -14,7 +14,7 @@ if __package__:
     from . import console
     from .tickets_format import _extract_flag, _read_utf8
     from .tickets_issue import _cmd_new
-    from .tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
+    from .tickets_lifecycle import _cmd_check, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from .tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from .tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from .tickets_join import _cmd_dispatch_join
@@ -24,18 +24,16 @@ if __package__:
     from .tickets_commands import HELP_COMMANDS, HELP_FLAGS, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags
     from .tickets_lint import _cmd_lint
     from .tickets_bound import _cmd_bound_check
-    from .tickets_grade import _cmd_gate, _cmd_grade
+    from .tickets_grade import _cmd_grade
+    from .tickets_brick import _cmd_do, _cmd_judge
+    from .tickets_frame import _cmd_frame_close, _cmd_frame_open
     from .tickets_dispatch_facade import _cmd_dispatch
     from .tickets_land import _cmd_land
-    from .tickets_loop import _cmd_loop_advance, _cmd_loop_arm, _cmd_loop_evaluate
-    from .tickets_instantiate import _cmd_instantiate, _cmd_stamp_generation, _sealed_template_snapshot, _template_stubs, git_head, render_stub
-    from .tickets_seal import GENERATION_SUBCOMMANDS
-    from .tickets_dispatch_gate import _cmd_checker_stage, _gate_body, _gate_input, _gate_sections, _gate_stub, _gate_under_run_lock, _input_name, _listed_items, _pack_domain
 else:  # pragma: no cover - direct/installed flat script path
     import console
     from tickets_format import _extract_flag, _read_utf8
     from tickets_issue import _cmd_new
-    from tickets_lifecycle import _cmd_check, _cmd_join_noop_repair, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
+    from tickets_lifecycle import _cmd_check, _cmd_list, _cmd_ready, _cmd_set_status, _cmd_show
     from tickets_result import COVERAGE_RECORD_NAME, IMPROVEMENT_USAGE, PROPOSALS_DIR, _append_one_line, _cmd_result, _cmd_run_state
     from tickets_attempts import _cmd_dispatch_commit, _cmd_dispatch_open, _cmd_dispatch_replace, _cmd_dispatch_retire
     from tickets_join import _cmd_dispatch_join
@@ -45,17 +43,11 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_commands import HELP_COMMANDS, HELP_FLAGS, SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE, VALUE_FLAGS, resolve_payload_flags
     from tickets_lint import _cmd_lint
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check
-    _grade_module = __import__('tickets_grade'); _cmd_gate = _grade_module._cmd_gate; _cmd_grade = _grade_module._cmd_grade
+    _cmd_grade = __import__('tickets_grade')._cmd_grade
+    _brick = __import__('tickets_brick'); _cmd_do = _brick._cmd_do; _cmd_judge = _brick._cmd_judge
+    _frame = __import__('tickets_frame'); _cmd_frame_open = _frame._cmd_frame_open; _cmd_frame_close = _frame._cmd_frame_close
     from tickets_dispatch_facade import _cmd_dispatch
     _cmd_land = __import__('tickets_land')._cmd_land
-    _loop = __import__('tickets_loop')
-    _cmd_loop_arm, _cmd_loop_evaluate, _cmd_loop_advance = (_loop._cmd_loop_arm, _loop._cmd_loop_evaluate, _loop._cmd_loop_advance)
-    _instantiate_module = __import__('tickets_instantiate'); _cmd_instantiate = _instantiate_module._cmd_instantiate; _cmd_stamp_generation = _instantiate_module._cmd_stamp_generation
-    _sealed_template_snapshot = _instantiate_module._sealed_template_snapshot; _template_stubs = _instantiate_module._template_stubs; git_head = _instantiate_module.git_head; render_stub = _instantiate_module.render_stub
-    _gate_module = __import__('tickets_dispatch_gate'); _cmd_checker_stage = _gate_module._cmd_checker_stage; _gate_body = _gate_module._gate_body; _gate_input = _gate_module._gate_input; _gate_sections = _gate_module._gate_sections
-    _gate_stub = _gate_module._gate_stub; _gate_under_run_lock = _gate_module._gate_under_run_lock; _input_name = _gate_module._input_name; _listed_items = _gate_module._listed_items; _pack_domain = _gate_module._pack_domain
-    try: GENERATION_SUBCOMMANDS = __import__("tickets_seal").GENERATION_SUBCOMMANDS
-    except ModuleNotFoundError: GENERATION_SUBCOMMANDS = {}
 # Installed by `scripts/tickets.py` at facade import, never imported back up
 # from here: the facade owns which seams it re-points, and a helper reaching
 # up for that is the import cycle `tickets_store` used to close per write.
@@ -145,7 +137,7 @@ def _dispatch(argv):
     if _sync_seams is not None:
         _sync_seams()
     if not argv:
-        return {'error': 'missing subcommand: new | lint | bound-check | instantiate | grade | gate | checker-stage | stamp-generation | draft-validate | seal | list | show | ready | dispatch | land | loop-arm | loop-evaluate | loop-advance | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | join-noop-repair | result | worklog | run-state | repair-run-identity | improvement'}
+        return {'error': 'missing subcommand: new | do | judge | frame-open | frame-close | lint | bound-check | grade | list | show | dispatch | land | dispatch-open | dispatch-commit | dispatch-retire | dispatch-replace | dispatch-outcome | dispatch-join | check | set-status | result | worklog | run-state | repair-run-identity | improvement'}
     command, rest = (argv[0], argv[1:])
     if command in HELP_COMMANDS:
         return _cmd_help()
@@ -159,19 +151,11 @@ def _dispatch(argv):
     # Named one per line, not folded into a membership test: `cli_help`
     # reads the dispatched set off these comparisons, and a subcommand
     # reachable only through a lookup is one whose `--help` silently errs.
-    if command == 'stamp-generation': return _cmd_stamp_generation(rest)
-    if command == 'draft-validate': return GENERATION_SUBCOMMANDS[command][2](rest)
-    if command == 'seal': return GENERATION_SUBCOMMANDS[command][2](rest)
-    if command == 'instantiate': return _cmd_instantiate(rest)
     if command == 'grade': return _cmd_grade(rest)
-    if command == 'gate': return _cmd_gate(rest)
-    if command == 'checker-stage': return _cmd_checker_stage(rest)
     if command == 'list':
         return _cmd_list(rest)
     if command == 'show':
         return _cmd_show(rest)
-    if command == 'ready':
-        return _cmd_ready(rest)
     if command == 'dispatch-open':
         return _cmd_dispatch_open(rest)
     if command == 'dispatch-commit':
@@ -182,10 +166,11 @@ def _dispatch(argv):
         return _cmd_dispatch_replace(rest)
     if command == 'dispatch':
         return _cmd_dispatch(rest)
+    if command == 'do': return _cmd_do(rest)
+    if command == 'judge': return _cmd_judge(rest)
+    if command == 'frame-open': return _cmd_frame_open(rest)
+    if command == 'frame-close': return _cmd_frame_close(rest)
     if command == 'land': return _cmd_land(rest)
-    if command == 'loop-arm': return _cmd_loop_arm(rest)
-    if command == 'loop-evaluate': return _cmd_loop_evaluate(rest)
-    if command == 'loop-advance': return _cmd_loop_advance(rest)
     if command == 'dispatch-outcome':
         return _cmd_dispatch_outcome(rest)
     if command == 'dispatch-join':
@@ -194,8 +179,6 @@ def _dispatch(argv):
         return _cmd_check(rest)
     if command == 'set-status':
         return _cmd_set_status(rest)
-    if command == 'join-noop-repair':
-        return _cmd_join_noop_repair(rest)
     if command == 'result':
         return _cmd_result(rest)
     if command == 'worklog':

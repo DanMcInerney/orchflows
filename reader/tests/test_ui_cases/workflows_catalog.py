@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 
 from reader.scripts import ui_workflows_catalog as catalog
-from reader.scripts import ui_workflows_compositions as compositions
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -17,118 +16,15 @@ SUMMARY = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 
 
 class WorkflowCatalogTests(unittest.TestCase):
-    def test_uninstantiated_executor_slot_invents_no_skill_projection(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: {{executor}}\n"
-                "depends_on: []\nbound: {{bound}}\n---\n",
-            )
-
-            detail = compositions.project_composition(root, "demo")
-
-        self.assertEqual(
-            ["workflow:demo", "work:demo/00-deliver"],
-            [node["id"] for node in detail["nodes"]],
-        )
-        self.assertEqual([], detail["edges"])
-        self.assertEqual([], detail["diagnostics"])
-
-    def test_a_stub_projects_its_one_executor_and_no_retired_sequence(self):
-        """`sequence` was retired with the multi-stage chain: a stub runs its
-        one `executor`, and a pack's stages run inside that one child. A stub
-        still carrying the key gets no second executor edge from it."""
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: orch-tdd\n"
-                "sequence: [orch-tdd, orch-verify]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-            for name in ("orch-tdd", "orch-verify"):
-                self._write(
-                    root / "skills" / "workflows" / name / "SKILL.md",
-                    f"---\nname: {name}\ndescription: Execute {name}.\nrole: worker\n---\n",
-                )
-
-            detail = compositions.project_composition(root, "demo")
-
-        executor_edges = [
-            edge for edge in detail["edges"] if edge["kind"] == "executor"
-        ]
-        self.assertEqual(
-            ["skill:orch-tdd"],
-            [edge["to"] for edge in executor_edges],
-        )
-        self.assertEqual(executor_edges, [
-            edge for edge in detail["relations"] if edge["kind"] == "executor"
-        ])
-        self.assertNotIn(
-            "skill:orch-verify", {node["id"] for node in detail["nodes"]}
-        )
-
-    def test_pack_cell_sequence_projects_only_its_bound_executor(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: orch-draft\n"
-                "pack: orch-content-pack\nsequence: [draft, edit]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-            self._write(
-                root / "skills" / "workflows" / "orch-draft" / "SKILL.md",
-                "---\nname: orch-draft\ndescription: Execute draft.\nrole: worker\n---\n",
-            )
-
-            detail = compositions.project_composition(root, "demo")
-
-        self.assertEqual(["skill:orch-draft"], [
-            edge["to"] for edge in detail["edges"] if edge["kind"] == "executor"
-        ])
-        self.assertNotIn("skill:draft", [node["id"] for node in detail["nodes"]])
-        self.assertNotIn("skill:edit", [node["id"] for node in detail["nodes"]])
-
-    def test_list_valued_executor_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write(
-                root / "example-workflows" / "demo" / "template.md",
-                "---\nname: demo\ndescription: Demonstrate one flow.\nentry: named\n---\n",
-            )
-            self._write(
-                root / "example-workflows" / "demo" / "00-deliver.md",
-                "---\nid: 00-deliver\nexecutor: [orch-tdd, orch-verify]\n"
-                "depends_on: []\nbound: 30m\n---\n",
-            )
-
-            with self.assertRaises(compositions.WorkflowCompositionError):
-                compositions.project_composition(root, "demo")
-
     def test_escaping_file_and_directory_symlink_owners_are_rejected(self):
         for link_kind in ("file", "directory"):
             with self.subTest(link_kind=link_kind), tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
                 root = Path(directory)
                 external = Path(outside) / "demo"
                 external.mkdir()
-                external_template = external / "template.md"
+                external_template = external / "SKILL.md"
                 external_template.write_text(
-                    "---\nname: demo\ndescription: EXTERNAL_SECRET\nentry: named\n---\n",
+                    "---\nname: demo\ndescription: EXTERNAL_SECRET\n---\n",
                     encoding="utf-8",
                 )
                 composition = root / "example-workflows" / "demo"
@@ -138,7 +34,7 @@ class WorkflowCatalogTests(unittest.TestCase):
                         os.symlink(external, composition, target_is_directory=True)
                     else:
                         composition.mkdir()
-                        os.symlink(external_template, composition / "template.md")
+                        os.symlink(external_template, composition / "SKILL.md")
                 except OSError as error:
                     self.skipTest(f"symlink unavailable: {error}")
                 summary_path = self._write_summary(root, {"demo": self._summary()})
@@ -146,14 +42,14 @@ class WorkflowCatalogTests(unittest.TestCase):
                 with self.assertRaises(catalog.WorkflowCatalogError):
                     catalog.project_catalog(root, summary_path)
 
-    def test_repository_catalog_is_derived_from_compositions_and_workflow_skills(self):
+    def test_repository_catalog_is_derived_from_both_canonical_homes(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)
 
         self.assertEqual(
             [
                 "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
                 "self-improve", "skill-tournament", "super-research",
-                "orch-check", "orch-execute", "orch-outline", "orch-slice",
+                "orch-do", "orch-judge",
             ],
             [workflow["id"] for workflow in projected],
         )
@@ -162,14 +58,16 @@ class WorkflowCatalogTests(unittest.TestCase):
             for workflow in projected
         ))
         by_id = {workflow["id"]: workflow for workflow in projected}
-        self.assertEqual("composition", by_id["browser-game"]["type"])
-        self.assertEqual("named", by_id["browser-game"]["entry"])
+        # Both homes carry the same kind now: a library workflow and a brick
+        # are alike skills, differing only in what their prose calls.
+        self.assertEqual("workflow-skill", by_id["browser-game"]["type"])
+        self.assertEqual("callable", by_id["browser-game"]["entry"])
         self.assertEqual(
             "Turn an incomplete browser-game brief into evidence-bound checkpoints and pack-stamped successor delivery.",
             by_id["browser-game"]["description"],
         )
-        self.assertEqual("workflow-skill", by_id["orch-outline"]["type"])
-        self.assertEqual("callable", by_id["orch-outline"]["entry"])
+        self.assertEqual("workflow-skill", by_id["orch-do"]["type"])
+        self.assertEqual("callable", by_id["orch-do"]["entry"])
 
     def test_validated_summary_is_joined_by_canonical_id(self):
         projected = catalog.project_catalog(ROOT, SUMMARY)
@@ -189,13 +87,10 @@ class WorkflowCatalogTests(unittest.TestCase):
             with self.assertRaises(catalog.WorkflowCatalogError):
                 catalog.project_catalog(root, summary_path)
 
-    def test_duplicate_owner_identity_and_unknown_entry_are_closed_errors(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self._write_owner(root, name="demo", entry="automatic")
-            summary_path = self._write_summary(root, {"demo": self._summary()})
-            with self.assertRaises(catalog.WorkflowCatalogError):
-                catalog.project_catalog(root, summary_path)
+    def test_duplicate_owner_identity_is_a_closed_error(self):
+        """One name, two canonical homes: `example-workflows/demo/` and
+        `skills/workflows/demo/` both claim `demo`, and the catalog refuses
+        rather than picking one."""
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -211,11 +106,12 @@ class WorkflowCatalogTests(unittest.TestCase):
                 catalog.project_catalog(root, summary_path)
 
     @staticmethod
-    def _write_owner(root: Path, *, name: str, entry: str = "named") -> None:
-        template = root / "example-workflows" / "demo" / "template.md"
-        template.parent.mkdir(parents=True)
-        template.write_text(
-            f"---\nname: {name}\ndescription: Demonstrate one flow.\nentry: {entry}\n---\n",
+    def _write_owner(root: Path, *, name: str) -> None:
+        body = root / "example-workflows" / "demo" / "SKILL.md"
+        body.parent.mkdir(parents=True)
+        body.write_text(
+            f"---\nname: {name}\ndescription: Demonstrate one flow.\n"
+            "disable-model-invocation: true\n---\n",
             encoding="utf-8",
         )
 

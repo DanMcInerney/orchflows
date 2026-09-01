@@ -22,9 +22,9 @@ from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
 from scripts import state_root
+from tests import _retired_doors as retired_doors
 from scripts import tickets
 from scripts import tickets_done
-from scripts import tickets_loop
 from scripts.tickets_format import _sections, parse_canonical_json
 
 # The interpreter every predicate below is run through: a bare `python` is a
@@ -62,22 +62,15 @@ class DonePredicateGrammarTest(unittest.TestCase):
                 self.assertEqual(len(expected), len(defects), defects)
                 for fragment, defect in zip(expected, defects):
                     self.assertIn(fragment, defect)
-        # The loop has no second home for it: the marker moves who reads the
-        # one `done`, and a marker with nothing to read is refused.
-        self.assertEqual(
-            [], tickets_format.loop_defects("true", "orch-execute", _done("command", "ok")),
-        )
-        marked = tickets_format.loop_defects("true", "orch-execute", "")
-        self.assertTrue(any("carries the `done` predicate" in item for item in marked))
-        valued = tickets_format.loop_defects(
-            '{"done": {"form": "command", "value": "ok"}}', "orch-execute",
-            _done("command", "ok"),
-        )
-        self.assertTrue(any("takes no other value" in item for item in valued))
+        # `done` has one home and one grader. The `loop` marker was the
+        # second reader of this field and it is gone, so a ticket carrying
+        # the marker is now refused for the unknown field it is.
+        self.assertFalse(hasattr(tickets_format, "loop_defects"))
+        self.assertNotIn("loop", tickets_format.ALLOWED_TICKET_KEYS)
 
     def test_the_predicate_is_part_of_the_sealed_assignment(self):
         """`done` says what completion means, so a changed one is a changed
-        assignment -- the rule `loop` already answers to."""
+        assignment."""
 
         from scripts import tickets_generations
 
@@ -100,7 +93,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def run_command(self, *arguments):
-        result = tickets._dispatch(list(arguments))
+        result = retired_doors.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -111,7 +104,7 @@ class LandDonePredicateTest(unittest.TestCase):
         """A sealed, dispatched, closed item ready for one `land`."""
 
         self.run_command(
-            "new", "run", "T", "--executor", "orch-execute",
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "none",
@@ -157,7 +150,7 @@ class LandDonePredicateTest(unittest.TestCase):
         )
 
     def land(self, *extra):
-        return tickets._dispatch([
+        return retired_doors.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *extra,
@@ -203,7 +196,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertEqual("arm", step["outcome"])
         self.assertEqual("T.repair.1", step["repair"])
         armed = self.ticket_path("T.repair.1").read_text(encoding="utf-8")
-        self.assertIn("executor: orch-execute", armed)
+        self.assertIn("executor: orch-do", armed)
         self.assertIn("exits 3 there now", armed)
         # the ticket is not closed: nothing joined, so nothing is terminal
         self.assertIn(
@@ -215,16 +208,16 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertEqual("replayed", self.steps(again)["done"]["outcome_detail"])
 
     def test_two_rounds_with_no_delta_close_the_ticket_stalled(self):
-        """`tickets_loop`'s own rule, reached through the second marker."""
+        """The advance rule, now in the module that is its one reader."""
 
         run_dir = self.ticket_path().parent
         self.assertEqual(
             {"action": "arm", "next": 1},
-            tickets_loop.advance_action(run_dir, "T", tickets_loop.REPAIR_MARKER, False),
+            tickets_done.advance_action(run_dir, "T", tickets_done.REPAIR_MARKER, False),
         )
         self.assertEqual(
             {"action": "close", "status": "complete"},
-            tickets_loop.advance_action(run_dir, "T", tickets_loop.REPAIR_MARKER, True),
+            tickets_done.advance_action(run_dir, "T", tickets_done.REPAIR_MARKER, True),
         )
 
     def test_the_check_form_mints_one_orch_check_and_reads_its_joined_status(self):
@@ -236,7 +229,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertIsNone(landed["land"]["status"])
         self.assertEqual("await-done-check", self.steps(landed)["done"]["outcome"])
         minted = self.ticket_path("T.done").read_text(encoding="utf-8")
-        self.assertIn("executor: orch-check", minted)
+        self.assertIn("executor: orch-judge", minted)
         self.assertIn("the Goal clause no oracle covers", minted)
         # no lane, no verdict token: the check files findings and the
         # authority that joins it records the disposition
@@ -308,8 +301,8 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         return checkout
 
     def stand_up(self, done=None):
-        result = tickets._dispatch([
-            "new", "run", "T", "--executor", "orch-execute",
+        result = retired_doors.run([
+            "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
             "--pack", "orch-code-pack", "--isolation", "required",
@@ -323,19 +316,19 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-        self.assertNotIn("error", tickets._dispatch(["stamp-generation", "run", "T"]))
-        validated = tickets._dispatch(["draft-validate", "run", "T"])
-        tickets._dispatch([
+        self.assertNotIn("error", retired_doors.run(["stamp-generation", "run", "T"]))
+        validated = retired_doors.run(["draft-validate", "run", "T"])
+        retired_doors.run([
             "seal", "run", "T", "--cut-generation",
             validated["draft_validation"]["cut_generation"],
         ])
-        tickets._dispatch(["ready", "--run", "run"])
+        retired_doors.run(["ready", "--run", "run"])
         lease = (
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
         # the real establishment, not a stub: this case is about the tree
         # git actually made and the branch it actually stands on
-        launched = tickets._dispatch([
+        launched = retired_doors.run([
             "dispatch", "run", "T", "--by", "worker", "--dispatch-id", "D1",
             "--lease-expires-at", lease, "--workspace", str(self.main),
         ])
@@ -347,13 +340,13 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         return path
 
     def close(self):
-        closed = tickets._dispatch([
+        closed = retired_doors.run([
             "dispatch-outcome", "run", "T", "--note", "delivered and verified",
         ])
         self.assertNotIn("error", closed, closed)
 
     def land(self, *extra):
-        return tickets._dispatch([
+        return retired_doors.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *extra,

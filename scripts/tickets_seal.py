@@ -26,9 +26,9 @@ if __package__:
     )
     from .tickets_transitions import CLAIMED, stamp
     from .tickets_admission import (
-        binding_findings, dependency_order_findings, graph_closed, graph_findings,
+        binding_findings, dependency_order_findings,
     )
-    from .tickets_generations import composite_gate_findings, correction_decision
+    from .tickets_generations import correction_decision
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import refresh_admissions
     from tickets_format import _parse_frontmatter, canonical_json
@@ -40,11 +40,10 @@ else:  # pragma: no cover - direct/installed flat script path
     generation_ordinal = _generations.generation_ordinal
     seal_assignments = _generations.seal_assignments
     validate_draft = _generations.validate_draft
-    composite_gate_findings = _generations.composite_gate_findings
     correction_decision = _generations.correction_decision
     from tickets_transitions import CLAIMED, stamp
     from tickets_admission import (
-        binding_findings, dependency_order_findings, graph_closed, graph_findings,
+        binding_findings, dependency_order_findings,
     )
 
 DRAFT_VALIDATE_USAGE = "draft-validate <run> <root-id> [--correction-bound N]"
@@ -134,11 +133,6 @@ def _draft_findings(root_id: str, snapshot: dict) -> list:
     # A claimed root is an allowed grading vantage; a claimed member is not.
     positions = frozenset(stamp("draft-validate").draft_statuses)
     findings = []
-    root_data = _parse_frontmatter(snapshot[root_id])
-    findings.extend(graph_findings(
-        root_id, root_data, snapshot,
-        complete=graph_closed(root_id, snapshot, root_data.get("cut_generation")),
-    ))
     for ticket_id in [root_id, *_cut_members(root_id, snapshot)]:
         data = _parse_frontmatter(snapshot[ticket_id])
         status = str(data.get("status") or "")
@@ -149,7 +143,6 @@ def _draft_findings(root_id: str, snapshot: dict) -> list:
             findings.append({"code": "draft-status", "field": "status", "ticket": ticket_id})
         findings.extend(binding_findings(ticket_id, data))
         findings.extend(dependency_order_findings(ticket_id, data))
-    findings.extend(composite_gate_findings(root_id, snapshot))
     return findings
 
 

@@ -10,18 +10,17 @@ family's five owner modules.
   owns one pure data shape, hash-pinned: a field or enum change breaks
   it even when the prose meaning holds.
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
-- **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns
-  skill-free primitives; `workflows/` domain-blind behavior. Control
-  flow is not a tier: the driver runs `dispatch` and `land`. A package
+- **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns the
+  two bricks; `workflows/` domain-blind behavior. Control
+  flow is not a tier: it is the caller's prose. A package
   owns its `SKILL.md`, `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
   [pack signature](contracts/pack-signature.md), never control flow.
   Cells bind generic workflows to the domain concerns the signature
   lists; the signature owns term-placement constraints, `craft` domain
   vocabulary and domain-only shape.
-- **T3 — [`example-workflows/`](example-workflows/):** named workflow templates.
-  Their ticket stubs follow the
-  [work-item contract](contracts/work-item.md); their authoring standard is
+- **T3 — [`example-workflows/`](example-workflows/):** named workflows, each
+  a skill body calling bricks; their authoring standard is
   [custom workflow authoring](docs/custom-workflow-authoring.md).
 
 ## Cross-cutting owners
@@ -42,8 +41,8 @@ family's five owner modules.
   mutates atomically;
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
   `tickets_emission.py` emission grading; `tickets_issue_render.py`
-  issuance markdown; and
-  `tickets_dispatch_gate.py` integrated-result gates;
+  issuance markdown; `tickets_brick.py` and `tickets_frame.py` the brick
+  and frame doors;
   `tickets_dispatch_launch.py` resolves the host launch binding. `cutcheck.py`
   owns structural graph validation.
   Cutcheck imports those owners directly, never the tickets facade;
@@ -56,7 +55,7 @@ family's five owner modules.
   project, home, pinned imports, lib — with its reserved-prefix floor and
   shadow notices; `packs_support.py` and `tickets_adapters.py` route through
   it and spell no root of their own. `rings_trust.py` owns the never-portable
-  trust ledger. `orchflows.py` is the ring command surface over
+  trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
   `orchflows_scaffold.py` (`new` skeletons) and `orchflows_adapters.py`
   (generated inert host adapters).
@@ -106,8 +105,8 @@ family's five owner modules.
 Helper membership derives from code, not inventoried here. Two
 non-derivable facts: `scripts/cutcheck.py` owns cut-defect
 detection over issued ticket sets; `scripts/tickets.py` owns
-the public ticket facade, the one root/gate
-family, immutable run identity (`opened_at`, installed version, source commit),
+the public ticket facade, the one root and
+review family, immutable run identity (`opened_at`, installed version, source commit),
 immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 Its `dispatch` owns one launch and its `land` one return, each a single
 transaction over the granular operations, which stay public for recovery.
@@ -139,8 +138,8 @@ Arrows point from reader or binder to dependency:
 `AGENTS.md` → `rules/` → `contracts/` → `skills/` → package `scripts/`.
 
 Packs depend on contracts and may name callable skills. Generic skills
-never name a pack or domain. Workflow stubs bind skills or scripts as
-executors; no skill depends on a workflow template. A lower layer
+never name a pack or domain. A workflow calls skills and
+scripts; no skill depends on a workflow. A lower layer
 may link the law or contract binding it; a rule never depends on
 package internals for its meaning. Shared packages never name project packages;
 project packages may name visible ones.

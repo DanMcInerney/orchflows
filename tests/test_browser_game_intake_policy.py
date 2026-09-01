@@ -147,8 +147,8 @@ class BrowserGameIntakePolicyTests(unittest.TestCase):
         )
         self.assertNotIn("default", self.policy)
 
-    def test_record_ticket_links_both_intake_contracts(self):
-        record = (COMPOSITION / "00-record.md").read_text(encoding="utf-8")
+    def test_the_record_call_links_both_intake_contracts(self):
+        record = (COMPOSITION / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("browser-game-program-record.schema.json", record)
         self.assertIn("browser-game-intake-policy.json", record)
 
@@ -190,8 +190,8 @@ class BrowserGameIntakePolicyTests(unittest.TestCase):
                 self.assertTrue(rule["recorded_trigger_required"])
                 self.assertTrue(rule["trigger"])
 
-    def test_evidence_ticket_consumes_the_intake_policy(self):
-        evidence = (COMPOSITION / "01-evidence.md").read_text(encoding="utf-8")
+    def test_the_evidence_call_consumes_the_intake_policy(self):
+        evidence = (COMPOSITION / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("browser-game-intake-policy.json", evidence)
 
 

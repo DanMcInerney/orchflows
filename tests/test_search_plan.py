@@ -20,11 +20,10 @@ sys.modules.setdefault("tests.test_search_plan", sys.modules[__name__])
 
 
 ROOT = Path(__file__).resolve().parents[1]
-# Since P4 both campaigns are ticket-set templates: a `template.md`
-# manifest plus the stubs `tickets.py instantiate` writes into a run. The
-# text graded below is the whole directory, stubs first, because the law
-# that used to be one composition body is now spread across the stubs
-# that carry it.
+# Both campaigns are workflow skills: one `SKILL.md` whose prose opens a
+# frame and writes the brick calls that used to be stubs. The text graded
+# below is that whole body, because the law that was spread across a
+# directory of stubs is back in one place.
 EVOLVE = ROOT / "example-workflows" / "evolve"
 EVOLVE_GENERATION = ROOT / "example-workflows" / "references" / "evolve-generation.md"
 TOURNAMENT = ROOT / "example-workflows" / "skill-tournament"
@@ -40,6 +39,8 @@ SEARCH_PROTOCOL = ROOT / "docs" / "search-plan-protocol.md"
 
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 EXECUTOR_RE = re.compile(r"^executor:\s*(\S+)", re.MULTILINE)
+# One brick call as the prose writes it: the verb, then the pack it stamps.
+BRICK_CALL_RE = re.compile(r"\b(do|judge)(?: <run>)? --pack ")
 
 
 def canonical_bytes(value):
@@ -317,10 +318,10 @@ def read(path: Path) -> str:
 
 
 def template_text(directory: Path) -> str:
-    """One template as one string: `00-...` through the terminal stub,
-    then the manifest."""
-    stubs = sorted(p for p in directory.glob("*.md") if p.name != "template.md")
-    return "".join(read(path) for path in stubs + [directory / "template.md"])
+    """One workflow as one string. A workflow is a skill whose prose calls
+    bricks, so its whole surface is the one body -- there are no stubs
+    beside it to concatenate."""
+    return read(directory / "SKILL.md")
 
 
 _MODULE = []
@@ -427,44 +428,47 @@ def recursive_target_errors(evolve: str, generation: str, tournament: str):
 def architecture_errors(evolve: str, generation: str, tournament: str, leaf: str):
     errors = []
     combined_evolve = evolve + generation
-    # Who runs each step is the stubs' `executor`, not a backticked name in
-    # prose. `orch-check` twice: eligibility opens the campaign, the final
-    # score card closes it. Since P3 it is also the one scorer -- `orch-judge`
-    # merged into it (a score scale in the criteria), `orch-delegate` into
+    # Who runs each step is the pack the brick call stamps, read off the
+    # call line the prose writes. `judge` twice: eligibility opens the
+    # campaign, the final score card closes it; `do` twice: the frozen
+    # evaluation, then the per-candidate write. Since P3 the *scorer* was
+    # also a candidate standalone skill named `orch-judge` -- unrelated to
+    # the callable of that name today -- merged into `orch-check` instead
+    # (a score scale in the criteria); `orch-delegate` merged into
     # rules/delegation.md, `orch-worklog` into the `tickets.py` view -- and
     # since P4 `orch-panel` too, judging being N blind verify lanes plus the
-    # loop body's reduce. None of the four may reappear.
-    executors = Counter(EXECUTOR_RE.findall(evolve))
-    required = Counter(
-        {"orch-outline": 1, "orch-execute": 1, "orch-check": 2}
-    )
-    if executors != required:
+    # loop body's reduce. None of those three demoted names may reappear.
+    calls = Counter(BRICK_CALL_RE.findall(evolve))
+    required = Counter({"do": 2, "judge": 2})
+    if calls != required:
         errors.append("evolve-call-graph")
-    eligibility = evolve[
-        evolve.index("id: 01-eligibility") : evolve.index("id: 02-campaign")
-    ]
-    campaign = evolve[evolve.index("id: 02-campaign") : evolve.index("id: 03-result")]
-    if "executor: orch-check" not in eligibility:
+    admission = evolve.partition("Admit the incumbent")[2].partition("Generations,")[0]
+    generations = evolve.partition("Generations,")[2].partition("Close the campaign")[0]
+    if "judge --pack" not in admission:
         errors.append("eligibility-unit")
-    # The campaign reuses the eligibility verdicts rather than re-taking
-    # them: it cites that stub's report as its own fixed input.
-    if "01-eligibility's `## Report`" not in campaign:
+    # The generations reuse the admission verdicts rather than re-taking
+    # them: each candidate is handed that judge's findings unaltered.
+    if "eligibility findings verbatim" not in generations:
         errors.append("generation-verify-binding")
-    if re.search(r"^id:\s*04-", evolve, re.MULTILINE):
+    # Nothing follows the close but the Never and Return paragraphs: a
+    # further stage after it is the closing wrapper the campaign refuses.
+    if "**" in evolve.partition("\nReturn:")[2] or "**" in evolve.partition(
+        "Close the campaign**"
+    )[2].partition("\nNever:")[0]:
         errors.append("closing-wrapper")
-    for demoted in ("orch-panel", "orch-judge", "orch-delegate", "orch-worklog"):
+    for demoted in ("orch-panel", "orch-delegate", "orch-worklog"):
         if demoted in combined_evolve:
             errors.append("judge-owner")
             break
-    # A template binds its executors in frontmatter; a backticked call edge
-    # in the prose is the second grammar P4 removed.
+    # A workflow binds its executor in the brick call's `--pack`; a
+    # backticked callable name in the prose is the second grammar P4 removed.
     if set(CALL_EDGE_RE.findall(combined_evolve)):
         errors.append("evolve-call-edge")
 
     tournament_calls = set(CALL_EDGE_RE.findall(tournament))
     if tournament_calls:
         errors.append("tournament-internal-call")
-    if "writer=orch-execute" not in normalized(tournament):
+    if "writer=orch-do" not in normalized(tournament):
         errors.append("tournament-writer-binding")
     # The campaign's promotion judgment is evolve's, and the tournament may
     # not restate it. Since 2026-08-16 (thread T27) the tournament does name

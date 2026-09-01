@@ -21,22 +21,46 @@ that needs a different meaning needs a different word.
 - **skill** — one callable package: a directory whose `SKILL.md` states a
   contract in Require / procedure / Never / Return anatomy.
 - **body** — a skill's procedure text: the always-paid part of its
-  `SKILL.md`, budgeted by `rules/token-economy.md`. What a loop
-  iteration dispatches is its **loop body**: the loop stub's own
-  `executor` verb (`rules/loops.md`), never a call edge.
+  `SKILL.md`, budgeted by `rules/token-economy.md`.
 - **kernel** — the primitive skills under `skills/kernel/`; a kernel
   skill calls no skill.
 - **workflow skill** — an assembled T1 skill calling primitives or other
   skills; always domain-blind. It lives under `skills/workflows/`.
-- **checker** — `orch-check`: the planner-role callable rendering findings
-  or verdicts over a fixed artifact and never a deliverable; it is exempt
-  from the envelope per `rules/composition.md`.
-- **outline** — `orch-outline`: the planner-role callable that freezes and
-  seals a semantic root at intake, reading the stamped pack craft's
-  `## Outline` and `## Spec fields` sections to do it. It supersedes the
-  earlier intake-verb name, which no
-  dispatch revives; the noun **spec** (below) is unrenamed. As a routing shape it is
-  the shape (below) that reaches this verb.
+- **brick** — one of the two T1 callables under `skills/kernel/`, `orch-do`
+  and `orch-judge`, that do all real work. Each has one door — `tickets.py
+  do` and `tickets.py judge` — which mints the ticket, seals it through its
+  parent, pins the pack digest, takes the lease, establishes the workspace,
+  and emits the launch, in that one command.
+- **frame** — one workflow invocation's durable stack frame: the ticket
+  carrying `frame: true` that `tickets.py frame-open` opens and
+  `tickets.py frame-close` closes. It binds no executor and stamps no pack,
+  because the orchestrator session drives it and a journal is not
+  craft-governed work; `contracts/work-item.md` owns the marker, the close
+  refusal, and the **parent** link that makes the ticket tree the call tree.
+  `orchflows resume` lists this project's open frames.
+- **journal** — a frame's `## Report`: the driver's own working memory,
+  appended one line per wave through `tickets.py result` and re-read at the
+  start of the next. It is where a driver that died — or merely compacted —
+  recovers what it already decided, so it is read before a wave and not only
+  after a crash.
+- **typed artifact line** — the one machine line a brick's child prints for
+  its result, `artifact: <kind>:<identity>`, the kind fixed by the stamped
+  pack's adapter; a judging brick prints `findings: <path>` beside it. The
+  grammar, the kinds, and what a join grades are `contracts/dispatch.md`'s.
+  A parent relays the line as it stands — paraphrase is the failure it
+  exists to prevent.
+- **checker** — `orch-judge` (formerly orch-check): the planner-role
+  callable rendering findings or verdicts over a fixed artifact and never
+  a deliverable; it is exempt from the envelope per `rules/composition.md`.
+- **retired verb** — a callable name the registry refuses naming its
+  successor. orch-execute and orch-check are renamed to `orch-do` and
+  `orch-judge`; orch-spec, orch-outline and orch-decompose became a
+  planning `orch-do`, which freezes and seals a semantic root at intake;
+  orch-slice retired with the decomposed root itself, its craft surviving
+  as the planning sections below. No dispatch revives any of them; the noun
+  **spec** (below) is unrenamed,
+  and **outline** survives only as the routing shape (below) that reaches a
+  planning `orch-do`.
 - **pack** — a T2 package of pure data satisfying the pack signature; a pack
   binds cells and never contains control flow.
 - **cell** — one field of the pack signature: `adapter`, `stages`, and
@@ -44,27 +68,26 @@ that needs a different meaning needs a different word.
   signature (below) owns the roster.
 - **craft section** — one `##` section of a pack's craft document, resolved
   whole through `packs.py cells <digest>`. The signature's craft-section
-  table names the mandatory seven; every verb reads the whole document and
-  acts under the sections its skill names.
+  table names the mandatory seven; every brick reads the whole document and
+  acts under the sections its call is for. A making `orch-do` acts under
+  `## Workspace`, `## Stages`, `## Shape` and `## Evidence`; a planning one
+  under `## Outline`, `## Spec fields` and `## Slicing`; `orch-judge` under
+  `## Lens`. Those are the two doorways the four retired verbs were.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **workflow** — a T3 named workflow: a template (below) under
-  `example-workflows/` (the library's gallery) or a ring's workflows
-  directory (yours); entry `routed | named`; admitted under
-  `docs/custom-workflow-authoring.md`. One instantiated into a run is a
-  **workflow instance**. This is the user-facing word.
-- **composition** — the former spelling of **workflow**. It survives in
-  one place: the reader's projection still discriminates a T3
-  `composition` from a T1 workflow skill
-  (`reader/docs/workflows.md`). New prose says workflow.
-- **combinator** — one of the three ways a template composes its stubs:
-  a `depends_on` edge, disjoint parallel stubs (no dependency path
-  between them, so the frontier may run them together), and a loop stub
-  (the `loop` field of `contracts/work-item.md`). There is no fourth.
-- **dispatchable unit / envelope** — a skill or workflow another may
-  bind as a step or loop body, and the leading `Return` fields it must
-  carry — status, result identity, verification — per
-  `contracts/result.md`.
+- **workflow** — a skill whose prose calls bricks or other skills: a
+  `SKILL.md` under `example-workflows/` (the library's gallery) or a ring's
+  workflows directory (yours), invoked only when named and admitted under
+  `docs/custom-workflow-authoring.md`. Order, parallelism, branches and
+  bounded rounds are that prose; there is no engine beneath it. Each
+  invocation opens a **frame**. This is the user-facing word.
+- **composition** — the former spelling of **workflow**, surviving as the
+  reader's projection type for the older manifest-and-stub shape a ring
+  bundle may still ship (`reader/docs/workflows.md`). New prose says
+  workflow.
+- **dispatchable unit / envelope** — a skill a workflow's prose may call,
+  and the leading `Return` fields it must carry — status, result identity,
+  verification — per `contracts/result.md`.
 - **authoring scope** — where an authored item lands and which admission evidence gates it:
   canonical (the library repository), user, or project. User- and
   project-scope items are custom — outside library law, binding only at
@@ -85,19 +108,19 @@ that needs a different meaning needs a different word.
   is not one, and neither is a count nor a reading taken from the
   environment.
 - **run** — one physical execution of a workflow against one spec; owns a
-  run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. When
-  decomposed it has one root ticket and one composite gate. An ad-hoc
+  run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. Its
+  tickets form one tree: a frame per invocation, bricks under the frame
+  that called them. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
   tickets' Goals and Context are its frozen statement,
   the ticket files the whole record — no worklog.
 - **unit** — one work item's execution by one context; the scope
   `rules/verification.md` §8 binds.
 - **spec** — a run's frozen statement, carried by its root ticket per
-  `contracts/work-item.md`; input to decomposition; `orch-outline` is its
-  only editor, at intake — every other reader, `orch-slice`
-  included while cutting, treats it as frozen. The noun keeps this name
-  after the intake verb was renamed; so does the craft's `## Spec fields`
-  section.
+  `contracts/work-item.md`; a planning `orch-do` is its only editor, at
+  intake, and every later reader treats it as frozen. The noun keeps this
+  name after the intake verb was renamed and after orch-outline retired; so
+  does the craft's `## Spec fields` section.
 - **semantic root** — the executable delivery contract owned by the caller,
   not the spec's general vision. `rules/delegation.md` owns which facts the
   caller freezes and which deterministic corrections a decomposer may make;
@@ -114,7 +137,7 @@ that needs a different meaning needs a different word.
 - **stamp** — the pack fixed at intake, carried by a ticket's `pack`
   field, which every later reader takes blind.
 - **domain** — the deliverable's kind (code, content, research,
-  design, data); selects an item's pack and gate lens, per [topology](../rules/topology.md) §§5–6.
+  design, data); selects an item's pack and review lens, per [topology](../rules/topology.md) §§5–6.
 - **work item / ticket** — a sealed Goal, Context, optional Details,
   lifecycle, and graph position, per
   `contracts/work-item.md`; on disk, a markdown ticket the executor writes
@@ -123,21 +146,17 @@ that needs a different meaning needs a different word.
   dependency closure. Law, and what lies either side of it, in
   `rules/topology.md` §3.
 - **root ticket** — the ticket named by a `root_generation`, directly bound to
-  any lawful executor. A decomposed root uses `orch-slice`; its subtree is
-  any `<id>.NN` unit tickets plus `<id>.gate.*`, and it completes when
-  `land` reads its `done` predicate as met. A successor root lives in a successor run
+  any lawful executor, and parent to whatever hangs beneath it. It completes
+  when `land` reads its `done` predicate as met.
+  A successor root lives in a successor run
   opened after the accepted predecessor result identity resolves and cites
   that identity in its Context; the predecessor run's durable `successors.md`
-  names the planned root until `orch-outline` materializes it once the run's
-  frontier drains.
-- **template** — a directory of ticket stubs plus its `template.md`
-  manifest, instantiated into a run's ticket directory by `tickets.py
-  instantiate` and drained by the driver two commands at a time; the one
-  form a workflow takes. Shape per `contracts/work-item.md`.
-- **stub** — a template's unit: a ticket missing only `run`, `status`,
-  `claimed_*` and any `{{placeholder}}`.
-- **terminal ticket** — the stub no other stub depends on; its Goal is the
-  template's final observable result.
+  names the planned root until a planning `orch-do` materializes it once the
+  run's frontier drains.
+- **terminal ticket** — the ticket whose terminal transition ends the run;
+  its timing is the run identity's `terminal_at` and `elapsed_ms`
+  (`ARCHITECTURE.md`), and `contracts/worklog.md` reads a run's state off
+  it.
 - **ad-hoc ticket** — a work item the orchestrator cuts directly from a
   one-off request: a Goal and Context persisted with system metadata,
   not a separate species — same contract shape, run id
@@ -147,8 +166,8 @@ that needs a different meaning needs a different word.
   bound; the ticket files are the whole record — no worklog.
 - **routing shape** — the host projection selected before execution:
   `answer` when available evidence decides; `single` for one ordinary ticket;
-  `graph` for a frozen root that needs decomposition; `outline` when a planner
-  must first freeze that root, preserve its claim lifecycle, then decompose it.
+  `graph` for work whose frame drives more than one brick; `outline` when a
+  planner must first freeze and seal the root that graph then drives.
   `fix` is no fifth shape: it disambiguates a known cause into `single` and an
   unknown or unverified one into `outline`.
   Small, medium and large are explanatory mappings, never ticket fields.
@@ -156,9 +175,9 @@ that needs a different meaning needs a different word.
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the
   work.
-- **assembly item** — the at-most-one terminal work item that integrates
-  candidate results into the final artifact before the final gate.
-- **decision gap** — a decomposition return naming a Goal portion the stamped
+- **assembly item** — the at-most-one last work item that integrates
+  candidate results into the final artifact before its frame closes.
+- **decision gap** — a planning return naming a Goal portion the stamped
   slicing cannot cover.
 - **workspace** — where results live and what identities mean there (git
   revisions, doc slots, evidence store), per the pack craft's `## Workspace`
@@ -188,7 +207,7 @@ that needs a different meaning needs a different word.
   §9. Research craft narrows the term for sources: no shared upstream.
 - **checker** — the durable adjudication carrier for the ordinary
   outside-independence path: an explicit derived review-stage ticket whose
-  fresh read-only `orch-check` accepts the exact assignment, challenges one
+  fresh read-only `orch-judge` accepts the exact assignment, challenges one
   fixed artifact and its evidence, and joins its accepted set before the
   target can record `checked_by`.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
@@ -198,20 +217,21 @@ that needs a different meaning needs a different word.
   source, by identity.
 - **disagreement register** — where disagreement is recorded with both
   sides' evidence, never averaged away.
-- **lens** — the criteria set a reviewer applies; every additional root-gate
-  reviewer has a unique named lens; freshness law `rules/verification.md`
+- **lens** — the criteria set a reviewer applies; each reviewer of one
+  artifact has a unique named lens; freshness law `rules/verification.md`
   §6.
-- **ordered lens bundle** — an opt-in stable adjudication order of unique lens
-  identities. Their independent critique tickets remain parallel; the order
-  does not add execution dependencies.
-- **gate** — a decomposed run's immutable predecessor-linked `GatePlan` →
-  `CritiqueAdjudication` → `RepairOutcome` path. It fixes
-  reviewed and repaired artifact identities, accepted blockers, root pack,
-  established workspace, and normalized isolation `none`; authoring admission
-  and benchmark qualification are not gates.
+- **review chain** — the immutable predecessor-linked `GatePlan` →
+  `CritiqueAdjudication` → `RepairOutcome` path one checker stage writes,
+  fixing the reviewed and repaired artifact identities and the accepted
+  blockers; law in `rules/verification.md` §9. A **critique** is a `judge`
+  brick and the **repair** answering it a `do` brick, sequenced by the
+  calling workflow's prose; authoring admission and benchmark qualification
+  are neither.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
-  other candidates: an `orch-check` ticket whose criteria carry a score scale,
-  blindness being a property of the assignment's `inputs`, not of a skill.
+  other candidates: an `orch-judge` ticket whose criteria carry a score
+  scale, blindness being a property of the assignment's `inputs`, not of a
+  skill. Distinct from the callable `orch-judge` itself, which this noun
+  predates; the collision is a naming debt for the full vocabulary sweep.
 
 The benchmark pipeline's artifacts are named here and defined by their
 producers, never restated: **evaluation design** (the execute lane's
@@ -230,8 +250,9 @@ workflow).
   overriding role resolution for that dispatch alone. Role-bearing dispatch is
   ticket-durable, and nothing travels beside the ticket: see **launch**.
 - **assignment seal** — the proof that an exact validated assignment digest
-  is immutable for dispatch. A later cut generation may add or change members
-  under the same immutable root semantics; changing sealed semantic-root fields
+  is immutable for dispatch. A runtime child seals through its parent's own
+  generation rather than through a cut that closed before it existed, per
+  `contracts/work-item.md`; changing sealed semantic-root fields
   opens a successor run citing the accepted predecessor result under the
   successor-run lifecycle in `rules/delegation.md`.
 - **dispatch attempt** — one fenced execution of a sealed ticket under
@@ -244,7 +265,8 @@ workflow).
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. A path named in Details does not attenuate it; actual
   changes are adjudicated at the join.
-- **launch** — the one object `tickets.py dispatch` emits and commits: the
+- **launch** — the one object a dispatching door — `tickets.py do`,
+  `judge`, or `dispatch` for a hand-written ticket — emits and commits: the
   host, verb, agent, model, effort, native fields, and generated prompt for
   the child, resolved from the host record. The caller invokes it verbatim
   and adds nothing. Its prompt is the only child-facing instruction surface
@@ -275,33 +297,37 @@ workflow).
 
 ## Iteration
 
-- **context packet** — the converged state an iteration receives beside
+- **bounded campaign** — a repeated attempt written as prose in a calling
+  workflow over repeated bricks — no engine, no marker, no loop field. Law
+  in `rules/loops.md`, which also governs the one mechanical round the
+  library arms, `land`'s `<id>.repair.NN`.
+- **context packet** — the converged state a round receives beside
   the frozen goal and worklog — identities, verdicts, decisions, never
   transcript prose; law in `rules/loops.md` §2.
 - **done-check / bound** — the external oracle that alone decides a
-  loop is complete (any oracle class per `contracts/verdict.md`; an
-  iteration count is a deterministic one), and the resource cap —
-  iterations, tool calls, tokens, time — whose exhaustion exits
+  campaign is complete (any oracle class per `contracts/verdict.md`; a
+  round count is a deterministic one), and the resource cap —
+  rounds, tool calls, tokens, time — whose exhaustion exits
   `limited`; success-condition law owned by `rules/loops.md` §1.
-- **iteration** — one fresh-context pass of a loop from the frozen goal
-  plus worklog; two consecutive iterations without progress are a
+- **round** — one fresh-context pass from the frozen goal
+  plus worklog; two consecutive rounds without progress are a
   **stall**, which `rules/loops.md` exits `stalled`.
 - **frontier** — the set of work items dispatchable now — every dependency
   `complete` — reported by `land` at each join and dispatched
   as it forms, never batched.
 - **critical path** — the longest `depends_on` chain over a run's issued
-  items, gate stubs excluded; what decomposition minimizes subject to
+  items; what a planning cut minimizes subject to
   every item an atom. Read with each level's width from
   `scripts/cutcheck.py`'s `graph` block (classes `critical-path`,
   `level-width`).
 - **lane** — an isolated parallel candidate. Lanes may change the same path;
   actual overlap and Git conflicts are integration inputs, not cut defects.
 - **terminal state** — a closed exit: a ticket status in
-  `contracts/work-item.md`'s terminal set; a run's is its root (or loop)
+  `contracts/work-item.md`'s terminal set; a run's is its terminal
   ticket's, per `contracts/worklog.md`.
 - **worklog** — the run view `tickets.py worklog` renders from the ticket
   directory per `contracts/worklog.md`, never a second hand-written
-  file; what makes fresh-context iteration and resumption possible.
+  file; what makes a fresh-context round and resumption possible.
 - **handoff** — the suspension, resumption, or escalation record: what a
   parked child writes into its `## Report`, per `contracts/work-item.md`.
 

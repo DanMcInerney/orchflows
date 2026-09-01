@@ -1,8 +1,8 @@
 # Library review prompt
 
 The standing prompt for a full review of this library. Run it through
-`orch-check`: one path-walk lane per pack plus the ad-hoc lane, and one
-lane per question below. Findings feed an execute repair lane or tickets. The
+`orch-judge`: one path-walk lane per pack plus the ad-hoc lane, and one
+lane per question below. Findings feed a repair lane or tickets. The
 prompt shrinks under its own law: a question that has produced nothing
 for two passes is folded or deleted; it grows only when a constitution
 principle changes owner. A project reuses everything below its

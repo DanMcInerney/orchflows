@@ -35,14 +35,14 @@ class WorkflowSkillTests(unittest.TestCase):
         self.assertEqual([], detail["diagnostics"])
 
     def test_repository_skill_derives_only_backticked_calls_and_invoked_scripts(self):
-        detail = skills.project_workflow_skill(ROOT, "orch-outline")
+        detail = skills.project_workflow_skill(ROOT, "orch-do")
 
         self.assertEqual(
             {"schema", "id", "type", "nodes", "edges", "relations", "diagnostics"},
             set(detail),
         )
         self.assertEqual("orchflows.workflow-detail.v1", detail["schema"])
-        self.assertEqual("orch-outline", detail["id"])
+        self.assertEqual("orch-do", detail["id"])
         self.assertEqual("workflow-skill", detail["type"])
 
         edge_tuples = {
@@ -50,16 +50,51 @@ class WorkflowSkillTests(unittest.TestCase):
             for edge in detail["edges"]
         }
         self.assertIn(
-            ("skill-call", "workflow:orch-outline", "skill:orch-slice"),
+            ("script-call", "workflow:orch-do", "script:bin/packs.py"),
             edge_tuples,
         )
-        self.assertIn(
-            ("script-call", "workflow:orch-outline", "script:bin/tickets.py"),
-            edge_tuples,
-        )
-        self.assertNotIn("skill:objective", {node["id"] for node in detail["nodes"]})
-        self.assertNotIn("skill:inputs", {node["id"] for node in detail["nodes"]})
+        # A kernel skill calls no skill (rules/composition.md 1): orch-do's
+        # body names no other skill by backticked call.
+        self.assertFalse(any(kind == "skill-call" for kind, _from, _to in edge_tuples))
+        self.assertEqual([], detail["diagnostics"])
         self.assertEqual(len(detail["edges"]), len({edge["id"] for edge in detail["edges"]}))
+        self.assertEqual(
+            sorted(
+                detail["edges"],
+                key=lambda edge: (edge["from"], edge["kind"], edge["to"], edge["id"]),
+            ),
+            detail["relations"],
+        )
+
+    def test_a_library_workflow_projects_its_pack_and_its_scripts(self):
+        """`example-workflows/<name>/SKILL.md` is the second canonical home
+        for a workflow skill. The pack a brick call stamps resolves like any
+        other canonical name -- it ships in `packs/` -- so a workflow that
+        names its own pack is not an unresolved reference."""
+
+        detail = skills.project_workflow_skill(ROOT, "evolve")
+
+        self.assertEqual("evolve", detail["id"])
+        self.assertEqual("workflow-skill", detail["type"])
+        self.assertEqual(
+            {
+                "workflow:evolve",
+                "skill:orch-code-pack",
+                "script:bin/search_plan.py",
+                "script:bin/tickets.py",
+            },
+            {node["id"] for node in detail["nodes"]},
+        )
+        self.assertEqual([], detail["diagnostics"])
+        by_id = {node["id"]: node for node in detail["nodes"]}
+        self.assertEqual(
+            identity.source_id("lib/example-workflows/evolve/SKILL.md"),
+            by_id["workflow:evolve"]["source_id"],
+        )
+        self.assertEqual(
+            identity.source_id("lib/packs/orch-code-pack/SKILL.md"),
+            by_id["skill:orch-code-pack"]["source_id"],
+        )
         self.assertEqual(
             sorted(
                 detail["edges"],

@@ -1,4 +1,4 @@
-"""Render run worklogs and validate ticket-template graphs."""
+"""Render run worklogs."""
 
 from __future__ import annotations
 
@@ -8,18 +8,14 @@ import re
 
 if __package__:
     from .tickets_format import (
-        REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE,
-        TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8,
-        _sections, lease_of, ticket_defects,
+        TERMINAL_STATES, _executor_of, _read_utf8, _sections, lease_of,
     )
     from .tickets_store import (
         NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root,
     )
 else:
     from tickets_format import (
-        REQUIRED_SECTIONS, ROOT_EXECUTOR, SECTION_RANK, TEMPLATE_FILE,
-        TERMINAL_STATES, _executor_of, _parse_frontmatter, _read_utf8,
-        _sections, lease_of, ticket_defects,
+        TERMINAL_STATES, _executor_of, _read_utf8, _sections, lease_of,
     )
     from tickets_store import (
         NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root,
@@ -58,63 +54,6 @@ def _upstream(stubs: dict) -> dict:
     return upstream
 
 
-def _template_order(stubs: dict):
-    """Return topological order for a closed graph with one terminal."""
-    for stub_id, (_, dependencies) in stubs.items():
-        for dependency in dependencies:
-            if dependency not in stubs:
-                return None, {"error": f"stub {stub_id} depends on '{dependency}', which is not a stub in this template"}
-    remaining = {stub_id: set(dependencies) for stub_id, (_, dependencies) in stubs.items()}
-    ordered = []
-    while remaining:
-        ready = sorted(stub_id for stub_id, dependencies in remaining.items() if not dependencies)
-        if not ready:
-            return None, {"error": f"template is cyclic: no stub in {sorted(remaining)} is free of dependencies"}
-        ordered.extend(ready)
-        for stub_id in ready:
-            del remaining[stub_id]
-        for dependencies in remaining.values():
-            dependencies.difference_update(ready)
-    depended_on = {dependency for _, dependencies in stubs.values() for dependency in dependencies}
-    terminals = sorted(set(stubs) - depended_on)
-    if len(terminals) != 1:
-        return None, {"error": f"template has {len(terminals)} terminal stubs {terminals}; exactly one stub is terminal"}
-    return ordered, None
-
-
-def template_defects(directory) -> list:
-    """Validate ticket shape and dependency closure for one template."""
-    directory = Path(directory)
-    manifest = directory / TEMPLATE_FILE
-    paths = sorted(path for path in directory.glob("*.md") if path.name != TEMPLATE_FILE)
-    if not paths:
-        return [(manifest, f"template {directory.name} holds no stub")]
-    defects = []
-    stubs = {}
-    for path in paths:
-        text, failure = _read_utf8(path, f"stub {path.name}", encoding="utf-8-sig")
-        if failure is not None:
-            defects.append((path, failure["error"]))
-            continue
-        defects.extend((path, defect) for defect in ticket_defects(text, stub=True))
-        data = _parse_frontmatter(text)
-        declared_id = str(data.get("id") or "").strip()
-        if declared_id and declared_id != path.stem:
-            defects.append((path, f"stub {path.name} names id '{declared_id}': a stub's id is its file stem"))
-        dependencies = data.get("depends_on")
-        if not isinstance(dependencies, list):
-            defects.append((path, "'depends_on' is not a list; write [] when the stub names none"))
-            dependencies = []
-        ordered = [SECTION_RANK[name.strip().lower()] for name in _sections(text) if name.strip().lower() in SECTION_RANK]
-        if ordered != sorted(ordered):
-            defects.append((path, "stub body sections are out of contract order; expected " + ", ".join(REQUIRED_SECTIONS)))
-        stubs[path.stem] = (text, dependencies)
-    _, error = _template_order(stubs)
-    if error is not None:
-        defects.append((manifest, error["error"]))
-    return defects
-
-
 def _run_tickets(run: str):
     tickets_root = _tickets_root()
     if tickets_root is None:
@@ -135,22 +74,23 @@ def _run_tickets(run: str):
 
 
 def _run_goal(items: list) -> tuple:
+    """The one root or terminal a run's worklog and status transitions read.
+
+    A run has one root identity (contracts/work-item.md), and a runtime
+    child's id carries its whole call path (`<parent>.<n>`), so the one
+    top-level id (no `.`) is that root whenever it is unique -- true of
+    every brick tree, decomposed or not, regardless of what a descendant's
+    own `depends_on` says. The rare shape with more than one top-level id
+    (parallel manually-issued tickets, one `depends_on` the other) falls
+    back to the free ticket nobody depends on; a run with neither shape
+    falls back to the earliest id.
+    """
     ordered = sorted(items, key=lambda item: item["id"])
-    ids = {item["id"] for item in ordered}
+    top_level = [item for item in ordered if "." not in item["id"]]
+    if len(top_level) == 1:
+        return top_level[0], "root"
     depended = {dependency for item in ordered for dependency in item.get("depends_on") or []}
     free = [item for item in ordered if item["id"] not in depended]
-    roots = [item for item in ordered if _executor_of(item) == ROOT_EXECUTOR]
-    top_level = [item for item in ordered if "." not in item["id"]]
-    graph = len(roots) > 1 or any(
-        dependency in ids
-        for item in top_level
-        for dependency in item.get("depends_on") or []
-        if "." not in str(dependency)
-    )
-    if graph and len(free) == 1:
-        return free[0], "terminal"
-    if roots:
-        return roots[0], "root"
     if len(free) == 1:
         return free[0], "terminal"
     return ordered[0], "root"

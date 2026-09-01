@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
+from tests import _retired_doors as retired_doors
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
@@ -141,7 +142,7 @@ class AdapterRegistryTest(unittest.TestCase):
             self._pack(root, "no-such-adapter")
             ticket = (
                 "---\nid: T1\nrun: testrun\nstatus: pending\n"
-                "executor: orch-execute\ndepends_on: []\nbound: 30m\n"
+                "executor: orch-do\ndepends_on: []\nbound: 30m\n"
                 "pack: widget-pack\nisolation: required\n---\n\n"
                 "## Goal\n\nDeliver the widget.\n\n## Context\n\n[]\n"
             )
@@ -157,6 +158,7 @@ class AdapterRegistryTest(unittest.TestCase):
         adapter = tickets_mod.Adapter(
             key="synthetic",
             identity_form="git-commit",
+            artifact_kind="git",
             establishes_isolation=True,
             deterministic_gate=True,
             conflict_semantics="synthetic-overlap",
@@ -218,18 +220,18 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     # fixture needs an actual checkout rather than a bare `.git` directory.
     git_checkout(tmp)
     sink = use_sink(tmp)
-    tickets_mod._dispatch([
-        "new", "testrun", "T1", "--executor", "orch-execute",
+    retired_doors.run([
+        "new", "testrun", "T1", "--executor", "orch-do",
         "--goal", "Test result attribution.", "--context", "[]",
         "--pack", "orch-code-pack", "--isolation", "required",
     ])
-    tickets_mod._dispatch(["stamp-generation", "testrun", "T1"])
-    validated = tickets_mod._dispatch(["draft-validate", "testrun", "T1"])
-    tickets_mod._dispatch([
+    retired_doors.run(["stamp-generation", "testrun", "T1"])
+    validated = retired_doors.run(["draft-validate", "testrun", "T1"])
+    retired_doors.run([
         "seal", "testrun", "T1", "--cut-generation",
         validated["draft_validation"]["cut_generation"],
     ])
-    tickets_mod._dispatch(["ready", "--run", "testrun"])
+    retired_doors.run(["ready", "--run", "testrun"])
     ticket = sink / "tickets" / "testrun" / "T1.md"
     established = ticket.read_text(encoding="utf-8")
     for key, value in (
@@ -239,7 +241,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
         established = tickets_mod._set_frontmatter_field(established, key, value)
     ticket.write_text(established, encoding="utf-8")
     lease = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    opened = tickets_mod._dispatch([
+    opened = retired_doors.run([
         "dispatch-open", "testrun", "T1", "--by", by,
         "--dispatch-id", "D1", "--lease-expires-at", lease,
     ])["dispatch"]
@@ -353,7 +355,7 @@ class PackPinTest(unittest.TestCase):
     def test_new_pins_the_stamped_packs_digest_at_issue_time(self):
         with self._pinned_world() as (tmp, pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
@@ -366,7 +368,7 @@ class PackPinTest(unittest.TestCase):
     def test_a_pack_edited_under_the_pin_refuses_at_admission(self):
         with self._pinned_world() as (tmp, pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
@@ -386,12 +388,15 @@ class PackPinTest(unittest.TestCase):
                 if item["code"] == "pack-digest-mismatch"
             )
             self.assertIn("changed under the seal", detail)
-            self.assertIn("stamp-generation", detail)
+            # The remedy names a living door: the generation stamp retired
+            # into the brick fold, so a caller is sent to `do` or `judge`.
+            self.assertIn("tickets.py do | judge", detail)
+            self.assertNotIn("stamp-generation", detail)
 
     def test_an_unchanged_pack_grades_clean(self):
         with self._pinned_world() as (tmp, _pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )
@@ -406,7 +411,7 @@ class PackPinTest(unittest.TestCase):
     def test_a_pack_that_cannot_be_pinned_refuses_at_issue(self):
         with self._pinned_world() as (tmp, _pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T2", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T2", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "no-such-pack",
             )
@@ -419,7 +424,7 @@ class PackPinTest(unittest.TestCase):
 
         with self._pinned_world() as (tmp, _pack):
             payload = run_cmd(
-                tmp, "new", "testrun", "T1", "--executor", "orch-execute",
+                tmp, "new", "testrun", "T1", "--executor", "orch-do",
                 "--goal", "Deliver the widget.", "--context", "[]",
                 "--pack", "widget-pack",
             )

@@ -32,8 +32,8 @@ from tests.test_search_plan import (
 class TestArchitecture(unittest.TestCase):
     def test_thin_evolve_owns_one_campaign_call_graph(self):
         for path in (EVOLVE, TOURNAMENT):
-            self.assertTrue(path.is_dir(), f"missing campaign template: {path}")
-            self.assertTrue((path / "template.md").is_file(), f"{path} has no manifest")
+            self.assertTrue(path.is_dir(), f"missing campaign workflow: {path}")
+            self.assertTrue((path / "SKILL.md").is_file(), f"{path} has no body")
         for path in (EVOLVE_GENERATION, SEARCH_PROTOCOL, SEARCH_SCRIPT):
             self.assertTrue(path.is_file(), f"missing search-planning surface: {path}")
         self.assertEqual(
@@ -52,14 +52,14 @@ class TestArchitecture(unittest.TestCase):
         self.assertIn("docs/search-plan-protocol.md", leaf)
         self.assertNotIn("operation registry", normalized(leaf))
 
-    def test_the_campaign_stub_names_the_planner_it_selects_through(self):
-        """The one caller of the search planner is the loop body, and it
-        names the script by bare filename -- the path moves when the script
-        does, and a template that named the path would be stale the day it
-        moved."""
-        campaign = read(EVOLVE / "02-campaign.md")
+    def test_the_campaign_prose_names_the_planner_it_selects_through(self):
+        """The one caller of the search planner is the generations loop, and
+        it names the script by bare filename -- the path moves when the
+        script does, and a body that named the path would be stale the day
+        it moved."""
+        campaign = template_text(EVOLVE).partition("Generations,")[2]
         self.assertIn("search_plan.py advance", campaign)
-        self.assertEqual("orch-execute", EXECUTOR_RE.search(campaign).group(1))
+        self.assertIn("do --pack orch-code-pack", campaign)
 
     def test_planner_is_evaluation_mode_agnostic(self):
         protocol = read(SEARCH_PROTOCOL)
@@ -75,7 +75,7 @@ class TestArchitecture(unittest.TestCase):
         tournament = template_text(TOURNAMENT)
         leaf = read(SEARCH_SCRIPT)
 
-        closing = evolve + "\n---\nid: 04-closing\nexecutor: orch-check\n---\n"
+        closing = evolve + "\n**Wrap the campaign** with a further report.\n"
         self.assertIn(
             "closing-wrapper",
             architecture_errors(closing, generation, tournament, leaf),
@@ -85,7 +85,7 @@ class TestArchitecture(unittest.TestCase):
             "tournament-internal-call",
             architecture_errors(evolve, generation, direct_panel, leaf),
         )
-        extra_leaf_call = leaf + "\nCall `orch-check`.\n"
+        extra_leaf_call = leaf + "\nCall `orch-judge`.\n"
         self.assertIn(
             "leaf-call",
             architecture_errors(evolve, generation, tournament, extra_leaf_call),
@@ -102,7 +102,9 @@ class TestArchitecture(unittest.TestCase):
             architecture_errors(evolve, generation, judged_here, leaf),
         )
 
-        unresolved = evolve.replace("executor: orch-check", "executor: orch-outline", 1)
+        unresolved = evolve.replace(
+            "judge --pack orch-code-pack", "do --pack orch-code-pack", 1
+        )
         self.assertIn(
             "eligibility-unit",
             architecture_errors(unresolved, generation, tournament, leaf),

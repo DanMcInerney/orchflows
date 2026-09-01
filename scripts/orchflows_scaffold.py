@@ -5,8 +5,8 @@ One file per kind, and nothing beyond what its own admission requires: a
 skeleton that guessed at content would be a second, weaker copy of the
 authoring standard. Every skeleton is a *valid* item on the day it is
 written -- a pack carries all four cells and every mandatory craft
-section, a workflow carries a manifest and one stub -- so the first thing
-an author does is edit, never repair.
+section, a workflow carries a frame open, one brick call and a close --
+so the first thing an author does is edit, never repair.
 """
 
 from __future__ import annotations
@@ -70,35 +70,25 @@ description: Domain pack for <artifacts>. Stamp when the deliverable is <kind>.
 _WORKFLOW = """---
 name: {name}
 description: One sentence saying what running {name} produces.
-entry: {name}
-placeholders: [run]
+disable-model-invocation: true
 ---
 
-# {name}
+Require: what the caller supplies before {name} can start.
 
-What this workflow produces, and what the caller supplies. Instantiate it
-with `tickets.py instantiate {name} --run <run>`.
-"""
+    tickets.py frame-open <run> --goal-file <goal>
 
-_WORKFLOW_STUB = """---
-id: 00-root
-run: {{{{run}}}}
-status: pending
-executor: orch-slice
-depends_on: []
-bound: 60m
----
+Re-read the frame's `## Report` and its children before each wave, then
+append that wave's decision with `tickets.py result <run> <frame> --by
+<frame>`. Replace the one call below with this workflow's real calls, and
+keep every returned `artifact:` line verbatim.
 
-## Goal
+    tickets.py do <run> --pack <pack> --parent <frame> --goal-file <goal>
 
-One observable end result.
+Never: state a constraint here that this workflow's calls do not obey.
 
-## Context
-
-What the executor needs and nothing more.
-
-## Report
-
+Return: `tickets.py frame-close <run> <frame> --done <check>`, whose done
+is a command, and whose close carries a judge child or an
+`unjudged: <reason>` journal line once two or more calls have run.
 """
 
 
@@ -121,10 +111,7 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
             ("SKILL.md", _PACK.format(name=name)),
             ("references/craft.md", _craft(name)),
         ]
-    return [
-        ("template.md", _WORKFLOW.format(name=name)),
-        ("00-root.md", _WORKFLOW_STUB),
-    ]
+    return [("SKILL.md", _WORKFLOW.format(name=name))]
 
 
 def write(directory: Path, kind: str, name: str) -> List[Path]:

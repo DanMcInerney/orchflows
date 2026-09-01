@@ -32,13 +32,20 @@ class WorkflowSkillError(ValueError):
 
 
 def workflow_skill_path(root: Path, workflow_id: str) -> Path | None:
-    """Locate one callable skill across the installed tier layout."""
+    """Locate one callable skill across the installed tier layout.
+
+    Two homes, one shape. A T1 brick lives under its tier in ``skills/``; a
+    workflow — a skill whose prose calls those bricks — lives in
+    ``example-workflows/<name>/SKILL.md``. Neither is a template any more,
+    so the lookup is the same file name in both places.
+    """
 
     root = Path(root)
     candidates = sorted(
         (root / "skills").glob(f"*/{workflow_id}/SKILL.md"),
         key=lambda path: path.relative_to(root).as_posix(),
     )
+    candidates.append(root / "example-workflows" / workflow_id / "SKILL.md")
     for path in candidates:
         if _contained_file(root, path):
             return path
@@ -65,13 +72,19 @@ def _read_skill(root: Path, path: Path) -> tuple[dict, str]:
 
 
 def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
-    """Return canonical skill names mapped to installed lib paths."""
+    """Return canonical skill and pack names mapped to installed lib paths.
+
+    Packs belong here because a brick call stamps exactly one of them, and
+    the pack is what carries that call's craft. Leaving them out reported
+    every workflow's own pack as an unresolved reference.
+    """
 
     root = Path(root)
     resolved = {}
     duplicates = set()
     paths = sorted(
-        (root / "skills").glob("*/*/SKILL.md"),
+        list((root / "skills").glob("*/*/SKILL.md"))
+        + list((root / "packs").glob("*/SKILL.md")),
         key=lambda path: path.relative_to(root).as_posix(),
     )
     for path in paths:

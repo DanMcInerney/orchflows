@@ -158,8 +158,8 @@ Why this shape:
 
 - **A cell, not a loose reference.** Generic skills reference domain
   facts only through the stamped pack's cells
-  ([rules/composition.md](rules/composition.md) §9). `orch-outline` is
-  generic and needs the nouns; reaching them any other way is a
+  ([rules/composition.md](rules/composition.md) §9). A planning `orch-do`
+  is generic and needs the nouns; reaching them any other way is a
   signature leak.
 - **One file, not vocabulary and design separately.** A good craft
   term is a compressed principle — "skim layer" names a thing and
@@ -453,6 +453,79 @@ one the join will grade. That is the test for what belongs in code.
   perfect model cannot guess a run's ready set, and gains nothing from being
   handed a skill body that tells it to ask `land` for one.
 
+## Why two bricks, frames, and prose
+
+Designed 2026-08-31 from the seven investigations of 2026-08-30, the ring
+work, and a super-research dogfood run that logged fourteen frictions. The
+finding underneath all three: workflows and skills were never two kinds. A
+workflow is a skill whose prose calls other skills, down to the small set
+that does real work — composition is functions calling functions, and the
+interpreter is whichever agent the user is already talking to. Everything
+the library had built to be that interpreter was machinery it did not need
+to own.
+
+- **Two callables, not four.** The four verbs were four doorways into one
+  pack's craft. A pack is read three ways and always was; what the tier
+  actually needs is one callable that makes something and one that reads
+  something, each naming which craft sections its call is for. Freezing a
+  root is a `do` whose artifact is a sealed root, which is why the intake
+  verb and the cutter both retire into it rather than into each other.
+- **The ticket tree is the call stack.** One move buys durability for
+  arbitrary depth: every invocation opens a ticket, and a `parent` link
+  makes the tree mirror the calls. A resumed orchestrator reads the tree; it
+  does not reconstruct a stack it never persisted. Frames carry no lease,
+  because their driver is a session rather than a dispatched child, and a
+  stale frame is shown with its age for a human to judge — unknown never
+  decays into idle.
+- **The journal is working memory, not insurance.** The design's first draft
+  called journaling a cheap habit over a re-derivation floor. That was the
+  sharpest thing the Fable review overturned: the common failure of a prose
+  driver is not death but degradation — a compaction mid-workflow
+  paraphrases the very lines the parent was trusted to relay, and resume
+  never fires because nothing died. The incumbent's stateless ready/frontier
+  reads were accidentally load-bearing against exactly this. So waves are
+  pull-based for the living driver too: re-read the journal and the
+  children's states, decide, append.
+- **Typed lines, because the relay is the seam.** The one-line contract was
+  Git-shaped and the pack roster is not, so the artifact line is typed per
+  adapter and a judge returns its findings path the same way. What is
+  verbatim survives a compaction; what is prose does not.
+- **Judge-or-say-why at a multi-child close.** Composition-invisibility is
+  an information-access problem — no member can see the whole from its own
+  seat — so it survives the perfect-model test and earns one mechanical
+  check. A frame closing over two or more `do` children refuses without a
+  judging child or an `unjudged: <reason>` line, which converts a silent
+  under-review into an auditable decision.
+- **What this bought by deletion.** The loop lane and its marker grammar,
+  the template/instantiate/placeholder layer and entry kinds, the reader's
+  workflow-summary manifest, the stamp/validate/seal door parade as separate
+  public doors, admission's graph-shape checks, and the gate choreography
+  with its lens ordering. Each fails the same test the trunk review set: a
+  perfect model still cannot make a sequence atomic or know which spelling a
+  join will grade — but it can perfectly well write a loop, and none of that
+  machinery was buying anything else. Critique and repair survive as prose
+  over `judge` and `do`; compare-and-swap sealing survives inside the brick
+  and frame doors. Sunk cost stated plainly: parts of the loop-lane PRs and
+  the instantiate half of the ring work are deleted by this design.
+- **A brick keeps its lease; a frame gets none.** The review called the
+  lease borderline under perfect models. It is not a capability mechanism:
+  it arbitrates writer contention on dispatchable work, which no model
+  quality removes. Frames are singular and session-bound, so displaying
+  their age suffices; bricks are dispatchable by anyone holding the sink, so
+  the lease is the arbiter.
+- **Packs bind per call, not per run.** Bricks never share a workspace —
+  each adapter owns its own brick's world — so the one-pack-per-run law and
+  the adapter-compatibility worry behind it both dissolve. One brick is one
+  pack is one artifact; two domains in one deliverable are two bricks and a
+  handoff. Frames carry no pack, because a journal is not craft-governed
+  work.
+
+Eyes open on the costs: parent-mediated handoffs can still drift, and the
+verbatim machine line is the whole mitigation; the composition vantage is
+opt-in past the two-child floor; and a workflow imported from someone else's
+ring executes as orchestrator reasoning, which is why the containment
+default is to drive it in a spawned frame agent.
+
 ## Roads not taken
 
 - **A central domain glossary in `docs/`** — wrong owner, and an
@@ -498,7 +571,7 @@ one the join will grade. That is the test for what belongs in code.
   composition contract.
 - **A new-cell appetite.** The signature grows only when a generic
   skill needs judgment no cell promises, read strictly. Craft was
-  admitted because `orch-outline`'s noun source had no owner — not
+  admitted because orch-outline's noun source had no owner — not
   because more reference material seemed nice. The next cell must
   clear the same bar.
 - **A generated Claude Code plugin.** Audited 2026-07-16 against a

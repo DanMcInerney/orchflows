@@ -1,6 +1,7 @@
 """Ticket creation for the sealed semantic assignment."""
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import datetime, timezone
 
 if __package__:
@@ -8,7 +9,7 @@ if __package__:
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
-        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
+        REQUIRED_ISOLATION, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -22,7 +23,7 @@ else:
     from tickets_emission import grade_run_emission
     from tickets_format import (
         DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
-        REQUIRED_ISOLATION, ROOT_EXECUTOR, _executor_of, _extract_flag,
+        REQUIRED_ISOLATION, _extract_flag,
         _parse_frontmatter, _read_utf8, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
     )
@@ -80,18 +81,6 @@ def _invalidate_assignment(text):
     if root_generation.startswith(f"root:{data.get('id')}:"):
         text = _remove_frontmatter_field(text, "root_generation")
     return text
-
-
-def _distinct_gate_lenses(lenses: list) -> list:
-    seen, repeated = set(), []
-    for lens in lenses:
-        identity = lens.casefold()
-        if identity in seen and lens not in repeated:
-            repeated.append(lens)
-        seen.add(identity)
-    if repeated:
-        raise ValueError("gate review lenses must be distinct; repeated: " + ", ".join(repeated))
-    return lenses
 
 
 def _cmd_new(rest):
@@ -228,25 +217,37 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
         defects.append(f"independence '{independence}' is not one of {list(INDEPENDENCE_VALUES)}")
     checked_by = str(data.get("checked_by") or "").strip()
     if checked_by:
-        if independence == "gate" and _executor_of(data) != ROOT_EXECUTOR:
-            defects.append("a non-root gate-deferred ticket cannot carry checked_by")
+        if independence == "gate":
+            defects.append("a gate-deferred ticket cannot carry checked_by")
         elif not issued:
             defects.append("an unissued ticket cannot carry checked_by")
     return defects
 
 
-def _issue_ticket(run: str, ticket_id: str, text: str):
+def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = False):
+    """Write one ticket into the run, graded, under the run lock.
+
+    ``_lock_held`` is the idiom `dispatch-open` and `_commit_record` already
+    use: a caller that minted this id under its own hold of the run lock
+    cannot take it again -- the lock is one process byte, not a counter --
+    and releasing it to issue would let a second minter choose the same id.
+    """
+
     defects = _issue_defects(text)
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
     if GATE_ID_MARKER in ticket_id:
-        return {"error": f"ticket id '{ticket_id}' is reserved for `tickets.py gate`"}
+        return {"error": (
+            f"ticket id '{ticket_id}' uses the reserved `.gate.` review-stage "
+            "grammar; a critique is a `tickets.py judge` brick and the repair "
+            "answering it a `tickets.py do` brick under the same parent"
+        )}
     root = _tickets_root()
     if root is None:
         return {"error": NO_SINK_ERROR}
     path = root / run / f"{ticket_id}.md"
     try:
-        with _run_lock(run):
+        with (nullcontext() if _lock_held else _run_lock(run)):
             if path.exists():
                 return {"error": f"ticket id '{ticket_id}' is already issued in run '{run}': {path}"}
             if (held := grade_run_emission("new", run, path.parent, {ticket_id: text})) is not None:
@@ -269,7 +270,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str):
 
 __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
-    "_cmd_new", "_distinct_gate_lenses", "_frontmatter_list", "_issue_defects",
+    "_cmd_new", "_frontmatter_list", "_issue_defects",
     "_issue_ticket", "_place_ticket", "_project_file_ticket", "_render_ticket",
     "pinned_pack_digest",
 )

@@ -39,11 +39,12 @@ class ExperienceFoundationContractTests(unittest.TestCase):
             b"schema (`web/src/api/schema.ts`)",
             b"[schema](../../web/src/api/schema.ts)",
         )
-        # Re-frozen 2026-08-31 over the merged tip's bytes: the accepted
-        # content evolved deliberately (orch-slice, example-workflows) after
-        # the earlier freeze, and the locator repairs above still hold.
+        # Re-frozen 2026-08-31 over the workflows-convert tip's bytes: every
+        # library entry became a workflow skill, so the catalog rows name
+        # `SKILL.md` and the detail example is the prose loop rather than a
+        # stub graph. The locator repairs above still hold.
         self.assertEqual(
-            "4B3FF726EE3EEB2B305152A6D199A971FAA3BE8CF7161D11AEFAA083A0499145",
+            "21BB18981ACAC7D0122E70BCF4E682CB4C81A377E9B61FD9AABB7D17844FC9FC",
             hashlib.sha256(reconstructed).hexdigest().upper(),
         )
 
@@ -233,7 +234,7 @@ class ExperienceProjectionTest(unittest.TestCase):
                 associated,
                 "01-report",
                 status="complete",
-                executor="orch-execute",
+                executor="orch-do",
                 depends_on="[]",
             )
             ticket.write_text(
@@ -246,7 +247,7 @@ class ExperienceProjectionTest(unittest.TestCase):
                 associated,
                 "02-historical",
                 status="complete",
-                executor="orch-execute",
+                executor="orch-do",
                 depends_on="[01-report]",
             )
             historical.write_text(

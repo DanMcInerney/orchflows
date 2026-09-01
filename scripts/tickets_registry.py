@@ -16,19 +16,35 @@ except ImportError:
 
 # Keep this order stable: it is the user-facing registry artifact and is
 # rendered in refusal messages and help/test projections.
+#
+# `orch-slice` retired in W4a together with `tickets.py instantiate`, its
+# only minter of decomposed roots: with nothing left to mint one, the
+# decomposed-root discriminator ROOT_EXECUTOR (scripts/tickets_format.py)
+# is gone too, and the two brick doors are the whole callable tier.
 CALLABLE_EXECUTORS = (
-    "orch-execute",
-    "orch-check",
-    "orch-slice",
-    "orch-outline",
+    "orch-do",
+    "orch-judge",
 )
 
+# ``files_findings`` marks the verb whose product is a findings file rather
+# than an artifact: it is what the launch prompt reads to ask for the second
+# verbatim machine line, so the judging verb is named once here instead of
+# in the prompt composer.
 EXECUTOR_REGISTRY = {
-    "orch-execute": {"role": "worker", "requires_pack": True},
-    "orch-check": {"role": "planner", "requires_pack": True},
-    "orch-slice": {"role": "planner"},
-    "orch-outline": {"role": "planner"},
+    "orch-do": {"role": "worker", "requires_pack": True},
+    "orch-judge": {"role": "planner", "requires_pack": True, "files_findings": True},
 }
+
+# `orch-outline` and `orch-slice` both retired toward this living remedy: a
+# planning `do` -- goal a frozen root or a call plan -- reading the pack
+# craft's Outline and Spec fields sections in `do`'s stead. Their own
+# predecessor intake verbs (`orch-spec`, `orch-decompose`) point at the same
+# remedy rather than at a retired name that itself refuses, so no refusal
+# chains through a name with no binding left to offer.
+_PLANNING_DO_REMEDY = (
+    "a planning `do` reading the pack craft's Outline and Spec fields "
+    "sections"
+)
 
 # A superseded verb and the successor that replaced it, per
 # ``rules/delegation.md`` 8: no dispatch may revive a superseded skill
@@ -37,9 +53,16 @@ EXECUTOR_REGISTRY = {
 # A successor that is itself a registered verb is offered as a binding;
 # any other successor is a mechanism, named as the remedy it is.
 SUPERSEDED_EXECUTORS = {
-    "orch-spec": "orch-outline",
-    "orch-decompose": "orch-slice",
-    "orch-loop": "the ticket `loop` field, driven by tickets.py loop-arm | loop-evaluate | loop-advance",
+    "orch-execute": "orch-do",
+    "orch-check": "orch-judge",
+    "orch-outline": _PLANNING_DO_REMEDY,
+    "orch-spec": _PLANNING_DO_REMEDY,
+    "orch-slice": _PLANNING_DO_REMEDY,
+    "orch-decompose": _PLANNING_DO_REMEDY,
+    "orch-loop": (
+        "a prose loop in the calling workflow over repeated `do` bricks, with "
+        "the ticket `done` predicate evaluated by tickets.py land"
+    ),
     "orch-frontier": (
         "the driver loop is mechanical: `tickets.py dispatch` emits the launch, "
         "`tickets.py land` evaluates done, integrates, and prints the ready frontier"
@@ -54,7 +77,7 @@ REVIEW_KINDS = ("critique", "repair")
 
 
 def executor_registered(executor: str) -> bool:
-    """Return whether ``executor`` is one of the four callable verbs."""
+    """Return whether ``executor`` is one of the registered callable verbs."""
 
     return dequote(executor) in EXECUTOR_REGISTRY
 

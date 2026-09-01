@@ -10,16 +10,16 @@ from __future__ import annotations
 import hashlib
 import re
 if __package__:
-    from .tickets_admission import binding_findings, graph_closed, graph_findings
-    from .tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from .tickets_admission import binding_findings
+    from .tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
 else:
-    from tickets_admission import binding_findings, graph_closed, graph_findings
-    from tickets_format import (ROOT_EXECUTOR, _executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
+    from tickets_admission import binding_findings
+    from tickets_format import (_executor_of, _parse_frontmatter, _sections, _set_frontmatter_field, canonical_json)
 
 GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha256:([0-9a-f]{64})$")
 ASSIGNMENT_SYSTEM_FIELDS = (
-    "bound", "done", "independence", "isolation", "loop", "pack",
-    "pack_digest", "profile", "review_order", "review_kind",
+    "bound", "done", "independence", "isolation", "pack",
+    "pack_digest", "profile", "review_kind",
 )
 
 
@@ -136,43 +136,6 @@ def draft_snapshot(root_id: str, snapshot: dict, ordinal: int = 1, member_ids=No
         "root_payload": root_payload,
     }
 
-def composite_gate_findings(root_id: str, snapshot: dict, member_ids=None) -> list:
-    """Require the one exact gate around every decomposed multi-result graph."""
-
-    if _executor_of(_parse_frontmatter(snapshot[root_id])) != ROOT_EXECUTOR:
-        return []
-    members = _cut_members(root_id, snapshot) if member_ids is None else sorted(str(value) for value in member_ids)
-    units = sorted(ticket_id for ticket_id in members if ".gate." not in ticket_id)
-    if len(units) < 2:
-        return []
-    prefix = f"{root_id}.gate.critique."
-    repair_id = f"{root_id}.gate.repair"
-    critiques = sorted(ticket_id for ticket_id in members if ticket_id.startswith(prefix) and ticket_id != prefix)
-    expected_gate_ids = set(critiques) | {repair_id}
-    actual_gate_ids = {ticket_id for ticket_id in members if ".gate." in ticket_id}
-    findings = []
-    if not critiques:
-        findings.append({"code": "composite-gate-missing", "field": "members", "detail": "two or more executor members require at least one critique"})
-    for ticket_id in sorted(expected_gate_ids - actual_gate_ids):
-        findings.append({"code": "composite-gate-missing", "field": "members", "ticket": ticket_id})
-    for ticket_id in sorted(actual_gate_ids - expected_gate_ids):
-        findings.append({"code": "composite-gate-extra", "field": "members", "ticket": ticket_id})
-    expected = {
-        **{ticket_id: ("orch-check", "critique", units) for ticket_id in critiques},
-        repair_id: ("orch-execute", "repair", critiques),
-    }
-    for ticket_id in sorted(expected_gate_ids & actual_gate_ids):
-        data = _parse_frontmatter(snapshot[ticket_id])
-        executor, review_kind, dependencies = expected[ticket_id]
-        if _executor_of(data) != executor:
-            findings.append({"code": "composite-gate-executor", "field": "executor", "ticket": ticket_id, "detail": f"expected {executor}"})
-        if str(data.get("review_kind") or "") != review_kind:
-            findings.append({"code": "composite-gate-review-kind", "field": "review_kind", "ticket": ticket_id, "detail": f"expected {review_kind}"})
-        actual_dependencies = sorted(str(value) for value in (data.get("depends_on") or []))
-        if actual_dependencies != sorted(dependencies):
-            findings.append({"code": "composite-gate-dependencies", "field": "depends_on", "ticket": ticket_id, "detail": f"expected {sorted(dependencies)}"})
-    return findings
-
 def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -> dict:
     """Grade exactly one draft snapshot and return its validation receipt."""
 
@@ -181,11 +144,7 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -
     if expected != draft:
         raise GenerationError("draft validation failed: supplied draft is not the exact snapshot grade")
     members = [item["id"] for item in draft.get("assignments") or []]
-    root_data = _parse_frontmatter(snapshot[root_id])
-    findings = list(graph_findings(
-        root_id, root_data, snapshot,
-        complete=graph_closed(root_id, snapshot, members, root_data.get("cut_generation")),
-    ))
+    findings = []
     for ticket_id in [root_id, *members]:
         data = _parse_frontmatter(snapshot[ticket_id])
         findings.extend(binding_findings(ticket_id, data))
@@ -197,11 +156,10 @@ def validate_draft(root_id: str, snapshot: dict, draft: dict, member_ids=None) -
                 "ticket": ticket_id,
                 "detail": "sealed digest does not match the current assignment",
             })
-    gate_findings = composite_gate_findings(root_id, snapshot, member_ids)
-    findings.extend(gate_findings)
     if findings:
-        reason = "composite gate topology" if gate_findings else "assignment grade"
-        raise GenerationError("draft validation failed: " + reason + ": " + canonical_json(findings))
+        raise GenerationError(
+            "draft validation failed: assignment grade: " + canonical_json(findings)
+        )
     return {
         "cut_generation": draft["cut_generation"],
         "draft_digest": "sha256:" + _digest(draft),
@@ -285,7 +243,7 @@ def seal_findings(ticket_id: str, text: str) -> list:
 __all__ = (
     "GENERATION_RE", "GenerationError",
     "assignment_digest", "assignment_payload", "canonical_json",
-    "composite_gate_findings", "correction_decision",
+    "correction_decision",
     "draft_snapshot", "generation_identity", "generation_ordinal",
     "seal_assignments", "validate_draft", "seal_findings",
 )

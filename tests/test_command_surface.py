@@ -42,11 +42,30 @@ class CurrentCommandSurfaceTest(unittest.TestCase):
                     stale.append(f"{path.relative_to(ROOT).as_posix()}: {command}")
         self.assertEqual([], stale)
 
-    def test_generation_and_gate_operators_are_reachable(self):
+    def test_the_retired_generation_and_gate_doors_are_named_nowhere(self):
+        """The four pre-brick doors and the gate family left the surface.
+
+        `stamp-generation`, `draft-validate`, and `seal` are folded inside
+        `tickets.py do` and `tickets.py judge`; `gate` and `checker-stage`
+        are gone with the choreography, and critique-to-repair is prose over
+        `judge` and `do`. `instantiate` left with the template layer it read,
+        and `join-noop-repair` left with the `.gate.` id family it
+        discriminated -- unreachable once nothing minted a `.gate.repair`
+        ticket, and now not routed either. A skill that still walked a
+        caller through one of them would be walking it into
+        `unknown subcommand`.
+        """
+
+        retired = {
+            "stamp-generation", "draft-validate", "seal", "gate",
+            "checker-stage", "loop-arm", "loop-evaluate", "loop-advance",
+            "instantiate", "join-noop-repair",
+        }
+        self.assertEqual(set(), retired & routed_commands())
         named = set()
         for path in SKILLS.rglob("SKILL.md"):
             named.update(NAMED_COMMAND.findall(path.read_text(encoding="utf-8")))
-        self.assertEqual(set(), {"stamp-generation", "draft-validate", "seal", "gate"} - named)
+        self.assertEqual(set(), retired & named)
 
     def test_removed_authority_commands_have_no_route_or_facade_export(self):
         removed = {"amend", "amendment-request", "grant", "recut", "reissue", "result-grade"}

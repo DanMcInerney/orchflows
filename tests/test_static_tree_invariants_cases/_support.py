@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 import tools.validate as validate  # noqa: E402
 
 COMPOSITIONS = ROOT / "example-workflows"
-TEMPLATE_FILE = "template.md"
+WORKFLOW_FILE = "SKILL.md"
 CALL_EDGE_RE = re.compile(r"`(orch-[a-z0-9-]+)`")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 FRONTMATTER_RE = re.compile(r"---\n(.*?)\n---\n(.*)", re.DOTALL)
@@ -59,23 +59,18 @@ def bodies(*paths: Path) -> str:
     return "".join(split_document(path)[1] for path in paths)
 
 
-def template_files(directory: Path):
-    """One template's stubs in order, followed by its manifest."""
-    stubs = sorted(p for p in directory.glob("*.md") if p.name != TEMPLATE_FILE)
-    return tuple(stubs) + (directory / TEMPLATE_FILE,)
+def workflow_files(directory: Path):
+    """One workflow's whole surface: its single body. A workflow is a skill
+    whose prose calls bricks, so there are no stubs beside it to read."""
+    return (directory / WORKFLOW_FILE,)
 
 
-def stub_graph(directory: Path):
-    """Return ``{stub id: (executor, depends_on)}`` for one template."""
-    graph = {}
-    for path in template_files(directory)[:-1]:
-        fields = split_document(path)[0]
-        depends = fields.get("depends_on", "[]").strip("[] ")
-        graph[path.stem] = (
-            fields.get("executor"),
-            [item.strip() for item in depends.split(",") if item.strip()],
-        )
-    return graph
+def workflow_directories():
+    """Every `example-workflows/<name>/` that is a workflow, not shared data."""
+    return sorted(
+        directory for directory in COMPOSITIONS.iterdir()
+        if directory.is_dir() and (directory / WORKFLOW_FILE).is_file()
+    )
 
 
 def called_name(node):

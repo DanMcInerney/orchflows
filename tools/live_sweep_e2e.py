@@ -3,7 +3,7 @@
 
 The probe launches one foreground subagent through Claude's Agent tool and
 checks the exact dispatch and its sentinel reply, following the
-``live_claude_profiles`` / ``live_loop_e2e`` idiom (inline ``--agents`` JSON,
+``live_claude_profiles`` idiom (inline ``--agents`` JSON,
 ``--no-session-persistence``, ``sonnet`` at medium effort by default,
 subprocess timeout handling).
 

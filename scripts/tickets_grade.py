@@ -12,13 +12,13 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import ROOT_EXECUTOR, is_loop_stub, is_review_stage_id
+    from .tickets_format import is_review_stage_id
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import ROOT_EXECUTOR, is_loop_stub, is_review_stage_id
+    from tickets_format import is_review_stage_id
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -122,22 +122,10 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         raise GradeError(f"root ticket has no readable frontmatter: {root_id}")
     if str(root_data.get("id") or root_id).strip() != root_id:
         raise GradeError(f"root ticket id differs from requested id: {root_id}")
-    root_executor = _executor(root_value)
     members = _member_ids(root_id, snapshot)
-    if root_executor == ROOT_EXECUTOR:
-        if dequote(root_data.get("independence")) == "checker":
-            raise GradeError(f"decomposed root {root_id} must declare independence=gate")
-        if len(members) == 1:
-            raise GradeError(f"root {root_id} is over-decomposition: one executor result member")
-        if not members:
-            raise GradeError(f"root {root_id} has no executor result members")
-        shape, width = "graph", len(members)
-    elif is_loop_stub(root_data):
-        shape, width = "loop", 1
-    else:
-        if members:
-            raise GradeError(f"root {root_id} is a direct root with executor-result members")
-        shape, width = "single", 1
+    if members:
+        raise GradeError(f"root {root_id} is a direct root with executor-result members")
+    shape, width = "single", 1
     pack = dequote(root_data.get("pack"))
     if not pack:
         raise GradeError(f"root {root_id} names no pack")
@@ -158,7 +146,6 @@ def grade_snapshot(root_id: str, snapshot: dict) -> dict:
         "shape": shape,
         "unmentioned_spec_fields": unmentioned,
         "deterministic_gate": deterministic_gate,
-        "over_decomposed": False,
     }
 
 
@@ -189,26 +176,6 @@ def _cmd_grade(rest):
     return {"grade": {"run": run, "root": root_id, **grade}}
 
 
-def _cmd_gate(rest):
-    """Materialize the gate for one root.
-
-    There is no fixed-result probe in front of it any more. That probe read a
-    stored `PASS`/`FAIL` verdict, and it read it out of two places that no
-    longer exist: a `Verification` review record, whose kind the ledger stopped
-    admitting when the verdict-token law went, and the `## Verification`
-    section, which the one-channel return replaced. A reader of a shape nothing
-    writes reuses nothing and reports `stale` forever, so it is gone rather
-    than repointed -- a done predicate's exit code is the reusable reading now,
-    and rebuilding this on that is a successor's, with evidence.
-    """
-
-    if __package__:
-        from .tickets_dispatch_gate import _cmd_gate as materialize_gate
-    else:
-        from tickets_dispatch_gate import _cmd_gate as materialize_gate
-    return materialize_gate(rest)
-
-
 __all__ = (
-    "GRADE_USAGE", "GradeError", "_cmd_gate", "_cmd_grade", "grade_snapshot",
+    "GRADE_USAGE", "GradeError", "_cmd_grade", "grade_snapshot",
 )

@@ -3,24 +3,25 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, launches what `dispatch` emits, and lands
+- Root routes, launches what a door emits, and lands
   returns; relay a `kind: user-only` question verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile role-bearing work refuses;
   `role: none` only orchestrates. `orch-off` suspends automatic routing; named
   items still run only when named. Route smallest-first: **answer** — context
   evidence decides; **single** — one [ticket]({{ORCH_LIB}}/contracts/work-item.md)
-  carrying Goal, Context, and optional Details takes the same two commands.
-  **graph** — per ready ticket of one
-  sealed, stamped root, run `tickets.py dispatch <run> <root> --by
-  <assigned-name> --dispatch-id <dispatch-id> --lease-expires-at <absolute-iso>
-  [--host <host>] [--workspace <tree>]`, invoke the emitted `launch`
-  verbatim adding nothing to its prompt, then `tickets.py land` its
-  return: it reads the ticket's `done`, integrates, and prints the frontier it
-  freed. Declaring none, grade it yourself with `land --status`. Repeat until
-  that frontier is empty. **outline** — one planner
-  runs `orch-outline`; it seals a direct root for one lawful executor, or a sealed
-  `orch-slice` root for distinct results/dependencies. The planner never
-  drives the run. Skill/workflow/pack/contract/router work carries
+  carrying Goal, Context, and optional Details takes `new --file`, then
+  `tickets.py dispatch` and `land`. **graph** — open the journal:
+  `tickets.py frame-open <run>`. Each wave, re-read that frame's
+  `## Report` and its children, then per ready intent run
+  `tickets.py do <run> --pack <pack> --goal-file <f> [--parent <frame>] [--workspace <tree>]`, or
+  `judge` over the artifacts it is handed; invoke the emitted `launch`
+  verbatim adding nothing to its prompt, then `tickets.py land` its return:
+  it reads the ticket's `done`, integrates, and prints the frontier it freed. Declaring
+  none, grade it yourself with `land --status`. Append every decision through
+  `result`, relaying each `artifact:` and `findings:` line verbatim. End at
+  `frame-close`; `orchflows resume` lists open frames. **outline** — one
+  planner runs a planning `orch-do` that seals the root this route drives.
+  The planner never drives the run. Skill/workflow/pack/contract/router work carries
   `{{ORCH_LIB}}/docs/custom-workflow-authoring.md` in Context. **fix** — a known
   cause enters single; an unknown or unverified cause enters outline. `install.py
   doctor` diagnoses dispatch; `evolve` and `benchmaker` run only when named.

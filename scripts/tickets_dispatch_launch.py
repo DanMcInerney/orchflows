@@ -34,6 +34,7 @@ if __package__:
     from .tickets_format import (
         REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
+    from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_store import NO_SINK_ERROR, _tickets_root
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
@@ -41,6 +42,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import (
         REPORT_SECTION, _executor_of, _parse_frontmatter, _read_utf8,
     )
+    from tickets_registry import EXECUTOR_REGISTRY
     from tickets_store import NO_SINK_ERROR, _tickets_root
 
 HOST_ENV_VAR = "ORCHFLOWS_HOST"
@@ -346,6 +348,45 @@ def _craft_lines(assignment: dict) -> list:
     return lines
 
 
+ARTIFACT_LINE_FORMS = {
+    "git": "artifact: git:<full-commit-id>",
+    "doc": "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>",
+    "evidence": "artifact: evidence:<store-id>",
+}
+FINDINGS_LINE = "findings: <path>"
+
+
+def _return_lines(assignment: dict) -> list:
+    """The commit, and the machine lines a parent relays without rewriting.
+
+    Two of four workers on 2026-08-31 closed without committing inside the
+    candidate, so the tree the landing merged held nothing; and the artifact
+    a parent passed to the next brick rode through paraphrase because the
+    child never printed one exact form. Both are said here, once, in the one
+    surface a child is guaranteed to read.
+    """
+
+    kind = assignment.get("artifact_kind")
+    lines = [
+        "Commit your work inside this candidate before you close; the closing "
+        "note names that commit. Uncommitted bytes are not evidence, and the "
+        "landing merges the candidate, not your working tree.",
+    ]
+    if kind in ARTIFACT_LINE_FORMS:
+        lines.append(
+            "Print this line verbatim in your closing note, as its own line, "
+            f"filled in and with no other text on it: {ARTIFACT_LINE_FORMS[kind]}"
+        )
+    if EXECUTOR_REGISTRY.get(
+        str(assignment.get("executor") or ""), {},
+    ).get("files_findings"):
+        lines.append(
+            "Print this second line verbatim beside it, naming the findings "
+            f"file you wrote in this workspace: {FINDINGS_LINE}"
+        )
+    return lines
+
+
 def launch_prompt(assignment: dict) -> str:
     """The one child-facing surface, filled from the graded assignment.
 
@@ -390,6 +431,7 @@ def launch_prompt(assignment: dict) -> str:
                  "--file", "PATH"),
         _command(sys.executable, script, "result", run, ticket_id, *identity,
                  "--text", "TEXT"),
+        *_return_lines(assignment),
         "Report what a reader would need and cannot re-derive: the exit code of "
         "every command you ran as you observed it, what you changed and why, what "
         "you deliberately did not do and why, and anything the assignment asked "
@@ -455,7 +497,8 @@ def precheck(run: str, ticket_id: str, host):
 
 
 __all__ = (
-    "CANONICAL_DUMP", "DEFAULT_HOST", "HOST_ENV_VAR", "PROFILE_ROLES",
+    "ARTIFACT_LINE_FORMS", "CANONICAL_DUMP", "DEFAULT_HOST", "FINDINGS_LINE",
+    "HOST_ENV_VAR", "PROFILE_ROLES",
     "ROLE_PROFILES", "binding_failure", "declared_role", "host_names",
     "hosts_dir", "launch_prompt", "launch_spec", "precheck", "resolve_host",
     "resolved_role_profile", "selected_host",

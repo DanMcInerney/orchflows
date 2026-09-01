@@ -29,7 +29,6 @@ from scripts import tickets as tickets_mod  # noqa: E402
 from scripts import tickets_attempts  # noqa: E402
 from scripts import tickets_dispatch_facade  # noqa: E402
 from scripts import tickets_dispatch_facade  # noqa: E402
-from scripts import tickets_dispatch_gate  # noqa: E402
 from scripts import tickets_join  # noqa: E402
 from scripts import tickets_result  # noqa: E402
 from scripts import tickets_lifecycle  # noqa: E402
@@ -47,7 +46,7 @@ UTC_STAMP = "%Y-%m-%dT%H:%M:%SZ"
 WAIT = 2.0
 
 
-def ticket_at(run_dir: Path, tid: str, *, executor="orch-execute", deps="[]",
+def ticket_at(run_dir: Path, tid: str, *, executor="orch-do", deps="[]",
               status="ready", extra=()) -> Path:
     """One fixture work item, written straight into the sink's run."""
 
@@ -99,11 +98,8 @@ class TestMalformedIdentityRefusesBeforeTheLock(unittest.TestCase):
         return (
             ("check", run, tid, "--stage", f"{tid}.check"),
             ("set-status", run, tid, "complete"),
-            ("join-noop-repair", run, tid, "--by", "gate-join"),
             ("dispatch", run, tid, "--by", "worker", "--dispatch-id", "D1",
              "--lease-expires-at", "2099-01-01T00:00:00Z"),
-            ("gate", run, tid),
-            ("checker-stage", run, tid),
         )
 
     def assert_refused_without_writing(self, argv, expected: str):
@@ -156,9 +152,6 @@ class TestTheOneLockedWritePrimitive(unittest.TestCase):
     SUBJECTS = (
         tickets_lifecycle._cmd_check,
         tickets_lifecycle._cmd_set_status,
-        tickets_lifecycle._cmd_join_noop_repair,
-        tickets_dispatch_gate._cmd_gate,
-        tickets_dispatch_gate._cmd_checker_stage,
     )
     RUN_ONLY_SUBJECTS = (tickets_result._cmd_run_state,)
 
@@ -368,7 +361,7 @@ class TestOnlyTheRunsOwnRootClosesIt(unittest.TestCase):
         self.assertTrue(tickets_join._closes_the_run("testrun", "T1"))
 
     def test_a_loop_runs_single_ticket_is_its_own_root(self):
-        ticket_at(self.run_dir, "L", executor="orch-execute")
+        ticket_at(self.run_dir, "L", executor="orch-do")
         self.assertTrue(tickets_join._closes_the_run("testrun", "L"))
 
     def test_an_unreadable_or_absent_run_closes_nothing(self):

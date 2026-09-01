@@ -1,11 +1,19 @@
-"""Static invariants owned by composition templates."""
+"""Static invariants owned by the library's workflow skills."""
 import unittest
 
-from ._support import COMPOSITIONS, LINK_RE, TEMPLATE_FILE, split_document, validate
+from scripts.tickets_registry import CALLABLE_EXECUTORS
+
+from ._support import (
+    COMPOSITIONS,
+    LINK_RE,
+    WORKFLOW_FILE,
+    split_document,
+    workflow_directories,
+)
 
 
 class TestCompositionLinks(unittest.TestCase):
-    """Every local markdown link from a composition resolves."""
+    """Every local markdown link from a workflow resolves."""
 
     def test_every_composition_link_resolves(self):
         checked = 0
@@ -23,94 +31,54 @@ class TestCompositionLinks(unittest.TestCase):
         self.assertTrue(checked, "found no composition links to resolve")
 
 
-class TestCompositionTemplates(unittest.TestCase):
-    """Composition stubs preserve their executor binding and terminal."""
+class TestWorkflowSkills(unittest.TestCase):
+    """Every library workflow is one manual-only skill calling bricks."""
 
-    TEMPLATES = {
-        "benchmaker": (
-            {
-                "00-acquire": "orch-execute",
-                "01-design": "orch-outline",
-                "02-materialize": "orch-execute",
-                "03-qualify": "orch-check",
-                "04-audit": "orch-check",
-                "05-measure": "orch-check",
-            },
-            "05-measure",
-        ),
-        "drift-canary": (
-            {"00-run": "orch-execute", "01-diff": "orch-execute"},
-            "01-diff",
-        ),
-        "evolve": (
-            {
-                "00-eval": "orch-outline",
-                "01-eligibility": "orch-check",
-                "02-campaign": "orch-execute",
-                "03-result": "orch-check",
-            },
-            "03-result",
-        ),
-        "renovate": (
-            {
-                "00-audit": "orch-check",
-                "01-triage": "orch-check",
-                "02-deliver": "orch-execute",
-            },
-            "02-deliver",
-        ),
-        "self-improve": (
-            {"00-mine": "orch-execute", "01-deliver": "orch-execute"},
-            "01-deliver",
-        ),
-        "skill-tournament": (
-            {"00-benchmark": "orch-execute", "01-campaign": "orch-execute"},
-            "01-campaign",
-        ),
-    }
+    WORKFLOWS = (
+        "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
+        "self-improve", "skill-tournament", "super-research",
+    )
 
-    @staticmethod
-    def _stubs(name):
-        tickets = validate._ticket_law()
-        directory = COMPOSITIONS / name
-        return {
-            path.stem: tickets._parse_frontmatter(
-                path.read_text(encoding="utf-8")
-            )
-            for path in sorted(directory.glob("*.md"))
-            if path.name != tickets.TEMPLATE_FILE
-        }
+    def test_every_workflow_directory_holds_exactly_one_body(self):
+        directories = workflow_directories()
 
-    def test_each_template_binds_the_executors_its_composition_named(self):
-        for name, (expected, _) in self.TEMPLATES.items():
-            with self.subTest(template=name):
-                stubs = self._stubs(name)
+        self.assertEqual(
+            list(self.WORKFLOWS), [directory.name for directory in directories]
+        )
+        for directory in directories:
+            with self.subTest(workflow=directory.name):
                 self.assertEqual(
-                    expected,
-                    {stub: fields.get("executor") for stub, fields in stubs.items()},
+                    [WORKFLOW_FILE],
+                    sorted(path.name for path in directory.glob("*.md")),
                 )
 
-    def test_no_composition_stub_uses_a_removed_executor(self):
-        registered = set(validate._ticket_law().CALLABLE_EXECUTORS)
-        for directory in sorted(COMPOSITIONS.iterdir()):
-            if not directory.is_dir() or directory.name == "references":
-                continue
-            with self.subTest(template=directory.name):
-                for path in directory.glob("*.md"):
-                    if path.name == TEMPLATE_FILE:
-                        continue
-                    fields = validate._ticket_law()._parse_frontmatter(
-                        path.read_text(encoding="utf-8")
-                    )
-                    self.assertIn(fields.get("executor"), registered, path)
+    def test_every_workflow_declares_its_name_and_manual_invocation(self):
+        for directory in workflow_directories():
+            with self.subTest(workflow=directory.name):
+                fields, _ = split_document(directory / WORKFLOW_FILE)
+                self.assertEqual(directory.name, fields.get("name"))
+                self.assertTrue(fields.get("description"))
+                self.assertEqual("true", fields.get("disable-model-invocation"))
+                self.assertNotIn("entry", fields)
+                self.assertNotIn("placeholders", fields)
 
-    def test_each_template_ends_at_the_stub_carrying_its_done_check(self):
-        for name, (_, terminal) in self.TEMPLATES.items():
-            with self.subTest(template=name):
-                stubs = self._stubs(name)
-                depended = {
-                    edge
-                    for fields in stubs.values()
-                    for edge in fields.get("depends_on", [])
-                }
-                self.assertEqual({terminal}, set(stubs) - depended)
+    def test_every_workflow_opens_a_frame_calls_or_nests_and_closes(self):
+        """A workflow either stamps a pack on a brick call of its own, or
+        nests another workflow's frame under its own; `skill-tournament` is
+        the second shape, and packs bind per brick, never per workflow."""
+
+        registered = set(CALLABLE_EXECUTORS)
+        for directory in workflow_directories():
+            with self.subTest(workflow=directory.name):
+                body = (directory / WORKFLOW_FILE).read_text(encoding="utf-8")
+                self.assertIn("tickets.py frame-open", body)
+                self.assertIn("tickets.py frame-close", body)
+                self.assertTrue(
+                    "--pack " in body or "frame-open <run> --parent" in body,
+                    f"{directory.name} neither calls a brick nor nests a frame",
+                )
+                # No retired callable survives the conversion.
+                for retired in ("orch-execute", "orch-check", "orch-outline", "orch-spec"):
+                    self.assertNotIn(retired, body)
+                for token in ("orch-do", "orch-judge"):
+                    self.assertIn(token, registered)

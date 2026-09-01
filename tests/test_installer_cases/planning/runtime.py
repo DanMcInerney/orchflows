@@ -158,7 +158,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
 
     def test_the_shared_names_remain_the_reduced_claude_set(self):
         self.assertEqual(
-            ("orch-outline", "orch-slice"),
+            ("orch-do", "orch-judge"),
             install.SHARED_ADAPTER_NAMES,
         )
 
@@ -202,7 +202,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
     def test_all_is_the_default_and_mints_every_package_and_template(self):
         default = self._plan()
         explicit = self._plan("all")
-        expected = len(install.discover_packages()) + len(install.discover_templates())
+        expected = len(install.discover_packages()) + len(install.discover_workflow_skills())
         self.assertEqual(expected, len(default.claude_adapters))
         self.assertEqual(
             [(dest, content) for dest, content in default.claude_adapters],
@@ -267,7 +267,7 @@ class TestClaudeAdapterSet(unittest.TestCase):
             self.assertEqual(0, code)
             return buffer.getvalue()
 
-        every = len(install.discover_packages()) + len(install.discover_templates())
+        every = len(install.discover_packages()) + len(install.discover_workflow_skills())
         self.assertIn(
             f"Claude Code skill adapters ({every})", _dry_run(["--user", "--dry-run"])
         )

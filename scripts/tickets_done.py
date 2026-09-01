@@ -4,7 +4,7 @@ Done is a checked condition, not a recorded claim. A ticket may carry the
 same closed `{form, value}` binding a loop stub carries for its iterations
 (contracts/work-item.md), and `tickets.py land` is the one caller that
 evaluates it: a deterministic command whose exit 0 is the verdict, or a
-frozen criterion no oracle covers, judged by one minted `orch-check`
+frozen criterion no oracle covers, judged by one minted `orch-judge`
 ticket. A ticket that carries neither is graded the way it always was, by
 the driver, through `land --status`.
 
@@ -14,10 +14,14 @@ candidate: the fact under test is what the repository does with the
 candidate's commits in it, which is why `land` merges before it asks.
 
 A refused command does not wedge the run and does not close the ticket. It
-arms the next `<id>.repair.NN` round through `tickets_loop`'s advance
-rules -- the same three rules a loop advances by -- and `land` run again
-after that round re-runs the predicate against the further-integrated tree.
-Round two is a lawful slot, not hand surgery.
+arms the next `<id>.repair.NN` round through the advance rules below, and
+`land` run again after that round re-runs the predicate against the
+further-integrated tree. Round two is a lawful slot, not hand surgery.
+
+The round machinery lives here because `land` is its one reader. It was
+written inside the loop lane, whose iterations advanced by the same three
+rules; the lane is gone and the rules moved to the door that still asks
+them.
 """
 
 from __future__ import annotations
@@ -29,26 +33,34 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_format import (
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
+        RESULT_BEARING_STATES, TERMINAL_STATES,
         _sections, _set_frontmatter_field,
-        _write_section, dequote, done_defects, parse_done,
+        _write_section, dequote, done_defects, round_of, parse_done,
+        ticket_defects,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue_render import _render_ticket
-    from .tickets_loop import advance_action, check_reading
     from .tickets_result import RESULT_ATTRIBUTION_PREFIX
-    from .tickets_store import _create_text_exclusively, _write_text_atomically
+    from .tickets_store import (
+        TicketWriteRefused, _create_text_exclusively, _load_ticket,
+        _write_text_atomically, locked_ticket_write,
+    )
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import (
         DELIVERED_STATE, DONE_TICKET_SUFFIX, REPAIR_MARKER, REPORT_SECTION,
+        RESULT_BEARING_STATES, TERMINAL_STATES,
         _sections, _set_frontmatter_field,
-        _write_section, dequote, done_defects, parse_done,
+        _write_section, dequote, done_defects, round_of, parse_done,
+        ticket_defects,
     )
     from tickets_generations import assignment_digest
     from tickets_issue_render import _render_ticket
-    from tickets_loop import advance_action, check_reading
     from tickets_result import RESULT_ATTRIBUTION_PREFIX
-    from tickets_store import _create_text_exclusively, _write_text_atomically
+    from tickets_store import (
+        TicketWriteRefused, _create_text_exclusively, _load_ticket,
+        _write_text_atomically, locked_ticket_write,
+    )
 
 # The evidence line `land` files. It names the three facts a reader has to
 # have to re-run the check for themselves and get the same answer: what was
@@ -56,6 +68,163 @@ else:  # pragma: no cover - direct/installed flat script path
 COMMAND_VERIFICATION = "done command `{command}` exited {exit} in {tree}"
 CHECK_VERIFICATION = "done check `{criterion}` judged {status} by {ticket}"
 COMMAND_TIMEOUT_SECONDS = 1800
+# Two consecutive terminal rounds with no result delta exit stalled.
+STALL_WINDOW = 2
+
+
+def rounds(run_dir, parent_id, marker: str = REPAIR_MARKER):
+    """(number, id, data) for every round ticket, ordered by number.
+
+    The `.done` check tickets minted beside a round are not rounds -- they
+    judge one -- and the grammar `round_of` owns does not read them as
+    one.
+    """
+
+    found = []
+    for path in sorted(run_dir.glob(f"{parent_id}.{marker}.*.md")):
+        parsed = round_of(path.stem)
+        if parsed is None or parsed[0] != parent_id:
+            continue
+        loaded = _load_ticket(path)
+        if "error" in loaded:
+            continue
+        found.append((parsed[1], path.stem, loaded))
+    return sorted(found)
+
+
+def _result_reading(run_dir, round_id):
+    """What one round left behind, as the stall rule compares it.
+
+    The whole report, because the report is the whole of what a round filed:
+    two rounds that produced byte-identical reports converged on nothing,
+    which is the reading `advance_action` closes `stalled` on.
+    """
+
+    try:
+        text = (run_dir / f"{round_id}.md").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    return _sections(text).get(REPORT_SECTION, "").strip()
+
+
+def advance_action(run_dir, parent_id: str, marker: str, done: bool) -> dict:
+    """The advance decision for one done reading, over one round marker.
+
+    Three rules and no scheduler: a met done closes `complete`; two
+    consecutive delivered rounds with no result delta converge on nothing
+    and close `stalled`, as does a latest round that left no result to build
+    on; anything else arms the next round. The bound is the dispatching
+    caller's -- an effort-shaped bound is not a clock this can read. No
+    prior round is a reason to arm rather than a reason to give up.
+    """
+
+    numbered = rounds(run_dir, parent_id, marker)
+    if done:
+        return {"action": "close", "status": "complete"}
+    if numbered and str(numbered[-1][2].get("status")) not in TERMINAL_STATES:
+        # The standing round has not landed. Counting past it would arm a
+        # second round against the same unanswered one.
+        return {"action": "arm", "next": numbered[-1][0]}
+    delivered = [
+        item for item in numbered if str(item[2].get("status")) in TERMINAL_STATES
+    ]
+    if len(delivered) >= STALL_WINDOW:
+        tail = [_result_reading(run_dir, item[1]) for item in delivered[-STALL_WINDOW:]]
+        if all(entry is not None for entry in tail) and (
+            all(not entry for entry in tail) or len(set(tail)) == 1
+        ):
+            return {"action": "close", "status": "stalled"}
+    if delivered and not any(
+        str(item[2].get("status")) in RESULT_BEARING_STATES for item in delivered[-1:]
+    ):
+        return {"action": "close", "status": "stalled"}
+    return {"action": "arm", "next": numbered[-1][0] + 1 if numbered else 1}
+
+
+def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
+               context, *, depends_on: str, lock_held: bool = False):
+    """Create -- or replay -- the one `orch-judge` ticket judging a criterion.
+
+    The single minter for the `check` done form: a landing whose predicate
+    names a criterion no oracle covers. A second minter would be a second
+    place the check's shape could drift from contracts/work-item.md, and the
+    check is the surface whose measured yield bought this form its place.
+
+    It carries no `review_kind`: it is ordinary judging work, and its verdict
+    is the status its join records rather than a token in its prose.
+    """
+
+    path = run_dir / f"{check_id}.md"
+    fields = {
+        "id": check_id, "run": run, "status": "pending",
+        "admission": ADMISSION_PENDING, "executor": "orch-judge",
+        "pack": dequote(source.get("pack")) or None,
+        "independence": "gate", "depends_on": [depends_on],
+        "isolation": "none", "bound": source.get("bound"),
+        "root_generation": source.get("root_generation"),
+    }
+    rendered = _render_ticket(fields, [
+        ("Goal", goal),
+        ("Context", "\n".join(f"- {line}" for line in context)),
+        (REPORT_SECTION, ""),
+    ])
+    cut_generation = str(source.get("cut_generation") or "").strip()
+    if cut_generation:
+        rendered = _set_frontmatter_field(rendered, "cut_generation", cut_generation)
+    rendered = _set_frontmatter_field(
+        rendered, "assignment_seal", assignment_digest(check_id, rendered)
+    )
+    defects = ticket_defects(rendered)
+    if defects:
+        return {"error": f"done-check {check_id} is off contract: " + "; ".join(defects)}
+    try:
+        if lock_held:
+            # `land` already holds this run's lock across its whole return,
+            # and the lock is one process byte rather than a counter: taking
+            # it again here would be a caller waiting on itself.
+            if not path.exists():
+                _create_text_exclusively(path, rendered)
+        else:
+            with locked_ticket_write(run, check_id):
+                if not path.exists():
+                    _create_text_exclusively(path, rendered)
+    except TicketWriteRefused as refused:
+        return refused.payload
+    except OSError as error:
+        return {"error": f"unable to create done-check: {error}"}
+    return None
+
+
+def check_reading(run: str, run_dir, check_id: str, source: dict, goal: str,
+                  context, *, depends_on: str, lock_held: bool = False):
+    """`(reading, refusal)` for the `check` done form's minted judge.
+
+    A verdict here is the check ticket's own joined status: `complete` is
+    met and any other terminal state is not. Nothing parses a token out of
+    prose -- the child files findings, and the authority that joins the
+    check is what records the disposition.
+    """
+
+    path = run_dir / f"{check_id}.md"
+    if not path.is_file():
+        refusal = mint_check(
+            run, run_dir, check_id, source, goal, context,
+            depends_on=depends_on, lock_held=lock_held,
+        )
+        if refusal is not None:
+            return None, refusal
+        return {"pending": check_id, "outcome": "created"}, None
+    check = _load_ticket(path)
+    if "error" in check:
+        return None, {"error": check["error"]}
+    status = str(check.get("status"))
+    if status not in TERMINAL_STATES:
+        return {"pending": check_id, "outcome": "live"}, None
+    return {
+        "done": status == DELIVERED_STATE,
+        "status": status,
+        "verdict_ticket": check_id,
+    }, None
 
 
 def predicate(data: dict):
@@ -151,7 +320,7 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
         return repair_id, "replayed", None
     rendered = _render_ticket({
         "id": repair_id, "run": run, "status": "pending",
-        "admission": ADMISSION_PENDING, "executor": "orch-execute",
+        "admission": ADMISSION_PENDING, "executor": "orch-do",
         "pack": dequote(source.get("pack")) or None,
         "independence": "gate", "depends_on": [],
         "isolation": "none", "bound": source.get("bound"),
@@ -247,6 +416,8 @@ def resolve(run: str, ticket_id: str, run_dir, path, data: dict, tree,
 
 
 __all__ = (
-    "CHECK_VERIFICATION", "COMMAND_VERIFICATION",
-    "predicate", "record_verification", "resolve", "verification_line",
+    "CHECK_VERIFICATION", "COMMAND_VERIFICATION", "REPAIR_MARKER",
+    "STALL_WINDOW", "advance_action", "check_reading", "mint_check",
+    "predicate", "record_verification", "resolve", "rounds",
+    "verification_line",
 )

@@ -81,61 +81,72 @@ def discover_packages():
     return packages
 
 
-TEMPLATE_MANIFEST = "template.md"
+WORKFLOW_SKILL_FILE = "SKILL.md"
+# Every workflow adapter is manual-invocation-only, whatever the source
+# declares. A workflow's prose executes as orchestrator reasoning rather
+# than inside a sealed child prompt (the lego design's A5 containment), so
+# a host that fires one on its own reading of a description has opened that
+# surface without anybody asking. The flag is forced here rather than
+# trusted from frontmatter, because a ring workflow is authored outside
+# this repository and cannot be required to remember it.
+MANUAL_ONLY = "disable-model-invocation: true"
 
 
-def discover_templates(root: Path = REPO_ROOT):
-    """Every invocable composition: a template directory
-    ``example-workflows/<name>/`` whose ``template.md`` manifest carries an
-    ``entry`` (per contracts/work-item.md's Template and stub section).
+def discover_workflow_skills(root: Path = REPO_ROOT):
+    """Every invocable workflow: a directory ``example-workflows/<name>/``
+    whose ``SKILL.md`` is a workflow skill -- prose that calls bricks.
 
-    Returns ``(directory, frontmatter, body)`` per template. A directory
-    without a manifest, or a manifest without frontmatter or without
-    ``entry``, is library data rather than a name surface and is skipped
-    -- it still reaches the installed lib copy. ``example-workflows/references/``
-    is exactly that."""
+    Returns ``(directory, frontmatter, body)`` per workflow. A directory
+    without that file, or one without frontmatter or a ``name``, is library
+    data rather than a name surface and is skipped -- it still reaches the
+    installed lib copy. ``example-workflows/references/`` is exactly that."""
 
-    templates = []
+    workflows = []
     comps_root = root / "example-workflows"
     if not comps_root.is_dir():
-        return templates
+        return workflows
     for directory in sorted(p for p in comps_root.iterdir() if p.is_dir()):
-        manifest = directory / TEMPLATE_MANIFEST
+        manifest = directory / WORKFLOW_SKILL_FILE
         if not manifest.is_file():
             continue
         try:
             frontmatter, body = split_frontmatter(manifest.read_text(encoding="utf-8"))
         except ValueError:
             continue
-        if not frontmatter_field(frontmatter, "entry"):
+        if not frontmatter_field(frontmatter, "name"):
             continue
-        templates.append((directory, frontmatter, body))
-    return templates
+        workflows.append((directory, frontmatter, body))
+    return workflows
 
 
-def template_adapter_body(name: str, lib_template_dir: Path, frontmatter: str) -> str:
-    """The Claude adapter stub's body for a template.
+def manual_only_frontmatter(frontmatter: str, host: str = "claude") -> str:
+    """Host-legal adapter frontmatter with the manual-only flag guaranteed."""
 
-    A skill's adapter is an ``@``-include of one file; a template is a
-    directory, and ``@`` cannot include one -- so the stub says what the
-    name is and hands over the two commands that run it. The placeholders
-    come from the manifest's own declaration, so a stub can never offer a
-    ``--set`` the template does not take."""
+    legal = host_legal_frontmatter(frontmatter, host)
+    if MANUAL_ONLY.split(":")[0] in legal:
+        return legal
+    lines = legal.splitlines(keepends=True)
+    lines[-1:-1] = [MANUAL_ONLY + "\n"]
+    return "".join(lines)
 
-    declared = (frontmatter_field(frontmatter, "placeholders") or "").strip()
-    names = [item.strip() for item in declared.strip("[]").split(",") if item.strip()]
-    sets = "".join(f" --set {item}=<{item}>" for item in names)
+
+def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -> str:
+    """The Claude adapter stub's body for a workflow.
+
+    A workflow is a skill whose prose calls bricks, so the adapter says
+    exactly that and points at the one body: read it and invoke it. It is
+    a pointer rather than an ``@``-include because the body's own relative
+    links resolve against the library directory it lives in, not against
+    the host surface this stub is written into."""
+
     return (
-        f"`{name}` is a ticket-set template, not a skill body: a directory of\n"
-        f"ticket stubs at {lib_template_dir}, with its manifest and every\n"
-        "stub's objective, write scope and completion test beside it. Read the\n"
-        "manifest first. Instantiate it into one run:\n\n"
-        f"    tickets.py instantiate {lib_template_dir} --run <run>{sets}\n\n"
-        "then drain that run yourself, two commands per ready stub:\n"
-        "`tickets.py dispatch` emits one launch to invoke verbatim, and\n"
-        "`tickets.py land` joins the return and prints what its `depends_on`\n"
-        "edges just made ready. The terminal stub's completion test is this\n"
-        "template's done check.\n"
+        f"`{name}` is a workflow skill: prose that opens a frame and calls\n"
+        f"bricks. Its one body is {lib_workflow_dir / WORKFLOW_SKILL_FILE}.\n\n"
+        "Read that file whole and invoke the skill by following it exactly:\n"
+        "its Require names what the caller supplies, its call lines are the\n"
+        "commands to run, and its Return is the close. A workflow is only\n"
+        "ever invoked by name -- never on a host's own reading of this\n"
+        "description.\n"
     )
 
 

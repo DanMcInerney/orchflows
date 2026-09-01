@@ -36,8 +36,8 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 
 - `id`, `run`, `status` — stable identity, owning run, and lifecycle state.
 - `executor`, optional `profile`, and `pack` — exact dispatch and
-  role binding. Callable executors are the four registered verbs
-  `orch-execute`, `orch-check`, `orch-slice`, and `orch-outline`;
+  role binding. Callable executors are the two registered verbs
+  `orch-do` and `orch-judge`;
   `script:<repo-relative path>`
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
@@ -49,29 +49,41 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
 - optional `done` — the canonical JSON done predicate, `{"form", "value"}`:
   form `command`, a deterministic command whose exit 0 is the verdict, or
   form `check`, a criterion no oracle covers, judged by one minted
-  `orch-check` ticket. On an ordinary ticket `tickets.py land` is the only
+  `orch-judge` ticket. On an ordinary ticket `tickets.py land` is the only
   evaluator: it runs the
   command in the integrated tree, and that run is the one outside execution
   ([verification.md](../rules/verification.md) §6). A refused command arms
   the next `<id>.repair.NN` round rather than closing the ticket; two rounds
   with no result delta close it `stalled`. A ticket carrying no predicate is
   graded by the driver at the join instead.
-- optional `loop` — the marker `true`, and no other value. It moves the
-  reading of this ticket's own `done`: once per iteration instead of once at
-  landing. The stub's own `executor` is the
-  iteration body's verb. A loop
-  stub is never dispatched: `scripts/tickets_loop.py` arms iteration
-  `<id>.iter.NN` tickets, evaluates the done-check, and advances — re-arm, or
-  terminal `complete` | `limited` | `stalled` — with the worklog as the state
-  and `bound` reused as the loop's operational bound. A marker with no `done`
-  beside it marks nothing and is refused.
-- `depends_on` — ticket ids that must complete first.
+- optional `frame` — the marker `true`, and no other value. It says this
+  ticket is one call-stack frame: the durable record of one workflow
+  invocation, opened by `tickets.py frame-open` and closed by
+  `tickets.py frame-close`. A frame binds no `executor` and stamps no
+  `pack`, and both absences are the marker's meaning rather than an
+  omission — nothing dispatches a frame, because the orchestrator session
+  is what drives it, and a frame is a journal rather than craft-governed
+  work. `executor` is required of every other ticket and of no frame. Its
+  `## Report` is that journal: the driver appends one line per wave through
+  `tickets.py result` and re-reads it at the start of the next wave, which
+  is where a resumed — or a merely compacted — driver recovers what it
+  decided. A frame closing over two or more `do` children is refused unless
+  its subtree holds a judging child or its journal carries an
+  `unjudged: <reason>` line.
+- optional `parent` — the ticket this one was minted under at runtime. It
+  makes the ticket tree the call tree: a brick opened by `tickets.py do` or
+  `tickets.py judge` hangs under its caller, its id is auto-minted as
+  `<parent>.<n>` (root ids `B<n>` when parentless), and it is sealed through
+  the parent's own sealed generation rather than named in a sealed cut that
+  closed before it existed. A ticket naming no parent is a root.
+- optional `depends_on` — ticket ids that must complete first. A runtime
+  child declares none: prose order in the calling workflow is what sequences
+  bricks, and the parent relays each result forward.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate mechanics, and the rare
   explicit workspace override; an absent `isolation` derives its effective
   value from the stamped pack's adapter (`establishes_isolation`), read
   through one derivation everywhere.
-- `review_order` — the sealed zero-based order of a composite-gate lens.
 - `review_kind` — optional typed review lane: `critique` or `repair`; its
   value selects the mechanical checker or repair projection. There is no
   standing verification lane: the fresh outside check is the root's own
@@ -134,13 +146,15 @@ pack, normalized isolation, and ordered lens assignment identities;
 `RepairOutcome` fixes the resulting artifact or proves no-op from an empty
 accepted set, and closes the chain.
 
-A composite gate lane consumes only the validated predecessor chain. Critique
-and repair joins append their stage atomically with the lifecycle
-join. The ordinary distinct checker writes the same `GatePlan` and
-`CritiqueAdjudication` carrier before `checked_by`; it must name the fixed
-artifact, complete canonical findings, and accepted subset. Those two arrays
-are the findings' one durable home: they reach the join as files, never as
-prose a consumer would have to read out of a report.
+A review lane consumes only the validated predecessor chain. Critique and
+repair joins append their stage atomically with the lifecycle join. The
+distinct checker stage writes the `GatePlan` and `CritiqueAdjudication`
+carrier before `checked_by`; it must name the fixed artifact, complete
+canonical findings, and accepted subset. Those two arrays are the findings'
+one durable home: they reach the join as files, never as prose a consumer
+would have to read out of a report. No door emits a lensed critique family
+any more: a critique is a `judge` brick and the repair answering it a `do`
+brick, sequenced by the calling workflow's prose.
 
 ## Executor records
 
@@ -160,9 +174,11 @@ reading to the same section, attributed to the driver that ran it.
 
 ## Roots, decomposition, and integration
 
-A root is the ticket named by a `root_generation`. A direct root may bind any
-lawful registered executor and owns the whole artifact. A decomposed root binds
-`orch-slice`; every member and gate ticket uses this same semantic shape.
+A root is the ticket named by a `root_generation` and may bind any lawful
+registered executor; it owns the whole artifact. Decomposition retired with
+orch-slice, its only minter (W4a): every root is direct now, and a runtime
+child declares its `parent` and binds through that parent's seal rather than
+through a cut a decomposer wrote.
 
 Each physical run has one root identity. Its `root_generation` uses ordinal
 `1`; only cut drafts can advance before seal. A semantic change after seal is
@@ -181,14 +197,15 @@ never by itself a rejection: Goal is the acceptance boundary.
 
 ## Template and executor form
 
-A composition is `template.md` plus ticket stubs. `tickets.py instantiate`
-substitutes placeholders, validates one acyclic graph with one terminal, seals
-the exact snapshot, and writes all tickets or none.
+A workflow is a skill whose prose opens a frame and calls bricks
+([vocabulary.md](../docs/vocabulary.md#structure)); `tickets.py instantiate`
+and the `template.md`-plus-stubs shape it used to substitute and seal
+retired with the decomposed-root concept they served (W4a).
 
 `executor` names one registered callable verb or `script:<repo-relative path>`.
 A multi-stage pack runs its declared `stages` in order through that one
-child and one role ([roles.md](../rules/roles.md) §4); `orch-execute` and
-`orch-check` read the stamped pack's craft and may not import a superseded
+child and one role ([roles.md](../rules/roles.md) §4); `orch-do` and
+`orch-judge` read the stamped pack's craft and may not import a superseded
 skill body or invent a second pack parser. Anything needing a fresh role or
 independent verdict is a new ticket and child. Domains may add facts to
 Context but do not replace the semantic sections.
@@ -300,10 +317,11 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `pack_digest` | no | — |
 | `profile` | no | — |
 | `independence` | no | — |
-| `depends_on` | yes | — |
+| `parent` | no | — |
+| `depends_on` | no | — |
 | `isolation` | no | — |
 | `bound` | yes | — |
-| `loop` | no | `true` |
+| `frame` | no | `true` |
 | `done` | no | — |
 | `checked_by` | no | — |
 | `root_generation` | no | — |
@@ -312,7 +330,6 @@ GENERATED BY tools/render_shapes.py from `contracts/shapes.json` for `contracts/
 | `workspace_branch` | no | — |
 | `workspace_baseline` | no | — |
 | `dispatch_v1` | no | — |
-| `review_order` | no | — |
 | `review_v1` | no | — |
 | `review_stage` | no | — |
 | `review_kind` | no | `critique`, `repair`, `null` |
@@ -463,6 +480,29 @@ their durable home. `land` appends its predicate reading to `Report`. No
 instruction ceiling bounds any of it: `tickets.py new` and `lint` grade a
 ticket's shape, never its length.
 
+T0 supersession record sha256:4ec52ffb648bd12731105db78255d9ed61f5b8627fa8d82242cafc32146eca88:
+the ticket gains the optional `parent` link, and `depends_on` stops being
+required. A brick opened by `tickets.py do` or `tickets.py judge` is minted
+after its caller's cut was already sealed, so it can never be a member of
+that cut: it inherits the parent's `root_generation` and `cut_generation`,
+self-seals its own assignment, and admission binds it by verifying the
+parent's seal in the sealed record — the loop round's door, generalized to
+every runtime child. Edges give way to parentage for those children: prose
+in the calling workflow is what orders them, so an empty `depends_on` is now
+an absent one rather than a required empty list.
+
+T0 supersession record sha256:0d85c915e08293e5dc0c648ae51acbcec5ec6e3ed511850b545a5d9b809e8ec9:
+the ticket gains the optional `frame` marker, and `executor` stops being
+required of the tickets that carry it. A frame is one workflow invocation's
+durable stack frame: sealed goal, `parent` link to its caller, and a
+`## Report` the driver journals into and re-reads at the start of every
+wave. Nothing executes it — the orchestrator is a session, not a dispatched
+child — so it binds no executor and stamps no pack, and the pair of
+absences is what the marker declares. The close is a recording act rather
+than a launch: it refuses over two or more `do` children unless the
+subtree holds a judging child or the journal states `unjudged: <reason>`,
+which converts a silent under-review into a ledger-visible decision.
+
 T0 supersession record sha256:53406f681678ca1134b5e418980d4b736e4a865b1b0d3a4806ba27922d3fbe89:
 `loop` is a marker, not an object. Since the ticket gained its own top-level
 `done`, the loop object has carried exactly one field -- a second copy of
@@ -472,3 +512,16 @@ A loop stub is a ticket carrying `loop: true` beside the `done` its
 iterations are read against; the marker with no `done` beside it marks
 nothing and is refused, and every reader that asked whether the object
 parsed now asks whether the marker is set.
+
+T0 supersession record sha256:60c5ee4de5db22535faee1c11d6857652dc857dd2cca9643aa5611795babf67b:
+the loop lane and the gate choreography leave together. `loop` is removed as
+a frontmatter field: nothing arms, evaluates, or advances a stub, and a
+bounded campaign is prose in the calling workflow over repeated bricks whose
+`done` predicate `land` reads once at landing. `review_order` is removed with
+the composite gate that sealed lens order -- no door emits a lensed critique
+family, so a critique is a `judge` brick and the repair answering it a `do`
+brick under the same parent. The distinct checker stage, its `GatePlan` and
+`CritiqueAdjudication` carrier, and the findings and accepted arrays that
+reach the join as files are unchanged. Admission's member-count rules go with
+the cut-membership law they guarded: a runtime child declares its `parent`
+and binds through that parent's seal, so parentage owns shape.

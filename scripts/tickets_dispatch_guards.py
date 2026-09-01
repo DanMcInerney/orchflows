@@ -41,14 +41,16 @@ def admission_failure(path, text: str, data: dict, run: str, ticket_id: str):
         return None
     # A never-promoted ticket is the common half of this refusal and the only
     # half with a mechanical remedy: it holds the pending placeholder because
-    # nothing has admitted it yet, and `ready` is the command that does. This
-    # is the door a claim on a pending ticket actually reaches -- the status
-    # check further down never sees it -- so the remedy is named here.
+    # nothing has admitted it yet, and promotion is `dispatch`'s own first
+    # step now that `ready` is no longer a door of its own. This is the door a
+    # claim on a pending ticket actually reaches -- the status check further
+    # down never sees it -- so the remedy is named here.
     if stored == ADMISSION_PENDING:
         return classification(
             "admission-mismatch",
             "ticket has never been admitted: its receipt is still the pending "
-            f"placeholder. Promote it with `tickets.py ready --run {run}`",
+            f"placeholder. `tickets.py dispatch {run} {ticket_id}` promotes "
+            "and launches it under one lock",
         )
     return classification(
         "admission-mismatch", "ticket's stored admission receipt is not current"

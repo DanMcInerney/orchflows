@@ -135,17 +135,15 @@ class StandaloneDispatchTest(unittest.TestCase):
         self.assertNotIn("errand", self.report["commands"])
         self.assertEqual([], self.report["missing"])
 
-    def test_the_generation_table_the_flat_branch_falls_back_to_is_not_empty(self):
-        # `missing` above cannot see this one: the flat branch binds
-        # ``GENERATION_SUBCOMMANDS`` to ``{}`` when ``tickets_generations``
-        # is absent, so the name resolves and the lookup still raises. A
-        # bound but empty table is the vacuous form of the same defect.
-        self.assertIn("draft-validate", self.report["generation_commands"])
-        self.assertIn("seal", self.report["generation_commands"])
-        unroutable = sorted(
-            set(self.report["generation_commands"]) - set(self.report["generation_keys"])
-        )
-        self.assertEqual([], unroutable)
+    def test_no_arm_routes_through_a_table_lookup(self):
+        # The generation table was the one arm that resolved its handler by
+        # subscript rather than by name, so `missing` above could not see it:
+        # the flat branch bound it to `{}` when `tickets_generations` was
+        # absent, the name resolved, and the lookup still raised. W3a retired
+        # `draft-validate` and `seal` as doors and the table with them, and
+        # every remaining arm calls a bound name `missing` does grade.
+        self.assertEqual([], self.report["generation_commands"])
+        self.assertEqual([], self.report["generation_keys"])
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # BenchMaker protocol
 
-Benchmark craft for a domain with no pack: what the stubs of
-[the benchmaker template](../benchmaker/template.md) call, and nothing
+Benchmark craft for a domain with no pack: what the calls of
+[the benchmaker workflow](../benchmaker/SKILL.md) make, and nothing
 they, a contract, or a rule already state.
 
 ## Licensed oracle material

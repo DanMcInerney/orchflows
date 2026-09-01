@@ -74,7 +74,7 @@ class WorkflowProjectionTests(unittest.TestCase):
         detail = workflows.project_workflow(ROOT, "evolve")
         source_id = next(
             node["source_id"] for node in detail["nodes"]
-            if node["id"] == "work:evolve/02-campaign"
+            if node["id"] == "workflow:evolve"
         )
 
         status, source = workflows.project_workflow_source(ROOT, "evolve", source_id)
@@ -87,7 +87,7 @@ class WorkflowProjectionTests(unittest.TestCase):
         self.assertEqual("orchflows.workflow-source.v1", source["schema"])
         self.assertEqual(source_id, source["id"])
         self.assertEqual("markdown", source["language"])
-        self.assertIn("02-campaign", source["text"])
+        self.assertIn("Generations, until", source["text"])
 
 
 if __name__ == "__main__":

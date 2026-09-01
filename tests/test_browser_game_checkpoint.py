@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = (
     ROOT / "example-workflows" / "references" / "browser-game-checkpoint.schema.json"
 )
-CHECKPOINT_PATH = ROOT / "example-workflows" / "browser-game" / "02-checkpoint.md"
+WORKFLOW_PATH = ROOT / "example-workflows" / "browser-game" / "SKILL.md"
 
 DISPOSITIONS = {
     "advance",
@@ -37,8 +37,8 @@ class BrowserGameCheckpointContractTests(unittest.TestCase):
         cls.schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         cls.defs = cls.schema["$defs"]
 
-    def test_composition_owns_and_links_the_checkpoint_contract(self):
-        checkpoint = CHECKPOINT_PATH.read_text(encoding="utf-8")
+    def test_the_workflow_owns_and_links_the_checkpoint_contract(self):
+        checkpoint = WORKFLOW_PATH.read_text(encoding="utf-8")
 
         self.assertIn("../references/browser-game-checkpoint.schema.json", checkpoint)
         self.assertEqual(

@@ -105,7 +105,11 @@ RESERVED_WORDINGS = {
 
 #: The tiers the contract sweep must span; a glob that stopped matching
 #: one would leave its contracts unswept while this module stayed green.
-TIERS = {"kernel", "workflows"}
+#: `workflows` dropped out here when W2b (verbs-rename) retired
+#: `orch-outline`, its last skill; `skills/workflows/` still exists
+#: (kept by `.gitkeep`) for the tier itself to return to, but carries no
+#: contract to sweep until one does.
+TIERS = {"kernel"}
 
 
 def contracts():
@@ -182,12 +186,14 @@ class TheClauseStillSaysWhatItWasWrittenToSay(unittest.TestCase):
 class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
     """The clause renders on role-bearing surfaces and lives nowhere else."""
 
-    PLANNER = "skills/workflows/orch-outline/SKILL.md"
-    WORKER = "skills/kernel/orch-execute/SKILL.md"
+    PLANNER = "skills/kernel/orch-judge/SKILL.md"
+    WORKER = "skills/kernel/orch-do/SKILL.md"
     # No skill declares `role: none` any more: the driver loop stopped being
-    # one. The role-less name surface left is a composition manifest, and the
-    # same composers render it.
-    GLUE = "example-workflows/self-improve/template.md"
+    # one. The role-less name surface left is a workflow body, and the same
+    # composers render it. A workflow declares no role deliberately -- its
+    # prose is driven by the orchestrator in place, so it never forks and
+    # can never produce the prompt-less arrival the clause governs.
+    GLUE = "example-workflows/self-improve/SKILL.md"
 
     def test_no_skill_contract_body_carries_a_copy(self):
         """A body copy re-opens the doclint saturation the relocation closed."""
@@ -237,7 +243,7 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
         self.assertIn(
             FORK_ARRIVAL_CLAUSE,
             codex_role_adapter_body(
-                "orch-execute", "worker", install.load_role_profiles()["orch-worker"], Path("X")
+                "orch-do", "worker", install.load_role_profiles()["orch-worker"], Path("X")
             ),
         )
 
@@ -279,41 +285,15 @@ class TheInstallerIsTheClausesOneOwner(unittest.TestCase):
                         self.assertNotIn(FORK_ARRIVAL_CLAUSE, content)
 
 
-class SpecStatesItsDirectTicketLane(unittest.TestCase):
-    """One executor plus the mandatory join needs no decomposition.
-
-    Five consecutive runs went to landing one direct verifier ticket
-    because the contract routed every stamped root through
-    orch-slice. The lane has to be stated, and stated with its
-    mechanics: a lane a reader cannot execute is the gap it was written
-    to close.
-    """
-
-    SPEC = "skills/workflows/orch-outline/SKILL.md"
-
-    def spec_body(self) -> str:
-        return flat(body(ROOT / self.SPEC))
-
-    def test_the_direct_lane_names_its_condition_and_its_mechanics(self):
-        text = self.spec_body()
-        for token, why in (
-            ("one executor", "the condition the lane turns on"),
-            # The bare name appears twice more in this body, so a bare-token
-            # assertion passes with the whole lane deleted. Only the lane
-            # says it this way, which is what makes the case able to fail.
-            ("rather than `orch-slice`", "what the direct root is emitted instead of"),
-            (
-                "prescribe implementation or tests in Goal",
-                "the directly bound executor's implementation authority",
-            ),
-        ):
-            with self.subTest(token=token):
-                self.assertIn(
-                    token, text,
-                    f"orch-outline's direct lane omits {token!r}, which names "
-                    f"{why}; without it the lane is an intention rather than "
-                    "something a reader can run",
-                )
+# `SpecStatesItsDirectTicketLane` (once here) pinned the direct-ticket-lane
+# paragraph in `orch-outline`'s body -- "bind one executor directly rather
+# than `orch-slice`", naming the condition and the mechanics a reader could
+# actually run. W2b (verbs-rename) retired `orch-outline` with no successor
+# skill body: the lane's content survives only as the tombstone's remedy
+# text in `scripts/tickets_registry.py`, not as an executable paragraph
+# anywhere in the tree, so there is nothing left here to pin. Restoring this
+# guard is a later wave's job, once a planning `orch-do` body states the
+# lane again.
 
 
 if __name__ == "__main__":

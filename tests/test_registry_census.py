@@ -45,13 +45,16 @@ Deliver one result.
 
 
 class CallableRegistryTests(unittest.TestCase):
-    def test_callable_registry_is_exactly_the_four_enforced_verbs(self):
+    def test_callable_registry_is_exactly_the_two_bricks(self):
+        """`orch-slice` retired in W4a together with the instantiate layer
+        that was its only minter of decomposed roots (`ROOT_EXECUTOR` in
+        `scripts/tickets_format.py` is gone with it): the two brick doors
+        are the whole callable tier now."""
+
         self.assertEqual(
             (
-                "orch-execute",
-                "orch-check",
-                "orch-slice",
-                "orch-outline",
+                "orch-do",
+                "orch-judge",
             ),
             tickets.CALLABLE_EXECUTORS,
         )
@@ -104,7 +107,7 @@ Deliver one result.
 """
         defects = tickets.ticket_defects(text)
         self.assertTrue(any("executor-unregistered" in defect for defect in defects))
-        self.assertTrue(any("orch-check" in defect for defect in defects))
+        self.assertTrue(any("orch-judge" in defect for defect in defects))
 
     def test_a_superseded_verb_is_refused_naming_its_successor(self):
         """rules/delegation.md 8: no dispatch may revive a superseded skill
@@ -120,18 +123,24 @@ Deliver one result.
         self.assertEqual(1, len(refusals), defects)
         self.assertIn("orch-spec", refusals[0])
         self.assertIn("superseded", refusals[0])
-        self.assertIn("orch-outline", refusals[0])
+        self.assertIn("planning `do`", refusals[0])
         self.assertEqual(
-            "orch-outline", registry.executor_successor("orch-spec")
+            registry.SUPERSEDED_EXECUTORS["orch-outline"],
+            registry.executor_successor("orch-spec"),
         )
-        self.assertEqual("orch-outline", registry.executor_successor("`orch-spec`"))
-        self.assertIsNone(registry.executor_successor("orch-outline"))
+        self.assertEqual(
+            registry.SUPERSEDED_EXECUTORS["orch-outline"],
+            registry.executor_successor("`orch-spec`"),
+        )
+        # orch-do is the live registered verb, not a superseded name.
+        self.assertIsNone(registry.executor_successor("orch-do"))
         self.assertFalse(registry.executor_registered("orch-spec"))
         # An ordinary unknown still gets the registry list, not a remedy that
         # does not exist: the two refusals must not collapse into one.
         unknown = registry.executor_refusal("orch-verify")
         self.assertNotIn("superseded", unknown)
-        self.assertIn("orch-outline", unknown)
+        self.assertIn("orch-do", unknown)
+        self.assertIn("orch-judge", unknown)
         for superseded, successor in registry.SUPERSEDED_EXECUTORS.items():
             with self.subTest(superseded=superseded):
                 self.assertNotIn(superseded, registry.EXECUTOR_REGISTRY)
@@ -139,18 +148,44 @@ Deliver one result.
                 # that replaced the verb, named as the remedy it is.
                 if successor not in registry.EXECUTOR_REGISTRY:
                     self.assertIn(successor, registry.executor_refusal(superseded))
-        # The absorbed loop engine refuses toward the loop field mechanism.
+        # The loop lane is gone: the refusal names the mechanism that
+        # replaced it -- prose over bricks and land's `done` predicate --
+        # rather than the arm/evaluate/advance doors W3a deleted.
         loop_refusal = registry.executor_refusal("orch-loop")
         self.assertIn("superseded", loop_refusal)
-        self.assertIn("loop-arm", loop_refusal)
+        self.assertIn("do` bricks", loop_refusal)
+        self.assertIn("tickets.py land", loop_refusal)
+        self.assertNotIn("loop-arm", loop_refusal)
         self.assertNotIn("bind '", loop_refusal)
 
-    def test_execute_and_check_require_pack_authority(self):
+    def test_the_outline_and_slice_doorways_collapse_to_one_remedy(self):
+        """`orch-outline` retired as a verb in wave 3; `orch-slice` retires
+        in W4a together with the instantiate layer that was its only
+        minter of decomposed roots. Both leave their craft behind as the
+        planning `do` reading the pack craft's Outline and Spec fields
+        sections (`.orchflows/lego-design-2026-08-31.md`), and both
+        predecessors -- `orch-spec` and `orch-decompose` -- refuse toward
+        that same living remedy rather than toward a name that itself
+        refuses."""
+
+        remedy = (
+            "a planning `do` reading the pack craft's Outline and Spec "
+            "fields sections"
+        )
+        for retired in ("orch-outline", "orch-spec", "orch-slice", "orch-decompose"):
+            with self.subTest(retired=retired):
+                self.assertEqual(remedy, registry.executor_successor(retired))
+                refusal = registry.executor_refusal(retired)
+                self.assertIn("superseded", refusal)
+                self.assertIn(remedy, refusal)
+                self.assertNotIn("bind '", refusal)
+
+    def test_do_and_judge_require_pack_authority(self):
         text = """---
 id: R
 run: r
 status: pending
-executor: orch-execute
+executor: orch-do
 depends_on: []
 bound: 10m
 ---
@@ -176,6 +211,8 @@ Deliver one result.
 []
 """
         self.assertTrue(any("executor-pack-required" in defect for defect in tickets.ticket_defects(text)))
+        judged = text.replace("executor: orch-do", "executor: orch-judge")
+        self.assertTrue(any("executor-pack-required" in defect for defect in tickets.ticket_defects(judged)))
 
     def test_shipped_callable_skill_packages_are_exactly_registry(self):
         root = Path(__file__).resolve().parents[1] / "skills"

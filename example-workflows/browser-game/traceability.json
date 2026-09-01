@@ -11,91 +11,91 @@
       "identities": ["PJ-21"],
       "implementation": "example-workflows/browser-game/traceability.json",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "program-record",
       "identities": ["PJ-03", "PJ-07"],
-      "implementation": "example-workflows/browser-game/00-record.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "question-authority",
       "identities": ["PJ-06", "PJ-09", "PJ-10"],
-      "implementation": "example-workflows/browser-game/00-record.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "checkpoint-disposition",
       "identities": ["PJ-05"],
-      "implementation": "example-workflows/browser-game/02-checkpoint.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "experiment-validity",
       "identities": ["PJ-16", "PJ-17"],
-      "implementation": "example-workflows/browser-game/01-evidence.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "kind-separation",
       "identities": ["AUTH-05", "PJ-18", "PJ-19", "PJ-28"],
-      "implementation": "example-workflows/browser-game/02-checkpoint.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "closed-surface",
       "identities": ["PJ-20"],
-      "implementation": "example-workflows/browser-game/template.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "decision-safety",
       "identities": ["PJ-22"],
-      "implementation": "example-workflows/browser-game/00-record.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "conditional-fidelity",
       "identities": ["PJ-23"],
-      "implementation": "example-workflows/browser-game/01-evidence.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "evidence-identity",
       "identities": ["PJ-08", "PJ-24"],
-      "implementation": "example-workflows/browser-game/02-checkpoint.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "revalidation",
       "identities": ["PJ-25"],
-      "implementation": "example-workflows/browser-game/01-evidence.md",
+      "implementation": "example-workflows/browser-game/SKILL.md",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "migration",
       "identities": ["PJ-01", "PJ-26", "U-03"],
       "implementation": "example-workflows/browser-game/traceability.json",
       "test": "tests/test_browser_game_traceability.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     },
     {
       "behavior": "instance-validation",
       "identities": ["PJ-05", "PJ-06", "PJ-09", "PJ-10", "PJ-22", "PJ-24", "PJ-25", "PJ-28"],
       "implementation": "scripts/browser_game_validate.py",
       "test": "tests/test_browser_game_instances.py",
-      "help": "example-workflows/browser-game/template.md"
+      "help": "example-workflows/browser-game/SKILL.md"
     }
   ],
   "program_record_contract": {

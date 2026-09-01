@@ -202,16 +202,16 @@
       "contract": "work-item.md",
       "fields": [
         "id", "run", "status", "admission", "executor", "pack",
-        "pack_digest", "profile", "independence", "depends_on", "isolation", "bound", "loop",
-        "done",
+        "pack_digest", "profile", "independence", "parent", "depends_on", "isolation", "bound",
+        "frame", "done",
         "checked_by", "root_generation", "cut_generation", "assignment_seal",
         "workspace_branch", "workspace_baseline", "dispatch_v1",
-        "review_order", "review_v1", "review_stage", "review_kind"
+        "review_v1", "review_stage", "review_kind"
       ],
-      "required": ["id", "run", "status", "executor", "depends_on", "bound"],
+      "required": ["id", "run", "status", "executor", "bound"],
       "values": {
         "status": ["pending", "ready", "claimed", "suspended", "complete", "blocked", "stalled", "failed", "limited"],
-        "loop": ["true"],
+        "frame": ["true"],
         "review_kind": ["critique", "repair", "null"]
       }
     },

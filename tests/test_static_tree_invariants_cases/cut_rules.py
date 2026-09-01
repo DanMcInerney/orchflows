@@ -3,17 +3,9 @@ import unittest
 
 from ._support import ROOT, read_flat
 
-SLICE = ROOT / "skills" / "kernel" / "orch-slice" / "SKILL.md"
-# The join stopped being a skill; the law that owns what it skips is the
-# verification rule, and `tickets.py join-noop-repair` is what performs it.
-VERIFICATION = ROOT / "rules" / "verification.md"
 CODE_CRAFT = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
 DESIGN_CRAFT = ROOT / "packs" / "orch-design-pack" / "references" / "craft.md"
 
-# Stable owner anchors for each rule, rather than whole prose sentences.
-OVERLAP_ANCHORS = ("Details may overlap", "never grant authority")
-CUT_GOAL_ANCHORS = ("critical path", "item an atom", "graph")
-EMPTY_SET_SKIP_ANCHORS = ("gate.repair", "accepted defect set")
 PROVEN_SEAM_ANCHORS = ("first frontier", "unproven")
 # The member assignment shape has one owner, contracts/work-item.md; a
 # pack slicing section restating it was the drift surface this guard once
@@ -33,19 +25,8 @@ RETIRED_SHAPE_RESTATEMENTS = (
 class TestDependencyOrderedOverlap(unittest.TestCase):
     """Predicted paths are hints; actual overlap belongs to integration."""
 
-    def test_the_owner_does_not_turn_suggested_paths_into_cut_authority(self):
-        text = read_flat(SLICE)
-        for anchor in OVERLAP_ANCHORS:
-            self.assertIn(
-                anchor, text,
-                f"orch-slice, the rule's one owner, does not name "
-                f"{anchor!r}, so predicted paths can still become cut-time "
-                "authority",
-            )
-
     def test_no_cut_states_a_superseded_overlap_rule(self):
         for label, path in (
-            ("orch-slice", SLICE),
             ("code pack craft", CODE_CRAFT),
             ("design pack craft", DESIGN_CRAFT),
         ):
@@ -94,28 +75,6 @@ class TestDependencyOrderedOverlap(unittest.TestCase):
 
 class TestCutGoalAnchors(unittest.TestCase):
     """Pin each cut goal to stable anchors in its one prose owner."""
-
-    def test_the_decomposer_states_the_goal_by_anchor(self):
-        text = read_flat(SLICE)
-        for anchor in CUT_GOAL_ANCHORS:
-            self.assertIn(
-                anchor, text,
-                f"orch-slice does not name {anchor!r}, so the cut is no "
-                "longer told to minimize the critical path subject to every "
-                "item an atom, or no longer returns the graph block whose "
-                "numbers that goal is measured by",
-            )
-
-    def test_the_join_skips_the_repair_on_an_empty_accepted_set(self):
-        text = read_flat(VERIFICATION)
-        for anchor in EMPTY_SET_SKIP_ANCHORS:
-            self.assertIn(
-                anchor, text,
-                f"rules/verification.md does not name {anchor!r}, so the join "
-                "no longer completes the gate's repair itself on an empty "
-                "accepted defect set and every clean run pays for a no-op "
-                "dispatch on its critical path",
-            )
 
     def test_the_slicing_sections_put_proven_seams_on_the_first_frontier(self):
         for label, path in (
