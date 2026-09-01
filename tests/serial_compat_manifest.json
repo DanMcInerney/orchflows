@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2052,
+  "count": 2056,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -147,6 +147,8 @@
    "test_dispatch_standalone.StandaloneDispatchTest.test_no_arm_routes_through_a_table_lookup",
    "test_dispatch_standalone.StandaloneDispatchTest.test_the_flat_import_is_the_one_under_test",
    "test_dispatch_v1.DispatchV1Test.test_a_claim_without_a_dispatch_record_is_refused",
+   "test_dispatch_v1.DispatchV1Test.test_a_join_commits_after_the_workers_lease_expires",
+   "test_dispatch_v1.DispatchV1Test.test_a_join_still_refuses_a_lease_past_attempt_with_no_committed_outcome",
    "test_dispatch_v1.DispatchV1Test.test_a_non_root_join_leaves_the_runs_terminal_timing_unwritten",
    "test_dispatch_v1.DispatchV1Test.test_a_second_attempt_keeps_its_status_with_the_join",
    "test_dispatch_v1.DispatchV1Test.test_all_dispatch_state_operations_refuse_path_aliased_origins",
@@ -931,6 +933,7 @@
    "test_ticket_bricks.BrickPromptTest.test_a_git_brick_is_told_to_commit_and_to_print_a_git_line",
    "test_ticket_bricks.BrickPromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
    "test_ticket_bricks.BrickPromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
+   "test_ticket_bricks.RepairRoundAdmissionTest.test_a_runtime_bricks_repair_round_admits_and_dispatches",
    "test_ticket_bricks.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_predicate_is_part_of_the_sealed_assignment",
@@ -938,6 +941,7 @@
    "test_ticket_done_predicate.LandDonePredicateTest.test_a_refused_command_arms_a_repair_round_instead_of_wedging",
    "test_ticket_done_predicate.LandDonePredicateTest.test_a_refused_join_flag_leaves_everything_unmoved",
    "test_ticket_done_predicate.LandDonePredicateTest.test_a_ticket_with_no_predicate_still_takes_the_drivers_grade",
+   "test_ticket_done_predicate.LandDonePredicateTest.test_land_still_joins_after_the_workers_lease_expires",
    "test_ticket_done_predicate.LandDonePredicateTest.test_the_check_form_mints_one_orch_check_and_reads_its_joined_status",
    "test_ticket_done_predicate.LandDonePredicateTest.test_the_two_grade_paths_refuse_to_be_used_together_or_neither",
    "test_ticket_done_predicate.LandDonePredicateTest.test_two_rounds_with_no_delta_close_the_ticket_stalled",
@@ -2055,7 +2059,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e85faf232830bd7408cf8e3f5343eb9bc965e706e41b21faccec2cb2428fe66f"
+  "sha256": "a953f5340525f92e7e4b1c2606d5bfffa8c623e8a102ea8b442c5e4aee57872c"
  },
  "mutation_owners": [
   {
@@ -4434,6 +4438,14 @@
    "seams": [
     "environment",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_bricks",
+   "owner": "RepairRoundAdmissionTest._issue",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

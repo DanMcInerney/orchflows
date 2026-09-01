@@ -620,6 +620,63 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("outcome-record-mismatch", mismatch["code"])
         self.assertEqual(joined_text, self.ticket_text())
 
+    def test_a_join_commits_after_the_workers_lease_expires(self):
+        """The 2026-09-01 wedge: the join is the driver's act, not the
+        worker's, and the worker's lease says nothing about when its caller
+        gets around to reading the outcome and joining it.
+
+        The outcome commits inside the lease, as it always must; the lease
+        then ends with nobody having joined, and the join that follows is
+        refused nothing the outcome did not already survive.
+        """
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.commit_launch()
+        outcome = self.outcome()
+        self.assertNotIn("error", outcome, outcome)
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            joined = self.join()
+
+        self.assertNotIn("error", joined, joined)
+        self.assertEqual("complete", joined["join"]["status"])
+        data = _parse_frontmatter(self.ticket_text())
+        self.assertEqual("complete", data["status"])
+        state = parse_canonical_json(data["dispatch_v1"])
+        self.assertEqual("retired", state["attempts"][0]["state"])
+
+    def test_a_join_still_refuses_a_lease_past_attempt_with_no_committed_outcome(self):
+        """The relaxed lease never invents an outcome nobody filed.
+
+        Skipping the lease check for a join reaches `join`'s own guard
+        instead: no committed outcome names this dispatch_id, so there is
+        still nothing lawful for `join` to relay, and nothing is written.
+        """
+
+        opened = self.open()
+        self.opened_seal = opened["dispatch"]["assignment_seal"]
+        self.commit_launch()
+        before = self.ticket_text()
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            unfiled = self.join()
+
+        self.assertEqual("outcome-record-mismatch", unfiled["code"])
+        self.assertEqual(before, self.ticket_text())
+
     def test_the_closing_note_appends_to_the_report_and_replays(self):
         """No delta law: the note is prose, and prose is not deduplicated.
 

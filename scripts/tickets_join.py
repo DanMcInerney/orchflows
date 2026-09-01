@@ -188,6 +188,15 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         result = _commit_record(
             run, ticket_id, dispatch_id, join_record_id, content,
             mutate=join, expected_seal=assignment_seal, record_kind="join",
+            # The join is the driver's act, not the worker's, and the
+            # worker's own lease says nothing about when its caller gets
+            # around to reading the outcome and joining it. `join` above
+            # still refuses `outcome-record-mismatch` when no committed
+            # outcome names this dispatch_id, so an attempt that ended
+            # without ever filing one is refused exactly as before -- what
+            # is dropped is only the requirement that the *join* itself
+            # lands inside a lease the worker, not the driver, was bound by.
+            require_live_lease=False,
             _lock_held=True,
         )
         if "error" in result:
