@@ -105,21 +105,28 @@ bodies were mostly sequencing, and every recurring shape grew the
 routing table — the one surface every session pays for on every
 request. The replacement:
 
-- **The routing table stays fixed while the named tier grows.** Four
-  branches — answer, single, graph, and the intake verb since renamed
-  outline — and one closed rule: everything else
-  runs only when named. Recurring shapes accumulate as templates under
-  `example-workflows/`, never in the dispatch prose (diluted attention: the
-  always-paid cost never grows).
-- **A template is tickets, not a second grammar.** A demoted pattern's
-  law rides its stubs' Goal and Context; the combinators are the ticket graph's own — a `depends_on` edge,
-  parallel stubs, a loop stub — so `tickets.py instantiate` writes a run
-  and the driver drains it with no engine, contract or step file to
-  keep in step with the ticket contract (cheap generation: the gate is
-  the same graded ticket shape every other item has).
+- **The routing table stays fixed while the named tier grows.** A fixed
+  small set of lanes and one closed rule: everything else runs only when
+  named — named answer, single, graph, and the intake verb since renamed
+  outline at this design's writing; the 2026-08-31 routing redesign
+  renamed them again to act, brick, frame, and outline
+  (`docs/vocabulary.md`'s routing-shape entry owns the current mapping).
+  Recurring shapes accumulate as templates under `example-workflows/`,
+  never in the dispatch prose (diluted attention: the always-paid cost
+  never grows).
+- **A template was tickets, not a second grammar.** A demoted pattern's
+  law rode its stubs' Goal and Context; the combinators were the ticket
+  graph's own — a `depends_on` edge, parallel stubs, a loop stub — and
+  `tickets.py instantiate` wrote the run mechanically, with no engine,
+  contract or step file of its own to keep in step with the ticket
+  contract (cheap generation: the gate was the same graded ticket shape
+  every other item had). That door retired with the decomposed-root
+  concept it served (W4a): a named workflow is now prose that opens a
+  frame and calls bricks directly, no materializing step between them —
+  "Why two bricks, frames, and prose" below is that design.
 - **The envelope closes the algebra.** Every ticket attempt closes through
   the dispatch outcome envelope, fenced to its assignment, attempt, reserved
-  outcome identity, writer, status, and evidence. Its accepted durable result
+  outcome identity, writer, and evidence. Its accepted durable result
   identity becomes successor evidence with no per-pair glue (search is memory:
   one return shape, one name).
 
@@ -432,11 +439,12 @@ one the join will grade. That is the test for what belongs in code.
   is free-form and unbounded, and `Report` is one channel. The rule that
   replaces both is narrow: prescribe as hard as investigation earned, carry
   the evidence and the escape hatch with every prescription, and keep
-  structure only where something mechanical reads it — which, on the return
-  side, is one JSON findings file the join binds into the review ledger, and
-  nothing else. The test is the amnesia test again: a perfect model still
-  cannot guess the file you already read, and still gains nothing from being
-  told which heading to file a fact under.
+  structure only where something mechanical reads it. The return side had
+  one such exception — a JSON findings file the join bound into the review
+  ledger — and it retired too once the join stopped adjudicating: `Report`
+  is the one channel without exception now. The test is the amnesia test
+  again: a perfect model still cannot guess the file you already read, and
+  still gains nothing from being told which heading to file a fact under.
 - **A verb is only a verb if a model has to judge something.** The library
   shipped six callables; two of them were the driver and the join, and by
   the time `dispatch` emitted a complete launch and `land` evaluated the

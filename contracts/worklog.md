@@ -16,12 +16,11 @@ has its own run view after its predecessor result is fixed.
 
 - `goal` — the root ticket's `## Goal` and `## Context` verbatim.
 - `iterations` — every ticket ordered by its dispatch attempt's
-  `opened_at` (the lease the record owns), each with its
-  `## Verification` entries.
-- `failed_approaches` — the `## Result` and `## Feedback` of every
-  `failed` or `limited` ticket, and of every loop iteration ticket: the
-  approach and the evidence that killed it. A later iteration never
-  re-walks one.
+  `opened_at` (the lease the record owns), each with its identity,
+  executor, and status.
+- `failed_approaches` — the `## Report` of every `failed` or `limited`
+  ticket in a bounded campaign: the approach and the evidence that
+  killed it. A later round never re-walks one.
 - `queued_scope` — the tickets that `depends_on` the run's gate:
   discovered work, queued behind the frozen goal and never merged into
   it.
