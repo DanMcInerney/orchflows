@@ -160,35 +160,6 @@ ENVELOPE_VOCAB_RES = (
     )),
 )
 
-# --- Ticket templates (contracts/work-item.md, Template and stub) ----
-#
-# A template is a directory `example-workflows/<name>/` holding `template.md`
-# plus one ticket stub per other `*.md` file; a stub is a ticket per
-# contracts/work-item.md missing only `run`, `status` and `claimed_*`,
-# with `{{placeholder}}` where instantiation fills a value. These checks
-# are the admission the spec's enforcement clause names: a cyclic
-# template, or a stub without an executor or Goal, or a
-# template with no single terminal stub is rejected here. Since P4-3
-# this is the whole of composition admission: the `.md` step form and
-# its contract are deleted, so there is no second set of checks to keep
-# in step with these.
-#
-# What a stub *is* -- its required keys, its list fields, its sections and
-# their order, its criteria, its legal executors -- is not stated here.
-# `scripts/tickets.py` owns it, grades every issued ticket and every
-# instantiated stub against it, and reports it in its own words
-# (`template_defects`); validate_templates reads that and adds only what
-# needs the tree. A second statement of the same law is how a template the
-# compiler admits fails at instantiation, which is what the P1 gate found
-# across eight inputs and the executor enum.
-#
-# The manifest's name, the placeholder syntax and the `script:` prefix are
-# that script's too, imported from it below rather than spelled again here:
-# a second spelling of the placeholder syntax admitted `{{lens name}}` into
-# the tree and hid it from the manifest-balance check, because instantiation
-# refuses an unfilled one by a wider pattern than this file matched.
-TEMPLATE_ENTRY_VALUES = {"routed", "named"}
-
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
 # "Every Require item rides a named T0 carrier ... the caller supplies
@@ -262,7 +233,7 @@ __all__ = (
     'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',
     'LIST_MARKER_RE', 'SENTENCE_END_RE', 'OUTSIDE_PACK_CITATION', 'SIGNATURE_CELL_POINTER_RE',
     'MANDATED_FORM_RES', 'MD_LINK_RE', 'LOOP_TRIGGER_RE', 'BOUND_TERM_RE',
-    'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES', 'TEMPLATE_ENTRY_VALUES',
+    'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES',
     'CARRIAGE_REQUIRE_BLOCK_RE', 'CARRIAGE_SENTENCE_SPLIT_RE', 'CARRIAGE_MD_LINK_RE', 'CARRIAGE_PAREN_RE',
     'CARRIAGE_CODE_RE', 'CARRIAGE_WORD_RE', 'CARRIAGE_DASH_SPLIT_RE', 'TICKET_FILING_RE',
     'RETURN_TEXT_RE', 'PACK_WORKSPACE_RE', 'PACK_STORE_RE', 'PACK_SLICING_RE',

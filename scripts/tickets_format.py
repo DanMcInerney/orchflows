@@ -87,8 +87,6 @@ TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 # reader's promotion question with it, and the two disagreed -- readiness
 # went on requiring `complete` after admission stopped.
 RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
-PACK_NAME_PREFIX = 'orch-'
-PACK_NAME_SUFFIX = '-pack'
 # The ids the round machinery mints after a cut is already sealed, and the
 # one grammar that names them. A landing whose `done` command refused arms
 # its `<id>.repair.NN` round, and the `check` done form mints a
@@ -323,8 +321,8 @@ def mint_ordinal(ticket_id, parent=None):
     None.
 
     ``parent`` empty asks the root question instead: `B3` is ordinal 3 and
-    nothing else is a root callable. A round id (`X.iter.2`) answers None
-    under parent `X`, because its own parent group is `X.iter` -- the two
+    nothing else is a root callable. A round id (`X.repair.2`) answers None
+    under parent `X`, because its own parent group is `X.repair` -- the two
     grammars share a suffix and never share an id.
     """
     text = str(ticket_id or '')

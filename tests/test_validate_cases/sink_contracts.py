@@ -17,15 +17,10 @@ own cells, and the friction log's one location against every copy of it —
 lives here now, because a copy checked against its owner is the same
 subject as a copy the compiler refuses outright.
 """
-import ast
-import os
 import re
-import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -34,11 +29,7 @@ CONTRACTS = ROOT / "contracts"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import scripts.friction as friction_mod  # noqa: E402
-import scripts.state_root as state_root  # noqa: E402  the sink resolver's one owner
 import scripts.tickets as tickets_mod  # noqa: E402
-import tools.validate as validate  # noqa: E402
-from tests.tree_removal import remove_repo_tree  # noqa: E402  the removal's one owner
 
 VALIDATE = ROOT / "tools" / "validate.py"
 PACKS = ROOT / "packs"

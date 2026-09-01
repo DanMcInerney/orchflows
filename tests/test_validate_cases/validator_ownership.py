@@ -1,5 +1,4 @@
 """Validator ownership and friction-location regression cases."""
-import ast
 import os
 import re
 import shutil

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2115,
+  "count": 2114,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -427,7 +427,6 @@
    "test_installer.TestHostBlockRendering.test_render_host_block_substitutes_resolved_interpreter",
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
-   "test_installer.TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
    "test_installer.TestHostConfigLimitRemoval.test_a_block_holding_only_the_installers_keys_lifts_out_whole",
    "test_installer.TestHostConfigLimitRemoval.test_a_table_the_host_appended_inside_the_block_survives_removal",
    "test_installer.TestHostConfigLimitRemoval.test_absent_markers_pass_the_config_through",
@@ -2118,7 +2117,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "765df522e1b77ee210f1d076041a79c7723ba1bedeaa7eb3065492f8b623be32"
+  "sha256": "ce9999108cd840da28caa4051a5d4aa6e21feb04182554bbd6ae9f065213d13b"
  },
  "mutation_owners": [
   {
@@ -2842,14 +2841,6 @@
   {
    "module": "tests.test_installer_cases.managed_text.claude_import",
    "owner": "TestClaudeAlwaysOnImport.test_user_plan_renders_host_block_file_and_claude_import",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.managed_text.host_block",
-   "owner": "TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
@@ -4647,22 +4638,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.common",
-   "owner": "refusing_to_read",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.common",
-   "owner": "refusing_to_write",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
    ]
   },
   {

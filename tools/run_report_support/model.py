@@ -29,7 +29,6 @@ import reader.scripts.ui_model as ui_model  # noqa: E402
 from tools.run_report_support import friction as friction_support  # noqa: E402
 
 DEFAULT_TOP = 40
-LONGEST_TICKETS = 40
 SLICE_EXECUTOR = "orch-slice"
 COMPLETE_STATUS = "complete"
 FAILED_STATUS = "failed"

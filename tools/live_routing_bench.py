@@ -74,7 +74,6 @@ DEFAULT_CASES = REPO_ROOT / "benchmarks" / "routing" / "cases.json"
 ADAPTER_SETS = ("all", "four")
 ADAPTER_CHOICES = ADAPTER_SETS + ("both",)
 CASE_FIELDS = ("id", "prompt", "expected", "note")
-ROLE_SKILL_ROUTES = {}
 
 _install_command_impl = _install_command
 _run_benchmark_impl = run_benchmark
@@ -116,11 +115,6 @@ def load_cases(path) -> list:
         if bool(required_role) != bool(required_skill):
             raise ValueError(
                 f"routing case {case['id']!r} must pair required_role and required_skill"
-            )
-        required_pair = ROLE_SKILL_ROUTES.get(route_class(expected))
-        if required_pair and (required_role, required_skill) != required_pair:
-            raise ValueError(
-                f"routing case {case['id']!r} requires role/skill {required_pair!r}"
             )
     return cases
 
