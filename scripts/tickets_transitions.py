@@ -10,10 +10,10 @@ from collections import namedtuple
 
 if __package__:
     from .tickets_admission import ADMISSION_PENDING
-    from .tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
+    from .tickets_format import TERMINAL_STATES, VALID_STATUSES
 else:
     from tickets_admission import ADMISSION_PENDING
-    from tickets_format import DELIVERED_STATE as COMPLETE, TERMINAL_STATES, VALID_STATUSES
+    from tickets_format import TERMINAL_STATES, VALID_STATUSES
 
 PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
 STATUSES = tuple(sorted(VALID_STATUSES))
@@ -46,7 +46,6 @@ def set_status_command(target: str) -> str:
 
 _ROWS = (
     Row("claim", (PENDING, READY), CLAIMED, ("admission", "status"), (), "claim it"),
-    Row("check", tuple(sorted(CHECKABLE_STATUSES)), None, ("checked_by",), (), "check it"),
     Row(set_status_command(PENDING), STATUSES, PENDING, ("status",), (), "release it to pending"),
     Row(set_status_command(SUSPENDED), STATUSES, SUSPENDED, ("status",), (), "suspend it"),
 ) + tuple(
@@ -77,8 +76,6 @@ _LIFECYCLE_SPECS = (
 ) + tuple(
     LifecycleSpec("dispatch-join", ("claimed / outcome committed",), f"{state} / retired attempt", "caller", "reserved outcome record", "contracts/dispatch.md", "rules/delegation.md")
     for state in (SUSPENDED,) + tuple(TERMINAL_STATES)
-) + (
-    LifecycleSpec("check", (COMPLETE,), COMPLETE, "caller", "completed critique adjudication", "contracts/verdict.md", "rules/verification.md"),
 ) + tuple(
     # Not a legacy path, though an earlier rendering called it one: these are
     # the only transitions a ticket that was never dispatched can take, and

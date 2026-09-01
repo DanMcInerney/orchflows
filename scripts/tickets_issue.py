@@ -8,7 +8,7 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_emission import grade_run_emission
     from .tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        DEFAULT_BOUND_MINUTES, REPORT_SECTION,
         REQUIRED_ISOLATION, _extract_flag,
         _parse_frontmatter, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
@@ -22,7 +22,7 @@ else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_emission import grade_run_emission
     from tickets_format import (
-        DEFAULT_BOUND_MINUTES, GATE_ID_MARKER, REPORT_SECTION,
+        DEFAULT_BOUND_MINUTES, REPORT_SECTION,
         REQUIRED_ISOLATION, _extract_flag,
         _parse_frontmatter, _remove_frontmatter_field,
         _set_frontmatter_field, _split_commas, dequote, ticket_defects,
@@ -194,12 +194,6 @@ def _issue_defects(text: str, *, issued: bool=False) -> list:
     independence = dequote(data.get("independence") or "checker")
     if independence not in INDEPENDENCE_VALUES:
         defects.append(f"independence '{independence}' is not one of {list(INDEPENDENCE_VALUES)}")
-    checked_by = str(data.get("checked_by") or "").strip()
-    if checked_by:
-        if independence == "gate":
-            defects.append("a gate-deferred ticket cannot carry checked_by")
-        elif not issued:
-            defects.append("an unissued ticket cannot carry checked_by")
     return defects
 
 
@@ -215,12 +209,6 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
     defects = _issue_defects(text)
     if defects:
         return {"error": f"ticket {run}/{ticket_id} is off contract: " + "; ".join(defects)}
-    if GATE_ID_MARKER in ticket_id:
-        return {"error": (
-            f"ticket id '{ticket_id}' uses the reserved `.gate.` review-stage "
-            "grammar; a critique is a `tickets.py judge` brick and the repair "
-            "answering it a `tickets.py do` brick under the same parent"
-        )}
     root = _tickets_root()
     if root is None:
         return {"error": NO_SINK_ERROR}

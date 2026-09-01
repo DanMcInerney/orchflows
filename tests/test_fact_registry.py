@@ -72,36 +72,6 @@ class TestOneDequotingPrimitive(unittest.TestCase):
                 self.assertEqual(expected, tickets_markdown.dequote(raw))
 
 
-class TestOneReviewStagePredicate(unittest.TestCase):
-    """`.gate.` and `.check` are read through one predicate.
-
-    Nine sites open-coded the two-substring test and two of them spelled
-    only half of it, so a checker stage read as ordinary executor work at
-    one door and as a review stage at the next.
-    """
-
-    OPEN_CODED = re.compile(
-        r"\.gate\.[a-z.]*\"?\s*(?:in|not in)\s*\w+\s*or\s*\w+\.endswith"
-    )
-
-    def test_no_script_open_codes_the_two_substring_test(self):
-        offenders = [
-            path.name for path, text in scripts_sources()
-            if self.OPEN_CODED.search(text)
-        ]
-        self.assertEqual([], offenders)
-
-    def test_the_predicate_answers_both_spellings_of_a_stage(self):
-        for identifier in (
-            "00-root.gate.critique.code", "00-root.01.check", "00-root.gate.repair",
-        ):
-            with self.subTest(identifier):
-                self.assertTrue(tickets_format.is_review_stage_id(identifier))
-        for identifier in ("00-root", "00-root.01", "", None):
-            with self.subTest(identifier):
-                self.assertFalse(tickets_format.is_review_stage_id(identifier))
-
-
 class TestOneOwnerPerEnumAndMapping(unittest.TestCase):
     """The enums and mappings this pass consolidated have one definition."""
 
@@ -216,6 +186,17 @@ class TestTheUnreachableIsGone(unittest.TestCase):
                                   "CUT_LENS_PARTS", "_cmd_packet",
                                   "_packet_under_run_lock"),
         "workspace_git.py": ("_checkouts",),
+        # The checker-stage apparatus that survived the `review_kind`
+        # deletion: no live door ever minted a `.check` ticket or built the
+        # `review_v1` chain `tickets.py check` required, so its one input
+        # was always hand-edited state -- test-only reachability, not
+        # liveness. `tickets_review.py` and `tickets_review_schema.py`
+        # (the ledger's own construction and schema) are deleted whole.
+        "tickets_format.py": ("GATE_ID_MARKER", "CHECKER_STAGE_SUFFIX",
+                              "CHECKED_BY_KEY", "is_review_stage_id"),
+        "tickets_lifecycle.py": ("_cmd_check", "_check_under_run_lock",
+                                 "CHECK_USAGE"),
+        "tickets_admission.py": ("_checker_stage_target",),
     }
 
     def test_no_module_still_defines_the_deleted_names(self):

@@ -10,24 +10,22 @@ if __package__:
         _identity_failure,
     )
     from .tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
-    from .tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field, canonical_json
+    from .tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field
     from .tickets_store import UTC_STAMP, _run_lock, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
     from .tickets_worklog import _run_goal, _run_tickets
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
-    from .tickets_review import REVIEW_FIELD, ReviewError, state_from_text
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
     from tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
-    from tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field, canonical_json
+    from tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field
     from tickets_store import UTC_STAMP, _run_lock, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
     from tickets_worklog import _run_goal, _run_tickets
     from tickets_project import TERMINAL_REMEDY, binding_refusal
-    from tickets_review import REVIEW_FIELD, ReviewError, state_from_text
 
 JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 DISPATCH_JOIN_USAGE = (
@@ -152,10 +150,6 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         # predicate read, and a ticket with no predicate gets the driver's
         # grade -- neither is the child's word for itself.
         status = disposition
-        try:
-            review = state_from_text(text, allow_legacy=True)
-        except ReviewError as error:
-            return text, None, _classification("review-invalid", str(error))
         if status in TERMINAL_STATES:
             held = binding_refusal(run, TERMINAL_REMEDY)
             if held is not None:
@@ -172,16 +166,10 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
             "status": status,
             "joined_at": joined_at,
         }}
-        if review is not None:
-            response["join"]["review_identity"] = review["records"][-1]["identity"]
         attempt["state"] = "retired"
         attempt["retired_at"] = joined_at
         attempt["retirement"] = response
         updated = _set_frontmatter_field(text, "status", status)
-        if review is not None:
-            updated = _set_frontmatter_field(
-                updated, REVIEW_FIELD, canonical_json(review)
-            )
         return updated, response, None
 
     def transaction():

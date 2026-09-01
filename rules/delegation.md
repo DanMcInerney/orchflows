@@ -36,12 +36,10 @@ connect this law to each authorized dispatch event and predecessor record.
    states a parallel prose join. The disposition is the landed ticket's
    `done` reading, or the caller's `land --status` grade where the ticket
    declares no predicate, and never the child's own word for it. Grading
-   it: read Goal and Context at the fixed artifact identity; a `checker`
-   item is accepted only over [work-item.md](../contracts/work-item.md)'s
-   `checked_by`, `independence: gate` defers that reading to this join
-   itself, and a Goal claim no evidence covers is needs-check rather than
-   accepted. Suspension parks the attempt and resumes from the ticket's
-   `## Report`. What the join grades --
+   it: read Goal and Context at the fixed artifact identity; this join is
+   independence's one path now, and a Goal claim no evidence covers is
+   needs-check rather than accepted. Suspension parks the attempt and
+   resumes from the ticket's `## Report`. What the join grades --
    candidate write authority, actual diffs and conflicts, and what a path
    named in Details is worth -- is [work-item.md](../contracts/work-item.md)'s.
 6. Every join applies the [result contract](../contracts/result.md).

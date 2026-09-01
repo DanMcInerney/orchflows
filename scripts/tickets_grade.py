@@ -12,13 +12,11 @@ import re
 
 if __package__:
     from .tickets_adapters import AdapterError, adapter_spec, pack_path
-    from .tickets_format import is_review_stage_id
     from .tickets_markdown import _parse_frontmatter, _sections, dequote
     from .tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from .tickets_context import run_snapshot
 else:
     from tickets_adapters import AdapterError, adapter_spec, pack_path
-    from tickets_format import is_review_stage_id
     from tickets_markdown import _parse_frontmatter, _sections, dequote
     from tickets_store import NO_SINK_ERROR, _run_lock, _segment_error, _tickets_root
     from tickets_context import run_snapshot
@@ -46,19 +44,15 @@ def _executor(value):
 
 
 def _member_ids(root_id: str, snapshot: dict) -> list[str]:
-    """Return the root's executor-result members, excluding review plumbing.
+    """Return the root's executor-result members.
 
-    Gate and ordinary checker stages are descendants in the ticket directory,
-    but they are assurance work rather than independent result members.  A
-    nested member remains a member of the issued root: the graph's width is
-    the number of independently observable result tickets in its cut.
+    A nested member remains a member of the issued root: the graph's width
+    is the number of independently observable result tickets in its cut.
     """
 
     members = []
     for ticket_id in sorted(snapshot):
         if not ticket_id.startswith(root_id + "."):
-            continue
-        if is_review_stage_id(ticket_id):
             continue
         executor = _executor(snapshot[ticket_id])
         members.append(ticket_id)

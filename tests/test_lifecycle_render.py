@@ -17,7 +17,6 @@ class LifecycleTableTest(unittest.TestCase):
         events = {row.event for row in rows}
         self.assertEqual(
             {
-                "check",
                 "claim",
                 "dispatch-join",
                 "dispatch-commit",

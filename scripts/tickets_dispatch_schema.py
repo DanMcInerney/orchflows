@@ -29,7 +29,7 @@ if __package__:
     )
     from .tickets_format import (
         TERMINAL_STATES, _parse_iso, canonical_json,
-        is_frame, is_review_stage_id, parse_canonical_json,
+        is_frame, parse_canonical_json,
     )
 else:
     from tickets_shapes import (
@@ -56,7 +56,7 @@ else:
     )
     from tickets_format import (
         TERMINAL_STATES, _parse_iso, canonical_json,
-        is_frame, is_review_stage_id, parse_canonical_json,
+        is_frame, parse_canonical_json,
     )
 
 ATTEMPT_STATES = frozenset(DISPATCH_ATTEMPT_VALUES["state"])
@@ -223,21 +223,12 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
     if kind == "join":
         if not isinstance(content, dict):
             return _invalid(f"join record '{record_id}' has invalid content")
-        review_stage = is_review_stage_id(ticket_id)
         expected = {
             "assignment_seal": attempt["assignment_seal"],
             "dispatch_id": attempt["dispatch_id"],
             "joined_by": content.get("joined_by"),
             "operation": "join", "outcome_record_id": OUTCOME_RECORD_ID,
         }
-        if review_stage:
-            review = content.get("review")
-            if not _closed(review, {"accepted", "artifact"}) or any(
-                value is not None and not isinstance(value, str)
-                for value in review.values()
-            ):
-                return _invalid(f"join record '{record_id}' has invalid review content")
-            expected["review"] = review
         if content != expected or identity_failure("join-owner", content.get("joined_by")) is not None:
             return _invalid(f"join record '{record_id}' has invalid content")
         outcome = next((
@@ -247,14 +238,8 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
         success = record["success"]
         joined = success.get("join") if _closed(success, {"join"}) else None
         joined_keys = set(DISPATCH_JOIN_SUCCESS_REQUIRED)
-        if review_stage:
-            joined_keys.add("review_identity")
         if outcome is None or not _closed(joined, joined_keys):
             return _invalid(f"join record '{record_id}' has invalid stored success")
-        if review_stage and identity_failure(
-            "review-identity", joined.get("review_identity"),
-        ) is not None:
-            return _invalid(f"join record '{record_id}' has invalid review identity")
         # The disposition is the join's own. The outcome is still required
         # to exist -- its existence is what closed the attempt -- but it no
         # longer carries a status for this to check itself against, so the
@@ -269,8 +254,6 @@ def _record_failure(record, content, *, run, ticket_id, attempt):
             "status": joined["status"],
             "joined_at": attempt.get("retired_at"),
         }
-        if review_stage:
-            expected_join["review_identity"] = joined["review_identity"]
         if joined != expected_join or attempt.get("retirement") != success:
             return _invalid(f"join record '{record_id}' differs from its outcome or retirement")
         return None
@@ -308,51 +291,7 @@ def stored_state(data: dict):
 
 
 def state(data: dict):
-    parsed, failure = stored_state(data)
-    if failure is not None or parsed is None:
-        return parsed, failure
-    ticket_id = str(data.get("id") or "").strip()
-    review_text = str(data.get("review_v1") or "").strip()
-    review_stage = is_review_stage_id(ticket_id)
-    if review_text and review_stage:
-        try:
-            if __package__:
-                from .tickets_review import review_records
-            else:
-                from tickets_review import review_records
-            review = review_records(review_text, allow_legacy=True)
-        except (ImportError, ValueError) as error:
-            return None, classification(
-                "dispatch-record-invalid", f"review_v1 is invalid: {error}",
-            )
-        joins = [
-            record
-            for attempt in parsed["attempts"]
-            for record in attempt["records"]
-            if record.get("kind") == "join"
-        ]
-        if joins:
-            if len(joins) != 1:
-                return None, classification(
-                    "dispatch-record-invalid",
-                    "review stage has more than one protocol-owned join",
-                )
-            joined = joins[0].get("success", {}).get("join", {})
-            if not review or joined.get("review_identity") != review[-1]["identity"]:
-                return None, classification(
-                    "dispatch-record-invalid",
-                    "review_v1 tip is not anchored to its protocol-owned join",
-                )
-            if review[-1]["kind"] == "CritiqueAdjudication":
-                attempt = next(
-                    item for item in parsed["attempts"] if joins[0] in item["records"]
-                )
-                if review[-1].get("adjudicated_by") != attempt.get("owner"):
-                    return None, classification(
-                        "dispatch-record-invalid",
-                        "critique adjudication authority differs from the accepted receiver",
-                    )
-    return parsed, None
+    return stored_state(data)
 
 
 def status_ownership_returned(data: dict) -> bool:

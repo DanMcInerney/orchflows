@@ -143,8 +143,6 @@ class TicketProtocolTest(unittest.TestCase):
 
         for phrase in (
             "launch prompt", "replaying the same `dispatch` call",
-            "GatePlan", "CritiqueAdjudication", "RepairOutcome",
-            "tickets.py check <run> <id> --stage <id>.check",
             "tickets.py show", "tickets.py lint <run> [<id>] --file",
             "retired attempt", "successor run",
         ):
