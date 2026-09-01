@@ -237,20 +237,6 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         self.assertNotIn("--packet-file", refused["error"])
         self.assertEqual(before, self.ticket_bytes())
 
-    def test_an_uncommitted_launch_still_runs_current_review_validation(self):
-        """And the attempt it opened for that launch does not survive it."""
-
-        owner = tickets._tickets_dispatch_facade_module
-        with mock.patch.object(
-            owner, "launch_state_result",
-            return_value=(None, "current review is invalid"),
-        ):
-            refusal = self.dispatch()
-
-        self.assertEqual("review-invalid", refusal["code"])
-        self.assertNotIn("launch", [item["record_id"] for item in self.records()])
-        self.assertEqual("retired", self.ticket_state()["attempts"][0]["state"])
-
     def test_a_committed_launch_replays_before_current_resolution(self):
         """A durable record is never re-resolved: the child was started with
         those exact bytes, so a second dispatch reports what happened rather

@@ -175,6 +175,44 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertIn("### Written by `root-join`", verification)
         self.assertIn(f"done command `{command}` exited 0 in ", verification)
 
+    def test_a_refused_join_flag_leaves_everything_unmoved(self):
+        """The 2026-09-01 landing defect, in its general form.
+
+        `land --artifact` on an ordinary ticket used to merge the candidate
+        before `dispatch-join` refused "review flags apply only to
+        gate-stage joins" -- a refusal that had already mutated the tree it
+        was refusing over. The gate-stage flags are retired now, so the
+        concrete trigger is gone, but the law it exposed is general: every
+        argument-shape refusal `dispatch-join` itself would raise has to run
+        before `land` touches anything. A stray `--artifact` and a malformed
+        `--dispatch-id` both prove it here: the predicate marker this
+        Goal's own `done` command would leave behind never appears, and the
+        ticket is byte-identical to before either call.
+        """
+
+        marker = Path(self.temporary.name) / "predicate-ran.txt"
+        command = f'"{INTERPRETER}" -c "open(r\'{marker}\', \'w\').close()"'
+        self.stand_up(_done("command", command))
+        before = self.ticket_path().read_bytes()
+
+        stray = retired_doors.run([
+            "land", "run", "T", "--assignment-seal", self.seal,
+            "--dispatch-id", "D1", "--outcome-record-id", "outcome",
+            "--by", "root-join", "--artifact", "git:" + "a" * 40,
+        ])
+        self.assertIn("usage: land", stray.get("error", ""), stray)
+        self.assertFalse(marker.exists())
+        self.assertEqual(before, self.ticket_path().read_bytes())
+
+        malformed = retired_doors.run([
+            "land", "run", "T", "--assignment-seal", self.seal,
+            "--dispatch-id", "bad id", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        ])
+        self.assertEqual("dispatch-id-invalid", malformed.get("code"), malformed)
+        self.assertFalse(marker.exists())
+        self.assertEqual(before, self.ticket_path().read_bytes())
+
     def test_a_refused_command_arms_a_repair_round_instead_of_wedging(self):
         """The round-two slot the composite gate never had.
 

@@ -73,7 +73,7 @@ class TestOneDequotingPrimitive(unittest.TestCase):
 
 
 class TestOneReviewStagePredicate(unittest.TestCase):
-    """`.gate.` and `.check` are read through one pair of predicates.
+    """`.gate.` and `.check` are read through one predicate.
 
     Nine sites open-coded the two-substring test and two of them spelled
     only half of it, so a checker stage read as ordinary executor work at
@@ -91,19 +91,15 @@ class TestOneReviewStagePredicate(unittest.TestCase):
         ]
         self.assertEqual([], offenders)
 
-    def test_the_predicates_answer_both_spellings_of_a_stage(self):
-        for identifier in ("00-root.gate.critique.code", "00-root.01.check"):
+    def test_the_predicate_answers_both_spellings_of_a_stage(self):
+        for identifier in (
+            "00-root.gate.critique.code", "00-root.01.check", "00-root.gate.repair",
+        ):
             with self.subTest(identifier):
                 self.assertTrue(tickets_format.is_review_stage_id(identifier))
-                self.assertTrue(tickets_format.is_critique_stage_id(identifier))
-        for identifier in ("00-root.gate.repair",):
-            with self.subTest(identifier):
-                self.assertTrue(tickets_format.is_review_stage_id(identifier))
-                self.assertFalse(tickets_format.is_critique_stage_id(identifier))
         for identifier in ("00-root", "00-root.01", "", None):
             with self.subTest(identifier):
                 self.assertFalse(tickets_format.is_review_stage_id(identifier))
-                self.assertFalse(tickets_format.is_critique_stage_id(identifier))
 
 
 class TestOneOwnerPerEnumAndMapping(unittest.TestCase):

@@ -50,8 +50,8 @@ class LaunchResolutionTest(unittest.TestCase):
             "craft": None, "craft_scope": None, "dependencies": [],
             "dispatch_id": "D1", "executor": "orch-do",
             "executor_script": None, "id": "T", "lease_expires_at": "2099-01-01T00:00:00Z",
-            "pack": None, "review_kind": None, "review_tip": None, "role": role,
-            "root_path": None, "run": "run", "ticket_path": "/sink/run/T.md",
+            "pack": None, "role": role,
+            "run": "run", "ticket_path": "/sink/run/T.md",
             "workspace": "/tree",
         }
 
@@ -285,35 +285,13 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(1, prompt.count(state["lease_expires_at"]))
         self.assertEqual(1, prompt.count(str(craft)))
 
-    def test_a_review_lane_prompt_names_the_root_ticket_it_answers_to(self):
-        """Three proven verdicts turned on root clauses that exist nowhere
-        else, and reviewers reached them by their own initiative."""
-
-        assignment = tickets._tickets_assignment_module
-        self.assertEqual("R1", assignment.review_root_id("R1.gate.critique.code"))
-        self.assertEqual("R1", assignment.review_root_id("R1.gate.repair"))
-        self.assertEqual("R1.02", assignment.review_root_id("R1.02.check"))
-        self.assertIsNone(assignment.review_root_id("R1.02"))
-
-        prompt = launch.launch_prompt(dict(
-            self.assignment_facts(), review_kind="critique",
-            root_path="/sink/run/R1.md",
-            review_tip={"kind": "GatePlan", "identity": "sha256:abc"},
-        ))
-        self.assertIn("/sink/run/R1.md", prompt)
-        self.assertIn("GatePlan sha256:abc", prompt)
-
     def test_no_lane_asks_a_child_for_a_verdict_token(self):
         """A command verdict is an exit code and a check's verdict is its
         findings, so no prompt teaches a prefix a join used to parse."""
 
-        for review_kind in (None, "critique", "repair"):
-            with self.subTest(review_kind=review_kind):
-                prompt = launch.launch_prompt(dict(
-                    self.assignment_facts(), review_kind=review_kind,
-                ))
-                for token in ("PASS:", "FAIL:", "UNVERIFIED:"):
-                    self.assertNotIn(token, prompt)
+        prompt = launch.launch_prompt(self.assignment_facts())
+        for token in ("PASS:", "FAIL:", "UNVERIFIED:"):
+            self.assertNotIn(token, prompt)
 
     @staticmethod
     def assignment_facts() -> dict:
@@ -323,8 +301,7 @@ class DispatchLaunchTest(unittest.TestCase):
             "dispatch_id": "D1", "executor": "orch-judge",
             "executor_script": None, "id": "R1.gate.critique.code",
             "lease_expires_at": "2099-01-01T00:00:00Z", "pack": "orch-code-pack",
-            "review_kind": None, "review_tip": None, "role": "worker",
-            "root_path": None, "run": "run",
+            "role": "worker", "run": "run",
             "ticket_path": "/sink/run/R1.gate.critique.code.md", "workspace": "/tree",
         }
 

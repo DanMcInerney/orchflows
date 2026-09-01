@@ -94,7 +94,6 @@ RESULT_TOKEN_STRIP = _tickets_format_module.RESULT_TOKEN_STRIP
 CHECKED_BY_KEY = _tickets_format_module.CHECKED_BY_KEY
 CALLABLE_EXECUTORS = _tickets_registry_module.CALLABLE_EXECUTORS
 EXECUTOR_REGISTRY = _tickets_registry_module.EXECUTOR_REGISTRY
-REVIEW_KINDS = _tickets_registry_module.REVIEW_KINDS
 GATE_ID_MARKER = _tickets_format_module.GATE_ID_MARKER
 SCRIPT_EXECUTOR_PREFIX = _tickets_format_module.SCRIPT_EXECUTOR_PREFIX
 SECTION_ORDER = _tickets_format_module.SECTION_ORDER

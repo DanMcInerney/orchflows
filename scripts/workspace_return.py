@@ -30,7 +30,7 @@ PATH_KEY = workspace_git.PATH_KEY
 EXIT_OK = workspace_git.EXIT_OK
 
 
-def integrate(run: str, ticket_id: str, workspace, branch):
+def integrate(run: str, ticket_id: str, workspace, branch, baseline=None):
     """Merge this item's candidate branch into the run's own checkout.
 
     The step `land` used to leave for hand git, which is how a run once
@@ -54,9 +54,12 @@ def integrate(run: str, ticket_id: str, workspace, branch):
     the refusal names the conflicted paths and the one remedy -- resolve
     them in the candidate, then land again. Replaying is free: git answers
     an already-merged branch with an unchanged HEAD, which is reported as a
-    replay rather than as a second merge -- unless the candidate is holding
+    replay rather than as a second merge -- unless the branch never advanced
+    past its own `workspace_baseline` and the candidate is holding
     uncommitted work, which is no replay at all but a delivery that was
-    never committed, and is refused.
+    never committed, and is refused. A branch that has carried real commits
+    is a lawful replay regardless of whatever scratch a worker's candidate
+    is still holding: that dirt is graded by `check` at the join, not here.
 
     Anything the records do not resolve to a linked worktree of a readable
     repository is `absent`, never an error: an item that ran in the caller's
@@ -88,7 +91,7 @@ def integrate(run: str, ticket_id: str, workspace, branch):
             f"a run's work onto a branch the run never named: check {into!r} "
             f"out there, then land {run}/{ticket_id} again"
         )
-    _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, before)
+    _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, baseline)
     code, _, err = workspace_git._git(
         str(root), "merge", "--no-ff", "--no-edit", branch
     )
@@ -140,28 +143,32 @@ def _recorded_target(run: str, ticket_id: str):
     return root, recorded["branch"]
 
 
-def _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, head) -> None:
+def _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, baseline) -> None:
     """Refuse a candidate that would merge as a replay while holding work.
 
     Two members of one run landed `complete` on branches carrying zero
     commits: each worker closed without committing, the merge was a no-op,
     and integration reported `replayed` -- the one word that reads exactly
     like a lawful second landing, so nothing downstream looked again. The
-    tell is that a genuine replay leaves nothing behind in its tree, and
-    these trees were holding the whole delivery.
-
-    Only where the merge would change nothing: a branch with commits to
-    carry is merged, and whatever is still uncommitted beside them is the
-    worker's business, graded by `check` at the join rather than here.
+    tell used to be read off ancestry -- whether the branch tip was already
+    merged into the checkout's HEAD -- but a branch replayed after a real
+    delivery is *also* already merged, and a worker's own compliant scratch
+    (the `.orch-outcome-*`/`.orch-report-*` note files the launch prompt
+    tells every worker to write) then read as the same "never committed"
+    delivery a second, differently-named time. The tell that actually
+    distinguishes them is whether the branch ever advanced past the
+    revision `workspace.py establish` cut it from: a branch still standing
+    at its own write-once `workspace_baseline` delivered nothing, no matter
+    what commits already sit on the main checkout's own history; a branch
+    past its baseline has carried something, replayed or not, and whatever
+    scratch its candidate still holds beside that is the worker's business,
+    graded by `check` at the join rather than here.
     """
 
     if not target.is_dir():
         return
     tip = workspace_git._branch_tip(root, branch)
-    merged = workspace_git._is_ancestor(
-        lambda *args: workspace_git._git(str(root), *args), tip, head
-    )
-    if not merged:
+    if tip is None or tip != workspace_git.revision_of(baseline):
         return
     dirty, _emitted = workspace_git.emission_split(
         sorted(set(workspace_git.dirty_paths(str(target))))
@@ -169,8 +176,9 @@ def _refuse_uncommitted_delivery(run, ticket_id, root, target, branch, head) -> 
     if not dirty:
         return
     raise Refused(
-        f"branch {branch!r} carries nothing {root} does not already have, and "
-        f"its candidate at {target} is holding uncommitted work: "
+        f"branch {branch!r} carries no commit past its own established "
+        f"baseline, and its candidate at {target} is holding uncommitted "
+        f"work: "
         + ", ".join(dirty)
         + f". That is a delivery that was never committed, not a replay. "
         f"Commit it in the candidate, then land {run}/{ticket_id} again"

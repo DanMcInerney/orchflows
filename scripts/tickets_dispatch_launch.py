@@ -273,21 +273,7 @@ def _command(*arguments) -> str:
 def _lane_lines(assignment: dict) -> list:
     """What this lane asks of the child, beyond reading its ticket."""
 
-    review_kind = assignment.get("review_kind")
     script = assignment.get("executor_script")
-    if review_kind == "critique":
-        return [
-            "Remain read-only. Enumerate every evidence-backed material blocker, "
-            "then synthesize and rank the smallest architectural repair set. Write "
-            "the complete seven-field JSON findings array to a file in this "
-            "workspace and name that path in your report; the join reads the file "
-            "and binds it in the review ledger. Never rewrite another ticket.",
-        ]
-    if review_kind == "repair":
-        return [
-            "Resolve only the accepted blockers, preserving the fixed pack and "
-            "workspace authority, then report fresh evidence for the repaired artifact.",
-        ]
     if script is not None:
         return [
             f"Run the script {script} with the ticket path above, and report its "
@@ -306,19 +292,6 @@ def _reading_lines(assignment: dict) -> list:
     """The documents beyond the ticket this child has to read to be right."""
 
     lines = []
-    root_path = assignment.get("root_path")
-    if root_path is not None:
-        lines.append(
-            f"Required reading, the root ticket {root_path}: its Goal is what "
-            "your verdict answers to, and no other document carries those clauses."
-        )
-    tip = assignment.get("review_tip")
-    if tip is not None:
-        lines.append(
-            "Immutable review ledger: read `review_v1` in "
-            f"{assignment['ticket_path']}; consume that exact predecessor chain, "
-            f"whose tip is {tip.get('kind')} {tip.get('identity')}."
-        )
     dependencies = assignment.get("dependencies") or []
     if dependencies:
         lines.append(
