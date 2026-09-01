@@ -56,7 +56,7 @@ memorize.
 
     > ship dark mode
     # one root ticket that cuts itself into tickets, parallel
-    # subagents, one review gate, and a final verification against
+    # subagents, one review pass, and a final verification against
     # what you asked for
 
     > fix the flaky login test
@@ -76,8 +76,8 @@ Nothing marks "done" except an external check passing.
 ## More ways to use it
 
 Routing projects four shapes: `answer` when evidence already decides,
-`single` for one ordinary ticket, `graph` for a frozen root that needs
-decomposition, and `outline` when that root must first be settled — a
+`single` for one ordinary ticket, `graph` for work whose frame drives
+more than one brick, and `outline` when the root must first be settled — a
 planning `orch-do` freezes and seals it. Known-cause
 work enters the smallest of those shapes; an unknown-cause failure uses fix,
 which is a disambiguation between two of them rather than a fifth shape.
@@ -100,10 +100,10 @@ Or build your own workflow in plain English:
       updates the documentation afterwards (favoring edits and
       deletions over additions), and automatically PRs and merges it
 
-That gets admitted as a named workflow — a directory of ticket stubs
-with the edges between them written down and one end-to-end done check
-on the last one. It's project-local and callable by name from then on,
-like a `/site-work-and-merge` you own; two commands per ticket run it.
+That gets admitted as a named workflow — a skill whose prose calls the
+bricks in order, with one end-to-end done check at the end. It's
+project-local and callable by name from then on, like a
+`/site-work-and-merge` you own.
 
 Runs survive session death: every ticket is a file in one per-user
 state sink outside every repository, so a fresh context — in any
@@ -118,7 +118,7 @@ skills and workflows are ordinary repository work under
 `--dry-run` previews whether runtime apply will create, reuse, or repair.
 `--claude-adapters {all,four}` chooses how much of the library
 Claude gets first-class adapters for — `all` (the default) mints one per
-package and template, `four` mints only `orch-do` and
+package and workflow, `four` mints only `orch-do` and
 `orch-judge` and leaves every other name to resolve at
 `by-name/`. Default model and effort per role, all three hosts:
 [profiles.md](hosts/profiles.md). Edit
@@ -172,25 +172,23 @@ the same loop to the library's own skills.
 `orch-do` renders a supplied subject as a verified visual page when
 the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
-[`orch-do`](skills/kernel/orch-do/SKILL.md) planning the root and
-[`orch-slice`](skills/kernel/orch-slice/SKILL.md) cutting it;
-[verification](rules/verification.md) owns acceptance. This view shows
-only the checker-or-gate choice; that rule owns the other ordinary paths and
-their details:
+[`orch-do`](skills/kernel/orch-do/SKILL.md), which both plans the root and
+builds each unit; [verification](rules/verification.md) owns acceptance.
+This view shows only the checker-or-caller choice; that rule owns the other
+ordinary paths and their details:
 
 ```mermaid
 flowchart TD
-    outline["orch-do (planning) — freeze one root ticket"] --> pack{"stamp a domain pack"}
-    pack --> dec["orch-slice — cut ordered units"]
-    dec --> frontier["tickets.py dispatch — one launch per ready unit"]
-    frontier --> exec["unit executor"]
+    frame["tickets.py frame-open — the invocation's journal"] --> outline["orch-do (planning) — freeze one root ticket"]
+    outline --> pack{"stamp a domain pack per call"}
+    pack --> brick["tickets.py do / judge — one launch per call"]
+    brick --> exec["the child"]
     exec --> path{"independence path"}
     path -->|unit-local| checker["durable &lt;id&gt;.check — launch, outcome, join"]
-    path -->|gate-deferred| join["tickets.py land — each return crosses once"]
+    path -->|deferred to the caller| join["tickets.py land — each return crosses once"]
     checker --> join
-    join -->|named downstream gate| gate["composite gate"]
-    join -->|otherwise| accepted["accepted result"]
-    gate --> accepted
+    join --> accepted["accepted result"]
+    accepted --> close["tickets.py frame-close"]
 ```
 
 ## Design
@@ -218,43 +216,43 @@ self-improvement wired into every run.
 
 - **Two bricks, every job.** `orch-do` produces each unit and, in its
   planning mode, freezes the root; `orch-judge` challenges Goal and
-  evidence. (`orch-slice` still cuts a decomposed root — retiring with
-  the decomposed-root concept itself, not with this rename.) A ticket's
-  `done` predicate decides Goal at `land`, and its loop field iterates
-  it. The graph itself is not a brick: two
-  commands run it.
+  evidence. Each has one door that mints, seals, establishes and launches
+  it. A ticket's `done` predicate decides Goal at `land`. Control flow is
+  not a brick: loops, branches and retries are the calling workflow's own
+  prose, and a `frame` ticket is the durable stack frame under them.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
 - **One return shape.** Every ticket attempt closes through the dispatch
   outcome envelope: `assignment_seal`, `dispatch_id`, `outcome_record_id`,
   writer, and evidence. The durable result identity then feeds any
-  successor's evidence. A named workflow is just
-  tickets with the edges between them written down, so a chain needs
-  no per-pair glue.
+  successor's evidence, carried forward as one verbatim `artifact:` line,
+  so a chain needs no per-pair glue.
 
 You snap bricks by naming them; the agent snaps them by routing. Same
 bricks either way.
 
-### Two verbs move a child
+### One command out, one command back
 
 Sending work to a subagent and getting it back used to be a hand-typed
 sequence — read the host file, pick the model, write the child's prompt,
 then import, join, and clean up afterwards. Each of those is now one command.
 
-`tickets.py dispatch` is the whole outbound half in one transaction: it
-admits the ticket, creates the isolated worktree the child will work in,
+`tickets.py do` (and `judge`, its read-only twin) is the whole outbound
+half in one transaction: it mints the ticket under its parent, seals it,
+pins the pack, creates the isolated worktree the child will work in,
 opens the attempt, and hands back one `launch` object naming the exact
 agent, model and effort, and carrying the whole prompt the child is given
 — the ticket's path, its workspace, the interpreter, the pack's craft, the
 filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
 half: import the result, adjudicate it at the join, retire the worktree,
-and report what became ready to dispatch next.
+and report what became ready to dispatch next. A ticket you wrote by hand
+takes `new --file` and then `dispatch`, the same launch by another door.
 
 That split is the honest line between mechanical and judgment. Both
 commands are pure bookkeeping — replayable, refusing before they touch
 anything. What stays a judgment call is what the work *is* and whether
-it is good: the root, the cut, the review. The granular commands are
+it is good: the root, the calls, the review. The granular commands are
 still there for recovery; nothing needs them on a healthy path.
 
 ### Skills and workflows
@@ -294,12 +292,12 @@ builds inside a domain stays cohesive. Stamp a different pack on the
 root ticket and the identical pipeline ships code, documents, research,
 analyses, or UI.
 
-Each pack is read three ways, one per verb — its **execute** taste when
-work is produced, its **check** taste when work is challenged, and its
-**outline** taste at intake, telling the planner what a well-formed
-frozen root looks like in that domain and which questions are worth
-asking before sealing one. Same data, three projections; the signature
-says which cells each gets.
+Each pack is read three ways through two doors — its **making** taste when
+`orch-do` produces work, its **planning** taste when `orch-do` freezes a
+root instead, telling the planner what a well-formed one looks like in
+that domain and which questions are worth asking before sealing it, and
+its **review** taste when `orch-judge` challenges the result. Same data,
+three projections; the signature says which sections each reads.
 
 ### Advantages over Anthropic's Dynamic Workflows
 
@@ -313,7 +311,7 @@ saved workflows are no longer the difference, so this is what is:
   review is house advice there; here Goal, executor evidence, and the
   applicable independent path stand between an executor's claim and "done".
 - **Self-improving.** Nothing there mines runs into fixes; here friction
-  and traces feed the improvement composition, including on itself.
+  and traces feed the improvement workflow, including on itself.
 - **Survives session death.** Exit mid-run and a workflow starts fresh
   there; here every ticket is a file in a per-user state sink, so any
   fresh context in any checkout resumes mid-flight.

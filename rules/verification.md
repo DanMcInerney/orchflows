@@ -24,9 +24,11 @@ place this evidence law in the ticket lifecycle.
    never a disposition an executor recorded for itself.
 7. Each ticket takes one independence path: a blocker-only `orch-judge`
    checker recorded by `checked_by`, or none at all. A gate-deferred ticket
-   does not use `checked_by`. Independence comes from that checker or from
-   the predicate, never from a standing verification child. The checker path
-   is the driver's to walk: author `<id>.check` against the sealed target,
+   does not use `checked_by`; `independence: gate` hands that reading to the
+   caller's own join. Independence comes from that checker
+   or from the predicate, never from a standing verification child. The
+   checker path is the driver's to walk: author `<id>.check` against the
+   sealed target,
    spend one distinct read-only `orch-judge` dispatch on it, land that
    return, then anchor the joined stage through
    `check <run> <id> --stage <id>.check`. An accepted checked target takes
@@ -38,13 +40,11 @@ place this evidence law in the ticket lifecycle.
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
     candidate's own changes through `scripts/workspace.py check`.
-9. Composite and ordinary review share an immutable `orchflows.review.v1`
+9. Every review writes one immutable `orchflows.review.v1`
    chain. `GatePlan` freezes criteria plus artifact/workspace; Git requires
    equality with that workspace's HEAD. `CritiqueAdjudication` carries all
    observations and only the chosen blockers. `RepairOutcome` repeats those
    blockers, identifies the successor artifact, and closes the chain; only an
-   empty set permits `no_op`. An accepted defect set of `[]` from every
-   critique feeding `<root>.gate.repair` completes that repair through
-   `tickets.py join-noop-repair`, so a clean run pays no dispatch for it.
-   Ordinary checks are derived tickets crossing the
-   dispatch lifecycle; callers cannot inject findings.
+   empty set permits `no_op`. Checks are derived tickets crossing the
+   dispatch lifecycle; callers cannot inject findings. Which tickets carry
+   the chain is [work-item.md](../contracts/work-item.md)'s.

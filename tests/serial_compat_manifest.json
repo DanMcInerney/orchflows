@@ -365,12 +365,12 @@
    "test_installer.TestHostAutoDetection.test_state_directories_are_not_installation_signals",
    "test_installer.TestHostAutoDetection.test_the_managed_subagent_limit_markers_bracket_a_toml_comment_pair",
    "test_installer.TestHostAutoDetection.test_the_subagent_depth_limit_is_the_one_grok_enforces",
+   "test_installer.TestHostBlockBrickFlags.test_brick_example_flag_pin_can_fail",
+   "test_installer.TestHostBlockBrickFlags.test_brick_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockDemands.test_host_block_demands_and_read_by_tokens_are_all_stated",
    "test_installer.TestHostBlockDemands.test_host_block_demands_dropped_one_at_a_time_fail_the_check",
    "test_installer.TestHostBlockDemands.test_host_block_demands_fit_the_every_turn_budget",
    "test_installer.TestHostBlockDemands.test_host_block_demands_number_exactly_eight",
-   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_flag_pin_can_fail",
-   "test_installer.TestHostBlockDispatchFlags.test_dispatch_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockRendering.test_render_host_block_substitutes_resolved_interpreter",
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
@@ -915,7 +915,7 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_decompose_route",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_graph_lane_emits_the_complete_brick_route",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
    "test_ticket_bricks.BrickAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
@@ -2062,7 +2062,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "f5ec8fbc444e6e6bfb38192f68970e8fd7ef8dfde26e23cc63dea78dd14da58c"
+  "sha256": "4c39a86b68642a6d3ac10b06f32deab928c5ef5591a8a7acbd5f574447183316"
  },
  "mutation_owners": [
   {

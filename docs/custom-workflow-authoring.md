@@ -73,6 +73,12 @@ its own ledger, or its own copy of the pack signature contract, changes
 nothing. A pinned import needs no prompt, because adding it was the consent;
 only a change to its pin puts it in front of you again.
 
+Trust in a bundle is not trust in its prose running as your own reasoning. A
+workflow you authored may drive inline in your session; an imported one
+drives inside a frame you spawn an agent for, unless you decide otherwise for
+that bundle. The convention costs a spawn and buys the same containment a
+sealed child prompt has.
+
 ## The five flows
 
 - **Create** — `orchflows new {skill|pack|workflow} <name>` scaffolds into the
@@ -91,6 +97,64 @@ only a change to its pin puts it in front of you again.
   stand, its ring, its trust state, and every shadow, through the same
   resolver dispatch uses.
 
+## What a workflow is made of
+
+A workflow is a skill whose prose calls other skills, down to two bricks.
+`tickets.py do` makes one artifact through one stamped pack's craft;
+`tickets.py judge` reads fixed artifacts and returns findings. Each call is
+one door: it mints the ticket, seals it, pins the pack digest, takes the
+lease, establishes the workspace, and emits the `launch` you invoke
+verbatim. Every call names exactly one pack — that call's craft, workspace
+semantics, and evidence discipline — so two domains in one deliverable are
+two calls and a handoff, never one call with two tastes. Depth mixes packs
+freely, because bricks never share a workspace.
+
+`tickets.py frame-open` opens the invocation's frame and `frame-close` ends
+it. A frame is pack-less and lease-less: it is a journal, not
+craft-governed work, and its driver is the session you are already talking
+to. Write the calls in whatever order, parallelism, branching or bounded
+repetition the job needs — that prose *is* the control flow, and there is no
+engine under it to keep in step.
+
+Two obligations your body has to state for its driver, both defined
+elsewhere: the **typed artifact line**
+([vocabulary](vocabulary.md)) is relayed, never summarised, and the
+**journal** ([work-item.md](../contracts/work-item.md)'s `frame` bullet) is
+read at the head of a wave, not only after a crash. Write both into the
+prose in your own words; a workflow that leaves either implicit is one whose
+first compaction loses it.
+
+## Deterministic calls, or a planning `do`
+
+Write the calls literally when you know them: the same three `do`s every
+time is a better workflow than a planner asked to rediscover them. Only
+where the calls depend on what the work finds does a planning `do` earn its
+context — and which craft sections each kind of call reads is
+[vocabulary](vocabulary.md)'s craft-section entry.
+
+## Which work earns a brick
+
+A brick spends a whole child's context, so spend it on the four things
+prose in your own session cannot buy. Ask, in order:
+
+- **Does it need a second agent?** Independent eyes on your own output, or
+  breadth you want run in parallel — not work you are about to do anyway.
+- **Must it survive a crash?** A sealed ticket and a journal outlive the
+  session; a paragraph of reasoning does not.
+- **Does it land somewhere risky?** An isolated candidate worktree, an
+  evidence-bound merge, and a `done` predicate `land` executes are what a
+  claim of success is worth checking against.
+- **Does it need the audit trail?** Someone will ask later what was decided
+  and on what evidence.
+
+None of the four: write it in the prose and move on. One or more: it is a
+brick, and which brick is whether it makes something or reads something.
+Closing a frame over two or more `do` children refuses unless the tree holds
+a judging child or the journal states `unjudged: <reason>`
+([work-item.md](../contracts/work-item.md)'s `frame` bullet owns the
+refusal); take the refusal seriously — it is asking whether anyone looked at
+the composition, which no member could see from its own seat.
+
 ## Procedure
 
 1. Route existing machinery first. If a stamped spec, skill, or workflow
@@ -106,12 +170,12 @@ only a change to its pin puts it in front of you again.
    cells and every craft section — `## Outline` included, so a custom pack a
    planner freezes a root against fills it like any other. A T0 shape change is a
    supersession change and follows its contract's pinning procedure.
-4. For a workflow, start from the nearest template under `example-workflows/`,
-   pin its open decisions, and keep control flow in ticket stubs. A
+4. For a workflow, start from the nearest body under `example-workflows/` and
+   pin its open decisions. Its `Return:` is what `frame-close` records, and
+   its `done` is a command something outside the workflow runs. A
    multi-stage pack's stages run at one role, [roles.md](../rules/roles.md)
-   §4's alone; a loop is a stub's `loop` field. Run
-   `tickets.py instantiate <name>` against the finished template as
-   deterministic admission.
+   §4's alone. Invoking the finished body against a scratch run, and reading
+   the tickets it opened, is its deterministic admission.
 5. Build host integrations from the top-level [host records](../hosts/). Use
    the selected record's installed-item template, legal frontmatter, launch
    verb and native fields, role profile, and capability classification. The
@@ -125,17 +189,21 @@ only a change to its pin puts it in front of you again.
    rather than hand-written, and carry a pointer or a command and never a
    preprocessing construct.
 6. Run the target repository's required checks. In this library that means
-   tools/validate.py, affected tests, template instantiation when applicable,
+   tools/validate.py, affected tests,
    adapter/routing/role tests when host surfaces change, and the full required
    checks before acceptance. Install only the accepted source identity.
 
 ## Workflow admission
 
-A workflow carries only its manifest, ticket stubs, and placeholder values.
-It carries no schema, validator, fixture format, or script. Repository admission
+A workflow carries its `SKILL.md` body and the references beside it. It
+carries no schema, validator, fixture format, or script. Repository admission
 refuses those artifacts inside a workflow, schema or fixture-format artifacts
 named for it under [shared references](../example-workflows/references/), and any
-workflow-named module under scripts. Validation a workflow needs instead
+workflow-named module under scripts. It also grades the body as a skill's:
+the name matches its directory, the description is present and inside budget,
+the body fits the workflow tier's word budget, and the manual-invocation flag
+[composition](../rules/composition.md) §1 requires is declared. Validation a
+workflow needs instead
 belongs to pack data when it is domain craft or to a T0 contract when machinery
 branches on it; a workflow that needs another shape exposes that missing
 owner.

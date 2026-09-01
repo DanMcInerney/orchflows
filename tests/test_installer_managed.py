@@ -8,7 +8,7 @@ if _facade is None:
 from tests.test_installer_cases.application.partial_apply import TestPartialApplyAfterRmtree
 from tests.test_installer_cases.managed_text.host_block import (
     TestHostBlockDemands,
-    TestHostBlockDispatchFlags,
+    TestHostBlockBrickFlags,
     TestHostBlockRendering,
 )
 from tests.test_installer_cases.managed_text.markers import (
@@ -21,7 +21,7 @@ from tests.test_installer_cases.managed_text.roles import TestRoleAgentInstructi
 
 TestPartialApplyAfterRmtree.__module__ = _facade.__name__
 TestHostBlockDemands.__module__ = _facade.__name__
-TestHostBlockDispatchFlags.__module__ = _facade.__name__
+TestHostBlockBrickFlags.__module__ = _facade.__name__
 TestHostBlockRendering.__module__ = _facade.__name__
 TestConservativeBlockRemoval.__module__ = _facade.__name__
 TestHostConfigLimitRemoval.__module__ = _facade.__name__
