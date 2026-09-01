@@ -59,6 +59,52 @@ class TestInstallReceipt(unittest.TestCase):
                 self.assertEqual(digest(Path(entry["path"])), entry["sha256"])
             self.assertEqual("added-block", receipt["blocks"][0]["install_action"])
 
+    def test_reinstall_removes_a_receipt_owned_script_the_plan_dropped(self):
+        """A script whose source left ``scripts/`` (or dropped out of the flat
+        support-prefix census) disappears from the installed bin dir on the
+        next install, and a file the receipt never claimed stays exactly
+        where it was. Every other kind gets this sweep before its write
+        loop; ``script`` was the one silently exempted."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            bin_dir = project / ".orch" / "bin"
+            bin_dir.mkdir(parents=True)
+            stale_script = bin_dir / "tickets_gone.py"
+            stale_script.write_text("print('gone')\n", encoding="utf-8")
+            mine = bin_dir / "handwritten.py"
+            mine.write_text("before\n", encoding="utf-8")
+            receipt_path = project / ".orchflows" / "receipt.json"
+            receipt_path.parent.mkdir(parents=True)
+            receipt_path.write_text(
+                json.dumps(
+                    {
+                        "files": [
+                            {
+                                "path": str(stale_script),
+                                "kind": "script",
+                                "sha256": digest(stale_script),
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            new_source = project / "tickets.py"
+            new_source.write_text("print('new')\n", encoding="utf-8")
+            kept_script = bin_dir / "tickets.py"
+            plan = self._role_agent_plan(
+                project,
+                receipt_path=receipt_path,
+                scripts=[(new_source, kept_script)],
+            )
+
+            install.apply_plan(plan, accepted_source=install.resolve_source_commit())
+
+            self.assertFalse(stale_script.exists())
+            self.assertEqual("print('new')\n", kept_script.read_text(encoding="utf-8"))
+            self.assertEqual("before\n", mine.read_text(encoding="utf-8"))
+
     def _role_agent_plan(self, project: Path, **kwargs) -> "install.Plan":
         defaults = dict(
             scope="user",
