@@ -19,9 +19,9 @@ if __package__:
 else:
     from tickets_format import REPORT_SECTION, TERMINAL_STATES, TicketFormatError, _extract_flag, _parse_frontmatter, _read_utf8, _section_body, _write_section, dequote, lease_of
 if __package__:
-    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, SINK_CONVENTION, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, _writer_identity, locked_run_write
+    from .tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, SINK_CONVENTION, UTC_STAMP, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, _writer_identity, locked_run_write
 else:
-    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, SINK_CONVENTION, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, _writer_identity, locked_run_write
+    from tickets_store import DEFAULT_RUN_STATE_TREE, NO_SINK_ERROR, RUN_IDENTITY_NAME, RUN_NOTES_NAME, RUN_STATE_TREES, SINK_CONVENTION, UTC_STAMP, TicketWriteRefused, _identity_update, _lock_windows_byte, _run_lock, _run_state_root, _runs_root, _segment_error, _tickets_root, _waiting_out_windows, _write_identity, _write_text_atomically, _writer_identity, locked_run_write
 if __package__:
     from .tickets_project import recorded_project
 else:
@@ -254,7 +254,7 @@ def _append_event(run: str, ticket_id: str, event: str, fields: dict) -> None:
         now = datetime.now(timezone.utc)
         entry = {
             'sink_convention': SINK_CONVENTION,
-            'ts': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'ts': now.strftime(UTC_STAMP),
             'project': _event_project(run),
             'run': run,
             'ticket': ticket_id,
