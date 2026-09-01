@@ -41,3 +41,8 @@
    reports it in the script's JSON payload, which the caller reads — exit
    status alone can be 0; the friction logger's silence contract is
    `scripts/friction.py`'s own.
+   Beside run state and the improvement evidence, the sink carries one
+   more append-only channel, `events/<yyyy-mm>.jsonl` — one line per
+   terminal machine event, written only by `scripts/tickets_frame.py`
+   and `scripts/tickets_land.py`, silent on write failure by the same
+   contract.

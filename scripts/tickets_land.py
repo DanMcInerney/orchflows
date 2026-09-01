@@ -31,19 +31,21 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 if __package__:
     from . import tickets_done
     from .tickets_format import (
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
-        _extract_flag, _parse_frontmatter, _read_utf8,
+        _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from .tickets_adapters import derived_isolation
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
     from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_lifecycle import _cmd_ready
+    from .tickets_result import _append_event
     from .tickets_store import (
         NO_SINK_ERROR, _run_lock, _tickets_root,
         segment_refusal,
@@ -52,13 +54,14 @@ else:  # pragma: no cover - direct/installed flat script path
     import tickets_done
     from tickets_format import (
         REQUIRED_ISOLATION, RESULT_BEARING_STATES, TERMINAL_STATES,
-        _extract_flag, _parse_frontmatter, _read_utf8,
+        _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from tickets_adapters import derived_isolation
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
     from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_lifecycle import _cmd_ready
+    from tickets_result import _append_event
     from tickets_store import (
         NO_SINK_ERROR, _run_lock, _tickets_root,
         segment_refusal,
@@ -109,6 +112,32 @@ def _prior_records(run: str, ticket_id: str, dispatch_id: str) -> dict:
         "outcome": OUTCOME_RECORD_ID in identities,
         "join": any(name.startswith(JOIN_RECORD_PREFIX) for name in identities),
     }
+
+
+def _dispatch_cost(data: dict):
+    """`(attempts, elapsed_s)` off the ticket's own dispatch record, best-effort.
+
+    `attempts` counts every attempt `dispatch_v1` carries -- replays and
+    retries included, since a replayed attempt is exactly the cost this is
+    for. `elapsed_s` runs from the earliest attempt's `opened_at` to now,
+    not this attempt's: a ticket re-landed after a repair round is still
+    one item, and its whole cost is what a reader wants. Either half comes
+    back `None` where the record does not parse or carries no timestamp --
+    cheap and best-effort, never a second source of truth for `dispatch_v1`.
+    """
+    state, failure = stored_state(data)
+    if failure is not None or state is None:
+        return None, None
+    attempts = state.get("attempts") or []
+    if not attempts:
+        return None, None
+    opened = [value for value in (
+        _parse_iso(item.get("opened_at")) for item in attempts
+    ) if value is not None]
+    if not opened:
+        return len(attempts), None
+    elapsed = (datetime.now(timezone.utc) - min(opened)).total_seconds()
+    return len(attempts), max(elapsed, 0.0)
 
 
 def _ticket(run: str, ticket_id: str):
@@ -264,15 +293,28 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
     )
     if refusal is not None:
         return refusal
+    # `action == "close"` is the one shape `tickets_done.resolve` returns
+    # only through `advance_action`'s two-identical-repair-rounds close,
+    # since the only other route to `status == "stalled"` -- a driver's own
+    # `--status stalled` for a ticket that carries no predicate -- decides
+    # through a `decision` with no `action` key at all.
+    if decision.get("status") == "stalled" and decision.get("action") == "close":
+        _append_event(run, ticket_id, "stalled", {})
     steps.append({"step": "done", "outcome": _done_outcome(decision), **{
         key: value for key, value in decision.items()
         if key not in ("reading", "action")
     }})
+    attempts, elapsed_s = _dispatch_cost(data)
+    done_exit = (decision.get("reading") or {}).get("exit")
     if decision["status"] is None:
         # Nothing to join: a minted check is still out, or a repair round was
         # just armed. The attempt stays open, and landing again once that
         # round is in re-runs the predicate against the further-integrated
         # tree. That is the round-two slot the composite gate never had.
+        _append_event(run, ticket_id, "land", {
+            "status": None, "done_exit": done_exit,
+            "attempts": attempts, "elapsed_s": elapsed_s,
+        })
         return {"land": {
             "run": run, "id": ticket_id, "status": None,
             "done": decision.get("reading"), "steps": steps,
@@ -293,6 +335,10 @@ def _land_transaction(run, ticket_id, identity, outcome_file, driver_status):
         "outcome": REPLAYED if prior["join"] else COMMITTED,
     })
     steps.append(_retire_workspace(run, ticket_id, joined["join"]["status"], data))
+    _append_event(run, ticket_id, "land", {
+        "status": joined["join"]["status"], "done_exit": done_exit,
+        "attempts": attempts, "elapsed_s": elapsed_s,
+    })
     return {"land": {
         "run": run,
         "id": ticket_id,
