@@ -227,3 +227,31 @@ class TestSurfaceBudgets(_IsolatedTree):
             with self.subTest(surface=name):
                 text = (ROOT / name).read_text(encoding="utf-8")
                 self.assertLessEqual(validate.body_words(text), limit)
+
+
+class TestRoutingBlockBudget(unittest.TestCase):
+    """rules/token-economy.md §11's project-routing-block default
+    (`ROUTING_BLOCK_BUDGET`). No renderer or sync mechanism installs a
+    project-scope routing block in this tree (the constant's own comment,
+    tools/validate_support/common.py, carries the verified evidence), so
+    the check is exercised directly against synthetic text -- the can-fail
+    direction of rules/verification.md Section 8, matching
+    tests/test_architecture_owners.py's padded-copy pattern for the same
+    reason: there is no second tree to build."""
+
+    def test_an_oversized_routing_block_is_refused(self):
+        diag = validate.Diagnostics()
+        oversized = " ".join(["word"] * (validate.ROUTING_BLOCK_BUDGET + 10))
+
+        validate.validate_routing_block(oversized, "a-project/AGENTS.md", diag)
+
+        self.assertTrue(diag.has_errors)
+        self.assertIn("exceeds the every-turn budget", diag.lines()[0])
+
+    def test_a_routing_block_inside_the_budget_passes(self):
+        diag = validate.Diagnostics()
+        in_budget = " ".join(["word"] * validate.ROUTING_BLOCK_BUDGET)
+
+        validate.validate_routing_block(in_budget, "a-project/AGENTS.md", diag)
+
+        self.assertFalse(diag.has_errors)
