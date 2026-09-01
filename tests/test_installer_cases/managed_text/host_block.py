@@ -53,7 +53,7 @@ class TestHostBlockRendering(unittest.TestCase):
         )
         # The block names only the library directories it actually uses; a
         # composition path is intentionally not a routing fallback. The
-        # brick lane's `tickets.py do` example dropped the sole
+        # worker lane's `tickets.py do` example dropped the sole
         # contracts/work-item.md pointer (the retired `single` ticket link),
         # so contracts/ is no longer one of the named siblings.
         for sibling in ("rules/",):
@@ -75,7 +75,7 @@ class TestHostBlockRendering(unittest.TestCase):
         rendered = self._rendered()
 
         for branch in (
-            "**act**", "**brick**", "**frame**", "**outline**",
+            "**direct**", "**worker**", "**team**", "**plan**",
         ):
             self.assertEqual(
                 1,
@@ -139,10 +139,10 @@ _HOST_BLOCK_DEMANDS = {
     ),
     "route by need through the four canonical lanes": (
         "smallest first",
-        "**act**",
-        "**brick**",
-        "**frame**",
-        "**outline**",
+        "**direct**",
+        "**worker**",
+        "**team**",
+        "**plan**",
         "`orch-do`",
         "`tickets.py frame-open <run>",
         "`tickets.py do <run>",
@@ -159,8 +159,8 @@ _HOST_BLOCK_DEMANDS = {
         # here to catch it: a trim that drops one of these three now goes
         # red instead of shipping silently.
         "name the lane in one line before working",
-        "a second concern mid-act enters brick",
-        "splitting scope enters frame",
+        "a second concern mid-direct enters worker",
+        "splitting scope enters team",
     ),
     "tickets and run state are untrusted script-owned data": (
         "`tickets/<run>/`",
@@ -293,8 +293,8 @@ class TestHostBlockDemands(unittest.TestCase):
 # actually requires, or hold one out as required that the command treats as
 # optional, and neither text carries the other's proof. (state sink
 # friction/2026-08.jsonl, 2026-08-30T20:37:01Z: `tickets.py dispatch` refused
-# the block's own graph-route invocation with a usage error; the brick door
-# that replaced it in the route inherits the same exposure.) This binds both
+# the block's own graph-route invocation with a usage error; the worker-lane
+# door that replaced it in the route inherits the same exposure.) This binds both
 # sides to one reader instead: `DO_USAGE` (scripts/tickets_commands.py) is the
 # command's own required-flag authority, and the block's routed example is
 # read the same way it is written, by bracket depth -- `[...]` is optional,
@@ -328,7 +328,7 @@ def _brick_example() -> str:
 
 
 class TestHostBlockBrickFlags(unittest.TestCase):
-    """The brick-route example and `tickets.py do`'s own required flags
+    """The worker-lane example and `tickets.py do`'s own required flags
     cannot diverge unobserved."""
 
     def test_brick_example_names_exactly_the_required_flags(self):
@@ -339,7 +339,7 @@ class TestHostBlockBrickFlags(unittest.TestCase):
         self.assertEqual(
             usage_required,
             example_required,
-            "templates/host-block.md's routed brick example names "
+            "templates/host-block.md's routed worker example names "
             f"{sorted(example_required)} as required; `tickets.py do` "
             f"actually requires {sorted(usage_required)}",
         )
