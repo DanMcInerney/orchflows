@@ -1,3 +1,13 @@
+# Research, design records, and working notes are personal artifacts:
+# they inform the library but are not part of it, and they are not
+# published. Their durable home is the state sink, outside every
+# checkout (rules/visibility.md section 3).
+research/
+
+# Every dot-directory is ignored wholesale. Each re-admission below is
+# one the product, the tests, or CI reads directly, named so that a new
+# file lands ignored by default rather than published by accident.
+
 # Runtime state: everything in .orch/ except the tracked canary fixture.
 # Canary scratch is a run-output area; only its .gitkeep is tracked.
 .orch/*
@@ -5,11 +15,27 @@
 .orch/canary/scratch/*
 !.orch/canary/scratch/.gitkeep
 
-# Session-local host state.
+# Project-scope skills ship to whoever clones; AGENTS.md names the
+# super-research path, so validate's documented-path check reads it on
+# a fresh clone. Designs and migration papers here stay unpublished.
+.orchflows/*
+!.orchflows/skills/
+
+# Session-local host state, and the committed project-scope adapters
+# that give a cloner the skills without installing first.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
 .claude/worktrees/
 .claude/settings.local.json
 .claude/skills/no/
+.agents/*
+!.agents/skills/
 .codex/
+
+# CI is the repository's own gate: the workflows stay, nothing else here.
+.github/*
+!.github/workflows/
 
 # Python bytecode, environments, test output, and tool caches.
 __pycache__/
