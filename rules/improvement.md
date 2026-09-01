@@ -42,6 +42,8 @@
    `tickets.py improvement --covered`; a `project` proposal, the same
    machinery in its own repository under its own oracles; an
    `environment` proposal is actioned directly by the human and verified
-   by its probe passing. The cycle end to end — mine, then deliver — is
-   the `self-improve` workflow under `example-workflows/`, one run in the sink
-   per cycle.
+   by its probe passing. The cycle end to end — a deterministic harvest
+   that slices the sink and computes §4's recurrence arithmetic
+   mechanically, then mine, then deliver — is the `self-improve`
+   workflow under `example-workflows/`, one run in the sink per cycle;
+   no standing qualify step remains.
