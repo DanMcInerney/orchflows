@@ -252,7 +252,7 @@ def _v1_result_ticket(tmp: Path, *, by="agent-a"):
     assert failure is None, failure
     launched = tickets_mod._tickets_dispatch_facade_module._launched_under_run_lock(
         "testrun", "T1", host, dispatch_id="D1",
-        workspace=str(tmp.resolve()), artifact=None, review_kind=None,
+        workspace=str(tmp.resolve()), artifact=None,
     )
     assert "error" not in launched, launched
     return ticket, opened["assignment_seal"]

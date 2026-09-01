@@ -215,7 +215,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         )["dispatch"]
 
     def launch(self, run, ticket_id, dispatch_id, workspace=None,
-               artifact=None, review_kind=None, record=True):
+               artifact=None, record=True):
         """Establish, then commit the launch this child's records enter behind.
 
         Reached at the facade seam that owns it: `dispatch` composes the
@@ -233,7 +233,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertIsNone(failure, failure)
         return tickets._tickets_dispatch_facade_module._launched_under_run_lock(
             run, ticket_id, host, dispatch_id=dispatch_id,
-            workspace=workspace, artifact=artifact, review_kind=review_kind,
+            workspace=workspace, artifact=artifact,
         )
 
     def committed_launch(self, *arguments, **facts) -> dict:

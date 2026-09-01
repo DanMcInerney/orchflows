@@ -42,7 +42,6 @@ DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> "
     "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
-    "[--review-kind critique|repair|verify] "
     "[--host <name>]"
 )
 GRADE_USAGE = "grade <run> <root>"
@@ -114,7 +113,7 @@ VALUE_FLAGS = frozenset({
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
     "--outcome-record-id", "--status", "--stage",
     "--goal-file", "--details-file", "--parent", "--done", "--artifacts",
-    "--accepted-file", "--review-kind", "--result-file", "--verification-file",
+    "--accepted-file", "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
     "--host", "--outcome-file",
 })

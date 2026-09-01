@@ -153,7 +153,6 @@ def _cmd_dispatch(rest):
     lease = _extract_flag(args, "--lease-expires-at")
     workspace = _extract_flag(args, "--workspace")
     artifact = _extract_flag(args, "--artifact")
-    review_kind = _extract_flag(args, "--review-kind")
     host = selected_host(_extract_flag(args, "--host"))
     if len(args) != 2 or not all((owner, dispatch_id, lease)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
@@ -179,7 +178,6 @@ def _cmd_dispatch(rest):
         dispatched = _dispatched_under_run_lock(
             run, ticket_id, host=host, owner=owner, dispatch_id=dispatch_id,
             lease=lease, workspace=workspace, artifact=artifact,
-            review_kind=review_kind,
         )
     if "error" in dispatched:
         return dispatched
@@ -192,7 +190,7 @@ def _cmd_dispatch(rest):
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
-                               lease, workspace, artifact, review_kind):
+                               lease, workspace, artifact):
     """Everything the run lock has to hold, and nothing that does not."""
 
     # Before the first side effect: an attempt opened for a launch that
@@ -231,7 +229,6 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
             launched = _launched_under_run_lock(
                 run, ticket_id, record, dispatch_id=dispatch_id,
                 workspace=workspace_path, artifact=artifact,
-                review_kind=review_kind,
             )
     if "error" not in launched:
         return launched
@@ -325,7 +322,7 @@ def _committed_launch(attempt: dict):
 
 
 def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
-                             workspace, artifact, review_kind):
+                             workspace, artifact):
     """Grade the assignment, resolve the launch, and commit it, once.
 
     Every read decides what the commit writes -- stored attempt, replay
@@ -370,8 +367,6 @@ def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
             "ticket no longer matches the attempt's sealed assignment",
         )
     arguments = [run, ticket_id, "--by", attempt["owner"], "--workspace", workspace]
-    if review_kind is not None:
-        arguments.extend(("--review-kind", review_kind))
     graded = dispatch_assignment(
         arguments, attempt=attempt, review_state=review_state,
     )
