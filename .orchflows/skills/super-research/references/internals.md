@@ -26,6 +26,7 @@ list: `ledger.py`, `ordering.py` and `pacing.py` were split out of `runner.py`,
 | `cache.py` | one run's TTL memory of reads it already made |
 | `normalize.py` | native pages to immutable records; grouping and provenance edges |
 | `project.py` | a pure bounded subset of one artifact |
+| `window.py` | the closed timeframe-phrase grammar: a question's own words to a step's two instants, anchored on `as_of` and never on a wall clock |
 | `probes.py` | the twenty-five liveness probe declarations |
 | `smoke.py` | one probe's read, and the standing it leaves an adapter at |
 | `cli.py` | three operations, and everything an operator reads |

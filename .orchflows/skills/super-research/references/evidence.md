@@ -198,3 +198,49 @@ Two rows here supersede claims above.
   `_player_page` branches on.
 
 Every row is one host, one network, one moment.
+
+## The route sweep of 2026-09-01
+
+The survey-validation sweep behind the six-adapter expansion, plus a full
+re-smoke of the nineteen-adapter roster the same day. One host, one network,
+one moment, as always.
+
+**The re-smoke.** Fourteen of nineteen carried their row. The five that did
+not, each with the typed cause the smoke reported: `web_search` (DDG answered
+202, the challenge it has answered every identity since 2026-08-17),
+`x_syndication` (429, `rate_limited`), `x_guest` (401, `auth_required` — the
+guest activation refused), `instagram_public` (429, `rate_limited`), and
+`x_fxtwitter` (404, its measured answer-then-refuse flit). None exited 3:
+every read reached its origin. The keyless X surfaces and anonymous
+Instagram are at-risk rows, and a caller should read their smoke before
+planning on them.
+
+**The new-source validation.** Each endpoint the expansion declares was read
+live before it was declared. Keyless 200 with the origin honoring its date
+bound: Stack Exchange `search/advanced` (`fromdate`/`todate`, the 300/day
+anonymous quota reported in the body), Wikimedia per-article pageviews (the
+range is two path segments; one cold 429, then 200), OpenAlex, Crossref
+(month-precision dates on some items) and arXiv (`submittedDate` range in
+`search_query`). GDELT DOC 2.0 honored `startdatetime`/`enddatetime` and
+stated its one-request-per-five-seconds ceiling in a plain-text 429 body —
+over plain HTTP, because **port 443 to `api.gdeltproject.org` timed out from
+this host on every attempt**, curl and this package's own opener alike, while
+port 80 answered; the transport admits https only, so the GDELT smoke here
+reports `unreachable` and concludes nothing about the platform. GDELT
+Context 2.0 answered 200 with an empty article list to six different queries
+and is deferred, not declared. All six oEmbed endpoints answered 200,
+including `publish.x.com` — the survey's 402-from-datacenter report did not
+reproduce from here. A TikTok video page served the full rehydration payload
+to a plain cookieless GET; a profile page served the profile's counts and an
+empty `itemList`. Stack Exchange compressed its answer only when asked
+(`Accept-Encoding` sent: gzip; not sent: identity), which is why
+`transport.decoded_body` honors a stated encoding rather than assuming one.
+
+**The transport-identity question, held open.** The 2026-09-01 survey
+(`research/super-research-technique-survey-2026-09-01.md`, §6.3 and §8.2)
+argues the cold X/Instagram surfaces are fingerprint-gated at the TLS layer,
+and that a browser-matched ClientHello — chosen once, never rotated on a
+block — might be a lawful persistent identity where stdlib's is flagged on
+the first packet. This delivery holds the pure-stdlib line: the identity
+stays `super-research/0.1` over urllib's own handshake, the gated origins
+stay typed losses, and the law change is the user's call, not a sweep's.

@@ -267,12 +267,27 @@ behind an ESM import map) with `K4` as the interim route, and FxTwitter as a
 same day, until an adapter reads them — Reddit search and comments themselves
 are no longer waiting on that, because `reddit_shreddit` reaches both;
 Reddit's `more-comments` continuation, because it asks for a POST and this
-package admits two, both named; `tiktok_public`, unverified because this
-network answered 503 with a login portal and `evidence.md` §"The
-captive-portal caveat" forbids reading that as platform behaviour; Bluesky's
+package admits two, both named; Bluesky's
 `searchPosts`, which answered 403 from the CDN in front of the public AppView
-on this host while its sibling methods answered 200; and `reddit_oauth` and
-`youtube_data_api` as `K5` throughput upgrades.
+on this host while its sibling methods answered 200; GDELT's Context 2.0,
+which answered 200 with an empty article list to six queries on 2026-09-01
+and reopens when a live read returns one, and GDELT's `timelinevol`
+attention series, measured working the same day and waiting only on an
+operation to carry it; Stack Exchange's per-question answers surface and
+OpenAlex's cursor paging, each an ordinary second operation when a caller
+needs one; and `reddit_oauth` and
+`youtube_data_api` as `K5` throughput upgrades. (`tiktok_public`, deferred
+here since the captive-portal sweep, shipped on 2026-09-01: the 2026-08
+reading was this network's login portal, not the platform's.)
+
+Refused by policy, distinct from deferred: platforms with no keyless
+read-only route at all, named so an answer over them files a declared gap
+rather than implying coverage. Instagram comments and feeds beyond the one
+profile surface, Threads, Pinterest, Facebook, Truth Social, and TikTok
+comments and search — each reachable today only through an authenticated
+account, a logged-in browser session, or a signed client challenge, the
+three techniques the access ladder exists to refuse. A platform moves off
+this list by a measured keyless read, never by an easier identity.
 
 ## Failure and loss vocabulary
 

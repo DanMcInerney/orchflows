@@ -20,10 +20,14 @@ parser was made from.
 access class each declares, and the field set its smoke asserts; the offline
 `fake` adapter has no smoke and is not on that list. The roster's routes were
 measured from one host on 2026-08-10, two sweeps on 2026-08-12 read them
-against real origins, and a third sweep on 2026-08-17 measured the routes this
-revision adds and reversed three earlier findings; what each of those found is
+against real origins, a third sweep on 2026-08-17 measured the routes that
+revision added and reversed three earlier findings, and a fourth on
+2026-09-01 validated the six-adapter expansion's endpoints and re-smoked the
+whole prior roster, finding the keyless X surfaces and anonymous Instagram
+at-risk; what each found is
 in [evidence.md](evidence.md) §"Route measurements of 2026-08-10",
-§"The two liveness sweeps of 2026-08-12" and §"The route sweep of 2026-08-17". `status` still reports every adapter
+§"The two liveness sweeps of 2026-08-12", §"The route sweep of 2026-08-17"
+and §"The route sweep of 2026-09-01". `status` still reports every adapter
 `unverified` until `smoke --adapter <id>` makes one bounded read that carries
 that adapter's row: the smoke ledger lives in a tempdir and never travels with a
 checkout.
@@ -116,6 +120,38 @@ the cap is spent inside it. Order afterwards with `runner.order_records` at an
 gives the smallest such moment), and rank on topic with
 `relevance.compile_query` / `relevance.rank` / `relevance.partition`, reading
 the dropped list before applying any floor.
+
+## Manifest recipes
+
+Staged-manifest shapes the reference tools wired as code and this package
+authors as steps. Each is a pattern for the caller writing the manifest, not
+a mechanism: nothing below is a fallback, and every step still names its cap.
+
+- **Reddit, four stages.** Discover on `reddit_shreddit` (search or listing,
+  real scores); backfill anything older than the listing reaches by id on
+  `reddit_archive`; select the discussion-heavy hits; hydrate their comment
+  pages on `reddit_shreddit` `comments`. The feed route is the freshness
+  probe beside that, not a stage of it.
+- **X, three lanes.** One `x_fxtwitter` search on the topic words, one on
+  `from:<handle>` for each named principal, one on the principal's handle as
+  a plain term for the conversation *about* them — three discovery steps,
+  fused, because they answer three different questions about one subject.
+- **News with a window.** `gdelt` bounded at the origin plus `web_search`'s
+  `gnews` operation, fused; select; hydrate the article bodies on
+  `open_page`. GDELT's rows carry dates and domains, so the window is spent
+  server-side and the cull is auditable.
+- **Overfetch, then cull.** On a surface whose page is bigger than the
+  question (`hacker_news` search, `stack_exchange`), cap at the page, rank
+  with `relevance`, and hydrate only what survives — the cap buys nothing
+  under the page size, and the dropped list is the audit.
+- **Markets, two passes.** `prediction_markets` search first; where a hit's
+  tags name a family, a second discovery on the tag before hydrating, so the
+  odds quoted come from every market on the question rather than the one the
+  search happened to surface.
+- **The long tail.** A discovered link no richer adapter owns hydrates on
+  `oembed` under its provider prefix, or on `open_page` when no provider
+  serves it; the two cover different failures and neither is a retry of the
+  other.
 
 ## Smoke inventory
 
