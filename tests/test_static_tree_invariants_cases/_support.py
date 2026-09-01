@@ -61,7 +61,7 @@ def bodies(*paths: Path) -> str:
 
 def workflow_files(directory: Path):
     """One workflow's whole surface: its single body. A workflow is a skill
-    whose prose calls bricks, so there are no stubs beside it to read."""
+    whose prose calls callables, so there are no stubs beside it to read."""
     return (directory / WORKFLOW_FILE,)
 
 

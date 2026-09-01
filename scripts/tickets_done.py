@@ -20,7 +20,7 @@ further-integrated tree. Round two is a lawful slot, not hand surgery.
 
 The round machinery lives here because `land` is its one reader. It was
 written inside the loop lane, whose iterations advanced by the same three
-rules; the lane is gone and the rules moved to the door that still asks
+rules; the lane is gone and the rules moved to the command that still asks
 them.
 """
 

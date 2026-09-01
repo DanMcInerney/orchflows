@@ -120,10 +120,10 @@ request. The replacement:
   `tickets.py instantiate` wrote the run mechanically, with no engine,
   contract or step file of its own to keep in step with the ticket
   contract (cheap generation: the gate was the same graded ticket shape
-  every other item had). That door retired with the decomposed-root
+  every other item had). That command retired with the decomposed-root
   concept it served (W4a): a named workflow is now prose that opens a
-  frame and calls bricks directly, no materializing step between them —
-  "Why two bricks, frames, and prose" below is that design.
+  frame and calls callables directly, no materializing step between them —
+  "Why two callables, frames, and prose" below is that design.
 - **The envelope closes the algebra.** Every ticket attempt closes through
   the dispatch outcome envelope, fenced to its assignment, attempt, reserved
   outcome identity, writer, and evidence. Its accepted durable result
@@ -332,7 +332,7 @@ library through a hand-written host shim.
 - **The seal is the lockfile.** Skill bodies said "the stamped pack
   digest" while no field carried one, so the ticket named a pack and a
   name resolves to whatever bytes are nearest. Pinning at issue and
-  verifying at every later door makes the trust grant and the seal cite
+  verifying at every later command makes the trust grant and the seal cite
   one digest: what was approved is what runs.
 - **Generated adapters are inert on purpose.** Orchflows can gate what
   enters its own prompts and tickets. It cannot gate a host's native
@@ -462,7 +462,7 @@ one the join will grade. That is the test for what belongs in code.
   perfect model cannot guess a run's ready set, and gains nothing from being
   handed a skill body that tells it to ask `land` for one.
 
-## Why two bricks, frames, and prose
+## Why two callables, frames, and prose
 
 Designed 2026-08-31 from the seven investigations of 2026-08-30, the ring
 work, and a super-research dogfood run that logged fourteen frictions. The
@@ -473,8 +473,8 @@ interpreter is whichever agent the user is already talking to. Everything
 the library had built to be that interpreter was machinery it did not need
 to own.
 
-- **Two callables, not four.** The four verbs were four doorways into one
-  pack's craft. A pack is read three ways and always was; what the tier
+- **Two callables, not four.** The four verbs were four entry points into
+  one pack's craft. A pack is read three ways and always was; what the tier
   actually needs is one callable that makes something and one that reads
   something, each naming which craft sections its call is for. Freezing a
   root is a `do` whose artifact is a sealed root, which is why the intake
@@ -507,27 +507,28 @@ to own.
   under-review into an auditable decision.
 - **What this bought by deletion.** The loop lane and its marker grammar,
   the template/instantiate/placeholder layer and entry kinds, the reader's
-  workflow-summary manifest, the stamp/validate/seal door parade as separate
-  public doors, admission's graph-shape checks, and the gate choreography
-  with its lens ordering. Each fails the same test the trunk review set: a
-  perfect model still cannot make a sequence atomic or know which spelling a
-  join will grade — but it can perfectly well write a loop, and none of that
-  machinery was buying anything else. Critique and repair survive as prose
-  over `judge` and `do`; compare-and-swap sealing survives inside the brick
-  and frame doors. Sunk cost stated plainly: parts of the loop-lane PRs and
-  the instantiate half of the ring work are deleted by this design.
-- **A brick keeps its lease; a frame gets none.** The review called the
+  workflow-summary manifest, the stamp/validate/seal command parade as
+  separate public commands, admission's graph-shape checks, and the gate
+  choreography with its lens ordering. Each fails the same test the trunk
+  review set: a perfect model still cannot make a sequence atomic or know
+  which spelling a join will grade — but it can perfectly well write a
+  loop, and none of that machinery was buying anything else. Critique and
+  repair survive as prose over `judge` and `do`; compare-and-swap sealing
+  survives inside the callable and frame minting commands. Sunk cost stated
+  plainly: parts of the loop-lane PRs and the instantiate half of the ring
+  work are deleted by this design.
+- **A callable keeps its lease; a frame gets none.** The review called the
   lease borderline under perfect models. It is not a capability mechanism:
   it arbitrates writer contention on dispatchable work, which no model
   quality removes. Frames are singular and session-bound, so displaying
-  their age suffices; bricks are dispatchable by anyone holding the sink, so
-  the lease is the arbiter.
-- **Packs bind per call, not per run.** Bricks never share a workspace —
-  each adapter owns its own brick's world — so the one-pack-per-run law and
-  the adapter-compatibility worry behind it both dissolve. One brick is one
-  pack is one artifact; two domains in one deliverable are two bricks and a
-  handoff. Frames carry no pack, because a journal is not craft-governed
-  work.
+  their age suffices; callables are dispatchable by anyone holding the
+  sink, so the lease is the arbiter.
+- **Packs bind per call, not per run.** Callables never share a workspace —
+  each adapter owns its own callable's world — so the one-pack-per-run law
+  and the adapter-compatibility worry behind it both dissolve. One callable
+  is one pack is one artifact; two domains in one deliverable are two
+  callables and a handoff. Frames carry no pack, because a journal is not
+  craft-governed work.
 
 Eyes open on the costs: parent-mediated handoffs can still drift, and the
 verbatim machine line is the whole mitigation; the composition vantage is

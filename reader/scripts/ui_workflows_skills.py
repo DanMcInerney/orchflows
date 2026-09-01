@@ -34,8 +34,8 @@ class WorkflowSkillError(ValueError):
 def workflow_skill_path(root: Path, workflow_id: str) -> Path | None:
     """Locate one callable skill across the installed tier layout.
 
-    Two homes, one shape. A T1 brick lives under its tier in ``skills/``; a
-    workflow — a skill whose prose calls those bricks — lives in
+    Two homes, one shape. A T1 callable lives under its tier in ``skills/``; a
+    workflow — a skill whose prose calls those callables — lives in
     ``example-workflows/<name>/SKILL.md``. Neither is a template any more,
     so the lookup is the same file name in both places.
     """
@@ -74,7 +74,7 @@ def _read_skill(root: Path, path: Path) -> tuple[dict, str]:
 def skill_index(root: Path) -> tuple[dict[str, str], set[str]]:
     """Return canonical skill and pack names mapped to installed lib paths.
 
-    Packs belong here because a brick call stamps exactly one of them, and
+    Packs belong here because a callable call stamps exactly one of them, and
     the pack is what carries that call's craft. Leaving them out reported
     every workflow's own pack as an unresolved reference.
     """

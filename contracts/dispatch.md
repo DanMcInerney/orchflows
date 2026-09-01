@@ -98,7 +98,7 @@ the stamped pack's adapter fixes — `git` a full commit id, `doc` a
 `<path>@sha256:<digest>` over the document bytes at close, `evidence` a store
 id; and a review lane is told to print `findings: <path>` as a second
 verbatim line. The digest a `doc` identity carries is declared, not verified:
-the child computes it, and no door yet recomputes it.
+the child computes it, and no command yet recomputes it.
 
 Dispatch refuses `state-inaccessible` when the sink holding the ticket cannot
 be read, `review-invalid` when the ticket's review ledger does not admit this
@@ -137,7 +137,7 @@ adjudicates nothing and binds no findings, accepted subset, or fixed
 artifact identity of its own: the mechanical checker/repair selector that
 used to do that on `--findings-file`/`--accepted-file`/`--artifact` retired
 with the gate-stage ids -- `.gate.critique.<lens>`, `.gate.repair`, `.check`
--- it selected between, minted by no live door. A worker's own fixed
+-- it selected between, minted by no live command. A worker's own fixed
 artifact identity reaches its ticket the same way any other closing fact
 does: printed verbatim in the outcome evidence the launch prompt asks for,
 never through a join flag.
@@ -145,9 +145,9 @@ never through a join flag.
 `review_v1`, its `GatePlan`/`CritiqueAdjudication`/`RepairOutcome` chain,
 `checked_by`/`review_stage`, and `check <run> <id> --stage <id>.check` --
 the one surviving reader the gate-stage census above left standing -- are
-themselves retired: no live door ever built the chain that reader required,
+themselves retired: no live command ever built the chain that reader required,
 so its one input was hand-edited state, which the host block forbids. A
-critique is a `judge` brick and its repair a `do` brick, sequenced by the
+critique is a `judge` ticket and its repair a `do` ticket, sequenced by the
 calling workflow's prose, and both return the ordinary way -- the
 executor's `## Report` and the disposition this join records.
 

@@ -63,7 +63,7 @@ sentence in the library must be required by one of them.
 ## The path walks — does it run?
 
 One realistic request per pack, plus one through the ad-hoc lane
-(a lone ad-hoc brick, a critique-then-repair pair, and an ad-hoc
+(a lone ad-hoc callable, a critique-then-repair pair, and an ad-hoc
 set). Walk the exact live path hop by hop, carrying the artifacts as
 concrete data checked against their contracts. A hop is a finding
 when a consumer reads what no producer wrote, two skills claim one

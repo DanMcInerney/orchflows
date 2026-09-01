@@ -1,4 +1,4 @@
-"""A literal backslash-n in a semantic section: one owner, two doors.
+"""A literal backslash-n in a semantic section: one owner, two commands.
 
 friction/2026-08.jsonl, 2026-08-30T21:02:18Z: `tickets.py new --context`
 accepted a shell string carrying an escaped newline and collapsed three
@@ -6,7 +6,7 @@ intake bullets onto one stored line; lint and admission both passed it, and
 only a checker reading stored bytes saw the collapse. `format_policy_defects`
 is the one shape-defect owner both `new` (refusal) and `lint` (finding)
 already read through `ticket_defects` -> `_issue_defects`, so a fix there
-reaches both doors without a second reader.
+reaches both commands without a second reader.
 """
 
 import unittest

@@ -9,7 +9,7 @@ that `ready` admitted cleanly reported `seal-state-unavailable` under
 the wrong one.
 
 Both are stated here once and consumed by all four, and `graded_admission`
-is the only door to `grade_admission` those four have. A site cannot omit
+is the only route to `grade_admission` those four have. A site cannot omit
 the context again without omitting it for every one of them, which is a
 change a reader sees rather than a silence one does not.
 """

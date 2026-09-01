@@ -22,7 +22,7 @@ SUPERSEDED_BODIES = (
 
 
 class TestBenchmarkArchitecture(unittest.TestCase):
-    """Pin benchmark call edges, brick order, and demoted owners."""
+    """Pin benchmark call edges, callable order, and demoted owners."""
 
     # (label, sources, exactly, at_least, never)
     CALL_EDGES = (

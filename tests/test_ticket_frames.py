@@ -2,8 +2,8 @@
 
 Every case fires on something the design bought and nothing else provides.
 A frame is minted, sealed and journalled without ever being dispatched --
-so it carries no executor and no pack, and the ordinary `result` door is
-what its driver appends waves to. Its close is a recording act, and it
+so it carries no executor and no pack, and the ordinary `result` command
+is what its driver appends waves to. Its close is a recording act, and it
 refuses the one thing a prose driver silently gets away with: shipping two
 artifacts nobody read together. `orchflows resume` is the pull that finds
 the frames again, filtered to the project the caller is standing in.
@@ -23,7 +23,7 @@ from pathlib import Path
 from unittest import mock
 
 from scripts import orchflows, state_root, tickets
-from scripts.tickets_brick import DO_EXECUTOR
+from scripts.tickets_mint import DO_EXECUTOR
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, ticket_defects,
 )
@@ -35,7 +35,7 @@ FIXED_NOW = "2026-08-31T12:00:00Z"
 
 
 class FrameSinkTest(unittest.TestCase):
-    """A temp sink, and the workspace establishment a brick would really do."""
+    """A temp sink, and the workspace establishment a callable would really do."""
 
     RUN = "framerun"
 
@@ -69,10 +69,10 @@ class FrameSinkTest(unittest.TestCase):
         return (self.run_dir(run) / f"{ticket_id}.md").read_text(encoding="utf-8")
 
     def call(self, *arguments, expect_error=False) -> dict:
-        """One subcommand, with a brick's workspace establishment stubbed.
+        """One subcommand, with a callable's workspace establishment stubbed.
 
         A frame establishes nothing -- that is the point of it -- but the
-        `do` and `judge` children these cases open are ordinary bricks, and
+        `do` and `judge` children these cases open are ordinary callables, and
         stubbing the tree they would be cut into keeps the case about the
         frame rather than about git.
         """
@@ -100,7 +100,7 @@ class FrameSinkTest(unittest.TestCase):
         )
         return opened["frame_open"]
 
-    def brick(self, verb, frame_id, *arguments, run=None) -> str:
+    def callable(self, verb, frame_id, *arguments, run=None) -> str:
         answer = self.call(
             verb, run or self.RUN, "--pack", DOC_PACK,
             "--goal-file", str(self.goal_file), "--parent", frame_id,
@@ -226,7 +226,7 @@ class FrameCloseTest(FrameSinkTest):
     """The close records, and refuses the composition nobody read."""
 
     def _two_do_children(self, frame: dict) -> list:
-        return [self.brick("do", frame["id"]) for _ in range(2)]
+        return [self.callable("do", frame["id"]) for _ in range(2)]
 
     def test_a_close_over_two_unjudged_do_children_is_refused_by_name(self):
         frame = self.frame()
@@ -251,7 +251,7 @@ class FrameCloseTest(FrameSinkTest):
     def test_a_judge_under_the_frame_lets_the_same_close_land(self):
         frame = self.frame()
         self._two_do_children(frame)
-        judge = self.brick(
+        judge = self.callable(
             "judge", frame["id"], "--artifacts", "doc:draft.md@sha256:" + "e" * 64,
         )
 
@@ -349,12 +349,12 @@ class FrameCloseTest(FrameSinkTest):
         self.assertIn("a frame's done is a command", refused["error"])
         self.assertFalse(self.run_dir().exists())
 
-    def test_land_stays_the_brick_door_and_frame_close_says_so(self):
+    def test_land_stays_the_callable_command_and_frame_close_says_so(self):
         frame = self.frame()
-        brick = self.brick("do", frame["id"])
+        callable_ticket = self.callable("do", frame["id"])
 
         refused = self.call(
-            "frame-close", self.RUN, brick, "--status", "complete",
+            "frame-close", self.RUN, callable_ticket, "--status", "complete",
             expect_error=True,
         )
 
@@ -392,7 +392,7 @@ class ResumeTest(FrameSinkTest):
     def test_one_open_frame_is_listed_with_its_goal_age_and_children(self):
         frame = self.frame()
         self.journal(frame, "wave 1: one draft out", "wave-1")
-        self.brick("do", frame["id"])
+        self.callable("do", frame["id"])
         self._hold_open_at("B1", "2026-08-31T10:30:00Z")
 
         listing = self._resume("--now", FIXED_NOW)

@@ -94,7 +94,7 @@ MANUAL_ONLY = "disable-model-invocation: true"
 
 def discover_workflow_skills(root: Path = REPO_ROOT):
     """Every invocable workflow: a directory ``example-workflows/<name>/``
-    whose ``SKILL.md`` is a workflow skill -- prose that calls bricks.
+    whose ``SKILL.md`` is a workflow skill -- prose that calls callables.
 
     Returns ``(directory, frontmatter, body)`` per workflow. A directory
     without that file, or one without frontmatter or a ``name``, is library
@@ -133,7 +133,7 @@ def manual_only_frontmatter(frontmatter: str, host: str = "claude") -> str:
 def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -> str:
     """The Claude adapter stub's body for a workflow.
 
-    A workflow is a skill whose prose calls bricks, so the adapter says
+    A workflow is a skill whose prose calls callables, so the adapter says
     exactly that and points at the one body: read it and invoke it. It is
     a pointer rather than an ``@``-include because the body's own relative
     links resolve against the library directory it lives in, not against
@@ -141,7 +141,7 @@ def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -
 
     return (
         f"`{name}` is a workflow skill: prose that opens a frame and calls\n"
-        f"bricks. Its one body is {lib_workflow_dir / WORKFLOW_SKILL_FILE}.\n\n"
+        f"callables. Its one body is {lib_workflow_dir / WORKFLOW_SKILL_FILE}.\n\n"
         "Read that file whole and invoke the skill by following it exactly:\n"
         "its Require names what the caller supplies, its call lines are the\n"
         "commands to run, and its Return is the close. A workflow is only\n"

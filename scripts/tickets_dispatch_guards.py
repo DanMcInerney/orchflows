@@ -42,9 +42,9 @@ def admission_failure(path, text: str, data: dict, run: str, ticket_id: str):
     # A never-promoted ticket is the common half of this refusal and the only
     # half with a mechanical remedy: it holds the pending placeholder because
     # nothing has admitted it yet, and promotion is `dispatch`'s own first
-    # step now that `ready` is no longer a door of its own. This is the door a
-    # claim on a pending ticket actually reaches -- the status check further
-    # down never sees it -- so the remedy is named here.
+    # step now that `ready` is no longer a command of its own. This is the
+    # command a claim on a pending ticket actually reaches -- the status
+    # check further down never sees it -- so the remedy is named here.
     if stored == ADMISSION_PENDING:
         return classification(
             "admission-mismatch",

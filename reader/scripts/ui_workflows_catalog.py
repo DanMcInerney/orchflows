@@ -50,8 +50,8 @@ def _owner(root: Path, path: Path) -> dict:
 
 def _canonical_owners(root: Path) -> list[dict]:
     # Two canonical homes, one owner file. `example-workflows/<name>/` holds
-    # the workflow skills — prose that opens a frame and calls bricks — and
-    # `skills/` holds the bricks themselves. Neither is a template, so both
+    # the workflow skills — prose that opens a frame and calls callables — and
+    # `skills/` holds the callables themselves. Neither is a template, so both
     # are read as workflow skills off the same `SKILL.md`.
     compositions = sorted(
         (root / "example-workflows").glob("*/SKILL.md"),

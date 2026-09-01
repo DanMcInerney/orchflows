@@ -54,7 +54,7 @@ def pinned_pack_digest(pack):
 
     Issue time is where the pin is taken, because that is the last moment
     the assignment is still a draft: from the seal onward the digest is
-    what every later door compares against, so taking it later would be
+    what every later command compares against, so taking it later would be
     pinning whatever the pack had already become. A ticket with no pack
     pins nothing.
     """
@@ -112,7 +112,7 @@ def _cmd_new(rest):
     for flag, value, allowed in (("--independence", independence, INDEPENDENCE_VALUES), ("--isolation", isolation, ISOLATION_VALUES)):
         if value is not None and value.strip() not in allowed:
             return {"error": f"{flag} '{value}' is not one of {list(allowed)}"}
-    # Sorted here, at the one door that authors the list from a flag. Two
+    # Sorted here, at the one command that authors the list from a flag. Two
     # orderings of one edge set are two assignment digests, and the digest
     # cannot absorb the difference without invalidating every historical
     # seal, so the canonical order is established where the list is written.
@@ -142,7 +142,7 @@ def _project_file_ticket(
 
     The one remaining caller is ``lint --file``: grading the exact pre-issue
     shape of a ticket a person wrote by hand, without writing it anywhere.
-    Issuing a file this way is no longer a door -- ``new`` mints from
+    Issuing a file this way is no longer live -- ``new`` mints from
     flags and ``do``/``judge`` mint from a goal file -- so this projection is
     now read-only in every live path.
     """

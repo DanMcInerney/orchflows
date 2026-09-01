@@ -20,7 +20,7 @@ except ImportError:
 # `orch-slice` retired in W4a together with `tickets.py instantiate`, its
 # only minter of decomposed roots: with nothing left to mint one, the
 # decomposed-root discriminator ROOT_EXECUTOR (scripts/tickets_format.py)
-# is gone too, and the two brick doors are the whole callable tier.
+# is gone too, and the two minting commands are the whole callable tier.
 CALLABLE_EXECUTORS = (
     "orch-do",
     "orch-judge",
@@ -60,7 +60,7 @@ SUPERSEDED_EXECUTORS = {
     "orch-slice": _PLANNING_DO_REMEDY,
     "orch-decompose": _PLANNING_DO_REMEDY,
     "orch-loop": (
-        "a prose loop in the calling workflow over repeated `do` bricks, with "
+        "a prose loop in the calling workflow over repeated `do` callables, with "
         "the ticket `done` predicate evaluated by tickets.py land"
     ),
     "orch-frontier": (

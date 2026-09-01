@@ -294,7 +294,7 @@ class TestHostBlockDemands(unittest.TestCase):
 # optional, and neither text carries the other's proof. (state sink
 # friction/2026-08.jsonl, 2026-08-30T20:37:01Z: `tickets.py dispatch` refused
 # the block's own graph-route invocation with a usage error; the worker-lane
-# door that replaced it in the route inherits the same exposure.) This binds both
+# command that replaced it in the route inherits the same exposure.) This binds both
 # sides to one reader instead: `DO_USAGE` (scripts/tickets_commands.py) is the
 # command's own required-flag authority, and the block's routed example is
 # read the same way it is written, by bracket depth -- `[...]` is optional,

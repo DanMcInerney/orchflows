@@ -24,7 +24,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
 from scripts import state_root
 from scripts import tickets
 from scripts.tickets_format import parse_canonical_json
@@ -84,7 +84,7 @@ class _EventSinkTestCase(unittest.TestCase):
 
 
 class _FrameEventTestCase(_EventSinkTestCase):
-    """The frame world: a goal file and the two brick verbs a close reads."""
+    """The frame world: a goal file and the two callable verbs a close reads."""
 
     RUN = "eventrun"
 
@@ -118,7 +118,7 @@ class _FrameEventTestCase(_EventSinkTestCase):
         )
         return opened["frame_open"]
 
-    def brick(self, verb, frame_id, *arguments) -> str:
+    def callable(self, verb, frame_id, *arguments) -> str:
         answer = self.call(
             verb, self.RUN, "--pack", "orch-content-pack",
             "--goal-file", str(self.goal_file), "--parent", frame_id, *arguments,
@@ -174,8 +174,8 @@ class FrameCloseEventTest(_FrameEventTestCase):
 
     def test_a_judged_close_names_its_children_and_no_reason(self):
         frame = self.frame()
-        do_children = [self.brick("do", frame["id"]) for _ in range(2)]
-        self.brick(
+        do_children = [self.callable("do", frame["id"]) for _ in range(2)]
+        self.callable(
             "judge", frame["id"], "--artifacts", "doc:draft.md@sha256:" + "e" * 64,
         )
 
@@ -193,7 +193,7 @@ class FrameCloseEventTest(_FrameEventTestCase):
     def test_an_unjudged_close_names_the_journals_reason(self):
         frame = self.frame()
         for _ in range(2):
-            self.brick("do", frame["id"])
+            self.callable("do", frame["id"])
         self.journal(
             frame, "unjudged: both drafts go straight to the user", "wave-1",
         )
@@ -211,7 +211,7 @@ class FrameCloseEventTest(_FrameEventTestCase):
     def test_a_refused_close_writes_no_event(self):
         frame = self.frame()
         for _ in range(2):
-            self.brick("do", frame["id"])
+            self.callable("do", frame["id"])
 
         self.call(
             "frame-close", self.RUN, frame["id"], "--status", "complete",
@@ -258,7 +258,7 @@ class _LandEventTestCase(_EventSinkTestCase):
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -313,7 +313,7 @@ class _LandEventTestCase(_EventSinkTestCase):
         )
 
     def land(self, *extra):
-        return retired_doors.run([
+        return retired_commands.run([
             "land", self.RUN, "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *extra,
@@ -357,7 +357,7 @@ class LandEventTest(_LandEventTestCase):
 
 
 class LandEventFailureIsSwallowedTest(_LandEventTestCase):
-    """The same reliability bar, at the door that never backgrounds a gate."""
+    """The same reliability bar, at the command that never backgrounds a gate."""
 
     def test_a_broken_append_does_not_fail_the_land(self):
         self.stand_up(_done("command", _command(0)))

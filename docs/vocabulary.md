@@ -2,7 +2,10 @@
 
 The library's nouns. Each term is defined once, here, and used with exactly
 this meaning everywhere — skills, rules, contracts, tickets, logs. A document
-that needs a different meaning needs a different word.
+that needs a different meaning needs a different word. A term names its
+mechanism in plain words; a metaphor is permitted only where it is already
+domain-standard computing usage (kernel, cache, shard, sentinel), never
+invented for this library.
 
 ## Structure
 
@@ -26,11 +29,12 @@ that needs a different meaning needs a different word.
   skill calls no skill.
 - **workflow skill** — an assembled T1 skill calling primitives or other
   skills; always domain-blind. It lives under `skills/workflows/`.
-- **brick** — one of the two T1 callables under `skills/kernel/`, `orch-do`
-  and `orch-judge`, that do all real work. Each has one door — `tickets.py
-  do` and `tickets.py judge` — which mints the ticket, seals it through its
-  parent, pins the pack digest, takes the lease, establishes the workspace,
-  and emits the launch, in that one command.
+- **callable** — one of the two T1 kernel skills under `skills/kernel/`,
+  `orch-do` and `orch-judge`, that do all real work. Each is invoked
+  through one minting command — `tickets.py do` and `tickets.py judge` —
+  which mints the ticket, seals it through its parent, pins the pack
+  digest, takes the lease, establishes the workspace, and emits the
+  launch, in that one command.
 - **frame** — one workflow invocation's durable stack frame: the ticket
   carrying `frame: true` that `tickets.py frame-open` opens and
   `tickets.py frame-close` closes. It binds no executor and stamps no pack,
@@ -43,9 +47,10 @@ that needs a different meaning needs a different word.
   start of the next. It is where a driver that died — or merely compacted —
   recovers what it already decided, so it is read before a wave and not only
   after a crash.
-- **typed artifact line** — the one machine line a brick's child prints for
-  its result, `artifact: <kind>:<identity>`, the kind fixed by the stamped
-  pack's adapter; a judging brick prints `findings: <path>` beside it. The
+- **typed artifact line** — the one machine line a callable's child prints
+  for its result, `artifact: <kind>:<identity>`, the kind fixed by the
+  stamped pack's adapter; a `judge` ticket's child prints `findings: <path>`
+  beside it. The
   grammar, the kinds, and what a join grades are `contracts/dispatch.md`'s.
   A parent relays the line as it stands — paraphrase is the failure it
   exists to prevent.
@@ -68,14 +73,15 @@ that needs a different meaning needs a different word.
   signature (below) owns the roster.
 - **craft section** — one `##` section of a pack's craft document, resolved
   whole through `packs.py cells <digest>`. The signature's craft-section
-  table names the mandatory seven; every brick reads the whole document and
-  acts under the sections its call is for. A making `orch-do` acts under
-  `## Workspace`, `## Stages`, `## Shape` and `## Evidence`; a planning one
-  under `## Outline`, `## Spec fields` and `## Slicing`; `orch-judge` under
-  `## Lens`. Those are the two doorways the four retired verbs were.
+  table names the mandatory seven; every callable reads the whole document
+  and acts under the sections its call is for. A making `orch-do` acts
+  under `## Workspace`, `## Stages`, `## Shape` and `## Evidence`; a
+  planning one under `## Outline`, `## Spec fields` and `## Slicing`;
+  `orch-judge` under `## Lens`. Those are the two entry points the four
+  retired verbs collapsed into.
 - **signature** — `contracts/pack-signature.md`: the cells every pack must
   provide and the sharing constraints between them.
-- **workflow** — a skill whose prose calls bricks or other skills: a
+- **workflow** — a skill whose prose calls callables or other skills: a
   `SKILL.md` under `example-workflows/` (the library's gallery) or a ring's
   workflows directory (yours), invoked only when named and admitted under
   `docs/custom-workflow-authoring.md`. Order, parallelism, branches and
@@ -109,7 +115,7 @@ that needs a different meaning needs a different word.
   environment.
 - **run** — one physical execution of a workflow against one spec; owns a
   run id (`<utc-stamp>-<slug>`), a worklog, and a ticket directory. Its
-  tickets form one tree: a frame per invocation, bricks under the frame
+  tickets form one tree: a frame per invocation, callables under the frame
   that called them. An ad-hoc
   run executes one ad-hoc ticket — or an ad-hoc set — instead: the
   tickets' Goals and Context are its frozen statement,
@@ -176,9 +182,10 @@ that needs a different meaning needs a different word.
   `team` drives it. Named tripwires promote on evidence, never prediction,
   and live only in the host block — this entry names the lanes, not their
   triggers. `act`, `brick`, `frame`, `outline`, `answer`, `single`, `graph`,
-  and `fix` are the retired names for this shape; `brick` and `frame` no
-  longer double as lane name and noun — the words stay for the ticket-tree
-  nouns below, and the lane took `worker` and `team` instead.
+  and `fix` are the retired names for this shape; `frame` no longer
+  doubles as lane name and noun — the word stays for the ticket-tree noun
+  below, and the lane took `worker` and `team` instead. `brick` is retired
+  outright, noun and all: see **callable**, above.
   Small, medium and large are explanatory mappings, never ticket fields.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
@@ -224,13 +231,13 @@ that needs a different meaning needs a different word.
 - **lens** — the criteria set a reviewer applies; each reviewer of one
   artifact has a unique named lens; freshness law `rules/verification.md`
   §6.
-- **critique** — a `judge` brick scoring one fixed artifact; the
-  **repair** answering it is a `do` brick under the same parent,
+- **critique** — a `judge` ticket scoring one fixed artifact; the
+  **repair** answering it is a `do` ticket under the same parent,
   sequenced by the calling workflow's prose rather than a distinct
   adjudication carrier. Neither is authoring admission or benchmark
   qualification. The predecessor-linked `GatePlan`/`CritiqueAdjudication`/
   `RepairOutcome` ledger this pair once wrote through has retired with the
-  door that built it; `rules/verification.md` §9 and
+  command that built it; `rules/verification.md` §9 and
   `contracts/work-item.md`'s Review-stage ledger own that history.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: an `orch-judge` ticket whose criteria carry a score
@@ -270,7 +277,7 @@ workflow).
 - **candidate authority** — repository/workspace write authority granted to
   an isolated candidate. A path named in Details does not attenuate it; actual
   changes are adjudicated at the join.
-- **launch** — the one object a dispatching door — `tickets.py do`,
+- **launch** — the one object a dispatching command — `tickets.py do`,
   `judge`, or `dispatch` for a hand-written ticket — emits and commits: the
   host, verb, agent, model, effort, native fields, and generated prompt for
   the child, resolved from the host record. The caller invokes it verbatim
@@ -303,7 +310,7 @@ workflow).
 ## Iteration
 
 - **bounded campaign** — a repeated attempt written as prose in a calling
-  workflow over repeated bricks — no engine, no marker, no loop field. Law
+  workflow over repeated callables — no engine, no marker, no loop field. Law
   in `rules/loops.md`, which also governs the one mechanical round the
   library arms, `land`'s `<id>.repair.NN`.
 - **context packet** — the converged state a round receives beside

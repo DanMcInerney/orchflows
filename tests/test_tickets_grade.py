@@ -80,7 +80,7 @@ class GradeSnapshotTest(unittest.TestCase):
         """`review_v1`'s own construction and schema retired whole.
 
         The checker-stage apparatus that survived the `review_kind`
-        deletion is censused and resolved: no live door ever built a
+        deletion is censused and resolved: no live command ever built a
         `GatePlan`-then-`CritiqueAdjudication` chain, so `tickets_review.py`
         and `tickets_review_schema.py` -- the ledger's sole writer and
         schema -- are deleted rather than kept reachable as an import.

@@ -15,12 +15,12 @@ Two laws live here, and they are two.  *Attribution* names the run's
 project from its ROOT TICKET's workspace, so the cut decides and the
 caller's directory never does.  *Admission* compares a writing
 workspace's project against the recorded one and refuses a mismatch, so
-a context standing in the wrong checkout is stopped at the door rather
+a context standing in the wrong checkout is stopped at the boundary rather
 than discovered later by a baseline that will not resolve.
 
 The claim path lived here too, for the same reason, until the dispatch-v1
-cutover made ``dispatch-open`` the one door that takes a ticket. What
-remains is the law both doors read.
+cutover made ``dispatch-open`` the one command that takes a ticket. What
+remains is the law both commands read.
 """
 
 from __future__ import annotations
@@ -64,12 +64,12 @@ def recorded_project(run: str):
         return recorded
     return None
 def held_by(run: str, recorded: dict, writing: dict, remedy: str) -> str:
-    """The one sentence every door refuses a foreign write with.
+    """The one sentence every command refuses a foreign write with.
 
     One law refusing in three places says so in one voice, and the remedy
     is the half that differs: what a caller should do about it depends on
-    which door they were at, and a remedy naming the wrong door is how a
-    correct refusal still costs a context its next twenty minutes.
+    which command they were at, and a remedy naming the wrong command is
+    how a correct refusal still costs a context its next twenty minutes.
     """
     theirs, mine = (_project_key(recorded), _project_key(writing))
     return (

@@ -140,7 +140,7 @@ class StandaloneDispatchTest(unittest.TestCase):
         # subscript rather than by name, so `missing` above could not see it:
         # the flat branch bound it to `{}` when `tickets_generations` was
         # absent, the name resolved, and the lookup still raised. W3a retired
-        # `draft-validate` and `seal` as doors and the table with them, and
+        # `draft-validate` and `seal` as commands and the table with them, and
         # every remaining arm calls a bound name `missing` does grade.
         self.assertEqual([], self.report["generation_commands"])
         self.assertEqual([], self.report["generation_keys"])

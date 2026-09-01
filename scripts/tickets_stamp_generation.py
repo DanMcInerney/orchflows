@@ -3,13 +3,13 @@
 `stamp-generation` used to sit beside `instantiate` as its hand-authored
 twin: one sealed a graph it rendered, the other opened the lifecycle on a
 graph somebody wrote. `instantiate` and the template layer it read are
-gone -- bricks mint their own graphs at runtime now -- so only the second
-half survives, here alone.
+gone -- callables mint their own graphs at runtime now -- so only the
+second half survives, here alone.
 
-It is dead as a public subcommand (W3a removed the door from the
-dispatch table) and alive as an internal call: `tickets_brick.py`'s
+It is dead as a public subcommand (W3a removed the command from the
+dispatch table) and alive as an internal call: `tickets_mint.py`'s
 parentless-root path calls it directly to open the one-member cut a
-standalone `do`/`judge` brick takes on itself.
+standalone `do`/`judge` callable takes on itself.
 """
 
 from __future__ import annotations

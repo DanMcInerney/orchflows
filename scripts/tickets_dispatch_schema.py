@@ -306,7 +306,7 @@ def status_ownership_returned(data: dict) -> bool:
     join could exist because there was no outcome for one to consume. The
     lifecycle owns a status it never started executing.
 
-    The door is exactly as wide as that: one attempt, ended, carrying
+    The exception is exactly as wide as that: one attempt, ended, carrying
     nothing but its own lifecycle records. A launch record, a result, an
     outcome or a join is real execution evidence, and a ticket holding any
     of them keeps its status with the join that has to read them --

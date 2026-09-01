@@ -22,7 +22,7 @@ from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
 from scripts import state_root
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
 from scripts import tickets
 from scripts import tickets_done
 from scripts.tickets_format import _sections, parse_canonical_json
@@ -104,7 +104,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -161,7 +161,7 @@ class LandDonePredicateTest(unittest.TestCase):
         )
 
     def land(self, *extra):
-        return retired_doors.run([
+        return retired_commands.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *extra,
@@ -187,7 +187,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertIn(f"done command `{command}` exited 0 in ", verification)
 
     def test_land_still_joins_after_the_workers_lease_expires(self):
-        """The 2026-09-01 wedge, at the door a driver actually calls.
+        """The 2026-09-01 wedge, at the command a driver actually calls.
 
         `stand_up` already commits the outcome inside the worker's lease.
         The driver calling `land` days later is not the worker's overrun to
@@ -230,7 +230,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.stand_up(_done("command", command))
         before = self.ticket_path().read_bytes()
 
-        stray = retired_doors.run([
+        stray = retired_commands.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--artifact", "git:" + "a" * 40,
@@ -239,7 +239,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertFalse(marker.exists())
         self.assertEqual(before, self.ticket_path().read_bytes())
 
-        malformed = retired_doors.run([
+        malformed = retired_commands.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "bad id", "--outcome-record-id", "outcome",
             "--by", "root-join",
@@ -374,7 +374,7 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         return checkout
 
     def stand_up(self, done=None):
-        result = retired_doors.run([
+        result = retired_commands.run([
             "new", "run", "T", "--executor", "orch-do",
             "--goal", "Deliver the behavior.",
             "--context", "The repository is authoritative.",
@@ -389,19 +389,19 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-        self.assertNotIn("error", retired_doors.run(["stamp-generation", "run", "T"]))
-        validated = retired_doors.run(["draft-validate", "run", "T"])
-        retired_doors.run([
+        self.assertNotIn("error", retired_commands.run(["stamp-generation", "run", "T"]))
+        validated = retired_commands.run(["draft-validate", "run", "T"])
+        retired_commands.run([
             "seal", "run", "T", "--cut-generation",
             validated["draft_validation"]["cut_generation"],
         ])
-        retired_doors.run(["ready", "--run", "run"])
+        retired_commands.run(["ready", "--run", "run"])
         lease = (
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
         # the real establishment, not a stub: this case is about the tree
         # git actually made and the branch it actually stands on
-        launched = retired_doors.run([
+        launched = retired_commands.run([
             "dispatch", "run", "T", "--by", "worker", "--dispatch-id", "D1",
             "--lease-expires-at", lease, "--workspace", str(self.main),
         ])
@@ -413,13 +413,13 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         return path
 
     def close(self):
-        closed = retired_doors.run([
+        closed = retired_commands.run([
             "dispatch-outcome", "run", "T", "--note", "delivered and verified",
         ])
         self.assertNotIn("error", closed, closed)
 
     def land(self, *extra):
-        return retired_doors.run([
+        return retired_commands.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *extra,

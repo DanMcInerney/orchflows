@@ -18,7 +18,7 @@ project, home, or imports item bearing that prefix is refused loudly here
 rather than shadowing a library name or, worse, never running.
 
 A skill lives at `<name>/SKILL.md`, a pack at `<name>/SKILL.md`, and a
-workflow — a skill whose prose calls bricks — at `<name>/SKILL.md` too.
+workflow — a skill whose prose calls callables — at `<name>/SKILL.md` too.
 Home roots are honoured when they exist and never required to;
 `orchflows sync` creates them.
 
@@ -77,7 +77,7 @@ def item_name(value: str) -> str:
 
 
 def reserved_refusal(kind: str, name: str, ring: str, path: Path) -> str:
-    """The one reserved-floor sentence, so every door says it the same way."""
+    """The one reserved-floor sentence, so every caller says it the same way."""
 
     return (
         f"{kind} '{name}' in the {ring} ring at {path} takes the reserved "

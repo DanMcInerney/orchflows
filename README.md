@@ -92,7 +92,7 @@ for; [vocabulary.md](docs/vocabulary.md)'s routing-shape entry owns what
 may enter it. If routing gets in the way, the router's off flag stands
 it down for the session.
 
-Name the bricks yourself when you want a specific shape:
+Name the callables yourself when you want a specific shape:
 
     > loop the build until `pytest -q` exits 0
     > orch-judge this cache design — rank what it gets wrong
@@ -106,7 +106,7 @@ Or build your own workflow in plain English:
       deletions over additions), and automatically PRs and merges it
 
 That gets admitted as a named workflow — a skill whose prose calls the
-bricks in order, with one end-to-end done check at the end. It's
+callables in order, with one end-to-end done check at the end. It's
 project-local and callable by name from then on, like a
 `/site-work-and-merge` you own.
 
@@ -149,7 +149,7 @@ proposals from my own usage:
 - Remove overlapping verification steps from a workflow to speed it up
 - Add a documentation-update step a user kept requesting manually
 
-Chain any bricks and put the improvement workflow last and you have a
+Chain any callables and put the improvement workflow last and you have a
 workflow that upgrades itself:
 
     > my release workflow: investigate what merged since the last
@@ -186,8 +186,8 @@ details:
 flowchart TD
     frame["tickets.py frame-open — the invocation's journal"] --> plan["orch-do (planning) — freeze one root ticket"]
     plan --> pack{"stamp a domain pack per call"}
-    pack --> brick["tickets.py do / judge — one launch per call"]
-    brick --> exec["the child"]
+    pack --> callable["tickets.py do / judge — one launch per call"]
+    callable --> exec["the child"]
     exec --> join["tickets.py land — each return crosses once"]
     join --> accepted["accepted result"]
     accepted --> close["tickets.py frame-close"]
@@ -216,12 +216,13 @@ self-improvement wired into every run.
 
 ### Legos
 
-- **Two bricks, every job.** `orch-do` produces each unit and, in its
+- **Two callables, every job.** `orch-do` produces each unit and, in its
   planning mode, freezes the root; `orch-judge` challenges Goal and
-  evidence. Each has one door that mints, seals, establishes and launches
-  it. A ticket's `done` predicate decides Goal at `land`. Control flow is
-  not a brick: loops, branches and retries are the calling workflow's own
-  prose, and a `frame` ticket is the durable stack frame under them.
+  evidence. Each has one minting command that mints, seals, establishes
+  and launches it. A ticket's `done` predicate decides Goal at `land`.
+  Control flow is not a callable: loops, branches and retries are the
+  calling workflow's own prose, and a `frame` ticket is the durable stack
+  frame under them.
 - **One stud pattern.** Six frozen contracts — dispatch, work-item, verdict,
   worklog, pack-signature, result — are the only interfaces. Anything
   that emits one plugs into anything that takes one.
@@ -231,8 +232,8 @@ self-improvement wired into every run.
   successor's evidence, carried forward as one verbatim `artifact:` line,
   so a chain needs no per-pair glue.
 
-You snap bricks by naming them; the agent snaps them by routing. Same
-bricks either way.
+You snap callables by naming them; the agent snaps them by routing. Same
+callables either way.
 
 ### One command out, one command back
 
@@ -249,8 +250,8 @@ agent, model and effort, and carrying the whole prompt the child is given
 filing commands. The orchestrator's job is to invoke it verbatim. `tickets.py land` is the whole inbound
 half: import the result, adjudicate it at the join, retire the worktree,
 and report what became ready to dispatch next. A ticket you wrote by hand
-takes the same `do --goal-file` (and `--details-file`) door — there is no
-second door for hand-authored work.
+takes the same `do --goal-file` (and `--details-file`) command — there is
+no second command for hand-authored work.
 
 That split is the honest line between mechanical and judgment. Both
 commands are pure bookkeeping — replayable, refusing before they touch
@@ -295,7 +296,7 @@ builds inside a domain stays cohesive. Stamp a different pack on the
 root ticket and the identical pipeline ships code, documents, research,
 analyses, or UI.
 
-Each pack is read three ways through two doors — its **making** taste when
+Each pack is read three ways through two callables — its **making** taste when
 `orch-do` produces work, its **planning** taste when `orch-do` freezes a
 root instead, telling the planner what a well-formed one looks like in
 that domain and which questions are worth asking before sealing it, and
