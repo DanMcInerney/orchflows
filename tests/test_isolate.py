@@ -312,7 +312,7 @@ class TestIsolateCopiesFromSink(IsolateFixture):
         )
 
     def test_the_snapshot_keeps_the_sinks_own_layout(self):
-        """`ORCHFLOWS_STATE_HOME` pointed at the snapshot resolves the run
+        """The sink env var pointed at the snapshot resolves the run
         exactly as it resolves it in the real sink, so a check in the tree
         needs no second recipe."""
 

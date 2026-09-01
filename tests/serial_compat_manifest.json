@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2113,
+  "count": 2115,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1527,8 +1527,10 @@
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_all_three_writers_resolve_to_the_one_sink",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_each_owned_function_is_defined_exactly_once_under_scripts",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_no_retired_resolver_body_survives_anywhere_under_scripts",
+   "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_the_bootstrap_leaf_imports_nothing_beyond_pathlib",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_the_module_is_a_leaf_with_no_module_level_side_effects",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_workspace_reads_its_ticket_out_of_the_sink",
+   "tests.test_state_root_cases.environment.TestTheEnvVarNameIsThisLiteral.test_the_owner_constant_is_this_exact_value",
    "tests.test_state_root_cases.environment.TestTheOverrideAndTheDefault.test_a_set_value_wins_and_a_tilde_is_expanded",
    "tests.test_state_root_cases.environment.TestTheOverrideAndTheDefault.test_set_but_empty_reads_as_unset",
    "tests.test_state_root_cases.environment.TestTheOverrideAndTheDefault.test_the_four_subroots_hang_off_the_one_root",
@@ -2116,7 +2118,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "56f17dbec992f66985f9a24cffaa98805d00d65ef919fec8962e409e4657c64c"
+  "sha256": "e21e2bc09e0312257240a1be959e99e4083eb9872e9f8258f78f04b2022d8d13"
  },
  "mutation_owners": [
   {
@@ -3159,7 +3161,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment",
-    "import-path",
     "monkeypatch"
    ]
   },
@@ -4872,6 +4873,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.sink_law",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
    ]
   },
   {

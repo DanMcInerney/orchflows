@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests.test_state_root_cases.support import (
+    BOOTSTRAP_PY,
     ENV_VAR,
     OWNED_FUNCTIONS,
     RETIRED_FUNCTIONS,
@@ -24,6 +25,19 @@ from tests.test_state_root_cases.support import (
     tickets_mod,
     workspace_mod,
 )
+
+
+class TestTheEnvVarNameIsThisLiteral(unittest.TestCase):
+    """The one witness (spec binding ruling 3): an independent pin catching
+    a fat-fingered owner. Every other reader in this tree imports
+    `state_root.ENV_VAR` (re-exported from `scripts._bootstrap`, the
+    owner) rather than spelling the value; this is the one test allowed
+    to spell it directly, so a typo in the owner still fails a check
+    instead of silently renaming the sink for every importer at once.
+    """
+
+    def test_the_owner_constant_is_this_exact_value(self):
+        self.assertEqual("ORCHFLOWS_STATE_HOME", state_root.ENV_VAR)
 
 
 class TestOneResolverOwnsBothFacts(unittest.TestCase):
@@ -58,8 +72,25 @@ class TestOneResolverOwnsBothFacts(unittest.TestCase):
         # `tempfile` joined for `inside_temp_root`: it is a standard
         # library leaf that resolves the temp root lazily, so it adds a
         # fact this module owns without adding an import-time act.
-        self.assertEqual({"__future__", "os", "pathlib", "tempfile"}, imported)
-        for node in tree.body:
+        # `scripts` and `_bootstrap` are the two spellings of the one
+        # guarded import of the bootstrap leaf below -- package mode
+        # resolves one, the flat installed layout the other.
+        self.assertEqual(
+            {"__future__", "os", "pathlib", "tempfile", "scripts", "_bootstrap"},
+            imported,
+        )
+        body = tree.body
+        guards = [node for node in body if isinstance(node, ast.Try)]
+        self.assertEqual(1, len(guards), "expected exactly one guarded import")
+        guard = guards[0]
+        self.assertEqual([], guard.orelse)
+        self.assertEqual([], guard.finalbody)
+        self.assertEqual(1, len(guard.body))
+        self.assertIsInstance(guard.body[0], ast.ImportFrom)
+        self.assertEqual(1, len(guard.handlers))
+        self.assertEqual(1, len(guard.handlers[0].body))
+        self.assertIsInstance(guard.handlers[0].body[0], ast.ImportFrom)
+        for node in body:
             self.assertIsInstance(
                 node,
                 (
@@ -70,8 +101,27 @@ class TestOneResolverOwnsBothFacts(unittest.TestCase):
                     ast.AnnAssign,
                     ast.FunctionDef,
                     ast.ClassDef,
+                    ast.Try,
                 ),
                 "state_root.py runs something at import time",
+            )
+
+    def test_the_bootstrap_leaf_imports_nothing_beyond_pathlib(self):
+        """Spec prescription: the leaf imports stdlib only, no `scripts.*`."""
+
+        tree = ast.parse(BOOTSTRAP_PY.read_text(encoding="utf-8"))
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                imported.add(node.module.split(".")[0])
+        self.assertEqual({"__future__", "pathlib"}, imported)
+        for node in tree.body:
+            self.assertIsInstance(
+                node,
+                (ast.Expr, ast.Import, ast.ImportFrom, ast.Assign, ast.AnnAssign),
+                "_bootstrap.py runs something beyond assignment at import time",
             )
 
     def test_all_three_writers_resolve_to_the_one_sink(self):
@@ -170,7 +220,7 @@ class TestNoTestReachesTheRealSink(unittest.TestCase):
             [
                 sys.executable,
                 "-c",
-                "import os; print(os.environ.get('ORCHFLOWS_STATE_HOME', ''))",
+                "import os; print(os.environ.get({0!r}, ''))".format(ENV_VAR),
             ],
             capture_output=True,
             text=True,
@@ -183,10 +233,10 @@ class TestNoTestReachesTheRealSink(unittest.TestCase):
         program = (
             "import os, sys, unittest\n"
             "sys.path.insert(0, %r)\n"
-            "os.environ.pop('ORCHFLOWS_STATE_HOME', None)\n"
+            "os.environ.pop(%r, None)\n"
             "unittest.TestLoader().discover(%r)\n"
-            "print(os.environ.get('ORCHFLOWS_STATE_HOME', ''))\n"
-        ) % (str(ROOT), str(ROOT / "tests"))
+            "print(os.environ.get(%r, ''))\n"
+        ) % (str(ROOT), ENV_VAR, str(ROOT / "tests"), ENV_VAR)
         env = dict(os.environ)
         env.pop(ENV_VAR, None)
         done = subprocess.run(

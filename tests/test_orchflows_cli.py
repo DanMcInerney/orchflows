@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import orchflows, orchflows_home, orchflows_scaffold, rings, rings_trust
+from scripts import orchflows, orchflows_home, orchflows_scaffold, rings, rings_trust, state_root
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +36,7 @@ def _git(*args, cwd):
 def _home():
     with tempfile.TemporaryDirectory(prefix="orchflows-cli-") as tmp:
         home = Path(tmp).resolve()
-        with patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(home / "state")}):
+        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
             yield home
 
 

@@ -30,7 +30,7 @@ else:
 
 UTC_STAMP = '%Y-%m-%dT%H:%M:%SZ'
 SINK_CONVENTION = 2
-NO_SINK_ERROR = 'cannot resolve the state sink: no $ORCHFLOWS_STATE_HOME and no home directory'
+NO_SINK_ERROR = f'cannot resolve the state sink: no ${state_root.ENV_VAR} and no home directory'
 RUN_STATE_TREES = ('runs', 'research', 'improvement', 'handoffs')
 DEFAULT_RUN_STATE_TREE = 'runs'
 RUN_NOTES_NAME = 'notes.md'

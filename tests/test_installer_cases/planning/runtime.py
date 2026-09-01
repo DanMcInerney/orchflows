@@ -19,7 +19,7 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
         self.project = self.tmp / "project"
         (self.project / ".git").mkdir(parents=True)
         self.sink = self.home / ".orchflows" / "state"
-        # The suite guard points ORCHFLOWS_STATE_HOME at a temporary sink for
+        # The suite guard points the sink env var at a temporary sink for
         # every test in the process, and `_state_sink` honours it. These cases
         # are about the home-derived default, so they clear it for their own
         # duration — the documented single-call opt-out.
@@ -75,17 +75,12 @@ class TestRuntimeDirsSeedTheSink(unittest.TestCase):
         self.assertEqual(SINK_ENV_VAR, install.STATE_HOME_ENV_VAR)
 
     def test_the_sink_it_seeds_is_the_one_the_scripts_resolve(self):
-        """``install.py`` cannot import ``scripts/state_root.py``: it runs
-        before any script is installed. That duplication is only safe while
-        the two spellings agree, so they are compared against the owner
-        rather than each against a literal of its own — the shape
-        ``tests/test_suite_check.py`` already holds the other replica to."""
+        """``install.STATE_HOME_ENV_VAR`` and ``install.STATE_SINK_SUBPATH``
+        are ``scripts.state_root``'s own constants, imported rather than
+        restated (spec unit U4) — this proves the seeded sink is the one
+        the installed scripts resolve, not merely that two independent
+        spellings happen to agree."""
 
-        sys.path.insert(0, str(install.REPO_ROOT / "scripts"))
-        try:
-            import state_root
-        finally:
-            sys.path.pop(0)
         self.assertEqual(state_root.ENV_VAR, install.STATE_HOME_ENV_VAR)
         self.assertEqual(
             state_root.DEFAULT_HOME_SUBPATH, install.STATE_SINK_SUBPATH

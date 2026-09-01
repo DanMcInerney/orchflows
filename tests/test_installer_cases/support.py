@@ -23,6 +23,7 @@ from unittest.mock import patch
 
 import install
 from installer import foundation
+from scripts import state_root
 from tools import validate
 
 _ENV_GUARD = patch.dict(os.environ)
@@ -209,10 +210,11 @@ requires_tomllib = unittest.skipIf(
 )
 
 
-# Spelled out rather than read off ``install``: a can-fail run against a
-# revision that has no such constant must fail on behavior, not on an
-# AttributeError raised in setUp. One case pins the constant to this literal.
-SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+# Read off `scripts.state_root`, the owner -- never off `install`: a
+# can-fail run that mutates `install.py` away from the owner must fail
+# the one assertion that checks for it, not every case in this module at
+# collection time with an `AttributeError`.
+SINK_ENV_VAR = state_root.ENV_VAR
 
 
 def digest(path: Path) -> str:

@@ -2,11 +2,12 @@
 """The one resolver for durable run state. Stdlib-only, cross-platform.
 
 Every run's state and every improvement evidence stream resolve to one
-user-scope sink, not to the repository work happens in. The root is
-``$ORCHFLOWS_STATE_HOME`` when that is set to a non-empty value, else
-``~/.orchflows/state``. It is read at call time, never cached at import,
-so a test may point it at a temporary directory after this module is
-already loaded.
+user-scope sink, not to the repository work happens in. The root is the
+sink env var (``scripts._bootstrap.ENV_VAR``, named in prose at
+``rules/visibility.md`` section 6) when that is set to a non-empty value,
+else ``~/.orchflows/state``. It is read at call time, never cached at
+import, so a test may point it at a temporary directory after this
+module is already loaded.
 
 A record carries the project it arose in as a field. ``find_repo_root``
 is here for that reason and no other: it answers *which project*, never
@@ -35,7 +36,11 @@ import os
 import tempfile
 from pathlib import Path
 
-ENV_VAR = "ORCHFLOWS_STATE_HOME"
+try:
+    from scripts._bootstrap import ENV_VAR
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from _bootstrap import ENV_VAR
+
 WORKTREES_ENV_VAR = "ORCHFLOWS_WORKTREES_HOME"
 DEFAULT_HOME_SUBPATH = (".orchflows", "state")
 WORKTREES_SUBPATH = "worktrees"
@@ -43,6 +48,16 @@ WORKTREES_SUBPATH = "worktrees"
 # item working in it opens files far below its root.
 WORKTREE_BRANCH_PREFIX = "wt"
 MAX_WALK_UP = 64
+
+# Sink subdirectory names with no root above yet -- `runs`, `tickets`,
+# `friction` and `improvement` already have one, their `*_root` function.
+# `orchflows_home.py`'s `MANAGED_IGNORES` imports these five plus
+# `tickets_root().name` rather than restate any of them.
+LOCKS_SUBPATH = "locks"
+SCRATCH_SUBPATH = "scratch"
+WORKSPACES_SUBPATH = "workspaces"
+MUTANTS_SUBPATH = "mutants"
+DRAFTS_SUBPATH = "drafts"
 
 
 def state_root() -> Path:
@@ -55,6 +70,10 @@ def state_root() -> Path:
 
 
 def runs_root() -> Path:
+    # Literal join, not `RUNS_SUBPATH`: `tools/validate_support/friction.py`
+    # (and any sibling check shaped like it) reads this family's return
+    # expression by AST, matching a `<root> / "name"` join -- a `Name`
+    # reference would read as zero matches instead of one.
     return state_root() / "runs"
 
 
@@ -73,7 +92,7 @@ def improvement_root() -> Path:
 def orchflows_home() -> Path:
     """The user-scope home the sink sits inside, resolved through the sink.
 
-    One resolution, not two: ``$ORCHFLOWS_STATE_HOME`` moves the sink for a
+    One resolution, not two: the sink env var moves the sink for a
     test or a host, and everything user-scope beside it -- the installer
     receipt, the installed library, the derived worktrees -- has to move
     with it or a test would reach into the real home to find them.

@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets  # noqa: E402  the grant key's one owner
 import scripts.tickets_generations as generations  # noqa: E402
 import scripts.workspace as workspace  # noqa: E402
@@ -29,12 +30,12 @@ WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
 STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
 CONTRACT = ROOT / "contracts" / "work-item.md"
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 
 
 def git_env() -> dict:
     """Built per call, never frozen at import: ``use_sink`` points
-    ``ORCHFLOWS_STATE_HOME`` at this test's own sink, and every child
+    the sink env var at this test's own sink, and every child
     process must inherit the value in force when it is launched."""
 
     return dict(
@@ -184,7 +185,7 @@ def _live_attempt() -> str:
 
 
 def use_sink(tmp: Path) -> Path:
-    """Point ``ORCHFLOWS_STATE_HOME`` at a sink under this test's tempdir.
+    """Point the sink env var at a sink under this test's tempdir.
 
     Sets the variable for the rest of the process rather than restoring
     it: every writing test calls this first, and ``tests/__init__.py``
@@ -260,7 +261,7 @@ def graded_repository():
 
     if _GRADED:
         # re-pointed on every call, not only built once: ``use_sink`` moves
-        # ``ORCHFLOWS_STATE_HOME`` for the rest of the process, so any test
+        # the sink env var for the rest of the process, so any test
         # that has built its own repository since left the variable at its
         # own sink, and this repository's tickets would be looked for there.
         os.environ[STATE_HOME_ENV_VAR] = str(_GRADED["sink"])

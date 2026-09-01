@@ -50,7 +50,7 @@ Deliverables:
    determinism (same input, same digest modulo the header timestamp);
    `--list-runs` output with and without frame-open events; empty-sink
    and empty-window behavior; Windows path handling. Use a temp
-   `ORCHFLOWS_STATE_HOME` fixture sink; never touch the real sink. If
+   sink-env-var fixture sink; never touch the real sink. If
    the serial-compat manifest must list the new module, regenerate it
    with `uv run --no-project python tools/run_serial_compat.py
    --write-manifest` and commit the result.

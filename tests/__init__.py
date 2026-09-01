@@ -2,8 +2,9 @@
 
 Two of them, for two hazards a single test cannot be trusted to remember:
 
-- ``ensure_temporary_sink`` points ``$ORCHFLOWS_STATE_HOME`` at one
-  per-process temporary directory, removed at exit and inherited by every
+- ``ensure_temporary_sink`` points the sink env var
+  (``rules/visibility.md`` section 6) at one per-process temporary
+  directory, removed at exit and inherited by every
   subprocess a test launches, so no test can reach the user's real
   evidence history. ``scripts/state_root.py`` otherwise resolves durable
   run state to ``~/.orchflows/state``. It is a guard, not a convention: a
@@ -32,8 +33,9 @@ import tempfile
 from pathlib import Path
 
 from . import _windows_semantics
+from scripts import state_root
 
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 
 _SINK = None
 

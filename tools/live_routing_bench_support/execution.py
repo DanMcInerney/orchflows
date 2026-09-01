@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from scripts import state_root
 from tools.live_claude_profiles import _captured_text
 from tools.live_routing_bench_support.grading import ERROR, grade_transcript
 
@@ -18,7 +19,7 @@ def _isolated_env(home: Path) -> dict:
 
     HOME and USERPROFILE move ``Path.home()`` on POSIX and Windows
     respectively; CLAUDE_CONFIG_DIR and CODEX_HOME are the two host
-    overrides install.py reads, and ORCHFLOWS_STATE_HOME is the state sink
+    overrides install.py reads, and the sink env var is the state sink
     -- an inherited value for any of them would send a benchmark run's
     writes into the real home this probe must leave alone.
     """
@@ -28,7 +29,7 @@ def _isolated_env(home: Path) -> dict:
     env["USERPROFILE"] = str(home)
     env["CLAUDE_CONFIG_DIR"] = str(home / ".claude")
     env["CODEX_HOME"] = str(home / ".codex")
-    env["ORCHFLOWS_STATE_HOME"] = str(home / ".orchflows" / "state")
+    env[state_root.ENV_VAR] = str(home / ".orchflows" / "state")
     return env
 
 

@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import orchflows_adapters, rings
+from scripts import orchflows_adapters, rings, state_root
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +31,7 @@ def _world():
         (project / ".git").mkdir(parents=True)
         (project / ".orchflows" / "skills").mkdir(parents=True)
         with patch.dict(os.environ, {
-            "ORCHFLOWS_STATE_HOME": str(home / "state"),
+            state_root.ENV_VAR: str(home / "state"),
             "CLAUDE_CONFIG_DIR": str(root / "claude-home"),
         }):
             yield {"root": root, "home": home, "project": project}

@@ -29,7 +29,7 @@ F4 (should-fix, the vacuous-green root): `tests/test_harvest.py`'s
 fixture invents the reader's spelling (it even types `sink_convention`
 as a string where the real writer emits the int 2). Add a true
 cross-seam test: drive the REAL writer — `tickets.py frame-open` (via
-the in-repo scripts, against a temp `ORCHFLOWS_STATE_HOME` sink, the
+the in-repo scripts, against a temp sink-env-var sink, the
 way the judge's proof did) — then run harvest `--list-runs` over that
 sink and assert the workflow and goal columns carry the recorded
 values. Correct the existing fixture's field spellings to match the

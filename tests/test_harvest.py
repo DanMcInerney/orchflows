@@ -4,8 +4,8 @@ exclusion, greedy-union clustering, the improvement law rule 4 arithmetic,
 the digest's own covered ``watermark``, and the ``--list-runs`` resolver
 (including the writer/reader seam it crosses -- ``TestWriterReaderSeam``
 drives the real ``tickets.py frame-open`` rather than a fixture). Never
-touches the real sink: ``ORCHFLOWS_STATE_HOME`` is pointed at a fresh
-tempdir for every case.
+touches the real sink: the sink env var is pointed at a fresh tempdir
+for every case.
 """
 
 from __future__ import annotations
@@ -36,9 +36,9 @@ _spec.loader.exec_module(harvest)
 
 # The real writer, for the one test (TestWriterReaderSeam) that has to drive
 # it instead of a fixture -- see scripts.tickets_frame's frame-open.
-from scripts import tickets
+from scripts import state_root, tickets
 
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 
 
 def _ts(dt: datetime) -> str:
@@ -564,7 +564,7 @@ class TestWindowsPathHandling(_HarvestTestCase):
         json.loads(nested.read_text(encoding="utf-8"))  # parses cleanly
 
     def test_sink_directories_resolve_under_a_windows_style_state_home(self):
-        # ORCHFLOWS_STATE_HOME itself is a Windows path with backslashes on
+        # The sink env var itself is a Windows path with backslashes on
         # this host; state_root.py resolves it via pathlib either way, and
         # this re-affirms harvest.py never hand-joins one with "/".
         _write_jsonl(self._friction_path(), [_friction_entry("2026-08-01T00:00:00Z", "o", "e")])

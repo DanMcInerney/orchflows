@@ -26,9 +26,10 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 try:
-    from scripts import rings
+    from scripts import rings, state_root
 except ImportError:  # pragma: no cover - direct/installed flat script path
     import rings
+    import state_root
 
 
 LIB_VERSION_NAME = "lib.version"
@@ -44,6 +45,19 @@ GITIGNORE_END = "# END ORCHFLOWS MANAGED IGNORES"
 # lock restores, the trust ledger that must never travel (P2), and the state
 # trees that are heavy or per-run rather than history. `state/friction/` and
 # `state/runs/` are deliberately absent: they are the sync value.
+# The six sink subdirectory names are `state_root.py`'s owners -- its
+# `tickets_root` function for the one with a root already, its five new
+# `*_SUBPATH` constants for the rest -- imported rather than restated so
+# a renamed subdirectory there cannot drift silently out of what the
+# home ring ignores.
+SINK_MANAGED_SUBPATHS = (
+    state_root.tickets_root().name,
+    state_root.LOCKS_SUBPATH,
+    state_root.SCRATCH_SUBPATH,
+    state_root.WORKSPACES_SUBPATH,
+    state_root.MUTANTS_SUBPATH,
+    state_root.DRAFTS_SUBPATH,
+)
 MANAGED_IGNORES = (
     "lib/",
     "runtime/",
@@ -52,13 +66,7 @@ MANAGED_IGNORES = (
     "worktrees/",
     "imports/",
     "trust.json",
-    "state/tickets/",
-    "state/locks/",
-    "state/scratch/",
-    "state/workspaces/",
-    "state/mutants/",
-    "state/drafts/",
-)
+) + tuple(f"state/{name}/" for name in SINK_MANAGED_SUBPATHS)
 RING_DIRS = tuple(rings.RING_DIRS.values())
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$")
 _REF_SPLIT_RE = re.compile(r"^(?P<url>.+?)@(?P<pin>[^@/]+)$")
