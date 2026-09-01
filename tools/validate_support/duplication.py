@@ -41,6 +41,29 @@ CELL_DUPLICATION_ALLOWLIST = (
             "evidence store: identities are evidence packets",
         ),
     },
+    {
+        "family": "verification-scope anchor",
+        "reason": (
+            "scripts/tickets_assignment.py's _craft_scope() reads a pack's "
+            "own verification-scope sentence out of its `## Stages` (or "
+            "`## Lens`) section by the literal anchor \"gate's row\", so "
+            "the one-suite law (.orchflows/routing-design-2026-08-31.md "
+            "\"The one-suite law\") reaches every pack the same way: "
+            "children run their own narrow affected checks, and the full "
+            "required suite is the closing `done`'s alone. Every pack "
+            "carries this sentence by that mandate, not by drift -- each "
+            "names its own check vocabulary, and the closing clause "
+            "states the shared law itself, which has exactly one wording."
+        ),
+        "clauses": (
+            "Run the narrow affected checks",
+            "Run the narrow affected document checks",
+            "Run the narrow affected computation replay",
+            "Run the narrow affected render checks",
+            "Run the narrow affected source verification",
+            "the full suite is the gate's row, never a unit's",
+        ),
+    },
 )
 
 
