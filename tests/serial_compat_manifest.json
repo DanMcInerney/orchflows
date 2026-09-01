@@ -2063,11 +2063,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-<<<<<<< HEAD
-  "sha256": "defd6d34b9e457d7b2147da0a1004e4af7e7e1a43de974a955fe694dbcb10c10"
-=======
-  "sha256": "915aadc71212361d91f2832a39817e3bf19cf887446fe28b10764cf6c8c88a32"
->>>>>>> claude/implement-orchflows-routing-384e7e
+  "sha256": "0dcebe671ace93dcca00dfe237d3b0375d31f0d8aaa218ff4b00d4956bbd1e26"
  },
  "mutation_owners": [
   {
