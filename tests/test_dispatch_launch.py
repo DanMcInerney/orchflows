@@ -379,6 +379,7 @@ class DispatchLaunchTest(unittest.TestCase):
         state = parse_canonical_json(attempt["dispatch_v1"])["attempts"][0]
         craft = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
         friction = ROOT / "scripts" / "friction.py"
+        skill = ROOT / "skills" / "kernel" / "orch-do" / "SKILL.md"
 
         for fact in (
             str(self.ticket_path()), str(self.candidate), sys.executable,
@@ -391,6 +392,17 @@ class DispatchLaunchTest(unittest.TestCase):
             # friction law (rules/token-economy.md's prompt-budget escape
             # hatch), so the prompt is its only carrier.
             "log friction, then continue", str(friction),
+            # S7(a), 2026-09-01: the resolved skill file, so a forked child
+            # never fires a filesystem search to find its own definition.
+            str(skill),
+            # S6, 2026-09-01: the check sentence names the mechanism the
+            # host's own auto-backgrounding disagreed with the old
+            # instruction over.
+            "with an explicit timeout longer than the check",
+            # S7(b), 2026-09-01: hygiene for a background command the child
+            # itself supersedes, reusing this same command-running sentence
+            # rather than opening a third surface.
+            "kill anything you background once it is superseded",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
@@ -400,6 +412,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(1, prompt.count(str(craft)))
         self.assertEqual(1, prompt.count(state["assignment_seal"]))
         self.assertEqual(1, prompt.count(str(friction)))
+        self.assertEqual(1, prompt.count(str(skill)))
         # the craft's quoted scope is the one scope statement: the standing
         # gate line yields to it rather than restating the same law
         self.assertNotIn("run it here only if this ticket is the gate", prompt)

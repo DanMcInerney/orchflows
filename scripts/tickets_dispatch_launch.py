@@ -261,6 +261,29 @@ def _command(*arguments) -> str:
     return shlex.join(values)
 
 
+def _identity_line(assignment: dict) -> str:
+    """The prompt's first fact: which skill, at which file, for which ticket.
+
+    S7(a): the installed by-name layout is documented in the host block a
+    forked child provably never receives (run 20260901T181410Z, B1.13's
+    first-person evidence), so the one line that already names the skill
+    and the ticket path carries the skill's own resolved file too --
+    nothing is left for the child to search the filesystem for.
+    `tickets_assignment.py` resolves it through the one ring resolver;
+    `None` only for a hand-built assignment that skips that resolution.
+    """
+
+    skill_path = assignment.get("skill_path")
+    named = (
+        f"Apply skill {assignment['executor']}, whose file is {skill_path},"
+        if skill_path else f"Apply skill {assignment['executor']}"
+    )
+    return (
+        f"{named} to ticket {assignment['ticket_path']}. Read that ticket "
+        "whole: it is your assignment, and there is no other copy of it."
+    )
+
+
 def _lane_lines(assignment: dict) -> list:
     """What this lane asks of the child, beyond reading its ticket."""
 
@@ -432,9 +455,7 @@ def launch_prompt(assignment: dict) -> str:
         "--by", assignment["assigned_name"],
     ]
     lines = [
-        f"Apply skill {assignment['executor']} to ticket "
-        f"{assignment['ticket_path']}. Read that ticket whole: it is your "
-        "assignment, and there is no other copy of it.",
+        _identity_line(assignment),
         *_lane_lines(assignment),
         *_reading_lines(assignment),
         f"Work in {assignment['workspace']}: change into that directory first "
@@ -442,8 +463,10 @@ def launch_prompt(assignment: dict) -> str:
         f"Every Python command runs through this host's verified interpreter, "
         f"{sys.executable}, never a bare `python`.",
         *_craft_lines(assignment),
-        "Run every check to completion in the turn it starts; never background "
-        "a gate or a test run, and never report a check you did not watch finish.",
+        "Run every check to completion in the turn it starts, with an explicit "
+        "timeout longer than the check; never background a gate or a test run, "
+        "kill anything you background once it is superseded, and never report "
+        "a check you did not watch finish.",
         *_friction_lines(),
         f"Your assigned name is `{assignment['assigned_name']}`; use exactly it "
         "wherever a command takes --by.",

@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 if __package__:
+    from . import rings
     from .tickets_adapters import (
         AdapterError, adapter_spec, craft_path, derived_isolation,
     )
@@ -33,6 +34,7 @@ if __package__:
     )
     from .workspace_git import BASELINE_KEY, BRANCH_KEY
 else:
+    import rings
     from tickets_adapters import (
         AdapterError, adapter_spec, craft_path, derived_isolation,
     )
@@ -198,6 +200,29 @@ def _craft(pack):
     return str(path), _craft_scope(path), _workspace_line(path)
 
 
+def _skill_path(executor):
+    """The applied skill's own manifest, resolved through the one ring
+    resolver -- the same guarantee `craft_path` already gives the pack.
+
+    A launch hands the child this path instead of telling it to find one:
+    `scripts/rings.py` resolves a skill name to one absolute path
+    deterministically (S7, 2026-09-01: a forked child fired an unscoped
+    filesystem search to locate its own skill file, the installed layout
+    the host block documents never reaching it). None when the executor
+    names no resolvable skill -- a launch with no working prompt is refused
+    long before this fact is read, so a caller here always holds a name
+    that either resolves or the dispatch never opens.
+    """
+
+    name = dequote(executor)
+    if not name:
+        return None
+    try:
+        return str(rings.resolve("skill", name)["path"])
+    except rings.RingError:
+        return None
+
+
 def git_candidate(pack) -> bool:
     """Whether the landing merges a candidate branch this pack's child
     committed into.
@@ -328,6 +353,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "pack": pack,
         "role": role,
         "run": str(loaded.get("run") or run),
+        "skill_path": _skill_path(executor),
         "ticket_path": str(ticket_path),
         "workspace": workspace,
         "workspace_line": workspace_line,
