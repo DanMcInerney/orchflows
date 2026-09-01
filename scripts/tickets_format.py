@@ -6,12 +6,12 @@ from pathlib import Path
 from datetime import datetime, timezone
 if __package__:
     from .tickets_registry import (
-        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY, REVIEW_KINDS,
+        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY,
         executor_refusal, executor_registered,
     )
 else:
     from tickets_registry import (
-        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY, REVIEW_KINDS,
+        CALLABLE_EXECUTORS, EXECUTOR_REGISTRY,
         executor_refusal, executor_registered,
     )
 if __package__:
@@ -91,7 +91,6 @@ PACK_NAME_PREFIX = 'orch-'
 PACK_NAME_SUFFIX = '-pack'
 CHECKED_BY_KEY = 'checked_by'
 GATE_ID_MARKER = '.gate.'
-GATE_CRITIQUE_MARKER = '.gate.critique.'
 CHECKER_STAGE_SUFFIX = '.check'
 # The ids the round machinery mints after a cut is already sealed, and the
 # one grammar that names them. A landing whose `done` command refused arms
@@ -252,11 +251,6 @@ def ticket_defects(text: str) -> list:
                 f"executor-pack-required: {executor} consumes resolved pack cells and "
                 "requires a stamped pack"
             )
-    review_kind = dequote(data.get('review_kind'))
-    if review_kind and review_kind not in REVIEW_KINDS:
-        defects.append(
-            f"review_kind '{review_kind}' is not one of {list(REVIEW_KINDS)}"
-        )
     parsed_sections = _sections(text)
     sections = {name.strip().lower(): body for name, body in parsed_sections.items()}
     for name in REQUIRED_SECTIONS:
@@ -510,12 +504,3 @@ def is_review_stage_id(ticket_id) -> bool:
     """
     text = str(ticket_id or '')
     return GATE_ID_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)
-def is_critique_stage_id(ticket_id) -> bool:
-    """`is_review_stage_id` narrowed to the stages that file findings.
-
-    A repair and a verification stage are review stages that do not: only a
-    critique lens and the ordinary checker produce the findings array the
-    schema grades and the join adjudicates.
-    """
-    text = str(ticket_id or '')
-    return GATE_CRITIQUE_MARKER in text or text.endswith(CHECKER_STAGE_SUFFIX)

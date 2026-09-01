@@ -39,24 +39,21 @@ An unseen result requires the attempt's committed launch, and carries the
 `(dispatch_id, assignment_seal, --by)` the attempt was opened under: that
 triple is the writer's whole authority, on this write and on every other.
 
-A read-only critique never rewrites the reviewed executor's Report. Its
-findings are structured, so they are not prose: a critique writes one JSON
-array to a file and the join reads that file through `--findings-file
-<path|->`, exactly as the accepted subset crosses through `--accepted-file
-<path|->`. Each finding object has exactly `blocking`
-(boolean), `class`, `goal_impact`, `id`, `repair`, `summary` (non-empty
-strings), and `evidence` (a non-empty array of non-empty strings). Finding ids
-are unique in the array. The join normalizes both arrays and binds the
-complete findings and exact accepted subset in the review ledger, which is
-their one durable home; inline arrays or caller-authored finding flags are not
-a form.
+A read-only critique never rewrites the reviewed executor's Report. It is a
+`judge` brick like any other now: its enumerated blockers are this same one
+free-text `## Report`, and the repair answering it is a `do` brick the
+calling workflow opens against them, sequenced by prose rather than a
+mechanical selector. The `orchflows.review.v1` ledger's own closed record
+shapes -- `GatePlan`, `CritiqueAdjudication`, `RepairOutcome` -- are declared
+in [work-item.md](work-item.md#review-stage-ledger) for whatever still reads
+one; `dispatch-join` no longer writes that chain or binds a findings array,
+an accepted subset, or a fixed artifact identity of its own.
 
-The join reads the fixed candidate identity and its actual diff, checks the
-returning name against the claim, and adjudicates only material blockers
-against Goal and Context. The reserved durable return and its lifecycle
-consumption belong to the [dispatch contract](dispatch.md#outcome-and-join).
-Deterministic repository-global gates run on the integrated tip. A path named
-in Details is never an acceptance boundary.
+The join checks the returning name against the claim. The reserved durable
+return and its lifecycle consumption belong to the
+[dispatch contract](dispatch.md#outcome-and-join). Deterministic
+repository-global gates run on the integrated tip. A path named in Details is
+never an acceptance boundary.
 
 A generic `dispatch-commit` record is not an executor report and does not
 replace this section's writer. The `result` operation uses the same committed

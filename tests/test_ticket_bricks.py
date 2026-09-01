@@ -399,20 +399,6 @@ class TypedArtifactGrammarTest(unittest.TestCase):
             tickets_brick.ARTIFACT_KINDS, set(ARTIFACT_LINE_FORMS),
         )
 
-    def test_a_non_git_join_refuses_an_untyped_identity(self):
-        from scripts import tickets_review
-
-        with tempfile.TemporaryDirectory() as raw:
-            with self.assertRaises(tickets_review.ReviewError) as caught:
-                tickets_review.validate_fixed_artifact(DOC_PACK, "revision 4", raw)
-            self.assertIn("must be doc:<fixed-identity>", str(caught.exception))
-            self.assertEqual(
-                ("doc:notes.md@sha256:" + "c" * 64, str(Path(raw).resolve())),
-                tickets_review.validate_fixed_artifact(
-                    DOC_PACK, "doc:notes.md@sha256:" + "c" * 64, raw,
-                ),
-            )
-
 
 if __name__ == "__main__":
     unittest.main()

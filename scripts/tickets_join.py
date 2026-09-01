@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import sys
 
 if __package__:
     from .tickets_attempts import (
@@ -11,69 +10,51 @@ if __package__:
         _identity_failure,
     )
     from .tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
-    from .tickets_format import (
-        GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
-        _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
-        is_critique_stage_id, is_review_stage_id,
-    )
+    from .tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field, canonical_json
     from .tickets_store import UTC_STAMP, _run_lock, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
     from .tickets_worklog import _run_goal, _run_tickets
     from .tickets_project import TERMINAL_REMEDY, binding_refusal
-    from .tickets_review import (
-        REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
-        state_from_text,
-    )
+    from .tickets_review import REVIEW_FIELD, ReviewError, state_from_text
 else:
     from tickets_attempts import (
         OUTCOME_RECORD_ID, PROTOCOL, _classification, _commit_record,
         _identity_failure,
     )
     from tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
-    from tickets_format import (
-        GATE_CRITIQUE_MARKER, CHECKER_STAGE_SUFFIX, TERMINAL_STATES,
-        _extract_flag, _read_utf8, _set_frontmatter_field, canonical_json,
-        is_critique_stage_id, is_review_stage_id,
-    )
+    from tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field, canonical_json
     from tickets_store import UTC_STAMP, _run_lock, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
     from tickets_worklog import _run_goal, _run_tickets
     from tickets_project import TERMINAL_REMEDY, binding_refusal
-    from tickets_review import (
-        REVIEW_FIELD, ReviewError, adjudicate, canonical_finding_array, repair_outcome,
-        state_from_text,
-    )
+    from tickets_review import REVIEW_FIELD, ReviewError, state_from_text
 
 JOIN_STATUSES = frozenset(DISPATCH_JOIN_SUCCESS_VALUES["status"])
 DISPATCH_JOIN_USAGE = (
     "dispatch-join <run> <id> --assignment-seal <seal> --dispatch-id <id> "
-    "--outcome-record-id outcome --by <join-name> --status <disposition> "
-    "[--findings-file <path|->] [--accepted-file <path|->] "
-    "[--artifact <fixed-identity>]"
+    "--outcome-record-id outcome --by <join-name> --status <disposition>"
 )
 
 
-def _review_file(source: str, subject: str):
-    """Read one review array from a file or standard input.
+def dispatch_join_identity_defects(outcome_record_id: str, dispatch_id: str, joined_by: str):
+    """The argument-shape refusals a join can raise, before any tree read.
 
-    Both review arrays cross this boundary the same way, as UTF-8 file data,
-    so a shell argument cannot masquerade as a durable carrier. The complete
-    findings used to be scraped out of the child's `Result` or `Feedback`
-    prose; there is one free-text `Report` now and nothing machine-critical
-    is read out of it, so the array a critique produces arrives here as the
-    file it always was on disk, and lands in the `review_v1` adjudication
-    that is its one durable home.
+    One function for both callers: the standalone command validates its own
+    parsed flags here, and `land`'s composition calls this before
+    `workspace-integrate` merges anything, so a malformed `--dispatch-id` or
+    `--by` refuses before the tree is mutated rather than after -- the
+    landing defect this closes (a refused join left the candidate merged).
     """
-    if source == "-":
-        try:
-            stream = getattr(sys.stdin, "buffer", sys.stdin)
-            value = stream.read()
-            if isinstance(value, bytes):
-                value = value.decode("utf-8")
-            return value, None
-        except (OSError, UnicodeDecodeError, AttributeError) as error:
-            return None, {"error": f"unreadable {subject}: {error}"}
-    return _read_utf8(source, subject)
+
+    if outcome_record_id != OUTCOME_RECORD_ID:
+        return _classification(
+            "outcome-record-mismatch", "dispatch-join consumes only the reserved outcome record"
+        )
+    for kind, value in (("dispatch-id", dispatch_id), ("join-owner", joined_by)):
+        failure = _identity_failure(kind, value)
+        if failure is not None:
+            return failure
+    return None
 
 
 def _closes_the_run(run: str, ticket_id: str) -> bool:
@@ -95,25 +76,6 @@ def _closes_the_run(run: str, ticket_id: str) -> bool:
     return str(goal.get("id") or "") == ticket_id
 
 
-def _attempt_workspace(attempt: dict) -> str | None:
-    """The tree this attempt was executed in, from that field's one owner.
-
-    Read off the attempt, not off any record it carries: the establishment
-    records the tree there, and a launch that restated it would be the second
-    home this field no longer has. Imported at call time because the flat
-    installed layout fixes no order between these two families.
-    """
-
-    try:
-        if __package__:
-            from . import workspace_record
-        else:  # pragma: no cover - the flat installed layout
-            import workspace_record
-    except ImportError:  # pragma: no cover - a partial install
-        return None
-    return workspace_record.recorded_workspace(attempt)
-
-
 def _cmd_dispatch_join(rest, *, _lock_held=False):
     """Commit or replay one outcome-fenced join and its lifecycle transition.
 
@@ -133,9 +95,6 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
     outcome_record_id = _extract_flag(args, "--outcome-record-id")
     joined_by = _extract_flag(args, "--by")
     disposition = _extract_flag(args, "--status")
-    findings_file = _extract_flag(args, "--findings-file")
-    accepted_file = _extract_flag(args, "--accepted-file")
-    artifact = _extract_flag(args, "--artifact")
     if len(args) != 2 or not all((
         assignment_seal, dispatch_id, outcome_record_id, joined_by, disposition,
     )):
@@ -151,43 +110,9 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         invalid = _segment_error(kind, value)
         if invalid is not None:
             return invalid
-    if outcome_record_id != OUTCOME_RECORD_ID:
-        return _classification("outcome-record-mismatch", "dispatch-join consumes only the reserved outcome record")
-    for kind, value in (("dispatch-id", dispatch_id), ("join-owner", joined_by)):
-        failure = _identity_failure(kind, value)
-        if failure is not None:
-            return failure
-    review_stage = is_critique_stage_id(ticket_id)
-    for flag, value in (("--findings-file", findings_file), ("--accepted-file", accepted_file)):
-        if value is not None and not review_stage:
-            return _classification(
-                "review-invalid", f"{flag} applies only to critique joins"
-            )
-    findings = accepted = None
-    for source, subject, target in (
-        (findings_file, "critique findings file", "findings"),
-        (accepted_file, "accepted blocker file", "accepted"),
-    ):
-        if source is None:
-            continue
-        body, failure = _review_file(source, subject)
-        if failure is not None:
-            return failure
-        if target == "findings":
-            findings = body
-        else:
-            accepted = body
-    if review_stage:
-        for flag, value in (("--findings-file", findings), ("--accepted-file", accepted)):
-            if value is None:
-                return _classification(
-                    "review-invalid", f"critique join requires {flag} <path|->"
-                )
-        try:
-            findings = canonical_finding_array(findings, "critique findings")
-            accepted = canonical_finding_array(accepted, "critique accepted")
-        except ReviewError as error:
-            return _classification("review-invalid", str(error))
+    failure = dispatch_join_identity_defects(outcome_record_id, dispatch_id, joined_by)
+    if failure is not None:
+        return failure
 
     join_record_id = f"join:{outcome_record_id}"
     content = {
@@ -197,8 +122,6 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         "operation": "join",
         "outcome_record_id": outcome_record_id,
     }
-    if is_review_stage_id(ticket_id):
-        content["review"] = {"accepted": accepted, "artifact": artifact}
 
     def join(text, _data, attempt, _state):
         outcome_record = next(
@@ -231,23 +154,6 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
         status = disposition
         try:
             review = state_from_text(text, allow_legacy=True)
-            if is_critique_stage_id(ticket_id):
-                lens = (
-                    "checker" if ticket_id.endswith(CHECKER_STAGE_SUFFIX)
-                    else ticket_id.split(GATE_CRITIQUE_MARKER, 1)[1]
-                )
-                review = adjudicate(
-                    review, findings, accepted, outcome["by"], lens,
-                )
-            elif ticket_id.endswith(".gate.repair"):
-                if accepted is not None:
-                    raise ReviewError("repair join does not accept --accepted-file")
-                review = repair_outcome(
-                    review, artifact or "", outcome["evidence"],
-                    joined_by, workspace=_attempt_workspace(attempt),
-                )
-            elif accepted is not None or artifact is not None:
-                raise ReviewError("review flags apply only to gate-stage joins")
         except ReviewError as error:
             return text, None, _classification("review-invalid", str(error))
         if status in TERMINAL_STATES:

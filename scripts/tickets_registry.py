@@ -73,8 +73,6 @@ SUPERSEDED_EXECUTORS = {
     ),
 }
 
-REVIEW_KINDS = ("critique", "repair")
-
 
 def executor_registered(executor: str) -> bool:
     """Return whether ``executor`` is one of the registered callable verbs."""
@@ -108,7 +106,6 @@ __all__ = (
     "CALLABLE_EXECUTORS",
     "EXECUTOR_REGISTRY",
     "SUPERSEDED_EXECUTORS",
-    "REVIEW_KINDS",
     "executor_registered",
     "executor_successor",
     "executor_refusal",

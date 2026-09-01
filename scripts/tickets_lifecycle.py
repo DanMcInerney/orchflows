@@ -242,7 +242,6 @@ def _check_under_run_lock(rest, *, ticket_path=None):
     stage = _parse_frontmatter(stage_text)
     if (str(stage.get('status') or '') != 'complete'
             or _executor_of(stage) != 'orch-judge'
-            or str(stage.get('review_kind') or '') != 'critique'
             or list(stage.get('depends_on') or []) != [ticket_id]):
         return {'error': f'checker stage is not a completed review of {ticket_id}: {stage_id}'}
     dispatch_state, dispatch_failure = _dispatch_state(stage)

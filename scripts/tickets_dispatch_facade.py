@@ -25,7 +25,6 @@ if __package__:
     )
     from .tickets_generations import seal_findings
     from .tickets_lifecycle import _cmd_ready
-    from .tickets_review import launch_mutation, launch_state_result
     from .tickets_store import _run_lock, _segment_error, _tickets_root
 else:
     from tickets_assignment import dispatch_assignment, workspace_establishment_finding
@@ -42,7 +41,6 @@ else:
     )
     from tickets_generations import seal_findings
     from tickets_lifecycle import _cmd_ready
-    from tickets_review import launch_mutation, launch_state_result
     from tickets_store import _run_lock, _segment_error, _tickets_root
 
 
@@ -152,7 +150,6 @@ def _cmd_dispatch(rest):
     dispatch_id = _extract_flag(args, "--dispatch-id")
     lease = _extract_flag(args, "--lease-expires-at")
     workspace = _extract_flag(args, "--workspace")
-    artifact = _extract_flag(args, "--artifact")
     host = selected_host(_extract_flag(args, "--host"))
     if len(args) != 2 or not all((owner, dispatch_id, lease)):
         return {"error": f"usage: {DISPATCH_USAGE}"}
@@ -177,7 +174,7 @@ def _cmd_dispatch(rest):
     with _run_lock(run):
         dispatched = _dispatched_under_run_lock(
             run, ticket_id, host=host, owner=owner, dispatch_id=dispatch_id,
-            lease=lease, workspace=workspace, artifact=artifact,
+            lease=lease, workspace=workspace,
         )
     if "error" in dispatched:
         return dispatched
@@ -190,7 +187,7 @@ def _cmd_dispatch(rest):
 
 
 def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
-                               lease, workspace, artifact):
+                               lease, workspace):
     """Everything the run lock has to hold, and nothing that does not."""
 
     # Before the first side effect: an attempt opened for a launch that
@@ -228,7 +225,7 @@ def _dispatched_under_run_lock(run, ticket_id, *, host, owner, dispatch_id,
         else:
             launched = _launched_under_run_lock(
                 run, ticket_id, record, dispatch_id=dispatch_id,
-                workspace=workspace_path, artifact=artifact,
+                workspace=workspace_path,
             )
     if "error" not in launched:
         return launched
@@ -322,7 +319,7 @@ def _committed_launch(attempt: dict):
 
 
 def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
-                             workspace, artifact):
+                             workspace):
     """Grade the assignment, resolve the launch, and commit it, once.
 
     Every read decides what the commit writes -- stored attempt, replay
@@ -348,9 +345,6 @@ def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
     attempt, failure = _attempt(data, dispatch_id)
     if failure is not None:
         return failure
-    review_state, review_error = launch_state_result(path, text, artifact, workspace)
-    if review_error is not None:
-        return _classification("review-invalid", review_error)
     finding = workspace_establishment_finding(data, workspace)
     if finding is not None:
         return _classification(*finding)
@@ -367,9 +361,7 @@ def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
             "ticket no longer matches the attempt's sealed assignment",
         )
     arguments = [run, ticket_id, "--by", attempt["owner"], "--workspace", workspace]
-    graded = dispatch_assignment(
-        arguments, attempt=attempt, review_state=review_state,
-    )
+    graded = dispatch_assignment(arguments, attempt=attempt)
     if "error" in graded:
         return graded
     launch, failure = launch_spec(host_record, graded["assignment"])
@@ -378,9 +370,6 @@ def _launched_under_run_lock(run, ticket_id, host_record, *, dispatch_id,
     content = {"launch": launch}
     committed = _commit_record(
         run, ticket_id, dispatch_id, LAUNCH_RECORD_ID, content,
-        mutate=launch_mutation(
-            review_state, run, ticket_id, dispatch_id, LAUNCH_RECORD_ID,
-        ),
         record_kind="launch", _lock_held=True,
     )
     if "error" in committed:

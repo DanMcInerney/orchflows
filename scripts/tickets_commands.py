@@ -41,8 +41,7 @@ LINT_USAGE = "lint (<run> <id> | <run> [<id>] --file <path>) [--fix]"
 DISPATCH_USAGE = (
     "dispatch <run> <id> --by <name> --dispatch-id <id> "
     "--lease-expires-at <absolute-iso> "
-    "[--workspace <source-tree-to-cut-from>] [--artifact <fixed-identity>] "
-    "[--host <name>]"
+    "[--workspace <source-tree-to-cut-from>] [--host <name>]"
 )
 GRADE_USAGE = "grade <run> <root>"
 BOUND_CHECK_USAGE = "bound-check <run> [--now <iso>]"
@@ -113,7 +112,7 @@ VALUE_FLAGS = frozenset({
     "--lease-expires-at", "--replacement-dispatch-id", "--record-id", "--content",
     "--outcome-record-id", "--status", "--stage",
     "--goal-file", "--details-file", "--parent", "--done", "--artifacts",
-    "--accepted-file", "--result-file", "--verification-file",
+    "--result-file", "--verification-file",
     "--feedback-file", "--risks-file", "--handoff-file",
     "--host", "--outcome-file",
 })

@@ -155,7 +155,7 @@ class SealedRunTest(SinkTest):
         self.assertIsNone(failure, failure)
         return facade._launched_under_run_lock(
             "run", "T", host, dispatch_id="D1",
-            workspace=str(self.candidate), artifact=None,
+            workspace=str(self.candidate),
         )
 
 
