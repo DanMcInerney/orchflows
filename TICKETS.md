@@ -191,11 +191,11 @@ Three moments use readers who did not produce the fixed artifact
   `tickets.py land` adjudicates it. For v1, only the join sets suspended or terminal
   status ([rules/delegation.md](rules/delegation.md)). A worker cannot
   declare itself done.
-- **Structure only where a machine reads it.** A critique's findings are a
-  JSON file the join reads; everything else a child has to say goes to
-  `## Report` in whatever form it judges useful. Work that cannot finish
-  within its bound suspends through the join, reporting what a resumer needs
-  rather than improvising.
+- **Structure only where a machine reads it.** Nothing on the return side is
+  machine-parsed any more: a critique's findings live in its own `## Report`,
+  like anything else a child has to say, in whatever form it judges useful.
+  Work that cannot finish within its bound suspends through the join,
+  reporting what a resumer needs rather than improvising.
 - **The absolute lease does not move.** Launch replay, transport activity, and
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a

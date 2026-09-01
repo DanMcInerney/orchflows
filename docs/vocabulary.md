@@ -212,12 +212,7 @@ that needs a different meaning needs a different word.
   `contracts/verdict.md`; a property of a structured evaluation method.
 - **independence** — acceptance evidence originating outside the executing
   context through exactly one ordinary path; law in `rules/verification.md`
-  §9. Research craft narrows the term for sources: no shared upstream.
-- **checker** — the durable adjudication carrier for the ordinary
-  outside-independence path: an explicit derived review-stage ticket whose
-  fresh read-only `orch-judge` accepts the exact assignment, challenges one
-  fixed artifact and its evidence, and joins its accepted set before the
-  target can record `checked_by`.
+  §7. Research craft narrows the term for sources: no shared upstream.
 - **verdict** — PASS, FAIL, or UNVERIFIED with evidence and covered identities.
 - **evidence** — methods, observations, sources, captures, or other records
   demonstrating or challenging Goal at a fixed artifact identity.
@@ -228,13 +223,14 @@ that needs a different meaning needs a different word.
 - **lens** — the criteria set a reviewer applies; each reviewer of one
   artifact has a unique named lens; freshness law `rules/verification.md`
   §6.
-- **review chain** — the immutable predecessor-linked `GatePlan` →
-  `CritiqueAdjudication` → `RepairOutcome` path one checker stage writes,
-  fixing the reviewed and repaired artifact identities and the accepted
-  blockers; law in `rules/verification.md` §9. A **critique** is a `judge`
-  brick and the **repair** answering it a `do` brick, sequenced by the
-  calling workflow's prose; authoring admission and benchmark qualification
-  are neither.
+- **critique** — a `judge` brick scoring one fixed artifact; the
+  **repair** answering it is a `do` brick under the same parent,
+  sequenced by the calling workflow's prose rather than a distinct
+  adjudication carrier. Neither is authoring admission or benchmark
+  qualification. The predecessor-linked `GatePlan`/`CritiqueAdjudication`/
+  `RepairOutcome` ledger this pair once wrote through has retired with the
+  door that built it; `rules/verification.md` §9 and
+  `contracts/work-item.md`'s Review-stage ledger own that history.
 - **judge** — scoring one fixed candidate against frozen criteria, blind to
   other candidates: an `orch-judge` ticket whose criteria carry a score
   scale, blindness being a property of the assignment's `inputs`, not of a

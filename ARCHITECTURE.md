@@ -105,8 +105,8 @@ family's five owner modules.
 Helper membership derives from code, not inventoried here. Two
 non-derivable facts: `scripts/cutcheck.py` owns cut-defect
 detection over issued ticket sets; `scripts/tickets.py` owns
-the public ticket facade, the one root and
-review family, immutable run identity (`opened_at`, installed version, source commit),
+the public ticket facade, the one root,
+immutable run identity (`opened_at`, installed version, source commit),
 immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 Its `dispatch` owns one launch and its `land` one return, each a single
 transaction over the granular operations, which stay public for recovery.

@@ -178,8 +178,8 @@ the design pack is stamped, choosing diagrams, panels, or charts from its
 relationships. This delivery view points to
 [`orch-do`](skills/kernel/orch-do/SKILL.md), which both plans the root and
 builds each unit; [verification](rules/verification.md) owns acceptance.
-This view shows only the checker-or-caller choice; that rule owns the other
-ordinary paths and their details:
+This view shows the one path every return crosses; that rule owns its
+details:
 
 ```mermaid
 flowchart TD
@@ -187,10 +187,7 @@ flowchart TD
     outline --> pack{"stamp a domain pack per call"}
     pack --> brick["tickets.py do / judge — one launch per call"]
     brick --> exec["the child"]
-    exec --> path{"independence path"}
-    path -->|unit-local| checker["durable &lt;id&gt;.check — launch, outcome, join"]
-    path -->|deferred to the caller| join["tickets.py land — each return crosses once"]
-    checker --> join
+    exec --> join["tickets.py land — each return crosses once"]
     join --> accepted["accepted result"]
     accepted --> close["tickets.py frame-close"]
 ```
