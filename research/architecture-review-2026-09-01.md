@@ -779,8 +779,9 @@ Root non-doc files (`pyproject.toml`, `install.py/.cmd/.sh`,
 though B1.1's "root" scope may have covered them informally. This is
 disclosure, not a new defect claim: nothing above contradicts a finding
 elsewhere in this document, it is simply unrepresented — and it is the
-same gap class B-2's repair came from, a question spanning two lanes'
-surfaces answered inside one and reported as a whole-tree negative.
+same gap class the corrected `ARCHITECTURE.md`-ceiling verdict above
+came from (limits table): a question spanning two lanes' surfaces
+answered inside one and reported as a whole-tree negative.
 
 ## Cut log
 
