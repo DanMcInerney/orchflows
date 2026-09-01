@@ -50,6 +50,7 @@ CORE_MODULES = (
     "schema",
     "smoke",
     "transport",
+    "window",
 )
 
 # Every extracted implementation module has exactly one public facade. The
@@ -119,6 +120,7 @@ CORE_IMPORT_EDGES = {
     "schema": (),
     "smoke": ("probes", "runner", "schema", "transport"),
     "transport": ("routes",),
+    "window": ("schema",),
 }
 
 # Everything the package takes from outside itself, and the check below
