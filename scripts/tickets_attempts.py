@@ -12,8 +12,9 @@ if __package__:
     from .tickets_generations import seal_findings
     from . import tickets_dispatch_guards as dispatch_guards
     from .tickets_project import CLAIM_REMEDY, binding_refusal
+    from .tickets_transitions import CLAIMED, SUSPENDED
     from .tickets_dispatch_schema import (
-        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX, OUTCOME_RECORD_ID, PROTOCOL,
         RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
@@ -32,8 +33,9 @@ else:
     from tickets_generations import seal_findings
     import tickets_dispatch_guards as dispatch_guards
     from tickets_project import CLAIM_REMEDY, binding_refusal
+    from tickets_transitions import CLAIMED, SUSPENDED
     from tickets_dispatch_schema import (
-        LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX, OUTCOME_RECORD_ID, PROTOCOL,
         RECORD_KINDS,
         classification as _classification, identity_failure as _identity_failure,
         record_id_is_reserved as _record_id_is_reserved,
@@ -121,7 +123,7 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
             if failure is not None:
                 return failure
             status = str(data.get("status") or "")
-            if state is None and status in ("claimed", "suspended"):
+            if state is None and status in (CLAIMED, SUSPENDED):
                 return _classification(
                     "claim-without-dispatch",
                     "a live claim exists only as a dispatch-v1 attempt; this claimed ticket has no dispatch record",
@@ -171,7 +173,7 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
                 return _classification(
                     "lease-expired", "--lease-expires-at is not later than the open time"
                 )
-            allowed = ("ready",) if state is None else ("ready", "claimed", "suspended")
+            allowed = ("ready",) if state is None else ("ready", CLAIMED, SUSPENDED)
             if status not in allowed:
                 return _classification(
                     "ticket-not-ready",
@@ -187,7 +189,7 @@ def _cmd_dispatch_open(rest, *, _lock_held=False):
             attempts.append(attempt)
             encoded = canonical_json({"attempts": attempts, "protocol": PROTOCOL})
             updated = _set_frontmatter_field(text, "dispatch_v1", encoded)
-            updated = _set_frontmatter_field(updated, "status", "claimed")
+            updated = _set_frontmatter_field(updated, "status", CLAIMED)
             _write_text_atomically(path, updated)
             return _open_response(run, ticket_id, attempt, "opened")
     except OSError as error:
@@ -250,7 +252,7 @@ def _commit_record(
             if failure is not None:
                 return failure
             if state is None:
-                if str(data.get("status") or "") in ("claimed", "suspended"):
+                if str(data.get("status") or "") in (CLAIMED, SUSPENDED):
                     return _classification(
                         "claim-without-dispatch",
                         "a live claim exists only as a dispatch-v1 attempt; this claimed ticket has no dispatch record",
@@ -403,7 +405,7 @@ def _cmd_dispatch_retire(rest, *, _lock_held=False):
         attempt["retirement"] = response
         return text, response, None
 
-    if not record_id.startswith("lifecycle:"):
+    if not record_id.startswith(LIFECYCLE_RECORD_PREFIX):
         return _classification("record-id-invalid", "retirement record_id must use the lifecycle: namespace")
     return _commit_record(
         run, ticket_id, dispatch_id, record_id, content,
@@ -431,7 +433,7 @@ def _cmd_dispatch_replace(rest):
         failure = _identity_failure(kind, value)
         if failure is not None:
             return failure
-    if not record_id.startswith("lifecycle:"):
+    if not record_id.startswith(LIFECYCLE_RECORD_PREFIX):
         return _classification("record-id-invalid", "replacement record_id must use the lifecycle: namespace")
     lease = _parse_iso(lease_text)
     if lease is None or lease.utcoffset() is None:
@@ -495,7 +497,7 @@ def _cmd_dispatch_replace(rest):
         current["replaced_by"] = replacement_id
         current["replacement"] = response
         state["attempts"].append(replacement)
-        updated = _set_frontmatter_field(text, "status", "claimed")
+        updated = _set_frontmatter_field(text, "status", CLAIMED)
         return updated, response, None
 
     return _commit_record(

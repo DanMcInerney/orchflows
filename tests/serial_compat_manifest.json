@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2113,
+  "count": 2115,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1961,6 +1961,8 @@
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_two_skills_carrying_one_clause_are_reported_against_each_other",
    "tests.test_validator_cases.corpus_and_surfaces.TestLicensedCopies.test_the_licensed_pair_is_not_reported_against_the_real_tree",
    "tests.test_validator_cases.corpus_and_surfaces.TestLicensedCopies.test_the_visibility_copy_in_the_host_block_is_licensed",
+   "tests.test_validator_cases.corpus_and_surfaces.TestRoutingBlockBudget.test_a_routing_block_inside_the_budget_passes",
+   "tests.test_validator_cases.corpus_and_surfaces.TestRoutingBlockBudget.test_an_oversized_routing_block_is_refused",
    "tests.test_validator_cases.corpus_and_surfaces.TestSurfaceBudgets.test_a_host_block_over_its_budget_is_refused",
    "tests.test_validator_cases.corpus_and_surfaces.TestSurfaceBudgets.test_the_real_surfaces_sit_under_their_ceilings",
    "tests.test_validator_cases.corpus_and_surfaces.TestWordBudgetAndLinks.test_a_dangling_markdown_link_in_docs_is_an_error",
@@ -2116,7 +2118,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "2c2623144c85594bdde1434df478850220c1ae4ec537de3ff100516867b9190e"
+  "sha256": "e21e2bc09e0312257240a1be959e99e4083eb9872e9f8258f78f04b2022d8d13"
  },
  "mutation_owners": [
   {

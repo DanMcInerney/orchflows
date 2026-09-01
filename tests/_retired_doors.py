@@ -29,6 +29,12 @@ RETIRED_DOORS = {
     "seal": _cmd_seal,
     "ready": _cmd_ready,
 }
+# The four door names alone, for a reader that only needs the closed set
+# `test_command_surface.py` checks against `routed_commands()`. Every
+# fixture that dispatches one of these names through `run` above depends
+# on the key spelling `RETIRED_DOORS` carries, which is what keeps this
+# set honest.
+RETIRED_DOOR_NAMES = frozenset(RETIRED_DOORS)
 
 
 def run(argv) -> dict:

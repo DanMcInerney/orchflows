@@ -41,7 +41,7 @@ if __package__:
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from .tickets_adapters import derived_isolation
-    from .tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
+    from .tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
     from .tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from .tickets_outcome import _cmd_dispatch_outcome
     from .tickets_lifecycle import _cmd_ready
@@ -50,6 +50,7 @@ if __package__:
         NO_SINK_ERROR, _run_lock, _tickets_root,
         segment_refusal,
     )
+    from .workspace_git import BASELINE_KEY, BRANCH_KEY
 else:  # pragma: no cover - direct/installed flat script path
     import tickets_done
     from tickets_format import (
@@ -57,7 +58,7 @@ else:  # pragma: no cover - direct/installed flat script path
         _extract_flag, _parse_frontmatter, _parse_iso, _read_utf8,
     )
     from tickets_adapters import derived_isolation
-    from tickets_dispatch_schema import OUTCOME_RECORD_ID, stored_state
+    from tickets_dispatch_schema import JOIN_RECORD_PREFIX, OUTCOME_RECORD_ID, stored_state
     from tickets_join import _cmd_dispatch_join, dispatch_join_identity_defects
     from tickets_outcome import _cmd_dispatch_outcome
     from tickets_lifecycle import _cmd_ready
@@ -66,13 +67,13 @@ else:  # pragma: no cover - direct/installed flat script path
         NO_SINK_ERROR, _run_lock, _tickets_root,
         segment_refusal,
     )
+    from workspace_git import BASELINE_KEY, BRANCH_KEY
 
 LAND_USAGE = (
     "land <run> <id> --assignment-seal <seal> --dispatch-id <id> "
     "--outcome-record-id outcome --by <join-name> [--status <disposition>] "
     "[--outcome-file <path|->]"
 )
-JOIN_RECORD_PREFIX = "join:"
 COMMITTED = "committed"
 REPLAYED = "replayed"
 SKIPPED = "skipped"
@@ -209,8 +210,8 @@ def _integrate_workspace(run: str, ticket_id: str, data: dict, status):
     try:
         candidate = _candidate(run, ticket_id)
         response, _code = candidate.integrate(
-            run, ticket_id, _recorded_workspace(data), data.get("workspace_branch"),
-            data.get("workspace_baseline"),
+            run, ticket_id, _recorded_workspace(data), data.get(BRANCH_KEY),
+            data.get(BASELINE_KEY),
         )
     except Exception as error:  # `Refused`, and anything git surprised us with
         return {"step": "workspace-integrate", "outcome": "refused", "error": str(error)}

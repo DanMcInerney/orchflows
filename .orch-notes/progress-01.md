@@ -7,7 +7,7 @@ Done:
   except flat-sibling `_bootstrap`, matching this module family's
   existing package/flat dual-mode idiom).
 - Converted every module/test that redeclared the ENV_VAR literal
-  ("ORCHFLOWS_STATE_HOME") to import state_root.ENV_VAR (or, where
+  to import state_root.ENV_VAR (or, where
   importing state_root itself would be wrong -- tools/suite_check.py,
   which must watch the sink a --repo-root tree with no such module
   would resolve -- scripts._bootstrap.ENV_VAR directly). ~45 files

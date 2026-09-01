@@ -12,6 +12,8 @@ from pathlib import Path
 from scripts import tickets
 from scripts.tickets_commands import SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE
 
+from tests._retired_doors import RETIRED_DOOR_NAMES
+
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 RULES = ROOT / "rules"
@@ -45,22 +47,24 @@ class CurrentCommandSurfaceTest(unittest.TestCase):
     def test_the_retired_generation_and_gate_doors_are_named_nowhere(self):
         """The four pre-brick doors and the gate family left the surface.
 
-        `stamp-generation`, `draft-validate`, and `seal` are folded inside
-        `tickets.py do` and `tickets.py judge`; `gate` and `checker-stage`
-        are gone with the choreography, and critique-to-repair is prose over
-        `judge` and `do`. `instantiate` left with the template layer it read,
-        and `join-noop-repair` left with the `.gate.` id family it
-        discriminated -- unreachable once nothing minted a `.gate.repair`
-        ticket, and now not routed either. A skill that still walked a
-        caller through one of them would be walking it into
+        `stamp-generation`, `draft-validate`, `seal`, and `ready` are folded
+        inside `tickets.py do`, `tickets.py judge`, and `tickets.py dispatch`
+        (`tests/_retired_doors.py` owns this closed set, and reaches their
+        internals for fixtures that still need one directly); `gate` and
+        `checker-stage` are gone with the choreography, and critique-to-repair
+        is prose over `judge` and `do`. `instantiate` left with the template
+        layer it read, and `join-noop-repair` left with the `.gate.` id
+        family it discriminated -- unreachable once nothing minted a
+        `.gate.repair` ticket, and now not routed either. A skill that still
+        walked a caller through one of them would be walking it into
         `unknown subcommand`.
         """
 
-        retired = {
-            "stamp-generation", "draft-validate", "seal", "gate",
-            "checker-stage", "loop-arm", "loop-evaluate", "loop-advance",
-            "instantiate", "join-noop-repair",
+        gate_and_loop_family = {
+            "gate", "checker-stage", "loop-arm", "loop-evaluate",
+            "loop-advance", "instantiate", "join-noop-repair",
         }
+        retired = RETIRED_DOOR_NAMES | gate_and_loop_family
         self.assertEqual(set(), retired & routed_commands())
         named = set()
         for path in SKILLS.rglob("SKILL.md"):

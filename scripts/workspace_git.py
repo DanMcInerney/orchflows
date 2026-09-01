@@ -10,11 +10,12 @@ from pathlib import Path
 # facade is what a facade exists to spare its callers, and the one here read
 # through seams the facade re-points at these same modules anyway.
 try:
-    from . import state_root, tickets_format, tickets_store, workspace_record
+    from . import state_root, tickets_format, tickets_store, tickets_transitions, workspace_record
 except ImportError:
     import state_root
     import tickets_format
     import tickets_store
+    import tickets_transitions
     import workspace_record
 
 
@@ -508,7 +509,7 @@ def _sharers(ticket_path, git_out, is_ancestor, branch: str) -> list:
         if path == ticket_path:
             continue
         data = tickets_store._load_ticket(path)
-        if "error" in data or data.get("status") != "claimed":
+        if "error" in data or data.get("status") != tickets_transitions.CLAIMED:
             continue
         recorded = str(data.get(BRANCH_KEY) or "").strip()
         if _records_this_tree(git_out, is_ancestor, recorded, branch):

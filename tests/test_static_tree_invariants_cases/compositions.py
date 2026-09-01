@@ -1,7 +1,7 @@
 """Static invariants owned by the library's workflow skills."""
 import unittest
 
-from scripts.tickets_registry import CALLABLE_EXECUTORS
+from scripts.tickets_registry import CALLABLE_EXECUTORS, SUPERSEDED_EXECUTORS
 
 from ._support import (
     COMPOSITIONS,
@@ -77,8 +77,11 @@ class TestWorkflowSkills(unittest.TestCase):
                     "--pack " in body or "frame-open <run> --parent" in body,
                     f"{directory.name} neither calls a brick nor nests a frame",
                 )
-                # No retired callable survives the conversion.
-                for retired in ("orch-execute", "orch-check", "orch-outline", "orch-spec"):
+                # No retired callable survives the conversion: every name
+                # the registry knows as superseded, not a hand-picked
+                # subset of it (report P6; a subset is how a name the
+                # registry already tracks slips back in unnoticed).
+                for retired in SUPERSEDED_EXECUTORS:
                     self.assertNotIn(retired, body)
                 for token in ("orch-do", "orch-judge"):
                     self.assertIn(token, registered)

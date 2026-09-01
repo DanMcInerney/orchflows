@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from scripts import orchflows_home
+
 from .foundation import _scope_home
 from .managed_text import upsert_import_line, upsert_marked_block
 from .models import Plan, _host_block_content
@@ -394,7 +396,7 @@ def quick_report(
     """Return the fast freshness verdict without touching the filesystem."""
 
     scope_home = _scope_home(scope, project_root)
-    receipt_path = scope_home / "receipt.json"
+    receipt_path = scope_home / orchflows_home.RECEIPT_FILENAME
     receipt, unreadable = _read_receipt(receipt_path)
     findings = [unreadable] if unreadable is not None else []
     if receipt is not None:

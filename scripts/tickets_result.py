@@ -32,12 +32,14 @@ if __package__:
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
     )
+    from .tickets_transitions import CLAIMED
 else:
     from tickets_attempts import PROTOCOL, _commit_record
     from tickets_shapes import (
         DISPATCH_RESULT_PROJECTION_FIELDS, DISPATCH_RESULT_RECORD_FIELDS,
         DISPATCH_RESULT_SUCCESS_FIELDS,
     )
+    from tickets_transitions import CLAIMED
 
 TERMINAL_HEADING = '## terminal'
 RESULT_ATTRIBUTION_PREFIX = '### Written by '
@@ -124,7 +126,7 @@ def _result_under_run_lock(rest):
         if recorded != (run, ticket_id):
             return text, None, {'error': f'ticket identity does not match result target {run}/{ticket_id}: frontmatter records {recorded[0] or "<missing>"}/{recorded[1] or "<missing>"}'}
         status = dequote(data.get('status'))
-        if status != 'claimed':
+        if status != CLAIMED:
             return text, None, {'error': f"result requires a claimed ticket and writes no lifecycle state; {run}/{ticket_id} is '{status or '<missing>'}'"}
         if lease_of(data)[0] != written_by:
             return text, None, {'code': 'identity-mismatch', 'error': 'result writer does not match the current ticket claimant', 'protocol': PROTOCOL}

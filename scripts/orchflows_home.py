@@ -34,6 +34,10 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 LIB_VERSION_NAME = "lib.version"
 GITIGNORE_NAME = ".gitignore"
+# The installer's freshness record, read here and by every scope-home
+# consumer (`tickets_store`, and the installer's own doctor/planning/
+# uninstall) instead of respelling the filename.
+RECEIPT_FILENAME = "receipt.json"
 GITIGNORE_START = "# BEGIN ORCHFLOWS MANAGED IGNORES"
 GITIGNORE_END = "# END ORCHFLOWS MANAGED IGNORES"
 # Regenerable or machine-local, in that order: the installed library and its
@@ -108,7 +112,7 @@ def lib_version(home: Optional[Path] = None) -> Dict[str, object]:
 
     root = home if home is not None else rings.home_ring()
     try:
-        receipt = json.loads((root / "receipt.json").read_text(encoding="utf-8-sig"))
+        receipt = json.loads((root / RECEIPT_FILENAME).read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeDecodeError, ValueError):
         receipt = {}
     if not isinstance(receipt, dict):
@@ -281,7 +285,8 @@ def restore(home: Optional[Path] = None) -> List[dict]:
 
 __all__ = (
     "GITIGNORE_END", "GITIGNORE_NAME", "GITIGNORE_START", "LIB_VERSION_NAME",
-    "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "add", "bundle_name", "clone_at",
+    "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "RECEIPT_FILENAME",
+    "add", "bundle_name", "clone_at",
     "ensure", "lib_version", "read_lock", "resolve_pin", "restore",
     "split_reference", "upsert_block", "write_lock",
 )
