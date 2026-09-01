@@ -368,16 +368,22 @@ def _return_lines(assignment: dict) -> list:
     child never printed one exact form. Both are said here, once, in the one
     surface a child is guaranteed to read. Three of five research children
     on 2026-09-01 skipped that same commit line for a workspace with nothing
-    to commit: an adapter that establishes no git candidate gets its own
-    craft's `## Workspace` sentence instead, never the commit clause.
+    to commit: an adapter whose identity carries no commit (evidence-store
+    alone) gets its own craft's `## Workspace` sentence instead, never the
+    commit clause. A document-tree child does commit -- straight onto the
+    coordinator's own branch -- so it keeps the clause, minus the sentence
+    naming a candidate branch nothing was isolated to merge (finding F4).
     """
 
     kind = assignment.get("artifact_kind")
-    if assignment.get("git_candidate"):
+    if assignment.get("commits_in_place"):
+        merge_sentence = (
+            ", and the landing merges the candidate, not your working tree."
+            if assignment.get("git_candidate") else "."
+        )
         lines = [
             "Commit your work inside this candidate before you close; the closing "
-            "note names that commit. Uncommitted bytes are not evidence, and the "
-            "landing merges the candidate, not your working tree.",
+            "note names that commit. Uncommitted bytes are not evidence" + merge_sentence,
         ]
     else:
         workspace_line = assignment.get("workspace_line")

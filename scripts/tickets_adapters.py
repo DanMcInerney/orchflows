@@ -30,6 +30,16 @@ class Adapter:
     deterministic_gate: bool
     conflict_semantics: str
     workspace_strategy: str
+    # Whether a child of this adapter must commit in the tree it stands in
+    # for its bytes to survive: true for git, git-plus-render and
+    # document-tree, whose identities are all commits or a document
+    # revision one records; false for evidence-store, whose identity is a
+    # lane packet no commit stands behind. Distinct from
+    # `establishes_isolation and workspace_strategy == "git"` (whether the
+    # landing merges a candidate branch): a document-tree child commits
+    # straight onto the coordinator's own branch, so it must commit but has
+    # no isolated candidate for `land` to merge.
+    commits_in_place: bool
 
 
 ADAPTER_REGISTRY = {
@@ -41,6 +51,7 @@ ADAPTER_REGISTRY = {
         deterministic_gate=False,
         conflict_semantics="section-overlap",
         workspace_strategy="document-tree",
+        commits_in_place=True,
     ),
     "evidence-store": Adapter(
         key="evidence-store",
@@ -50,6 +61,7 @@ ADAPTER_REGISTRY = {
         deterministic_gate=False,
         conflict_semantics="append-only-lanes",
         workspace_strategy="evidence-store",
+        commits_in_place=False,
     ),
     "git": Adapter(
         key="git",
@@ -59,6 +71,7 @@ ADAPTER_REGISTRY = {
         deterministic_gate=True,
         conflict_semantics="git-overlap",
         workspace_strategy="git",
+        commits_in_place=True,
     ),
     "git-plus-render": Adapter(
         key="git-plus-render",
@@ -68,6 +81,7 @@ ADAPTER_REGISTRY = {
         deterministic_gate=True,
         conflict_semantics="view-overlap",
         workspace_strategy="git",
+        commits_in_place=True,
     ),
 }
 
