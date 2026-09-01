@@ -90,7 +90,7 @@ class LandDonePredicateTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -337,7 +337,7 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.environment = mock.patch.dict(os.environ, {
-            "ORCHFLOWS_STATE_HOME": self.temporary.name,
+            state_root.ENV_VAR: self.temporary.name,
             # the derived candidate lives beside the sink, never in the
             # host's own worktree root, or this fixture would meet a tree
             # some other run left there

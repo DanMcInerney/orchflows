@@ -36,8 +36,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from scripts import state_root  # noqa: E402
+
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 RUN = "testrun"
 # The one phrase every binding refusal carries, whichever door refused.  A
 # case that must tell "this law refused me" from "some other law did" reads

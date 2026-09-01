@@ -6,7 +6,7 @@ every lane at once. This exports one revision, overlays a caller-named
 path set from the working tree, and copies caller-named runs out of the
 user-scope state sink into a snapshot inside the tree, which a
 measurement record's artifact identities recompute over. A check reading
-run state in the tree points `ORCHFLOWS_STATE_HOME` at that snapshot, so
+run state in the tree points the sink env var at that snapshot, so
 it reads the revision's state rather than whatever the live sink holds
 by then. `--baseline` stops after the export, so the comparison reading
 comes from the same harness rather than a second recipe.
@@ -54,7 +54,7 @@ except ImportError:  # pragma: no cover - the installed copy's path
 
 # Where the snapshot lands inside the isolated tree. Not a second sink root
 # -- `scripts/state_root.py` owns that -- but a copy of one, laid out the
-# same way, so `ORCHFLOWS_STATE_HOME` can be pointed at it unchanged.
+# same way, so the sink env var can be pointed at it unchanged.
 SINK_COPY = ".orchflows-state"
 
 
@@ -238,7 +238,7 @@ def build(args) -> str:
         len(args.orch_run),
         "y" if len(args.orch_run) == 1 else "ies",
     )
-    # Where to point `ORCHFLOWS_STATE_HOME`; silent when nothing was copied,
+    # Where to point the sink env var; silent when nothing was copied,
     # because naming an empty snapshot invites a check to read one.
     if args.orch_run:
         report = "{} in {}/".format(report, SINK_COPY)

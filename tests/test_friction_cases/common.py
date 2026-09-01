@@ -37,9 +37,9 @@ _spec = importlib.util.spec_from_file_location(
 friction = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_spec and friction)
 
-from scripts import tickets  # noqa: E402  the owner of project identity
+from scripts import state_root, tickets  # noqa: E402  the owner of project identity
 
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 
 # The logger's current record fields, named separately from the four project
 # provenance fields so their ownership remains visible in assertions.
@@ -54,7 +54,7 @@ REQUIRED_ENTRY_KEYS = LOGGER_ENTRY_KEYS | PROVENANCE_KEYS
 class _IsolatedRepoTestCase(unittest.TestCase):
     """Base for tests that run friction.main() against a synthetic repo root.
 
-    Never touches the real sink — ``ORCHFLOWS_STATE_HOME`` is pointed at a
+    Never touches the real sink — the sink env var is pointed at a
     fresh tempdir for the duration, and cwd is pinned to a repository
     inside it and restored via addCleanup even if the test body raises.
     """

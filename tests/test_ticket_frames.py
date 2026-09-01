@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-from scripts import orchflows, tickets
+from scripts import orchflows, state_root, tickets
 from scripts.tickets_brick import DO_EXECUTOR
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, ticket_defects,
@@ -48,7 +48,7 @@ class FrameSinkTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),

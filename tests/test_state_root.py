@@ -17,6 +17,7 @@ ensure_temporary_sink()
 from tests.test_state_root_cases.environment import (  # noqa: E402, F401
     TestNoTestReachesTheRealSink,
     TestOneResolverOwnsBothFacts,
+    TestTheEnvVarNameIsThisLiteral,
     TestTheOverrideAndTheDefault,
 )
 from tests.test_state_root_cases.fallback import (  # noqa: E402, F401

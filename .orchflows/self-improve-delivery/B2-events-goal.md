@@ -40,7 +40,7 @@ Deliverables:
    unjudged, land with and without a done predicate); each line parses
    and carries the provenance head; the locked append writes whole
    lines; an unwritable events root does not fail the land or close
-   that triggered it. Use a temp `ORCHFLOWS_STATE_HOME` fixture sink.
+   that triggered it. Use a temp sink-env-var fixture sink.
    If the serial-compat manifest must list the new module, regenerate
    with `uv run --no-project python tools/run_serial_compat.py
    --write-manifest` and commit the result.

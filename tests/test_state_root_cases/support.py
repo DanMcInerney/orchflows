@@ -17,6 +17,7 @@ import scripts.workspace as workspace_mod
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = ROOT / "scripts"
 STATE_ROOT_PY = SCRIPTS_DIR / "state_root.py"
+BOOTSTRAP_PY = SCRIPTS_DIR / "_bootstrap.py"
 TICKETS_PY = SCRIPTS_DIR / "tickets.py"
 FRICTION_PY = SCRIPTS_DIR / "friction.py"
 ENV_VAR = state_root.ENV_VAR

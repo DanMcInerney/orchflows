@@ -50,6 +50,7 @@ from tests.test_tickets_cases.run_state_terminal import (  # noqa: F401
 )
 
 import scripts.rings_trust as rings_trust
+import scripts.state_root as state_root
 import scripts.tickets as tickets_mod
 import scripts.tickets_assignment as tickets_assignment
 import scripts.tickets_dispatch_launch as launch_module
@@ -78,7 +79,7 @@ class AdapterRegistryTest(unittest.TestCase):
             root = Path(raw).resolve()
             home = Path(raw_home).resolve()
             (root / ".orchflows" / "packs").mkdir(parents=True)
-            with mock.patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(home / "state")}):
+            with mock.patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
                 yield root
 
     def _pack(self, root: Path, adapter: str, body: str = None):
@@ -337,7 +338,7 @@ class PackPinTest(unittest.TestCase):
                 skill.read_bytes().replace(b"name: orch-code-pack", b"name: widget-pack")
             )
             with mock.patch.dict(
-                os.environ, {"ORCHFLOWS_STATE_HOME": str(tmp / "state-sink")}
+                os.environ, {state_root.ENV_VAR: str(tmp / "state-sink")}
             ), mock.patch("scripts.rings.Path.cwd", return_value=tmp):
                 rings_trust.grant(tmp / ".orchflows")
                 yield tmp, pack

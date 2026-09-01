@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
@@ -53,7 +54,7 @@ TICKETS_WORKLOG_PY = TICKETS_PY.with_name("tickets_worklog.py")
 TICKETS_DISPATCH_PY = TICKETS_PY.with_name("tickets_dispatch.py")
 STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
 WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 
 TICKET = """---
 id: {tid}
@@ -72,7 +73,7 @@ Test ticket.
 
 
 def use_sink(tmp: Path) -> Path:
-    """Point ``ORCHFLOWS_STATE_HOME`` at a sink under this test's tempdir.
+    """Point the sink env var at a sink under this test's tempdir.
 
     Sets the variable for the rest of the process rather than restoring
     it: every fixture below calls this before writing, and

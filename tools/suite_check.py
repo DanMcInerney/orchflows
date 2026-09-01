@@ -12,9 +12,9 @@ mechanically:
     existing files mid-run -- the running session's transcript -- while
     the friction streams stay byte-exact (the harness itself writes only
     to stdout). The sink is
-    resolved in *this* process, so a suite that redirects
-    ``ORCHFLOWS_STATE_HOME`` for its own children is still graded
-    against the root it was supposed to leave alone.
+    resolved in *this* process, so a suite that redirects the sink env
+    var for its own children is still graded against the root it was
+    supposed to leave alone.
 (c) stripped-PATH run — re-runs the suite with PATH rebuilt to only
     the running interpreter's own directory (and a ``Scripts``/``bin``
     sibling, if present), so no `claude`, `codex`, or `npx` on the
@@ -42,6 +42,17 @@ import stat
 import subprocess
 import sys
 from pathlib import Path
+
+# Not `scripts.state_root`: this guard watches the sink the *suite's own*
+# interpreter would resolve even when `--repo-root` points at a tree that
+# carries no such module at all, so it cannot depend on the tree under
+# test having one. `scripts/_bootstrap.py` is this checkout's own fixed
+# sibling, never the target tree's, and it is the one code owner of the
+# env-var name regardless of which tree is under test.
+_OWN_ROOT = Path(__file__).resolve().parent.parent
+if str(_OWN_ROOT) not in sys.path:
+    sys.path.insert(0, str(_OWN_ROOT))
+from scripts import _bootstrap  # noqa: E402
 
 SKIP_LINE_RE = re.compile(r"^(?P<test_id>\S.*?) \.\.\. skipped (?P<repr>.+?)\s*$")
 
@@ -199,11 +210,8 @@ HOME_WATCH_DIRS = (
     ("codex_home", ".codex", "CODEX_HOME"),
     ("orchflows_home", ".orchflows", None),
 )
-# scripts/state_root.py owns this pair; the guard cannot import it, because
-# it must watch the sink the *suite's* interpreter would resolve even when
-# the tree under test has no such module. tests/test_suite_check.py asserts
-# the two agree.
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+# `STATE_HOME_SUBPATH` mirrors `scripts.state_root.DEFAULT_HOME_SUBPATH`;
+# tests/test_suite_check.py asserts the two agree.
 STATE_HOME_SUBPATH = (".orchflows", "state")
 
 
@@ -220,12 +228,12 @@ def state_sink_dir(home: Path) -> Path:
     """The state sink this run would write to, override honoured.
 
     ``~/.orchflows`` is already watched, so the default sink is covered by
-    that tree. An ``ORCHFLOWS_STATE_HOME`` pointing anywhere else is not,
-    and a suite that redirects the sink is exactly when a stray write is
-    most likely — so the resolved root is watched under its own name.
+    that tree. The sink env var pointing anywhere else is not, and a
+    suite that redirects the sink is exactly when a stray write is most
+    likely — so the resolved root is watched under its own name.
     """
 
-    override = os.environ.get(STATE_HOME_ENV_VAR, "").strip()
+    override = os.environ.get(_bootstrap.ENV_VAR, "").strip()
     return Path(override).expanduser() if override else home.joinpath(*STATE_HOME_SUBPATH)
 
 

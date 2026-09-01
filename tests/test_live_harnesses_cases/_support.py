@@ -14,6 +14,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from scripts import state_root
 from tools import live_claude_profiles as claude_live
 from tools import live_codex_profiles as codex_live
 from tools import live_routing_bench as routing_live

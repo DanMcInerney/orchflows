@@ -229,7 +229,7 @@ def default_root() -> Path:
 
     One fact, one owner (``rules/visibility.md`` §3): the path comes from
     ``scripts/state_root.py`` and is read at call time, never cached, so a
-    caller may redirect ``$ORCHFLOWS_STATE_HOME`` after import.
+    caller may redirect the sink env var after import.
     """
 
     return state_root.state_root()

@@ -25,6 +25,7 @@ from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
 from tests import _retired_doors as retired_doors
+from scripts import state_root
 from scripts import tickets
 from scripts.tickets_format import parse_canonical_json
 
@@ -50,7 +51,7 @@ class _EventSinkTestCase(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),

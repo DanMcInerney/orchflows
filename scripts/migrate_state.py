@@ -2,10 +2,10 @@
 """Copy a pre-existing state tree into the one user-scope sink.
 
 Stdlib-only, cross-platform, no symlinks followed or created. The
-destination is the root ``scripts/state_root.py`` resolves —
-``$ORCHFLOWS_STATE_HOME`` or ``~/.orchflows/state`` — and this script
-holds no second copy of that rule, of what a project is, or of the
-friction entry's shape: it calls their owners.
+destination is the root ``scripts/state_root.py`` resolves — the sink
+env var (``rules/visibility.md`` section 6) or ``~/.orchflows/state`` —
+and this script holds no second copy of that rule, of what a project is,
+or of the friction entry's shape: it calls their owners.
 
 Usage:
     python migrate_state.py --from ROOT [--from ROOT ...] [--dry-run]

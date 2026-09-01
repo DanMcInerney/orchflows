@@ -13,7 +13,7 @@ from reader.tests.test_ui_cases import _base as fixture
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+SINK_ENV_VAR = state_root.ENV_VAR
 UI_PY = ROOT / "reader" / "scripts" / "ui.py"
 
 

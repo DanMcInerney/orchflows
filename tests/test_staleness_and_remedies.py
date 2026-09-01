@@ -24,6 +24,7 @@ from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
 from tests import _retired_doors as retired_doors
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
 from scripts import tickets_dispatch_launch as launch_module
@@ -51,7 +52,7 @@ class SinkTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": str(self.home),
+                state_root.ENV_VAR: str(self.home),
                 "ORCHFLOWS_WORKTREES_HOME": str(self.home / "worktrees"),
             },
         )

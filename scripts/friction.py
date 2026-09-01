@@ -23,8 +23,8 @@ is resolved mechanically -- ``$ORCHFLOWS_RUN``, else the candidate
 workspace the caller is standing in. See ``_resolved_run``.
 
 Log location: ``<sink>/friction/<YYYY-MM>.jsonl``, where the sink is the
-one user-scope root ``scripts/state_root.py`` resolves —
-``$ORCHFLOWS_STATE_HOME`` or ``~/.orchflows/state``. One stream for
+one user-scope root ``scripts/state_root.py`` resolves — the sink env var
+(``rules/visibility.md`` section 6) or ``~/.orchflows/state``. One stream for
 every repository; the project an entry arose in is a field on the entry,
 never its location. There is no fallback: a write that cannot reach that
 root lands nowhere, and says so on stderr, per the bar above.

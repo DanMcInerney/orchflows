@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_grade
 from scripts.tickets_grade import grade_snapshot, GradeError
@@ -114,7 +115,7 @@ class GradeCommandTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),

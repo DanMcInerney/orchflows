@@ -14,6 +14,7 @@ from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
 from tests import _retired_doors as retired_doors
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
@@ -57,7 +58,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         # machine-shared system temp root -- instead of staying inside
         # this fixture's own tree.
         self.environment = mock.patch.dict(os.environ, {
-            "ORCHFLOWS_STATE_HOME": self.temporary.name,
+            state_root.ENV_VAR: self.temporary.name,
             "ORCHFLOWS_WORKTREES_HOME": str(Path(self.temporary.name) / "worktrees"),
         })
         self.environment.start()

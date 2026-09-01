@@ -11,6 +11,8 @@ import textwrap
 import unittest
 from pathlib import Path
 
+from scripts import state_root
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -99,33 +101,37 @@ class TestHarnessSubprocess(unittest.TestCase):
         for who, body in (
             (
                 "in_process",
-                """
+                (
+                    """
                 import os, pathlib, unittest
 
                 class TestStray(unittest.TestCase):
                     def test_writes_into_the_sink(self):
-                        sink = pathlib.Path(os.environ["ORCHFLOWS_STATE_HOME"])
+                        sink = pathlib.Path(os.environ[{0!r}])
                         (sink / "runs" / "leaked").mkdir(parents=True, exist_ok=True)
                         (sink / "runs" / "leaked" / "worklog.md").write_text("x\\n")
-                """,
+                """
+                ).format(state_root.ENV_VAR),
             ),
             (
                 "subprocess",
-                """
+                (
+                    """
                 import os, subprocess, sys, unittest
 
                 class TestStray(unittest.TestCase):
                     def test_a_child_writes_into_the_inherited_sink(self):
                         program = (
                             "import os, pathlib;"
-                            "s = pathlib.Path(os.environ['ORCHFLOWS_STATE_HOME']);"
+                            "s = pathlib.Path(os.environ[{0!r}]);"
                             "d = s / 'friction';"
                             "d.mkdir(parents=True, exist_ok=True);"
-                            "(d / '2026-08.jsonl').write_text('{}\\\\n')"
+                            "(d / '2026-08.jsonl').write_text('{{}}\\\\n')"
                         )
                         done = subprocess.run([sys.executable, "-c", program])
                         self.assertEqual(0, done.returncode)
-                """,
+                """
+                ).format(state_root.ENV_VAR),
             ),
         ):
             with self.subTest(who=who), tempfile.TemporaryDirectory() as td:
@@ -138,7 +144,7 @@ class TestHarnessSubprocess(unittest.TestCase):
                 )
                 sink = root / "stand-in-sink"
                 sink.mkdir()
-                env = dict(os.environ, ORCHFLOWS_STATE_HOME=str(sink))
+                env = dict(os.environ, **{state_root.ENV_VAR: str(sink)})
                 result = subprocess.run(
                     [
                         sys.executable,
