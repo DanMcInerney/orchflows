@@ -1,8 +1,11 @@
 """Checks for scripts/harvest.py (and its scripts/harvest_cluster.py seam):
 the deterministic harvest door -- window/selector slicing, covered-matcher
 exclusion, greedy-union clustering, the improvement law rule 4 arithmetic,
-and the ``--list-runs`` resolver. Never touches the real sink:
-``ORCHFLOWS_STATE_HOME`` is pointed at a fresh tempdir for every case.
+the digest's own covered ``watermark``, and the ``--list-runs`` resolver
+(including the writer/reader seam it crosses -- ``TestWriterReaderSeam``
+drives the real ``tickets.py frame-open`` rather than a fixture). Never
+touches the real sink: ``ORCHFLOWS_STATE_HOME`` is pointed at a fresh
+tempdir for every case.
 """
 
 from __future__ import annotations
@@ -31,6 +34,10 @@ _spec = importlib.util.spec_from_file_location("harvest", HARVEST_PY)
 harvest = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(harvest)
 
+# The real writer, for the one test (TestWriterReaderSeam) that has to drive
+# it instead of a fixture -- see scripts.tickets_frame's frame-open.
+from scripts import tickets
+
 STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
 
 
@@ -58,11 +65,15 @@ def _friction_entry(ts, observed, expected, *, session=None, run=None,
     }
 
 
-def _frame_open(ts, run, workflow, goal):
+def _frame_open(ts, run, workflow, goal_head):
+    # Field spellings match the real writer (scripts/tickets_frame.py's
+    # `_cmd_frame_open` and scripts/tickets_store.py's `SINK_CONVENTION`,
+    # an int) -- F4: an invented spelling here is exactly what let F1 ship.
     return {
-        "sink_convention": "orchflows.events.v1", "ts": ts,
+        "sink_convention": tickets.SINK_CONVENTION, "ts": ts,
         "project": None, "run": run, "ticket": None, "host": "claude-code",
-        "session": None, "event": "frame-open", "workflow": workflow, "goal": goal,
+        "session": None, "event": "frame-open", "workflow": workflow,
+        "goal_head": goal_head,
     }
 
 
@@ -197,6 +208,55 @@ class TestOnDaysDisjointUnion(_HarvestTestCase):
         rc, _, stderr = self._run(["--out", str(self._out_path()), "--on", "not-a-date"])
         self.assertEqual(2, rc)
         self.assertIn("--on", stderr)
+
+
+class TestDigestWatermark(_HarvestTestCase):
+    """F2: the digest header's own `watermark` -- the newest entry
+    timestamp this run actually read, or the window's own closing edge
+    when nothing was read. `improvement --covered` is meant to carry this
+    verbatim (SKILL.md's Frame law), so a covered line built from it must
+    never claim a date past what this harvest saw.
+    """
+
+    def test_watermark_is_the_newest_selected_entry(self):
+        entries = [
+            _friction_entry("2026-08-01T00:00:00Z", "a", "e"),
+            _friction_entry("2026-08-10T00:00:00Z", "b", "e"),
+        ]
+        _write_jsonl(self._friction_path(), entries)
+        rc, digest, _, _ = self._harvest(["--since", "2026-01-01T00:00:00Z"])
+        self.assertEqual("2026-08-10T00:00:00Z", digest["watermark"])
+
+    def test_watermark_counts_a_selected_entry_even_when_covered_drops_it(self):
+        # the entry is read (selected) before covered exclusion runs, so it
+        # still dates the watermark despite never reaching a cluster.
+        _write_jsonl(self._friction_path(), [
+            _friction_entry("2026-08-01T00:00:00Z", "old failure marker", "e"),
+        ])
+        _write_jsonl(self._covered_path(), [{
+            "matcher": ["failure marker"], "watermark": "2026-08-05T00:00:00Z",
+        }])
+        rc, digest, _, _ = self._harvest(["--since", "2026-01-01T00:00:00Z"])
+        self.assertEqual(1, digest["totals"]["covered_dropped"])
+        self.assertEqual(0, digest["totals"]["clustered_entries"])
+        self.assertEqual("2026-08-01T00:00:00Z", digest["watermark"])
+
+    def test_empty_selection_with_a_bounded_until_uses_the_window_end(self):
+        rc, digest, _, _ = self._harvest([
+            "--since", "2026-01-01T00:00:00Z", "--until", "2026-06-01T00:00:00Z",
+        ])
+        self.assertEqual(0, digest["totals"]["friction_selected"])
+        self.assertEqual("2026-06-01T00:00:00Z", digest["watermark"])
+
+    def test_empty_selection_with_an_on_day_uses_the_days_end(self):
+        rc, digest, _, _ = self._harvest(["--on", "2026-08-01"])
+        self.assertEqual(0, digest["totals"]["friction_selected"])
+        self.assertEqual("2026-08-02T00:00:00Z", digest["watermark"])
+
+    def test_empty_selection_with_an_unbounded_window_is_null(self):
+        rc, digest, _, _ = self._harvest(["--since", "2026-01-01T00:00:00Z"])
+        self.assertEqual(0, digest["totals"]["friction_selected"])
+        self.assertIsNone(digest["watermark"])
 
 
 class TestCoveredMatcherExclusion(_HarvestTestCase):
@@ -431,6 +491,53 @@ class TestListRuns(_HarvestTestCase):
     def test_list_runs_rejects_out(self):
         rc, _, stderr = self._run(["--list-runs", "--out", str(self._out_path())])
         self.assertEqual(2, rc)
+
+
+class TestWriterReaderSeam(_HarvestTestCase):
+    """F4: the seam itself, not a fixture standing in for it. Drives the
+    real writer -- `tickets.py frame-open` (scripts/tickets_frame.py), the
+    way a driver actually invokes it -- against this test's own temp sink,
+    then reads the same sink back with harvest's real `--list-runs`. A
+    fixture that invents the reader's spelling cannot fail when the
+    writer's spelling drifts (that is exactly how F1 shipped green); this
+    test is built precisely so it can, on either side.
+    """
+
+    def setUp(self):
+        super().setUp()
+        worktrees_patch = mock.patch.dict(
+            os.environ, {"ORCHFLOWS_WORKTREES_HOME": str(self.tmp / "worktrees")},
+        )
+        worktrees_patch.start()
+        self.addCleanup(worktrees_patch.stop)
+        self.goal_file = self.tmp / "goal.md"
+        self.goal_file.write_text("Deliver the thing.\nsecond line.\n", encoding="utf-8")
+
+    def _real_frame_open(self, run, workflow):
+        # Workspace establishment is the one side effect this seam does not
+        # own -- mocked exactly as tests/test_events.py mocks it, so this
+        # stays a test of the frame-open/harvest seam and not of the
+        # workspace machinery underneath it.
+        facade = tickets._tickets_dispatch_facade_module
+        with mock.patch.object(
+            facade, "_workspace_establish",
+            side_effect=lambda *_: {"establish": {"workspace_path": str(self.tmp)}},
+        ), mock.patch.object(
+            facade, "_workspace_prepare", return_value={"outcome": "skipped"},
+        ):
+            answer = tickets._dispatch([
+                "frame-open", run, "--goal-file", str(self.goal_file),
+                "--workflow", workflow,
+            ])
+        self.assertNotIn("error", answer, answer)
+        return answer["frame_open"]
+
+    def test_real_writer_and_reader_agree_on_workflow_and_goal(self):
+        self._real_frame_open("R1", "self-improve")
+        rc, stdout, _ = self._run(["--list-runs", "--since", "2020-01-01T00:00:00Z"])
+        self.assertEqual(0, rc)
+        fields = stdout.strip().splitlines()[0].split("\t")
+        self.assertEqual(["R1", "self-improve", "Deliver the thing."], fields[:3])
 
 
 class TestCliUsageErrors(_HarvestTestCase):

@@ -13,25 +13,24 @@ Require: a window — the harvest's flags — and, when delivering, a
       [--on <date>]... [--session <id>]... [--run <id>]...
       [--project <name>] [--workflow <name>] [--skill <orch-name>]
 
-A fuzzy window — "this last workflow", "the scraper run" — resolves
-first: `harvest.py --list-runs` prints the candidate runs (id,
-workflow, goal, counts); then pass exact flags. One command slices
-friction and events by the window, drops what a covered matcher
-already answers, clusters, and marks each cluster meeting
+A fuzzy window — "this last workflow" — resolves first:
+`harvest.py --list-runs` prints candidate runs (id, workflow, goal,
+counts); pass exact flags. One command slices friction and events
+by the window, drops what a covered matcher already answers,
+clusters, and marks each cluster meeting
 [the improvement law](../../rules/improvement.md) §4's recurrence
 arithmetic. The digest is the only evidence later steps read; raw
-streams are never handed to a child. An empty digest ends the cycle
-here — say so and stop: no frame, no ticket.
+streams never reach a child. An empty digest ends the cycle here —
+say so and stop: no frame, no ticket.
 
 **Mine.** A digest at or under 40 entries you mine yourself — the
 act lane: assign each qualifying cluster one causal owner, check any
 claimed contradiction against the owner's current text, and write
 ranked proposals through `tickets.py improvement --proposal`,
-carrying the digest's cluster_key, matcher and watermark verbatim.
-Larger, or when independent eyes are wanted, spend one brick, which
-opens the frame:
+carrying the digest's cluster_key, matcher_draft and watermark
+verbatim. Larger, or when independent eyes are wanted, spend one
+brick:
 
-    tickets.py frame-open <run> --goal-file <frame-goal>
     tickets.py do <run> --pack orch-content-pack --parent <frame>
       --goal-file <mine-goal> --bound "<= 40 tool calls"
 
@@ -52,13 +51,17 @@ replayable item, `done` the owner's required gate at the landed
 revision — and, the last act, `tickets.py improvement --covered`
 with the digest-supplied line citing that revision.
 
-Frame law: reread `## Report` before deciding, log each `result`;
-keep `artifact:` or `findings:` word for word. Close with
-`frame-close`. With two or more do-children the judge reads the
-seam: the delivered change equals the top proposal, nothing edited
-outside its scope, the covered line present with a sane watermark. A
-single-child cycle closes `unjudged: single child; the owner's gate
-and the human-reviewed merge are the review`.
+Frame law: the first brick, mine's or deliver's, opens it.
+
+    tickets.py frame-open <run> --goal-file <frame-goal> --workflow self-improve
+
+Reread `## Report` before deciding, log each `result`; keep
+`artifact:` or `findings:` word for word. Close with `frame-close`.
+With two or more do-children the judge reads the seam: the delivered
+change equals the top proposal, nothing edited outside its scope,
+the covered line present with a sane watermark. A single-child cycle
+closes `unjudged: single child; the owner's gate and the
+human-reviewed merge are the review`.
 
 Never: land a proposal the mine did not rank first, deliver more
 than one proposal per cycle, edit a friction entry, an event, or a

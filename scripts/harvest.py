@@ -50,6 +50,13 @@ Move 1):
 4. Compute improvement law (``rules/improvement.md``) rule 4's recurrence
    arithmetic per cluster and mark ``recurrence_met``.
 
+The digest header carries ``watermark``: the newest ``ts`` among the
+friction entries this run selected (step 1, before covered exclusion), so
+a covered line built from this digest never eats a recurrence past what
+was actually read. An empty selection has no entry to date it by, so
+``watermark`` falls back to the window's own closing edge (``--until`` or
+the latest ``--on`` day) when the window is bounded, else ``null``.
+
 ``--list-runs`` never writes ``--out``; it prints one tab-separated line
 per run in the window (run id, workflow, goal first line, earliest and
 latest entry timestamp, friction count, event count), a missing field
@@ -301,6 +308,27 @@ def _default_since_from_covered(covered):
     return max(marks) if marks else None
 
 
+def _window_end(until_dt, on_ranges):
+    """The window's closing edge if the caller bounded one, else ``None``.
+    ``--until`` and each ``--on`` day both name a half-open upper edge; the
+    later of whichever were given stands, so an ``--on`` day past an
+    earlier ``--until`` still counts as the bound."""
+
+    ends = [dt for dt in [until_dt] if dt is not None]
+    if on_ranges:
+        ends.append(max(end for _, end in on_ranges))
+    return max(ends) if ends else None
+
+
+def _newest_ts(entries):
+    """The latest parseable ``ts`` among ``entries``, or ``None`` for an
+    empty or entirely unparseable list."""
+
+    stamps = [_parse_timestamp(e.get("ts")) for e in entries]
+    stamps = [dt for dt in stamps if dt is not None]
+    return max(stamps) if stamps else None
+
+
 def _apply_covered_exclusion(entries, covered):
     """``(kept, dropped_count)``. A candidate is dropped by the first covered
     entry at or before whose watermark it falls and whose pattern matches;
@@ -363,7 +391,7 @@ def _goal_first_lines(event_entries) -> dict:
             continue
         run = entry.get("run")
         if run and run not in goals:
-            goals[run] = entry.get("goal")
+            goals[run] = entry.get("goal_head")
     return goals
 
 
@@ -483,8 +511,13 @@ def _run(argv, now=None) -> int:
     cluster = _cluster()
     records = cluster.build_cluster_records(cluster.cluster_entries(kept))
 
+    watermark_dt = _newest_ts(selected)
+    if watermark_dt is None:
+        watermark_dt = _window_end(until_dt, on_ranges)
+
     digest = {
         "generated_at": _iso(now),
+        "watermark": _iso(watermark_dt),
         "window": _window_echo(args, since_dt, until_dt, on_ranges, defaulted),
         "streams_read": {
             "friction_files": _file_count(friction_dir),
