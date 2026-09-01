@@ -21,9 +21,11 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -292,6 +294,70 @@ class BrickPromptTest(BrickSinkTest):
 
         self.assertIn("is not one typed identity", refused["error"])
         self.assertFalse((self.run_dir() / "B1.1.md").exists())
+
+
+class RepairRoundAdmissionTest(BrickSinkTest):
+    """A `do` brick's repair round binds through the brick, not the frame.
+
+    The wedge run 20260901T021739Z hit: the sealed record for a frame-rooted
+    run names only the frame in `assignment_seals`, but a repair round's
+    grammar-derived parent (`landing_round_parent`) is the brick it repairs,
+    which is itself a runtime-minted child the cut never named. Grading the
+    round's admission through one hop found a parent absent from the sealed
+    set and refused `sealed-parent-mismatch` -- every repair round of every
+    `do`/`judge` brick, unconditionally.
+    """
+
+    def _issue(self, verb, *arguments) -> dict:
+        """One non-brick door, under the same establishment stub `brick` uses."""
+
+        facade = tickets._tickets_dispatch_facade_module
+        with mock.patch.object(
+            facade, "_workspace_establish", side_effect=self._establish,
+        ), mock.patch.object(
+            facade, "_workspace_prepare", return_value={"outcome": "skipped"},
+        ):
+            return tickets._dispatch([verb, self.RUN, *arguments])
+
+    def _lease(self) -> str:
+        return (
+            datetime.now(timezone.utc) + timedelta(hours=1)
+        ).isoformat().replace("+00:00", "Z")
+
+    def test_a_runtime_bricks_repair_round_admits_and_dispatches(self):
+        frame_id = self.brick("frame-open")["frame_open"]["id"]
+        command = f'"{sys.executable}" -c "raise SystemExit(3)"'
+        done = json.dumps({"form": "command", "value": command}, sort_keys=True)
+
+        brick_id = self.brick(
+            "do", "--pack", CODE_PACK, "--parent", frame_id,
+            "--isolation", "none", "--done", done,
+        )["do"]["id"]
+        seal = parse_canonical_json(
+            _parse_frontmatter(self.ticket_text(brick_id))["dispatch_v1"]
+        )["attempts"][0]["assignment_seal"]
+
+        self._issue(
+            "dispatch-outcome", brick_id, "--note", "delivered and verified",
+        )
+        landed = self._issue(
+            "land", brick_id, "--assignment-seal", seal,
+            "--dispatch-id", f"{brick_id}:d1", "--outcome-record-id", "outcome",
+            "--by", "root-join",
+        )
+        self.assertNotIn("error", landed, landed)
+        self.assertIsNone(landed["land"]["status"])
+        repair_id = landed["land"]["steps"][-1]["repair"]
+        self.assertEqual(f"{brick_id}.repair.1", repair_id)
+
+        dispatched = self._issue(
+            "dispatch", repair_id, "--by", repair_id,
+            "--dispatch-id", f"{repair_id}:d1",
+            "--lease-expires-at", self._lease(),
+            "--workspace", str(self.candidate),
+        )
+
+        self.assertNotIn("error", dispatched, dispatched)
 
 
 class BrickLandingTest(BrickSinkTest):

@@ -175,6 +175,30 @@ class LandDonePredicateTest(unittest.TestCase):
         self.assertIn("### Written by `root-join`", verification)
         self.assertIn(f"done command `{command}` exited 0 in ", verification)
 
+    def test_land_still_joins_after_the_workers_lease_expires(self):
+        """The 2026-09-01 wedge, at the door a driver actually calls.
+
+        `stand_up` already commits the outcome inside the worker's lease.
+        The driver calling `land` days later is not the worker's overrun to
+        answer for: the join is the driver's own act, and it names no
+        lease of its own to have missed.
+        """
+
+        self.stand_up(_done("command", _command(0)))
+
+        class Later(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                value = datetime(2100, 1, 1, tzinfo=timezone.utc)
+                return value if tz is None else value.astimezone(tz)
+
+        with mock.patch("scripts.tickets_attempts.datetime", Later):
+            landed = self.land()
+
+        self.assertNotIn("error", landed, landed)
+        self.assertEqual("complete", landed["land"]["status"])
+        self.assertEqual("checked", self.steps(landed)["done"]["outcome"])
+
     def test_a_refused_join_flag_leaves_everything_unmoved(self):
         """The 2026-09-01 landing defect, in its general form.
 

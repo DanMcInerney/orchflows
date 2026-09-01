@@ -183,8 +183,8 @@ def _checker_stage_target(ticket_id: str, dependencies) -> str | None:
     return None
 
 
-def sealed_parent_target(ticket_id, text, data, siblings, digest):
-    """The sealed ticket one lawful post-seal child binds its admission through.
+def sealed_parent_target(ticket_id, text, data, siblings, digest, sealed_assignments=None):
+    """The sealed ticket one lawful post-seal chain binds its admission through.
 
     The sealed cut names the assignments that existed when it was sealed, and
     a runtime child exists only afterwards, so it can never be named there.
@@ -195,23 +195,44 @@ def sealed_parent_target(ticket_id, text, data, siblings, digest):
     fails that last reading and falls through to the sealed-set door, which
     has never named it and refuses it.
 
+    A one-hop reading of that rule stops at whatever `post_seal_parent`
+    returns even when that parent is itself a runtime child the cut never
+    named -- a `do`/`judge` brick's own repair round, whose grammar-derived
+    parent is the brick, not the frame the brick was minted under. That
+    parent admits exactly the way the brick it repairs admitted, so the walk
+    continues past it: each hop is validated the same way (generations agree,
+    self-seal matches current bytes) and the chain keeps climbing through
+    every un-sealed ancestor until one already named in `sealed_assignments`
+    grounds it. A chain that runs out (no further parent), or loops back on
+    an ancestor it already crossed -- which lawful minting cannot produce,
+    but a hand-edited `parent:` field could claim -- never grounds, and
+    returns ``None`` exactly as a chain of one always has: the caller's
+    sealed-set door then refuses the leaf directly.
+
     Written for a landing's repair rounds and generalized to every runtime
     child by the brick doors: `do` and `judge` mint under a sealed parent for
     the same reason a round does, and the parentage the id used to imply is
     now declared.
     """
-    parent_id = post_seal_parent(ticket_id, data, siblings)
-    if parent_id is None:
-        return None
-    parent = _parse_frontmatter(siblings[parent_id])
-    if any(
-        str(data.get(field) or "") != str(parent.get(field) or "")
-        for field in ("cut_generation", "root_generation")
-    ):
-        return None
-    if str(data.get("assignment_seal") or "") != digest(ticket_id, text):
-        return None
-    return parent_id
+    sealed_assignments = dict(sealed_assignments or {})
+    visited = {ticket_id}
+    current_id, current_text, current_data = ticket_id, text, data
+    while True:
+        parent_id = post_seal_parent(current_id, current_data, siblings)
+        if parent_id is None or parent_id in visited:
+            return None
+        parent = _parse_frontmatter(siblings[parent_id])
+        if any(
+            str(current_data.get(field) or "") != str(parent.get(field) or "")
+            for field in ("cut_generation", "root_generation")
+        ):
+            return None
+        if str(current_data.get("assignment_seal") or "") != digest(current_id, current_text):
+            return None
+        if parent_id in sealed_assignments:
+            return parent_id
+        visited.add(parent_id)
+        current_id, current_text, current_data = parent_id, siblings[parent_id], parent
 
 
 def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> dict:
@@ -270,6 +291,7 @@ def grade_admission(ticket_id: str, text: str, siblings: dict, context=None) -> 
             checker_target = _checker_stage_target(ticket_id, dependencies)
             sealed_parent = sealed_parent_target(
                 ticket_id, text, data, siblings, assignment_digest,
+                sealed_assignments,
             )
             if checker_target is not None:
                 target_text = siblings.get(checker_target)
