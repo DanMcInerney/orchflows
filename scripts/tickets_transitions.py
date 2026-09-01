@@ -15,7 +15,10 @@ else:
     from tickets_admission import ADMISSION_PENDING
     from tickets_format import TERMINAL_STATES, VALID_STATUSES
 
-PENDING, READY, CLAIMED, SUSPENDED = "pending", "ready", "claimed", "suspended"
+# PENDING is not respelled: ADMISSION_PENDING is tickets_admission's own
+# declared "pending" literal, imported above, and this row only re-exports
+# it under the lifecycle vocabulary's name.
+PENDING, READY, CLAIMED, SUSPENDED = ADMISSION_PENDING, "ready", "claimed", "suspended"
 STATUSES = tuple(sorted(VALID_STATUSES))
 CHECKABLE_STATUSES = frozenset({CLAIMED, SUSPENDED})
 ADMISSION_OWNED_TARGETS = (READY, CLAIMED)

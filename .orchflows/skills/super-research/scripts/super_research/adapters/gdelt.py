@@ -57,7 +57,7 @@ import json
 from datetime import datetime
 from typing import Any, List, Mapping, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -134,7 +134,7 @@ SOURCECOUNTRY_ATTRIBUTE = "sourcecountry"
 # ``YYYYMMDDHHMMSS``, no separators and no trailing zone letter.
 ORIGIN_SEENDATE_FORMAT = "%Y%m%dT%H%M%SZ"
 ORIGIN_WINDOW_FORMAT = "%Y%m%d%H%M%S"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 def _text(value: Any) -> str:

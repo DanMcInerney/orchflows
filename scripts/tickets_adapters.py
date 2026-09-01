@@ -20,7 +20,7 @@ class Adapter:
     key: str
     identity_form: str
     # The prefix of the one verbatim artifact line a child of this adapter's
-    # pack prints, and the prefix every door that binds a fixed identity
+    # pack prints, and the prefix every command that binds a fixed identity
     # grades: `git:<full-commit-id>`, `doc:<path>@sha256:<digest>`,
     # `evidence:<store-id>`. `identity_form` names the *thing*; this names
     # how the line spells it, and the two are not the same string because a
@@ -150,7 +150,7 @@ def craft_path(pack, *, root=None) -> Path:
 def pack_digest(pack, *, root=None) -> str:
     """The resolved pack's content digest, through the one pack resolver.
 
-    A ticket pins this at issue time and every later door compares against
+    A ticket pins this at issue time and every later command compares against
     it, which is what makes "the stamped pack digest" a verification rather
     than a lookup: `cells_for` re-derives digests to *find* a pack, and a
     search can never notice that the pack changed under a sealed

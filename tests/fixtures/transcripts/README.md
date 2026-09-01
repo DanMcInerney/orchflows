@@ -1,6 +1,6 @@
 # Claude Code transcript fixture corpus
 
-A synthetic `~/.claude/projects` tree. `tests/test_ui.py` copies it into a
+A synthetic `~/.claude/projects` tree. `reader/tests/test_ui_cases/_base.py` copies it into a
 temporary directory and stamps a deterministic mtime on each session file,
 because the index orders on last activity and a copy takes whatever the
 clock says. No test reads the operator's real transcripts: the reader

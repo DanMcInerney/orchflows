@@ -3,7 +3,7 @@
 The generated [terminal lifecycle cells](../docs/lifecycle.md#ticket-lifecycle)
 connect bounded round outcomes to their run-visible states. There is no loop
 engine and no loop marker: a bounded campaign is prose in the calling
-workflow over repeated bricks, and the one mechanical round the library still
+workflow over repeated callables, and the one mechanical round the library still
 arms is the `<id>.repair.NN` round a refused
 [`done` predicate](../contracts/work-item.md) leaves behind at `land`. The
 law below governs both.

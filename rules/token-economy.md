@@ -47,12 +47,15 @@
     contract mandating its content. Ceilings order by load frequency,
     because a file loaded by every child on every turn costs its length
     times the children forever, whatever the model: every-turn surfaces
-    tightest — the host block 400 words and at most eight standing
-    demands, a project's routing block 400, this repository's
-    `AGENTS.md` 230, a role agent file 80; every-dispatch units next —
-    kernel bodies 300, pack `SKILL.md` 150, a pack's craft as
+    tightest — the host block and at most eight standing demands, a
+    project's routing block, this repository's `AGENTS.md`, a role
+    agent file; every-dispatch units next — kernel bodies, pack
+    `SKILL.md`, a pack's craft as
     [contracts/pack-signature.md](../contracts/pack-signature.md)
-    mandates; every-run units widest — workflow bodies 450.
+    mandates; every-run units widest — workflow bodies. Every number is
+    `common.py`'s (`SURFACE_BUDGET`, `ROUTING_BLOCK_BUDGET`,
+    `ROLE_AGENT_BUDGET`, `BODY_BUDGET`); the eight-demand cap is not a
+    body ceiling and is not owned there.
     Counted in words with link targets
     stripped by tools/validate.py. A ticket carries no such ceiling: it
     is written for one child and read by one child, so its length is
@@ -61,13 +64,13 @@
     blind recuts instead of shorter assignments. What degrades adherence is the count of
     standing demands and tension between them, not length at a fixed
     count — so a surface earns each demand by §1 and carries no two in
-    tension, and complexity buys structure, never width: more bricks and
+    tension, and complexity buys structure, never width: more callables and
     frames, each one launch, each re-paying the every-turn floor, which
     is why that floor is the tightest ceiling. A ceiling only falls, and
     falls on evidence — a tournament in which the shorter candidate
     holds its benchmark within margin, or a review whose deletions land
     — never on taste, and never rises for a new model: a stronger model
     needs less how, not more. On 2026-08-16 the host block's ceiling fell
-    460 → 400 with the deletions that landed, the demand cap staying
+    by 60 words with the deletions that landed, the demand cap staying
     eight, on the evidence that adherence answers to the count of
     standing demands and their conflict, not to length at a fixed count.

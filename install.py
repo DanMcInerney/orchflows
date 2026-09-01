@@ -175,14 +175,12 @@ from installer.packages import (
     render_claude_agent,
     render_codex_agent,
     resolve_source_commit,
-    resolved_python_interpreter,
     source_commit_drift_message,
     source_commit_warning,
     split_frontmatter,
-    template_markers,
     workflow_adapter_body,
 )
-from installer.hosts import HOSTS_DIR, HOST_ADAPTERS_DIR, load_host_adapters
+from installer.hosts import HOSTS_DIR, HOST_ADAPTERS_DIR, load_host_adapters, marker
 from installer.planning import _mints_claude_adapter, detect_hosts, plan_entry_count
 from installer.uninstall import (
     _auto_remove_path_is_safe,

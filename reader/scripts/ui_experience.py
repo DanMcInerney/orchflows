@@ -11,7 +11,7 @@ from reader.scripts.ui_discovery import (
     read_friction, read_run_identity, read_sessions, run_tickets,
 )
 from reader.scripts.ui_layout import DIAGNOSTIC_CYCLE, DIAGNOSTIC_DANGLING, graph_layout
-from reader.scripts.ui_model import _scalar
+from reader.scripts.ui_model import REDACTED_HOST_PATH, _scalar
 from reader.scripts.ui_readiness import explain_run
 from reader.scripts.ui_sessions import DIAGNOSTIC_UNDECODABLE_SLUG
 
@@ -49,7 +49,6 @@ WINDOWS_HOST_PATH_RE = re.compile(
 POSIX_HOST_PATH_RE = re.compile(
     r"(?<![:A-Za-z0-9_])/(?:Users|home|tmp|private|var|opt|srv|mnt|Volumes)(?:/[^\s`\"'<>]+)+"
 )
-REDACTED_HOST_PATH = "[redacted-host-path]"
 CANONICAL_WORKFLOW_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,126}$")
 VIEW_SLICES = {
     "now": ("orchflows.now.v1", ("runs",)),

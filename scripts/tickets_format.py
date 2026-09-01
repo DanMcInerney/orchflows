@@ -87,29 +87,27 @@ TERMINAL_STATES = (DELIVERED_STATE, 'blocked', 'stalled', 'limited', 'failed')
 # reader's promotion question with it, and the two disagreed -- readiness
 # went on requiring `complete` after admission stopped.
 RESULT_BEARING_STATES = (DELIVERED_STATE, 'limited')
-PACK_NAME_PREFIX = 'orch-'
-PACK_NAME_SUFFIX = '-pack'
 # The ids the round machinery mints after a cut is already sealed, and the
 # one grammar that names them. A landing whose `done` command refused arms
 # its `<id>.repair.NN` round, and the `check` done form mints a
 # `<round>.done` judge beside one. Two readers have to agree on which ids
-# those are -- the advance and the sealed-admission door -- and while the
-# grammar was spelled inside the lane that minted them, that door answered by
-# never asking: it read every armed round as an assignment the seal did not
-# name and refused the whole lane at its first dispatch.
+# those are -- the advance and the sealed-admission command -- and while the
+# grammar was spelled inside the lane that minted them, that command
+# answered by never asking: it read every armed round as an assignment the
+# seal did not name and refused the whole lane at its first dispatch.
 REPAIR_MARKER = 'repair'
 DONE_TICKET_SUFFIX = '.done'
 ROUND_ID_RE = re.compile(
     f'^(?P<parent>.+)\\.{REPAIR_MARKER}\\.(?P<number>\\d+)$'
 )
-# The auto id grammar of the two brick doors. A runtime child is minted
-# under the ticket that called it -- `<parent>.<n>` -- and a parentless one
-# roots its own tree as `B<n>`, so the id alone says where in the call tree a
-# ticket hangs. Ordinals are per parent and never reused inside one run: the
-# door mints under the run lock, which is what makes two concurrent `do`
-# calls under one parent disagree about nothing.
-BRICK_ROOT_ID_RE = re.compile('^B(?P<number>\\d+)$')
-BRICK_CHILD_ID_RE = re.compile('^(?P<parent>.+)\\.(?P<number>\\d+)$')
+# The auto id grammar of the two minting commands. A runtime child is
+# minted under the ticket that called it -- `<parent>.<n>` -- and a
+# parentless one roots its own tree as `B<n>`, so the id alone says where
+# in the call tree a ticket hangs. Ordinals are per parent and never reused
+# inside one run: the command mints under the run lock, which is what
+# makes two concurrent `do` calls under one parent disagree about nothing.
+MINT_ROOT_ID_RE = re.compile('^B(?P<number>\\d+)$')
+MINT_CHILD_ID_RE = re.compile('^(?P<parent>.+)\\.(?P<number>\\d+)$')
 ESCAPED_NEWLINE_RE = re.compile('\\\\n')
 # A literal backslash then the letter 'n' -- the two-character escape a
 # shell or a hand can type in place of the one byte it was meant to stand
@@ -223,8 +221,9 @@ def ticket_defects(text: str) -> list:
         return ["no frontmatter: a ticket opens with a '---' block (contracts/work-item.md)"]
     defects = []
     required = REQUIRED_TICKET_KEYS + REQUIRED_LIFECYCLE_KEYS
-    # `executor` is required of every ticket a door may dispatch, and a frame
-    # is the one kind no door may: its driver is the session that opened it.
+    # `executor` is required of every ticket a command may dispatch, and a
+    # frame is the one kind no command may: its driver is the session that
+    # opened it.
     # Exempted here rather than dropped from the declared shape, because
     # every other ticket still owes the field.
     if is_frame(data):
@@ -317,23 +316,24 @@ def round_parent(ticket_id):
         text = text[:-len(DONE_TICKET_SUFFIX)]
     parsed = round_of(text)
     return None if parsed is None else parsed[0]
-def brick_ordinal(ticket_id, parent=None):
-    """The ordinal an auto-minted brick id carries under ``parent``, or None.
+def mint_ordinal(ticket_id, parent=None):
+    """The ordinal an auto-minted callable id carries under ``parent``, or
+    None.
 
     ``parent`` empty asks the root question instead: `B3` is ordinal 3 and
-    nothing else is a root brick. A round id (`X.iter.2`) answers None under
-    parent `X`, because its own parent group is `X.iter` -- the two grammars
-    share a suffix and never share an id.
+    nothing else is a root callable. A round id (`X.repair.2`) answers None
+    under parent `X`, because its own parent group is `X.repair` -- the two
+    grammars share a suffix and never share an id.
     """
     text = str(ticket_id or '')
     if not str(parent or ''):
-        match = BRICK_ROOT_ID_RE.fullmatch(text)
+        match = MINT_ROOT_ID_RE.fullmatch(text)
         return None if match is None else int(match.group('number'))
-    match = BRICK_CHILD_ID_RE.fullmatch(text)
+    match = MINT_CHILD_ID_RE.fullmatch(text)
     if match is None or match.group('parent') != str(parent):
         return None
     return int(match.group('number'))
-def next_brick_id(parent, ticket_ids) -> str:
+def next_mint_id(parent, ticket_ids) -> str:
     """The next unused auto id under ``parent``, or the next root `B<n>`.
 
     One past the highest ordinal already present rather than the first gap:
@@ -342,7 +342,7 @@ def next_brick_id(parent, ticket_ids) -> str:
     """
     ordinals = [
         number for number in (
-            brick_ordinal(ticket_id, parent) for ticket_id in ticket_ids or ()
+            mint_ordinal(ticket_id, parent) for ticket_id in ticket_ids or ()
         ) if number is not None
     ]
     number = max(ordinals, default=0) + 1

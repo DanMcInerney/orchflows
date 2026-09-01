@@ -43,6 +43,6 @@
    `scripts/friction.py`'s own.
    Beside run state and the improvement evidence, the sink carries one
    more append-only channel, `events/<yyyy-mm>.jsonl` — one line per
-   terminal machine event, written only by `scripts/tickets_frame.py`
-   and `scripts/tickets_land.py`, silent on write failure by the same
-   contract.
+   terminal machine event, appended only by `scripts/tickets_frame.py`
+   and `scripts/tickets_land.py`, through `scripts/tickets_result.py`'s
+   `_append_event`, silent on write failure by the same contract.

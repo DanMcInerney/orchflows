@@ -65,7 +65,8 @@ class CritiqueContractTest(unittest.TestCase):
         self.assertIn("A critique enumerates evidence-backed findings", check)
         self.assertIn("one thread per shared cause", check)
         self.assertIn("extinguishes the class", check)
-        self.assertIn("Write the complete\nseven-field findings array to one JSON file", check)
+        self.assertIn("Write the findings to one\nJSON file", check)
+        self.assertIn("print `findings: <path>` in the report", check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-judge/SKILL.md")

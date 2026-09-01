@@ -35,7 +35,7 @@ from scripts import state_root  # noqa: E402
 from scripts import tickets as tickets_mod  # noqa: E402
 from reader.scripts import ui_sessions  # noqa: E402
 
-SINK_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+SINK_ENV_VAR = state_root.ENV_VAR
 UI_PY = ROOT / "reader" / "scripts" / "ui.py"
 WORK_ITEM_CONTRACT = ROOT / "contracts" / "work-item.md"
 FIXTURES = ROOT / "tests" / "fixtures" / "ui"

@@ -24,9 +24,9 @@ _spec = importlib.util.spec_from_file_location(
 migrate_state = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_spec and migrate_state)
 
-from scripts import tickets  # noqa: E402  the owner of project identity
+from scripts import state_root, tickets  # noqa: E402  the owner of project identity
 
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 # A legacy entry: the shape the stream carried before it said which project
 # an entry arose in. No `project`, no `project_source`, no
 # `sink_convention` -- exactly what migration has to answer for.

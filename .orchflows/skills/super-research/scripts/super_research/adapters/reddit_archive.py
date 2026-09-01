@@ -18,7 +18,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Mapping, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -65,7 +65,7 @@ def epoch_to_utc_iso(created_utc: Any) -> str:
     if not isinstance(created_utc, (int, float)) or isinstance(created_utc, bool):
         return ""
     moment = datetime.fromtimestamp(float(created_utc), tz=timezone.utc)
-    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return moment.strftime(schema.INSTANT_FORMAT)
 
 
 def _engagement_of(post: Mapping[str, Any]) -> Tuple[Tuple[str, int], ...]:

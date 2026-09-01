@@ -21,37 +21,11 @@ else:
         NO_SINK_ERROR, _load_ticket, _runs_root, _segment_error, _tickets_root,
     )
 
-PACKS_DIR = "packs"
 WORKLOG_NAME = "worklog.md"
 WORKLOG_RENDER_MARKER = "<!-- rendered by tickets.py worklog -->"
 WORKLOG_SECTIONS = ("goal", "iterations", "failed approaches", "queued scope", "terminal")
-ITERATION_ID_RE = re.compile(r"^.+\.iter\.\d+$")
+ITERATION_ID_RE = re.compile(r"^.+\.repair\.\d+$")
 WORKLOG_USAGE = "worklog <run> [--write]"
-
-
-def _packs_root(directory):
-    directory = Path(directory).resolve()
-    for parent in (directory, *directory.parents):
-        candidate = parent / PACKS_DIR
-        if candidate.is_dir():
-            return candidate
-    return None
-
-
-def _upstream(stubs: dict) -> dict:
-    upstream = {stub_id: set(deps) for stub_id, (_, deps) in stubs.items()}
-    changed = True
-    while changed:
-        changed = False
-        for stub_id, dependencies in upstream.items():
-            expanded = set(dependencies)
-            for dependency in dependencies:
-                expanded.update(upstream.get(dependency, ()))
-            expanded.discard(stub_id)
-            if expanded != dependencies:
-                upstream[stub_id] = expanded
-                changed = True
-    return upstream
 
 
 def _run_tickets(run: str):
@@ -79,7 +53,7 @@ def _run_goal(items: list) -> tuple:
     A run has one root identity (contracts/work-item.md), and a runtime
     child's id carries its whole call path (`<parent>.<n>`), so the one
     top-level id (no `.`) is that root whenever it is unique -- true of
-    every brick tree, decomposed or not, regardless of what a descendant's
+    every callable tree, decomposed or not, regardless of what a descendant's
     own `depends_on` says. The rare shape with more than one top-level id
     (parallel manually-issued tickets, one `depends_on` the other) falls
     back to the free ticket nobody depends on; a run with neither shape

@@ -19,7 +19,8 @@ import unittest
 from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
+from scripts import state_root
 from scripts import tickets
 from scripts.tickets_assignment import workspace_establishment_finding
 from scripts.tickets_format import canonical_json, parse_canonical_json
@@ -36,7 +37,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -79,7 +80,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -103,7 +104,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
 
     def dispatch(self, *extra, workspace=None, ticket_id="T", dispatch_id="D1"):
         with self.established(workspace):
-            return retired_doors.run([
+            return retired_commands.run([
                 "dispatch", "run", ticket_id, "--by", "worker",
                 "--dispatch-id", dispatch_id,
                 "--lease-expires-at", self.lease, *extra,
@@ -216,7 +217,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
             "--dispatch-id", "D1", "--lease-expires-at", self.lease,
         )
         before = self.ticket_bytes()
-        refusal = retired_doors.run([
+        refusal = retired_commands.run([
             "result", "run", "T",
             "--assignment-seal", opened["dispatch"]["assignment_seal"],
             "--dispatch-id", "D1", "--record-id", "result-1",
@@ -229,7 +230,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
     def test_the_retired_delivery_verbs_are_gone_from_the_public_surface(self):
         for verb in ("dispatch-receive", "dispatch-receipt", "dispatch-packet"):
             with self.subTest(verb=verb):
-                refusal = retired_doors.run([verb, "run", "T"])
+                refusal = retired_commands.run([verb, "run", "T"])
                 self.assertEqual(f"unknown subcommand: {verb}", refusal["error"])
         subcommands = tickets._cmd_help()["help"]["subcommands"]
         self.assertNotIn("dispatch-receive", subcommands)
@@ -288,7 +289,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
             tickets._tickets_dispatch_facade_module, "_workspace_establish",
             side_effect=establish,
         ):
-            refusal = retired_doors.run([
+            refusal = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker", "--dispatch-id", "D1",
                 "--lease-expires-at", self.lease,
             ])
@@ -310,7 +311,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
             tickets._tickets_dispatch_facade_module, "_workspace_establish",
             side_effect=establish,
         ):
-            refusal = retired_doors.run([
+            refusal = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker", "--dispatch-id", "D1",
                 "--lease-expires-at", self.lease,
             ])
@@ -354,7 +355,7 @@ class DispatchLaunchRecordTest(unittest.TestCase):
         self.dispatch()
         before = self.ticket_bytes()
 
-        relayed_content = retired_doors.run([
+        relayed_content = retired_commands.run([
             "dispatch-outcome", "run", "T", "--content",
             canonical_json({"status": "complete"}),
         ])
@@ -381,7 +382,7 @@ class DispatchCarriageTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -414,7 +415,7 @@ class DispatchCarriageTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 

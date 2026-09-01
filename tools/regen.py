@@ -114,6 +114,36 @@ def _write_lifecycle() -> int:
     return 0
 
 
+# --- generated CI topology --------------------------------------------------
+
+
+def _stale_ci_topology(root: Path) -> tuple:
+    from tools import render_ci_topology as topology
+
+    try:
+        breakdown = topology.leg_breakdown(root / ".github" / "workflows" / "checks.yml")
+        targets = (
+            ("tools/preflight.py", topology.leg_total_clause(breakdown)),
+            ("tests/tree_removal.py", topology.windows_split_clause(breakdown)),
+        )
+        drifted = []
+        for relative, generated in targets:
+            path = root / relative
+            current = path.read_text(encoding="utf-8")
+            if current != topology._replace_section(current, generated, path):
+                drifted.append(relative)
+        return tuple(drifted)
+    except topology.TopologyUnreadable as error:
+        raise ValueError(str(error)) from error
+
+
+def _write_ci_topology() -> int:
+    from tools import render_ci_topology
+
+    render_ci_topology.write()
+    return 0
+
+
 # --- rendered host adapters and the host-block template --------------------
 
 
@@ -206,6 +236,20 @@ ARTIFACTS = (
         absent="lifecycle render check skipped: transition owners are absent",
         stale=_stale_lifecycle,
         write=_write_lifecycle,
+    ),
+    Artifact(
+        name="ci-topology",
+        label=".github/workflows/checks.yml",
+        command="python tools/render_ci_topology.py",
+        drift="generated CI leg breakdown drifted from checks.yml's own matrix",
+        owners=(
+            ".github/workflows/checks.yml",
+            "tools/preflight.py",
+            "tests/tree_removal.py",
+        ),
+        absent="CI topology render check skipped: workflow or a rendered target is absent",
+        stale=_stale_ci_topology,
+        write=_write_ci_topology,
     ),
     Artifact(
         name="host-adapters",

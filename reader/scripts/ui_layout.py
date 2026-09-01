@@ -5,19 +5,7 @@ from __future__ import annotations
 from reader.scripts.ui_model import *
 from reader.scripts.ui_discovery import discover_sessions
 from reader.scripts.ui_sessions import *
-from reader.scripts.ui_sessions import _make_room
 
-
-LAYER_WIDTH = 4
-NODE_WIDTH = 132
-NODE_HEIGHT = 44
-GAP_X = 24
-GAP_Y = 52
-MARGIN = 16
-
-# Coordinates are integers, so "two calls return byte-equal coordinates" is
-# a fact about the layout rather than about float formatting.
-LayoutNode = namedtuple("LayoutNode", ("id", "layer", "order", "x", "y"))
 
 # What the layout cannot honour it names. Both shapes occur on real data:
 # nothing on the write path proves a `depends_on` set is acyclic, and a
@@ -94,98 +82,14 @@ def _break_cycles(node_ids, edges) -> tuple:
     return kept, diagnostics
 
 
-def _predecessors(node_ids, edges) -> dict:
-    """``{node: sorted dependencies}``, every node present."""
-
-    preds = dict((node, set()) for node in node_ids)
-    for source, target in edges:
-        preds[target].add(source)
-    return dict((node, sorted(values)) for node, values in preds.items())
-
-
-def _coffman_graham_order(node_ids, preds) -> list:
-    """Coffman-Graham phase 1: label each node only once every predecessor
-    carries a label, taking the candidate whose predecessor labels are
-    lexicographically smallest. The tie-break on the id is load-bearing --
-    without it the whole layout depends on iteration order."""
-
-    labels = {}
-    order = []
-    remaining = list(node_ids)
-    while remaining:
-        best = None
-        for node in remaining:
-            if any(p not in labels for p in preds[node]):
-                continue
-            key = (sorted((labels[p] for p in preds[node]), reverse=True), node)
-            if best is None or key < best:
-                best = key
-        if best is None:
-            # No candidate means a cycle reached this far. Unreachable once
-            # `_break_cycles` has run; kept so a caller that skipped it
-            # degrades to input order rather than looping forever.
-            order.extend(remaining)
-            break
-        labels[best[1]] = len(labels)
-        order.append(best[1])
-        remaining.remove(best[1])
-    return order
-
-
-def _layer_assignment(order, preds, width) -> dict:
-    """Coffman-Graham phase 2: each node lands on the lowest layer that is
-    strictly above every predecessor's and is not already full. Every edge
-    is therefore upward by construction, not by a later repair pass."""
-
-    layers = {}
-    occupancy = {}
-    for node in order:
-        layer = max((layers[p] + 1 for p in preds[node] if p in layers), default=0)
-        while occupancy.get(layer, 0) >= width:
-            layer += 1
-        layers[node] = layer
-        occupancy[layer] = occupancy.get(layer, 0) + 1
-    return layers
-
-
-def _barycenter(node, preds, placed) -> Fraction:
-    """The mean position of a node's already-placed predecessors, exactly.
-    A float mean sorts the same today and is one rounding change away from
-    not doing so. A node with no placed predecessor floats left."""
-
-    positions = [placed[p] for p in preds[node] if p in placed]
-    if not positions:
-        return Fraction(-1)
-    return Fraction(sum(positions), len(positions))
-
-
-def _within_layer_order(node_ids, layers, preds) -> dict:
-    """One barycenter sweep down the layers. Crossing reduction is one of
-    the two things dagre buys over Argo's hand-rolled layout, and one sweep
-    is most of it at this size; ties break on the id."""
-
-    members = {}
-    for node in node_ids:
-        members.setdefault(layers[node], []).append(node)
-    placed = {}
-    for layer in sorted(members):
-        ordered = sorted(
-            members[layer], key=lambda node: (_barycenter(node, preds, placed), node)
-        )
-        for index, node in enumerate(ordered):
-            placed[node] = index
-    return placed
-
-
 def graph_layout(node_ids, edges) -> dict:
-    """Coordinates for one run's dependency graph.
+    """The edges actually drawn and any diagnostics, for one run's
+    dependency graph.
 
-    ``edges`` run from a dependency to the ticket that declares it, so an
-    edge always points up the layers. Returns ``nodes``, the ``edges``
-    actually drawn, any ``diagnostics``, and the canvas size.
-
-    O(V^2 log V + E) -- the Coffman-Graham labelling is the quadratic term,
-    which at 3-12 tickets is a few hundred comparisons.
+    ``edges`` run from a dependency to the ticket that declares it. Node
+    position is a browser-side concern (``layout.worker.ts``,
+    ``elk.worker.ts``): this seam states which edges survive cycle- and
+    dangling-breaking and why, and nothing about where a node sits.
     """
 
     ids, given = layout_key(node_ids, edges)
@@ -198,50 +102,7 @@ def graph_layout(node_ids, edges) -> dict:
         ids, [edge for edge in given if edge[0] in known and edge[1] in known]
     )
     diagnostics.extend(cycles)
-    preds = _predecessors(ids, kept)
-    order = _coffman_graham_order(ids, preds)
-    layers = _layer_assignment(order, preds, LAYER_WIDTH)
-    placed = _within_layer_order(ids, layers, preds)
-    nodes = [
-        LayoutNode(
-            node,
-            layers[node],
-            placed[node],
-            MARGIN + placed[node] * (NODE_WIDTH + GAP_X),
-            MARGIN + layers[node] * (NODE_HEIGHT + GAP_Y),
-        )
-        for node in ids
-    ]
-    columns = max((node.order for node in nodes), default=-1) + 1
-    rows = max((node.layer for node in nodes), default=-1) + 1
-    return {
-        "nodes": nodes,
-        "edges": list(kept),
-        "diagnostics": diagnostics,
-        "width": MARGIN * 2 + columns * NODE_WIDTH + max(columns - 1, 0) * GAP_X,
-        "height": MARGIN * 2 + rows * NODE_HEIGHT + max(rows - 1, 0) * GAP_Y,
-    }
-
-
-LAYOUT_CACHE = {}
-LAYOUT_CACHE_LIMIT = 32
-
-
-def cached_layout(node_ids, edges) -> dict:
-    """``graph_layout`` memoized on the node-and-edge set alone.
-
-    Status is deliberately absent from the key: a poll that repaints a
-    ticket from claimed to complete moved no node, so it must not pay for
-    a layout.
-    """
-
-    key = layout_key(node_ids, edges)
-    layout = LAYOUT_CACHE.get(key)
-    if layout is None:
-        layout = graph_layout(node_ids, edges)
-        _make_room(LAYOUT_CACHE, LAYOUT_CACHE_LIMIT)
-        LAYOUT_CACHE[key] = layout
-    return layout
+    return {"edges": list(kept), "diagnostics": diagnostics}
 
 
 # --- Claude Code sessions -----------------------------------------------------

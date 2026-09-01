@@ -29,7 +29,25 @@ LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # rules/token-economy.md §11: every-turn surfaces tightest, every-dispatch
 # units next, every-run units widest. Ceilings only fall.
 SURFACE_BUDGET = {"templates/host-block.md": 400, "AGENTS.md": 230}
-MANIFEST_BUDGET = 250
+# The default ceiling a project's own router file (routing + friction law,
+# outside managed blocks -- docs/custom-workflow-authoring.md's project-tier
+# row) is held to when it states no stricter number of its own. No renderer
+# or sync mechanism installs a project-scope routing block in this tree
+# today (install.py: "Installation has one scope: user"; the legacy
+# project-scope path `_codex_agents_path` still carries is unreachable from
+# its CLI; scripts/orchflows_scaffold.py scaffolds skills/packs/workflows,
+# never a project's day-zero router) -- this repository is itself one
+# project instance and states its own stricter number at
+# SURFACE_BUDGET["AGENTS.md"] instead of this default.
+ROUTING_BLOCK_BUDGET = 400
+# rules/token-economy.md §11's "role agent file" and tests/
+# test_installer_cases/managed_text/roles.py's rendered-body `BODY_CEILING`
+# are one fact, not two: `installer/packages.py`'s `ROLE_INSTRUCTIONS` is
+# the only content a role agent file ever carries (there is no separate
+# un-rendered source file for it, unlike a SKILL.md body), so "the role
+# agent file" and "the rendered Claude/Codex agent body" name the same
+# artifact. roles.py imports this rather than restating the literal.
+ROLE_AGENT_BUDGET = 80
 DESCRIPTION_BUDGET = 140
 ALLOWED_FRONTMATTER_KEYS = {"name", "description", "disable-model-invocation", "role"}
 ROLE_PROFILES = {"orch-planner", "orch-worker"}
@@ -142,35 +160,6 @@ ENVELOPE_VOCAB_RES = (
     )),
 )
 
-# --- Ticket templates (contracts/work-item.md, Template and stub) ----
-#
-# A template is a directory `example-workflows/<name>/` holding `template.md`
-# plus one ticket stub per other `*.md` file; a stub is a ticket per
-# contracts/work-item.md missing only `run`, `status` and `claimed_*`,
-# with `{{placeholder}}` where instantiation fills a value. These checks
-# are the admission the spec's enforcement clause names: a cyclic
-# template, or a stub without an executor or Goal, or a
-# template with no single terminal stub is rejected here. Since P4-3
-# this is the whole of composition admission: the `.md` step form and
-# its contract are deleted, so there is no second set of checks to keep
-# in step with these.
-#
-# What a stub *is* -- its required keys, its list fields, its sections and
-# their order, its criteria, its legal executors -- is not stated here.
-# `scripts/tickets.py` owns it, grades every issued ticket and every
-# instantiated stub against it, and reports it in its own words
-# (`template_defects`); validate_templates reads that and adds only what
-# needs the tree. A second statement of the same law is how a template the
-# compiler admits fails at instantiation, which is what the P1 gate found
-# across eight inputs and the executor enum.
-#
-# The manifest's name, the placeholder syntax and the `script:` prefix are
-# that script's too, imported from it below rather than spelled again here:
-# a second spelling of the placeholder syntax admitted `{{lens name}}` into
-# the tree and hid it from the manifest-balance check, because instantiation
-# refuses an unfilled one by a wider pattern than this file matched.
-TEMPLATE_ENTRY_VALUES = {"routed", "named"}
-
 # --- Carriage (rules/composition.md rule 10) -------------------------
 #
 # "Every Require item rides a named T0 carrier ... the caller supplies
@@ -233,7 +222,8 @@ __all__ = (
     'annotations', 'argparse', 'ast', 'hashlib',
     'json', 're', 'sys', 'Path',
     'ROOT', 'SKIPPED', 'SKILL_TIERS', 'BODY_BUDGET',
-    'LINK_TARGET_RE', 'SURFACE_BUDGET', 'MANIFEST_BUDGET', 'DESCRIPTION_BUDGET',
+    'LINK_TARGET_RE', 'SURFACE_BUDGET', 'ROUTING_BLOCK_BUDGET', 'ROLE_AGENT_BUDGET',
+    'DESCRIPTION_BUDGET',
     'ALLOWED_FRONTMATTER_KEYS', 'ROLE_PROFILES', 'ROLE_VALUES',
     'PACK_SIGNATURE_CELLS', 'PACK_TYPED_CELLS', 'PACK_ADAPTER_RE', 'PACK_STAGE_RE',
     'CRAFT_CELLS_BY_POINTER', 'CRAFT_MANDATORY_SECTIONS', 'CRAFT_OPTIONAL_SECTIONS',
@@ -243,7 +233,7 @@ __all__ = (
     'ASSEMBLY_SKILL_FORM_RE', 'ASSEMBLY_NONE_FORM_RE', 'CELL_REFERENCE_LINK_RE', 'TABLE_DELIM_ROW_RE',
     'LIST_MARKER_RE', 'SENTENCE_END_RE', 'OUTSIDE_PACK_CITATION', 'SIGNATURE_CELL_POINTER_RE',
     'MANDATED_FORM_RES', 'MD_LINK_RE', 'LOOP_TRIGGER_RE', 'BOUND_TERM_RE',
-    'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES', 'TEMPLATE_ENTRY_VALUES',
+    'TERMINAL_TERM_RE', 'ENVELOPE_UNITS', 'ENVELOPE_VOCAB_RES',
     'CARRIAGE_REQUIRE_BLOCK_RE', 'CARRIAGE_SENTENCE_SPLIT_RE', 'CARRIAGE_MD_LINK_RE', 'CARRIAGE_PAREN_RE',
     'CARRIAGE_CODE_RE', 'CARRIAGE_WORD_RE', 'CARRIAGE_DASH_SPLIT_RE', 'TICKET_FILING_RE',
     'RETURN_TEXT_RE', 'PACK_WORKSPACE_RE', 'PACK_STORE_RE', 'PACK_SLICING_RE',

@@ -115,7 +115,7 @@ class TestScriptNames(unittest.TestCase):
             sink = home / "sink"
             elsewhere = home / "not-a-repo"
             elsewhere.mkdir()
-            env = dict(os.environ, ORCHFLOWS_STATE_HOME=str(sink))
+            env = dict(os.environ, **{state_root.ENV_VAR: str(sink)})
 
             def run(name, *args):
                 return subprocess.run(

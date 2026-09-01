@@ -27,7 +27,8 @@ from unittest import mock
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch
 from scripts import workspace_git
@@ -158,6 +159,58 @@ class LaunchResolutionTest(unittest.TestCase):
         )
 
 
+class ReturnLineConditionalTest(unittest.TestCase):
+    """U2a: the commit clause is conditional on the adapter's git candidate.
+
+    An adapter that establishes one (git, git-plus-render) still gets told
+    to commit; one that establishes none (evidence-store, document-tree)
+    gets its own craft's `## Workspace` sentence instead -- never both, never
+    neither.
+    """
+
+    def assignment(self, *, pack: str, artifact_kind, git_candidate: bool, workspace_line):
+        return {
+            "assigned_name": "child-1", "assignment_seal": "sha256:seal",
+            "artifact_kind": artifact_kind, "craft": None, "craft_scope": None,
+            "dependencies": [], "dispatch_id": "D1", "executor": "orch-do",
+            "executor_script": None, "git_candidate": git_candidate, "id": "T",
+            "lease_expires_at": "2099-01-01T00:00:00Z", "pack": pack,
+            "role": "worker", "run": "run", "ticket_path": "/sink/run/T.md",
+            "workspace": "/tree", "workspace_line": workspace_line,
+        }
+
+    def test_a_research_pack_do_launch_carries_no_commit_clause(self):
+        from scripts.tickets_assignment import _workspace_line, git_candidate
+
+        craft = ROOT / "packs" / "orch-research-pack" / "references" / "craft.md"
+        research_line = _workspace_line(craft)
+        self.assertIsNotNone(research_line)
+        self.assertFalse(git_candidate("orch-research-pack"))
+
+        prompt = launch.launch_prompt(self.assignment(
+            pack="orch-research-pack", artifact_kind="evidence",
+            git_candidate=False, workspace_line=research_line,
+        ))
+
+        self.assertNotIn("Commit your work inside this candidate", prompt)
+        self.assertIn(research_line, prompt)
+
+    def test_a_code_pack_do_launch_still_commits(self):
+        from scripts.tickets_assignment import git_candidate
+
+        self.assertTrue(git_candidate("orch-code-pack"))
+
+        prompt = launch.launch_prompt(self.assignment(
+            pack="orch-code-pack", artifact_kind="git",
+            git_candidate=True, workspace_line=None,
+        ))
+
+        self.assertIn(
+            "Commit your work inside this candidate before you close", prompt,
+        )
+        self.assertIn("artifact: git:<full-commit-id>", prompt)
+
+
 class DispatchLaunchTest(unittest.TestCase):
     """The facade emits the one invocation, prompt and all."""
 
@@ -172,7 +225,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -225,7 +278,7 @@ class DispatchLaunchTest(unittest.TestCase):
         return Path(self.temporary.name) / "tickets" / run / "T.md"
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -252,7 +305,7 @@ class DispatchLaunchTest(unittest.TestCase):
  "--workspace", str(self.candidate), *extra,
         ]
         with self.established():
-            return retired_doors.run(arguments)
+            return retired_commands.run(arguments)
 
     def test_the_dispatch_carries_the_launch_its_host_record_declares(self):
         result = self.dispatch()
@@ -282,6 +335,7 @@ class DispatchLaunchTest(unittest.TestCase):
         )
         state = parse_canonical_json(attempt["dispatch_v1"])["attempts"][0]
         craft = ROOT / "packs" / "orch-code-pack" / "references" / "craft.md"
+        friction = ROOT / "scripts" / "friction.py"
 
         for fact in (
             str(self.ticket_path()), str(self.candidate), sys.executable,
@@ -289,6 +343,11 @@ class DispatchLaunchTest(unittest.TestCase):
             state["lease_expires_at"], "outcome",
             "the gate's row", "to completion in the turn it starts",
             workspace_git.NOTES_DIR + "/",
+            "Close only after everything you dispatched has returned.",
+            # U13(c): a forked child does not receive the host block's
+            # friction law (rules/token-economy.md's prompt-budget escape
+            # hatch), so the prompt is its only carrier.
+            "log friction, then continue", str(friction),
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
@@ -297,6 +356,7 @@ class DispatchLaunchTest(unittest.TestCase):
         self.assertEqual(1, prompt.count(state["lease_expires_at"]))
         self.assertEqual(1, prompt.count(str(craft)))
         self.assertEqual(1, prompt.count(state["assignment_seal"]))
+        self.assertEqual(1, prompt.count(str(friction)))
         # the craft's quoted scope is the one scope statement: the standing
         # gate line yields to it rather than restating the same law
         self.assertNotIn("run it here only if this ticket is the gate", prompt)
@@ -417,7 +477,7 @@ class DispatchLaunchTest(unittest.TestCase):
         ):
             self.assertIn(token, prompt)
 
-        filed = retired_doors.run([
+        filed = retired_commands.run([
             "result", "run", "T", "--assignment-seal", state["assignment_seal"],
             "--dispatch-id", state["dispatch_id"], "--record-id", "R1",
             "--by", state["owner"],
@@ -451,7 +511,7 @@ class LandTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -512,7 +572,7 @@ class LandTest(unittest.TestCase):
         return Path(self.temporary.name) / "tickets" / "run" / "T.md"
 
     def run_command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -528,7 +588,7 @@ class LandTest(unittest.TestCase):
 
     def land(self, *extra, status="complete"):
         graded = ["--status", status] if status is not None else []
-        return retired_doors.run([
+        return retired_commands.run([
             "land", "run", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", *graded, *extra,
@@ -624,7 +684,7 @@ class LandTest(unittest.TestCase):
     def test_land_refuses_a_malformed_identity_without_writing(self):
         before = self.ticket_path().read_text(encoding="utf-8")
 
-        refusal = retired_doors.run([
+        refusal = retired_commands.run([
             "land", "..", "T", "--assignment-seal", self.seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
             "--by", "root-join", "--status", "complete",

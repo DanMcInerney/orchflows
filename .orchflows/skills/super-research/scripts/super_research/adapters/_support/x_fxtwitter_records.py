@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
+from ... import schema
 from .. import NativeRecord
 
 # The one standing fact every record from this route carries. An independent
@@ -119,7 +120,7 @@ ROUTE_MONTHS = (
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 )
 ROUTE_INSTANT_FORMAT = "%m %d %H:%M:%S %z %Y"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 ROUTE_STAMP_PARTS = 6
 
 FIELD_OMITTED = "field_omitted"

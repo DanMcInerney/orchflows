@@ -27,6 +27,10 @@ DEFAULT_BOUND_MINUTES = 60
 # conversion that lets a tool-call bound be aged at all, named so a reader
 # who disagrees with it can see the number they are disagreeing with.
 TOOL_CALL_MINUTES = 2
+# An iteration is not a duration either, and its conversion is its own fact,
+# not a reuse of the unparsed-bound substitute above -- the two happen to
+# share a value today, and nothing ties them together if one changes.
+ITERATION_MINUTES = 60
 DURATION_KIND = 'duration'
 TOOL_CALLS_KIND = 'tool-calls'
 ITERATIONS_KIND = 'iterations'
@@ -60,7 +64,7 @@ def parse_bound(bound) -> tuple:
         return (int(match.group(1)) * TOOL_CALL_MINUTES, TOOL_CALLS_KIND)
     match = ITERATIONS_RE.match(text)
     if match:
-        return (int(match.group(1)) * DEFAULT_BOUND_MINUTES, ITERATIONS_KIND)
+        return (int(match.group(1)) * ITERATION_MINUTES, ITERATIONS_KIND)
     return (DEFAULT_BOUND_MINUTES, OTHER_BOUND_KIND)
 
 
@@ -130,14 +134,16 @@ def _bound_support() -> dict:
         from .tickets_commands import BOUND_CHECK_USAGE
         from .tickets_format import _extract_flag, _parse_iso
         from .tickets_store import UTC_STAMP
+        from .tickets_transitions import CLAIMED
         from .tickets_worklog import _run_tickets
     else:
         from tickets_dispatch_schema import attempt_window
         from tickets_commands import BOUND_CHECK_USAGE
         from tickets_format import _extract_flag, _parse_iso
         from tickets_store import UTC_STAMP
+        from tickets_transitions import CLAIMED
         from tickets_worklog import _run_tickets
-    return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'UTC_STAMP': UTC_STAMP, 'attempt_window': attempt_window, '_extract_flag': _extract_flag,
+    return {'BOUND_CHECK_USAGE': BOUND_CHECK_USAGE, 'CLAIMED': CLAIMED, 'UTC_STAMP': UTC_STAMP, 'attempt_window': attempt_window, '_extract_flag': _extract_flag,
             '_parse_iso': _parse_iso, '_run_tickets': _run_tickets}
 
 
@@ -161,7 +167,7 @@ def _cmd_bound_check(rest):
         return failure
     rows, unreadable = ([], [])
     for item in items:
-        if item.get('status') != 'claimed':
+        if item.get('status') != support['CLAIMED']:
             continue
         row, problems = _bound_row(item, now, support)
         rows.append(row)

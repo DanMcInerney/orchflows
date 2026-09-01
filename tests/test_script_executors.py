@@ -50,33 +50,15 @@ isolation: required
 bound: 10m
 ---
 
-## Objective
+## Goal
 
 Run one repeated deterministic step as a graph node.
 
-## Fixed inputs
-
-- input: {{"name":"expected","type":"literal","value":"green"}}
-
-## Completion test
-
-- the step reports green | oracle: `python verify.py` | oracle_class: deterministic | provenance: pre-existing
-
-## Return fields
-
-status; result; changed_artifacts; verification; feedback; risks
-
-## Result
-
-## Verification
-
-## Feedback
+## Context
 
 []
 
-## Risks
-
-[]
+## Report
 """
 
 

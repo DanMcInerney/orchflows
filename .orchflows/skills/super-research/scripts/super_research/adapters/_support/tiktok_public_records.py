@@ -20,6 +20,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
+from ... import schema
 from .. import NativeRecord
 
 ID_KEY = "id"
@@ -82,7 +83,7 @@ PROFILE_ROSTER_KEYS = (
     "videoCount",
 )
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 def _text(value: Any) -> str:

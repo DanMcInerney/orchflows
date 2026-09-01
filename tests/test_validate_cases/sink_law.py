@@ -1,10 +1,16 @@
 """State-sink law and prose-ownership regression cases."""
 import os
 import re
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts import state_root  # noqa: E402
+
 CONTRACTS = ROOT / "contracts"
 TOKEN = re.compile(r"`([^`]+)`")
 
@@ -22,7 +28,7 @@ def flat(text):
 PATH_OWNER = "rules/visibility.md"
 
 # What "states the path literally" means: either spelling of the root.
-LITERAL_ROOT_TOKENS = ("~/.orchflows/state", "ORCHFLOWS_STATE_HOME")
+LITERAL_ROOT_TOKENS = ("~/.orchflows/state", state_root.ENV_VAR)
 
 # What §6 must now say about the root, so the law names the sink and not a
 # path inside some repository. This is the whole of §6 that is read here:

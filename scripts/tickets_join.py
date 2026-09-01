@@ -10,6 +10,7 @@ if __package__:
         _identity_failure,
     )
     from .tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
+    from .tickets_dispatch_schema import JOIN_RECORD_PREFIX
     from .tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field
     from .tickets_store import UTC_STAMP, _run_lock, _segment_error
     from .tickets_store import _terminal_identity_update, _write_identity
@@ -21,6 +22,7 @@ else:
         _identity_failure,
     )
     from tickets_shapes import DISPATCH_JOIN_SUCCESS_VALUES
+    from tickets_dispatch_schema import JOIN_RECORD_PREFIX
     from tickets_format import TERMINAL_STATES, _extract_flag, _set_frontmatter_field
     from tickets_store import UTC_STAMP, _run_lock, _segment_error
     from tickets_store import _terminal_identity_update, _write_identity
@@ -112,7 +114,7 @@ def _cmd_dispatch_join(rest, *, _lock_held=False):
     if failure is not None:
         return failure
 
-    join_record_id = f"join:{outcome_record_id}"
+    join_record_id = f"{JOIN_RECORD_PREFIX}{outcome_record_id}"
     content = {
         "assignment_seal": assignment_seal,
         "dispatch_id": dispatch_id,

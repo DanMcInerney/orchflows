@@ -107,8 +107,8 @@ class TestClaudeAlwaysOnImport(unittest.TestCase):
             home = Path(tmp)
             (home / ".claude").mkdir(parents=True)
             claude_md = home / ".claude" / "CLAUDE.md"
-            template_text = install.HOST_BLOCK_TEMPLATE.read_text(encoding="utf-8")
-            start_marker, end_marker = install.template_markers(template_text)
+            spec = install.marker("claude", "host_instructions")
+            start_marker, end_marker = spec["start"], spec["end"]
             claude_md.write_text(
                 f"# personal notes\n{start_marker}\nold rendered block\n{end_marker}\n", encoding="utf-8"
             )

@@ -9,6 +9,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from scripts import state_root
+
 from .hosts import (
     HOST_ADAPTERS_DIR,
     HOSTS_DIR,
@@ -145,10 +147,11 @@ def _bin_dir(scope: str, project_root: Path | None) -> Path:
     return _require_project_root(project_root) / ".orch" / "bin"
 
 
-# ``scripts/state_root.py`` owns this pair. The installer cannot import it: it
-# runs before any script is installed. Stated once here, and linked rather than
-# restated in prose.
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+# ``scripts/state_root.py`` owns this pair; the installer runs from the same
+# checkout, so it imports the env-var name rather than restating it.
+# ``STATE_SINK_SUBPATH`` still mirrors ``state_root.DEFAULT_HOME_SUBPATH``:
+# the installer seeds the sink before any receipt exists to resolve it from.
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 STATE_SINK_SUBPATH = (".orchflows", "state")
 
 

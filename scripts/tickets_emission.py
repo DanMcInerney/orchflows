@@ -1,15 +1,16 @@
-"""The grade every ticket-emitting door runs before it writes.
+"""The grade every ticket-emitting command runs before it writes.
 
-`lint`, `ready`, `claim` and `dispatch` grade a ticket they are handed.
-`new`, `amend`, `recut`, `instantiate` and `gate` write one. Those two
-halves ran different grades, so a door could spend the run's time writing
-what the next door then refused: a template instantiated two stubs and
-`ready` skipped both, `new` accepted a locator `claim` refused, and a gate
-wrote unsealed stubs under a sealed root. In each the flag that was wrong was still
-in the caller's hand at emission and nobody looked.
+`lint`, dispatch-v1's admission guards -- the retired `claim` command's
+replacement -- and the internal readiness pass `dispatch`, `frame-open`
+and `land` each run before promoting a pending ticket -- the retired
+`ready` command's replacement -- grade a ticket they are handed. `new`, `do`,
+`judge` and `stamp-generation` write one. Those two halves used to run
+different grades, so a command could spend the run's time writing what
+the next grading command then refused, the flag that was wrong still in the
+caller's hand at emission with nobody looking there.
 
 The one grade is `tickets_context.graded_admission`, and this module is
-the emitting half's door to it. What it adds is the partition, because an
+the emitting half's route to it. What it adds is the partition, because an
 emission cannot be held to a claim's standard: a freshly cut item names
 dependencies that have not run yet and an assignment `seal`
 has not sealed yet. Neither is the emitter's fault and neither can be
@@ -67,9 +68,9 @@ DEFERRED_CODES = frozenset({
     # A cut is emitted from wherever the cutter is standing and executed
     # somewhere else, so refusing on these would make one ticket admissible
     # or not by which worktree wrote it -- and would refuse a revision that
-    # is simply not fetched here. What is wrong in the text is this door's;
-    # what is merely unreachable from here is `ready`'s and `claim`'s, run
-    # from the workspace the work actually happens in.
+    # is simply not fetched here. What is wrong in the text is this
+    # command's; what is merely unreachable from here is `ready`'s and
+    # `claim`'s, run from the workspace the work actually happens in.
     'git-path-absent',
     'git-project-mismatch',
     'git-remote-mismatch',
@@ -85,18 +86,18 @@ DEFERRED_CODES = frozenset({
 
 
 def refusable(findings) -> list:
-    """The findings in ``findings`` an emitting door owns, in grader order.
+    """The findings in ``findings`` an emitting command owns, in grader order.
 
     Membership, not severity: the grader has already ordered and phrased
     these, and re-ranking them here would give one finding two spellings
-    depending on which door reported it.
+    depending on which command reported it.
     """
     return [finding for finding in findings or []
             if str((finding or {}).get('code') or '') not in DEFERRED_CODES]
 
 
 def emission_findings(ticket_id: str, text: str, prospective: dict, run) -> list:
-    """What the next door would refuse ``ticket_id`` for, graded now.
+    """What the next command would refuse ``ticket_id`` for, graded now.
 
     ``prospective`` is the snapshot as it would stand after the write --
     the run's existing members with the incoming ones laid over them --
@@ -114,23 +115,24 @@ def _keyed(findings, ticket_id: str) -> set:
              str(entry.get('detail') or '')) for entry in findings}
 
 
-def grade_emission(door: str, run, incoming: dict, siblings=None, prior=None):
+def grade_emission(command: str, run, incoming: dict, siblings=None, prior=None):
     """``None`` if this emission introduces nothing refusable, else a refusal.
 
-    All incoming tickets are graded before any is reported, so a door
-    writing more than one -- `instantiate` -- refuses with the whole grade
-    rather than with whichever stub happened to be graded first. The
-    findings carry their ticket, since a template's refusal naming no stub
-    is one a caller cannot act on.
+    All incoming tickets are graded before any is reported, so a command
+    writing more than one -- `stamp-generation`, over a root and every
+    member its generation covers -- refuses with the whole grade rather
+    than with whichever member happened to be graded first. The findings
+    carry their ticket, since a refusal naming no member is one a caller
+    cannot act on.
 
-    ``prior`` makes the grade a delta, and the doors that repair an
-    existing ticket pass it. `amend` and `recut` exist to repair a cut, so
+    ``prior`` makes the grade a delta, and the commands that repair an
+    existing ticket pass it. `stamp-generation` exists to repair a cut, so
     holding a repair hostage to a defect it did not introduce would refuse
     the one mechanism for fixing that defect -- and often refuse the first
     of the several repairs that together clear it. A ticket already
     carrying a finding keeps carrying it; `lint` is what reports it, and
-    `ready` is what refuses to dispatch it. What this door owns is only
-    what crossing it added.
+    the readiness pass is what refuses to dispatch it. What this command
+    owns is only what crossing it added.
     """
     prospective = dict(siblings or {})
     prospective.update(incoming)
@@ -148,42 +150,37 @@ def grade_emission(door: str, run, incoming: dict, siblings=None, prior=None):
     if not findings:
         return None
     subjects = ', '.join(sorted(incoming))
-    return {'error': f'{door} refuses to emit {subjects}: the next door would '
-                     f'refuse what this writes, and the cut still holds the '
-                     f'flag that was wrong', 'findings': findings}
+    return {'error': f'{command} refuses to emit {subjects}: the next command '
+                     f'would refuse what this writes, and the cut still holds '
+                     f'the flag that was wrong', 'findings': findings}
 
 
-def grade_run_emission(door: str, run, run_dir, incoming, *, repairs: bool=False):
+def grade_run_emission(command: str, run, run_dir, incoming, *, repairs: bool=False):
     """``grade_emission`` against the run directory as it stands on disk.
 
-    The doors call this one rather than assembling a snapshot each, which
-    is the omission `tickets_context` was written for: four callers built
-    the same surroundings four ways and one of them built it empty. A run
-    directory that does not exist yet is an empty run, not a failure --
+    The commands call this one rather than assembling a snapshot each,
+    which is the omission `tickets_context` was written for: four callers
+    built the same surroundings four ways and one of them built it empty. A
+    run directory that does not exist yet is an empty run, not a failure --
     the first ticket of a cut is emitted into nothing.
 
-    ``repairs`` marks a door that rewrites tickets already in the run --
-    `amend`, `recut`, `stamp-generation` -- and takes their current text
-    off the same disk as the prior grade, so the refusal covers what the
-    rewrite introduced and not what it inherited. A door that creates
-    tickets leaves it false: nothing was there to inherit from.
+    ``repairs`` marks a command that rewrites tickets already in the run --
+    today only `stamp-generation` -- and takes their current text off the
+    same disk as the prior grade, so the refusal covers what the rewrite
+    introduced and not what it inherited. A command that creates tickets
+    leaves it false: nothing was there to inherit from.
 
-    `amend` and `recut` reach this through the one writer they share,
-    ``tickets_issue._replace_and_invalidate``, rather than each calling it
-    for itself: a replacement graded in one caller and not in the other is
-    the asymmetry that family keeps growing back, and one writer can only
-    be given one grade.
-
-    An unreadable sibling is passed over rather than raised on. Every door
-    that reaches here has already taken its own exact snapshot and refused
-    on a read failure, so this is never the only reader of those bytes.
+    An unreadable sibling is passed over rather than raised on. Every
+    command that reaches here has already taken its own exact snapshot and
+    refused on a read failure, so this is never the only reader of those
+    bytes.
     """
     siblings = {}
     if Path(run_dir).is_dir():
         siblings, _unreadable = run_snapshot(run_dir)
     prior = {ticket_id: siblings[ticket_id] for ticket_id in incoming
              if repairs and ticket_id in siblings}
-    return grade_emission(door, run, incoming, siblings, prior)
+    return grade_emission(command, run, incoming, siblings, prior)
 
 
 __all__ = ('DEFERRED_CODES', 'emission_findings', 'grade_emission',

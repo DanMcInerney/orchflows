@@ -13,7 +13,7 @@ HOST_ADAPTERS_DIR = Path(__file__).resolve().parent / "host_adapters"
 HOST_IDS = ("claude", "codex", "grok")
 PROFILE_ROLES = ("planner", "worker")
 _CODEX_AGENT_TYPE_RE = re.compile(r"^[a-z0-9_]+$")
-GROK_MODEL_CENSUS = ("grok-4.6", "grok-4.5")
+GROK_MODEL_CENSUS = ("grok-4.6",)
 GROK_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 

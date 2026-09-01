@@ -12,9 +12,8 @@ the review criteria, its `## Evidence` the methods a checker may challenge.
 Apply both to the fixed artifact and the executor record. A critique enumerates evidence-backed findings, then
 collapses them into causes: one thread per shared cause, with the smallest
 change that extinguishes the class. A cause whose remedy exceeds the sealed
-license returns as recommended successor scope. Write the complete
-seven-field findings array to one JSON file and name its path in the report;
-the join reads that file and binds it in the ledger. Stream the review
+license returns as recommended successor scope. Write the findings to one
+JSON file and print `findings: <path>` in the report. Stream the review
 report and commit the reserved outcome.
 
 Never: edit the artifact or sealed semantics; infer a verdict from effort;

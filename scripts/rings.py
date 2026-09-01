@@ -18,7 +18,7 @@ project, home, or imports item bearing that prefix is refused loudly here
 rather than shadowing a library name or, worse, never running.
 
 A skill lives at `<name>/SKILL.md`, a pack at `<name>/SKILL.md`, and a
-workflow — a skill whose prose calls bricks — at `<name>/SKILL.md` too.
+workflow — a skill whose prose calls callables — at `<name>/SKILL.md` too.
 Home roots are honoured when they exist and never required to;
 `orchflows sync` creates them.
 
@@ -77,7 +77,7 @@ def item_name(value: str) -> str:
 
 
 def reserved_refusal(kind: str, name: str, ring: str, path: Path) -> str:
-    """The one reserved-floor sentence, so every door says it the same way."""
+    """The one reserved-floor sentence, so every caller says it the same way."""
 
     return (
         f"{kind} '{name}' in the {ring} ring at {path} takes the reserved "
@@ -315,6 +315,25 @@ def shadow_notice(record: Dict[str, object]) -> Optional[str]:
     )
 
 
+def _shadowed_record(hits: List[Dict[str, object]]) -> Dict[str, object]:
+    """The winning hit of a ``locate()`` list, its shadow list and notice
+    line attached.
+
+    ``resolve()`` and ``inventory()`` both build this before doing what
+    only one of them needs next -- ``resolve()``'s trust gate on a project
+    win, ``inventory()``'s reserved/refusal/trust recording for every hit
+    rather than a raise on the first one.
+    """
+
+    record = dict(hits[0])
+    record["shadows"] = [
+        {"ring": item["ring"], "path": item["path"]} for item in hits[1:]
+    ]
+    notice = shadow_notice(record)
+    record["notices"] = [notice] if notice else []
+    return record
+
+
 def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[str, object]:
     """Resolve one item to its nearest ring, refusing a reserved ring name.
 
@@ -333,12 +352,7 @@ def resolve(kind: str, name: str, *, trust: bool = True, **overrides) -> Dict[st
             )
     if not hits:
         raise RingError("unresolved", f"{kind_of(kind)} does not resolve: {item_name(name)}")
-    record = dict(hits[0])
-    record["shadows"] = [
-        {"ring": item["ring"], "path": item["path"]} for item in hits[1:]
-    ]
-    notice = shadow_notice(record)
-    record["notices"] = [notice] if notice else []
+    record = _shadowed_record(hits)
     if trust and record["ring"] == "project":
         _require_trust(Path(str(record["dir"])).parent.parent)
     return record
@@ -390,12 +404,7 @@ def inventory(kinds: Sequence[str] = KINDS, **overrides) -> List[Dict[str, objec
             hits = locate(kind, name, **overrides)
             if not hits:
                 continue
-            record = dict(hits[0])
-            record["shadows"] = [
-                {"ring": item["ring"], "path": item["path"]} for item in hits[1:]
-            ]
-            notice = shadow_notice(record)
-            record["notices"] = [notice] if notice else []
+            record = _shadowed_record(hits)
             reserved = [item for item in hits if item["ring"] != "lib"] if name.startswith(RESERVED_PREFIX) else []
             record["reserved"] = bool(reserved)
             if reserved:

@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 if __package__:
+    from .tickets_admission import ADMISSION_PENDING
     from .tickets_commands import LINT_USAGE
     from .tickets_context import graded_admission, run_snapshot
     from .tickets_format import (
@@ -19,6 +20,7 @@ if __package__:
         _write_text_atomically,
     )
 else:
+    from tickets_admission import ADMISSION_PENDING
     from tickets_commands import LINT_USAGE
     from tickets_context import graded_admission, run_snapshot
     from tickets_format import (
@@ -34,7 +36,7 @@ else:
 
 SYNTACTIC = "syntactic"
 SEMANTIC = "semantic"
-DEFAULTABLE = {"depends_on": "[]", "bound": NEW_DEFAULT_BOUND, "status": "pending"}
+DEFAULTABLE = {"depends_on": "[]", "bound": NEW_DEFAULT_BOUND, "status": ADMISSION_PENDING}
 
 
 def _finding(code, message, kind=SEMANTIC, severity="error", fix=None) -> dict:

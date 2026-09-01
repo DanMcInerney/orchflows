@@ -29,7 +29,12 @@ PROTOCOL = DISPATCH_PROTOCOL
 LAUNCH_RECORD_ID = SHAPE_LAUNCH_RECORD_ID
 OUTCOME_RECORD_ID = SHAPE_OUTCOME_RECORD_ID
 RESERVED_RECORD_IDS = frozenset({LAUNCH_RECORD_ID, OUTCOME_RECORD_ID})
-RESERVED_RECORD_PREFIXES = ("join:", "lifecycle:")
+# Named individually, not only as the pair below, so a caller that needs
+# exactly one namespace (a join record, a lifecycle record) never respells
+# it as a bare string to get there.
+JOIN_RECORD_PREFIX = "join:"
+LIFECYCLE_RECORD_PREFIX = "lifecycle:"
+RESERVED_RECORD_PREFIXES = (JOIN_RECORD_PREFIX, LIFECYCLE_RECORD_PREFIX)
 IDENTITY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 
@@ -58,7 +63,7 @@ def record_id_namespace_ok(kind: str, record_id: str):
     ids and prefixes, so it owns the mapping from a kind to them too: the
     writer (`tickets_attempts`) and the reader (`tickets_dispatch_validate`)
     each carried their own copy of this table, and a namespace added to one
-    would have been admitted by one door and refused by the other.
+    would have been admitted by one and refused by the other.
     """
 
     if kind == "launch":
@@ -75,6 +80,7 @@ def record_id_namespace_ok(kind: str, record_id: str):
 __all__ = (
     "IDENTITY_RE", "LAUNCH_RECORD_ID", "OUTCOME_RECORD_ID", "PROTOCOL",
     "RESERVED_RECORD_IDS", "RESERVED_RECORD_PREFIXES",
+    "JOIN_RECORD_PREFIX", "LIFECYCLE_RECORD_PREFIX",
     "classification", "identity_failure", "record_id_is_reserved",
     "record_id_namespace_ok",
 )

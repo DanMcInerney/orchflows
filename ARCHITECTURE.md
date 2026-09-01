@@ -11,7 +11,7 @@ family's five owner modules.
   it even when the prose meaning holds.
   [`dispatch.md`](contracts/dispatch.md) owns v1 grammar.
 - **T1 — [`skills/`](skills/):** callable packages. `kernel/` owns the
-  two bricks; `workflows/` domain-blind behavior. Control
+  two callables; `workflows/` domain-blind behavior. Control
   flow is not a tier: it is the caller's prose. A package
   owns its `SKILL.md`, `references/`, `scripts/`.
 - **T2 — [`packs/`](packs/):** domain data satisfying the
@@ -20,7 +20,7 @@ family's five owner modules.
   lists; the signature owns term-placement constraints, `craft` domain
   vocabulary and domain-only shape.
 - **T3 — [`example-workflows/`](example-workflows/):** named workflows, each
-  a skill body calling bricks; their authoring standard is
+  a skill body calling callables; their authoring standard is
   [custom workflow authoring](docs/custom-workflow-authoring.md).
 
 ## Cross-cutting owners
@@ -41,8 +41,8 @@ family's five owner modules.
   mutates atomically;
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
   `tickets_emission.py` emission grading; `tickets_issue_render.py`
-  issuance markdown; `tickets_brick.py` and `tickets_frame.py` the brick
-  and frame doors;
+  issuance markdown; `tickets_mint.py` and `tickets_frame.py` the callable
+  and frame minting commands;
   `tickets_dispatch_launch.py` resolves the host launch binding. `cutcheck.py`
   owns structural graph validation.
   Cutcheck imports those owners directly, never the tickets facade;

@@ -13,7 +13,8 @@ from unittest import mock
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch_module
 from scripts.tickets_format import (
@@ -32,7 +33,7 @@ class DispatchV1Test(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -70,12 +71,12 @@ class DispatchV1Test(unittest.TestCase):
         self.temporary.cleanup()
 
     def dispatch(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
     def open(self, dispatch_id="D1", lease=None, by="worker"):
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-open", "run", "T", "--by", by,
             "--dispatch-id", dispatch_id,
             "--lease-expires-at", lease or self.lease,
@@ -87,7 +88,7 @@ class DispatchV1Test(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
     def commit(self, dispatch_id="D1", record_id="R1", content='{"value":1}'):
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-commit", "run", "T",
             "--dispatch-id", dispatch_id,
             "--record-id", record_id,
@@ -133,7 +134,7 @@ class DispatchV1Test(unittest.TestCase):
         return committed["launch"]
 
     def retire(self, dispatch_id="D1", record_id="lifecycle:retire-1", seal=None):
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-retire", "run", "T", "--dispatch-id", dispatch_id,
             "--assignment-seal", seal or self.opened_seal,
             "--record-id", record_id,
@@ -154,13 +155,13 @@ class DispatchV1Test(unittest.TestCase):
         ]
         if supersede_live:
             arguments.append("--supersede-live")
-        return retired_doors.run(arguments)
+        return retired_commands.run(arguments)
 
     def result(
         self, *, dispatch_id="D1", record_id="result-1", by="worker",
         seal=None, body="delivered",
     ):
-        return retired_doors.run([
+        return retired_commands.run([
             "result", "run", "T",
             "--assignment-seal", seal or self.opened_seal,
             "--dispatch-id", dispatch_id,
@@ -177,14 +178,14 @@ class DispatchV1Test(unittest.TestCase):
     def outcome(self, *, note="delivered and verified"):
         """Close with one free-text note; the envelope names no status."""
 
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-outcome", "run", "T", "--note", note,
         ])
 
     def join(self, *, status="complete", seal=None, by="root-join"):
         """The join, carrying the disposition the joining authority records."""
 
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-join", "run", "T",
             "--assignment-seal", seal or self.opened_seal,
             "--dispatch-id", "D1", "--outcome-record-id", "outcome",
@@ -192,7 +193,7 @@ class DispatchV1Test(unittest.TestCase):
         ])
 
     def test_replace_help_states_lifecycle_record_id_namespace(self):
-        payload = retired_doors.run(["dispatch-replace", "--help"])
+        payload = retired_commands.run(["dispatch-replace", "--help"])
 
         self.assertIn(
             "--record-id <lifecycle:id>", payload["help"]["usage"],
@@ -470,7 +471,7 @@ class DispatchV1Test(unittest.TestCase):
         for command in commands:
             with self.subTest(command=command[0]):
                 path.write_text(before, encoding="utf-8")
-                refusal = retired_doors.run(command)
+                refusal = retired_commands.run(command)
                 self.assertIn("unsafe run id", refusal["error"])
                 self.assertEqual(before, self.ticket_text())
 
@@ -602,7 +603,7 @@ class DispatchV1Test(unittest.TestCase):
             "--outcome-record-id", "outcome",
             "--by", "root-join", "--status", "complete",
         ]
-        joined = retired_doors.run(arguments)
+        joined = retired_commands.run(arguments)
         self.assertEqual("complete", joined["join"]["status"])
         joined_text = self.ticket_text()
         data = _parse_frontmatter(joined_text)
@@ -617,7 +618,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("complete", identity["terminal_status"])
         self.assertEqual("T", identity["terminal_ticket_id"])
 
-        self.assertEqual(joined, retired_doors.run(arguments))
+        self.assertEqual(joined, retired_commands.run(arguments))
         self.assertEqual(joined_text, self.ticket_text())
         self.assertEqual(outcome, self.outcome())
 
@@ -626,7 +627,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertEqual("idempotency-conflict", conflict["code"])
         unseen = list(arguments)
         unseen[unseen.index("outcome")] = "another-outcome"
-        mismatch = retired_doors.run(unseen)
+        mismatch = retired_commands.run(unseen)
         self.assertEqual("outcome-record-mismatch", mismatch["code"])
         self.assertEqual(joined_text, self.ticket_text())
 
@@ -735,7 +736,7 @@ class DispatchV1Test(unittest.TestCase):
         before = self.ticket_text()
         for status in ("pending", "suspended", "complete", "failed"):
             with self.subTest(status=status):
-                refusal = retired_doors.run(["set-status", "run", "T", status])
+                refusal = retired_commands.run(["set-status", "run", "T", status])
                 self.assertEqual("dispatch-join-required", refusal["code"])
                 self.assertEqual(before, self.ticket_text())
 
@@ -752,13 +753,13 @@ class DispatchV1Test(unittest.TestCase):
         self.opened_seal = opened["dispatch"]["assignment_seal"]
         self.assertNotIn("error", self.retire())
 
-        moved = retired_doors.run(["set-status", "run", "T", "suspended"])
+        moved = retired_commands.run(["set-status", "run", "T", "suspended"])
 
         self.assertNotIn("error", moved)
         self.assertEqual("suspended", _parse_frontmatter(self.ticket_text())["status"])
 
     def test_an_attempt_that_launched_keeps_its_status_with_the_join(self):
-        """The other side of that door, so it stays exactly one case wide."""
+        """The other branch of that condition, so it stays exactly one case wide."""
 
         opened = self.open()
         self.opened_seal = opened["dispatch"]["assignment_seal"]
@@ -766,7 +767,7 @@ class DispatchV1Test(unittest.TestCase):
         self.assertNotIn("error", self.retire())
         before = self.ticket_text()
 
-        refusal = retired_doors.run(["set-status", "run", "T", "suspended"])
+        refusal = retired_commands.run(["set-status", "run", "T", "suspended"])
 
         self.assertEqual("dispatch-join-required", refusal["code"])
         self.assertEqual(before, self.ticket_text())
@@ -784,7 +785,7 @@ class DispatchV1Test(unittest.TestCase):
         ))
         before = self.ticket_text()
 
-        refusal = retired_doors.run(["set-status", "run", "T", "suspended"])
+        refusal = retired_commands.run(["set-status", "run", "T", "suspended"])
 
         self.assertEqual("dispatch-join-required", refusal["code"])
         self.assertEqual(before, self.ticket_text())
@@ -956,11 +957,11 @@ class DispatchV1Test(unittest.TestCase):
 
     def test_legacy_role_bearing_facade_routes_are_absent(self):
         for command in ("claim", "packet", "dispatch-packet"):
-            refusal = retired_doors.run([command, "run", "T"])
+            refusal = retired_commands.run([command, "run", "T"])
             self.assertIn("unknown subcommand", refusal["error"])
 
     def test_dispatch_facade_is_a_public_one_call_surface(self):
-        payload = retired_doors.run(["dispatch", "--help"])
+        payload = retired_commands.run(["dispatch", "--help"])
 
         self.assertIn("dispatch <run> <id>", payload["help"]["usage"])
 
@@ -993,7 +994,7 @@ class DispatchV1Test(unittest.TestCase):
                 tickets, "_cmd_dispatch_retire", return_value={"dispatch": {}}
             ) as retire,
         ):
-            result = retired_doors.run([
+            result = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
  "--workspace", str(self.candidate),
@@ -1017,7 +1018,7 @@ class DispatchV1Test(unittest.TestCase):
             "_workspace_establish",
             side_effect=self._establishes(),
         ):
-            result = retired_doors.run([
+            result = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
  "--workspace", str(self.candidate),
@@ -1041,7 +1042,7 @@ class DispatchV1Test(unittest.TestCase):
         ) as ready, mock.patch.object(
             tickets._tickets_dispatch_facade_module, "_workspace_establish",
         ) as workspace:
-            result = retired_doors.run([
+            result = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
             ])
@@ -1066,7 +1067,7 @@ class DispatchV1Test(unittest.TestCase):
                 tickets._tickets_dispatch_facade_module, "_workspace_establish",
             ) as workspace,
         ):
-            result = retired_doors.run([
+            result = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
  "--workspace", str(self.candidate),
@@ -1107,7 +1108,7 @@ class DispatchV1Test(unittest.TestCase):
                 tickets, "_cmd_dispatch_retire", return_value=retirement,
             ),
         ):
-            result = retired_doors.run([
+            result = retired_commands.run([
                 "dispatch", "run", "T", "--by", "worker",
                 "--dispatch-id", "D1", "--lease-expires-at", self.lease,
  "--workspace", str(self.candidate),

@@ -42,7 +42,7 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   is the only other executable form. Skill substitution is not allowed, and a
   superseded name is refused naming its successor rather than aliased.
 - optional `pack_digest` — the stamped pack's content digest, taken at issue
-  time and never afterwards. Every later door resolves the named pack and
+  time and never afterwards. Every later command resolves the named pack and
   refuses when the two differ, so a pack that changed under a sealed
   assignment, or a nearer ring that came to shadow it, is a refusal rather
   than a substitution. A ticket naming no pack pins nothing.
@@ -71,14 +71,14 @@ Frontmatter is lifecycle and graph state, separate from semantic content:
   its subtree holds a judging child or its journal carries an
   `unjudged: <reason>` line.
 - optional `parent` — the ticket this one was minted under at runtime. It
-  makes the ticket tree the call tree: a brick opened by `tickets.py do` or
+  makes the ticket tree the call tree: a callable opened by `tickets.py do` or
   `tickets.py judge` hangs under its caller, its id is auto-minted as
   `<parent>.<n>` (root ids `B<n>` when parentless), and it is sealed through
   the parent's own sealed generation rather than named in a sealed cut that
   closed before it existed. A ticket naming no parent is a root.
 - optional `depends_on` — ticket ids that must complete first. A runtime
   child declares none: prose order in the calling workflow is what sequences
-  bricks, and the parent relays each result forward.
+  callables, and the parent relays each result forward.
 - `bound` — operational effort bound.
 - `independence`, `isolation` — checker/gate mechanics, and the rare
   explicit workspace override; an absent `isolation` derives its effective
@@ -134,11 +134,11 @@ chain, the `checked_by` and `review_stage` frontmatter fields, and
 composite-gate deletion left standing -- are retired together. That
 deletion removed the mechanical minting and adjudication that used to
 build the chain and left the reader in place pending its own census: no
-live door ever constructs a `GatePlan`-then-`CritiqueAdjudication` chain,
+live command ever constructs a `GatePlan`-then-`CritiqueAdjudication` chain,
 so a `<id>.check` ticket could carry the ledger `check` required only by
 hand-edited state, which the host block forbids -- test-only reachability
-is not liveness. A critique is a `judge` brick and the repair answering it
-a `do` brick, sequenced by the calling workflow's prose, and either
+is not liveness. A critique is a `judge` ticket and the repair answering it
+a `do` ticket, sequenced by the calling workflow's prose, and either
 reaches its caller the ordinary way: the executor's `## Report` and the
 joined disposition `land` records, never a distinct adjudication carrier.
 
@@ -183,7 +183,7 @@ never by itself a rejection: Goal is the acceptance boundary.
 
 ## Template and executor form
 
-A workflow is a skill whose prose opens a frame and calls bricks
+A workflow is a skill whose prose opens a frame and calls callables
 ([vocabulary.md](../docs/vocabulary.md#structure)); `tickets.py instantiate`
 and the `template.md`-plus-stubs shape it used to substitute and seal
 retired with the decomposed-root concept they served (W4a).

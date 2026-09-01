@@ -22,7 +22,8 @@ if __package__:
         EXECUTOR_RESULT_VALUES,
     )
     from .tickets_dispatch_identity import (
-        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        IDENTITY_RE, JOIN_RECORD_PREFIX, LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX,
+        OUTCOME_RECORD_ID, PROTOCOL,
         RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
@@ -49,7 +50,8 @@ else:
         EXECUTOR_RESULT_VALUES,
     )
     from tickets_dispatch_identity import (
-        IDENTITY_RE, LAUNCH_RECORD_ID, OUTCOME_RECORD_ID, PROTOCOL,
+        IDENTITY_RE, JOIN_RECORD_PREFIX, LAUNCH_RECORD_ID, LIFECYCLE_RECORD_PREFIX,
+        OUTCOME_RECORD_ID, PROTOCOL,
         RESERVED_RECORD_IDS, RESERVED_RECORD_PREFIXES,
         classification, identity_failure, record_id_is_reserved,
         record_id_namespace_ok,
@@ -304,7 +306,7 @@ def status_ownership_returned(data: dict) -> bool:
     join could exist because there was no outcome for one to consume. The
     lifecycle owns a status it never started executing.
 
-    The door is exactly as wide as that: one attempt, ended, carrying
+    The exception is exactly as wide as that: one attempt, ended, carrying
     nothing but its own lifecycle records. A launch record, a result, an
     outcome or a join is real execution evidence, and a ticket holding any
     of them keeps its status with the join that has to read them --

@@ -99,15 +99,15 @@ sealed child prompt has.
 
 ## What a workflow is made of
 
-A workflow is a skill whose prose calls other skills, down to two bricks.
+A workflow is a skill whose prose calls other skills, down to two callables.
 `tickets.py do` makes one artifact through one stamped pack's craft;
 `tickets.py judge` reads fixed artifacts and returns findings. Each call is
-one door: it mints the ticket, seals it, pins the pack digest, takes the
-lease, establishes the workspace, and emits the `launch` you invoke
-verbatim. Every call names exactly one pack — that call's craft, workspace
-semantics, and evidence discipline — so two domains in one deliverable are
-two calls and a handoff, never one call with two tastes. Depth mixes packs
-freely, because bricks never share a workspace.
+one minting command: it mints the ticket, seals it, pins the pack digest,
+takes the lease, establishes the workspace, and emits the `launch` you
+invoke verbatim. Every call names exactly one pack — that call's craft,
+workspace semantics, and evidence discipline — so two domains in one
+deliverable are two calls and a handoff, never one call with two tastes.
+Depth mixes packs freely, because callables never share a workspace.
 
 `tickets.py frame-open` opens the invocation's frame and `frame-close` ends
 it. A frame is pack-less and lease-less: it is a journal, not
@@ -132,9 +132,9 @@ where the calls depend on what the work finds does a planning `do` earn its
 context — and which craft sections each kind of call reads is
 [vocabulary](vocabulary.md)'s craft-section entry.
 
-## Which work earns a brick
+## Which work earns a callable
 
-A brick spends a whole child's context, so spend it on the four things
+A callable spends a whole child's context, so spend it on the four things
 prose in your own session cannot buy. Ask, in order:
 
 - **Does it need a second agent?** Independent eyes on your own output, or
@@ -148,7 +148,7 @@ prose in your own session cannot buy. Ask, in order:
   and on what evidence.
 
 None of the four: write it in the prose and move on. One or more: it is a
-brick, and which brick is whether it makes something or reads something.
+callable, and which callable is whether it makes something or reads something.
 Closing a frame over two or more `do` children refuses unless the tree holds
 a judging child or the journal states `unjudged: <reason>`
 ([work-item.md](../contracts/work-item.md)'s `frame` bullet owns the
@@ -227,7 +227,7 @@ Review the fixed artifact independently against these owners:
   [pack signature](../contracts/pack-signature.md);
 - vocabulary: [vocabulary](vocabulary.md), using its meanings and no others;
 - implemented enforcement and non-normative illustrations:
-  [documentation](documentation.md) laws 5–6.
+  [documentation](documentation.md) laws 6, 9.
 
 Record the item and adapter paths, deterministic admission evidence, boundary
 findings, and verification observations. Failure handling follows

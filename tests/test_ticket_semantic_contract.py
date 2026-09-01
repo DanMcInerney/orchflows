@@ -13,7 +13,8 @@ from scripts import cutcheck
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch_module
 from scripts import tickets_generations
@@ -57,7 +58,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         # machine-shared system temp root -- instead of staying inside
         # this fixture's own tree.
         self.environment = mock.patch.dict(os.environ, {
-            "ORCHFLOWS_STATE_HOME": self.temporary.name,
+            state_root.ENV_VAR: self.temporary.name,
             "ORCHFLOWS_WORKTREES_HOME": str(Path(self.temporary.name) / "worktrees"),
         })
         self.environment.start()
@@ -67,7 +68,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def dispatch(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 
@@ -124,7 +125,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         for executor in ("orch-do", "orch-judge"):
             run = "root-" + executor.removeprefix("orch-")
             with self.subTest(executor):
-                created = retired_doors.run([
+                created = retired_commands.run([
                     "new", run, "R", "--executor", executor,
                     "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
                     "--isolation", "required",
@@ -135,13 +136,13 @@ class SemanticTicketContractTest(unittest.TestCase):
                     "root_generation",
                     _parse_frontmatter(path.read_text(encoding="utf-8")),
                 )
-                stamped = retired_doors.run(["stamp-generation", run, "R"])
+                stamped = retired_commands.run(["stamp-generation", run, "R"])
                 self.assertNotIn("error", stamped, stamped)
                 self.assertRegex(
                     stamped["stamp_generation"]["root_generation"],
                     r"^root:R:1:sha256:[0-9a-f]{64}$",
                 )
-                linted = retired_doors.run(["lint", run, "R"])
+                linted = retired_commands.run(["lint", run, "R"])
                 self.assertEqual(
                     {
                         "assignment-unsealed", "generation-invalid",
@@ -158,7 +159,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             "--pack", "orch-code-pack", "--isolation", "required",
         )
         goal = " ".join(["word"] * 400)
-        created = retired_doors.run([
+        created = retired_commands.run([
             "new", "unit-length", "R.01", "--executor", "orch-judge",
             "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
         ])
@@ -166,14 +167,14 @@ class SemanticTicketContractTest(unittest.TestCase):
 
     def test_a_malformed_first_attempt_writes_no_run_directory(self):
         goal = " ".join(["word"] * 400)
-        malformed = retired_doors.run([
+        malformed = retired_commands.run([
             "new", "malformed-root", "R", "--executor", "orch-do",
             "--goal", goal,
         ])
         self.assertIn("error", malformed)
         run_dir = Path(self.temporary.name) / "tickets" / "malformed-root"
         self.assertFalse(run_dir.exists())
-        accepted = retired_doors.run([
+        accepted = retired_commands.run([
             "new", "malformed-root", "R", "--executor", "orch-do",
             "--goal", goal, "--context", "[]", "--pack", "orch-code-pack",
             "--isolation", "required",
@@ -235,7 +236,7 @@ class SemanticTicketContractTest(unittest.TestCase):
         source.write_text(draft, encoding="utf-8")
         before = source.read_bytes()
 
-        linted = retired_doors.run(
+        linted = retired_commands.run(
             ["lint", "other-run", "R9", "--file", str(source)]
         )
         self.assertIn("placed as 'R9', but ticket file names 'R1'", linted["error"])
@@ -270,7 +271,7 @@ class SemanticTicketContractTest(unittest.TestCase):
             ("show", "inspect-run", "missing"),
         ):
             with self.subTest(arguments=arguments):
-                refused = retired_doors.run(list(arguments))
+                refused = retired_commands.run(list(arguments))
                 self.assertIn("error", refused)
         self.assertFalse((root / "tickets").exists())
 
@@ -396,13 +397,14 @@ class SemanticTicketContractTest(unittest.TestCase):
         )
 
     def test_two_executor_members_validate_and_seal_with_no_gate_family(self):
-        """The composite-gate topology law is gone with the door that met it.
+        """The composite-gate topology law is gone with the command that met it.
 
         Validation used to refuse a two-member cut that carried no
         `<root>.gate.critique.<lens>` and `<root>.gate.repair` pair, because
         `tickets.py gate` was there to mint them. Nothing mints them now --
-        a critique is a `judge` brick and its repair a `do` brick, sequenced
-        by prose -- so requiring them would refuse every lawful cut.
+        a critique is a `judge` ticket and its repair a `do` ticket,
+        sequenced by prose -- so requiring them would refuse every lawful
+        cut.
         """
 
         snapshot = {
@@ -417,12 +419,12 @@ class SemanticTicketContractTest(unittest.TestCase):
         self.assertEqual({"R", "R.01", "R.02"}, set(sealed))
         self.assertFalse(
             hasattr(tickets_generations, "composite_gate_findings"),
-            "the composite-gate topology grader outlived its door",
+            "the composite-gate topology grader outlived its command",
         )
 
     def test_a_checker_independence_dependency_no_longer_waits_on_anything(self):
         """The checker-stage apparatus that survived the `review_kind`
-        deletion is gone: no live door ever built the `review_v1` chain
+        deletion is gone: no live command ever built the `review_v1` chain
         `tickets.py check` required, so `checked_by` had no live producer.
         `independence: checker` no longer differs from the default in
         readiness -- both read the same status-only completeness.

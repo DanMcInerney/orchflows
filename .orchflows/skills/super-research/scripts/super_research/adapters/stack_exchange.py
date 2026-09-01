@@ -67,7 +67,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -134,7 +134,7 @@ IS_ANSWERED_ATTRIBUTE = "is_answered"
 TRUE_SPELLING = "true"
 FALSE_SPELLING = "false"
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 SCHEMA_DRIFT = "schema_drift"
 MALFORMED_JSON = "malformed_json"

@@ -22,7 +22,7 @@ def _gaps(verification: str, profiles: str) -> list[str]:
     verification = " ".join(verification.split())
     profiles = " ".join(profiles.split())
     required = {
-        # The checker/repair three-state path retired with the door that
+        # The checker/repair three-state path retired with the command that
         # built its ledger (`review_v1`'s `GatePlan`-then-`CritiqueAdjudication`
         # chain): independence is the caller's own join now, one path for
         # every ticket, never a standing verification child.

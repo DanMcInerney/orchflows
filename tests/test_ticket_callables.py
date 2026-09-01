@@ -1,17 +1,18 @@
-"""One door opens a brick, and the door is what seals it.
+"""One command opens a callable, and the same command is what seals it.
 
 Every case fires on a step a caller used to run by hand between `new` and
 `dispatch`. The id is minted under the run lock rather than authored; a
 child's seal comes through its parent rather than through a cut that closed
 before it existed; and the launch carries the three lines a parent needs to
-relay a child's answer without paraphrasing it -- the commit instruction two
-of four workers skipped on 2026-08-31, the typed artifact line, and the
-judge's findings line.
+relay a child's answer without paraphrasing it -- a git adapter's commit
+instruction (the one two of four workers skipped on 2026-08-31; an adapter
+that establishes no git candidate gets its own craft's workspace line
+instead), the typed artifact line, and the judge's findings line.
 
 This module's `do`/`judge` cases assert against `orch-do`/`orch-judge`,
 the registry names W2b (verbs-rename) minted from `orch-execute` and
-`orch-check`. They stay red on the `lego-W2b` branch alone: brick's own
-`DO_EXECUTOR`/`JUDGE_EXECUTOR` in `scripts/tickets_brick.py` (W2a's file,
+`orch-check`. They stay red on the `lego-W2b` branch alone: this module's
+own `DO_EXECUTOR`/`JUDGE_EXECUTOR` in `scripts/tickets_mint.py` (W2a's file,
 fenced from this ticket) still name the pre-rename verbs, so every mint
 here is refused as `executor-unregistered` until the two branches merge
 and that one-site constant flip lands with them.
@@ -34,7 +35,9 @@ from unittest import mock
 from tests._candidate_checkout import git_checkout, record_established_workspace
 from scripts import state_root
 from scripts import tickets
-from scripts import tickets_brick
+from scripts import tickets_mint
+from scripts.tickets_adapters import craft_path
+from scripts.tickets_assignment import _workspace_line, git_candidate
 from scripts.tickets_format import _parse_frontmatter, _sections, parse_canonical_json
 
 CODE_PACK = "orch-code-pack"
@@ -43,10 +46,10 @@ GOAL = "Deliver the widget and prove it runs.\n"
 DETAILS = "Read the craft first; report every exit code.\n"
 
 
-class BrickSinkTest(unittest.TestCase):
+class CallableSinkTest(unittest.TestCase):
     """A temp sink, a real candidate checkout, and a stubbed establishment."""
 
-    RUN = "brickrun"
+    RUN = "callablerun"
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -55,12 +58,12 @@ class BrickSinkTest(unittest.TestCase):
         # this process's shared system temp root -- so a derived candidate
         # would land at machine scope instead of inside this fixture's own
         # tree (`tests/test_state_root_cases`'s `worktrees_root` proves the
-        # derivation; `BrickSinkWorktreeIsolationTest` below proves this
+        # derivation; `CallableSinkWorktreeIsolationTest` below proves this
         # fixture stays clear of it).
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),
@@ -69,13 +72,13 @@ class BrickSinkTest(unittest.TestCase):
         self.environment.start()
         self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
         # The candidate is the git surface every `do`/`judge` mint below is
-        # pinned to (`brick` passes it as ``--workspace``): repo-local
+        # pinned to (`callable` passes it as ``--workspace``): repo-local
         # identity because a CI runner's ambient git carries none, and one
         # baseline commit so a branch can be cut from HEAD if the real
         # establishment ever runs against it.
         for arguments in (
-            ("config", "user.name", "brick fixture"),
-            ("config", "user.email", "brick@example.invalid"),
+            ("config", "user.name", "callable fixture"),
+            ("config", "user.email", "callable@example.invalid"),
             ("commit", "--quiet", "--allow-empty", "-m", "baseline"),
         ):
             completed = subprocess.run(
@@ -137,8 +140,8 @@ class BrickSinkTest(unittest.TestCase):
         ):
             yield
 
-    def brick_arguments(self, verb, *arguments) -> list:
-        """One brick door's argv, its establish source pinned to the fixture.
+    def callable_arguments(self, verb, *arguments) -> list:
+        """One minting command's argv, its establish source pinned to the fixture.
 
         ``do``/``judge`` carry ``--workspace`` naming the fixture's own
         candidate: left off, the facade's establishment falls back to
@@ -155,9 +158,9 @@ class BrickSinkTest(unittest.TestCase):
             *pinned, *arguments,
         ]
 
-    def brick(self, verb, *arguments, expect_error=False):
+    def callable(self, verb, *arguments, expect_error=False):
         with self._stubbed_establishment():
-            answer = tickets._dispatch(self.brick_arguments(verb, *arguments))
+            answer = tickets._dispatch(self.callable_arguments(verb, *arguments))
         if expect_error:
             self.assertIn("error", answer, answer)
         else:
@@ -168,7 +171,7 @@ class BrickSinkTest(unittest.TestCase):
         return answer[next(iter(answer))]["launch"]["prompt"]
 
 
-class BrickSinkWorktreeIsolationTest(BrickSinkTest):
+class CallableSinkWorktreeIsolationTest(CallableSinkTest):
     """The sink this fixture builds must keep derived worktrees inside it.
 
     ``worktrees_root()`` hangs off ``orchflows_home()``, the *parent* of
@@ -191,11 +194,11 @@ class BrickSinkWorktreeIsolationTest(BrickSinkTest):
         )
 
 
-class BrickIdGrammarTest(BrickSinkTest):
+class CallableIdGrammarTest(CallableSinkTest):
     """Ids are minted, and the mint is what the run lock arbitrates."""
 
-    def test_a_parentless_brick_roots_its_own_tree_and_seals_itself(self):
-        answer = self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+    def test_a_parentless_callable_roots_its_own_tree_and_seals_itself(self):
+        answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
 
         self.assertEqual("B1", answer["do"]["id"])
         self.assertIsNone(answer["do"]["parent"])
@@ -205,14 +208,14 @@ class BrickIdGrammarTest(BrickSinkTest):
         self.assertTrue(data["assignment_seal"].startswith("sha256:"))
         self.assertEqual("orch-do", data["executor"])
         self.assertNotIn("parent", data)
-        # prose order replaces edges: a brick declares no dependencies at all
+        # prose order replaces edges: a callable declares no dependencies at all
         self.assertNotIn("depends_on", data)
         self.assertEqual(GOAL.strip(), _sections(self.ticket_text("B1"))["Goal"].strip())
 
     def test_a_child_is_minted_under_its_parent_and_sealed_through_it(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
 
-        answer = self.brick(
+        answer = self.callable(
             "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
             "--details-file", str(self.details_file),
         )
@@ -229,33 +232,33 @@ class BrickIdGrammarTest(BrickSinkTest):
         )
         self.assertIn("- parent: B1", _sections(self.ticket_text("B1.1"))["Context"])
         # the second child takes the next ordinal under the same parent
-        second = self.brick(
+        second = self.callable(
             "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
         )
         self.assertEqual("B1.2", second["do"]["id"])
-        # and the next parentless brick roots a second tree
+        # and the next parentless callable roots a second tree
         self.assertEqual(
-            "B2", self.brick(
+            "B2", self.callable(
                 "do", "--pack", CODE_PACK, "--isolation", "required",
             )["do"]["id"],
         )
 
     def test_two_concurrent_calls_under_one_parent_mint_distinct_ids(self):
-        """The run lock the door holds at the mint is the whole arbiter.
+        """The run lock the minting command holds at the mint is the whole arbiter.
 
         The stubs go on once, around both threads. Each thread patching
         for itself is what leaked: the first exit restored the real
         establishment mid-flight, which resolved the developer's checkout
-        through ``Path.cwd()`` and left a real ``wt/brickrun/B1.2`` branch
+        through ``Path.cwd()`` and left a real ``wt/callablerun/B1.2`` branch
         standing there after every suite run -- failing the next one.
         """
 
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
         answers, start = [], threading.Barrier(2)
 
         def call():
             start.wait()
-            answers.append(tickets._dispatch(self.brick_arguments(
+            answers.append(tickets._dispatch(self.callable_arguments(
                 "do", "--pack", CODE_PACK, "--parent", "B1",
                 "--isolation", "required",
             )))
@@ -273,13 +276,13 @@ class BrickIdGrammarTest(BrickSinkTest):
         self.assertEqual(["B1.1", "B1.2"], minted)
 
     def test_a_child_of_an_unsealed_parent_is_refused_with_its_remedy(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
         tickets._dispatch([
             "new", self.RUN, "L", "--executor", "orch-do",
             "--goal", "Unsealed.", "--context", "[]", "--pack", CODE_PACK,
         ])
 
-        refused = self.brick(
+        refused = self.callable(
             "do", "--pack", CODE_PACK, "--parent", "L", expect_error=True,
         )
 
@@ -288,7 +291,7 @@ class BrickIdGrammarTest(BrickSinkTest):
         self.assertFalse((self.run_dir() / "L.1.md").exists())
 
 
-class BrickAdmissionTest(BrickSinkTest):
+class CallableAdmissionTest(CallableSinkTest):
     """A runtime child crosses admission through its parent, not the cut."""
 
     def _codes(self, ticket_id: str) -> set:
@@ -301,11 +304,11 @@ class BrickAdmissionTest(BrickSinkTest):
         return {item["code"] for item in grade["findings"]}
 
     def test_parent_and_child_both_admit_and_the_parent_owns_no_members(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
-        self.brick(
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable(
             "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
         )
-        self.brick(
+        self.callable(
             "judge", "--pack", CODE_PACK, "--parent", "B1",
             "--artifacts", "git:" + "a" * 40, "--isolation", "none",
         )
@@ -314,8 +317,8 @@ class BrickAdmissionTest(BrickSinkTest):
             self.assertEqual(set(), self._codes(ticket_id), ticket_id)
 
     def test_a_child_edited_after_it_was_minted_is_bound_by_nothing(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
-        self.brick(
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable(
             "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
         )
         path = self.run_dir() / "B1.1.md"
@@ -327,8 +330,8 @@ class BrickAdmissionTest(BrickSinkTest):
         self.assertIn("sealed-assignment-mismatch", self._codes("B1.1"))
 
     def test_a_child_whose_parent_the_seal_does_not_name_is_refused(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
-        self.brick(
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable(
             "do", "--pack", CODE_PACK, "--parent", "B1", "--isolation", "required",
         )
         parent = self.run_dir() / "B1.md"
@@ -340,19 +343,19 @@ class BrickAdmissionTest(BrickSinkTest):
         self.assertIn("sealed-parent-mismatch", self._codes("B1.1"))
 
 
-class BrickPromptTest(BrickSinkTest):
+class CallablePromptTest(CallableSinkTest):
     """The three lines the launch gained, and the adapter that types them."""
 
-    def test_a_git_brick_is_told_to_commit_and_to_print_a_git_line(self):
-        answer = self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+    def test_a_git_callable_is_told_to_commit_and_to_print_a_git_line(self):
+        answer = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
 
         prompt = self.prompt(answer)
         self.assertIn("Commit your work inside this candidate before you close", prompt)
         self.assertIn("artifact: git:<full-commit-id>", prompt)
         self.assertNotIn("findings: <path>", prompt)
 
-    def test_a_document_brick_is_told_to_print_a_doc_line(self):
-        answer = self.brick("do", "--pack", DOC_PACK)
+    def test_a_document_callable_is_told_to_print_a_doc_line(self):
+        answer = self.callable("do", "--pack", DOC_PACK)
 
         prompt = self.prompt(answer)
         self.assertIn(
@@ -360,10 +363,24 @@ class BrickPromptTest(BrickSinkTest):
         )
         self.assertNotIn("artifact: git:", prompt)
 
-    def test_a_judge_prints_the_findings_line_beside_its_artifact_line(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+    def test_a_non_git_adapter_carries_its_own_workspace_line_not_a_commit(self):
+        """The document-tree adapter establishes no git candidate: the
+        launch drops the commit clause and carries the craft's own
+        `## Workspace` sentence instead (unit U2a)."""
 
-        answer = self.brick(
+        self.assertFalse(git_candidate(DOC_PACK))
+        self.assertTrue(git_candidate(CODE_PACK))
+
+        answer = self.callable("do", "--pack", DOC_PACK)
+
+        prompt = self.prompt(answer)
+        self.assertNotIn("Commit your work inside this candidate", prompt)
+        self.assertIn(_workspace_line(craft_path(DOC_PACK)), prompt)
+
+    def test_a_judge_prints_the_findings_line_beside_its_artifact_line(self):
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+
+        answer = self.callable(
             "judge", "--pack", CODE_PACK, "--parent", "B1",
             "--artifacts", "git:" + "b" * 40, "--isolation", "none",
         )
@@ -380,9 +397,9 @@ class BrickPromptTest(BrickSinkTest):
         )
 
     def test_an_untyped_artifact_is_refused_before_anything_is_written(self):
-        self.brick("do", "--pack", CODE_PACK, "--isolation", "required")
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
 
-        refused = self.brick(
+        refused = self.callable(
             "judge", "--pack", CODE_PACK, "--parent", "B1",
             "--artifacts", "the draft I made earlier", expect_error=True,
         )
@@ -391,20 +408,20 @@ class BrickPromptTest(BrickSinkTest):
         self.assertFalse((self.run_dir() / "B1.1.md").exists())
 
 
-class RepairRoundAdmissionTest(BrickSinkTest):
-    """A `do` brick's repair round binds through the brick, not the frame.
+class RepairRoundAdmissionTest(CallableSinkTest):
+    """A `do` callable's repair round binds through the callable, not the frame.
 
     The wedge run 20260901T021739Z hit: the sealed record for a frame-rooted
     run names only the frame in `assignment_seals`, but a repair round's
-    grammar-derived parent (`landing_round_parent`) is the brick it repairs,
-    which is itself a runtime-minted child the cut never named. Grading the
-    round's admission through one hop found a parent absent from the sealed
-    set and refused `sealed-parent-mismatch` -- every repair round of every
-    `do`/`judge` brick, unconditionally.
+    grammar-derived parent (`landing_round_parent`) is the callable it
+    repairs, which is itself a runtime-minted child the cut never named.
+    Grading the round's admission through one hop found a parent absent
+    from the sealed set and refused `sealed-parent-mismatch` -- every
+    repair round of every `do`/`judge` callable, unconditionally.
     """
 
     def _issue(self, verb, *arguments) -> dict:
-        """One non-brick door, under the same establishment stub `brick` uses."""
+        """One non-callable command, under the same establishment stub `callable` uses."""
 
         with self._stubbed_establishment():
             return tickets._dispatch([verb, self.RUN, *arguments])
@@ -414,31 +431,31 @@ class RepairRoundAdmissionTest(BrickSinkTest):
             datetime.now(timezone.utc) + timedelta(hours=1)
         ).isoformat().replace("+00:00", "Z")
 
-    def test_a_runtime_bricks_repair_round_admits_and_dispatches(self):
-        frame_id = self.brick("frame-open")["frame_open"]["id"]
+    def test_a_runtime_callables_repair_round_admits_and_dispatches(self):
+        frame_id = self.callable("frame-open")["frame_open"]["id"]
         command = f'"{sys.executable}" -c "raise SystemExit(3)"'
         done = json.dumps({"form": "command", "value": command}, sort_keys=True)
 
-        brick_id = self.brick(
+        callable_id = self.callable(
             "do", "--pack", CODE_PACK, "--parent", frame_id,
             "--isolation", "none", "--done", done,
         )["do"]["id"]
         seal = parse_canonical_json(
-            _parse_frontmatter(self.ticket_text(brick_id))["dispatch_v1"]
+            _parse_frontmatter(self.ticket_text(callable_id))["dispatch_v1"]
         )["attempts"][0]["assignment_seal"]
 
         self._issue(
-            "dispatch-outcome", brick_id, "--note", "delivered and verified",
+            "dispatch-outcome", callable_id, "--note", "delivered and verified",
         )
         landed = self._issue(
-            "land", brick_id, "--assignment-seal", seal,
-            "--dispatch-id", f"{brick_id}:d1", "--outcome-record-id", "outcome",
+            "land", callable_id, "--assignment-seal", seal,
+            "--dispatch-id", f"{callable_id}:d1", "--outcome-record-id", "outcome",
             "--by", "root-join",
         )
         self.assertNotIn("error", landed, landed)
         self.assertIsNone(landed["land"]["status"])
         repair_id = landed["land"]["steps"][-1]["repair"]
-        self.assertEqual(f"{brick_id}.repair.1", repair_id)
+        self.assertEqual(f"{callable_id}.repair.1", repair_id)
 
         dispatched = self._issue(
             "dispatch", repair_id, "--by", repair_id,
@@ -450,10 +467,10 @@ class RepairRoundAdmissionTest(BrickSinkTest):
         self.assertNotIn("error", dispatched, dispatched)
 
 
-class BrickLandingTest(BrickSinkTest):
+class CallableLandingTest(CallableSinkTest):
     """`do` to `land`, once over a git pack and once over a document tree.
 
-    The whole chain the door is meant to fold: one command mints, seals,
+    The whole chain the command is meant to fold: one command mints, seals,
     establishes and emits; the child files a result and closes its reserved
     outcome; `land` evaluates, joins, and reports.
     """
@@ -485,20 +502,28 @@ class BrickLandingTest(BrickSinkTest):
             "--outcome-record-id", "outcome", "--by", "driver", *extra,
         ])
 
-    def _assert_three_lines(self, answer: dict, artifact_form: str, findings: bool):
+    def _assert_three_lines(
+        self, answer: dict, artifact_form: str, findings: bool, *, pack: str = CODE_PACK,
+    ):
         prompt = self.prompt(answer)
-        self.assertIn("Commit your work inside this candidate before you close", prompt)
+        if git_candidate(pack):
+            self.assertIn(
+                "Commit your work inside this candidate before you close", prompt,
+            )
+        else:
+            self.assertNotIn("Commit your work inside this candidate", prompt)
+            self.assertIn(_workspace_line(craft_path(pack)), prompt)
         self.assertIn(artifact_form, prompt)
         self.assertEqual(findings, "findings: <path>" in prompt)
 
-    def test_a_git_brick_runs_its_done_predicate_at_the_landing(self):
+    def test_a_git_callable_runs_its_done_predicate_at_the_landing(self):
         import sys
 
         done = json.dumps(
             {"form": "command", "value": f'"{sys.executable}" -c "raise SystemExit(0)"'},
             sort_keys=True,
         )
-        answer = self.brick(
+        answer = self.callable(
             "do", "--pack", CODE_PACK, "--isolation", "none", "--done", done,
         )
         self._assert_three_lines(answer, "artifact: git:<full-commit-id>", False)
@@ -513,10 +538,11 @@ class BrickLandingTest(BrickSinkTest):
             self.ticket_text("B1")
         )["Report"])
 
-    def test_a_document_brick_lands_on_the_drivers_grade(self):
-        answer = self.brick("do", "--pack", DOC_PACK)
+    def test_a_document_callable_lands_on_the_drivers_grade(self):
+        answer = self.callable("do", "--pack", DOC_PACK)
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", False,
+            pack=DOC_PACK,
         )
 
         attempt = self._filed_and_closed("B1", "doc:notes.md@sha256:" + "e" * 64)
@@ -525,16 +551,17 @@ class BrickLandingTest(BrickSinkTest):
         self.assertNotIn("error", landed, landed)
         self.assertEqual("complete", landed["land"]["status"])
 
-    def test_a_judge_under_a_landed_brick_carries_both_machine_lines(self):
-        self.brick("do", "--pack", DOC_PACK)
+    def test_a_judge_under_a_landed_callable_carries_both_machine_lines(self):
+        self.callable("do", "--pack", DOC_PACK)
 
-        answer = self.brick(
+        answer = self.callable(
             "judge", "--pack", DOC_PACK, "--parent", "B1",
             "--artifacts", "doc:notes.md@sha256:" + "e" * 64,
         )
 
         self._assert_three_lines(
             answer, "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", True,
+            pack=DOC_PACK,
         )
         attempt = self._filed_and_closed("B1.1", "doc:review.md@sha256:" + "f" * 64)
         landed = self._land("B1.1", attempt, "--status", "complete")
@@ -552,7 +579,7 @@ class TypedArtifactGrammarTest(unittest.TestCase):
         for adapter in ADAPTER_REGISTRY.values():
             self.assertIn(adapter.artifact_kind, ARTIFACT_LINE_FORMS)
         self.assertEqual(
-            tickets_brick.ARTIFACT_KINDS, set(ARTIFACT_LINE_FORMS),
+            tickets_mint.ARTIFACT_KINDS, set(ARTIFACT_LINE_FORMS),
         )
 
 

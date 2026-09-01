@@ -25,7 +25,7 @@ if __package__:
     from .tickets_lint import _cmd_lint
     from .tickets_bound import _cmd_bound_check
     from .tickets_grade import _cmd_grade
-    from .tickets_brick import _cmd_do, _cmd_judge
+    from .tickets_mint import _cmd_do, _cmd_judge
     from .tickets_frame import _cmd_frame_close, _cmd_frame_open
     from .tickets_dispatch_facade import _cmd_dispatch
     from .tickets_land import _cmd_land
@@ -44,7 +44,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_lint import _cmd_lint
     _cmd_bound_check = __import__('tickets_bound')._cmd_bound_check
     _cmd_grade = __import__('tickets_grade')._cmd_grade
-    _brick = __import__('tickets_brick'); _cmd_do = _brick._cmd_do; _cmd_judge = _brick._cmd_judge
+    _mint = __import__('tickets_mint'); _cmd_do = _mint._cmd_do; _cmd_judge = _mint._cmd_judge
     _frame = __import__('tickets_frame'); _cmd_frame_open = _frame._cmd_frame_open; _cmd_frame_close = _frame._cmd_frame_close
     from tickets_dispatch_facade import _cmd_dispatch
     _cmd_land = __import__('tickets_land')._cmd_land

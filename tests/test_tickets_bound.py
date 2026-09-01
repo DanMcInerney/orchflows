@@ -146,6 +146,7 @@ GRAMMAR = (
 class BoundGrammarTest(unittest.TestCase):
     def test_the_stated_conversions_are_the_stated_constants(self):
         self.assertEqual(2, tickets_bound.TOOL_CALL_MINUTES)
+        self.assertEqual(60, tickets_bound.ITERATION_MINUTES)
         self.assertEqual(60, tickets_bound.DEFAULT_BOUND_MINUTES)
         self.assertEqual(
             ("duration", "tool-calls", "iterations", "other"),
@@ -166,7 +167,7 @@ class BoundGrammarTest(unittest.TestCase):
         """The meter's refusal was never about durations -- it was about
         drawing a denominator no ticket stated. A tool-call or iteration
         bound now has one, stated in `TOOL_CALL_MINUTES` and
-        `DEFAULT_BOUND_MINUTES`; `one session` still has none."""
+        `ITERATION_MINUTES`; `one session` still has none."""
 
         for bound, minutes, kind in GRAMMAR:
             with self.subTest(bound=bound):

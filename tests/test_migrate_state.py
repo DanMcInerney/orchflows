@@ -1,7 +1,7 @@
 """Discover the migrate-state regression collection through one stable seam.
 
 The cases are partitioned by plan, collision, and apply behavior. Every case
-sets ``ORCHFLOWS_STATE_HOME`` for its own sink and uses only fixture trees in
+sets the sink env var for its own sink and uses only fixture trees in
 the OS temporary directory.
 """
 from __future__ import annotations

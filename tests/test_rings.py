@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import rings, rings_trust
+from scripts import rings, rings_trust, state_root
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +30,7 @@ def _world():
             (project / ".orchflows" / kind_dir).mkdir(parents=True, exist_ok=True)
         for kind_dir in rings.LIB_DIRS.values():
             (lib / kind_dir).mkdir(parents=True, exist_ok=True)
-        with patch.dict(os.environ, {"ORCHFLOWS_STATE_HOME": str(home / "state")}):
+        with patch.dict(os.environ, {state_root.ENV_VAR: str(home / "state")}):
             yield {"root": root, "home": home, "project": project, "lib": lib}
 
 

@@ -60,6 +60,11 @@ EMPTY_NO_DEPTH = "no spawn depth recorded"
 # shape of.
 DIAGNOSTIC_UNREADABLE = "could not be read"
 
+# What a host filesystem path is replaced with wherever contained content is
+# rendered. Three projections redact one, each over its own host-path
+# regexes; this is the one marker they agree on.
+REDACTED_HOST_PATH = "[redacted-host-path]"
+
 # Only `claimed` has a live dispatch attempt. A suspended ticket retains its
 # claimant observations for Handoff, but join has retired the attempt, so a
 # growing elapsed-against-bound meter would be a lie.

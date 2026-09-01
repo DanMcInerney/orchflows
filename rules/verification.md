@@ -26,19 +26,22 @@ places this evidence law in the ticket lifecycle.
    against the fixed artifact and evidence, and the disposition it records
    is never the executor's own claim. `independence: checker`
    no longer names a distinct path: the derived `<id>.check` `orch-judge`
-   stage and the `checked_by` field it anchored retired with the door that
-   built the ledger the retired `check` subcommand required, so every
+   stage and the `checked_by` field it anchored retired with the command
+   that built the ledger the retired `check` subcommand required, so every
    ticket is graded the `gate`-deferred way now. A driver that wants a
-   second, adversarial review dispatches one as an ordinary `judge` brick
-   and answers its findings with a `do` brick under the same parent,
+   second, adversarial review dispatches one as an ordinary `judge` ticket
+   and answers its findings with a `do` ticket under the same parent,
    sequenced by prose rather than a distinct independence value.
 8. Evidence holds only for the artifact and dependencies it covers. Any
     covered change invalidates it. Byte identities name their domain and
     normalization; workspace cleanliness distinguishes tool emissions from the
-    candidate's own changes through `scripts/workspace.py check`.
+    candidate's own changes through `scripts/workspace.py check`. That same
+    coverage bounds which checks a unit answers for — only the ones its own
+    change reaches; confirming everything else in the repository happens
+    once, at `land`, never inside a unit's own work.
 9. `review_v1`, the immutable `orchflows.review.v1` `GatePlan` →
    `CritiqueAdjudication` → `RepairOutcome` chain it carried, and the
-   derived `<id>.check` stage that wrote it are retired: no live door ever
+   derived `<id>.check` stage that wrote it are retired: no live command ever
    built that chain, so its one reader (the retired `check` subcommand) had
    nothing but hand-edited state to read. A critique's findings and a
    repair's result live in the ordinary `## Report` and the joined

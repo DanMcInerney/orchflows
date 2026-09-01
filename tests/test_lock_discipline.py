@@ -28,7 +28,6 @@ ROOT = Path(__file__).resolve().parent.parent
 from scripts import tickets as tickets_mod  # noqa: E402
 from scripts import tickets_attempts  # noqa: E402
 from scripts import tickets_dispatch_facade  # noqa: E402
-from scripts import tickets_dispatch_facade  # noqa: E402
 from scripts import tickets_join  # noqa: E402
 from scripts import tickets_result  # noqa: E402
 from scripts import tickets_lifecycle  # noqa: E402

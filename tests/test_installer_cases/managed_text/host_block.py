@@ -29,17 +29,6 @@ class TestHostBlockRendering(unittest.TestCase):
         self.assertNotIn("{{PYTHON}}", rendered)
         self.assertNotIn("{{ORCH_LIB}}", rendered)
 
-    def test_resolved_python_interpreter_refuses_a_bare_name(self):
-        # The rendered host block hands every agent this command. A bare
-        # "python" is a Windows Store stub on this host and several like it,
-        # so a plan built without a real interpreter path is worth refusing
-        # rather than shipping (F F9).
-        with patch.object(install.sys, "executable", ""):
-            with self.assertRaises(ValueError):
-                install.resolved_python_interpreter()
-        with patch.object(install.sys, "executable", "/usr/bin/python3"):
-            self.assertEqual("/usr/bin/python3", install.resolved_python_interpreter())
-
     def test_rendered_block_contains_name_to_path_map(self):
         # Only phrases that depend on a substituted placeholder belong here;
         # static template prose (e.g. "tier is not inferable from the name")
@@ -294,13 +283,13 @@ class TestHostBlockDemands(unittest.TestCase):
 # optional, and neither text carries the other's proof. (state sink
 # friction/2026-08.jsonl, 2026-08-30T20:37:01Z: `tickets.py dispatch` refused
 # the block's own graph-route invocation with a usage error; the worker-lane
-# door that replaced it in the route inherits the same exposure.) This binds both
+# command that replaced it in the route inherits the same exposure.) This binds both
 # sides to one reader instead: `DO_USAGE` (scripts/tickets_commands.py) is the
 # command's own required-flag authority, and the block's routed example is
 # read the same way it is written, by bracket depth -- `[...]` is optional,
 # bare is required.
 _FLAG_RE = re.compile(r"--[a-z][a-z-]*")
-_BRICK_EXAMPLE_RE = re.compile(r"`(tickets\.py do <run>[^`]*)`")
+_DO_EXAMPLE_RE = re.compile(r"`(tickets\.py do <run>[^`]*)`")
 
 
 def _flags_by_bracket_depth(text: str) -> tuple:
@@ -319,20 +308,20 @@ def _flags_by_bracket_depth(text: str) -> tuple:
     return frozenset(required), frozenset(optional)
 
 
-def _brick_example() -> str:
+def _do_example() -> str:
     """The routed `tickets.py do <run> ...` command, verbatim, off the
     collapsed (unrendered) template -- `{{...}}` placeholders never appear in
     this command, so rendering is not needed to read it."""
-    match = _BRICK_EXAMPLE_RE.search(_collapsed_block())
+    match = _DO_EXAMPLE_RE.search(_collapsed_block())
     return match.group(1) if match else ""
 
 
-class TestHostBlockBrickFlags(unittest.TestCase):
+class TestHostBlockDoFlags(unittest.TestCase):
     """The worker-lane example and `tickets.py do`'s own required flags
     cannot diverge unobserved."""
 
-    def test_brick_example_names_exactly_the_required_flags(self):
-        example = _brick_example()
+    def test_do_example_names_exactly_the_required_flags(self):
+        example = _do_example()
         self.assertTrue(example, "no `tickets.py do <run>` example found")
         example_required, _ = _flags_by_bracket_depth(example)
         usage_required, _ = _flags_by_bracket_depth(DO_USAGE)
@@ -344,7 +333,7 @@ class TestHostBlockBrickFlags(unittest.TestCase):
             f"actually requires {sorted(usage_required)}",
         )
 
-    def test_brick_example_flag_pin_can_fail(self):
+    def test_do_example_flag_pin_can_fail(self):
         """Can-fail evidence (rules/verification.md §8), taken on copies
         beside the tree and never by mutating it under test: an example that
         drops a required flag, a command that grows one the example never
@@ -352,7 +341,7 @@ class TestHostBlockBrickFlags(unittest.TestCase):
         (the exact shape of the friction this closes, before `--host` was
         bracketed) each leave the check above red.
         """
-        example = _brick_example()
+        example = _do_example()
         usage_required, _ = _flags_by_bracket_depth(DO_USAGE)
         example_required, _ = _flags_by_bracket_depth(example)
         self.assertEqual(usage_required, example_required)  # green on arrival

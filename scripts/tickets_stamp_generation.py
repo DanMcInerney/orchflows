@@ -3,13 +3,13 @@
 `stamp-generation` used to sit beside `instantiate` as its hand-authored
 twin: one sealed a graph it rendered, the other opened the lifecycle on a
 graph somebody wrote. `instantiate` and the template layer it read are
-gone -- bricks mint their own graphs at runtime now -- so only the second
-half survives, here alone.
+gone -- callables mint their own graphs at runtime now -- so only the
+second half survives, here alone.
 
-It is dead as a public subcommand (W3a removed the door from the
-dispatch table) and alive as an internal call: `tickets_brick.py`'s
+It is dead as a public subcommand (W3a removed the command from the
+dispatch table) and alive as an internal call: `tickets_mint.py`'s
 parentless-root path calls it directly to open the one-member cut a
-standalone `do`/`judge` brick takes on itself.
+standalone `do`/`judge` callable takes on itself.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ if __package__:
     from .tickets_emission import grade_run_emission
     from .tickets_context import run_snapshot
     from .tickets_generations import _root_payload, generation_identity
-    from .tickets_transitions import pending_admission
+    from .tickets_transitions import PENDING, READY, pending_admission
 else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import _parse_frontmatter, _set_frontmatter_field, lease_of
     from tickets_store import (
@@ -33,7 +33,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_emission import grade_run_emission
     from tickets_context import run_snapshot
     from tickets_generations import _root_payload, generation_identity
-    from tickets_transitions import pending_admission
+    from tickets_transitions import PENDING, READY, pending_admission
 
 
 STAMP_GENERATION_USAGE = "stamp-generation <run> <root-id>"
@@ -73,7 +73,7 @@ def _cmd_stamp_generation(rest):
             for member_id in members:
                 data = _parse_frontmatter(snapshot[member_id])
                 status = str(data.get('status') or '')
-                if status not in ('pending', 'ready') or lease_of(data)[0]:
+                if status not in (PENDING, READY) or lease_of(data)[0]:
                     return {'error': f"stamp-generation refused: {run}/{member_id} is '{status or '<missing>'}', and a stamp rewrites the assignment it would be working against (rules/verification.md §3). Nothing was written"}
                 if str(data.get('root_generation') or '').strip():
                     return {'error': f'stamp-generation refused: {run}/{member_id} already carries a generation; the lifecycle is opened once. Nothing was written'}

@@ -45,11 +45,11 @@ Deliver one result.
 
 
 class CallableRegistryTests(unittest.TestCase):
-    def test_callable_registry_is_exactly_the_two_bricks(self):
+    def test_callable_registry_is_exactly_the_two_callables(self):
         """`orch-slice` retired in W4a together with the instantiate layer
         that was its only minter of decomposed roots (`ROOT_EXECUTOR` in
-        `scripts/tickets_format.py` is gone with it): the two brick doors
-        are the whole callable tier now."""
+        `scripts/tickets_format.py` is gone with it): the two minting
+        commands are the whole callable tier now."""
 
         self.assertEqual(
             (
@@ -149,16 +149,16 @@ Deliver one result.
                 if successor not in registry.EXECUTOR_REGISTRY:
                     self.assertIn(successor, registry.executor_refusal(superseded))
         # The loop lane is gone: the refusal names the mechanism that
-        # replaced it -- prose over bricks and land's `done` predicate --
-        # rather than the arm/evaluate/advance doors W3a deleted.
+        # replaced it -- prose over callables and land's `done` predicate --
+        # rather than the arm/evaluate/advance commands W3a deleted.
         loop_refusal = registry.executor_refusal("orch-loop")
         self.assertIn("superseded", loop_refusal)
-        self.assertIn("do` bricks", loop_refusal)
+        self.assertIn("do` callables", loop_refusal)
         self.assertIn("tickets.py land", loop_refusal)
         self.assertNotIn("loop-arm", loop_refusal)
         self.assertNotIn("bind '", loop_refusal)
 
-    def test_the_outline_and_slice_doorways_collapse_to_one_remedy(self):
+    def test_the_outline_and_slice_executors_collapse_to_one_remedy(self):
         """`orch-outline` retired as a verb in wave 3; `orch-slice` retires
         in W4a together with the instantiate layer that was its only
         minter of decomposed roots. Both leave their craft behind as the

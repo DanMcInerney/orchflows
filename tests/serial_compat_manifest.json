@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2108,
+  "count": 2114,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -32,7 +32,7 @@
    "test_browser_game_composition.BrowserGameCompositionTests.test_checkpoint_consumes_the_kind_separated_successor_plan_contract",
    "test_browser_game_composition.BrowserGameCompositionTests.test_installer_adapter_points_at_the_body_and_forces_manual_only",
    "test_browser_game_composition.BrowserGameCompositionTests.test_named_invocation_closes_inputs_outputs_questions_and_dispositions",
-   "test_browser_game_composition.BrowserGameCompositionTests.test_the_workflow_is_discoverable_and_calls_a_frame_and_bricks",
+   "test_browser_game_composition.BrowserGameCompositionTests.test_the_workflow_is_discoverable_and_calls_a_frame_and_callables",
    "test_browser_game_instances.BrowserGameInstanceValidationTests.test_accessibility_promise_cannot_use_empirical_source",
    "test_browser_game_instances.BrowserGameInstanceValidationTests.test_checkpoint_coverage_must_equal_bound_identities",
    "test_browser_game_instances.BrowserGameInstanceValidationTests.test_checkpoint_coverage_must_equal_evidence_set",
@@ -82,7 +82,7 @@
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_help_usage_and_summary_name_one_exact_surface",
    "test_command_surface.CurrentCommandSurfaceTest.test_removed_authority_commands_have_no_route_or_facade_export",
-   "test_command_surface.CurrentCommandSurfaceTest.test_the_retired_generation_and_gate_doors_are_named_nowhere",
+   "test_command_surface.CurrentCommandSurfaceTest.test_the_retired_generation_and_gate_commands_are_named_nowhere",
    "test_console_io.TestAClosedReaderIsNotAFailure.test_a_tool_piped_into_a_closed_pipe_exits_clean",
    "test_console_io.TestAClosedReaderIsNotAFailure.test_run_answers_zero_and_says_nothing_when_stdout_breaks",
    "test_console_io.TestAFileThisLibraryWritesIsTheSameFileEverywhere.test_no_module_asks_for_a_keyword_the_floor_does_not_have",
@@ -99,8 +99,7 @@
    "test_constitution.NetLinesTest.test_every_principle_is_numbered_without_a_gap",
    "test_constitution.NetLinesTest.test_padding_a_copy_past_the_budget_fails_the_check",
    "test_constitution.NetLinesTest.test_the_block_stays_inside_the_near_zero_budget",
-   "test_constitution.WriteTimePointerTest.test_a_copy_without_either_pointer_fails_the_check",
-   "test_constitution.WriteTimePointerTest.test_agents_md_points_at_the_constitution",
+   "test_constitution.WriteTimePointerTest.test_a_copy_without_the_pointer_fails_the_check",
    "test_constitution.WriteTimePointerTest.test_documentation_lists_it_among_the_day_zero_artifacts",
    "test_cutcheck.CutcheckTest.test_closed_graph_passes_even_when_candidates_may_overlap",
    "test_cutcheck.CutcheckTest.test_dangling_dependency_and_cycle_fail",
@@ -130,6 +129,8 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
+   "test_dispatch_launch.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
+   "test_dispatch_launch.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
    "test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_after_retirement",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_before_current_resolution",
@@ -416,16 +417,15 @@
    "test_installer.TestHostAutoDetection.test_state_directories_are_not_installation_signals",
    "test_installer.TestHostAutoDetection.test_the_managed_subagent_limit_markers_bracket_a_toml_comment_pair",
    "test_installer.TestHostAutoDetection.test_the_subagent_depth_limit_is_the_one_grok_enforces",
-   "test_installer.TestHostBlockBrickFlags.test_brick_example_flag_pin_can_fail",
-   "test_installer.TestHostBlockBrickFlags.test_brick_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockDemands.test_host_block_demands_and_read_by_tokens_are_all_stated",
    "test_installer.TestHostBlockDemands.test_host_block_demands_dropped_one_at_a_time_fail_the_check",
    "test_installer.TestHostBlockDemands.test_host_block_demands_fit_the_every_turn_budget",
    "test_installer.TestHostBlockDemands.test_host_block_demands_number_exactly_eight",
+   "test_installer.TestHostBlockDoFlags.test_do_example_flag_pin_can_fail",
+   "test_installer.TestHostBlockDoFlags.test_do_example_names_exactly_the_required_flags",
    "test_installer.TestHostBlockRendering.test_render_host_block_substitutes_resolved_interpreter",
    "test_installer.TestHostBlockRendering.test_rendered_block_contains_name_to_path_map",
    "test_installer.TestHostBlockRendering.test_rendered_block_states_one_routing_rule",
-   "test_installer.TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
    "test_installer.TestHostConfigLimitRemoval.test_a_block_holding_only_the_installers_keys_lifts_out_whole",
    "test_installer.TestHostConfigLimitRemoval.test_a_table_the_host_appended_inside_the_block_survives_removal",
    "test_installer.TestHostConfigLimitRemoval.test_absent_markers_pass_the_config_through",
@@ -500,6 +500,7 @@
    "test_installer.TestRoleAgentInstructions.test_reinstalling_over_a_codex_config_leaves_the_block_byte_stable",
    "test_installer.TestRoleAgentInstructions.test_rendering_grok_leaves_the_claude_and_codex_agents_alone",
    "test_installer.TestRoleAgentInstructions.test_role_description_is_the_role_name_and_nothing_to_follow",
+   "test_installer.TestRoleAgentInstructions.test_role_instructions_name_the_mechanism_not_the_old_word",
    "test_installer.TestRoleAgentInstructions.test_role_instructions_send_no_child_to_read_the_role_contract",
    "test_installer.TestRoleAgentInstructions.test_the_codex_agent_limits_block_is_untouched_by_the_grok_one",
    "test_installer.TestRoleAgentInstructions.test_the_role_bearing_grok_body_states_the_explicit_dispatch_gate",
@@ -696,8 +697,8 @@
    "test_project_binding.TestLegacyRuns.test_a_run_with_no_recorded_project_admits_any_workspace",
    "test_project_binding.TestTerminalAdmission.test_a_terminal_write_from_a_foreign_project_is_refused",
    "test_project_binding.TestTerminalAdmission.test_a_terminal_write_from_the_runs_own_project_proceeds",
-   "test_project_binding.TestTheSeamIsGone.test_both_remaining_doors_refuse_through_that_one_law",
-   "test_project_binding.TestTheSeamIsGone.test_no_door_still_reaches_the_deleted_claim_plumbing",
+   "test_project_binding.TestTheSeamIsGone.test_both_remaining_commands_refuse_through_that_one_law",
+   "test_project_binding.TestTheSeamIsGone.test_no_command_still_reaches_the_deleted_claim_plumbing",
    "test_project_binding.TestTheSeamIsGone.test_the_project_module_owns_the_binding_law",
    "test_regen.TestAbsentOwners.test_a_tree_without_the_owners_is_skipped_and_says_so",
    "test_regen.TestCommandSurface.test_the_check_reports_one_machine_readable_line",
@@ -717,13 +718,13 @@
    "test_regen.TestValidateGate.test_a_reconciled_tree_draws_no_error_from_the_same_gate",
    "test_regen.TestValidateGate.test_a_stale_serial_manifest_fails_validate_and_names_the_command",
    "test_registry_census.CallableRegistryTests.test_a_superseded_verb_is_refused_naming_its_successor",
-   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_two_bricks",
+   "test_registry_census.CallableRegistryTests.test_callable_registry_is_exactly_the_two_callables",
    "test_registry_census.CallableRegistryTests.test_do_and_judge_require_pack_authority",
    "test_registry_census.CallableRegistryTests.test_pack_craft_carries_each_absorbed_execution_family",
    "test_registry_census.CallableRegistryTests.test_shipped_callable_skill_packages_are_exactly_registry",
    "test_registry_census.CallableRegistryTests.test_superseded_executor_is_rejected_with_named_registry",
    "test_registry_census.CallableRegistryTests.test_the_declared_launch_shape_is_the_invocation_and_nothing_else",
-   "test_registry_census.CallableRegistryTests.test_the_outline_and_slice_doorways_collapse_to_one_remedy",
+   "test_registry_census.CallableRegistryTests.test_the_outline_and_slice_executors_collapse_to_one_remedy",
    "test_registry_census.CallableRegistryTests.test_the_retired_driver_verbs_refuse_toward_the_mechanical_trunk",
    "test_ring_adapters.BodyTests.test_a_generated_body_carries_no_preprocessing_construct",
    "test_ring_adapters.BodyTests.test_a_workflow_adapter_points_at_its_body_and_is_manual_only",
@@ -973,23 +974,24 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_plan_route_consumes_the_root_shape_it_sealed",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_team_lane_emits_the_wave_lifecycle",
-   "test_ticket_bricks.BrickAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
-   "test_ticket_bricks.BrickAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
-   "test_ticket_bricks.BrickAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
-   "test_ticket_bricks.BrickIdGrammarTest.test_a_child_is_minted_under_its_parent_and_sealed_through_it",
-   "test_ticket_bricks.BrickIdGrammarTest.test_a_child_of_an_unsealed_parent_is_refused_with_its_remedy",
-   "test_ticket_bricks.BrickIdGrammarTest.test_a_parentless_brick_roots_its_own_tree_and_seals_itself",
-   "test_ticket_bricks.BrickIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
-   "test_ticket_bricks.BrickLandingTest.test_a_document_brick_lands_on_the_drivers_grade",
-   "test_ticket_bricks.BrickLandingTest.test_a_git_brick_runs_its_done_predicate_at_the_landing",
-   "test_ticket_bricks.BrickLandingTest.test_a_judge_under_a_landed_brick_carries_both_machine_lines",
-   "test_ticket_bricks.BrickPromptTest.test_a_document_brick_is_told_to_print_a_doc_line",
-   "test_ticket_bricks.BrickPromptTest.test_a_git_brick_is_told_to_commit_and_to_print_a_git_line",
-   "test_ticket_bricks.BrickPromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
-   "test_ticket_bricks.BrickPromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
-   "test_ticket_bricks.BrickSinkWorktreeIsolationTest.test_worktrees_root_stays_inside_the_sinks_own_tempdir",
-   "test_ticket_bricks.RepairRoundAdmissionTest.test_a_runtime_bricks_repair_round_admits_and_dispatches",
-   "test_ticket_bricks.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
+   "test_ticket_callables.CallableAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
+   "test_ticket_callables.CallableAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
+   "test_ticket_callables.CallableAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
+   "test_ticket_callables.CallableIdGrammarTest.test_a_child_is_minted_under_its_parent_and_sealed_through_it",
+   "test_ticket_callables.CallableIdGrammarTest.test_a_child_of_an_unsealed_parent_is_refused_with_its_remedy",
+   "test_ticket_callables.CallableIdGrammarTest.test_a_parentless_callable_roots_its_own_tree_and_seals_itself",
+   "test_ticket_callables.CallableIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
+   "test_ticket_callables.CallableLandingTest.test_a_document_callable_lands_on_the_drivers_grade",
+   "test_ticket_callables.CallableLandingTest.test_a_git_callable_runs_its_done_predicate_at_the_landing",
+   "test_ticket_callables.CallableLandingTest.test_a_judge_under_a_landed_callable_carries_both_machine_lines",
+   "test_ticket_callables.CallablePromptTest.test_a_document_callable_is_told_to_print_a_doc_line",
+   "test_ticket_callables.CallablePromptTest.test_a_git_callable_is_told_to_commit_and_to_print_a_git_line",
+   "test_ticket_callables.CallablePromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
+   "test_ticket_callables.CallablePromptTest.test_a_non_git_adapter_carries_its_own_workspace_line_not_a_commit",
+   "test_ticket_callables.CallablePromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
+   "test_ticket_callables.CallableSinkWorktreeIsolationTest.test_worktrees_root_stays_inside_the_sinks_own_tempdir",
+   "test_ticket_callables.RepairRoundAdmissionTest.test_a_runtime_callables_repair_round_admits_and_dispatches",
+   "test_ticket_callables.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_predicate_is_part_of_the_sealed_assignment",
    "test_ticket_done_predicate.LandDonePredicateTest.test_a_passing_command_is_the_verdict_and_land_files_its_evidence",
@@ -1005,14 +1007,14 @@
    "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
    "test_ticket_frames.FrameCloseTest.test_a_judge_under_the_frame_lets_the_same_close_land",
-   "test_ticket_frames.FrameCloseTest.test_a_judged_criterion_is_a_judge_brick_rather_than_a_frame_gate",
+   "test_ticket_frames.FrameCloseTest.test_a_judged_criterion_is_a_judge_callable_rather_than_a_frame_gate",
    "test_ticket_frames.FrameCloseTest.test_a_passing_done_command_is_what_closes_the_frame_complete",
    "test_ticket_frames.FrameCloseTest.test_a_refused_done_command_leaves_the_frame_open_and_unwritten",
    "test_ticket_frames.FrameCloseTest.test_a_stated_reason_in_the_journal_is_the_other_lawful_close",
    "test_ticket_frames.FrameCloseTest.test_an_unjudged_line_with_no_reason_buys_nothing",
-   "test_ticket_frames.FrameCloseTest.test_land_stays_the_brick_door_and_frame_close_says_so",
+   "test_ticket_frames.FrameCloseTest.test_land_stays_the_callable_command_and_frame_close_says_so",
    "test_ticket_frames.FrameJournalTest.test_a_journal_append_outlives_the_frames_nominal_expiry",
-   "test_ticket_frames.FrameJournalTest.test_a_wave_appends_through_the_result_door_under_the_frames_identity",
+   "test_ticket_frames.FrameJournalTest.test_a_wave_appends_through_the_result_channel_under_the_frames_identity",
    "test_ticket_frames.FrameShapeTest.test_a_called_frame_hangs_under_its_caller_and_seals_through_it",
    "test_ticket_frames.FrameShapeTest.test_a_frame_carrying_a_craft_binding_is_off_contract",
    "test_ticket_frames.FrameShapeTest.test_an_ordinary_ticket_still_owes_its_executor",
@@ -1524,8 +1526,10 @@
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_all_three_writers_resolve_to_the_one_sink",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_each_owned_function_is_defined_exactly_once_under_scripts",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_no_retired_resolver_body_survives_anywhere_under_scripts",
+   "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_the_bootstrap_leaf_imports_nothing_beyond_pathlib",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_the_module_is_a_leaf_with_no_module_level_side_effects",
    "tests.test_state_root_cases.environment.TestOneResolverOwnsBothFacts.test_workspace_reads_its_ticket_out_of_the_sink",
+   "tests.test_state_root_cases.environment.TestTheEnvVarNameIsThisLiteral.test_the_owner_constant_is_this_exact_value",
    "tests.test_state_root_cases.environment.TestTheOverrideAndTheDefault.test_a_set_value_wins_and_a_tilde_is_expanded",
    "tests.test_state_root_cases.environment.TestTheOverrideAndTheDefault.test_set_but_empty_reads_as_unset",
    "tests.test_state_root_cases.environment.TestTheOverrideAndTheDefault.test_the_four_subroots_hang_off_the_one_root",
@@ -1956,6 +1960,8 @@
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_two_skills_carrying_one_clause_are_reported_against_each_other",
    "tests.test_validator_cases.corpus_and_surfaces.TestLicensedCopies.test_the_licensed_pair_is_not_reported_against_the_real_tree",
    "tests.test_validator_cases.corpus_and_surfaces.TestLicensedCopies.test_the_visibility_copy_in_the_host_block_is_licensed",
+   "tests.test_validator_cases.corpus_and_surfaces.TestRoutingBlockBudget.test_a_routing_block_inside_the_budget_passes",
+   "tests.test_validator_cases.corpus_and_surfaces.TestRoutingBlockBudget.test_an_oversized_routing_block_is_refused",
    "tests.test_validator_cases.corpus_and_surfaces.TestSurfaceBudgets.test_a_host_block_over_its_budget_is_refused",
    "tests.test_validator_cases.corpus_and_surfaces.TestSurfaceBudgets.test_the_real_surfaces_sit_under_their_ceilings",
    "tests.test_validator_cases.corpus_and_surfaces.TestWordBudgetAndLinks.test_a_dangling_markdown_link_in_docs_is_an_error",
@@ -2111,7 +2117,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "5312b260e64cff67021a277d5c04d4af7bd51e7572ce7bdf04d40961bdbd5c50"
+  "sha256": "520d5e903a3aa3d152c35b37bba96345f148dbf855552d3c739d9c28162a4fcd"
  },
  "mutation_owners": [
   {
@@ -2842,14 +2848,6 @@
   },
   {
    "module": "tests.test_installer_cases.managed_text.host_block",
-   "owner": "TestHostBlockRendering.test_resolved_python_interpreter_refuses_a_bare_name",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_installer_cases.managed_text.host_block",
    "owner": "_flags_by_bracket_depth",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -3154,7 +3152,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment",
-    "import-path",
     "monkeypatch"
    ]
   },
@@ -4527,24 +4524,24 @@
    ]
   },
   {
-   "module": "tests.test_ticket_bricks",
-   "owner": "BrickIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
+   "module": "tests.test_ticket_callables",
+   "owner": "CallableIdGrammarTest.test_two_concurrent_calls_under_one_parent_mint_distinct_ids",
    "restoration": "selected-module-boundary",
    "seams": [
     "threads"
    ]
   },
   {
-   "module": "tests.test_ticket_bricks",
-   "owner": "BrickSinkTest._stubbed_establishment",
+   "module": "tests.test_ticket_callables",
+   "owner": "CallableSinkTest._stubbed_establishment",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
    ]
   },
   {
-   "module": "tests.test_ticket_bricks",
-   "owner": "BrickSinkTest.setUp",
+   "module": "tests.test_ticket_callables",
+   "owner": "CallableSinkTest.setUp",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",
@@ -4641,22 +4638,6 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.common",
-   "owner": "refusing_to_read",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
-   ]
-  },
-  {
-   "module": "tests.test_tickets_cases.common",
-   "owner": "refusing_to_write",
-   "restoration": "sharded-module-guard",
-   "seams": [
-    "monkeypatch"
    ]
   },
   {
@@ -4867,6 +4848,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.sink_law",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
    ]
   },
   {

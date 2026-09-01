@@ -29,7 +29,7 @@ claimed contradiction against the owner's current text, and write
 ranked proposals through `tickets.py improvement --proposal`,
 carrying the digest's cluster_key, matcher_draft and watermark
 verbatim. Larger, or when independent eyes are wanted, spend one
-brick:
+callable:
 
     tickets.py do <run> --pack orch-content-pack --parent <frame>
       --goal-file <mine-goal> --bound "<= 40 tool calls"
@@ -39,7 +39,7 @@ obligations, and §4 as the ranking law. Either way the result names
 the top proposal — or the finding that nothing qualified, which
 closes the cycle.
 
-**Deliver**, unless invoked mine-only — one brick in `workspace`:
+**Deliver**, unless invoked mine-only — one callable in `workspace`:
 
     tickets.py do <run> --pack orch-code-pack --parent <frame>
       --isolation required --goal-file <deliver-goal>
@@ -51,7 +51,7 @@ replayable item, `done` the owner's required gate at the landed
 revision — and, the last act, `tickets.py improvement --covered`
 with the digest-supplied line citing that revision.
 
-Frame law: the first brick, mine's or deliver's, opens it.
+Frame law: the first callable, mine's or deliver's, opens it.
 
     tickets.py frame-open <run> --goal-file <frame-goal> --workflow self-improve
 

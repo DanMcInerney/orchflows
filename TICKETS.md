@@ -46,8 +46,8 @@ and sections without mutation.
 ## Dispatch protocol
 
 `orchflows.dispatch.v1` makes the ticket the fence around at-least-once agent
-delivery. The caller invokes one door — `tickets.py do` or `judge` for a
-brick, `tickets.py dispatch` for a ticket written by hand — which promotes
+delivery. The caller invokes one command — `tickets.py do` or `judge` for a
+callable, `tickets.py dispatch` for a ticket written by hand — which promotes
 readiness, establishes the workspace, opens one attempt, and commits one
 immutable `launch` atomically — the agent, model, effort, and the whole
 prompt the child is given, so the caller invokes a `launch` object rather than
@@ -88,13 +88,13 @@ whose owner and opened time are the lease. The normative shapes and precedence l
 A delivery run holds one **root ticket** for the whole request. A direct
 root binds its complete work to one executor. Anything larger opens a
 **frame** — one ticket per workflow invocation, holding the journal its
-driver writes and re-reads — and hangs its bricks underneath:
+driver writes and re-reads — and hangs its callables underneath:
 
     <state sink>/tickets/<run>/
     ├── 00-root.md          the whole job
     ├── B1.md               a frame: goal, journal, no executor, no pack
     ├── B1.1.md   ┐
-    ├── B1.2.md   │ bricks, one bounded work item each, minted under B1
+    ├── B1.2.md   │ callables, one bounded work item each, minted under B1
     └── B1.3.md   ┘
 
 The `parent` field is what places each one, so the ticket tree is the call
@@ -106,7 +106,7 @@ call stack. Cut shape — what a unit may be, who owns what — is
 
 The frontmatter carries three related mechanisms:
 
-- **`parent`** is the call edge. A brick minted at runtime hangs under the
+- **`parent`** is the call edge. A callable minted at runtime hangs under the
   frame or root that opened it, takes an auto-minted `<parent>.<n>` id, and
   seals through that parent's own generation rather than through a cut that
   closed before it existed.
@@ -138,7 +138,7 @@ The frontmatter carries three related mechanisms:
                                         suspended       complete · blocked
                                                          stalled · limited · failed
 
-**Admission** is the door into work: `tickets.py` grades the ticket
+**Admission** is the entry point into work: `tickets.py` grades the ticket
 against a snapshot of the whole run — dependencies complete, executor
 bound by the stamped pack, workspace policy, inputs resolvable, and for a
 runtime child its parent's own seal — and
@@ -155,10 +155,10 @@ claimant observations and its `## Report`, but it has no live attempt.
 Three moments use readers who did not produce the fixed artifact
 ([rules/verification.md](rules/verification.md) §7):
 
-    plan ─▶ CUT CHECK ─▶ bricks under the frame ─▶ JUDGE ─▶ LAND
-            before units       one outside path     a brick,   runs the
-                                                    then a do  done
-                                                    to repair  predicate
+    plan ─▶ CUT CHECK ─▶ callables under the frame ─▶ JUDGE ─▶ LAND
+            before units        one outside path      a callable, runs the
+                                                       then a do  done
+                                                       to repair  predicate
 
 1. **Cut check** — before any unit is dispatched, a checker reads the
    issued ticket set as data and returns blockers to the planner before a
@@ -170,10 +170,10 @@ Three moments use readers who did not produce the fixed artifact
    the ordinary outside-independence path's one shape. The distinct
    `<id>.check` review ticket, its `orch-judge` dispatch, and `tickets.py
    check <run> <id> --stage <id>.check`'s anchor onto `checked_by` retired:
-   no live door ever built the ledger that reader required.
-3. **Critique and repair** — a critique is a `judge` brick over the artifacts
-   it is handed and the repair answering it a `do` brick, sequenced by the
-   calling workflow's prose; no door emits a lensed family for either, and
+   no live command ever built the ledger that reader required.
+3. **Critique and repair** — a critique is a `judge` ticket over the artifacts
+   it is handed and the repair answering it a `do` ticket, sequenced by the
+   calling workflow's prose; no command emits a lensed family for either, and
    each returns the ordinary way — the executor's `## Report` and the
    joined disposition `land` records. Closing a frame over two or more `do`
    children refuses unless the tree holds a judging child or the journal
@@ -200,7 +200,7 @@ Three moments use readers who did not produce the fixed artifact
   result filing never extend `lease_expires_at`. An ended attempt must be
   retired or atomically replaced before a successor runs. Suspension leaves a
   retired attempt, never a live predecessor.
-- **Findings fork by severity.** Blocking defects go to a `do` repair brick;
+- **Findings fork by severity.** Blocking defects go to a `do` repair ticket;
   non-blocking ones are recorded as candidate scope for a later pass —
   logged, never dropped.
 

@@ -16,8 +16,8 @@ connect this law to each authorized dispatch event and predecessor record.
    authors or changes a deliverable. Every such skill runs in a child
    at the role [roles.md](roles.md) §4 resolves; inline execution is
    forbidden. Those mechanics are one command each way and the root
-   improvises neither: a dispatching door — `tickets.py do` and `judge` for
-   a brick, `dispatch` for a hand-written ticket — emits the concrete
+   improvises neither: a dispatching command — `tickets.py do` and `judge`
+   for a callable, `dispatch` for a hand-written ticket — emits the concrete
    `launch` to invoke verbatim, never a retyped model, agent, or effort; and
    `tickets.py land` is the return. Both halves are
    [dispatch.md](../contracts/dispatch.md)'s transactions.

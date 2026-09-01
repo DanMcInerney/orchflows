@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import scripts.state_root as state_root  # noqa: E402
 import scripts.tickets as tickets_mod  # noqa: E402
 
 TICKETS_PY = ROOT / "scripts" / "tickets.py"
@@ -47,13 +48,8 @@ TICKETS_SUPPORT_NAMES = support_names()
 TICKETS_MODULES = (TICKETS_PY,) + tuple(
     TICKETS_PY.with_name(name) for name in TICKETS_SUPPORT_NAMES
 )
-TICKETS_FORMAT_PY = TICKETS_PY.with_name("tickets_format.py")
-TICKETS_STORE_PY = TICKETS_PY.with_name("tickets_store.py")
-TICKETS_WORKLOG_PY = TICKETS_PY.with_name("tickets_worklog.py")
 TICKETS_DISPATCH_PY = TICKETS_PY.with_name("tickets_dispatch.py")
-STATE_ROOT_PY = ROOT / "scripts" / "state_root.py"
-WORKSPACE_PY = ROOT / "scripts" / "workspace.py"
-STATE_HOME_ENV_VAR = "ORCHFLOWS_STATE_HOME"
+STATE_HOME_ENV_VAR = state_root.ENV_VAR
 
 TICKET = """---
 id: {tid}
@@ -72,7 +68,7 @@ Test ticket.
 
 
 def use_sink(tmp: Path) -> Path:
-    """Point ``ORCHFLOWS_STATE_HOME`` at a sink under this test's tempdir.
+    """Point the sink env var at a sink under this test's tempdir.
 
     Sets the variable for the rest of the process rather than restoring
     it: every fixture below calls this before writing, and
@@ -243,118 +239,6 @@ def run_cmd(cwd: Path, *args):
         except Exception as error:  # what `main` does with one
             payload = {"error": str(error)}
     return json.loads(json.dumps(payload, ensure_ascii=False))
-
-
-class SequencedPath:
-    """A ticket path whose read and write call the test back.
-
-    ``_do_claim`` takes the path as an argument, so two threads can be given
-    two instrumented paths onto one file and meet in a chosen interleaving
-    instead of whichever one the scheduler happens to produce. Only the
-    attributes ``_do_claim`` touches are forwarded -- the two calls, the
-    stem it names a refusal by, and the fspath the staleness check stats
-    for motion; the subject keeps its signature and its body.
-    """
-
-    def __init__(self, path: Path, before_read=None, after_read=None, after_write=None):
-        self._path = path
-        self._before_read = before_read
-        self._after_read = after_read
-        self._after_write = after_write
-
-    @property
-    def stem(self):
-        return self._path.stem
-
-    def __fspath__(self):
-        return str(self._path)
-
-    def read_text(self, *args, **kwargs):
-        if self._before_read is not None:
-            self._before_read()
-        text = self._path.read_text(*args, **kwargs)
-        if self._after_read is not None:
-            self._after_read()
-        return text
-
-    def write_text(self, *args, **kwargs):
-        written = self._path.write_text(*args, **kwargs)
-        if self._after_write is not None:
-            self._after_write()
-        return written
-
-
-@contextmanager
-def refusing_to_read(path, error=None, after: int = 0):
-    """``Path.read_text`` raising ``error`` for ``path`` alone, and nothing
-    else changed.
-
-    The portable way to reach an OSError on a file that is there: ``chmod``
-    has no effect on Windows and none as root, so an assertion resting on it
-    reports the platform rather than the handler. ``error`` of ``None``
-    leaves the real read in place, so a case needing no seam reads the same
-    line as one that does.
-
-    ``after`` lets the first N reads succeed. Several handlers sit behind an
-    earlier read of the same file that has its own guard, so a read failing
-    from the first call is caught by the earlier one and the later handler is
-    never reached -- ``after`` is what distinguishes "this file is
-    unreadable" from "this file stopped being readable partway through", and
-    only the second reaches those.
-    """
-
-    if error is None:
-        yield
-        return
-    target = Path(path).resolve()
-    original = Path.read_text
-    survived = []
-
-    def read_text(self, *args, **kwargs):
-        if Path(self).resolve() == target:
-            if len(survived) >= after:
-                raise error(13, "Permission denied", str(self))
-            survived.append(1)
-        return original(self, *args, **kwargs)
-
-    Path.read_text = read_text
-    try:
-        yield
-    finally:
-        Path.read_text = original
-
-
-@contextmanager
-def refusing_to_write(path, error=PermissionError):
-    """``refusing_to_read``'s twin over ``Path.write_text``.
-
-    A read that fails and a write that fails are different handlers with
-    different messages, and a file that cannot be written is not reachable by
-    making one on disk: an existing file is writable, and a path that is a
-    directory fails the ``is_file`` check long before the write.
-    """
-
-    target = Path(path).resolve()
-    original = Path.write_text
-    original_atomic = tickets_mod._write_text_atomically
-
-    def write_text(self, *args, **kwargs):
-        if Path(self).resolve() == target:
-            raise error(13, "Permission denied", str(self))
-        return original(self, *args, **kwargs)
-
-    def write_atomically(path, text):
-        if Path(path).resolve() == target:
-            raise error(13, "Permission denied", str(path))
-        return original_atomic(path, text)
-
-    Path.write_text = write_text
-    tickets_mod._write_text_atomically = write_atomically
-    try:
-        yield
-    finally:
-        Path.write_text = original
-        tickets_mod._write_text_atomically = original_atomic
 
 
 def backdate(path: Path, minutes: int) -> None:

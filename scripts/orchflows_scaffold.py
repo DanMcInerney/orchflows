@@ -5,7 +5,7 @@ One file per kind, and nothing beyond what its own admission requires: a
 skeleton that guessed at content would be a second, weaker copy of the
 authoring standard. Every skeleton is a *valid* item on the day it is
 written -- a pack carries all four cells and every mandatory craft
-section, a workflow carries a frame open, one brick call and a close --
+section, a workflow carries a frame open, one callable call and a close --
 so the first thing an author does is edit, never repair.
 """
 

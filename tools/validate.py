@@ -37,6 +37,7 @@ from tools.validate_support import carriage as _carriage_module
 from tools.validate_support import common as _common_module
 from tools.validate_support import duplication as _duplication_module
 from tools.validate_support import friction as _friction_module
+from tools.validate_support import lifecycle_literals as _lifecycle_literals_module
 from tools.validate_support import lint as _lint_module
 from tools.validate_support import names as _names_module
 from tools.validate_support import packages as _packages_module
@@ -45,6 +46,7 @@ from tools.validate_support.common import *
 from tools.validate_support.carriage import *
 from tools.validate_support.browser_game import *
 from tools.validate_support.friction import *
+from tools.validate_support.lifecycle_literals import *
 from tools.validate_support.packages import *
 from tools.validate_support.duplication import *
 from tools.validate_support.structure import *
@@ -55,6 +57,7 @@ ROOT = _FACADE_ROOT
 _SUPPORT_MODULES = (
     _common_module, _carriage_module, _friction_module, _packages_module,
     _duplication_module, _structure_module, _lint_module, _names_module,
+    _lifecycle_literals_module,
 )
 _ROOT_BINDINGS = (
     "ROOT", "CONTRACTS_DIR", "PINS_FILE", "FRICTION_OWNER", "NAME_CHECK_MARKER",
@@ -114,6 +117,17 @@ def validate_markdown_links(diag: Diagnostics) -> None:
     try:
         _bind_root(ROOT)
         _lint_module.validate_markdown_links(diag)
+    finally:
+        _restore_support(state)
+
+
+def validate_section_citations(diag: Diagnostics) -> None:
+    """Grade the root currently exposed by this compatibility facade."""
+
+    state = _support_state()
+    try:
+        _bind_root(ROOT)
+        _lint_module.validate_section_citations(diag)
     finally:
         _restore_support(state)
 
@@ -296,6 +310,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_cell_duplication(packages, diag)
     validate_cross_tier_duplication(packages, diag)
     validate_generated_enum_copies(diag)
+    validate_lifecycle_literals(diag)
     validate_envelope(packages, diag)
     validate_composition_admission(diag)
     validate_templates(diag)
@@ -304,6 +319,7 @@ def _run_validation_impl() -> Diagnostics:
     validate_names(packages, diag)
     validate_craft_sections(packages, diag)
     validate_markdown_links(diag)
+    validate_section_citations(diag)
     validate_regenerated_artifacts(diag)
     validate_documented_paths(diag)
     validate_surface_budgets(diag)

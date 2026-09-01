@@ -15,7 +15,7 @@ from unittest import mock
 
 from .common import *  # noqa: F401,F403
 
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
 from scripts import workspace_candidate  # noqa: F401
 from scripts.tickets_format import parse_canonical_json
 
@@ -103,7 +103,7 @@ class TestTheTrunkDispatchesAndLandsADocumentItem(unittest.TestCase):
         self.temporary.cleanup()
 
     def command(self, *arguments):
-        result = retired_doors.run(list(arguments))
+        result = retired_commands.run(list(arguments))
         self.assertNotIn("error", result, result)
         return result
 

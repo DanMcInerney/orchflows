@@ -23,7 +23,8 @@ from unittest import mock
 from tests._candidate_checkout import (
     git_checkout, record_established_workspace,
 )
-from tests import _retired_doors as retired_doors
+from tests import _retired_commands as retired_commands
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_admission, tickets_join, tickets_seal, tickets_store
 from scripts import tickets_dispatch_launch as launch_module
@@ -51,7 +52,7 @@ class SinkTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": str(self.home),
+                state_root.ENV_VAR: str(self.home),
                 "ORCHFLOWS_WORKTREES_HOME": str(self.home / "worktrees"),
             },
         )
@@ -62,12 +63,12 @@ class SinkTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def dispatch(self, *arguments):
-        result = retired_doors.run([str(value) for value in arguments])
+        result = retired_commands.run([str(value) for value in arguments])
         self.assertNotIn("error", result, result)
         return result
 
     def refuse(self, *arguments):
-        result = retired_doors.run([str(value) for value in arguments])
+        result = retired_commands.run([str(value) for value in arguments])
         self.assertIn("error", result, result)
         return result
 
@@ -128,7 +129,7 @@ class SealedRunTest(SinkTest):
     def recut(self):
         """The lawful membership change: one more member joins the cut.
 
-        Written by hand rather than through a door: `checker-stage` minted
+        Written by hand rather than through a command: `checker-stage` minted
         this member until W3a retired the gate choreography, and what the
         cases below turn on is the membership change itself -- a second
         generation, and the receipts the first one leaves stale.
@@ -443,7 +444,7 @@ class TestAFiledBodyKeepsItsOwnHeadings(SealedRunTest):
     def file_result(self, body):
         path = self.home / "body.md"
         path.write_text(body, encoding="utf-8")
-        return retired_doors.run([
+        return retired_commands.run([
             "result", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", "D1", "--record-id", "R1", "--by", "worker",
@@ -579,7 +580,7 @@ class TestPendingNamesItsPromotion(SinkTest):
         )
 
     def test_the_refusal_names_the_promotion(self):
-        """This is the door a claim on a pending ticket actually reaches:
+        """This is the command a claim on a pending ticket actually reaches:
         the receipt is still the placeholder, so the admission grade refuses
         before the status check downstream is ever consulted."""
 
@@ -714,7 +715,7 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
         )
 
     def close(self, *, note="delivered"):
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-outcome", "run", "T", "--note", note,
         ])
 
@@ -743,7 +744,7 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
             "--risks-file", "--handoff-file",
         ):
             with self.subTest(flag=flag):
-                refused = retired_doors.run([
+                refused = retired_commands.run([
                     "dispatch-outcome", "run", "T", flag, str(self.home / "x"),
                 ])
                 self.assertEqual("outcome-invalid", refused["code"])
@@ -775,7 +776,7 @@ class TestARelayedEnvelopeRefusalTeachesItsShape(SealedRunTest):
     def relay(self, body: str):
         path = self.home / "envelope.json"
         path.write_text(body, encoding="utf-8")
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-outcome", "run", "T", "--file", str(path),
         ])
 
@@ -811,7 +812,7 @@ class TestIdempotencyConflictsNameDistinctRemedies(SealedRunTest):
     """
 
     def replace(self, dispatch_id, replacement_id, record_id):
-        return retired_doors.run([
+        return retired_commands.run([
             "dispatch-replace", "run", "T",
             "--assignment-seal", self.frontmatter("T")["assignment_seal"],
             "--dispatch-id", dispatch_id, "--record-id", record_id,

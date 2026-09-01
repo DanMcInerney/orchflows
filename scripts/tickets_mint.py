@@ -1,11 +1,11 @@
-"""The two brick doors: one command opens, seals, and launches one child.
+"""The two minting commands: one command opens, seals, and launches one child.
 
 `do` makes an artifact and `judge` reads finished ones. Both fold what a
 caller used to sequence by hand -- `new`, `stamp-generation`,
 `draft-validate`, `seal`, `ready`, `dispatch` -- into one call, because every
 one of those steps is mechanical and none of them is a decision. Four of
-those six retired as doors once this fold was the only caller walking them;
-their functions are unchanged and each step below is the same one the
+those six retired as commands once this fold was the only caller walking
+them; their functions are unchanged and each step below is the same one the
 granular command called, so this is one protocol rather than a second.
 
 Two facts make the fold safe. The id is minted under the run lock, so two
@@ -16,9 +16,9 @@ parent's generations, self-seals its own assignment, and admission verifies
 the parent's seal in the sealed record -- the reading a landing's repair
 round already needed, generalized here to every runtime child.
 
-A parentless brick is its own root and takes the full generation lifecycle:
-it is stamped, its draft validated, and its own one-member cut sealed, here
-rather than by a caller.
+A parentless callable is its own root and takes the full generation
+lifecycle: it is stamped, its draft validated, and its own one-member cut
+sealed, here rather than by a caller.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ if __package__:
     from .tickets_format import (
         REPORT_SECTION, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
-        next_brick_id,
+        next_mint_id,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue import (
@@ -50,7 +50,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import (
         REPORT_SECTION, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
-        next_brick_id,
+        next_mint_id,
     )
     from tickets_generations import assignment_digest
     from tickets_issue import (
@@ -75,10 +75,10 @@ JUDGE_USAGE = (
 )
 DO_EXECUTOR = "orch-do"
 JUDGE_EXECUTOR = "orch-judge"
-# A brick carries no standing checker lane: what checks it is the caller's
-# own `judge` brick or its `done` predicate, both of which are outside work
-# rather than a dependent's `checked_by` anchor.
-BRICK_INDEPENDENCE = "gate"
+# A callable carries no standing checker lane: what checks it is the
+# caller's own `judge` ticket or its `done` predicate, both of which are
+# outside work rather than a dependent's `checked_by` anchor.
+MINT_INDEPENDENCE = "gate"
 ARTIFACT_KINDS = frozenset(
     adapter.artifact_kind for adapter in ADAPTER_REGISTRY.values()
 )
@@ -106,7 +106,7 @@ def _stamp_generation():
 
 
 def _run_dir(run: str):
-    """`(run_dir, refusal)` for the run this brick is minted into."""
+    """`(run_dir, refusal)` for the run this callable is minted into."""
 
     root = _tickets_root()
     if root is None:
@@ -119,7 +119,7 @@ def _issued_ids(run_dir) -> list:
 
     Read inside the lock and nowhere else. Two callers that listed the run
     before taking it both saw the same highest ordinal and both chose the id
-    after it, and the second one lost its whole brick to the exclusive
+    after it, and the second one lost its whole callable to the exclusive
     create -- which is the failure the lock is held to prevent, moved one
     line earlier rather than removed.
     """
@@ -184,21 +184,22 @@ def _sealed_parent(run_dir, parent: str):
 def _mint(run: str, run_dir, parent, fields: dict, sections: list):
     """`(ticket_id, refusal)` -- one runtime child's id, seal, and write.
 
-    All of what the runtime doors share, and the reason they can share it:
-    the id is read out of the run directory under the caller's own hold of
-    the run lock, and a child hangs its admission on its parent's seal
-    rather than on a cut that closed before it existed -- it inherits the
-    parent's two generations and self-seals its own bytes. What each door
-    owns is only which fields and sections its ticket carries, which is why
-    those arrive as arguments and nothing here reads them.
+    All of what the runtime minting commands share, and the reason they can
+    share it: the id is read out of the run directory under the caller's
+    own hold of the run lock, and a child hangs its admission on its
+    parent's seal rather than on a cut that closed before it existed -- it
+    inherits the parent's two generations and self-seals its own bytes.
+    What each command owns is only which fields and sections its ticket
+    carries, which is why those arrive as arguments and nothing here reads
+    them.
 
-    `frame-open` is the third caller. A frame is not a brick -- it binds no
-    executor and stamps no pack -- and it is minted exactly this way,
+    `frame-open` is the third caller. A frame is not a callable -- it binds
+    no executor and stamps no pack -- and it is minted exactly this way,
     because being a runtime child of a sealed parent is the one thing the
     two kinds have wholly in common.
     """
 
-    ticket_id = next_brick_id(parent, _issued_ids(run_dir))
+    ticket_id = next_mint_id(parent, _issued_ids(run_dir))
     inherit = None
     if parent:
         inherit, refusal = _sealed_parent(run_dir, parent)
@@ -219,16 +220,16 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 
 def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
             done, isolation, bound, artifacts):
-    """`(ticket_id, refusal)` -- one brick's fields, minted through `_mint`."""
+    """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
     pinned, refusal = pinned_pack_digest(pack)
     if refusal is not None:
         return None, refusal
     fields = {
-        "run": run, "status": "pending",
+        "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
         "pack": pack, "pack_digest": pinned,
-        "independence": BRICK_INDEPENDENCE,
+        "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": isolation, "bound": bound,
         "done": done,
@@ -241,7 +242,7 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
 
 
 def _sealed_root(run: str, ticket_id: str):
-    """Open, validate, and seal one parentless brick's own generation."""
+    """Open, validate, and seal one parentless callable's own generation."""
 
     stamped = _stamp_generation()([run, ticket_id])
     if "error" in stamped:
@@ -274,8 +275,8 @@ def _launched(run: str, ticket_id: str, bound: str, host, workspace):
     return _dispatch_facade()(arguments)
 
 
-def _cmd_brick(rest, *, judge: bool):
-    """Mint, seal, open, establish, and emit one brick's launch."""
+def _cmd_callable(rest, *, judge: bool):
+    """Mint, seal, open, establish, and emit one callable's launch."""
 
     usage = JUDGE_USAGE if judge else DO_USAGE
     args = list(rest)
@@ -327,8 +328,8 @@ def _cmd_brick(rest, *, judge: bool):
     if failure is not None:
         return failure
     # The one lock that decides anything two callers could disagree about:
-    # which id this brick takes. Everything after it is per-ticket work whose
-    # own door takes the lock for itself.
+    # which id this callable takes. Everything after it is per-ticket work
+    # whose own command takes the lock for itself.
     with _run_lock(run):
         ticket_id, failure = _minted(
             run, run_dir,
@@ -354,15 +355,15 @@ def _cmd_brick(rest, *, judge: bool):
 
 
 def _cmd_do(rest):
-    return _cmd_brick(rest, judge=False)
+    return _cmd_callable(rest, judge=False)
 
 
 def _cmd_judge(rest):
-    return _cmd_brick(rest, judge=True)
+    return _cmd_callable(rest, judge=True)
 
 
 __all__ = (
-    "ARTIFACT_KINDS", "BRICK_INDEPENDENCE", "DO_EXECUTOR", "DO_USAGE",
-    "JUDGE_EXECUTOR", "JUDGE_USAGE", "_cmd_brick", "_cmd_do", "_cmd_judge",
+    "ARTIFACT_KINDS", "MINT_INDEPENDENCE", "DO_EXECUTOR", "DO_USAGE",
+    "JUDGE_EXECUTOR", "JUDGE_USAGE", "_cmd_callable", "_cmd_do", "_cmd_judge",
     "_launched", "_mint", "_run_dir", "_sealed_root",
 )

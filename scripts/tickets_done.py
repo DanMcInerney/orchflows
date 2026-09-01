@@ -20,7 +20,7 @@ further-integrated tree. Round two is a lawful slot, not hand surgery.
 
 The round machinery lives here because `land` is its one reader. It was
 written inside the loop lane, whose iterations advanced by the same three
-rules; the lane is gone and the rules moved to the door that still asks
+rules; the lane is gone and the rules moved to the command that still asks
 them.
 """
 
@@ -156,7 +156,7 @@ def mint_check(run: str, run_dir, check_id: str, source: dict, goal: str,
 
     path = run_dir / f"{check_id}.md"
     fields = {
-        "id": check_id, "run": run, "status": "pending",
+        "id": check_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": "orch-judge",
         "pack": dequote(source.get("pack")) or None,
         "independence": "gate", "depends_on": [depends_on],
@@ -319,7 +319,7 @@ def _repair_round(run: str, run_dir, ticket_id: str, source: dict, reading: dict
     if path.exists():
         return repair_id, "replayed", None
     rendered = _render_ticket({
-        "id": repair_id, "run": run, "status": "pending",
+        "id": repair_id, "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": "orch-do",
         "pack": dequote(source.get("pack")) or None,
         "independence": "gate", "depends_on": [],

@@ -68,7 +68,7 @@ class WorkflowSkillTests(unittest.TestCase):
 
     def test_a_library_workflow_projects_its_pack_and_its_scripts(self):
         """`example-workflows/<name>/SKILL.md` is the second canonical home
-        for a workflow skill. The pack a brick call stamps resolves like any
+        for a workflow skill. The pack a callable call stamps resolves like any
         other canonical name -- it ships in `packs/` -- so a workflow that
         names its own pack is not an unresolved reference."""
 

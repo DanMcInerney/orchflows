@@ -8,7 +8,7 @@ from installer import managed_text, packages
 
 # This module declares exactly one class, and every case below is a method of
 # it. `test_installer_cases/managed_text/*.py` is collected by nothing: the one
-# door is the explicit class-name import block at `tests/test_installer_managed
+# route is the explicit class-name import block at `tests/test_installer_managed
 # .py`, which is outside this ticket's write scope, so a second top-level
 # `TestCase` here would be imported by no shard and would report green without
 # ever running. A mixin folded into the imported class is not the way out
@@ -49,7 +49,13 @@ class TestRoleAgentInstructions(unittest.TestCase):
     the dispatcher and every child alike -- on every turn, so a contract
     pointer left there is still a roles.md read the file names."""
 
-    BODY_CEILING = 80
+    # One fact, not two: installer/packages.py's ROLE_INSTRUCTIONS is the
+    # only content a role agent file ever carries (no separate un-rendered
+    # source, unlike a SKILL.md body), so this ceiling and
+    # rules/token-economy.md §11's "role agent file" number are the same
+    # fact. Imported, not restated -- common.py is the owner
+    # (tools/validate_support/common.py's ROLE_AGENT_BUDGET comment).
+    BODY_CEILING = validate.ROLE_AGENT_BUDGET
 
     # A snake_case key -- `subagent_type`, `model_reasoning_effort` -- is the
     # exact mistake this catches: it is what the profile row and the Codex
@@ -74,10 +80,19 @@ class TestRoleAgentInstructions(unittest.TestCase):
             "launch-stated ordered sequence",
             "dispatch id, seal, and assigned name",
             "first record is your acceptance",
-            "directly",
-            "never redispatch",
+            "never hand your ticket or role to another agent",
         ):
             self.assertIn(anchor, install.ROLE_INSTRUCTIONS)
+
+    def test_role_instructions_name_the_mechanism_not_the_old_word(self):
+        """U13(b), 2026-09-01: "never redispatch" named no mechanism -- three
+        children in run 20260901T155911Z fanned out background agents
+        without ever handing off their own ticket. Reworded at the same
+        word count (44); `directly` is dropped as redundant with the new,
+        explicit clause rather than kept as a second anchor for it."""
+
+        self.assertNotIn("never redispatch", install.ROLE_INSTRUCTIONS)
+        self.assertEqual(44, validate.body_words(install.ROLE_INSTRUCTIONS))
 
     def test_claude_agent_file_names_no_contract_read_and_stays_under_the_ceiling(self):
         profile = install.load_role_profiles()["orch-worker"]

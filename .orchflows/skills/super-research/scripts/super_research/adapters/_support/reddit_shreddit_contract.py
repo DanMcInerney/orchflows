@@ -6,7 +6,7 @@ import urllib.parse
 from datetime import datetime, timezone
 from typing import Any, Optional, Tuple
 
-from ... import transport
+from ... import schema, transport
 from .. import AdapterDescriptor
 
 
@@ -147,7 +147,7 @@ AFTER_PARAM = "after"
 CURSOR_PARAM = "cursor"
 
 ROUTE_INSTANT_LENGTH = 19
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 UTC_OFFSETS = ("+0000", "+00:00", "Z")
 
 HTTP_STATUS = "http_status"

@@ -186,13 +186,13 @@ class TestRoutingBenchRun(unittest.TestCase):
             "USERPROFILE": decoy,
             "CLAUDE_CONFIG_DIR": decoy,
             "CODEX_HOME": decoy,
-            "ORCHFLOWS_STATE_HOME": decoy,
+            state_root.ENV_VAR: decoy,
         }
         with mock.patch.dict(os.environ, ambient):
             self._run()
 
         overridden = ("HOME", "USERPROFILE", "CLAUDE_CONFIG_DIR", "CODEX_HOME",
-                      "ORCHFLOWS_STATE_HOME")
+                      state_root.ENV_VAR)
         for _, kwargs in self._install_calls():
             env = kwargs["env"]
             home = Path(env["USERPROFILE"])

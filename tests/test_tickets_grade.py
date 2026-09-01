@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
+from scripts import state_root
 from scripts import tickets
 from scripts import tickets_grade
 from scripts.tickets_grade import grade_snapshot, GradeError
@@ -79,7 +80,7 @@ class GradeSnapshotTest(unittest.TestCase):
         """`review_v1`'s own construction and schema retired whole.
 
         The checker-stage apparatus that survived the `review_kind`
-        deletion is censused and resolved: no live door ever built a
+        deletion is censused and resolved: no live command ever built a
         `GatePlan`-then-`CritiqueAdjudication` chain, so `tickets_review.py`
         and `tickets_review_schema.py` -- the ledger's sole writer and
         schema -- are deleted rather than kept reachable as an import.
@@ -114,7 +115,7 @@ class GradeCommandTest(unittest.TestCase):
         self.environment = mock.patch.dict(
             os.environ,
             {
-                "ORCHFLOWS_STATE_HOME": self.temporary.name,
+                state_root.ENV_VAR: self.temporary.name,
                 "ORCHFLOWS_WORKTREES_HOME": str(
                     Path(self.temporary.name) / "worktrees"
                 ),

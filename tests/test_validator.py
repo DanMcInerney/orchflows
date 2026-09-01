@@ -437,3 +437,4 @@ if __name__ == "__main__":
 
 # Keep this import after the direct-run seam to preserve its historical scope.
 from tests.test_validator_cases.corpus_and_surfaces import TestSurfaceBudgets  # noqa: E402
+from tests.test_validator_cases.corpus_and_surfaces import TestRoutingBlockBudget  # noqa: E402

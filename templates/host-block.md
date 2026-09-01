@@ -3,7 +3,7 @@
 
 `orch-` terms mean what {{ORCH_DOCS}}/vocabulary.md defines.
 
-- Root routes, launches what a door emits, and lands
+- Root routes, launches what a command emits, and lands
   returns; relay `kind: user-only` questions verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile work refuses;
   `role: none` only orchestrates. `orch-off` suspends routing; named
@@ -51,7 +51,7 @@ Optional flags: `--skill <orch-name>`, `--ticket <id>`, `--run <run-id>`.
 If the logger cannot run, append one JSON line
 (ts, observed, expected, host, project, project_source) to
 `friction/<yyyy-mm>.jsonl` in the state sink
-({{ORCH_LIB}}/rules/visibility.md §3) outside worktrees; never skip it. If refusal bars
+({{ORCH_LIB}}/rules/visibility.md §6) outside worktrees; never skip it. If refusal bars
 worktree writes, write where dispatch permits and return the path. Unresolved:
 project `null`, project_source `none`; session/run/ticket/skill optional. Law:
 {{ORCH_LIB}}/rules/improvement.md §1.

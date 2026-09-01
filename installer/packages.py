@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 from .foundation import HOST_ADAPTERS_DIR, PROFILE_ROLES, REPO_ROOT
@@ -94,7 +93,7 @@ MANUAL_ONLY = "disable-model-invocation: true"
 
 def discover_workflow_skills(root: Path = REPO_ROOT):
     """Every invocable workflow: a directory ``example-workflows/<name>/``
-    whose ``SKILL.md`` is a workflow skill -- prose that calls bricks.
+    whose ``SKILL.md`` is a workflow skill -- prose that calls callables.
 
     Returns ``(directory, frontmatter, body)`` per workflow. A directory
     without that file, or one without frontmatter or a ``name``, is library
@@ -133,7 +132,7 @@ def manual_only_frontmatter(frontmatter: str, host: str = "claude") -> str:
 def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -> str:
     """The Claude adapter stub's body for a workflow.
 
-    A workflow is a skill whose prose calls bricks, so the adapter says
+    A workflow is a skill whose prose calls callables, so the adapter says
     exactly that and points at the one body: read it and invoke it. It is
     a pointer rather than an ``@``-include because the body's own relative
     links resolve against the library directory it lives in, not against
@@ -141,7 +140,7 @@ def workflow_adapter_body(name: str, lib_workflow_dir: Path, frontmatter: str) -
 
     return (
         f"`{name}` is a workflow skill: prose that opens a frame and calls\n"
-        f"bricks. Its one body is {lib_workflow_dir / WORKFLOW_SKILL_FILE}.\n\n"
+        f"callables. Its one body is {lib_workflow_dir / WORKFLOW_SKILL_FILE}.\n\n"
         "Read that file whole and invoke the skill by following it exactly:\n"
         "its Require names what the caller supplies, its call lines are the\n"
         "commands to run, and its Return is the close. A workflow is only\n"
@@ -242,12 +241,21 @@ def _role_description(name: str) -> str:
 # already carries the clauses a child acts on (stay in scope; write the
 # return into the durable artifact; deliver it by SendMessage). No rendered
 # role agent file names roles.md anywhere (D-2).
+#
+# "never redispatch" (until U13, 2026-09-01) named no mechanism -- three
+# children in run 20260901T155911Z fanned out background read-only agents
+# without ever handing off their own ticket, the causal-order stranding's
+# direct cause, so the word stopped the wrong thing. Reworded to the plain
+# mechanism it actually guards -- never hand the ticket or the established
+# role to another agent -- at the same word count (44); the launch prompt's
+# own close-after-returns sentence (U2b) carries the fan-out discipline this
+# wording no longer has to.
 ROLE_INSTRUCTIONS = (
-    "Stay within delegated scope. Every record names your launch's dispatch id, "
-    "seal, and assigned name; your first record is your acceptance. "
-    "Execute the exact primary skill, or each exact member of a "
-    "launch-stated ordered sequence, directly; never redispatch. Refuse a missing "
-    "or mismatched role."
+    "Stay within delegated scope. Every record names dispatch id, seal, and "
+    "assigned name; first record is your acceptance. Execute exact primary "
+    "skill, or each exact member of launch-stated ordered sequence; never "
+    "hand your ticket or role to another agent. Refuse missing or "
+    "mismatched role."
 )
 
 def render_codex_agent(name: str, profile: dict) -> str:
@@ -281,32 +289,6 @@ def render_claude_agent(name: str, profile: dict) -> str:
     )
     lines.extend(["---", "", ROLE_INSTRUCTIONS + claude_transport])
     return "\n".join(lines) + "\n"
-
-
-# --- managed marker blocks ----------------------------------------------
-
-
-def template_markers(template_text: str):
-    lines = [line.strip() for line in template_text.splitlines() if line.strip()]
-    if not lines:
-        raise ValueError("empty host-block template")
-    return lines[0], lines[-1]
-
-
-def resolved_python_interpreter() -> str:
-    """The interpreter install.py verified itself running under
-    (``sys.executable``). Refuses when the platform reports none rather than
-    rendering a bare ``python`` into every command the host block hands an
-    agent: on Windows that name is commonly the Store stub, so the fallback
-    shipped a command that fails on first use."""
-
-    if not sys.executable:
-        raise ValueError(
-            "this platform reports no sys.executable, so no interpreter path "
-            "can be rendered into the host block; rerun install.py with an "
-            "interpreter that reports one"
-        )
-    return sys.executable
 
 
 def _git_dirs(repo_root: Path) -> tuple[Path, Path] | None:
