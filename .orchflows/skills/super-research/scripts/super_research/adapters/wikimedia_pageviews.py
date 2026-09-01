@@ -49,7 +49,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Mapping, Optional, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -97,9 +97,9 @@ NATIVE_ORDER = "wikimedia_pageviews_daily_order"
 # own instants rather than reaching into `ordering`, which stays a core-only
 # import — the same convention `linkedin_jobs.py` documents for the same
 # reason.
-WINDOW_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+WINDOW_INSTANT_FORMAT = schema.INSTANT_FORMAT
 ORIGIN_TIMESTAMP_FORMAT = "%Y%m%d%H"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 # Where the answer keeps its rows, and what each row names. Declared, never
 # searched for: the value of a typed drift is that it says the payload

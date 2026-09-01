@@ -45,7 +45,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Dict, List, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -149,7 +149,7 @@ IDENTITY_FIELD = "identity"
 DATE_FIELD = "published"
 ROSTER_FIELDS = (IDENTITY_FIELD, TITLE_TAG, LOCATOR_FIELD, DATE_FIELD)
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 RFC_3339_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
 SCHEMA_DRIFT = "schema_drift"

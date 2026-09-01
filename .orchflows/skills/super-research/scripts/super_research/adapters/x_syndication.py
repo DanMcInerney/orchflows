@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Mapping, Sequence, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -95,7 +95,7 @@ ROUTE_MONTHS = (
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 )
 ROUTE_INSTANT_FORMATS = ("%m %d %H:%M:%S %z %Y", "%Y-%m-%dT%H:%M:%S")
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 class _NextDataParser(HTMLParser):

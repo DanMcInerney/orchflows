@@ -93,7 +93,7 @@ PAGES_PER_SMOKE = 1
 # evidence older than that is a claim about a platform as it used to be. The
 # spec's own words for this posture: re-proved rather than assumed.
 SMOKE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
-LEDGER_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+LEDGER_STAMP_FORMAT = schema.INSTANT_FORMAT
 
 # Where the last-success stamps are kept. Outside every working tree on
 # purpose: a smoke is run by hand from wherever the operator happens to be, and

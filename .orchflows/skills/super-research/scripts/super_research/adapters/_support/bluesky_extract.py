@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
+from ... import schema
 from .. import NativeRecord
 
 # Where a Bluesky post lives for a reader. The AppView answers at an API host,
@@ -50,7 +51,7 @@ ROOT_URI_ATTRIBUTE = "root_uri"
 POST_ROW_KEYS = (URI_KEY, TEXT_KEY, HANDLE_KEY, CREATED_AT_KEY)
 
 ROUTE_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%S"
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 
 def record_key(uri: str) -> str:

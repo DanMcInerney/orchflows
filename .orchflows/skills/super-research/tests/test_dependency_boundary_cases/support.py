@@ -121,7 +121,7 @@ CORE_IMPORT_EDGES = {
     ),
     "schema": (),
     "smoke": ("probes", "runner", "schema", "transport"),
-    "transport": ("routes",),
+    "transport": ("routes", "schema"),
     "window": ("schema",),
 }
 

@@ -54,7 +54,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -140,7 +140,7 @@ NATIVE_ORDERS = {
 
 # --- Request grammar --------------------------------------------------
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 OPENALEX_SEARCH_PARAM = "search"
 OPENALEX_PER_PAGE_PARAM = "per-page"

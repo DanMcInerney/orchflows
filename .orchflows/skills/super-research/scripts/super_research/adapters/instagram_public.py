@@ -33,7 +33,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Mapping, Optional, Sequence, Tuple
 
-from .. import transport
+from .. import schema, transport
 from . import (
     AdapterDescriptor,
     AdapterRequest,
@@ -108,7 +108,7 @@ POST_LOCATOR_PATH = "/p/{0}/"
 PROFILE_ROSTER_KEYS = (USERNAME_KEY, BIOGRAPHY_KEY, FOLLOWERS_METRIC, POST_COUNT_METRIC)
 POST_ROSTER_KEYS = (SHORTCODE_KEY, TAKEN_AT_KEY, LIKE_METRIC, COMMENT_METRIC)
 
-RECORD_INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+RECORD_INSTANT_FORMAT = schema.INSTANT_FORMAT
 
 # The statuses that separate the origin refusing from the payload changing.
 AUTHORIZATION_STATUSES = (401, 403)
