@@ -77,6 +77,15 @@ class DeclarationMatchesBehaviorAcrossTheRosterTest(unittest.TestCase):
                 unwindowed = run_probe(probe, 0)
                 windowed = run_probe(probe, WINDOW_DAYS)
 
+                if not unwindowed.opened:
+                    # The strongest form a `True` declaration can take: the
+                    # bound is the request itself, so an unwindowed read has
+                    # no shape at all and is refused before any call.
+                    # `wikimedia_pageviews` is the measured case — its date
+                    # range is two path segments — and the windowed half must
+                    # still have spent exactly one real call.
+                    self.assertEqual(len(windowed.opened), 1)
+                    continue
                 self.assertNotEqual(
                     (unwindowed.opened[0].url, unwindowed.opened[0].body),
                     (windowed.opened[0].url, windowed.opened[0].body),

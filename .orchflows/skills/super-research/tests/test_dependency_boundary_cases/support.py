@@ -50,6 +50,7 @@ CORE_MODULES = (
     "schema",
     "smoke",
     "transport",
+    "window",
 )
 
 # Every extracted implementation module has exactly one public facade. The
@@ -75,7 +76,9 @@ PRIVATE_SUPPORT_OWNERS = {
     ("adapters", "reddit_shreddit_contract"): "reddit_shreddit",
     ("adapters", "reddit_shreddit_extract"): "reddit_shreddit",
     ("adapters", "reddit_shreddit_pages"): "reddit_shreddit",
+    ("adapters", "scholarly_records"): "scholarly",
     ("adapters", "stocktwits_records"): "stocktwits",
+    ("adapters", "tiktok_public_records"): "tiktok_public",
     ("adapters", "web_search_feeds"): "web_search",
     ("adapters", "x_fxtwitter_records"): "x_fxtwitter",
     ("adapters", "youtube_innertube_contract"): "youtube_innertube",
@@ -119,6 +122,7 @@ CORE_IMPORT_EDGES = {
     "schema": (),
     "smoke": ("probes", "runner", "schema", "transport"),
     "transport": ("routes",),
+    "window": ("schema",),
 }
 
 # Everything the package takes from outside itself, and the check below
@@ -127,7 +131,8 @@ CORE_IMPORT_EDGES = {
 # what is spelled out beneath it, and nothing would read it.
 # `concurrent` and `threading` joined on 2026-08-17 with the fused
 # lanes; `test_pipeline.CONCURRENCY_OWNERS` names the modules that may import
-# them.
+# them. `gzip` and `io` joined on 2026-09-01 with the transport's stated-
+# encoding decode: Stack Exchange compresses every answer unasked.
 STANDARD_LIBRARY_IMPORTS = (
     "__future__",
     "argparse",
@@ -136,8 +141,10 @@ STANDARD_LIBRARY_IMPORTS = (
     "dataclasses",
     "datetime",
     "email",
+    "gzip",
     "hashlib",
     "html",
+    "io",
     "json",
     "pathlib",
     "tempfile",

@@ -30,6 +30,7 @@ from tests._candidate_checkout import (
 from tests import _retired_doors as retired_doors
 from scripts import tickets
 from scripts import tickets_dispatch_launch as launch
+from scripts import workspace_git
 from scripts.tickets_format import canonical_json, parse_canonical_json
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -287,6 +288,7 @@ class DispatchLaunchTest(unittest.TestCase):
             str(craft), state["assignment_seal"], "D1", "worker",
             state["lease_expires_at"], "outcome",
             "the gate's row", "to completion in the turn it starts",
+            workspace_git.NOTES_DIR + "/",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, prompt)
@@ -294,6 +296,10 @@ class DispatchLaunchTest(unittest.TestCase):
         # every fact once: the prompt states, never restates
         self.assertEqual(1, prompt.count(state["lease_expires_at"]))
         self.assertEqual(1, prompt.count(str(craft)))
+        self.assertEqual(1, prompt.count(state["assignment_seal"]))
+        # the craft's quoted scope is the one scope statement: the standing
+        # gate line yields to it rather than restating the same law
+        self.assertNotIn("run it here only if this ticket is the gate", prompt)
 
     def test_no_lane_asks_a_child_for_a_verdict_token(self):
         """A command verdict is an exit code and a check's verdict is its

@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2104,
+  "count": 2108,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -928,6 +928,9 @@
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_an_invented_command_is_caught",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_every_named_command_is_routed",
    "test_staleness_and_remedies.TestARefusalNamesACommandThatExists.test_the_guard_reads_the_messages_it_is_for",
+   "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_a_non_canonical_file_names_the_dump_that_writes_one",
+   "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_a_wrong_identity_names_the_field_and_the_expected_value",
+   "test_staleness_and_remedies.TestARelayedEnvelopeRefusalTeachesItsShape.test_an_extra_field_names_the_exact_required_set",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_complete_and_limited_carry_a_result",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_result_bearing_set_is_stated_once",
    "test_staleness_and_remedies.TestATerminalDependencyWithAResultAdmits.test_the_states_that_filed_nothing_still_refuse",
@@ -967,9 +970,9 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_claude_role_skills_use_native_fork_and_matching_agent",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_codex_named_surfaces_dispatch_or_refuse_and_child_runs_directly",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_custom_codex_routing_uses_the_resolved_native_binding",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_frame_lane_emits_the_wave_lifecycle",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
-   "test_thin_orchestrator.ThinOrchestratorContractTests.test_outline_route_consumes_the_root_shape_it_sealed",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_plan_route_consumes_the_root_shape_it_sealed",
+   "test_thin_orchestrator.ThinOrchestratorContractTests.test_team_lane_emits_the_wave_lifecycle",
    "test_ticket_bricks.BrickAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
    "test_ticket_bricks.BrickAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
    "test_ticket_bricks.BrickAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
@@ -2020,6 +2023,7 @@
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_beside_real_dirt_leaves_only_the_dirt_in_the_refusal",
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_outside_a_pycache_directory_is_still_emission",
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_bytecode_the_baseline_itself_tracks_is_still_emission",
+   "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_the_reserved_notes_directory_is_emission",
    "tests.test_workspace_cases.emission_cases.TestBytecodeIsEmissionNotBreach.test_untracked_bytecode_does_not_fail_the_grade",
    "tests.test_workspace_cases.grade_cases.RuntimeInterpreterBoundaryTests.test_git_subprocesses_inherit_the_caller_environment",
    "tests.test_workspace_cases.grade_cases.TestCheckGradesFromTheCallersGit.test_a_branch_already_on_the_callers_head_exits_isolation_missing",
@@ -2107,7 +2111,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "88d40ba7985d8372a73ec6795731d40b9bdd7939d3e0f12dbd065f1db5441303"
+  "sha256": "5312b260e64cff67021a277d5c04d4af7bd51e7572ce7bdf04d40961bdbd5c50"
  },
  "mutation_owners": [
   {

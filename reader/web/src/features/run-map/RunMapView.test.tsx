@@ -195,4 +195,21 @@ describe("RunMapView", () => {
     ticketLink.focus();
     expect(document.activeElement).toBe(ticketLink);
   });
+
+  it("round-trips a Now-scoped ticket group through the route", () => {
+    const href = runMapRoute.build({ run: "run-gamma", fixture: "full-expanded", group: "G3,G4" });
+    const location = new URL(href, "https://orchflows.test");
+    const deepLink = runMapRoute.match({ pathname: location.pathname, search: location.search, hash: location.hash });
+    expect(deepLink).toEqual({ run: "run-gamma", fixture: "full-expanded", group: "G3,G4" });
+    expect(runMapRoute.build({ run: "run-gamma", fixture: "full-expanded" }))
+      .toBe("/runs/run-gamma?fixture=full-expanded");
+  });
+
+  it("opens a Now-linked ticket group straight into the focused canonical graph", async () => {
+    render(<RunMapView state={ready(model())} route={{ run: "run-gamma", fixture: "summary-active", group: "G3,G4" }} />);
+    await screen.findByRole("heading", { name: "Every canonical dependency" });
+    expect(screen.getByRole("button", { name: "G3" }).getAttribute("data-causal")).toBe("focus");
+    expect(screen.getByRole("button", { name: "G4" }).getAttribute("data-causal")).toBe("focus");
+    expect(screen.getByRole("button", { name: "G1" }).getAttribute("data-causal")).toBe("dimmed");
+  });
 });

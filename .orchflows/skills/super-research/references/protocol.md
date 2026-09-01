@@ -65,7 +65,11 @@ Step keys are exactly `step_id`, `kind`, `adapter_id`, `query`, `prior_step_id`,
   warning saying so before the read: one call returns the page whatever the
   cap, and the rows past it are dropped at no saving.
 - `window_start` and `window_end` are optional instants in the same spelling as
-  `as_of`, either or both empty, `window_start` not after `window_end`. A record
+  `as_of`, either or both empty, `window_start` not after `window_end`. The
+  caller turns a question's own timeframe words into this pair with
+  `window.parse_phrase(phrase, as_of)` — a closed grammar whose empty phrase
+  is the unbounded window and whose unknown phrase is a typed refusal naming
+  the grammar, so no step ever carries a bound nobody asked for. A record
   the origin dated outside the window is dropped by the core **before the cap
   counts it**, so the cap is spent in-window rather than on an origin's
   all-time-top ordering (X's syndication timeline is the measured case); a
@@ -214,10 +218,11 @@ construction, and why no lawful `K5` shape exists — is in
 
 ## Adapter roster
 
-Twenty adapters, nineteen live plus `fake`; thirty-six route surfaces, because
-ten adapters reach more than one — `bluesky`, `x_guest` and `youtube_innertube`
-among them, each pairing a second endpoint to its first. Thirty-five of the
-thirty-six are read;
+Twenty-six adapters, twenty-five live plus `fake`; fifty route surfaces, because
+thirteen adapters reach more than one — `bluesky`, `x_guest` and `youtube_innertube`
+among them, each pairing a second endpoint to its first, and `oembed` reaching
+six. Forty-nine of the
+fifty are read;
 `x_guest`'s activation is spent rather than read, so it carries a budget and
 never a record. Read back off `runner.surface_descriptors`.
 
@@ -242,6 +247,12 @@ never a record. Read back off `runner.surface_descriptors`.
 | `rss_atom` | `K0` | `youtube_channel_feed` | one generic RSS 2.0 and Atom parser: identity, dates, enclosures, transcript links |
 | `prediction_markets` | `K0` | `polymarket_gamma`, `kalshi_markets`, `manifold_markets` | the odds on a question with a date: Polymarket search, events and markets, Kalshi's open markets and events, Manifold search. Prices and volumes are decimals and ride as the exact strings each API wrote |
 | `stocktwits` | `K0` | `stocktwits_symbol_stream`, `stocktwits_symbol_search` | one ticker's message stream with `likes.total` and the poster's own `Bullish`/`Bearish` label, and symbol lookup. The roster's one finance-native surface |
+| `gdelt` | `K4` | `gdelt_doc` | GDELT DOC 2.0's global news index: article hits with `url`, `title`, `seendate` and `domain`, bounded at the origin by `startdatetime`/`enddatetime`. Measured 2026-09-01 answering keyless over plain HTTP while port 443 timed out from this host — the transport admits https only, so here the smoke reports `unreachable` and concludes nothing; declared on the documentation, the way the Bluesky search surface is |
+| `stack_exchange` | `K0` | `stackexchange_search_advanced` | `search/advanced` over a named site: questions with `score`, `answer_count` and `view_count`, bounded at the origin by `fromdate`/`todate` unix seconds, under a 300/day anonymous quota the answer itself reports |
+| `wikimedia_pageviews` | `K0` | `wikimedia_pageviews_per_article` | one article's daily view counts over a date range spelled as two path segments — attention over time, the keyless substitute for a trends surface. The one route whose origin serves nothing but a windowed read: a step here with no window is refused rather than defaulted |
+| `scholarly` | `K0` | `openalex_works`, `crossref_works`, `arxiv_query` | scholarly works over three origins a caller names one of: OpenAlex with `cited_by_count`, Crossref DOI-anchored with `is-referenced-by-count`, arXiv preprints as Atom. Each bounds publication time at the origin in its own grammar; the documented `mailto` etiquette is deliberately not sent, because this package attaches no identity a route constant does not spell |
+| `tiktok_public` | `K2` | `tiktok_video_page`, `tiktok_profile_page` | the web client's own rehydration JSON out of a public page's `__UNIVERSAL_DATA_FOR_REHYDRATION__` script tag, no script run: a video with `createTime`, its `statsV2` counts, author and hashtags, and a profile with its own counts. A profile page embeds no recent-video list — that is a signed client-side call this package does not perform — and comments need the signed mobile API, refused by policy |
+| `oembed` | `K0` | `youtube_oembed`, `vimeo_oembed`, `spotify_oembed`, `soundcloud_oembed`, `tiktok_oembed`, `x_publish_oembed` | one platform URL hydrated into the item's own author, title and thumbnail through the platform's own documented oEmbed endpoint — the universal hydration layer for the long tail of discovered links no richer route owns. No date and no counts ride on any of the six, and both absences are typed |
 | `fake` | `offline` | `fake_offline` | deterministic fixture pages. Never live evidence, and the one adapter with no smoke |
 
 `rss_atom` is a generic feed parser bound to one declared route. A second feed is
@@ -260,12 +271,27 @@ behind an ESM import map) with `K4` as the interim route, and FxTwitter as a
 same day, until an adapter reads them — Reddit search and comments themselves
 are no longer waiting on that, because `reddit_shreddit` reaches both;
 Reddit's `more-comments` continuation, because it asks for a POST and this
-package admits two, both named; `tiktok_public`, unverified because this
-network answered 503 with a login portal and `evidence.md` §"The
-captive-portal caveat" forbids reading that as platform behaviour; Bluesky's
+package admits two, both named; Bluesky's
 `searchPosts`, which answered 403 from the CDN in front of the public AppView
-on this host while its sibling methods answered 200; and `reddit_oauth` and
-`youtube_data_api` as `K5` throughput upgrades.
+on this host while its sibling methods answered 200; GDELT's Context 2.0,
+which answered 200 with an empty article list to six queries on 2026-09-01
+and reopens when a live read returns one, and GDELT's `timelinevol`
+attention series, measured working the same day and waiting only on an
+operation to carry it; Stack Exchange's per-question answers surface and
+OpenAlex's cursor paging, each an ordinary second operation when a caller
+needs one; and `reddit_oauth` and
+`youtube_data_api` as `K5` throughput upgrades. (`tiktok_public`, deferred
+here since the captive-portal sweep, shipped on 2026-09-01: the 2026-08
+reading was this network's login portal, not the platform's.)
+
+Refused by policy, distinct from deferred: platforms with no keyless
+read-only route at all, named so an answer over them files a declared gap
+rather than implying coverage. Instagram comments and feeds beyond the one
+profile surface, Threads, Pinterest, Facebook, Truth Social, and TikTok
+comments and search — each reachable today only through an authenticated
+account, a logged-in browser session, or a signed client challenge, the
+three techniques the access ladder exists to refuse. A platform moves off
+this list by a measured keyless read, never by an easier identity.
 
 ## Failure and loss vocabulary
 
@@ -333,20 +359,20 @@ The retained codes, what each one means, and every module that spells one:
 
 | code | means | named by |
 | --- | --- | --- |
-| `auth_required` | the origin refused over who is asking, or the route needs a credential this package does not supply | `bluesky`, `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `cli` — the router for a K5 route, the four adapters for an origin's own refusal, `cli` reading it |
+| `auth_required` | the origin refused over who is asking, or the route needs a credential this package does not supply | `bluesky`, `router`, `x_guest`, `linkedin_public`, `instagram_public`, `youtube_innertube`, `tiktok_public`, `cli` — the router for a K5 route, the adapters for an origin's own refusal, `cli` reading it |
 | `no_route` | the core declares no such adapter or route | `router`, `runner`, for an adapter or route the core does not declare |
 | `rate_limited` | the origin asked for fewer requests | `adapters`, on HTTP 429 |
-| `schema_drift` | the payload arrived in a shape this parser does not know, so an empty result would have been a lie | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` |
-| `field_omitted` | the answer carried, and one declared field of the roster row was not in it | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` |
-| `malformed_json` | the body did not parse as the JSON the route declares | `bluesky`, `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `stocktwits`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` |
-| `http_status` | the origin answered with a status the route does not read as an answer | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `public_page`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter` — seventeen, which is every adapter that reads an origin |
+| `schema_drift` | the payload arrived in a shape this parser does not know, so an empty result would have been a lie | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `stack_exchange`, `wikimedia_pageviews`, `tiktok_public`, `oembed`, `scholarly`, `gdelt` |
+| `field_omitted` | the answer carried, and one declared field of the roster row was not in it | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `wikimedia_pageviews`, `tiktok_public`, `scholarly` |
+| `malformed_json` | the body did not parse as the JSON the route declares | `bluesky`, `fake`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_public`, `prediction_markets`, `reddit_archive`, `stocktwits`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `stack_exchange`, `wikimedia_pageviews`, `tiktok_public`, `oembed`, `scholarly`, `gdelt` |
+| `http_status` | the origin answered with a status the route does not read as an answer | `bluesky`, `github_rest`, `hacker_news`, `instagram_public`, `linkedin_jobs`, `linkedin_public`, `open_page`, `prediction_markets`, `public_page`, `reddit_archive`, `reddit_feed`, `reddit_shreddit`, `rss_atom`, `stocktwits`, `web_search`, `x_guest`, `x_syndication`, `youtube_innertube`, `x_fxtwitter`, `stack_exchange`, `wikimedia_pageviews`, `tiktok_public`, `oembed`, `scholarly`, `gdelt` — every adapter shipped so far that reads an origin |
 | `withheld` | the origin declined the payload and said nothing this package can class further | `youtube_innertube`, for a playability refusal the evidence did not record |
-| `engagement_unavailable` | this surface publishes no counts at all, so a zero would be a number nobody reported | `reddit_feed`, `web_search` |
-| `date_precision_only` | the origin gave a date and no time, so the instant is the date's | `linkedin_jobs`, `open_page`, `youtube_innertube` |
-| `unselected_target` | this route does not serve the selection it was asked for | `open_page`, for an address its policy refuses; `public_page`, for a selection this route does not serve; `reddit_shreddit`, for a target its grammar does not name |
-| `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search`, standing on every index hit |
-| `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit |
-| `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search`, standing on every index hit |
+| `engagement_unavailable` | this surface publishes no counts at all, so a zero would be a number nobody reported | `reddit_feed`, `web_search`, `oembed`, `gdelt` |
+| `date_precision_only` | the origin gave a date and no time, so the instant is the date's | `linkedin_jobs`, `open_page`, `youtube_innertube`, `wikimedia_pageviews`, `scholarly` |
+| `unselected_target` | this route does not serve the selection it was asked for | `open_page`, for an address its policy refuses; `public_page`, for a selection this route does not serve; `reddit_shreddit`, for a target its grammar does not name; `tiktok_public`, for a video or profile argument that names no address this route can build; `wikimedia_pageviews`, for an unnamed article or a hydration carrying no window start — this route serves nothing but a dated range; `oembed`, for a target naming no provider, an unrecognised one, or a named provider with no item url |
+| `native_identity_unknown` | the row carries no platform-native id, so it can never group by strong identity | `web_search` and `gdelt`, standing on every index hit |
+| `unknown_publication_time` | the row carries no publication time, so it sorts as missing | `web_search`, standing on every index hit; `oembed`, standing on every record — no provider in its roster row states one |
+| `target_not_hydrated` | this hit was discovered and nothing in this artifact hydrated it | `web_search` and `gdelt`, standing on every index hit |
 | `recall_window_partial` | the step stopped while the origin was still offering, so the set is a window and not the whole | `runner`, when a cap truncated; `coverage`, which reads it |
 | `window_not_honored` | this step carried a window and called an operation `_support.window_reach.WINDOW_REACH` declares unable to bound time at its origin, independent of what the read answered with | `runner`, when a windowed call names such an operation |
 

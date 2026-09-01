@@ -26,7 +26,11 @@ Put this item's `scripts/` on `PYTHONPATH`. Write one manifest to a lane-private
 file — `fused` so every adapter named runs as its own concurrent lane (an origin
 still sees one read at a time), `staged` only where the caller must select hits
 between steps — set `window_start`/`window_end` on every step whose question
-has a window, parse it with `super_research.schema.parse_manifest` and run it
+has a window, turning the question's own timeframe words into those two
+instants with `super_research.window.parse_phrase(phrase, as_of)`: no
+timeframe means no window, never a thirty-day default, and a phrase outside
+its grammar is a typed refusal to resolve yourself, not to guess around.
+Parse the manifest with `super_research.schema.parse_manifest` and run it
 through `super_research.runner.run_acquisition(manifest)`, passing no transport:
 the default is paced, cached and serialized per origin, and passing one opts
 out of all three and of the guest-token mint. Read each `StepResult`'s

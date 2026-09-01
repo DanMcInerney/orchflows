@@ -125,10 +125,14 @@ CREDENTIALED_TWIN_IN_ANOTHER_REPRESENTATION = roster_with(
 )
 
 # 6. A twin on another platform. Keyless Instagram says nothing whatever about
-#    TikTok, and a law comparing only classes and counts would not notice.
+#    Threads, and a law comparing only classes and counts would not notice.
+#    Threads, because it must be a platform the live roster never reaches
+#    keylessly — TikTok held this seat until 2026-09-01, when `tiktok_public`
+#    made tiktok/tiktok/native a real keyless capability and the twin here
+#    quietly became satisfiable.
 CREDENTIALED_TWIN_ON_ANOTHER_PLATFORM = roster_with(
-    surface("tiktok_private", "K0", "tiktok_oembed", "instagram", "instagram", "native"),
-    surface("tiktok_private", CREDENTIALED, "tiktok_api", "tiktok", "tiktok", "native"),
+    surface("threads_private", "K0", "threads_oembed", "instagram", "instagram", "native"),
+    surface("threads_private", CREDENTIALED, "threads_api", "threads", "threads", "native"),
 )
 
 # 7. Every surface of one adapter credentialed, each capability twinned

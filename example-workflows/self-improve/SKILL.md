@@ -24,7 +24,7 @@ streams never reach a child. An empty digest ends the cycle here —
 say so and stop: no frame, no ticket.
 
 **Mine.** A digest at or under 40 entries you mine yourself — the
-act lane: assign each qualifying cluster one causal owner, check any
+direct lane: assign each qualifying cluster one causal owner, check any
 claimed contradiction against the owner's current text, and write
 ranked proposals through `tickets.py improvement --proposal`,
 carrying the digest's cluster_key, matcher_draft and watermark

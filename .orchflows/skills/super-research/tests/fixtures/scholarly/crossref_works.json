@@ -1,0 +1,842 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 2991701,
+    "items": [
+      {
+        "DOI": "10.1093/oso/9780198828044.003.0003",
+        "type": "book-chapter",
+        "title": [
+          "Machine learning with sklearn"
+        ],
+        "author": [
+          {
+            "given": "Thomas P.",
+            "family": "Trappenberg",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              2019,
+              11,
+              28
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2020,
+              1,
+              23
+            ]
+          ],
+          "date-time": "2020-01-23T10:54:18Z",
+          "timestamp": 1579776858000
+        },
+        "is-referenced-by-count": 19,
+        "URL": "https://doi.org/10.1093/oso/9780198828044.003.0003",
+        "container-title": [
+          "Fundamentals of Machine Learning"
+        ],
+        "publisher": "Oxford University Press"
+      },
+      {
+        "DOI": "10.1002/9781119902881",
+        "type": "monograph",
+        "title": [
+          "Optimization and Machine Learning"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2022,
+              2,
+              25
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2022,
+              2,
+              25
+            ]
+          ],
+          "date-time": "2022-02-25T17:49:03Z",
+          "timestamp": 1645811343000
+        },
+        "is-referenced-by-count": 1,
+        "URL": "https://doi.org/10.1002/9781119902881",
+        "container-title": null,
+        "publisher": "Wiley"
+      },
+      {
+        "DOI": "10.1017/cbo9780511975509.007",
+        "type": "book-chapter",
+        "title": [
+          "Machine learning"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2011,
+              6,
+              16
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2012,
+              8,
+              8
+            ]
+          ],
+          "date-time": "2012-08-08T15:35:08Z",
+          "timestamp": 1344440108000
+        },
+        "is-referenced-by-count": 2,
+        "URL": "https://doi.org/10.1017/cbo9780511975509.007",
+        "container-title": [
+          "Phase Transitions in Machine Learning"
+        ],
+        "publisher": "Cambridge University Press"
+      },
+      {
+        "DOI": "10.1017/cbo9780511804779.017",
+        "type": "book-chapter",
+        "title": [
+          "Machine learning"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2012,
+              6,
+              5
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2012,
+              6,
+              19
+            ]
+          ],
+          "date-time": "2012-06-19T17:06:44Z",
+          "timestamp": 1340125604000
+        },
+        "is-referenced-by-count": 1,
+        "URL": "https://doi.org/10.1017/cbo9780511804779.017",
+        "container-title": [
+          "Bayesian Reasoning and Machine Learning"
+        ],
+        "publisher": "Cambridge University Press"
+      },
+      {
+        "DOI": "10.1093/oso/9780190941659.003.0001",
+        "type": "book-chapter",
+        "title": [
+          "Why Use Automated Machine Learning?"
+        ],
+        "author": [
+          {
+            "given": "Kai R.",
+            "family": "Larsen",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          },
+          {
+            "given": "Daniel S.",
+            "family": "Becker",
+            "sequence": "additional",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              2021,
+              7,
+              22
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2021,
+              7,
+              21
+            ]
+          ],
+          "date-time": "2021-07-21T12:49:28Z",
+          "timestamp": 1626871768000
+        },
+        "is-referenced-by-count": 10,
+        "URL": "https://doi.org/10.1093/oso/9780190941659.003.0001",
+        "container-title": [
+          "Automated Machine Learning for Business"
+        ],
+        "publisher": "Oxford University Press"
+      },
+      {
+        "DOI": "10.1023/a:1022896407371",
+        "type": "journal-article",
+        "title": [
+          "Machine Learning and Concept Formation"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langley",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1987,
+              9
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:57:10Z",
+          "timestamp": 1049475430000
+        },
+        "is-referenced-by-count": 3,
+        "URL": "https://doi.org/10.1023/a:1022896407371",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1023/a:1022854429410",
+        "type": "journal-article",
+        "title": [
+          "Editorial: Human and Machine Learning"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langley",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1986,
+              9
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:57:10Z",
+          "timestamp": 1049475430000
+        },
+        "is-referenced-by-count": 0,
+        "URL": "https://doi.org/10.1023/a:1022854429410",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1023/a:1022661713654",
+        "type": "journal-article",
+        "title": [
+          "Machine Learning and Qualitative Reasoning"
+        ],
+        "author": [
+          {
+            "given": "Ivan",
+            "family": "Bratko",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1994,
+              3
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:55:36Z",
+          "timestamp": 1049475336000
+        },
+        "is-referenced-by-count": 0,
+        "URL": "https://doi.org/10.1023/a:1022661713654",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1002/9781119902881.fmatter",
+        "type": "other",
+        "title": [
+          "Front Matter"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2022,
+              2,
+              25
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2022,
+              2,
+              25
+            ]
+          ],
+          "date-time": "2022-02-25T22:49:03Z",
+          "timestamp": 1645829343000
+        },
+        "is-referenced-by-count": 0,
+        "URL": "https://doi.org/10.1002/9781119902881.fmatter",
+        "container-title": [
+          "Optimization and Machine Learning"
+        ],
+        "publisher": "Wiley"
+      },
+      {
+        "DOI": "10.1023/a:1022665512030",
+        "type": "journal-article",
+        "title": [
+          "Machine Learning: A Maturing Field"
+        ],
+        "author": [
+          {
+            "given": "Jaime",
+            "family": "Carbonell",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1992,
+              6
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:55:36Z",
+          "timestamp": 1049475336000
+        },
+        "is-referenced-by-count": 2,
+        "URL": "https://doi.org/10.1023/a:1022665512030",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1023/a:1022603230145",
+        "type": "journal-article",
+        "title": [
+          "Research Papers in Machine Learning"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langley",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1987,
+              11
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:55:36Z",
+          "timestamp": 1049475336000
+        },
+        "is-referenced-by-count": 2,
+        "URL": "https://doi.org/10.1023/a:1022603230145",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1023/a:1022808826027",
+        "type": "journal-article",
+        "title": [
+          "Machine Learning and Grammar Induction"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langely",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1987,
+              3
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:57:10Z",
+          "timestamp": 1049475430000
+        },
+        "is-referenced-by-count": 1,
+        "URL": "https://doi.org/10.1023/a:1022808826027",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.37473//10.1038/s41746-018-0061-1",
+        "type": "component",
+        "title": [
+          "Machine learning and medical education"
+        ],
+        "author": null,
+        "published": null,
+        "created": {
+          "date-parts": [
+            [
+              2020,
+              2,
+              28
+            ]
+          ],
+          "date-time": "2020-02-28T10:24:42Z",
+          "timestamp": 1582885482000
+        },
+        "is-referenced-by-count": 0,
+        "URL": "https://doi.org/10.37473//10.1038/s41746-018-0061-1",
+        "container-title": null,
+        "publisher": "Rescognito, Inc."
+      },
+      {
+        "DOI": "10.1017/cbo9780511804779.018",
+        "type": "book-chapter",
+        "title": [
+          "Machine learning concepts"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2012,
+              6,
+              5
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2012,
+              6,
+              19
+            ]
+          ],
+          "date-time": "2012-06-19T17:06:44Z",
+          "timestamp": 1340125604000
+        },
+        "is-referenced-by-count": 2,
+        "URL": "https://doi.org/10.1017/cbo9780511804779.018",
+        "container-title": [
+          "Bayesian Reasoning and Machine Learning"
+        ],
+        "publisher": "Cambridge University Press"
+      },
+      {
+        "DOI": "10.1023/a:1022840627593",
+        "type": "journal-article",
+        "title": [
+          "Editorial: The Terminology of Machine Learning"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langley",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1986,
+              6
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:57:10Z",
+          "timestamp": 1049475430000
+        },
+        "is-referenced-by-count": 1,
+        "URL": "https://doi.org/10.1023/a:1022840627593",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1002/9781119902881.index",
+        "type": "other",
+        "title": [
+          "Index"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2022,
+              2,
+              25
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2022,
+              2,
+              25
+            ]
+          ],
+          "date-time": "2022-02-25T22:49:03Z",
+          "timestamp": 1645829343000
+        },
+        "is-referenced-by-count": 0,
+        "URL": "https://doi.org/10.1002/9781119902881.index",
+        "container-title": [
+          "Optimization and Machine Learning"
+        ],
+        "publisher": "Wiley"
+      },
+      {
+        "DOI": "10.1023/a:1022647305786",
+        "type": "journal-article",
+        "title": [
+          "Editorial: Advice to Machine Learning Authors"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langley",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1990,
+              8
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:55:36Z",
+          "timestamp": 1049475336000
+        },
+        "is-referenced-by-count": 16,
+        "URL": "https://doi.org/10.1023/a:1022647305786",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1023/a:1022623814640",
+        "type": "journal-article",
+        "title": [
+          "Machine Learning as an Experimental Science"
+        ],
+        "author": [
+          {
+            "given": "Pat",
+            "family": "Langley",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1988,
+              8
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:55:36Z",
+          "timestamp": 1049475336000
+        },
+        "is-referenced-by-count": 12,
+        "URL": "https://doi.org/10.1023/a:1022623814640",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.1023/a:1022817027844",
+        "type": "journal-article",
+        "title": [
+          "New Theoretical Directions In Machine Learning"
+        ],
+        "author": [
+          {
+            "given": "David",
+            "family": "Haussler",
+            "sequence": "first",
+            "affiliation": [],
+            "role": [
+              {
+                "role": "author",
+                "vocabulary": "crossref"
+              }
+            ]
+          }
+        ],
+        "published": {
+          "date-parts": [
+            [
+              1988,
+              4
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2003,
+              4,
+              4
+            ]
+          ],
+          "date-time": "2003-04-04T16:57:10Z",
+          "timestamp": 1049475430000
+        },
+        "is-referenced-by-count": 1,
+        "URL": "https://doi.org/10.1023/a:1022817027844",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "Springer Science and Business Media LLC"
+      },
+      {
+        "DOI": "10.7551/mitpress/13811.003.0005",
+        "type": "book-chapter",
+        "title": [
+          "Machine Learning, Statistics, and Data Analytics"
+        ],
+        "author": null,
+        "published": {
+          "date-parts": [
+            [
+              2021,
+              8,
+              17
+            ]
+          ]
+        },
+        "created": {
+          "date-parts": [
+            [
+              2021,
+              8,
+              22
+            ]
+          ],
+          "date-time": "2021-08-22T13:21:32Z",
+          "timestamp": 1629638492000
+        },
+        "is-referenced-by-count": 1,
+        "URL": "https://doi.org/10.7551/mitpress/13811.003.0005",
+        "container-title": [
+          "Machine Learning"
+        ],
+        "publisher": "The MIT Press"
+      }
+    ],
+    "items-per-page": 20,
+    "query": {
+      "start-index": 0,
+      "search-terms": "machine learning"
+    }
+  }
+}
