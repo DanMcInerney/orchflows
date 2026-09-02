@@ -28,6 +28,7 @@ if __package__:
         ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
+    from .tickets_pins import PinError, digests_of, names_of, resolved
     from .tickets_registry import EXECUTOR_REGISTRY
     from .tickets_transitions import CHECKABLE_STATUSES
     from .tickets_store import (
@@ -45,6 +46,7 @@ else:
         ARTIFACT_CLAUSE, MAKES_FIELD, REPORT_SECTION, _executor_of, lease_of,
         _extract_flag, _read_utf8, _sections, dequote,
     )
+    from tickets_pins import PinError, digests_of, names_of, resolved
     from tickets_registry import EXECUTOR_REGISTRY
     from tickets_transitions import CHECKABLE_STATUSES
     from tickets_store import (
@@ -225,6 +227,36 @@ def _skill_path(executor):
         return None
 
 
+def _sheets(loaded: dict) -> list:
+    """`[{"name", "path", "digest"}]` for the sheets this ticket stamped.
+
+    The digest is the ticket's own pinned one, never a fresh hash: what the
+    prompt hands the child has to be the digest the assignment was sealed
+    with, so a child and its judge quote one number. Admission has already
+    re-derived and compared it -- `tickets_pins.pinned_findings` runs in the
+    same grade this function sits behind -- so a sheet that reaches here is
+    a sheet that still hashes to what is printed.
+
+    A name that will not resolve is therefore unreachable, and it drops its
+    line rather than crashing the launch: the door above owns that refusal,
+    and a second one here would report the same defect in a worse place.
+    """
+
+    digests = digests_of(loaded.get("sheet_digests"))
+    stamped = []
+    for name in names_of(loaded.get("sheets")):
+        try:
+            record = resolved("sheet", name)
+        except PinError:
+            continue
+        stamped.append({
+            "name": name,
+            "path": str(record["path"]),
+            "digest": digests.get(name, str(record["digest"])),
+        })
+    return stamped
+
+
 def git_candidate(pack) -> bool:
     """Whether the landing merges a candidate branch this pack's child
     committed into.
@@ -384,6 +416,7 @@ def dispatch_assignment(rest, *, attempt=None):
         "pack": pack,
         "role": role,
         "run": str(loaded.get("run") or run),
+        "sheets": _sheets(loaded),
         "skill_path": _skill_path(executor),
         "ticket_path": str(ticket_path),
         "workspace": workspace,

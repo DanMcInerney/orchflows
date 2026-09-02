@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2218,
+  "count": 2236,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -523,6 +523,8 @@
    "test_installer.TestRuntimeDirsSeedTheSink.test_the_override_redirects_what_an_install_seeds",
    "test_installer.TestRuntimeDirsSeedTheSink.test_the_sink_it_seeds_is_the_one_the_scripts_resolve",
    "test_installer.TestRuntimeDirsSeedTheSink.test_user_scope_seeds_the_sink",
+   "test_installer.TestScopedHostConfiguration.test_a_sheet_directory_is_read_as_a_sheet_and_a_bare_one_is_not",
+   "test_installer.TestScopedHostConfiguration.test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer",
    "test_installer.TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
    "test_installer.TestScopedHostConfiguration.test_codex_limit_merge_handles_dotted_agent_keys",
    "test_installer.TestScopedHostConfiguration.test_codex_role_agent_names_follow_spawn_identifier_grammar",
@@ -670,10 +672,12 @@
    "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
    "test_orchflows_cli.AddTests.test_a_tag_is_a_pin_and_the_import_resolves_through_the_ring",
    "test_orchflows_cli.AddTests.test_sync_restores_a_deleted_import_from_the_lock",
+   "test_orchflows_cli.ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
    "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
    "test_orchflows_cli.NewTests.test_a_new_item_lands_in_the_project_ring_when_you_stand_in_one",
    "test_orchflows_cli.NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "test_orchflows_cli.NewTests.test_a_new_sheet_is_a_valid_sheet_the_day_it_is_written",
    "test_orchflows_cli.NewTests.test_a_reserved_name_is_refused_before_anything_is_written",
    "test_orchflows_cli.SyncTests.test_lib_version_guesses_nothing_when_no_receipt_is_readable",
    "test_orchflows_cli.SyncTests.test_lib_version_records_the_installed_identity_or_nulls",
@@ -770,6 +774,7 @@
    "test_ring_adapters.ScopeTests.test_a_home_ring_skill_and_workflow_of_one_name_render_to_two_destinations",
    "test_ring_adapters.ScopeTests.test_a_pack_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_a_reserved_ring_item_gets_no_adapter",
+   "test_ring_adapters.ScopeTests.test_a_sheet_gets_no_adapter",
    "test_ring_adapters.ScopeTests.test_project_adapters_point_repository_relative",
    "test_ring_adapters.ScopeTests.test_sync_removes_the_adapter_of_a_deleted_ring_item",
    "test_rings.InventoryTests.test_inventory_reports_a_reserved_ring_item_rather_than_hiding_it",
@@ -1103,10 +1108,15 @@
    "test_ticket_pins.PinnedItemResolutionTest.test_the_drift_refusal_names_the_item_the_ring_and_both_digests",
    "test_ticket_pins.PinnedItemResolutionTest.test_two_rings_holding_one_name_hash_to_two_digests",
    "test_ticket_pins.StampedCallableTest.test_a_do_without_the_flags_is_unchanged_in_frontmatter_and_prompt",
+   "test_ticket_pins.StampedCallableTest.test_a_sheet_declaring_no_packs_is_refused_rather_than_stamped_anywhere",
+   "test_ticket_pins.StampedCallableTest.test_a_sheet_that_does_not_name_the_stamped_pack_refuses",
    "test_ticket_pins.StampedCallableTest.test_a_sheet_that_moves_after_the_mint_refuses_at_admission",
    "test_ticket_pins.StampedCallableTest.test_a_stamped_do_pins_both_kinds_and_admits",
+   "test_ticket_pins.StampedCallableTest.test_a_stamped_do_prompt_carries_the_sheet_line_verbatim",
    "test_ticket_pins.StampedCallableTest.test_a_stamped_judge_pins_the_same_way",
+   "test_ticket_pins.StampedCallableTest.test_a_stamped_judge_prompt_carries_the_judges_sheet_line_verbatim",
    "test_ticket_pins.StampedCallableTest.test_an_unresolvable_sheet_is_refused_before_the_run_exists",
+   "test_ticket_pins.StampedCallableTest.test_every_stamped_sheet_gets_its_own_line",
    "test_ticket_pins.StampedCallableTest.test_the_stamped_pins_are_sealed_with_the_rest_of_the_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
@@ -2028,6 +2038,14 @@
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_each_absent_owner_is_named_rather_than_passed_over",
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_the_library_itself_skips_nothing",
    "tests.test_validator_cases.availability_and_packages.TestASkippedCheckSaysSo.test_the_link_check_names_every_root_that_bought_its_silence",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_lens_entry_keyed_by_a_kind_the_named_pack_never_emits_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_missing_mandatory_section_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_pack_only_section_inside_a_sheet_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_packs_name_that_resolves_to_no_pack_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_requirements_file_inside_a_sheet_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_scripts_directory_inside_a_sheet_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_sheet_over_the_budget_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestSheetAnatomy.test_a_well_formed_sheet_passes",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_a_references_only_directory_is_no_package_and_no_finding",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_bom_prefixed_valid_skill_md_is_not_falsely_flagged",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_empty_skill_md_is_error_line_and_exit_1_no_traceback",
@@ -2221,7 +2239,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "01872bf75eea2ad29dce56b3607dffb0ec14c1617b4273928d5265b4584b25f8"
+  "sha256": "82472e02fbed4e3647b8b74ce9d4db717c3b6aeeaba01c8636ae27844bf3c57a"
  },
  "mutation_owners": [
   {
@@ -3294,6 +3312,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.scoped_hosts",
+   "owner": "TestScopedHostConfiguration.test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.scoped_hosts",
    "owner": "TestScopedHostConfiguration.test_by_name_index_is_host_agnostic",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -3971,6 +3997,14 @@
   },
   {
    "module": "tests.test_orchflows_cli",
+   "owner": "ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
    "owner": "ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -3996,6 +4030,14 @@
   {
    "module": "tests.test_orchflows_cli",
    "owner": "NewTests.test_a_new_pack_is_a_valid_pack_the_day_it_is_written",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "NewTests.test_a_new_sheet_is_a_valid_sheet_the_day_it_is_written",
    "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"

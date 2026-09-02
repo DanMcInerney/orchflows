@@ -53,11 +53,13 @@ from .models import (
     _is_build_artifact,
 )
 from .packages import (
+    SHEET_MANIFEST_FILE,
     WORKFLOW_SKILL_FILE,
     by_name_pointer_text,
     claude_role_adapter_text,
     codex_role_adapter_body,
     discover_packages,
+    discover_sheets,
     discover_workflow_skills,
     frontmatter_field,
     host_legal_frontmatter,
@@ -295,6 +297,25 @@ def _build_user_plan(
                     grok_skill_text(frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE),
                 )
             )
+
+    # A sheet is stamped on a ticket and never invoked, so it gets the one
+    # surface a stamped item needs and no host surface at all: the flat
+    # pointer, so a child handed the *name* `market-brief` has one
+    # deterministic path to read it at, exactly as a pack does. The pointer
+    # is named `SHEET.md`, not `SKILL.md` -- the manifest name is what
+    # `scripts/rings.py` resolves, and a pointer under the other name would
+    # be a second spelling of where a sheet lives.
+    for sheet_dir, frontmatter, _body in discover_sheets():
+        lib_sheet_dir = (lib_home / sheet_dir.relative_to(REPO_ROOT)).resolve()
+        pointer = (
+            frontmatter
+            + f"\nRead {lib_sheet_dir / SHEET_MANIFEST_FILE} and follow it "
+            f"exactly. It is the sheet at {lib_sheet_dir}, stamped on a "
+            "ticket beside its pack and never invoked by name.\n"
+        )
+        by_name.append(
+            (lib_home / "by-name" / sheet_dir.name / SHEET_MANIFEST_FILE, pointer)
+        )
 
     claude_agents = []
     codex_agents = []

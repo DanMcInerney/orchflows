@@ -25,7 +25,7 @@ if __package__:
     from . import state_root
     from .tickets_dispatch_launch_lines import (
         _command, _craft_lines, _friction_lines, _identity_line, _lane_lines,
-        _reading_lines, _return_lines,
+        _reading_lines, _return_lines, _sheet_lines,
     )
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from .tickets_format import (
@@ -36,7 +36,7 @@ else:  # pragma: no cover - direct/installed flat script path
     import state_root
     from tickets_dispatch_launch_lines import (
         _command, _craft_lines, _friction_lines, _identity_line, _lane_lines,
-        _reading_lines, _return_lines,
+        _reading_lines, _return_lines, _sheet_lines,
     )
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from tickets_format import (
@@ -284,6 +284,7 @@ def launch_prompt(assignment: dict) -> str:
         f"Every Python command runs through this host's verified interpreter, "
         f"{sys.executable}, never a bare `python`.",
         *_craft_lines(assignment),
+        *_sheet_lines(assignment),
         "Run every check to completion in the turn it starts, with an explicit "
         "timeout longer than the check; never background a gate or a test run, "
         "kill anything you background once it is superseded, and never report "

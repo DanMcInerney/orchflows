@@ -52,6 +52,7 @@ CANONICAL_DIRS = (
     "docs",
     "skills",
     "packs",
+    "sheets",
     "example-workflows",
     "templates",
     "hosts",

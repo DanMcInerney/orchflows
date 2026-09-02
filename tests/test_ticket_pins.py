@@ -7,9 +7,12 @@ under the seal -- would be a silent substitution. Every case here fires on
 one half of the answer: the digest is taken at issue, and every later door
 re-derives it and refuses the pair.
 
-U0 stops at the pin. No prompt line, no role check and no `packs:` check are
-asserted here, because none exists yet; the last case in `StampedCallableTest`
-is the one that says so, and it is the case U1 has to change.
+U0 stopped at the pin. U1 added the two doors that read a sheet's *content*:
+`packs:` decides whether the stamp is lawful at all, and the launch prompt
+hands the child the resolved path and the pinned digest. Both are asserted
+here, beside the pins, because all three are one question -- which bytes this
+ticket stamped -- asked at three doors. The applied skill's own role check
+and identity line are U2's and are still absent.
 """
 
 from __future__ import annotations
@@ -35,13 +38,18 @@ APPLIED_SKILL = "house-style"
 STAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
 
-def _sheet(root: Path, name: str, body: str) -> Path:
+def _sheet(root: Path, name: str, body: str, packs=(CODE_PACK,)) -> Path:
+    """One sheet manifest. `packs` is the field the stamp is checked against."""
+
     path = root / "sheets" / name / rings.MANIFESTS["sheet"]
     path.parent.mkdir(parents=True, exist_ok=True)
+    declared = ("packs: [" + ", ".join(packs) + "]\n") if packs else ""
     # Bytes, not text: a text write on Windows lands CRLF, and the digest
     # normalizes those away, so a CRLF fixture would hide a normalization
     # that stopped happening.
-    path.write_bytes(f"---\nname: {name}\n---\n\n## Craft\n\n{body}\n".encode("utf-8"))
+    path.write_bytes(
+        f"---\nname: {name}\n{declared}---\n\n## Craft\n\n{body}\n".encode("utf-8")
+    )
     return path
 
 
@@ -366,20 +374,18 @@ class StampedCallableTest(CallableSinkTest):
         self.assertFalse(self.run_dir().exists())
 
     def test_a_do_without_the_flags_is_unchanged_in_frontmatter_and_prompt(self):
-        """U0's own boundary: the pin exists, and nothing else moved.
+        """The boundary the two units share: stamping nothing changes nothing.
 
         The frontmatter keys are pinned as a sequence, so a field appearing
         on a ticket that stamped nothing fails here rather than at whatever
-        reads the ticket next. The two prompts are compared because U0 adds
-        no prompt line -- U1 does, and this is the assertion it has to
-        change.
+        reads the ticket next. The prompt half was a whole-prompt comparison
+        against a stamped one while U0 rendered no line for a sheet; U1
+        renders one, so what is held now is that the *unstamped* prompt
+        still names no sheet at all -- a line that leaked onto a ticket
+        which stamped none would be craft the child was never assigned.
         """
 
         plain = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
-        stamped = self.callable(
-            "do", "--pack", CODE_PACK, "--isolation", "required",
-            "--sheet", SHEET, "--skill", APPLIED_SKILL,
-        )
 
         self.assertEqual(
             [
@@ -390,14 +396,110 @@ class StampedCallableTest(CallableSinkTest):
             ],
             list(_parse_frontmatter(self.ticket_text(plain["do"]["id"]))),
         )
-        left = self.prompt(plain).splitlines()
-        right = self.prompt(stamped).splitlines()
-        self.assertEqual(len(left), len(right))
-        for plain_line, stamped_line in zip(left, right):
-            if STAMP.sub("<lease>", plain_line) == STAMP.sub("<lease>", stamped_line):
-                continue
-            self.assertIn(plain["do"]["id"], plain_line)
-            self.assertIn(stamped["do"]["id"], stamped_line)
+        self.assertEqual(
+            [], [line for line in self.prompt(plain).splitlines() if "sheet" in line],
+        )
+
+    def _sheet_line(self, answer: dict) -> str:
+        """The one sheet line this launch prompt carries."""
+
+        lines = [
+            line for line in self.prompt(answer).splitlines()
+            if line.startswith("Read the sheet ")
+        ]
+        self.assertEqual(1, len(lines), self.prompt(answer))
+        return lines[0]
+
+    def _resolved(self, name: str):
+        record = tickets_pins.resolved("sheet", name)
+        return record["path"], str(record["digest"]).split(":", 1)[-1]
+
+    def test_a_stamped_do_prompt_carries_the_sheet_line_verbatim(self):
+        """The maker's wording: path, pinned digest, and both halves of the
+        tighten-only rule pointed at the `## Lens` entry its kind resolved."""
+
+        answer = self.callable(
+            "do", "--pack", CODE_PACK, "--isolation", "required", "--sheet", SHEET,
+        )
+        path, digest = self._resolved(SHEET)
+
+        self.assertEqual(
+            f"Read the sheet `{SHEET}` at {path} whole (sha256 {digest}). Its "
+            "`## Craft` binds your making; its `## Lens` `### git` entry adds "
+            "to the craft's `### git` and never loosens it.",
+            self._sheet_line(answer),
+        )
+
+    def test_a_stamped_judge_prompt_carries_the_judges_sheet_line_verbatim(self):
+        """The same three facts, turned toward the reader who reports the
+        conflict rather than the one who would have to build to it."""
+
+        answer = self.callable(
+            "judge", "--pack", CODE_PACK, "--isolation", "none",
+            "--artifacts", "git:" + "a" * 40, "--sheet", SHEET,
+        )
+        path, digest = self._resolved(SHEET)
+
+        self.assertEqual(
+            f"Read the sheet `{SHEET}` at {path} whole (sha256 {digest}). Its "
+            "`## Lens` `### git` entry adds criteria you check beside the "
+            "craft's; where it loosens the craft's, the craft wins and you "
+            "report the conflict as a `sheet-defect` finding.",
+            self._sheet_line(answer),
+        )
+
+    def test_every_stamped_sheet_gets_its_own_line(self):
+        """Two stamps, two lines: one sheet's line naming another's digest
+        would be the substitution the pin exists to prevent."""
+
+        second = "house-brief"
+        _sheet(self.ring, second, "The second narrowing.")
+        answer = self.callable(
+            "do", "--pack", CODE_PACK, "--isolation", "required",
+            "--sheet", SHEET, "--sheet", second,
+        )
+
+        lines = [
+            line for line in self.prompt(answer).splitlines()
+            if line.startswith("Read the sheet ")
+        ]
+        self.assertEqual(2, len(lines))
+        for name in (SHEET, second):
+            path, digest = self._resolved(name)
+            self.assertTrue(
+                any(f"`{name}` at {path} whole (sha256 {digest})" in line for line in lines),
+                lines,
+            )
+
+    def test_a_sheet_that_does_not_name_the_stamped_pack_refuses(self):
+        """The `packs:` door. A sheet tightens the craft it was written
+        against; stamped beside another pack it is criteria for a domain it
+        never read, so the callable never opens."""
+
+        _sheet(self.ring, "doc-only", "Prose shape.", packs=("orch-content-pack",))
+
+        answer = self.callable(
+            "do", "--pack", CODE_PACK, "--isolation", "required",
+            "--sheet", "doc-only", expect_error=True,
+        )
+
+        self.assertIn("orch-content-pack", answer["error"])
+        self.assertIn(CODE_PACK, answer["error"])
+        self.assertFalse(self.run_dir().exists())
+
+    def test_a_sheet_declaring_no_packs_is_refused_rather_than_stamped_anywhere(self):
+        """The field is required (`contracts/sheet.md`), so its absence is a
+        refusal with its own sentence -- not a sheet that fits every pack."""
+
+        _sheet(self.ring, "unbound", "No packs named.", packs=())
+
+        answer = self.callable(
+            "do", "--pack", CODE_PACK, "--isolation", "required",
+            "--sheet", "unbound", expect_error=True,
+        )
+
+        self.assertIn("declares no `packs:`", answer["error"])
+        self.assertFalse(self.run_dir().exists())
 
 
 if __name__ == "__main__":  # pragma: no cover - direct invocation

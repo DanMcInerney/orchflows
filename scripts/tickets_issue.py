@@ -72,20 +72,24 @@ def pinned_pack_digest(pack):
         return None, {"error": f"pack '{name}' cannot be pinned: {error.detail}"}
 
 
-def pinned_items(sheets, skill):
+def pinned_items(sheets, skill, pack=None):
     """``(fields, refusal)`` for the ring items stamped beside the pack.
 
     Issue time again, and for the pack's reason above: this module is where
     a ticket's pins are taken, and `scripts/tickets_pins.py` is where the
     two new kinds are resolved, hashed, and refused -- so both minting
     commands take one pin the same way.
+
+    The stamped pack rides along because a sheet declares the packs it may
+    be stamped beside, and the pair is only checkable where both names are
+    in hand: here, before the ticket exists.
     """
 
     if __package__:
         from .tickets_pins import pin_fields
     else:  # pragma: no cover - direct/installed flat script path
         from tickets_pins import pin_fields
-    return pin_fields(sheets, skill)
+    return pin_fields(sheets, skill, pack=pack)
 
 
 def _invalidate_assignment(text):

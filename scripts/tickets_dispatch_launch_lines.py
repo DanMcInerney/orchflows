@@ -168,6 +168,54 @@ def _craft_lines(assignment: dict) -> list:
     return lines
 
 
+def _sheet_lines(assignment: dict) -> list:
+    """One line per stamped sheet: where it is, at which digest, and how far
+    it reaches into the craft the line above already handed over.
+
+    A sheet is extra craft, so it renders here, after the craft and before
+    anything else -- the child reads the pack's law and then the narrowing
+    the ticket stamped on top of it, in that order. Three facts a child
+    cannot derive from its ticket ride each line: the sheet's resolved path
+    (the ticket carries a name, and a name is a ring search), the digest the
+    assignment sealed (so a child reading different bytes than the judge
+    reads has something to compare), and the direction -- a maker's `##
+    Craft` binds what it makes, a judge's `## Lens` adds criteria it checks.
+
+    The `### <kind>` key is the craft line's own: a sheet's Lens is keyed by
+    artifact kind exactly as a craft's is, so a child with no resolved kind
+    would be sent to `### None` in both files at once. Nothing renders for
+    that assignment, for `_craft_lines`' reason.
+
+    The tighten-only rule is stated in the direction each verb needs it. A
+    maker is told the sheet never loosens the craft, because a maker
+    following a looser clause would build to the wrong bar; a judge is told
+    the craft wins and the conflict is its own `sheet-defect` finding,
+    because a judge is the one who reports it.
+    """
+
+    key = assignment.get("lens_key")
+    if not key:
+        return []
+    lines = []
+    for sheet in assignment.get("sheets") or ():
+        digest = str(sheet.get("digest") or "")
+        opening = (
+            f"Read the sheet `{sheet['name']}` at {sheet['path']} whole "
+            f"(sha256 {digest.split(':', 1)[-1]})."
+        )
+        lines.append(
+            f"{opening} Its `## Lens` `### {key}` entry adds criteria you "
+            "check beside the craft's; where it loosens the craft's, the "
+            "craft wins and you report the conflict as a `sheet-defect` "
+            "finding."
+            if _files_findings(assignment) else
+            f"{opening} Its `## Craft` binds your making; its `## Lens` "
+            f"`### {key}` entry adds to the craft's `### {key}` and never "
+            "loosens it."
+        )
+    return lines
+
+
 def _friction_lines() -> list:
     """The host block's always-on friction law, restated for a forked child.
 

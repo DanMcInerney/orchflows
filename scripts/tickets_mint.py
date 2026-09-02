@@ -348,7 +348,7 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
     pinned, refusal = pinned_pack_digest(pack)
     if refusal is not None:
         return None, refusal
-    stamped, refusal = pinned_items(sheets, skill)
+    stamped, refusal = pinned_items(sheets, skill, pack=pack)
     if refusal is not None:
         return None, refusal
     fields = {
