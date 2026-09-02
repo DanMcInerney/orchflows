@@ -112,6 +112,20 @@
         {"source": "challenge", "target": "verdict", "kind": "sequence"}
       ]
     },
+    "checkpointed-build": {
+      "nodes": [
+        {"id": "plan", "label": "Cut the build into waves"},
+        {"id": "waves", "label": "Make each wave in isolation"},
+        {"id": "judge", "label": "Judge the joined tip"},
+        {"id": "repair", "label": "Repair the named blocks"}
+      ],
+      "edges": [
+        {"source": "plan", "target": "waves", "kind": "sequence"},
+        {"source": "waves", "target": "judge", "kind": "sequence"},
+        {"source": "judge", "target": "repair", "kind": "branch"},
+        {"source": "repair", "target": "judge", "kind": "loop"}
+      ]
+    },
     "orch-do": {
       "nodes": [
         {"id": "resolve", "label": "Resolve the stamped pack"},

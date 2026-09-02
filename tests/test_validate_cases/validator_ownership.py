@@ -163,17 +163,22 @@ CITATION_ONLY = "[the work-item contract](contracts/work-item.md)"
 NAME_ONLY = "`orch-mimic`"
 
 RULE_MD = "# A rule\n\n{body}\n"
+# Two tiers, two frontmatters, because the library grades them as two
+# kinds. `skills/workflows/` is the reusable-workflow home: a body there
+# owes the manual-invocation flag and declares no role, since a workflow
+# is invoked by name into the driver's own context and never forked.
+# `skills/kernel/` holds the role-bearing skills and forbids the
+# skill-to-skill citation some cases below turn on. Each case picks the
+# tier its own question needs.
 SKILL_MD = (
-    "---\nname: {name}\ndescription: a synthetic skill standing in for a "
-    "tier the cross-tier check reads\nrole: worker\n"
-    # The workflows tier is also the library's reusable-workflow home,
-    # so a body there owes the manual-invocation flag; these cases are
-    # about a clause with two owners and pay it rather than change tier
-    # -- kernel, the other one, forbids the skill-to-skill citation
-    # they turn on.
-    "disable-model-invocation: true\n---\n"
+    "---\nname: {name}\ndescription: a synthetic body standing in for a "
+    "tier the cross-tier check reads\n{keys}---\n"
     "Require: one ticket.\nNever: guess.\nReturn: the ticket.\n{body}\n"
 )
+TIER_KEYS = {
+    "workflows": "disable-model-invocation: true\n",
+    "kernel": "role: worker\n",
+}
 
 
 class CrossTierDuplicationTest(unittest.TestCase):
@@ -194,19 +199,21 @@ class CrossTierDuplicationTest(unittest.TestCase):
         self.addCleanup(self.harness.doCleanups)
         self.tmp_path = self.harness.tmp_path
 
-    def _write(self, rule_body: str, skill_body: str, name: str = "orch-echo"):
+    def _write(self, rule_body: str, skill_body: str, name: str = "orch-echo",
+               tier: str = "workflows"):
         rules = self.tmp_path / "rules"
         rules.mkdir(parents=True, exist_ok=True)
         (rules / "duplication.md").write_text(
             RULE_MD.format(body=rule_body), encoding="utf-8"
         )
-        self._write_skill(name, skill_body)
+        self._write_skill(name, skill_body, tier)
 
-    def _write_skill(self, name: str, body: str):
-        skill = self.tmp_path / "skills" / "workflows" / name
+    def _write_skill(self, name: str, body: str, tier: str = "workflows"):
+        skill = self.tmp_path / "skills" / tier / name
         skill.mkdir(parents=True, exist_ok=True)
         (skill / "SKILL.md").write_text(
-            SKILL_MD.format(name=name, body=body), encoding="utf-8"
+            SKILL_MD.format(name=name, body=body, keys=TIER_KEYS[tier]),
+            encoding="utf-8",
         )
 
     def _findings(self):
@@ -255,12 +262,12 @@ class CrossTierDuplicationTest(unittest.TestCase):
         nothing compared.
         """
 
-        self._write("Nothing here.", COPIED_SENTENCE + ".")
-        self._write_skill("orch-mimic", COPIED_SENTENCE + ".")
+        self._write("Nothing here.", COPIED_SENTENCE + ".", tier="kernel")
+        self._write_skill("orch-mimic", COPIED_SENTENCE + ".", tier="kernel")
         result, findings = self._findings()
         self.assertEqual(1, len(findings), result.stdout)
-        self.assertIn("skills/workflows/orch-echo/SKILL.md", findings[0])
-        self.assertIn("skills/workflows/orch-mimic/SKILL.md", findings[0])
+        self.assertIn("skills/kernel/orch-echo/SKILL.md", findings[0])
+        self.assertIn("skills/kernel/orch-mimic/SKILL.md", findings[0])
         self.assertIn("(within skills)", findings[0])
         self.assertEqual(("skills",), tuple(sorted(validate.SAME_TIER_COMPARED)))
 

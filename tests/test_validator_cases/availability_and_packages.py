@@ -168,28 +168,41 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         self.assertIn("role", result.stdout)
         self.assertIn("badrolepkg", result.stdout)
 
-    def test_workflow_declaring_planner_role_is_valid(self):
+    def test_workflow_declaring_no_role_is_valid(self):
+        """A workflow's frontmatter is the gallery home's, role included.
+
+        The skills tier once held role-bearing driver skills, and the rule
+        here read the tier name. `skills/workflows/` now holds reusable
+        workflows: prose an orchestrator runs in place, invoked by name and
+        never forked into a child, which is why the installer renders its
+        host surfaces as a flat pointer and refuses to render a role-bearing
+        one without a profile row.
+        """
+
         self._write_skill(
             "someworkflowpkg",
-            b"---\nname: someworkflowpkg\ndescription: a workflow with a non-none role\n"
-            b"role: planner\ndisable-model-invocation: true\n---\n"
+            b"---\nname: someworkflowpkg\ndescription: a reusable workflow\n"
+            b"disable-model-invocation: true\n---\n"
             b"Require: x.\nNever: y.\nReturn: z.\n",
             tier="workflows",
         )
         result = self._run()
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_workflow_declaring_none_role_is_error(self):
+    def test_workflow_declaring_a_role_is_error(self):
+        """`planner` is the role the tier rule used to require, so it is the
+        one whose refusal says the rule turned over rather than loosened."""
+
         self._write_skill(
             "someworkflowpkg",
-            b"---\nname: someworkflowpkg\ndescription: a glue workflow\n"
-            b"role: none\ndisable-model-invocation: true\n---\n"
+            b"---\nname: someworkflowpkg\ndescription: a reusable workflow\n"
+            b"role: planner\ndisable-model-invocation: true\n---\n"
             b"Require: x.\nNever: y.\nReturn: z.\n",
             tier="workflows",
         )
         result = self._run()
         self.assertEqual(1, result.returncode)
-        self.assertIn("workflows skill must declare planner or worker", result.stdout)
+        self.assertIn("never forked, so it declares no role", result.stdout)
 
     def test_pack_declaring_role_at_all_is_error(self):
         self._write_pack(

@@ -14,6 +14,7 @@ MANIFEST = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 EXPECTED_WORKFLOWS = {
     "benchmaker",
     "browser-game",
+    "checkpointed-build",
     "drift-canary",
     "evolve",
     "orch-do",

@@ -55,10 +55,19 @@ class ThinOrchestratorContractTests(unittest.TestCase):
                 )
 
         # No skill is glue any more: the driver and the join are commands,
-        # so every callable declares planner or worker.
+        # so every callable declares planner or worker. The workflow homes
+        # under skills/ hold no callable -- a workflow's prose runs in the
+        # orchestrator's own context and declares no role at all -- and the
+        # tier they occupy is read from the validator rather than spelled
+        # again here.
+        homes = {ROOT / "skills" / tier for tier in validate.workflow_tiers()}
         self.assertEqual(
             set(self.WORKFLOW_ROLES),
-            {path.parent.name for path in (ROOT / "skills").rglob("SKILL.md")},
+            {
+                path.parent.name
+                for path in (ROOT / "skills").rglob("SKILL.md")
+                if path.parent.parent not in homes
+            },
         )
 
         delegation = (ROOT / "rules/delegation.md").read_text(encoding="utf-8")
