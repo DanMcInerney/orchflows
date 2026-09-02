@@ -7,7 +7,8 @@ Seven ring verbs over ``scripts/rings.py``'s one resolution order, plus
     orchflows sync [--project]         make a ring whole, render its adapters,
                                        build every declared item environment
     orchflows add <git-url>@<pin>      pin one external bundle
-    orchflows new {skill|pack|workflow} <name>
+    orchflows new {skill|pack|sheet|workflow} <name>
+    orchflows new bundle [<name>]      the manifest of the ring at hand
     orchflows list [--kind K]          every item resolvable from here
     orchflows env <kind> <name>        the interpreter an item's scripts run through
     orchflows trust [--once] <bundle>  allow one project ring's content
@@ -45,6 +46,10 @@ else:  # pragma: no cover - direct/installed flat script path
     import state_root
 
 
+# `new`'s one non-item target: a bundle is the ring itself, not something
+# in it, so it is spelled where a kind is spelled and refused everywhere a
+# ring kind is resolved.
+BUNDLE_KIND = "bundle"
 COLUMNS = ("kind", "name", "ring", "trust", "path")
 RESUME_COLUMNS = ("frame", "run", "age", "journal", "children", "leases", "goal")
 
@@ -199,13 +204,18 @@ def cmd_add(args) -> int:
     record = orchflows_home.add(args.reference)
     print(f"imported {record['name']} @ {record['pin']} from {record['url']}")
     print(f"cloned to {record['path']}")
+    for required in record["required"]:
+        print(
+            f"required {required['name']} @ {required['pin']} "
+            f"from {required['url']}"
+        )
     print(f"pinned in {record['lock']}")
     return 0
 
 
-def _new_target(kind: str):
-    """``(ring, directory)`` for a new item: the project ring when you stand
-    in a project, else the home ring.
+def _new_ring():
+    """``(ring, bundle directory)`` a new item or manifest is written into:
+    the project ring when you stand in a project, else the home ring.
 
     The write target follows the shared file rather than a local overlay:
     an author standing in a repository means that repository's ring, and a
@@ -214,14 +224,56 @@ def _new_target(kind: str):
 
     bundle = rings.project_ring()
     if bundle is not None:
-        return "project", bundle / rings.RING_DIRS[kind]
+        return "project", bundle
     repo = state_root.find_repo_root(Path.cwd())
     if repo is not None:
-        return "project", repo / rings.BUNDLE_DIR / rings.RING_DIRS[kind]
-    return "home", rings.home_ring() / rings.RING_DIRS[kind]
+        return "project", repo / rings.BUNDLE_DIR
+    return "home", rings.home_ring()
+
+
+def _new_target(kind: str):
+    """``(ring, directory)`` for a new item of ``kind``."""
+
+    ring, bundle = _new_ring()
+    return ring, bundle / rings.RING_DIRS[kind]
+
+
+def _bundle_name(directory: Path) -> str:
+    """The name a manifest takes when the author names none.
+
+    The bundle directory's parent: the repository a project ring sits in,
+    or the home the home ring sits in. A name is the one field only its
+    owner can decide, so a directory whose name is not a usable one asks
+    rather than inventing.
+    """
+
+    try:
+        return rings.item_name(Path(directory).resolve().parent.name)
+    except rings.RingError:
+        raise rings.RingError(
+            "bundle-unnamed",
+            f"{directory} gives a bundle no name to take: run "
+            "orchflows new bundle <name>.",
+        )
+
+
+def cmd_new_bundle(args) -> int:
+    """Scaffold the manifest of the ring at hand (contracts/bundle.md)."""
+
+    ring, directory = _new_ring()
+    name = rings.item_name(args.name) if args.name else _bundle_name(directory)
+    path = orchflows_scaffold.write_bundle(directory, name)
+    print(f"new bundle '{name}' in the {ring} ring")
+    print(f"wrote {path}")
+    return 0
 
 
 def cmd_new(args) -> int:
+    if args.kind == BUNDLE_KIND:
+        return cmd_new_bundle(args)
+    if not args.name:
+        print(f"error: orchflows new {args.kind} needs a name", file=sys.stderr)
+        return 1
     kind = rings.kind_of(args.kind)
     name = rings.item_name(args.name)
     if name.startswith(rings.RESERVED_PREFIX):
@@ -283,9 +335,12 @@ def _parser() -> argparse.ArgumentParser:
     added = subparsers.add_parser("add", help="pin one external bundle", allow_abbrev=False)
     added.add_argument("reference", metavar="<git-url>@<pin>")
     added.set_defaults(handler=cmd_add)
-    created = subparsers.add_parser("new", help="scaffold one item", allow_abbrev=False)
-    created.add_argument("kind", choices=rings.KINDS)
-    created.add_argument("name")
+    created = subparsers.add_parser(
+        "new", help="scaffold one item, or this ring's bundle manifest",
+        allow_abbrev=False,
+    )
+    created.add_argument("kind", choices=(*rings.KINDS, BUNDLE_KIND))
+    created.add_argument("name", nargs="?", help="required for every kind but bundle")
     created.set_defaults(handler=cmd_new)
     environment = subparsers.add_parser(
         "env", help="the interpreter an item's scripts run through", allow_abbrev=False,

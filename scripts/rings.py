@@ -70,6 +70,11 @@ MANIFESTS = {
 }
 RESERVED_PREFIX = "orch-"
 BUNDLE_DIR = ".orchflows"
+# The bundle's own manifest, beside the item directories rather than inside
+# one of them: it describes the bundle, not any item in it
+# (contracts/bundle.md). Named here with the other layout names so the one
+# module that says where a bundle's parts live says where all of them do.
+BUNDLE_MANIFEST = "BUNDLE.md"
 IMPORTS_DIR = "imports"
 IMPORTS_LOCK = "imports.lock"
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
