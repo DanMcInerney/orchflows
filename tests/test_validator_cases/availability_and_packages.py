@@ -3,6 +3,8 @@ import shutil
 import subprocess
 import sys
 
+from scripts import orchflows_scaffold
+
 from .support import ROOT, VALIDATE, _IsolatedTree, loop_lint_warnings, validate
 
 class TestASkippedCheckSaysSo(_IsolatedTree):
@@ -325,3 +327,176 @@ class TestWorkflowLibraryHomes(_IsolatedTree):
 
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn("is also at", result.stdout)
+
+
+class TestSheetAnatomy(_IsolatedTree):
+    """A sheet is graded against `contracts/sheet.md`, at the tree seam.
+
+    Every case writes one synthetic `sheets/<name>/SHEET.md` beside one
+    synthetic pack and runs the whole validator, so what is checked is the
+    ERROR/exit-code contract a run reads, not a helper called in isolation.
+    The pack is written rather than copied because two of the checks are
+    *about* the pack: which packs a sheet may be stamped beside, and which
+    `## Lens` keys its adapter makes readable.
+    """
+
+    PACK = "orch-widget-pack"
+
+    def _write_pack(self, name=None, adapter="git"):
+        """The scaffold's own pack skeleton, so the fixture pack is the pack
+        `orchflows new pack` writes -- a hand-rolled one drifts from what a
+        real pack must carry and reds these cases on its own defects."""
+
+        name = name or self.PACK
+        pack = self.tmp_path / "packs" / name
+        for relative, text in orchflows_scaffold.files_for("pack", name):
+            path = pack / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if relative == "SKILL.md" and adapter != "git":
+                text = text.replace("| adapter | git |", f"| adapter | {adapter} |")
+            path.write_bytes(text.encode("utf-8"))
+        return pack
+
+    def _write_sheet(self, name: str, text: str):
+        sheet = self.tmp_path / "sheets" / name
+        sheet.mkdir(parents=True)
+        (sheet / "SHEET.md").write_bytes(text.encode("utf-8"))
+        return sheet
+
+    def _sheet_text(self, name: str, *, packs=None, sections=None, lens=("git",)):
+        packs = self.PACK if packs is None else packs
+        body = sections if sections is not None else [
+            ("Craft", "Narrow the craft here."),
+        ]
+        lines = [
+            "---", f"name: {name}", "description: When to stamp it.",
+            f"packs: [{packs}]", "---", "", f"# {name}", "",
+        ]
+        for heading, prose in body:
+            lines.extend([f"## {heading}", "", prose, ""])
+        lines.extend(["## Lens", ""])
+        for key in lens:
+            lines.extend([f"### {key}", "", f"What a {key} artifact must satisfy.", ""])
+        return "\n".join(lines)
+
+    def _errors(self, stdout, name):
+        return [
+            line for line in stdout.splitlines()
+            if line.startswith("ERROR") and f"sheets/{name}" in line
+        ]
+
+    def test_a_well_formed_sheet_passes(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text("market-brief"))
+
+        result = self._run()
+
+        self.assertEqual([], self._errors(result.stdout, "market-brief"))
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_a_pack_only_section_inside_a_sheet_is_refused(self):
+        """`## Workspace` states identities and isolation -- a fact about the
+        domain, which the pack owns. A sheet carrying it is a second owner."""
+
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief",
+            sections=[("Craft", "Narrow it."), ("Workspace", "Commits, branches.")],
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("## Workspace" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_scripts_directory_inside_a_sheet_is_refused(self):
+        """A sheet carries prose and nothing executable, so it declares no
+        dependencies and owns no environment."""
+
+        self._write_pack()
+        sheet = self._write_sheet("market-brief", self._sheet_text("market-brief"))
+        (sheet / "scripts").mkdir()
+        (sheet / "scripts" / "run.py").write_text("print(1)\n", encoding="utf-8")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("'scripts'" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_requirements_file_inside_a_sheet_is_refused(self):
+        self._write_pack()
+        sheet = self._write_sheet("market-brief", self._sheet_text("market-brief"))
+        (sheet / "requirements.txt").write_text("requests\n", encoding="utf-8")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("'requirements.txt'" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_packs_name_that_resolves_to_no_pack_is_refused(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief", packs="orch-absent-pack",
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("orch-absent-pack" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_lens_entry_keyed_by_a_kind_the_named_pack_never_emits_is_refused(self):
+        """The key selects the entry a child is sent to. An entry under a
+        kind that pack's adapter does not emit is criteria nothing reads."""
+
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief", lens=("doc",),
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("### doc" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_sheet_over_the_budget_is_refused(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief",
+            sections=[("Craft", "\n".join(f"- clause {n}" for n in range(120)))],
+        ))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertTrue(
+            any("sheet budget" in line for line in self._errors(result.stdout, "market-brief")),
+            result.stdout,
+        )
+
+    def test_a_missing_mandatory_section_is_refused(self):
+        self._write_pack()
+        self._write_sheet("market-brief", self._sheet_text(
+            "market-brief", sections=[],
+        ).replace("## Lens", "## Vocabulary"))
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        errors = " ".join(self._errors(result.stdout, "market-brief"))
+        self.assertIn("## Craft", errors)
+        self.assertIn("## Lens", errors)

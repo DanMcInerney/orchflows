@@ -103,6 +103,37 @@ def _relative(path: Path, root: Path) -> str:
         return ""
 
 
+SHEET_MANIFEST_FILE = "SHEET.md"
+
+
+def discover_sheets(root: Path = REPO_ROOT):
+    """Every library sheet: a directory ``sheets/<name>/`` with its manifest.
+
+    Returns ``(directory, frontmatter, body)`` per sheet, the shape
+    ``discover_workflow_skills`` returns, because the caller does the same
+    thing with both: mint one flat name pointer. A directory without the
+    manifest, or without frontmatter naming the sheet, is library data
+    rather than a name -- it still reaches the installed lib copy.
+    """
+
+    sheets = []
+    root_dir = root / "sheets"
+    if not root_dir.is_dir():
+        return sheets
+    for directory in sorted(p for p in root_dir.iterdir() if p.is_dir()):
+        manifest = directory / SHEET_MANIFEST_FILE
+        if not manifest.is_file():
+            continue
+        try:
+            frontmatter, body = split_frontmatter(manifest.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if not frontmatter_field(frontmatter, "name"):
+            continue
+        sheets.append((directory, frontmatter, body))
+    return sheets
+
+
 WORKFLOW_SKILL_FILE = "SKILL.md"
 # Every workflow adapter is manual-invocation-only, whatever the source
 # declares. A workflow's prose executes as orchestrator reasoning rather

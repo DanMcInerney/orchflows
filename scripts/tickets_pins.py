@@ -27,10 +27,10 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 try:
     from scripts import rings
-    from scripts.tickets_markdown import dequote
+    from scripts.tickets_markdown import _parse_frontmatter, dequote
 except ImportError:  # pragma: no cover - direct/installed flat script path
     import rings
-    from tickets_markdown import dequote
+    from tickets_markdown import _parse_frontmatter, dequote
 
 
 # The kinds this module pins, and the directories inside one that its tree
@@ -188,11 +188,53 @@ def encode_digests(mapping: Dict[str, str]) -> str:
     return json.dumps(mapping, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
-def pin_fields(sheets: Sequence[str], skill, **overrides):
+def declared_packs(record: Dict[str, object]) -> List[str]:
+    """The pack names one resolved sheet's `packs:` frontmatter carries."""
+
+    try:
+        text = Path(str(record["path"])).read_text(encoding="utf-8-sig")
+    except OSError as error:
+        raise PinError("item-unreadable", f"unreadable sheet {record['path']}: {error}")
+    return names_of(_parse_frontmatter(text).get("packs"))
+
+
+def stamp_refusal(name: str, pack: str, packs: Sequence[str]) -> str:
+    """The one sentence a sheet says when it is stamped beside a wrong pack.
+
+    Two forms, because the two defects send the reader to different halves:
+    a sheet that names other packs is stamped in the wrong place, and a
+    sheet that names none is missing the field `contracts/sheet.md` makes
+    required -- reporting the second as an exclusion would name a set the
+    sheet never wrote.
+    """
+
+    remedy = (
+        f"Stamp '{name}' beside a pack it names, or add '{pack}' to its "
+        "`packs:` if the sheet really governs that domain."
+    )
+    if not packs:
+        return (
+            f"sheet '{name}' declares no `packs:`, and this callable stamps "
+            f"'{pack}'. Every sheet names the packs it may be stamped beside "
+            f"(contracts/sheet.md): add `packs: [{pack}]` to the sheet."
+        )
+    return (
+        f"sheet '{name}' declares packs {list(packs)} and this callable stamps "
+        f"'{pack}': a sheet tightens a craft it was written against and says "
+        f"nothing about one it was not. {remedy}"
+    )
+
+
+def pin_fields(sheets: Sequence[str], skill, pack=None, **overrides):
     """`(fields, refusal)` -- the four pin fields for one issuing ticket.
 
     A ticket stamping neither kind gets four `None`s, which the renderer
     drops: today's frontmatter, byte for byte.
+
+    `pack` is the name this callable stamps. It is read here rather than at
+    the mint because the resolution a `packs:` check needs is this module's
+    -- a second reader would resolve the sheet name a second time and could
+    resolve it to different bytes than the digest above pinned.
     """
 
     fields = {
@@ -205,13 +247,18 @@ def pin_fields(sheets: Sequence[str], skill, **overrides):
             "--sheet names " + ", ".join(f"'{name}'" for name in duplicated)
             + " more than once; one stamp per sheet"
         )}
+    stamped = dequote(pack) or ""
     if names:
         digests = {}
         for name in names:
             try:
-                digests[name] = item_digest("sheet", name, **overrides)
+                record = resolved("sheet", name, **overrides)
+                declared = declared_packs(record)
             except PinError as error:
                 return None, {"error": error.detail}
+            if stamped and stamped not in declared:
+                return None, {"error": stamp_refusal(name, stamped, declared)}
+            digests[name] = str(record["digest"])
         fields["sheets"] = sorted(names)
         fields["sheet_digests"] = encode_digests(digests)
     applied = names_of(skill)
@@ -269,6 +316,7 @@ def pinned_findings(data: dict, finding, **overrides) -> List[dict]:
 
 __all__ = (
     "DIGEST_PREFIX", "PINNED_KINDS", "PinError", "SKIPPED_DIRS", "TREE_VERSION",
-    "digests_of", "drift", "drift_refusal", "encode_digests", "item_digest",
-    "names_of", "pin_fields", "pinned_findings", "resolved", "tree_digest",
+    "declared_packs", "digests_of", "drift", "drift_refusal", "encode_digests",
+    "item_digest", "names_of", "pin_fields", "pinned_findings", "resolved",
+    "stamp_refusal", "tree_digest",
 )

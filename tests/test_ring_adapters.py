@@ -131,6 +131,24 @@ class ScopeTests(unittest.TestCase):
 
             self.assertEqual([], [path for path, _ in entries if "widget-pack" in str(path)])
 
+    def test_a_sheet_gets_no_adapter(self):
+        """A sheet is stamped on a ticket and never invoked, so it is the
+        pack's case exactly: a name in a host's skill list that cannot be
+        called crowds out the names that can. `ADAPTED_KINDS` is the one
+        place that is decided, and `sheet` is not in it."""
+
+        with _world() as world:
+            sheet = world["home"] / "sheets" / "market-brief" / "SHEET.md"
+            sheet.parent.mkdir(parents=True)
+            sheet.write_bytes(b"---\nname: market-brief\n---\n")
+
+            entries = orchflows_adapters.plan("home", project=world["project"])
+
+            self.assertNotIn("sheet", orchflows_adapters.ADAPTED_KINDS)
+            self.assertEqual(
+                [], [path for path, _ in entries if "market-brief" in str(path)],
+            )
+
     def test_sync_removes_the_adapter_of_a_deleted_ring_item(self):
         with _world() as world:
             item = _skill(world["project"] / ".orchflows" / "skills", "team-skill")

@@ -514,21 +514,112 @@ class TestScopedHostConfiguration(unittest.TestCase):
             expected_lib_path = (home / ".orchflows" / "lib").resolve()
             packages = install.discover_packages()
             templates = install.discover_workflow_skills()
+            sheets = install.discover_sheets()
             # One flat entry per canonical name — skills across every tier,
-            # packs, and invocable templates alike — no tier in the path.
-            self.assertEqual(len(packages) + len(templates), len(plan.by_name))
+            # packs, invocable templates and stamped sheets alike — no tier
+            # in the path.
             self.assertEqual(
-                {p.parent.name for p in packages} | {d.name for d, _, _ in templates},
+                len(packages) + len(templates) + len(sheets), len(plan.by_name),
+            )
+            self.assertEqual(
+                {p.parent.name for p in packages}
+                | {d.name for d, _, _ in templates}
+                | {d.name for d, _, _ in sheets},
                 {dest.parent.name for dest, _ in plan.by_name},
             )
+            sheet_names = {d.name for d, _, _ in sheets}
             for dest, content in plan.by_name:
                 self.assertEqual(by_name_root, dest.parent.parent.resolve())
-                self.assertEqual("SKILL.md", dest.name)
+                # The manifest name is what `scripts/rings.py` resolves, so a
+                # sheet's pointer carries the sheet's manifest name.
+                self.assertEqual(
+                    "SHEET.md" if dest.parent.name in sheet_names else "SKILL.md",
+                    dest.name,
+                )
                 frontmatter, body = install.split_frontmatter(content)
                 self.assertIn(f"name: {dest.parent.name}", frontmatter)
                 # Pointer only — names the canonical source, never duplicates it.
                 self.assertIn(str(expected_lib_path), body)
                 self.assertIn("follow it exactly.", body)
+
+    def test_a_sheet_directory_is_read_as_a_sheet_and_a_bare_one_is_not(self):
+        """Discovery, against a real tree rather than a mock: a directory
+        with the manifest and a `name` is a sheet; one without either is
+        library data that still reaches the lib copy but takes no name."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            good = root / "sheets" / "market-brief"
+            good.mkdir(parents=True)
+            (good / "SHEET.md").write_text(
+                "---\nname: market-brief\ndescription: d\npacks: [orch-code-pack]\n"
+                "---\n\n## Craft\n\nnarrow it\n",
+                encoding="utf-8",
+            )
+            (root / "sheets" / "references").mkdir()
+            (root / "sheets" / "references" / "notes.md").write_text("data\n", encoding="utf-8")
+            unnamed = root / "sheets" / "nameless"
+            unnamed.mkdir()
+            (unnamed / "SHEET.md").write_text("---\ndescription: d\n---\n", encoding="utf-8")
+
+            found = install.discover_sheets(root)
+
+            self.assertEqual(["market-brief"], [d.name for d, _, _ in found])
+            self.assertIn("packs: [orch-code-pack]", found[0][1])
+
+    def test_a_sheet_lands_in_the_lib_copy_and_takes_one_flat_pointer(self):
+        """Both halves of the installed surface a stamped item needs.
+
+        The copy: `sheets` is in `CANONICAL_DIRS`, the one list the lib-copy
+        loop walks -- witnessed here by `packs`, a canonical directory that
+        does exist in this tree, so the list membership is the copy.
+
+        The pointer: `by-name/<name>/SHEET.md`, naming the installed
+        manifest. Discovery is substituted because this repository carries
+        no sheet yet; what is graded is the planning the discovery feeds,
+        which is the half that would otherwise first run in a user's home.
+        """
+
+        from installer import planning as install_planning
+
+        self.assertIn("sheets", install.CANONICAL_DIRS)
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir(parents=True)
+            sheet_dir = install.REPO_ROOT / "sheets" / "market-brief"
+            frontmatter = "---\nname: market-brief\ndescription: d\n---"
+            with patch.object(install.Path, "home", return_value=home), \
+                    patch.object(
+                        install_planning, "discover_sheets",
+                        return_value=[(sheet_dir, frontmatter, "body")],
+                    ), mock_host_clis("claude"):
+                plan = install.build_plan("user", None)
+
+            lib_home = (home / ".orchflows" / "lib").resolve()
+            pointer = next(
+                (dest, text) for dest, text in plan.by_name
+                if dest.parent.name == "market-brief"
+            )
+            self.assertEqual(
+                lib_home / "by-name" / "market-brief" / "SHEET.md", pointer[0],
+            )
+            self.assertIn(
+                str(lib_home / "sheets" / "market-brief" / "SHEET.md"), pointer[1],
+            )
+            self.assertIn("name: market-brief", pointer[1])
+            # No host surface: a sheet is stamped, never invoked.
+            for surface in (plan.claude_adapters, plan.codex_prompts, plan.codex_skills):
+                self.assertEqual(
+                    [], [d for d, _ in surface if "market-brief" in str(d)],
+                )
+            # The copy loop's witness: a canonical directory that exists here
+            # has its files planned into lib, so `sheets` in the list is the
+            # same copy on the day a sheet exists.
+            sample = install.REPO_ROOT / "packs" / "orch-code-pack" / "SKILL.md"
+            self.assertIn(
+                (sample, plan.lib_home / sample.relative_to(install.REPO_ROOT)),
+                plan.lib_copies,
+            )
 
     def test_by_name_index_is_host_agnostic(self):
         # The flat index lives in the shared library, so it is built whether or
@@ -540,7 +631,9 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 plan = install.build_plan("user", None)
             self.assertEqual([], plan.claude_adapters)
             self.assertEqual(
-                len(install.discover_packages()) + len(install.discover_workflow_skills()),
+                len(install.discover_packages())
+                + len(install.discover_workflow_skills())
+                + len(install.discover_sheets()),
                 len(plan.by_name),
             )
 
