@@ -29,6 +29,7 @@ CANONICAL_WORKFLOW_IDS = frozenset({
     "self-improve",
     "skill-tournament",
     "super-research",
+    "tiktok-video",
 })
 EDGE_KINDS = frozenset({"sequence", "branch", "loop"})
 NODE_ID_RE = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
