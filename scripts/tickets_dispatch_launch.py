@@ -396,16 +396,24 @@ def _return_lines(assignment: dict) -> list:
     commit clause. A document-tree child does commit -- straight onto the
     coordinator's own branch -- so it keeps the clause, minus the sentence
     naming a candidate branch nothing was isolated to merge (finding F4).
+    The clause's own noun follows `git_candidate` too: a document-tree
+    lane has no candidate to be "inside", so it is told to commit in the
+    tree it is standing in instead of a noun with no antecedent (A2).
     """
 
     kind = assignment.get("artifact_kind")
     if assignment.get("commits_in_place"):
+        commit_lead = (
+            "Commit your work inside this candidate before you close;"
+            if assignment.get("git_candidate")
+            else "Commit your work in the tree you are standing in before you close;"
+        )
         merge_sentence = (
             ", and the landing merges the candidate, not your working tree."
             if assignment.get("git_candidate") else "."
         )
         lines = [
-            "Commit your work inside this candidate before you close; the closing "
+            f"{commit_lead} the closing "
             "note names that commit. Uncommitted bytes are not evidence" + merge_sentence,
         ]
     else:

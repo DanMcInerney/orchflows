@@ -40,6 +40,12 @@ from tests import helpers
 TESTS_DIR = Path(__file__).resolve().parent.parent
 FIXTURE_DIR = TESTS_DIR / "fixtures"
 CLI_FIXTURE_DIR = FIXTURE_DIR / "cli"
+# S1 exception: this is the outer orchflows-public checkout's root, four
+# levels above this package's own TESTS_DIR (super-research/tests ->
+# super-research -> skills -> .orchflows -> repository root), needed
+# because test_the_default_path_is_outside_any_repository_working_tree
+# below asserts the ledger path against the whole checkout, not just
+# this package.
 REPOSITORY_ROOT = TESTS_DIR.parents[3]
 
 # One frozen moment for every ledger row, and one adapter to hold the laws

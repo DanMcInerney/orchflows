@@ -16,6 +16,9 @@ from tests.test_static_tree_invariants_cases.cut_rules import (
     TestCutGoalAnchors,
     TestDependencyOrderedOverlap,
 )
+from tests.test_static_tree_invariants_cases.repo_root_derivation import (
+    TestRepoRootDerivationSitesAreOwnedOrExplained,
+)
 from tests.test_static_tree_invariants_cases.repository_shape import (
     TestEveryCaseClassIsRegistered,
     TestNoTempTreeIsDeletedWhileItIsTheCwd,

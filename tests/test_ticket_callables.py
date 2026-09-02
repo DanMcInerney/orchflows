@@ -369,7 +369,9 @@ class CallablePromptTest(CallableSinkTest):
         git candidate to merge: the launch keeps the commit clause and
         drops the sentence naming a candidate branch nothing was isolated
         to merge (finding F4; the prior law here was wrong -- it told this
-        child its pack commits nothing)."""
+        child its pack commits nothing). The clause's own noun follows
+        `git_candidate` too, so it never names a candidate this lane does
+        not have (A2)."""
 
         self.assertTrue(commits_in_place(DOC_PACK))
         self.assertFalse(git_candidate(DOC_PACK))
@@ -379,7 +381,11 @@ class CallablePromptTest(CallableSinkTest):
         answer = self.callable("do", "--pack", DOC_PACK)
 
         prompt = self.prompt(answer)
-        self.assertIn("Commit your work inside this candidate before you close", prompt)
+        self.assertIn(
+            "Commit your work in the tree you are standing in before you close",
+            prompt,
+        )
+        self.assertNotIn("this candidate", prompt)
         self.assertNotIn(
             "the landing merges the candidate, not your working tree.", prompt,
         )
@@ -515,9 +521,15 @@ class CallableLandingTest(CallableSinkTest):
     ):
         prompt = self.prompt(answer)
         if commits_in_place(pack):
-            self.assertIn(
-                "Commit your work inside this candidate before you close", prompt,
-            )
+            if git_candidate(pack):
+                self.assertIn(
+                    "Commit your work inside this candidate before you close", prompt,
+                )
+            else:
+                self.assertIn(
+                    "Commit your work in the tree you are standing in before you "
+                    "close", prompt,
+                )
         else:
             self.assertNotIn("Commit your work inside this candidate", prompt)
             self.assertIn(_workspace_line(craft_path(pack)), prompt)

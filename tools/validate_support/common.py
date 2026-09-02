@@ -10,10 +10,10 @@ import re
 import sys
 from pathlib import Path
 
-# tools/validate.py, the only entry point that loads this module, has
-# already put the repository root on sys.path before importing anything
-# under tools.validate_support -- so this leaf import needs no walk of
-# its own; it is a plain downstream read of the one repo-root fact.
+# Every entry point that loads this module -- tools/validate.py, and the
+# test modules that import tools.validate_support.* directly -- already
+# has the repository root on sys.path, so this leaf import needs no walk
+# of its own; it is a plain downstream read of the one repo-root fact.
 from scripts._bootstrap import ROOT
 
 # What a check says when the tree it grades is not here. One wording, so a
