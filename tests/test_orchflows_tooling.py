@@ -77,6 +77,22 @@ def _cli(*argv):
     return code, out.getvalue(), err.getvalue()
 
 
+def _built(world, kind: str, name: str, item_dir):
+    """One item's environment, stamped by the production path, built by nobody."""
+
+    return orchflows_envs.ensure(
+        kind, name, item_dir, home=world["home"],
+        builder=lambda env, requirements: env.mkdir(parents=True, exist_ok=True),
+    )
+
+
+class _Completed:
+    """What `subprocess.run` returns, for the checks that record a spawn."""
+
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
+
+
 def _runner(codes):
     """A probe runner reading `(exit code, output)` out of a table by argv[0]."""
 
@@ -186,6 +202,30 @@ class ResolutionTests(unittest.TestCase):
 
             self.assertEqual(1, len(reports), reports)
             self.assertIn("could not run", reports[0]["detail"])
+
+    def test_the_spawn_takes_the_file_path_resolves_not_the_bare_name(self):
+        """The one check that crosses the real spawn site.
+
+        A spawn is not a shell: on Windows `npm` and `pnpm` are `.CMD` shims
+        `CreateProcess` cannot find by name, so a bare argv[0] raises and
+        every probe and version read through it reads as missing.
+        """
+
+        shim = "C:\\tools\\npm.CMD"
+        spawned = []
+
+        def record(argv, **options):
+            spawned.append(list(argv))
+            return _Completed(0, "11.12.1\n")
+
+        with patch("scripts.orchflows_tools.subprocess.run", record):
+            resolved = orchflows_tools.run(
+                ["npm", "--version"], 1.0, which=lambda name: shim,
+            )
+            orchflows_tools.run([ABSENT, "--version"], 1.0, which=_which())
+
+        self.assertEqual([[shim, "--version"], [ABSENT, "--version"]], spawned)
+        self.assertEqual((0, "11.12.1\n"), resolved)
 
     def test_a_version_spec_is_read_off_version_output_only_when_it_parses(self):
         with _world() as world:
@@ -399,6 +439,41 @@ class NodeTests(unittest.TestCase):
             self.assertEqual("skipped", outcomes[0]["action"])
             self.assertIn(f"orchflows trust {bundle}", outcomes[0]["detail"])
 
+    def test_the_install_spawns_the_file_path_resolves_not_the_bare_name(self):
+        with _world() as world:
+            item = _item(
+                world["home"] / "skills", "skill", "capture",
+                {"package.json": "{}\n", "package-lock.json": "{}\n"},
+            )
+            shim = "C:\\tools\\npm.CMD"
+            spawned = []
+
+            def record(argv, **options):
+                spawned.append((list(argv), options.get("cwd")))
+                return _Completed()
+
+            with patch("scripts.orchflows_node.subprocess.run", record):
+                orchflows_node.install(item, ("npm", "ci"), which=lambda name: shim)
+
+            self.assertEqual([([shim, "ci"], str(item))], spawned)
+
+    def test_a_manager_that_cannot_start_is_raised_as_the_install_failure(self):
+        with _world() as world:
+            item = _item(
+                world["home"] / "skills", "skill", "capture",
+                {"package.json": "{}\n", "package-lock.json": "{}\n"},
+            )
+
+            def refuse(argv, **options):
+                raise FileNotFoundError(2, "The system cannot find the file specified")
+
+            with patch("scripts.orchflows_node.subprocess.run", refuse):
+                with self.assertRaises(RuntimeError) as raised:
+                    orchflows_node.install(item, ("npm", "ci"), which=_which())
+
+            self.assertIn("npm ci", str(raised.exception))
+            self.assertIn(str(item), str(raised.exception))
+
     def test_a_failed_install_leaves_no_stamp_to_reuse(self):
         with _world() as world:
             item = _item(
@@ -440,6 +515,46 @@ class PruneTests(unittest.TestCase):
             self.assertFalse(orphan.exists())
             self.assertTrue(kept.is_dir())
             self.assertTrue(stranger.is_dir())
+
+    def test_a_project_items_environment_survives_a_prune_from_elsewhere(self):
+        """Environments are machine-wide; an inventory is read from one place.
+
+        A project ring's items are in the inventory only inside that project,
+        so a plain `orchflows sync` run from anywhere else must not read
+        every other project's built environment as an orphan.
+        """
+
+        with _world() as world:
+            bundle = world["project"] / rings.BUNDLE_DIR
+            item = _item(
+                bundle / "skills", "skill", "heavy", {"requirements.txt": "torch\n"},
+            )
+            env = Path(_built(world, "skill", "heavy", item)["env"])
+
+            inside = orchflows_envs.prune(
+                _inventory(world, project=bundle), home=world["home"],
+            )
+            outside = orchflows_envs.prune(_inventory(world), home=world["home"])
+
+            self.assertEqual(([], []), (inside, outside))
+            self.assertTrue(env.is_dir())
+
+    def test_an_environment_whose_declaration_left_the_machine_is_pruned(self):
+        with _world() as world:
+            item = _item(
+                world["home"] / "skills", "skill", "fetcher",
+                {"requirements.txt": "requests==2.32.3\n"},
+            )
+            env = Path(_built(world, "skill", "fetcher", item)["env"])
+            shutil.rmtree(item)
+
+            removed = orchflows_envs.prune(_inventory(world), home=world["home"])
+
+            self.assertEqual(
+                [("skill", "fetcher", "pruned", str(env))],
+                [(r["kind"], r["name"], r["action"], r["env"]) for r in removed],
+            )
+            self.assertFalse(env.exists())
 
     def test_prune_says_nothing_when_there_is_no_environments_tree_at_all(self):
         with _world() as world:

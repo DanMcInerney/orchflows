@@ -269,16 +269,35 @@ def sync(
     return outcomes
 
 
+def orphaned(env: Path, kind: str, name: str, claimed) -> bool:
+    """Whether one built environment's declaration is gone from the machine.
+
+    Not "absent from this inventory": environments are keyed machine-wide by
+    ``(kind, name)`` while an inventory is read from wherever ``sync`` was
+    run, so a project ring's items are in it only inside that project. The
+    stamp is what settles it -- it carries the ``requirements.txt`` that
+    built the environment, so a declaration still on disk means an item that
+    is still there, visible from this vantage or another one. Only an
+    environment with no stamp to read falls back to the inventory, which is
+    the one claim a half-built tree can carry.
+    """
+
+    stamp = read_stamp(env)
+    declared = stamp.get("requirements") if stamp is not None else None
+    if isinstance(declared, str) and declared:
+        return not Path(declared).exists()
+    return (kind, name) not in claimed
+
+
 def prune(
     records: List[Dict[str, object]], *, home=None
 ) -> List[Dict[str, object]]:
-    """Remove the environment of every item the inventory no longer holds.
+    """Remove the environment of every item that is gone from the machine.
 
     An environment is derived from an item's declaration, so an item that
     left the ring leaves nothing behind that is worth keeping -- and a
     ``envs/`` that grows a directory per item ever installed is a machine
-    the user cannot reason about. The inventory is the same one ``sync``
-    builds from, so exactly the orphans go.
+    the user cannot reason about. What "left" means is ``orphaned``'s.
 
     Only this module's own layout is touched: a directory under a kind name
     orchflows knows, itself named like an item. A removal that fails raises
@@ -289,7 +308,7 @@ def prune(
     root = (Path(home) if home is not None else rings.home_ring()) / ENVS_DIR
     if not root.is_dir():
         return []
-    keep = {(str(record["kind"]), str(record["name"])) for record in records}
+    claimed = {(str(record["kind"]), str(record["name"])) for record in records}
     removed = []
     for kind_dir in sorted(path for path in root.iterdir() if path.is_dir()):
         if kind_dir.name not in rings.KINDS:
@@ -297,7 +316,7 @@ def prune(
         for env in sorted(path for path in kind_dir.iterdir() if path.is_dir()):
             if not rings.NAME_RE.fullmatch(env.name):
                 continue
-            if (kind_dir.name, env.name) in keep:
+            if not orphaned(env, kind_dir.name, env.name, claimed):
                 continue
             shutil.rmtree(env)
             removed.append({
@@ -310,6 +329,6 @@ def prune(
 __all__ = (
     "ACTIONS", "ENVS_DIR", "REQUIREMENTS_NAME", "STAMP_NAME", "STAMP_SCHEMA",
     "UNBUILT_REMEDY", "UNTRUSTED_REMEDY", "action", "build", "digest",
-    "ensure", "env_home", "interpreter", "prune", "read_stamp",
+    "ensure", "env_home", "interpreter", "orphaned", "prune", "read_stamp",
     "requirement_lines", "requirements_of", "resolve_interpreter", "sync",
 )

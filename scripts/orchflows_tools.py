@@ -155,12 +155,39 @@ def _argv(command: str) -> List[str]:
     ]
 
 
-def run(argv: Sequence[str], timeout: float) -> Tuple[Optional[int], str]:
-    """``(exit code, output)`` for one probe; ``None`` when it could not run."""
+def executable(name: str, which: Optional[Callable[[str], Optional[str]]] = None) -> str:
+    """The file ``PATH`` resolves a command name to, or the name unchanged.
 
+    A spawn is not a shell. ``CreateProcess`` searches ``PATH`` but appends
+    only ``.exe``, never the rest of ``PATHEXT``, so a bare ``npm`` cannot
+    start on Windows, where node's package managers ship as ``npm.CMD``
+    shims that ``PATH`` resolves perfectly well. Spawning what ``which``
+    already found starts the same file on every platform. A name that
+    resolves to nothing is returned unchanged, so a spawn that was going to
+    fail still fails where it did.
+    """
+
+    resolved = (shutil.which if which is None else which)(name)
+    return resolved or name
+
+
+def run(
+    argv: Sequence[str],
+    timeout: float,
+    *,
+    which: Optional[Callable[[str], Optional[str]]] = None,
+) -> Tuple[Optional[int], str]:
+    """``(exit code, output)`` for one probe; ``None`` when it could not run.
+
+    The head of ``argv`` is spawned as ``executable`` resolves it.
+    """
+
+    argv = list(argv)
+    if argv:
+        argv[0] = executable(str(argv[0]), which)
     try:
         completed = subprocess.run(
-            list(argv), capture_output=True, text=True,
+            argv, capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=timeout, check=False,
         )
     except (OSError, subprocess.SubprocessError):
@@ -293,6 +320,6 @@ def check_inventory(records: List[Dict[str, object]], **overrides) -> List[Dict[
 __all__ = (
     "ENV_KEYWORD", "ENV_NAME_RE", "GRAMMAR", "PROBE_SEPARATOR", "PROBE_TIMEOUT",
     "SPEC_RE", "TOOLS_NAME", "TOOL_NAME_RE", "VERSION_FLAG", "VERSION_TOKEN_RE",
-    "check", "check_inventory", "declarations", "parse_line", "resolve", "run",
-    "tools_of",
+    "check", "check_inventory", "declarations", "executable", "parse_line",
+    "resolve", "run", "tools_of",
 )

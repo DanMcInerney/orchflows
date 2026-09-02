@@ -36,9 +36,10 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 try:
-    from scripts import orchflows_envs, rings
+    from scripts import orchflows_envs, orchflows_tools, rings
 except ImportError:  # pragma: no cover - direct/installed flat script path
     import orchflows_envs
+    import orchflows_tools
     import rings
 
 
@@ -118,10 +119,29 @@ def action(item_dir, lockfile: Path) -> str:
     return "reuse" if stamp["lock_sha256"] == digest(lockfile) else "install"
 
 
-def install(item_dir, command: Tuple[str, ...]) -> None:
-    """Run the lockfile install in the item directory, or raise loudly."""
+def install(
+    item_dir,
+    command: Tuple[str, ...],
+    *,
+    which: Optional[Callable[[str], Optional[str]]] = None,
+) -> None:
+    """Run the lockfile install in the item directory, or raise loudly.
 
-    completed = subprocess.run(list(command), cwd=str(item_dir), check=False)
+    The manager is spawned as ``orchflows_tools.executable`` resolves it: on
+    Windows ``npm`` and ``pnpm`` are ``.CMD`` shims that a bare name cannot
+    start. A spawn that cannot start at all is raised as the same failure a
+    non-zero exit is, rather than escaping as an ``OSError`` into a caller
+    that is reporting on every other item.
+    """
+
+    argv = [orchflows_tools.executable(command[0], which), *command[1:]]
+    try:
+        completed = subprocess.run(argv, cwd=str(item_dir), check=False)
+    except OSError as error:
+        raise RuntimeError(
+            f"node dependency installation could not start in {item_dir} "
+            f"({' '.join(command)}: {error})"
+        ) from error
     if completed.returncode != 0:
         raise RuntimeError(
             f"node dependency installation failed in {item_dir} "
