@@ -52,10 +52,14 @@
     agent file; every-dispatch units next — kernel bodies, pack
     `SKILL.md`, a pack's craft as
     [contracts/pack-signature.md](../contracts/pack-signature.md)
-    mandates; every-run units widest — workflow bodies. Every number is
+    mandates, and a stamped sheet; every-run units widest — workflow
+    bodies. Every number is
     `common.py`'s (`SURFACE_BUDGET`, `ROUTING_BLOCK_BUDGET`,
-    `ROLE_AGENT_BUDGET`, `BODY_BUDGET`); the eight-demand cap is not a
-    body ceiling and is not owned there.
+    `ROLE_AGENT_BUDGET`, `BODY_BUDGET`, `SHEET_BUDGET`); the eight-demand
+    cap is not a body ceiling and is not owned there. `SHEET_BUDGET`
+    alone counts non-empty lines, because
+    [contracts/sheet.md](../contracts/sheet.md) bounds a list of criteria
+    rather than prose.
     Counted in words with link targets
     stripped by tools/validate.py. A ticket carries no such ceiling: it
     is written for one child and read by one child, so its length is
