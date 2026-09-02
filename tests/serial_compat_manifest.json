@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2218,
+  "count": 2233,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1007,6 +1007,21 @@
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_host_and_frontier_establish_the_workspace_before_dispatch",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_plan_route_consumes_the_root_shape_it_sealed",
    "test_thin_orchestrator.ThinOrchestratorContractTests.test_team_lane_emits_the_wave_lifecycle",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_a_checkout_without_by_name_falls_back_to_the_resolved_skill",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_a_declared_environment_adds_the_interpreter_line",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_a_do_stamping_no_skill_enters_the_kernel_verb_as_before",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_no_declared_environment_leaves_the_interpreter_line_off",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_contract_path_is_the_installers_flat_by_name_file",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_identity_line_enters_the_applied_skill_and_its_file",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_judge_verb_names_its_own_contract",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_second_line_binds_the_ticket_to_the_kernel_contract",
+   "test_ticket_applied_skill.AppliedSkillPromptTest.test_the_stamp_moves_the_first_line_and_adds_exactly_one",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_kernel_verb_is_refused_as_an_applied_skill",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_matching_role_mints_on_each_verb",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_planner_skill_is_refused_on_do",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_skill_declaring_no_role_is_refused_rather_than_assumed",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_a_worker_skill_is_refused_on_judge",
+   "test_ticket_applied_skill.AppliedSkillRefusalTest.test_an_unresolvable_skill_is_refused_by_name",
    "test_ticket_callables.CallableAdmissionTest.test_a_child_edited_after_it_was_minted_is_bound_by_nothing",
    "test_ticket_callables.CallableAdmissionTest.test_a_child_whose_parent_the_seal_does_not_name_is_refused",
    "test_ticket_callables.CallableAdmissionTest.test_parent_and_child_both_admit_and_the_parent_owns_no_members",
@@ -1102,7 +1117,7 @@
    "test_ticket_pins.PinnedItemResolutionTest.test_an_unresolvable_item_is_refused_by_name_rather_than_pinned",
    "test_ticket_pins.PinnedItemResolutionTest.test_the_drift_refusal_names_the_item_the_ring_and_both_digests",
    "test_ticket_pins.PinnedItemResolutionTest.test_two_rings_holding_one_name_hash_to_two_digests",
-   "test_ticket_pins.StampedCallableTest.test_a_do_without_the_flags_is_unchanged_in_frontmatter_and_prompt",
+   "test_ticket_pins.StampedCallableTest.test_a_do_without_the_flags_carries_no_new_frontmatter_field",
    "test_ticket_pins.StampedCallableTest.test_a_sheet_that_moves_after_the_mint_refuses_at_admission",
    "test_ticket_pins.StampedCallableTest.test_a_stamped_do_pins_both_kinds_and_admits",
    "test_ticket_pins.StampedCallableTest.test_a_stamped_judge_pins_the_same_way",
@@ -2221,7 +2236,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "01872bf75eea2ad29dce56b3607dffb0ec14c1617b4273928d5265b4584b25f8"
+  "sha256": "115934fa04ea26e56cfe53e5372a34d02aa299737dfbc7c7936fb705b8153a86"
  },
  "mutation_owners": [
   {
@@ -4666,6 +4681,23 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_applied_skill",
+   "owner": "AppliedSkillPromptTest.test_the_contract_path_is_the_installers_flat_by_name_file",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_ticket_applied_skill",
+   "owner": "AppliedSkillTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch",
+    "threads"
    ]
   },
   {
