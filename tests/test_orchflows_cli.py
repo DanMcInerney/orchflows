@@ -6,6 +6,7 @@ import contextlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -224,6 +225,44 @@ class NewTests(unittest.TestCase):
             self.assertTrue((project / ".orchflows" / "workflows" / "team-flow" / "SKILL.md").is_file())
             self.assertIn("orchflows trust", output)
 
+    def test_a_new_sheet_is_a_valid_sheet_the_day_it_is_written(self):
+        """The scaffold's whole promise, on the kind that has no host
+        surface to notice a defect later: what `orchflows new sheet` writes
+        passes the library validator's sheet checks unedited.
+
+        It is graded by the real checks against a tree holding the real
+        `packs/`, not by a re-listing of the anchors here -- a skeleton that
+        named a pack no install carries, or keyed its `## Lens` by a kind
+        that pack's adapter never emits, would satisfy an anchor list and
+        still be a sheet no ticket could stamp.
+        """
+
+        from tools.validate_support import packages as validate_packages
+        from tools.validate_support import sheets as validate_sheets
+
+        with _home() as home:
+            with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
+                (home / "nowhere").mkdir()
+                code, output = _run("new", "sheet", "market-brief")
+
+            self.assertEqual(0, code, output)
+            manifest = home / "sheets" / "market-brief" / "SHEET.md"
+            self.assertTrue(manifest.is_file())
+
+            graded = home / "graded"
+            (graded / "sheets").mkdir(parents=True)
+            shutil.copytree(ROOT / "packs", graded / "packs")
+            shutil.copytree(manifest.parent, graded / "sheets" / "market-brief")
+            diag = validate_packages.Diagnostics()
+            for module in (validate_packages, validate_sheets):
+                module.ROOT = graded
+            try:
+                validate_sheets.validate_sheets(diag)
+            finally:
+                for module in (validate_packages, validate_sheets):
+                    module.ROOT = ROOT
+            self.assertEqual([], diag.lines())
+
     def test_a_reserved_name_is_refused_before_anything_is_written(self):
         with _home() as home:
             with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
@@ -261,6 +300,26 @@ class ListTests(unittest.TestCase):
                 rings_trust.grant(project / ".orchflows")
                 _code, after = _run("list", "--kind", "workflow")
             self.assertEqual("trusted", _row(after, "team-flow")[3])
+
+    def test_a_sheet_is_listed_like_every_other_ring_item(self):
+        """A sheet has no host surface, so `list` is the only place a user
+        sees one at all: absent from the inventory it is an item that
+        resolves and cannot be found."""
+
+        with _home() as home:
+            (home / "sheets" / "market-brief").mkdir(parents=True)
+            (home / "sheets" / "market-brief" / "SHEET.md").write_text(
+                "---\nname: market-brief\n---\n", encoding="utf-8",
+            )
+
+            with patch.object(rings.Path, "cwd", return_value=home / "nowhere"):
+                (home / "nowhere").mkdir()
+                code, output = _run("list", "--kind", "sheet")
+
+            self.assertEqual(0, code, output)
+            self.assertEqual(
+                ["sheet", "market-brief", "home"], _row(output, "market-brief")[:3],
+            )
 
     def test_list_names_a_reserved_ring_item_rather_than_hiding_it(self):
         with _home() as home:

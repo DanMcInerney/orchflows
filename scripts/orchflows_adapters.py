@@ -20,9 +20,10 @@ before the model saw anything would make a cloned repository an execution
 surface, and orchflows cannot gate a host's own loading of a committed
 `.claude/skills/` (FM-6). What it can do is put nothing executable there.
 
-Packs get no adapter. A pack is stamped on a ticket, never invoked by
-name, so a pack in a host's skill list would be a name that cannot be
-called crowding the list of names that can (FM-13).
+Packs and sheets get no adapter. Both are stamped on a ticket and never
+invoked by name, so either one in a host's skill list would be a name that
+cannot be called crowding the list of names that can (FM-13).
+`ADAPTED_KINDS` is where that is decided, for every kind at once.
 """
 
 from __future__ import annotations

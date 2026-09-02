@@ -99,6 +99,62 @@ is a command, and whose close carries a judge child or an
 """
 
 
+# A sheet is extra craft stamped beside a pack, so its skeleton is the one
+# that cannot be domain-blind the way the others are: it has to name a pack
+# that resolves in this installation and key its `## Lens` by a kind that
+# pack's adapter emits, or `write` scaffolds a sheet the validator refuses
+# and no ticket could stamp. Both facts are read from the installed packs
+# below rather than spelled here -- a pack name written into this module
+# would be a domain name inside machinery, which `tools/validate.py`
+# refuses, and would go stale the day that pack is renamed.
+_SHEET = """---
+name: {name}
+description: One sentence saying when to stamp {name} beside its pack.
+packs: [{pack}]
+---
+
+# {name}
+
+## Craft
+
+What this sheet adds to the stamped pack's craft for the maker. Additive
+and tighten-only: never loosen what the craft already requires.
+
+## Lens
+
+### {kind}
+
+What a judge checks here beside the craft's own `### {kind}` entry.
+"""
+
+
+def _sheet_binding():
+    """`(pack, artifact kind)` the sheet skeleton is written against.
+
+    The first pack resolvable from here by name, and the kind its own
+    adapter emits. Deterministic, so two scaffolds in one installation
+    agree; refused rather than guessed where no pack resolves, because a
+    sheet with no pack is a sheet nothing may stamp.
+    """
+
+    if __package__:
+        from .tickets_adapters import AdapterError, adapter_spec
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_adapters import AdapterError, adapter_spec
+    for record in rings.inventory(("pack",)):
+        if record.get("reserved") and record.get("refusal"):
+            continue
+        try:
+            return str(record["name"]), adapter_spec(str(record["name"])).artifact_kind
+        except AdapterError:
+            continue
+    raise rings.RingError(
+        "no-pack-to-stamp",
+        "no pack resolves from here, so a sheet skeleton would name none; "
+        f"install the library or author the sheet by hand against {AUTHORING_DOC}",
+    )
+
+
 def _craft(name: str) -> str:
     body = [f"# {name} craft", ""]
     for heading, prompt in _CRAFT_SECTIONS:
@@ -124,6 +180,12 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
         ]
     if kind == "workflow":
         return [("SKILL.md", _WORKFLOW.format(name=name))]
+    if kind == "sheet":
+        pack, artifact_kind = _sheet_binding()
+        return [(
+            rings.MANIFESTS["sheet"],
+            _SHEET.format(name=name, pack=pack, kind=artifact_kind),
+        )]
     # Every kind is named, and an unnamed one refuses. The tail used to
     # fall through to the workflow skeleton, so a kind added to
     # `rings.KINDS` before its skeleton existed would have written a
