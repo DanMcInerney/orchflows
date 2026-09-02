@@ -13,6 +13,7 @@ import os
 import sys
 import unittest  # noqa: F401  (re-exported to the case modules)
 from datetime import datetime, timezone
+from pathlib import Path
 
 from tests._repo_root import ROOT
 if str(ROOT) not in sys.path:
