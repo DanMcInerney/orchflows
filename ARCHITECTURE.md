@@ -33,17 +33,16 @@ family's five owner modules.
 - [`scripts/`](scripts/) owns repository automation. Programs use Python
   3.9+, Windows and POSIX, then no network. An unprefixed family module is
   the public command and import facade; same-family helpers own internal concerns.
-  `tickets_format.py` owns syntax, closed parsers, and the pack registry;
+  `tickets_format.py` owns syntax, closed parsers, the pack registry;
   `tickets_markdown.py` semantic payload parsing and byte preservation;
   `tickets_admission.py` receipt lifecycle; `tickets_generations.py` immutable
   generation and seal identities; `tickets_project.py` run-project binding;
-  `tickets_dispatch_schema.py` validates dispatch grammar; `tickets_attempts.py`
+  `tickets_dispatch_schema.py` dispatch-grammar validation; `tickets_attempts.py`
   mutates atomically;
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
   `tickets_emission.py` emission grading; `tickets_issue_render.py`
   issuance markdown; `tickets_mint.py` and `tickets_frame.py` the callable
-  and frame minting commands; `tickets_shape.py` the shape-line grammar a
-  frame states its wave plan in;
+  and frame minting commands; `tickets_shape.py` shape-line grammar;
   `tickets_dispatch_launch.py` the host binding,
   `tickets_dispatch_launch_lines.py` the prompt's lines. `cutcheck.py`
   owns structural graph validation.
