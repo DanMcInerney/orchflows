@@ -246,11 +246,60 @@ class ReturnLineConditionalTest(unittest.TestCase):
             "Commit your work in the tree you are standing in before you close",
             prompt,
         )
-        self.assertNotIn("candidate", prompt)
+        # the two sentences that would name a candidate nothing isolated;
+        # never the whole prompt, whose script paths carry the checkout's
+        # own directory name (a worktree called *-candidate-* made the
+        # broad form red with the clause itself correct)
+        self.assertNotIn("inside this candidate", prompt)
+        self.assertNotIn("the landing merges the candidate", prompt)
         self.assertNotIn("Your stamped pack commits nothing", prompt)
         self.assertIn(
             "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", prompt,
         )
+
+
+class IdentityLineTest(unittest.TestCase):
+    """The first line names the entry mechanism, its argument, and the guard.
+
+    "Apply skill X" named no mechanism; the 2026-09-01 census of 56 live
+    dispatches found 33 children guessing the Skill tool, whose fork
+    arrived with nothing and refused before a re-call with hand-typed
+    arguments (6 of 24 paraphrased). The line now says which tool, that
+    the argument is this whole prompt verbatim, and what a fork already
+    running as the skill does with the same sentence.
+    """
+
+    def prompt(self, **overrides) -> str:
+        facts = dict(ReturnLineConditionalTest().assignment(
+            pack="orch-code-pack", artifact_kind="git", commits_in_place=True,
+            git_candidate=True, workspace_line=None,
+        ))
+        facts.update(overrides)
+        return launch.launch_prompt(facts)
+
+    def test_the_first_line_names_the_skill_tool_and_the_verbatim_argument(self):
+        first = self.prompt(skill_path="/lib/orch-do/SKILL.md").split("\n")[0]
+        self.assertIn("Call the Skill tool with skill `orch-do`", first)
+        self.assertIn("this entire prompt, verbatim, as its arguments", first)
+        self.assertIn("/lib/orch-do/SKILL.md", first)
+        self.assertIn("/sink/run/T.md", first)
+        self.assertIn("Read that ticket whole", first)
+
+    def test_the_first_line_tells_a_fork_already_inside_to_work_in_place(self):
+        """The fork reads this same prompt as its arguments; without the
+        guard it would call the tool again and recurse."""
+
+        first = self.prompt().split("\n")[0]
+        self.assertIn("Already running as that skill, do the work here", first)
+        self.assertIn("never invoke it again", first)
+
+    def test_no_skill_path_drops_only_the_file_clause(self):
+        first = self.prompt().split("\n")[0]
+        self.assertNotIn("skill's file", first)
+        self.assertIn("Your ticket is /sink/run/T.md", first)
+
+    def test_the_old_apply_wording_is_gone(self):
+        self.assertNotIn("Apply skill", self.prompt(skill_path="/x/SKILL.md"))
 
 
 class DispatchLaunchTest(unittest.TestCase):

@@ -87,8 +87,11 @@ and that every check runs to completion in the turn it starts with an
 explicit timeout longer than the check and any backgrounded command killed
 once superseded. It teaches no verdict token and no filing taxonomy: a child
 files evidence into one channel, never a disposition and never a heading of
-the protocol's choosing. It names no skill for the child to invoke and no
-pack for it to resolve: it hands the paths. The
+the protocol's choosing. It names the one mechanism for entering the applied
+skill — the host's Skill tool, with the whole prompt forwarded verbatim as
+the arguments, so the skill's fork arrives holding the assignment and a
+child already running as the skill works in place — and names no pack for
+the child to resolve: it hands the craft path. The
 public command emits ASCII-escaped canonical JSON, preserving every prompt
 character independently of the subprocess code page.
 

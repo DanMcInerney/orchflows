@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2117,
+  "count": 2121,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -113,6 +113,10 @@
    "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_carries_every_fact_a_child_cannot_derive",
    "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_names_the_identities_every_record_is_filed_under",
    "test_dispatch_launch.DispatchLaunchTest.test_the_removed_carriage_selectors_are_ordinary_unknown_arguments",
+   "test_dispatch_launch.IdentityLineTest.test_no_skill_path_drops_only_the_file_clause",
+   "test_dispatch_launch.IdentityLineTest.test_the_first_line_names_the_skill_tool_and_the_verbatim_argument",
+   "test_dispatch_launch.IdentityLineTest.test_the_first_line_tells_a_fork_already_inside_to_work_in_place",
+   "test_dispatch_launch.IdentityLineTest.test_the_old_apply_wording_is_gone",
    "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
    "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
    "test_dispatch_launch.LandTest.test_land_imports_the_outcome_it_is_handed",
@@ -2120,7 +2124,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "6f09971687a378b9eafe8a528c31a5d4aa4889285a7af5ca050b7a3bde422394"
+  "sha256": "e6a6dcfc7b91d335405cb30c27d2af14e424291ed60cf58ea291970056cda716"
  },
  "mutation_owners": [
   {

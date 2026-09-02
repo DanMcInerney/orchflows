@@ -262,25 +262,41 @@ def _command(*arguments) -> str:
 
 
 def _identity_line(assignment: dict) -> str:
-    """The prompt's first fact: which skill, at which file, for which ticket.
+    """The prompt's first fact: which skill, how to enter it, for which ticket.
 
-    S7(a): the installed by-name layout is documented in the host block a
-    forked child provably never receives (run 20260901T181410Z, B1.13's
-    first-person evidence), so the one line that already names the skill
-    and the ticket path carries the skill's own resolved file too --
-    nothing is left for the child to search the filesystem for.
-    `tickets_assignment.py` resolves it through the one ring resolver;
-    `None` only for a hand-built assignment that skips that resolution.
+    The skill is entered through the host's Skill tool with this whole
+    prompt as the arguments. "Apply skill X" named no mechanism, and the
+    2026-09-01 transcript census (56 dispatches, 9 runs) showed the
+    children splitting on the guess: 33 called the Skill tool, whose
+    installed adapter forks a fresh agent of the same role, and every one
+    of those forks arrived holding no assignment and refused (32 refusals,
+    ~24s each) before the child re-called it with hand-typed arguments --
+    18 verbatim, 6 paraphrased with lines dropped. The other 23 read the
+    skill file and worked in-context. Naming the mechanism and the
+    argument -- the prompt itself, verbatim -- makes the first call the
+    one that works and closes the paraphrase channel. The second sentence
+    is the recursion guard: the fork reads this same prompt as its
+    arguments, and the installed fork-arrival clause says the same thing
+    from its side (`installer.packages.FORK_ARRIVAL_CLAUSE`).
+
+    S7(a): the skill's resolved file still rides along -- a child on a
+    host without a Skill tool, or one reading the body for itself, has
+    nothing left to search the filesystem for. `tickets_assignment.py`
+    resolves it through the one ring resolver; `None` only for a
+    hand-built assignment that skips that resolution.
     """
 
     skill_path = assignment.get("skill_path")
-    named = (
-        f"Apply skill {assignment['executor']}, whose file is {skill_path},"
-        if skill_path else f"Apply skill {assignment['executor']}"
+    located = (
+        f"That skill's file is {skill_path}; your ticket is "
+        if skill_path else "Your ticket is "
     )
     return (
-        f"{named} to ticket {assignment['ticket_path']}. Read that ticket "
-        "whole: it is your assignment, and there is no other copy of it."
+        f"Call the Skill tool with skill `{assignment['executor']}` and pass "
+        "this entire prompt, verbatim, as its arguments. Already running as "
+        "that skill, do the work here and never invoke it again. "
+        f"{located}{assignment['ticket_path']}. Read that ticket whole: it is "
+        "your assignment, and there is no other copy of it."
     )
 
 

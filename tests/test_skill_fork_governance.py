@@ -84,6 +84,14 @@ CLAUSE_PROPERTIES = {
     "claim no name": "no invented identity",
     "derive no objective": "a self-scoped fork writes an unfalsifiable check",
     "forward your prompt or refuse": "the by-name invocation boundary",
+    "you are that skill": (
+        "the arrival that holds a launch prompt is the skill's own "
+        "execution, not a second invoker: the launch prompt's first line "
+        "tells the child to enter the skill through the Skill tool with the "
+        "whole prompt as arguments, and the fork reads that same line, so "
+        "without this sentence the fork would invoke itself again"
+    ),
+    "never invoke it again": "the recursion guard's mechanism, named",
 }
 
 #: Wordings the clause must NOT use, and the owner each belongs to.
