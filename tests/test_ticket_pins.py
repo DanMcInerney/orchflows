@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import contextlib
 import os
-import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -29,10 +28,6 @@ from tests.test_ticket_callables import CODE_PACK, CallableSinkTest
 
 SHEET = "market-brief"
 APPLIED_SKILL = "house-style"
-# The one thing two prompts minted seconds apart differ by on their own: the
-# absolute lease. Normalized away rather than tolerated as a diff, so the
-# comparison below still fails on any other difference.
-STAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
 
 
 def _sheet(root: Path, name: str, body: str) -> Path:
@@ -45,12 +40,21 @@ def _sheet(root: Path, name: str, body: str) -> Path:
     return path
 
 
-def _skill(root: Path, name: str, body: str, sublayer: str = "") -> Path:
-    """One skill manifest. `sublayer` is the library's own extra level."""
+def _skill(root: Path, name: str, body: str, sublayer: str = "",
+           role: str = "worker") -> Path:
+    """One skill manifest. `sublayer` is the library's own extra level.
+
+    The `role:` is declared because U2 refuses a `--skill` whose declared
+    role is not the verb's, and every mint below applies this skill on a
+    `do`: a role-less fixture would be refused at the flag and never reach
+    the pin these cases are about.
+    """
 
     path = root / "skills" / sublayer / name / rings.MANIFESTS["skill"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(f"---\nname: {name}\n---\n\n{body}\n".encode("utf-8"))
+    path.write_bytes(
+        f"---\nname: {name}\nrole: {role}\n---\n\n{body}\n".encode("utf-8")
+    )
     return path
 
 
@@ -366,21 +370,20 @@ class StampedCallableTest(CallableSinkTest):
         self.assertIn("no-such-sheet", answer["error"])
         self.assertFalse(self.run_dir().exists())
 
-    def test_a_do_without_the_flags_is_unchanged_in_frontmatter_and_prompt(self):
-        """U0's own boundary: the pin exists, and nothing else moved.
+    def test_a_do_without_the_flags_carries_no_new_frontmatter_field(self):
+        """U0's own boundary: a ticket that stamps nothing gains nothing.
 
         The frontmatter keys are pinned as a sequence, so a field appearing
         on a ticket that stamped nothing fails here rather than at whatever
-        reads the ticket next. The two prompts are compared because U0 adds
-        no prompt line -- U1 does, and this is the assertion it has to
-        change.
+        reads the ticket next.
+
+        U0 also compared the two prompts, on the ground that it added no
+        prompt line. U2 adds two for an applied skill, so that comparison
+        now lives in `tests/test_ticket_applied_skill.py`, which asserts
+        the stronger thing: exactly which lines the stamp may move.
         """
 
         plain = self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
-        stamped = self.callable(
-            "do", "--pack", CODE_PACK, "--isolation", "required",
-            "--sheet", SHEET, "--skill", APPLIED_SKILL,
-        )
 
         self.assertEqual(
             [
@@ -391,14 +394,6 @@ class StampedCallableTest(CallableSinkTest):
             ],
             list(_parse_frontmatter(self.ticket_text(plain["do"]["id"]))),
         )
-        left = self.prompt(plain).splitlines()
-        right = self.prompt(stamped).splitlines()
-        self.assertEqual(len(left), len(right))
-        for plain_line, stamped_line in zip(left, right):
-            if STAMP.sub("<lease>", plain_line) == STAMP.sub("<lease>", stamped_line):
-                continue
-            self.assertIn(plain["do"]["id"], plain_line)
-            self.assertIn(stamped["do"]["id"], stamped_line)
 
 
 if __name__ == "__main__":  # pragma: no cover - direct invocation

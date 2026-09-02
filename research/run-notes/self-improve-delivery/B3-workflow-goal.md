@@ -1,4 +1,4 @@
-Implement M3–M5 of `.orchflows/self-improve-design-2026-09-01.md` (in
+Implement M3–M5 of `research/self-improve-design-2026-09-01.md` (in
 your worktree; its "Move 3" drafted body is normative): the workflow
 body and the law repoints.
 

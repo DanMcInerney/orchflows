@@ -1,4 +1,4 @@
-Implement M2 of `.orchflows/self-improve-design-2026-09-01.md` (in your
+Implement M2 of `research/self-improve-design-2026-09-01.md` (in your
 worktree; its "Move 2" section is normative): the sink event stream.
 
 Deliverables:

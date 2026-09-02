@@ -2,7 +2,7 @@ Repair the five accepted findings of seam review B1.4 (run
 20260901T132749Z). The findings file is in your worktree at
 `FINDINGS-B1.4-seam-review.md` — read it whole first; it carries exact
 files, lines, and the live proof of each defect. The design doc
-`.orchflows/self-improve-design-2026-09-01.md` stays normative. Fix all
+`research/self-improve-design-2026-09-01.md` stays normative. Fix all
 five; nothing else.
 
 F1 (blocker): `scripts/harvest.py:366` reads `entry.get("goal")`; the
