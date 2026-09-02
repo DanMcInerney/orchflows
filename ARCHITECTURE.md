@@ -62,8 +62,8 @@ family's owner modules and again for T2's second directory.
   trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
   `orchflows_scaffold.py` (`new` skeletons), `orchflows_adapters.py`
-  (generated inert host adapters) and `orchflows_envs.py` (per-item
-  declared environments).
+  (generated inert host adapters) and three dependency-class modules:
+  `orchflows_envs.py`, `orchflows_tools.py`, `orchflows_node.py`.
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   the warn-only executable-source size report.

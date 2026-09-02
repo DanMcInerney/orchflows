@@ -4,10 +4,10 @@ from __future__ import annotations
 
 
 def _doclint():
-    from tools.validate_support.structure import _doclint as doclint
+    from .structure import _doclint as doclint
     return doclint()
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 CELL_CLAUSE_MIN_WORDS = __dep_common.CELL_CLAUSE_MIN_WORDS
 CELL_REFERENCE_LINK_RE = __dep_common.CELL_REFERENCE_LINK_RE
 CELL_SIMILARITY_THRESHOLD = __dep_common.CELL_SIMILARITY_THRESHOLD
@@ -18,7 +18,7 @@ PACK_SIGNATURE_CELLS = __dep_common.PACK_SIGNATURE_CELLS
 ROOT = __dep_common.ROOT
 re = __dep_common.re
 
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 cell_clauses = __dep_packages.cell_clauses

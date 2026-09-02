@@ -134,9 +134,15 @@ a `tools.txt` inside one are refused.
 - **Publish it** — make the bundle its own repository. Consumers run
   `orchflows add <git-url>@<pin>`, which refuses a branch name: only a tag or
   a full commit SHA is a pin, and `imports.lock` is what restores the clone.
+  Give it a manifest — `orchflows new bundle` scaffolds one — so the bundles
+  yours needs travel with it: `add` follows its `requires` transitively and
+  pins the whole closure, on the shape
+  [contracts/bundle.md](../contracts/bundle.md) owns.
 - **Discover** — `orchflows list` shows every item resolvable from where you
   stand, its ring, its trust state, and every shadow, through the same
-  resolver dispatch uses.
+  resolver dispatch uses. `orchflows check [<ring-dir>]` then grades those
+  items — this project's ring when you stand in a project, else the home
+  ring — with the library compiler's own checks, and exits 1 on a refusal.
 
 ## What a workflow is made of
 

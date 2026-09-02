@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 ALLOWED_FRONTMATTER_KEYS = __dep_common.ALLOWED_FRONTMATTER_KEYS
 ASSEMBLY_NONE_FORM_RE = __dep_common.ASSEMBLY_NONE_FORM_RE
 ASSEMBLY_SKILL_FORM_RE = __dep_common.ASSEMBLY_SKILL_FORM_RE
@@ -40,7 +40,15 @@ sys = __dep_common.sys
 # and the four inline `.strip("`")` sites here were the tools-layer half of
 # the twenty-one that graded a padded value as a different value from its
 # bare twin. `tools` may import `scripts`; the reverse is what is forbidden.
-from scripts.tickets_format import dequote
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts.tickets_format import dequote
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from tickets_format import dequote
 
 CONTRACTS_DIR = ROOT / "contracts"
 PINS_FILE = ROOT / "tests" / "pins.json"
@@ -85,14 +93,18 @@ def workflow_tiers() -> frozenset:
 
     ``scripts/rings.py`` owns where a workflow lives, so the tier graded
     here as a workflow and the tier a runtime resolves one through are one
-    fact. Imported on first use, like ``structure.workflow_roots``: an
-    isolated fixture carrying no ``scripts/`` still has to run every other
-    check.
+    fact. Imported on first use, like ``structure.workflow_roots``, and
+    under either name for the same reason ``dequote`` is: an isolated
+    fixture carrying no ``scripts/`` still has to run every other check,
+    and an install ships this package beside flat scripts in ``bin/``.
     """
 
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from scripts.rings import LIB_DIRS
+    try:
+        from scripts.rings import LIB_DIRS
+    except ImportError:  # pragma: no cover - direct/installed flat script path
+        from rings import LIB_DIRS
 
     return frozenset(
         relative.split("/", 1)[1]

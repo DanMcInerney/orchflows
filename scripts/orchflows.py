@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """The ring commands, and the one question a returning driver asks.
 
-Seven ring verbs over ``scripts/rings.py``'s one resolution order, plus
+Eight ring verbs over ``scripts/rings.py``'s one resolution order, plus
 ``resume``:
 
     orchflows sync [--project]         make a ring whole, render its adapters,
-                                       build every declared item environment
+                                       settle every item's declared dependencies
     orchflows add <git-url>@<pin>      pin one external bundle
-    orchflows new {skill|pack|workflow} <name>
+    orchflows new {skill|pack|sheet|workflow} <name>
+    orchflows new bundle [<name>]      the manifest of the ring at hand
     orchflows list [--kind K]          every item resolvable from here
+    orchflows check [<ring-dir>]       grade a ring's items, exit 1 on a refusal
     orchflows env <kind> <name>        the interpreter an item's scripts run through
     orchflows trust [--once] <bundle>  allow one project ring's content
     orchflows untrust <bundle>         withdraw both halves of that grant
@@ -31,20 +33,28 @@ from pathlib import Path
 
 if __package__:
     from . import (
-        console, orchflows_adapters, orchflows_envs, orchflows_home,
-        orchflows_scaffold, rings, rings_trust, state_root,
+        console, orchflows_adapters, orchflows_check, orchflows_envs,
+        orchflows_home, orchflows_node, orchflows_scaffold, orchflows_tools,
+        rings, rings_trust, state_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
     import console
     import orchflows_adapters
+    import orchflows_check
     import orchflows_envs
     import orchflows_home
+    import orchflows_node
     import orchflows_scaffold
+    import orchflows_tools
     import rings
     import rings_trust
     import state_root
 
 
+# `new`'s one non-item target: a bundle is the ring itself, not something
+# in it, so it is spelled where a kind is spelled and refused everywhere a
+# ring kind is resolved.
+BUNDLE_KIND = "bundle"
 COLUMNS = ("kind", "name", "ring", "trust", "path")
 RESUME_COLUMNS = ("frame", "run", "age", "journal", "children", "leases", "goal")
 
@@ -87,6 +97,32 @@ def cmd_list(args) -> int:
     for notice in notices:
         print(notice)
     return 0
+
+
+def cmd_check(args) -> int:
+    """Grade one ring with the library compiler's own item checks.
+
+    The findings print in the compiler's format -- ``ERROR|WARN <file>:
+    <message>``, one per line, relative to the ring -- because they are the
+    compiler's findings; ``scripts/orchflows_check.py`` says which checks a
+    ring gets and why. The two counted lines above them answer the question
+    a clean report otherwise leaves open: which ring, and how much of it
+    was actually looked at.
+    """
+
+    ring = orchflows_check.ring_at(args.ring)
+    if not ring.is_dir():
+        print(
+            f"error: no ring at {ring}; run orchflows sync to make one",
+            file=sys.stderr,
+        )
+        return 1
+    diag, counted = orchflows_check.check(ring)
+    print(f"ring: {ring}")
+    print(", ".join(f"{kind} {counted[kind]}" for kind in rings.KINDS))
+    for line in diag.lines():
+        print(line)
+    return 1 if diag.has_errors else 0
 
 
 def cmd_resume(args) -> int:
@@ -141,7 +177,7 @@ def cmd_sync(args) -> int:
         detail = f" ({record['detail']})" if record.get("detail") else ""
         print(f"import {record['name']} @ {record['pin']}: {record['action']}{detail}")
     _report(orchflows_adapters.write("home"))
-    _report_envs()
+    _report_dependencies()
     return 0
 
 
@@ -160,7 +196,8 @@ def _sync_project() -> int:
     project = bundle.parent
     print(f"project ring: {bundle}")
     _report(orchflows_adapters.write("project", project=project, start=project))
-    _report_envs()
+    print(f"wrote {orchflows_home.ensure_project_ignores(project)}")
+    _report_dependencies()
     return 0
 
 
@@ -171,21 +208,40 @@ def _report(result: dict) -> None:
         print(f"removed {path}")
 
 
-def _report_envs() -> None:
-    """Build every declared item environment resolvable from here, and say so.
+def _report_dependencies() -> None:
+    """Settle every declared dependency resolvable from here, and say so.
 
-    Both ``sync`` forms end here: an environment is machine-local under the
-    home ring whichever ring declared it, and the inventory is the same
-    resolver a launch reads, so what is built is what can run.
+    Both ``sync`` forms end here, over one inventory: the same resolver a
+    launch reads, so what is built is what can run. The three classes in
+    their order -- the Python environments this ring owns, the orphans it no
+    longer owns, the tooling it can only check, the Node trees it installs --
+    each with the item that declared it in front of the line.
     """
 
-    for outcome in orchflows_envs.sync(rings.inventory()):
+    records = rings.inventory()
+    for outcome in orchflows_envs.sync(records):
         if outcome["action"] == "skipped":
             print(f"env {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
         else:
             print(
                 f"env {outcome['kind']} '{outcome['name']}': "
                 f"{outcome['action']} {outcome['interpreter']}"
+            )
+    for outcome in orchflows_envs.prune(records):
+        print(f"env {outcome['kind']} '{outcome['name']}': pruned {outcome['env']}")
+    for report in orchflows_tools.check_inventory(records):
+        where = (
+            "" if report["line"] is None
+            else f" ({orchflows_tools.TOOLS_NAME} line {report['line']})"
+        )
+        print(f"tools {report['kind']} '{report['name']}': {report['detail']}{where}")
+    for outcome in orchflows_node.sync(records):
+        if outcome["action"] == "skipped":
+            print(f"node {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
+        else:
+            print(
+                f"node {outcome['kind']} '{outcome['name']}': "
+                f"{outcome['action']} {outcome['modules']}"
             )
 
 
@@ -199,13 +255,18 @@ def cmd_add(args) -> int:
     record = orchflows_home.add(args.reference)
     print(f"imported {record['name']} @ {record['pin']} from {record['url']}")
     print(f"cloned to {record['path']}")
+    for required in record["required"]:
+        print(
+            f"required {required['name']} @ {required['pin']} "
+            f"from {required['url']}"
+        )
     print(f"pinned in {record['lock']}")
     return 0
 
 
-def _new_target(kind: str):
-    """``(ring, directory)`` for a new item: the project ring when you stand
-    in a project, else the home ring.
+def _new_ring():
+    """``(ring, bundle directory)`` a new item or manifest is written into:
+    the project ring when you stand in a project, else the home ring.
 
     The write target follows the shared file rather than a local overlay:
     an author standing in a repository means that repository's ring, and a
@@ -214,14 +275,56 @@ def _new_target(kind: str):
 
     bundle = rings.project_ring()
     if bundle is not None:
-        return "project", bundle / rings.RING_DIRS[kind]
+        return "project", bundle
     repo = state_root.find_repo_root(Path.cwd())
     if repo is not None:
-        return "project", repo / rings.BUNDLE_DIR / rings.RING_DIRS[kind]
-    return "home", rings.home_ring() / rings.RING_DIRS[kind]
+        return "project", repo / rings.BUNDLE_DIR
+    return "home", rings.home_ring()
+
+
+def _new_target(kind: str):
+    """``(ring, directory)`` for a new item of ``kind``."""
+
+    ring, bundle = _new_ring()
+    return ring, bundle / rings.RING_DIRS[kind]
+
+
+def _bundle_name(directory: Path) -> str:
+    """The name a manifest takes when the author names none.
+
+    The bundle directory's parent: the repository a project ring sits in,
+    or the home the home ring sits in. A name is the one field only its
+    owner can decide, so a directory whose name is not a usable one asks
+    rather than inventing.
+    """
+
+    try:
+        return rings.item_name(Path(directory).resolve().parent.name)
+    except rings.RingError:
+        raise rings.RingError(
+            "bundle-unnamed",
+            f"{directory} gives a bundle no name to take: run "
+            "orchflows new bundle <name>.",
+        )
+
+
+def cmd_new_bundle(args) -> int:
+    """Scaffold the manifest of the ring at hand (contracts/bundle.md)."""
+
+    ring, directory = _new_ring()
+    name = rings.item_name(args.name) if args.name else _bundle_name(directory)
+    path = orchflows_scaffold.write_bundle(directory, name)
+    print(f"new bundle '{name}' in the {ring} ring")
+    print(f"wrote {path}")
+    return 0
 
 
 def cmd_new(args) -> int:
+    if args.kind == BUNDLE_KIND:
+        return cmd_new_bundle(args)
+    if not args.name:
+        print(f"error: orchflows new {args.kind} needs a name", file=sys.stderr)
+        return 1
     kind = rings.kind_of(args.kind)
     name = rings.item_name(args.name)
     if name.startswith(rings.RESERVED_PREFIX):
@@ -283,10 +386,21 @@ def _parser() -> argparse.ArgumentParser:
     added = subparsers.add_parser("add", help="pin one external bundle", allow_abbrev=False)
     added.add_argument("reference", metavar="<git-url>@<pin>")
     added.set_defaults(handler=cmd_add)
-    created = subparsers.add_parser("new", help="scaffold one item", allow_abbrev=False)
-    created.add_argument("kind", choices=rings.KINDS)
-    created.add_argument("name")
+    created = subparsers.add_parser(
+        "new", help="scaffold one item, or this ring's bundle manifest",
+        allow_abbrev=False,
+    )
+    created.add_argument("kind", choices=(*rings.KINDS, BUNDLE_KIND))
+    created.add_argument("name", nargs="?", help="required for every kind but bundle")
     created.set_defaults(handler=cmd_new)
+    checked = subparsers.add_parser(
+        "check", help="grade a ring's items", allow_abbrev=False,
+    )
+    checked.add_argument(
+        "ring", nargs="?", metavar="<ring-dir>",
+        help="the ring to grade; default this project's, else the home ring",
+    )
+    checked.set_defaults(handler=cmd_check)
     environment = subparsers.add_parser(
         "env", help="the interpreter an item's scripts run through", allow_abbrev=False,
     )

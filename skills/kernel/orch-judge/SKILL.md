@@ -20,6 +20,13 @@ successor scope. Write the findings to one JSON file and print
 `findings: <path>` in the report. Stream the review report and commit
 the reserved outcome.
 
+Every sheet the ticket stamps is checked beside that entry, read at the
+digest the prompt names: its criteria narrow the craft's, so a clause of
+one that would permit what the craft forbids is the sheet's defect — hold
+the craft and file that loosening as a `sheet-defect` finding. Where the
+ticket pins an applied skill, judge by it as method; the Require, Never
+and Return stated here still govern this review.
+
 Never: edit the artifact or sealed semantics; infer a verdict from effort;
 mix a review stage with another kind; or import craft outside the resolved
 pack and shared rules.

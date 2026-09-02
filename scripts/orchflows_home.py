@@ -14,20 +14,24 @@ referenced and pinned, never copied into the home ring: a promoted copy is
 outside every lockfile and becomes one version for all projects (npm's
 global tier, the survey's cautionary tale).  ``imports.lock`` is the pin
 and ``imports/`` is regenerable from it, which is why the lock is
-committed and the clones are not.
+committed and the clones are not.  A bundle declares what it needs in its
+own ``BUNDLE.md`` (contracts/bundle.md); ``add`` pins that whole closure
+and ``restore`` brings it back.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
 
 try:
-    from scripts import rings, state_root
+    from scripts import orchflows_bundle, rings, state_root
 except ImportError:  # pragma: no cover - direct/installed flat script path
+    import orchflows_bundle
     import rings
     import state_root
 
@@ -64,12 +68,18 @@ MANAGED_IGNORES = (
     "lib/",
     "runtime/",
     "envs/",
+    "node_modules/",
     "ui/",
     "tmp/",
     "worktrees/",
     "imports/",
     "trust.json",
 ) + tuple(f"state/{name}/" for name in SINK_MANAGED_SUBPATHS)
+# The project ring's half of the same line. A project's committed content is
+# its bundle and its rendered adapters; the one regenerable tree `sync`
+# writes inside a repository is an item's `node_modules/`, restored from the
+# lockfile committed beside the manifest.
+PROJECT_IGNORES = ("node_modules/",)
 RING_DIRS = tuple(rings.RING_DIRS.values())
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$")
 _REF_SPLIT_RE = re.compile(r"^(?P<url>.+?)@(?P<pin>[^@/]+)$")
@@ -78,6 +88,19 @@ MUTABLE_REF_REFUSAL = (
     "how 23,000 repositories consumed a rewritten tag in one afternoon; only "
     "consumers naming a commit were unaffected. Name the tag or the full "
     "commit SHA you mean: orchflows add {url}@<tag-or-sha>."
+)
+# The two refusals a manifest's `requires` can carry, each naming the
+# manifest that holds the offending line rather than the bundle the user
+# typed: the author of the reference is who has to fix it.
+UNPINNED_REQUIREMENT_REFUSAL = (
+    "{manifest} requires '{entry}', which is not a pinned bundle: {detail} "
+    "A requirement is <git-url>@<tag-or-sha>, held to the same pin law as a "
+    "reference somebody types."
+)
+CYCLE_REQUIREMENT_REFUSAL = (
+    "{manifest} requires {required}, which this import already opened: "
+    "{chain}. A bundle cycle has no closure to pin; break the ring in one of "
+    "those manifests."
 )
 
 
@@ -157,6 +180,21 @@ def ensure(home: Optional[Path] = None) -> Dict[str, object]:
         "lib_version": str(version_path),
         "gitignore": str(ignore_path),
     }
+
+
+def ensure_project_ignores(project: Path) -> Path:
+    """Upsert the managed block in one project's ``.gitignore``.
+
+    The same block, the same markers and the same upsert as the home ring's,
+    because it draws the same committed/regenerable line -- one owner, so a
+    ring whose ignores drift from a project's cannot happen. Only the lines
+    differ, and only because the two rings hold different regenerable trees.
+    """
+
+    path = Path(project) / GITIGNORE_NAME
+    before = path.read_text(encoding="utf-8-sig") if path.is_file() else ""
+    _write_lf(path, upsert_block(before, "\n".join(PROJECT_IGNORES)))
+    return path
 
 
 # --- pinned imports ----------------------------------------------------
@@ -241,12 +279,120 @@ def clone_at(url: str, pin: str, target: Path) -> None:
         )
 
 
+# --- bundle requirements and the closure ------------------------------
+
+
+def _clone_manifest(target: Path) -> Optional[dict]:
+    """The manifest of one cloned bundle, read where its items resolve."""
+
+    return orchflows_bundle.read_manifest(orchflows_bundle.clone_bundle_dir(target))
+
+
+def _requirement(entry: str, manifest: Path):
+    """``(url, pin as written)`` for one ``requires`` line."""
+
+    try:
+        return split_reference(entry)
+    except rings.RingError as error:
+        raise rings.RingError("requires-unpinned", UNPINNED_REQUIREMENT_REFUSAL.format(
+            manifest=manifest, entry=entry, detail=error.detail,
+        ))
+
+
+def _requirement_pin(url: str, requested: str, entry: str, manifest: Path) -> str:
+    """The pin one ``requires`` line resolves to, or the unpinned refusal."""
+
+    try:
+        return resolve_pin(url, requested)
+    except rings.RingError as error:
+        if error.code != "mutable-ref":
+            raise
+        raise rings.RingError("requires-unpinned", UNPINNED_REQUIREMENT_REFUSAL.format(
+            manifest=manifest, entry=entry, detail=error.detail,
+        ))
+
+
+def _discard(target: Path) -> None:
+    """Remove a clone this call made, so a refused add leaves nothing pinned.
+
+    The chmod pass is Windows: git marks its object files read-only, and
+    ``rmtree`` there fails on exactly the tree an add most needs to undo.
+    """
+
+    for path in sorted(target.rglob("*"), reverse=True):
+        try:
+            path.chmod(0o700)
+        except OSError:
+            pass
+    shutil.rmtree(str(target), ignore_errors=True)
+
+
+def import_closure(root: Path, url: str, pin: str) -> List[dict]:
+    """Every bundle one add pins: the named one, then what it requires.
+
+    Depth-first, cloning as it goes, so each manifest is on disk before it
+    is read. The path walked is the cycle check: a requirement naming a
+    bundle already open on that path has no fixed point and is refused. A
+    bundle reached twice off different paths is a diamond, not a cycle, and
+    is cloned once. A refusal unwinds every clone this call made, so an add
+    pins its whole closure or pins nothing.
+    """
+
+    locked = {entry["name"]: entry for entry in read_lock(root)}
+    pinned: Dict[str, dict] = {}
+    cloned: List[Path] = []
+
+    def visit(url: str, pin: str, chain: List[str]) -> None:
+        name = bundle_name(url)
+        held = pinned.get(name) or locked.get(name)
+        if held is not None and held["pin"] != pin:
+            raise rings.RingError(
+                "requires-conflict",
+                f"{name} is pinned at {held['pin']} and this import needs "
+                f"{pin}. One imports directory holds one clone of a bundle: "
+                "re-pin the bundle that asks for the older one, or drop it.",
+            )
+        if name in pinned:
+            return
+        target = root / rings.IMPORTS_DIR / name
+        if not target.is_dir():
+            clone_at(url, pin, target)
+            cloned.append(target)
+        pinned[name] = {"name": name, "url": url, "pin": pin}
+        manifest = _clone_manifest(target)
+        for entry in (manifest or {}).get("requires") or ():
+            required_url, requested = _requirement(entry, manifest["path"])
+            required = bundle_name(required_url)
+            if required in chain or required == name:
+                raise rings.RingError("requires-cycle", CYCLE_REQUIREMENT_REFUSAL.format(
+                    manifest=manifest["path"], required=required,
+                    chain=" -> ".join(chain + [name, required]),
+                ))
+            visit(
+                required_url,
+                _requirement_pin(required_url, requested, entry, manifest["path"]),
+                chain + [name],
+            )
+
+    try:
+        visit(url, pin, [])
+    except rings.RingError:
+        for path in reversed(cloned):
+            _discard(path)
+        raise
+    return list(pinned.values())
+
+
+# --- pinned imports, the two verbs -------------------------------------
+
+
 def add(reference: str, home: Optional[Path] = None) -> dict:
-    """Pin one external bundle into the home ring's imports.
+    """Pin one external bundle, and what it requires, into the home ring.
 
     Consent is the add, not the clone: an import trusted by this act needs
     no first-use prompt, and only a change to its pin puts it back in front
-    of the user.
+    of the user. A requirement is consented to by the same act, which is
+    why the whole closure is reported back and not only the name typed.
     """
 
     root = Path(home) if home is not None else rings.home_ring()
@@ -260,36 +406,88 @@ def add(reference: str, home: Optional[Path] = None) -> dict:
             f"{name} is already imported at {target}: remove it, or edit "
             f"{rings.imports_lock_path(root)} and run orchflows sync.",
         )
-    clone_at(url, pin, target)
-    entries = [item for item in read_lock(root) if item["name"] != name]
-    entries.append({"name": name, "url": url, "pin": pin})
-    lock = write_lock(entries, root)
-    return {"name": name, "url": url, "pin": pin, "path": str(target), "lock": str(lock)}
+    pinned = import_closure(root, url, pin)
+    names = {entry["name"] for entry in pinned}
+    entries = [item for item in read_lock(root) if item["name"] not in names]
+    lock = write_lock(entries + pinned, root)
+    return {
+        "name": name, "url": url, "pin": pin, "path": str(target),
+        "lock": str(lock),
+        "required": [entry for entry in pinned if entry["name"] != name],
+    }
 
 
 def restore(home: Optional[Path] = None) -> List[dict]:
-    """Bring ``imports/`` back to what ``imports.lock`` says, clone by clone."""
+    """Bring ``imports/`` back to the closure ``imports.lock`` implies.
+
+    Clone by clone, and then requirement by requirement: a lock naming one
+    bundle whose manifest needs a second restores both and grows to record
+    the second's pin. Restore is a recovery path, so a requirement it
+    cannot pin is reported against the bundle that declared it instead of
+    failing the sync, and a bundle already restored is never visited twice,
+    which is what makes a cycle terminate here. Refusing one is `add`'s.
+    """
 
     root = Path(home) if home is not None else rings.home_ring()
-    results = []
-    for entry in read_lock(root):
+    queue = list(read_lock(root))
+    closure = list(queue)
+    known = {entry["name"] for entry in queue}
+    results, grew = [], False
+    while queue:
+        entry = queue.pop(0)
         target = root / rings.IMPORTS_DIR / entry["name"]
+        record = {**entry, "path": str(target)}
         if target.is_dir():
-            results.append({**entry, "path": str(target), "action": "present"})
-            continue
+            record["action"] = "present"
+        else:
+            try:
+                clone_at(entry["url"], entry["pin"], target)
+            except rings.RingError as error:
+                results.append({**record, "action": "failed", "detail": error.detail})
+                continue
+            record["action"] = "cloned"
         try:
-            clone_at(entry["url"], entry["pin"], target)
+            required = _restored_requirements(target, known)
         except rings.RingError as error:
-            results.append({**entry, "path": str(target), "action": "failed", "detail": error.detail})
-            continue
-        results.append({**entry, "path": str(target), "action": "cloned"})
+            required, record["detail"] = [], error.detail
+        for item in required:
+            known.add(item["name"])
+            closure.append(item)
+            queue.append(item)
+            grew = True
+        results.append(record)
+    if grew:
+        write_lock(closure, root)
     return results
 
 
+def _restored_requirements(target: Path, known) -> List[dict]:
+    """One restored bundle's requirements that the lock does not carry yet.
+
+    The pin is resolved only for a requirement that is new, so a settled
+    closure costs no remote reads at all on the next sync.
+    """
+
+    manifest = _clone_manifest(target)
+    found = []
+    for entry in (manifest or {}).get("requires") or ():
+        url, requested = _requirement(entry, manifest["path"])
+        name = bundle_name(url)
+        if name in known or any(item["name"] == name for item in found):
+            continue
+        found.append({
+            "name": name, "url": url,
+            "pin": _requirement_pin(url, requested, entry, manifest["path"]),
+        })
+    return found
+
+
 __all__ = (
-    "GITIGNORE_END", "GITIGNORE_NAME", "GITIGNORE_START", "LIB_VERSION_NAME",
-    "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "RECEIPT_FILENAME",
-    "add", "bundle_name", "clone_at",
-    "ensure", "lib_version", "read_lock", "resolve_pin", "restore",
+    "CYCLE_REQUIREMENT_REFUSAL", "GITIGNORE_END", "GITIGNORE_NAME",
+    "GITIGNORE_START", "LIB_VERSION_NAME",
+    "MANAGED_IGNORES", "MUTABLE_REF_REFUSAL", "PROJECT_IGNORES",
+    "RECEIPT_FILENAME", "UNPINNED_REQUIREMENT_REFUSAL",
+    "add", "bundle_name", "clone_at", "ensure", "ensure_project_ignores",
+    "import_closure", "lib_version", "read_lock", "resolve_pin", "restore",
     "split_reference", "upsert_block", "write_lock",
 )

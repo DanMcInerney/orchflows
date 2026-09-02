@@ -269,9 +269,47 @@ def sync(
     return outcomes
 
 
+def prune(
+    records: List[Dict[str, object]], *, home=None
+) -> List[Dict[str, object]]:
+    """Remove the environment of every item the inventory no longer holds.
+
+    An environment is derived from an item's declaration, so an item that
+    left the ring leaves nothing behind that is worth keeping -- and a
+    ``envs/`` that grows a directory per item ever installed is a machine
+    the user cannot reason about. The inventory is the same one ``sync``
+    builds from, so exactly the orphans go.
+
+    Only this module's own layout is touched: a directory under a kind name
+    orchflows knows, itself named like an item. A removal that fails raises
+    rather than being swallowed -- a directory that could not go is a
+    directory the next ``resolve_interpreter`` may still find.
+    """
+
+    root = (Path(home) if home is not None else rings.home_ring()) / ENVS_DIR
+    if not root.is_dir():
+        return []
+    keep = {(str(record["kind"]), str(record["name"])) for record in records}
+    removed = []
+    for kind_dir in sorted(path for path in root.iterdir() if path.is_dir()):
+        if kind_dir.name not in rings.KINDS:
+            continue
+        for env in sorted(path for path in kind_dir.iterdir() if path.is_dir()):
+            if not rings.NAME_RE.fullmatch(env.name):
+                continue
+            if (kind_dir.name, env.name) in keep:
+                continue
+            shutil.rmtree(env)
+            removed.append({
+                "kind": kind_dir.name, "name": env.name,
+                "action": "pruned", "env": str(env),
+            })
+    return removed
+
+
 __all__ = (
     "ACTIONS", "ENVS_DIR", "REQUIREMENTS_NAME", "STAMP_NAME", "STAMP_SCHEMA",
     "UNBUILT_REMEDY", "UNTRUSTED_REMEDY", "action", "build", "digest",
-    "ensure", "env_home", "interpreter", "read_stamp", "requirement_lines",
-    "requirements_of", "resolve_interpreter", "sync",
+    "ensure", "env_home", "interpreter", "prune", "read_stamp",
+    "requirement_lines", "requirements_of", "resolve_interpreter", "sync",
 )
