@@ -42,6 +42,16 @@ class GoalEvidenceContractTest(unittest.TestCase):
         result_contract = " ".join(read("contracts/result.md").split())
         self.assertIn("do not change the semantic assignment digest", result_contract)
 
+    def test_callable_bodies_do_not_resolve_the_craft_themselves(self):
+        # One fact, one owner: the launch prompt hands the craft path and
+        # the artifact kind, so neither callable restates how a craft is
+        # projected. `packs.py cells` itself is not retired -- the
+        # vocabulary still owns it -- only its second owner here.
+        for skill in ("orch-do", "orch-judge"):
+            with self.subTest(skill=skill):
+                body = read(f"skills/kernel/{skill}/SKILL.md")
+                self.assertNotIn("packs.py cells", body)
+
     def test_non_code_packs_define_artifact_evidence_without_code_tests(self):
         expected = {
             "content": ("audience", "lint"),
@@ -78,7 +88,12 @@ class CritiqueContractTest(unittest.TestCase):
         normalized_check = " ".join(check.split())
         self.assertIn("Never: edit the artifact", normalized_check)
         self.assertIn("mix a review stage with another kind", normalized_check)
-        self.assertIn("`## Lens` owns the review criteria", normalized_check)
+        # The sentence this once pinned ("`## Lens` owns the review
+        # criteria") was keyed by artifact kind: the entry, not the whole
+        # section, is what a judge checks against. Same fact, new spelling.
+        self.assertIn(
+            "names the `## Lens` entry you check against", normalized_check
+        )
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):
         surfaces = (
