@@ -228,7 +228,12 @@ invented for this library.
   is refused to the `worker` lane and one that is `direct` opens no frame
   at all. `--workflow NAME` stands in for a line when a saved workflow's
   body is the plan, and a `--parent` frame states none: it is already one
-  wave of its caller's.
+  wave of its caller's. Before writing the line, a root asks in order: one
+  independent unit is `do`; two or more — sub-questions, files, features
+  needing no result of each other's — are one `[...]` wave. A goal whose
+  done predicate cannot be written yet opens with the lanes that would
+  settle it and an `outline` over what they find. A wrong result dearer
+  than one more child ends the line `> judge`.
 - **tracker** — the state sink's `tickets/` directory; there is no external
   tracker.
 - **executor** — the named skill a work item's frontmatter binds to do the

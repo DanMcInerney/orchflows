@@ -82,7 +82,7 @@ disable-model-invocation: true
 
 Require: what the caller supplies before {name} can start.
 
-    tickets.py frame-open <run> --goal-file <goal>
+    tickets.py frame-open <run> --goal-file <goal> --workflow {name}
 
 Re-read the frame's `## Report` and its children before each wave, then
 append that wave's decision with `tickets.py result <run> <frame> --by

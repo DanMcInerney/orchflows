@@ -14,6 +14,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -23,12 +24,15 @@ from pathlib import Path
 from unittest import mock
 
 from tests._repo_root import ROOT
-from scripts import orchflows, state_root, tickets
+from scripts import orchflows, orchflows_scaffold, state_root, tickets
 from scripts.tickets_mint import DO_EXECUTOR
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, ticket_defects,
 )
 from scripts.tickets_store import UTC_STAMP
+from scripts.tickets_shape_line import (
+    GRAMMAR_TOKENS, RESERVED_NAMES, SHAPE_GRAMMAR,
+)
 
 DOC_PACK = "orch-content-pack"
 GOAL = "Deliver the migration wave.\nAnd say what it cost.\n"
@@ -642,6 +646,51 @@ class SavedWorkflowShapeTest(unittest.TestCase):
                 stripped[name] = body.replace(" --workflow " + name, "")
                 self.assertIn(name, _planless(stripped))
 
+    def test_the_scaffolded_workflow_states_a_plan(self):
+        """`orchflows new workflow` writes a body the door would accept.
+
+        The skeleton is the first `frame-open` line most authors ever run,
+        and it is generated, not shipped -- so the glob above cannot see
+        it. Same check, same set: a scaffold that regressed to a planless
+        line would hand every new author a command this tree refuses.
+        """
+
+        name = "scaffolded-flow"
+        body = dict(orchflows_scaffold.files_for("workflow", name))["SKILL.md"]
+        self.assertEqual(set(), _planless({name: body}))
+        self.assertEqual(
+            {name},
+            _planless({name: body.replace(" --workflow " + name, "")}),
+        )
+
+
+class ShapeGrammarOwnerTest(unittest.TestCase):
+    """One grammar, stated as prose and echoed as notation.
+
+    `docs/vocabulary.md`'s shape-line paragraph defines it; `SHAPE_GRAMMAR`
+    is the line a refusal prints, and it points at that owner rather than
+    redefining it. Nothing but agreement holds the two together, so this
+    reads the anchors each must carry -- the parser's own tokens and its
+    reserved names, backticked, never a sentence -- and a construct one
+    side grows or loses alone lands here.
+    """
+
+    def test_the_prose_and_the_printed_notation_carry_the_same_anchors(self):
+        self.assertEqual([], _adrift(_shape_line_prose(), SHAPE_GRAMMAR))
+
+    def test_a_construct_dropped_from_either_side_is_caught(self):
+        """The can-fail direction, on copies: neither file is touched."""
+
+        prose = _shape_line_prose()
+        self.assertEqual(
+            ["notation:*"],
+            _adrift(prose, SHAPE_GRAMMAR.replace("`a[*]`", "`a`")),
+        )
+        self.assertEqual(
+            ["prose:judge"],
+            _adrift(prose.replace("`judge` are", "judge are"), SHAPE_GRAMMAR),
+        )
+
 
 def _planless(bodies: dict, flag: str = "--workflow") -> set:
     """The workflows whose root `frame-open` line names no plan.
@@ -660,6 +709,35 @@ def _planless(bodies: dict, flag: str = "--workflow") -> set:
             if not flag or (flag not in line and "--shape" not in line):
                 named.add(name)
     return named
+
+
+def _shape_line_prose() -> str:
+    """The vocabulary's shape-line paragraph: the grammar's owner.
+
+    Sliced on the bolded term and the next term's bullet, so the anchor
+    the check leans on is a heading-grade one; a paragraph that moved
+    reddens here rather than quietly matching nothing.
+    """
+
+    text = (ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    start = text.index("A **shape line**")
+    return text[start:text.index("\n- **", start)]
+
+
+def _adrift(prose: str, notation: str) -> list:
+    """`['<side>:<anchor>']` for every anchor a side fails to carry.
+
+    Tokens are looked for inside the backticked spans, names as whole
+    spans: `> judge` carries the token but is not the reserved name.
+    """
+
+    missing = []
+    for side, text in (("prose", prose), ("notation", notation)):
+        spans = re.findall(r"`([^`]+)`", " ".join(text.split()))
+        joined = " ".join(spans)
+        missing.extend(f"{side}:{t}" for t in GRAMMAR_TOKENS if t not in joined)
+        missing.extend(f"{side}:{n}" for n in RESERVED_NAMES if n not in spans)
+    return sorted(missing)
 
 
 def _ticket(extra: str) -> str:
