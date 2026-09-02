@@ -11,8 +11,9 @@ so the first thing an author does is edit, never repair.
 
 from __future__ import annotations
 
+import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 try:
     from scripts import rings
@@ -128,6 +129,24 @@ What a judge checks here beside the craft's own `### {kind}` entry.
 """
 
 
+# A bundle's manifest describes the ring it sits in, not an item inside it
+# (contracts/bundle.md), so it is the one skeleton written beside the item
+# directories rather than into a new `<name>/`. `requires: []` is written
+# out rather than omitted: an author adding a requirement edits a line that
+# is already the right shape.
+_BUNDLE = """---
+name: {name}
+version: {version}
+requires: []
+---
+
+# {name}
+
+What this bundle is for, who maintains it, and what a consumer gets by
+importing it. Each requirement above is one <git-url>@<tag-or-sha>.
+"""
+
+
 def _sheet_binding():
     """`(pack, artifact kind)` the sheet skeleton is written against.
 
@@ -214,6 +233,32 @@ def write(directory: Path, kind: str, name: str) -> List[Path]:
     return written
 
 
+def bundle_version() -> str:
+    """The version a scaffolded manifest carries: today, as a date.
+
+    A date is a version a person can write again tomorrow without a release
+    process, and `contracts/bundle.md` takes either that or a tag.
+    """
+
+    return datetime.date.today().isoformat()
+
+
+def write_bundle(ring: Path, name: str, version: Optional[str] = None) -> Path:
+    """Write one bundle manifest into ``ring``. Refuses to overwrite."""
+
+    path = Path(ring) / rings.BUNDLE_MANIFEST
+    if path.exists():
+        raise rings.RingError("bundle-exists", f"already there: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = _BUNDLE.format(
+        name=rings.item_name(name),
+        version=version if version else bundle_version(),
+    )
+    # Bytes for LF on every host, as `write` does.
+    path.write_bytes(text.encode("utf-8"))
+    return path
+
+
 def sections() -> Dict[str, str]:
     """The mandatory craft anchors this scaffold writes, as data for a test."""
 
@@ -226,4 +271,7 @@ def lens_entries() -> Dict[str, str]:
     return dict(_CRAFT_LENS_ENTRIES)
 
 
-__all__ = ("AUTHORING_DOC", "files_for", "lens_entries", "sections", "write")
+__all__ = (
+    "AUTHORING_DOC", "bundle_version", "files_for", "lens_entries",
+    "sections", "write", "write_bundle",
+)

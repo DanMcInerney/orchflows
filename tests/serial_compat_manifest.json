@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2285,
+  "count": 2295,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -673,6 +673,16 @@
    "test_multi_pack.MultiPackRunFixtureTest.test_fixture_join_uses_each_adapter_identity_form",
    "test_multi_pack.MultiPackTopologyTest.test_topology_names_the_join_as_the_only_adapter_boundary",
    "test_multi_pack.MultiPackWorkspaceTest.test_different_adapters_cannot_record_one_candidate_workspace",
+   "test_orchflows_bundle.ClosureTests.test_a_bundle_reached_twice_is_cloned_once_and_is_not_a_cycle",
+   "test_orchflows_bundle.ClosureTests.test_a_bundle_with_no_manifest_imports_as_it_always_did",
+   "test_orchflows_bundle.ClosureTests.test_a_cycle_is_refused_naming_the_manifest_that_closes_it",
+   "test_orchflows_bundle.ClosureTests.test_add_pins_every_bundle_the_named_one_requires",
+   "test_orchflows_bundle.ClosureTests.test_an_unpinned_requirement_is_refused_naming_the_manifest",
+   "test_orchflows_bundle.ClosureTests.test_restore_reports_a_requirement_it_cannot_pin_and_syncs_on",
+   "test_orchflows_bundle.ClosureTests.test_sync_restores_a_closure_the_lock_names_only_the_root_of",
+   "test_orchflows_bundle.ScaffoldTests.test_a_manifest_takes_its_rings_own_name_when_nobody_names_it",
+   "test_orchflows_bundle.ScaffoldTests.test_a_scaffolded_manifest_reads_back_through_the_reader",
+   "test_orchflows_bundle.ScaffoldTests.test_this_repositorys_own_bundle_is_named_and_requires_nothing",
    "test_orchflows_cli.AddTests.test_a_branch_name_is_refused_with_the_pin_remedy",
    "test_orchflows_cli.AddTests.test_a_full_commit_sha_is_a_pin_without_asking_the_remote",
    "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
@@ -2288,7 +2298,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1bddb3f79b5518d9cd4e59cd2f65a55e852c21d9e9db52858d2228a7cc919aea"
+  "sha256": "0b3633962685296953a90c47d45e08455eb97632add738542a805abd511f7d02"
  },
  "mutation_owners": [
   {
@@ -4057,6 +4067,38 @@
    "module": "tests.test_migrate_state_cases.plan",
    "owner": "TestMigrationPlan.test_a_source_that_merely_holds_the_sink_still_migrates",
    "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "ScaffoldTests.test_a_manifest_takes_its_rings_own_name_when_nobody_names_it",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "ScaffoldTests.test_a_scaffolded_manifest_reads_back_through_the_reader",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "_git",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_bundle",
+   "owner": "_home",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment"
    ]
