@@ -64,6 +64,15 @@ VALID_STATUSES = set(TICKET_FRONTMATTER_VALUES['status'])
 # invocation; the marker is what tells every reader that the ticket in front
 # of it binds no executor because nothing dispatches it.
 FRAME_MARKER = TICKET_FRONTMATTER_VALUES['frame'][0]
+# The field a planning `do` records its artifact kind under, named here and
+# nowhere else, its two values read off the declared shape. A craft's
+# `## Lens` has one entry per artifact kind: a `do` takes its kind from the
+# adapter and a `judge` from its Context, so this names what neither does.
+MAKES_FIELD = 'makes'
+PLANNING_KINDS = tuple(TICKET_FRONTMATTER_VALUES[MAKES_FIELD])
+# The Context clause a judge's typed artifact identities are written on:
+# `tickets_mint.py` writes them, `tickets_assignment.py` reads their kind.
+ARTIFACT_CLAUSE = '- artifact: '
 SCRIPT_EXECUTOR_PREFIX = 'script:'
 REQUIRED_LIFECYCLE_KEYS = ('run', 'status')
 REQUIRED_TICKET_KEYS = tuple(

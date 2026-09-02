@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2126,
+  "count": 2139,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -133,6 +133,11 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_judge_is_sent_to_the_kind_on_its_artifact_line",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_judge_over_two_kinds_is_refused_at_the_mint",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_making_do_is_sent_to_its_adapters_own_kind",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_planning_do_is_sent_to_the_kind_it_was_minted_to_make",
+   "test_dispatch_launch.LensKeyPromptTest.test_no_craft_carries_no_lens_sentence",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_content_pack_do_launch_commits_without_a_merge_sentence",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
@@ -995,6 +1000,11 @@
    "test_ticket_callables.CallablePromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
    "test_ticket_callables.CallablePromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
    "test_ticket_callables.CallableSinkWorktreeIsolationTest.test_worktrees_root_stays_inside_the_sinks_own_tempdir",
+   "test_ticket_callables.GenerationArtifactTest.test_a_live_cut_generation_is_accepted_and_carried_into_context",
+   "test_ticket_callables.GenerationArtifactTest.test_a_live_root_generation_is_accepted_and_carried_into_context",
+   "test_ticket_callables.GenerationArtifactTest.test_an_unknown_root_identity_is_refused_with_the_runs_known_values",
+   "test_ticket_callables.GenerationArtifactTest.test_the_three_adapter_kinds_are_admitted_unchanged",
+   "test_ticket_callables.GenerationArtifactTest.test_the_untyped_refusal_expects_all_five_kinds",
    "test_ticket_callables.RepairRoundAdmissionTest.test_a_runtime_callables_repair_round_admits_and_dispatches",
    "test_ticket_callables.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
@@ -1147,9 +1157,12 @@
    "test_validator.TestStructuralAdmissionMutants.test_one_unrelated_shared_stem_does_not_carry_an_input",
    "test_validator.TestStructuralAdmissionMutants.test_pack_control_flow_is_rejected",
    "test_validator.TestStructuralAdmissionMutants.test_pin_rewrite_requires_a_discriminating_supersession_record",
+   "test_verification_model.CraftLensKeyTest.test_craft_sections_are_the_migrated_set",
+   "test_verification_model.CraftLensKeyTest.test_lens_keys_are_root_cut_then_the_adapter_artifact_kind",
    "test_verification_model.CritiqueContractTest.test_check_owns_blockers_and_verification",
    "test_verification_model.CritiqueContractTest.test_critique_is_read_only_and_keeps_costly_fix_sentence",
    "test_verification_model.CritiqueContractTest.test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model",
+   "test_verification_model.GoalEvidenceContractTest.test_callable_bodies_do_not_resolve_the_craft_themselves",
    "test_verification_model.GoalEvidenceContractTest.test_execute_consumes_pack_craft_and_records_post_work_evidence",
    "test_verification_model.GoalEvidenceContractTest.test_non_code_packs_define_artifact_evidence_without_code_tests",
    "test_verification_model.GoalEvidenceContractTest.test_ticket_has_no_extra_success_schema",
@@ -2129,7 +2142,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "aa5e9a8a8b4d3b0bb1772dde7a75c83a5654adb82645d74c183c2ae22897a13f"
+  "sha256": "1d17447a4b638457d429a98269aa35657468f0b4070f4d61e94a39640440307d"
  },
  "mutation_owners": [
   {
@@ -2280,6 +2293,23 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LensKeyPromptTest.minted",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LensKeyPromptTest.setUp",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {

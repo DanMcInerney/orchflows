@@ -30,6 +30,7 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_bound import parse_bound
     from .tickets_format import (
+        ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
         next_mint_id,
@@ -48,6 +49,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_bound import parse_bound
     from tickets_format import (
+        ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
         next_mint_id,
@@ -64,7 +66,8 @@ else:  # pragma: no cover - direct/installed flat script path
 
 DO_USAGE = (
     "do <run> --pack P --goal-file F [--details-file D] [--parent ID] "
-    "[--done <canonical-json>] [--isolation required|none] [--bound B] "
+    "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
+    "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
 )
 JUDGE_USAGE = (
@@ -82,11 +85,20 @@ MINT_INDEPENDENCE = "gate"
 ARTIFACT_KINDS = frozenset(
     adapter.artifact_kind for adapter in ADAPTER_REGISTRY.values()
 )
+# The two library-owned artifact kinds, and the frontmatter field each one
+# names. A domain's kinds are the adapter's and carry their identity inside
+# the line; these two are the ticket machinery's own, and their identity is
+# a generation value it already stamped -- `root:<id>:<n>:sha256:<digest>`
+# and `cut:<id>:<n>:sha256:<digest>` -- so the whole line is the value and
+# the run itself is what says whether it is real.
+GENERATION_KINDS = {"root": "root_generation", "cut": "cut_generation"}
+# What a judge's `--artifacts` may name. Kept apart from `ARTIFACT_KINDS`,
+# which is the adapters' set and is read as such by the launch's line forms.
+JUDGE_KINDS = ARTIFACT_KINDS | frozenset(GENERATION_KINDS)
 # The `parent` clause on the child's own Context: the one line that says
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
 PARENT_CLAUSE = "- parent: "
-ARTIFACT_CLAUSE = "- artifact: "
 
 
 def _dispatch_facade():
@@ -130,12 +142,38 @@ def _issued_ids(run_dir) -> list:
     )
 
 
-def _artifact_lines(values) -> tuple:
+def _generation_values(run_dir, field: str) -> list:
+    """Every value of one generation field carried by a ticket in the run.
+
+    Read off the tickets rather than recomputed: the value spells the id and
+    ordinal of the stamp that minted it, so the run's own files are the only
+    place it exists, and a caller that re-derived one would be authoring a
+    generation instead of naming one.
+    """
+
+    values = set()
+    if run_dir is not None and run_dir.is_dir():
+        for path in sorted(run_dir.glob("*.md")):
+            text, failure = _read_utf8(path, "ticket")
+            if failure is not None:
+                continue
+            value = str(_parse_frontmatter(text).get(field) or "").strip()
+            if value:
+                values.add(value)
+    return sorted(values)
+
+
+def _artifact_lines(values, run_dir=None) -> tuple:
     """`(lines, refusal)` for the typed artifact identities a judge reads.
 
     One flag repeated, or one value carrying several lines: a caller relaying
     two children's returned lines has them as two lines already, and asking
     it to re-join them into one flag value is where a paraphrase gets made.
+
+    A `root:` or `cut:` line is checked against `run_dir` as well as typed:
+    those two identities live in the run's own frontmatter, so an unknown one
+    is refused with the run's real values rather than accepted and handed to
+    a judge that has nothing to open.
     """
 
     lines = []
@@ -143,12 +181,24 @@ def _artifact_lines(values) -> tuple:
         lines.extend(part.strip() for part in str(value).splitlines() if part.strip())
     if not lines:
         return None, {"error": f"judge requires --artifacts. usage: {JUDGE_USAGE}"}
+    known = {}
     for line in lines:
         kind = line.split(":", 1)[0]
-        if kind not in ARTIFACT_KINDS or not line[len(kind) + 1:].strip():
+        if kind not in JUDGE_KINDS or not line[len(kind) + 1:].strip():
             return None, {"error": (
                 f"artifact '{line}' is not one typed identity; expected "
-                + ", ".join(sorted(f"{name}:<identity>" for name in ARTIFACT_KINDS))
+                + ", ".join(sorted(f"{name}:<identity>" for name in JUDGE_KINDS))
+            )}
+        field = GENERATION_KINDS.get(kind)
+        if field is None:
+            continue
+        if field not in known:
+            known[field] = _generation_values(run_dir, field)
+        if line not in known[field]:
+            return None, {"error": (
+                f"artifact '{line}' names no {field} carried by any ticket in "
+                "this run; its known " + kind + " identities are: "
+                + (", ".join(known[field]) or "(none)")
             )}
     return lines, None
 
@@ -219,7 +269,7 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 
 
 def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
-            done, isolation, bound, artifacts):
+            done, isolation, bound, artifacts, makes=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
     pinned, refusal = pinned_pack_digest(pack)
@@ -232,7 +282,7 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
         "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": isolation, "bound": bound,
-        "done": done,
+        "done": done, MAKES_FIELD: makes,
     }
     sections = [("Goal", goal), ("Context", _context(parent, artifacts))]
     if details:
@@ -285,6 +335,7 @@ def _cmd_callable(rest, *, judge: bool):
     details_file = _extract_flag(args, "--details-file")
     parent = _extract_flag(args, "--parent")
     done = _extract_flag(args, "--done")
+    makes = _extract_flag(args, "--makes")
     isolation = _extract_flag(args, "--isolation")
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
     host = _extract_flag(args, "--host")
@@ -303,6 +354,15 @@ def _cmd_callable(rest, *, judge: bool):
             return invalid
     if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
         return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
+    # A judge is handed finished artifacts and names their kind on its
+    # Context; only a `do` chooses what it makes, and only when the pack's
+    # adapter does not already say.
+    if makes is not None:
+        if judge:
+            return {"error": f"--makes belongs to do. usage: {JUDGE_USAGE}"}
+        makes = makes.strip()
+        if makes not in PLANNING_KINDS:
+            return {"error": f"--makes '{makes}' is not one of {list(PLANNING_KINDS)}"}
     if done is not None:
         defects = done_defects(done)
         if defects:
@@ -317,16 +377,29 @@ def _cmd_callable(rest, *, judge: bool):
         details, failure = _read_utf8(details_file, "details file")
         if failure is not None:
             return failure
-    lines = []
-    if judge:
-        lines, failure = _artifact_lines(artifacts)
-        if failure is not None:
-            return failure
-    elif artifacts:
-        return {"error": f"--artifacts belongs to judge. usage: {DO_USAGE}"}
+    # The run directory is resolved ahead of the artifact check rather than
+    # after it: a `root:`/`cut:` line names a generation this run stamped,
+    # so the run's own tickets are what the check reads.
     run_dir, failure = _run_dir(run)
     if failure is not None:
         return failure
+    lines = []
+    if judge:
+        lines, failure = _artifact_lines(artifacts, run_dir)
+        if failure is not None:
+            return failure
+        # One judge, one kind: the kind selects the craft's `## Lens` entry
+        # the judge reads its criteria from, and a call handed two kinds
+        # has no one entry to be judged against. Two calls, not one.
+        kinds = sorted({line.split(":", 1)[0] for line in lines})
+        if len(kinds) > 1:
+            return {"error": (
+                "judge reads one artifact kind, and --artifacts names "
+                + ", ".join(f"'{kind}'" for kind in kinds)
+                + f"; mint one judge per kind. usage: {JUDGE_USAGE}"
+            )}
+    elif artifacts:
+        return {"error": f"--artifacts belongs to judge. usage: {DO_USAGE}"}
     # The one lock that decides anything two callers could disagree about:
     # which id this callable takes. Everything after it is per-ticket work
     # whose own command takes the lock for itself.
@@ -336,7 +409,7 @@ def _cmd_callable(rest, *, judge: bool):
             executor=JUDGE_EXECUTOR if judge else DO_EXECUTOR,
             pack=pack, goal=goal.strip(), details=(details or "").strip() or None,
             parent=parent, done=done, isolation=isolation, bound=bound,
-            artifacts=lines,
+            artifacts=lines, makes=makes,
         )
     if failure is not None:
         return failure

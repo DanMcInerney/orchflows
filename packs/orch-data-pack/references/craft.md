@@ -22,14 +22,6 @@ The shape principles every domain shares are
   different choice; a finding surviving none is the choice speaking,
   not the data.
 
-## Shape
-
-- Numbers are artifacts: a load-bearing number is materialized by its
-  pipeline into the workspace, never hand-copied from output to prose.
-- A point value claims too much: every load-bearing number carries its
-  spread, interval, or stated caveat.
-- Record seeds, versions, and environment wherever they change a number.
-
 ## Workspace
 
 git: identities are commits whose committed manifests pin dataset bytes
@@ -42,9 +34,11 @@ target repository; dataset identities or the pinning policy; the
 question; rerun policy; claim bar — the robustness checks every
 load-bearing number must survive
 
-## Outline
+## Lens
 
-### What a frozen data root carries
+### root
+
+#### What a frozen data root carries
 
 - One question answerable by numbers or a modeled relationship, never
   "explore the data" — with the sub-questions coverage requires.
@@ -53,7 +47,7 @@ load-bearing number must survive
 - The claim bar as named robustness checks, and the rerun policy that
   makes reproduction possible.
 
-### Worth asking at intake
+#### Worth asking at intake
 
 - What decision moves on these numbers, and at what precision does it
   stop moving?
@@ -63,13 +57,13 @@ load-bearing number must survive
   stay executor-owned degrees of freedom?
 - What would make the answer wrong even with every pipeline green?
 
-### Exemplar policy
+#### Exemplar policy
 
 Cite a prior analysis by identity and name each property the imitation
 carries: pipeline discipline, uncertainty reporting, robustness set.
 "As rigorous as that one" is a mood, not a property list.
 
-## Slicing
+### cut
 
 Slice only genuinely separable pipelines — by dataset, population, or
 sub-question — or dependency-ordered stages: pinning before analysis, analysis
@@ -78,14 +72,7 @@ identities and frozen choices. Every lane materializes its own outputs from
 the shared pinned inputs; terminal reproduction reruns every recorded pipeline
 and reconciles the findings.
 
-## Evidence
-
-Identify the candidate revision. Record dataset identities, pipeline commands
-with output digests, the fresh reproduction reading for every load-bearing
-number, spent degrees of freedom, robustness readings, and unanswered parts
-of Goal.
-
-## Lens
+### git
 
 - Reproduction: rerunning each recorded pipeline from its dataset
   identities returns each load-bearing number.
@@ -98,6 +85,17 @@ of Goal.
 - Provenance: every figure and number traces to a pipeline and dataset
   identity, and the uncertainty reaches the findings, not only the
   raw output.
+
+Identify the candidate revision. Record dataset identities, pipeline commands
+with output digests, the fresh reproduction reading for every load-bearing
+number, spent degrees of freedom, robustness readings, and unanswered parts
+of Goal.
+
+- Numbers are artifacts: a load-bearing number is materialized by its
+  pipeline into the workspace, never hand-copied from output to prose.
+- A point value claims too much: every load-bearing number carries its
+  spread, interval, or stated caveat.
+- Record seeds, versions, and environment wherever they change a number.
 
 ## Stages
 

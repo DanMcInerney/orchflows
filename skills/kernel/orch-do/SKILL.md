@@ -7,16 +7,15 @@ role: worker
 Require: one claimed ticket with a stamped pack digest and its semantic
 assignment.
 
-Resolve the stamped digest through `packs.py cells <digest>` and read the
-whole craft document. Work in its `## Workspace` semantics through its
-`## Stages`. Where the ticket's Details prescribes a step, a check, or a
-do-not, follow it and say so; where following it would miss Goal, deviate and
-report the deviation with the observation that forced it. Where Details is
-silent, that craft and repository law decide. Stream the executor record as
-work is produced, then commit the reserved outcome.
-
-A planning `do` — goal a frozen root or a call plan — instead reads the pack
-craft's Outline and Spec fields sections.
+The launch prompt hands the craft path and the artifact kind; read the
+whole craft document. That kind names the `## Lens` entry you make
+toward: a making `do` makes the kind its pack's adapter fixes, a
+planning `do` makes a `root` or a `cut` and says which. Where the
+ticket's Details prescribes a step, a check, or a do-not, follow it
+and say so; where following it would miss Goal, deviate and report
+the deviation with the observation that forced it. Where Details is
+silent, that craft and repository law decide. Stream the executor record
+as work is produced, then commit the reserved outcome.
 
 Never: substitute a skill name for a pack cell; invent a domain rule outside
 the resolved pack or shared rules; edit sealed semantics; integrate another

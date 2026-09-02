@@ -99,7 +99,7 @@ HELP_FLAGS = frozenset({"--help", "-h"})
 HELP_COMMANDS = HELP_FLAGS | {"help"}
 VALUE_FLAGS = frozenset({
     "--run", "--by", "--executor", "--goal", "--context", "--details",
-    "--depends-on", "--bound", "--pack",
+    "--depends-on", "--bound", "--pack", "--makes",
     "--profile", "--independence", "--isolation",
     "--section", "--file", "--text", "--note", "--artifact", "--terminal",
     "--tree", "--workspace", "--proposal", "--covered",

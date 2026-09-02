@@ -31,8 +31,8 @@ machinery already defines and identifies them:
   `cut_generation` value, already spelled `cut:<id>:<n>:sha256:<digest>`.
 
 The remaining kinds are domain-owned and fixed by the pack's adapter
-(`scripts/tickets_adapters.py` `artifact_kind`): `git` for code and design
-(git-plus-render), `doc` for content, `evidence` for research and data.
+(`scripts/tickets_adapters.py` `artifact_kind`): `git` for code, data and design
+(git-plus-render), `doc` for content, `evidence` for research.
 
 A new kind earns a Lens entry only when a workflow judges that artifact in
 its own call. A packet versus a synthesis, or a draft versus an edit, stay

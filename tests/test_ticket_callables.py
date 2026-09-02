@@ -589,6 +589,87 @@ class CallableLandingTest(CallableSinkTest):
         self.assertEqual("complete", landed["land"]["status"])
 
 
+class GenerationArtifactTest(CallableSinkTest):
+    """`root:` and `cut:` name a generation this run actually stamped.
+
+    The adapter kinds carry their own identity inside the line, so nothing
+    outside the line can check them. These two do not: the value spells the
+    id and ordinal of a generation the ticket machinery stamped, so a line
+    that names one no ticket in the run carries is a paraphrase, and the
+    refusal has the real values to hand back.
+    """
+
+    def sealed_root(self) -> dict:
+        """A parentless `do`, which stamps and seals both generations."""
+
+        self.callable("do", "--pack", CODE_PACK, "--isolation", "required")
+        return _parse_frontmatter(self.ticket_text("B1"))
+
+    def judge(self, *artifacts, expect_error=False):
+        lines = []
+        for artifact in artifacts:
+            lines.extend(("--artifacts", artifact))
+        return self.callable(
+            "judge", "--pack", CODE_PACK, "--parent", "B1",
+            *lines, "--isolation", "none", expect_error=expect_error,
+        )
+
+    def test_a_live_root_generation_is_accepted_and_carried_into_context(self):
+        root = self.sealed_root()["root_generation"]
+        self.assertTrue(root.startswith("root:"), root)
+
+        self.judge(root)
+
+        self.assertIn(
+            "- artifact: " + root, _sections(self.ticket_text("B1.1"))["Context"],
+        )
+
+    def test_a_live_cut_generation_is_accepted_and_carried_into_context(self):
+        cut = self.sealed_root()["cut_generation"]
+        self.assertTrue(cut.startswith("cut:"), cut)
+
+        self.judge(cut)
+
+        self.assertIn(
+            "- artifact: " + cut, _sections(self.ticket_text("B1.1"))["Context"],
+        )
+
+    def test_an_unknown_root_identity_is_refused_with_the_runs_known_values(self):
+        root = self.sealed_root()["root_generation"]
+
+        refused = self.judge(
+            "root:B9:1:sha256:" + "0" * 64, expect_error=True,
+        )
+
+        self.assertIn("root_generation", refused["error"])
+        self.assertIn(root, refused["error"])
+        self.assertFalse((self.run_dir() / "B1.1.md").exists())
+
+    def test_the_three_adapter_kinds_are_admitted_unchanged(self):
+        from scripts.tickets_adapters import ADAPTER_REGISTRY
+
+        self.sealed_root()
+        kinds = {adapter.artifact_kind for adapter in ADAPTER_REGISTRY.values()}
+        self.assertEqual({"doc", "evidence", "git"}, kinds)
+
+        for ordinal, kind in enumerate(sorted(kinds), start=1):
+            line = f"{kind}:whatever-this-kind-spells"
+            self.judge(line)
+            self.assertIn(
+                "- artifact: " + line,
+                _sections(self.ticket_text(f"B1.{ordinal}"))["Context"],
+                kind,
+            )
+
+    def test_the_untyped_refusal_expects_all_five_kinds(self):
+        self.sealed_root()
+
+        refused = self.judge("the draft I made earlier", expect_error=True)
+
+        for kind in ("cut", "doc", "evidence", "git", "root"):
+            self.assertIn(f"{kind}:<identity>", refused["error"])
+
+
 class TypedArtifactGrammarTest(unittest.TestCase):
     """Every adapter fixes the prefix its artifact line and its joins take."""
 
