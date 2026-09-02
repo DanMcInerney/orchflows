@@ -1,0 +1,78 @@
+{
+  "ticket": "B1.20",
+  "run": "20260902T181500Z-workflow-ladder",
+  "unit": "U5 Kernel sentences",
+  "executor_ticket": "B1.13",
+  "artifact": "git:ffa0ad045458b030f9905839e0a95b5bc6e26632",
+  "artifact_parent": "fed12b053edca59f757f901b5b13447c2cbd4484",
+  "artifact_tree": "78b5572293935aebd2f211e1e778b4b247acdcbf",
+  "judged_in": "worktree B1.20 at d32da40c, whose tree equals the artifact's (git rev-parse ^{tree} identical)",
+  "pack": "orch-code-pack",
+  "pack_digest": "sha256:27a9699df3c2ea7cdfaa7c3d11a099cb2de107f45ed081e4993aa9b06902996e",
+  "lens": "craft.md ## Lens ### git",
+  "verdict": "holds",
+  "blocking_count": 0,
+  "goal_criteria": [
+    {"criterion": "run_required.py passes at the commit", "reading": "uv run --no-project python tools/run_required.py --no-cache: exit 0, all five rows 0, tree 78b557229393", "holds": true},
+    {"criterion": "no section-2 name or shape differs", "reading": "`sheet-defect` tag, `## Lens` / `### <kind>` keying, Require/Never/Return anatomy, `role` lines (worker / planner) unchanged, no new heading, no domain, no pack name in either diff", "holds": true},
+    {"criterion": "no body or block exceeds its budget", "reading": "tools.validate_support.packages.body_words: orch-do 165 -> 222, orch-judge 186 -> 259, BODY_BUDGET['kernel'] = 300; validate.py exit 0 with the identical 17 WARN set as the parent tree (diff of sorted WARN lines empty)", "holds": true},
+    {"criterion": "no file outside the unit's Details without a reported reason", "reading": "3 files: the two kernel bodies named by the unit, plus tests/test_workflow_ladder_law.py, which the executor reported with its reason (each acceptance behavior carries a check) and which the unit's Done scope `tests` covers", "holds": true},
+    {"criterion": "both bodies still primitives", "reading": "no backticked orch- token in either added paragraph; validate.py exit 0 (its primitive rule has can-fail coverage in tests/test_validator.py)", "holds": true}
+  ],
+  "checks": [
+    {"command": "python tools/validate.py (artifact tree)", "exit": 0, "note": "17 WARN, 0 ERROR"},
+    {"command": "python tools/validate.py (parent tree exported to scratch via git archive)", "exit": 0, "note": "17 WARN; WARN set identical to the artifact's"},
+    {"command": "python -m unittest tests.test_workflow_ladder_law -v", "exit": 0, "note": "7 tests OK"},
+    {"command": "scratch canfail.py: the two new CASES against fed12b05 bytes in memory", "exit": 0, "note": "anchor standing at parent: True; facts hold at parent: False; facts hold at artifact: True; anchor falls to '' when a Never: label is removed -- for both kernels"},
+    {"command": "python tools/run_tests.py --scope skills,tests", "exit": 0, "note": "OK, wall 142s across 24 workers"},
+    {"command": "uv run --no-project python tools/run_required.py --no-cache", "exit": 0, "note": "validate 0, run_tests 0, run_serial_compat 0, install.py --dry-run 0, git diff --check 0"},
+    {"command": "git diff --check fed12b05 ffa0ad04", "exit": 0},
+    {"command": "git status --short (workspace clean before judging)", "exit": 0, "note": "0 lines"}
+  ],
+  "test_identities": [
+    {"id": "tests.test_workflow_ladder_law.LadderFactsTest.test_each_fact_is_carried_by_its_owner", "failing_reading": "at parent bytes (in memory): holds() False for both new cases", "passing_reading": "at ffa0ad04: OK"},
+    {"id": "tests.test_workflow_ladder_law.LadderFactsTest.test_dropping_any_fact_fails_the_check_with_the_anchor_standing", "failing_reading": "in-suite mutation: each of the 8 new facts dropped in memory, anchor stands, holds() False", "passing_reading": "at ffa0ad04: OK"}
+  ],
+  "findings": [
+    {
+      "id": "F1", "blocking": false, "class": "shape / comment states what the code does not do",
+      "where": "tests/test_workflow_ladder_law.py primitive_body docstring at ffa0ad04 (lines 53-60)",
+      "evidence": "The docstring anchors on 'the ordered `Require:`, `Never:` and `Return:` labels'; the code is all(re.search(rf\"^{label}\", body, re.MULTILINE) for label in ANATOMY), which tests presence only. A body with the labels permuted still counts as an anchor here while tools/validate.py refuses it.",
+      "smallest_change": "either assert increasing positions (positions = [m.start() ...]; standing = positions == sorted(positions)), or delete the word 'ordered' from the docstring and ANATOMY's comment. One line either way."
+    },
+    {
+      "id": "F2", "blocking": false, "class": "shape / one fact, several owners, no check comparing them",
+      "where": "contracts/sheet.md:57, docs/vocabulary.md:124, scripts/tickets_dispatch_launch_lines.py:235 and :252, skills/kernel/orch-judge/SKILL.md:26 (new)",
+      "evidence": "The tighten-only rule and the `sheet-defect` tag now appear in five files. Each is pinned by its own check (tests/test_ticket_pins.py:462 for the prompt line, tests/test_workflow_ladder_law.py:151 for the kernel) and nothing reads the tag from one owner into the others, so a rename of the tag drifts silently in whichever copy its check does not cover. The spec's U5 Goal demands the kernel sentence, so the copy is licensed; the executor filed the same observation in B1.13 ## Report.",
+      "smallest_change": "successor scope, outside this unit's license: one constant (e.g. SHEET_DEFECT_TAG in scripts/tickets_dispatch_launch_lines.py) read by both checks, so the prompt line and the kernel body are asserted against the same string."
+    },
+    {
+      "id": "F3", "blocking": false, "class": "shape / dangling antecedent in the new judge paragraph",
+      "where": "skills/kernel/orch-judge/SKILL.md line 23 at ffa0ad04",
+      "evidence": "The paragraph opens 'Every sheet the ticket stamps is checked beside that entry'; 'that entry' resolves to 'the `## Lens` entry you check against' four sentences earlier in the previous paragraph, past the findings-file and outcome sentences. A child reading the paragraph on its own has no referent.",
+      "smallest_change": "'beside the craft's `## Lens` entry' (+2 words, 261 of 300) with the matching fact string in tests/test_workflow_ladder_law.py updated in the same edit; optional -- prose, not contract."
+    },
+    {
+      "id": "F4", "blocking": false, "class": "spec defect outside the artifact -- Done line the tool refuses",
+      "where": "research/workflow-ladder-spec-2026-09-02.md Done lines at 125, 147, 163, 188, 222, 235, 255, 272, 286, 302, 356, 373, 390, 413",
+      "evidence": "Every unit's Done spells `--scope a b c`; tools/run_tests.py refuses that form (exit 1, 'takes one comma-separated value'). The executor ran `--scope skills,tests`, reported the deviation, and logged friction. This judge reproduced the intended reading (exit 0) and confirms the deviation was the only way to run any test.",
+      "smallest_change": "successor scope: regenerate the Done lines with comma-joined scopes at the generator in research/workflow-ladder-tickets/ so the remaining units stop inheriting the refusal."
+    }
+  ],
+  "causes": [
+    {"cause": "C1 docstring/code mismatch in the anatomy anchor", "findings": ["F1"], "remedy": "one-line edit in the test module; within a repair round's license"},
+    {"cause": "C2 the sheet-defect fact has five owners and no cross-check", "findings": ["F2"], "remedy": "successor: a shared tag constant read by both checks"},
+    {"cause": "C3 antecedent clarity in the judge paragraph", "findings": ["F3"], "remedy": "optional two-word edit plus its pinned fact"},
+    {"cause": "C4 spec Done spelling", "findings": ["F4"], "remedy": "successor: regenerate the spec's Done lines; not this artifact's defect"}
+  ],
+  "successor_scope": ["C2", "C4"],
+  "uncovered_behavior": [
+    "The Goal's shape 'one sentence on sheets and one clause on applied skills' has no check: a body could grow a second paragraph on sheets and only the 300-word budget would notice. Acceptable -- the budget is the bound the spec fixes; recorded, not raised.",
+    "The launch-prompt sheet lines and the kernel sentences are never compared to each other (F2)."
+  ],
+  "not_done": [
+    "Did not edit the artifact or any sealed text (judge is read-only).",
+    "Did not run the exhaustive unittest discover: the full suite is the gate's row; run_required.py is the join's mechanical done and was run uncached.",
+    "Did not raise F3 above shape: the wording is contract-correct; only its antecedent is far."
+  ]
+}

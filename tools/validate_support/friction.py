@@ -4,15 +4,15 @@ from __future__ import annotations
 
 
 def rel(path):
-    from tools.validate_support.packages import rel as relative
+    from .packages import rel as relative
     return relative(path)
 
 
 def _read_source(path):
-    from tools.validate_support.packages import _read_source as read_source
+    from .packages import _read_source as read_source
     return read_source(path)
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 Path = __dep_common.Path
 ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED

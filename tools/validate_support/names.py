@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 dequote = __dep_packages.dequote
 rel = __dep_packages.rel
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 CRAFT_LIBRARY_LENS_KINDS = __dep_common.CRAFT_LIBRARY_LENS_KINDS
 CRAFT_MANDATORY_SECTIONS = __dep_common.CRAFT_MANDATORY_SECTIONS
 CRAFT_OPTIONAL_SECTIONS = __dep_common.CRAFT_OPTIONAL_SECTIONS
@@ -24,7 +24,15 @@ re = __dep_common.re
 # when it stamps a ticket, and a second table here would let a craft's Lens
 # key a kind no adapter emits while both files read correct. Same direction
 # as `packages.py`'s `dequote` import -- `tools` may import `scripts`.
-from scripts.tickets_adapters import ADAPTER_REGISTRY
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts.tickets_adapters import ADAPTER_REGISTRY
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from tickets_adapters import ADAPTER_REGISTRY
 
 # Every shipped prose tree is recursive; depth does not change a call edge.
 NAME_CHECKED_TREES = (

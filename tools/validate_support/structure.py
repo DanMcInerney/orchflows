@@ -1,7 +1,7 @@
 """Validate call graphs, envelopes, and templates."""
 
 from __future__ import annotations
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 CALL_TOKEN_RE = __dep_common.CALL_TOKEN_RE
 CARRIAGE_SENTENCE_SPLIT_RE = __dep_common.CARRIAGE_SENTENCE_SPLIT_RE
 CRAFT_BUDGET = __dep_common.CRAFT_BUDGET
@@ -32,7 +32,7 @@ COMPOSITION_SCRIPT_SUFFIXES = frozenset({
 })
 COMPOSITION_SCHEMA_RE = re.compile(r"(?:^|[._-])schemas?(?:[._-]|$)", re.IGNORECASE)
 COMPOSITION_FIXTURE_RE = re.compile(r"(?:^|[._-])fixtures?(?:[._-]|$)", re.IGNORECASE)
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 _read_source = __dep_packages._read_source
 _split_frontmatter = __dep_packages._split_frontmatter
@@ -58,8 +58,18 @@ def validate_reference_links(body: str, pkg: dict, diag: Diagnostics) -> None:
             continue
         if not resolved.is_file():
             diag.error(file_label, f"cited reference does not exist: {target}")
-def build_call_graph(packages, diag: Diagnostics):
-    names = {pkg["path"].name for pkg in packages}
+def build_call_graph(packages, diag: Diagnostics, known=None):
+    """The call edges these packages carry, refusing one that resolves to
+    nothing.
+
+    ``known`` names every item a call may resolve to, and defaults to the
+    packages themselves -- the library grades a closed tree, where the two
+    sets are one. A ring is the open case: its items call the library by
+    name, so a caller grading one passes the wider set and an edge out of
+    the ring stays an edge rather than becoming a refusal.
+    """
+
+    names = set(known) if known is not None else {pkg["path"].name for pkg in packages}
     graph = {pkg["path"].name: set() for pkg in packages}
     for pkg in packages:
         file_label = rel(pkg["skill_md"])
@@ -103,8 +113,8 @@ def find_cycle(graph: dict):
     return None
 
 
-def validate_call_graph(packages, diag: Diagnostics) -> None:
-    graph = build_call_graph(packages, diag)
+def validate_call_graph(packages, diag: Diagnostics, known=None) -> None:
+    graph = build_call_graph(packages, diag, known)
     cycle = find_cycle(graph)
     if cycle:
         name_to_file = {pkg["path"].name: pkg["skill_md"] for pkg in packages}
@@ -292,7 +302,10 @@ def _doclint():
     """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from scripts import doclint
+    try:
+        from scripts import doclint
+    except ImportError:  # pragma: no cover - direct/installed flat script path
+        import doclint
 
     return doclint
 
@@ -308,12 +321,15 @@ def workflow_roots():
 
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from scripts.rings import LIB_DIRS
+    try:
+        from scripts.rings import LIB_DIRS
+    except ImportError:  # pragma: no cover - direct/installed flat script path
+        from rings import LIB_DIRS
 
     return [ROOT / relative for relative in LIB_DIRS["workflow"]]
 
 
-def validate_templates(diag: Diagnostics) -> None:
+def validate_templates(diag: Diagnostics, roots=None) -> None:
     """Every workflow directory entry is one workflow skill.
 
     A workflow is a skill whose prose calls callables, so the checks are a
@@ -331,10 +347,16 @@ def validate_templates(diag: Diagnostics) -> None:
 
     What a callable call is, and whether one is well formed, is `scripts/
     tickets.py`'s and is reported there; nothing in a body is graded here.
+
+    ``roots`` names the directories to walk, defaulting to the library's
+    two. A ring keeps its workflows in one directory of its own
+    (`scripts/rings.py`'s ``RING_DIRS``), and grading them is the same
+    question about the same shape, so it is this function asked about that
+    directory rather than a second one written beside it.
     """
     budget = BODY_BUDGET["workflows"]
     homes = {}
-    for comps_dir in workflow_roots():
+    for comps_dir in (workflow_roots() if roots is None else list(roots)):
         if not comps_dir.is_dir():
             diag.warn(rel(comps_dir), SKIPPED)  # no tree, so no workflow
             continue
