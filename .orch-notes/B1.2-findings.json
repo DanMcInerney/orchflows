@@ -1,0 +1,123 @@
+{
+  "review": "B1.2",
+  "run": "20260902T055342Z-browser-game-workflow-update",
+  "artifact": "git:5faeca4246895ea8f6f22a016a3cd959b93666d3",
+  "parent": "a305d9ed9227c3b628c5a9c14d34d3bb4ff05668",
+  "lens": "orch-code-pack craft ## Lens ### git, over docs/custom-workflow-authoring.md 'Authoring lens' owners",
+  "blocking_rule": "blocking: true only where a frozen B1.1 Goal bullet is shown false (ticket B1.2 Goal; rules/verification.md section 10)",
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "every stated tickets.py call accepted as spelled",
+      "verdict": "holds for the six fenced commands (all exit 0, scratch run 20260902T020202Z-bg-judge, frame closed complete); one non-blocking finding on the inline journal line",
+      "findings": ["F1"]
+    },
+    {
+      "criterion": 2,
+      "title": "journal re-read, verbatim relay, judge-or-unjudged Never",
+      "verdict": "no findings",
+      "evidence": "SKILL.md:15-17 re-read at every wave's head and relay of artifact:/findings: verbatim; SKILL.md:74-75 Never ends 'close over the making calls without the checkpoint judge or an `unjudged: <reason>` journal line'"
+    },
+    {
+      "criterion": 3,
+      "title": "PJ-20 closed surface, PJ-22 decision safety, PJ-28 successor-plan fields",
+      "verdict": "the three named PJs hold; one non-blocking finding on other spec clauses dropped by compression",
+      "evidence": "PJ-20: SKILL.md:7-8 inputs brief+workspace 'the only inputs'; outputs at :19, :39, :44, :58; :8-10 user-only verbatim relay / empirical declared experiment / neither blocking; :53-54 five dispositions backticked. PJ-22: :8 'No missing field becomes a default' and Never :70-71. PJ-28: :66-68 artifact identity, artifact kind, matching pack, proposed run/root identities, dependencies, planned/opened status",
+      "findings": ["F2"]
+    },
+    {
+      "criterion": 4,
+      "title": "authoring lens owners",
+      "verdict": "budgets, placement, overlap, ownership, vocabulary, laws 6 and 9 hold; one low-weight non-blocking finding on the description",
+      "evidence": "body_words 449/450 (parent 450), description 106/140 chars; fenced commands are the procedure a driver must reproduce, schema/policy/contract behind links (token-economy 6); 'no --isolation' and 'a judge reads one artifact kind' are implemented refusals B1.1 quoted verbatim (documentation law 6); every fenced example executed in the rehearsal (law 9); closed-surface words (brief, program record, checkpoint, the five dispositions, governing requirement, root relays) used in the specification's sense and no other; wave/journal/frame/callable/typed artifact line in the vocabulary's sense; no cross-package reference link new to this commit",
+      "findings": ["F3"]
+    },
+    {
+      "criterion": 5,
+      "title": "write scope",
+      "verdict": "no findings",
+      "evidence": "git diff --stat a305d9ed..5faeca42: example-workflows/browser-game/SKILL.md, tests/test_browser_game_composition.py (five call anchors respelled to the full command line, one added, none deleted); README.md untouched and its example (lines 68-70: brief in; program record, checkpoint, successor plan out) still matches the body"
+    },
+    {
+      "criterion": 6,
+      "title": "traceability seam closed",
+      "verdict": "no findings",
+      "evidence": "tools/validate.py exit 0, 0 ERROR, browser-game's only line the dated 2026-08-28 allowlist WARN; unittest over the six tests.test_browser_game_* modules exit 0, 50 OK; 23 BGW-TRACE markers, set byte-identical to the parent's; git diff --check exit 0"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "criterion": 1,
+      "blocking": false,
+      "cause": "C1",
+      "title": "the inline journal line is not a command the current set accepts",
+      "evidence": {
+        "file": "example-workflows/browser-game/SKILL.md:16",
+        "command": "scripts/tickets.py result 20260902T020202Z-bg-judge B1 --by B1 --text 'wave 1: opened'",
+        "exit": 1,
+        "output": "result requires assignment seal, dispatch id, record id, and writer. usage: result <run> <id> --assignment-seal <seal> --dispatch-id <id> --record-id <id> --by <writer> (--file <path> | --text <string>)",
+        "accepted_form": "result <run> B1 --assignment-seal <seal frame-open printed> --dispatch-id B1:d1 --record-id wave-1 --by B1 --text ... -> exit 0",
+        "shared_by": "all seven example-workflows bodies state the same shorthand (benchmaker:19, drift-canary:16, evolve:18, renovate:15, skill-tournament:22, super-research:17)"
+      },
+      "why_not_blocking": "B1.1's frozen bullet enumerates the calls it governs (frame-open, each do, the checkpoint judge, frame-close) and every one is accepted as printed; the journal line is the library's own idiom inherited from the exemplars Procedure step 4 says to start from, and frame-open prints the seal and dispatch id a driver needs",
+      "smallest_repair": "in this body alone: spell the line as frame-open prints it (about ten words the 449/450 body must buy); at the shared cause: see C1"
+    },
+    {
+      "id": "F2",
+      "criterion": 3,
+      "blocking": false,
+      "cause": "C2",
+      "title": "compression under the word ceiling dropped four specification clauses outside the named PJs",
+      "evidence": {
+        "file": "example-workflows/browser-game/SKILL.md:39-42 (Evidence), :70-75 (Never)",
+        "dropped_from_parent": [
+          "PJ-07 'represent absence as agreement' (parent Never; absent at the commit)",
+          "PJ-16 'predeclares every required field and settles only its matched cells' (parent Evidence; absent)",
+          "PJ-17 'inconclusive' results (parent Evidence; absent)"
+        ],
+        "absent_in_both": [
+          "PJ-06 'license acceptance' in the invented-default list (Never lists stack, cohort, support promise, budget, fallback, provider, release policy)"
+        ],
+        "still_claimed": "BGW-TRACE[implementation:experiment-validity|PJ-16,PJ-17] and [implementation:program-record|PJ-03,PJ-07] remain on the body",
+        "measurement": "body_words 449 of 450; the trace block already costs 25 words"
+      },
+      "why_not_blocking": "PJ-20, PJ-22 and PJ-28 -- the frozen bullets -- hold as cited under criterion 3; 'No missing field becomes a default' covers PJ-22 generically; the dropped clauses are section 3.2 / section 6 fidelity B1.1's Details asked to preserve, not a frozen Goal bullet",
+      "smallest_repair": "restore 'license acceptance' and 'represent absence as agreement' to Never and 'predeclared, settling only matched cells' plus 'inconclusive' to Evidence (about twelve words), which the ceiling cannot absorb until the trace block leaves the body -- see C2"
+    },
+    {
+      "id": "F3",
+      "criterion": 4,
+      "blocking": false,
+      "cause": "C1",
+      "title": "description states what the skill does, not when to invoke it",
+      "evidence": {
+        "file": "example-workflows/browser-game/SKILL.md:3",
+        "owner": "rules/token-economy.md section 8",
+        "unchanged": "byte-identical to the parent's description; every exemplar description takes the same form"
+      },
+      "why_not_blocking": "no frozen bullet governs the description's form; it is inside budget and unchanged by this commit",
+      "smallest_repair": "none in this body alone; a library-wide description convention is C1's successor"
+    }
+  ],
+  "causes": [
+    {
+      "id": "C1",
+      "findings": ["F1", "F3"],
+      "cause": "the body inherits two forms from the exemplars the authoring standard tells an author to start from (journal shorthand; what-form description), and the standard's own text does not print the accepted journal line",
+      "smallest_change": "one of: tickets.py result accepts a frame-journal shorthand (frame-open already emits journal_by, scripts/tickets_frame.py:182), or docs/custom-workflow-authoring.md prints the accepted line and the seven exemplars follow it",
+      "license": "exceeds B1.1's sealed license (scripts/, docs/ and other workflows were outside its write scope) -> recommended successor scope; friction filed 2026-09-02"
+    },
+    {
+      "id": "C2",
+      "findings": ["F2"],
+      "cause": "BODY_BUDGET workflows = 450 with 25 words of BGW-TRACE markers inside the body leaves no room for the specification's full clause list; B1.1 reported the same wall (449/450)",
+      "smallest_change": "move the traceability markers out of the body (research/architecture-repair-spec-2026-09-01.md Deferred names) and restore the four clauses in the same change",
+      "license": "the trace block's location is the deferred design project, outside this run -> recommended successor scope"
+    }
+  ],
+  "uncovered": [
+    "no test executes the body's fenced commands; the six anchors pin substrings, so a command that keeps its substring and breaks would stay green -- the manual rehearsal is the only oracle (B1.1 named this too)",
+    "the rehearsal's frame-close done ran the installed validator over the shipped fixtures, not over a record and checkpoint a live Record/Checkpoint child produced"
+  ]
+}
