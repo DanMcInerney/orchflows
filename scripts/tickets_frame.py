@@ -32,6 +32,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 if __package__:
+    from . import rings
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_attempts import OUTCOME_RECORD_ID
     from .tickets_bound import parse_bound
@@ -62,6 +63,7 @@ if __package__:
         _tickets_root, _writer_identity, segment_refusal,
     )
 else:  # pragma: no cover - direct/installed flat script path
+    import rings
     from tickets_admission import ADMISSION_PENDING
     from tickets_attempts import OUTCOME_RECORD_ID
     from tickets_bound import parse_bound
@@ -91,6 +93,23 @@ else:  # pragma: no cover - direct/installed flat script path
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _same_project, _segment_error,
         _tickets_root, _writer_identity, segment_refusal,
     )
+
+# The three sentences a frame's driver has to hold for the whole run, printed
+# by the command that opens the frame rather than copied into each workflow
+# body. Eight bodies used to carry a paraphrase of them apiece, which is
+# eight chances for one to drift and no way for a reader to tell which
+# wording was the law. The trunk says it once, at the one moment every
+# driver passes through.
+FRAME_LAW = (
+    "Before each call, re-read this frame's `## Report` and its children's "
+    "states.",
+    "After each call, append the decision with `tickets.py result <run> "
+    "<frame> --by <frame>`; keep every returned `artifact:` and `findings:` "
+    "line verbatim and hand the line itself to the next goal file.",
+    "Close with `tickets.py frame-close <run> <frame> --done <command>` run "
+    "outside the children; a close over two or more `do` children needs a "
+    "judging child or an `unjudged: <reason>` line.",
+)
 
 FRAME_OPEN_USAGE = (
     "frame-open <run> --goal-file F [--details-file D] [--parent ID] "
@@ -156,6 +175,9 @@ def _cmd_frame_open(rest):
     plan, refusal = shape_for(shape, workflow, parent)
     if refusal is not None:
         return refusal
+    workflow_path, refusal = _workflow_path(workflow)
+    if refusal is not None:
+        return refusal
     goal, failure = _read_utf8(goal_file, "goal file")
     if failure is not None:
         return failure
@@ -208,8 +230,30 @@ def _cmd_frame_open(rest):
         "assignment_seal": opened["assignment_seal"],
         "dispatch_id": opened["dispatch_id"],
         "journal_by": frame_id, "shape": plan,
+        "workflow_path": workflow_path,
+        "law": list(FRAME_LAW),
     }}
 
+
+def _workflow_path(workflow):
+    """The named workflow's body, or a refusal naming the rings searched.
+
+    Resolved at the door, before the run exists: a driver holding a name
+    that opens no body is about to improvise the workflow it was asked to
+    run, and the refusal has to say where it looked or the author cannot
+    tell a typo from a ring they never installed.
+    """
+
+    if not workflow:
+        return None, None
+    try:
+        record = rings.resolve("workflow", workflow)
+    except rings.RingError as error:
+        searched = "; ".join(
+            f"{ring} {root}" for ring, root in rings.item_roots("workflow")
+        )
+        return None, {"error": f"{error.detail}. rings searched: {searched}"}
+    return str(record["path"]), None
 
 
 def _opened(run: str, frame_id: str, bound: str) -> dict:
@@ -628,6 +672,6 @@ def open_frames(now=None) -> list:
 
 
 __all__ = (
-    "FRAME_CLOSE_USAGE", "FRAME_OPEN_USAGE", "_cmd_frame_close",
+    "FRAME_CLOSE_USAGE", "FRAME_LAW", "FRAME_OPEN_USAGE", "_cmd_frame_close",
     "_cmd_frame_open", "open_frames", "resume_now",
 )

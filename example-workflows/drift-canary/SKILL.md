@@ -12,9 +12,6 @@ model-invokes.
 
     tickets.py frame-open <run> --goal-file <drift-goal> --workflow drift-canary
 
-Re-read the frame's `## Report` and its children before each wave, and
-append the wave's decision with `tickets.py result <run> <frame> --by
-<frame>`. Keep every returned `artifact:` and `findings:` line verbatim.
 
 **Re-run the set**:
 

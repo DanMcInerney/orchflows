@@ -67,8 +67,9 @@ def _rings():
         for kind_dir in rings.RING_DIRS.values():
             (world["home"] / kind_dir).mkdir(parents=True, exist_ok=True)
             (world["project"] / ".orchflows" / kind_dir).mkdir(parents=True, exist_ok=True)
-        for kind_dir in rings.LIB_DIRS.values():
-            (world["lib"] / kind_dir).mkdir(parents=True, exist_ok=True)
+        for lib_dirs in rings.LIB_DIRS.values():
+            for kind_dir in lib_dirs:
+                (world["lib"] / kind_dir).mkdir(parents=True, exist_ok=True)
         with mock.patch.dict(os.environ, {state_root.ENV_VAR: str(world["home"] / "state")}):
             yield world
 

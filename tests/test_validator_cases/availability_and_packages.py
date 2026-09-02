@@ -169,7 +169,8 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
     def test_workflow_declaring_planner_role_is_valid(self):
         self._write_skill(
             "someworkflowpkg",
-            b"---\nname: someworkflowpkg\ndescription: a workflow with a non-none role\nrole: planner\n---\n"
+            b"---\nname: someworkflowpkg\ndescription: a workflow with a non-none role\n"
+            b"role: planner\ndisable-model-invocation: true\n---\n"
             b"Require: x.\nNever: y.\nReturn: z.\n",
             tier="workflows",
         )
@@ -179,7 +180,8 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
     def test_workflow_declaring_none_role_is_error(self):
         self._write_skill(
             "someworkflowpkg",
-            b"---\nname: someworkflowpkg\ndescription: a glue workflow\nrole: none\n---\n"
+            b"---\nname: someworkflowpkg\ndescription: a glue workflow\n"
+            b"role: none\ndisable-model-invocation: true\n---\n"
             b"Require: x.\nNever: y.\nReturn: z.\n",
             tier="workflows",
         )
@@ -257,3 +259,69 @@ class TestSyntheticPackageBoundaryInputs(_IsolatedTree):
         found = loop_lint_warnings(result.stdout)
         self.assertTrue(found, result.stdout)
         self.assertTrue(all("boundlesspkg" in line for line in found), found)
+
+
+class TestWorkflowLibraryHomes(_IsolatedTree):
+    """Two library directories hold workflows, and one name may sit in one.
+
+    `scripts/rings.py` resolves `skills/workflows` before
+    `example-workflows`, so a name in both resolves to the first and
+    silently shadows the second -- a hiding nobody authored, in the one
+    kind whose body a driver reads rather than dispatches. The validator
+    is where that collision is a refusal instead.
+    """
+
+    # `role` as well as the flag: `skills/workflows` is a skills tier
+    # too, so a body there answers to both check sets. Everything else
+    # is the minimum a skill body owes, so the only finding a case
+    # below sees is the one it plants.
+    BODY = (
+        "---\nname: {name}\ndescription: a synthetic workflow\n"
+        "role: planner\ndisable-model-invocation: true\n---\n"
+        "Require: a goal.\nNever: improvise.\n"
+        "Return: `tickets.py frame-close <run> <frame> --done <check>`.\n"
+    )
+
+    def _write_workflow(self, name: str, home: str, body: str = None):
+        directory = self.tmp_path / home / name
+        directory.mkdir(parents=True)
+        (directory / "SKILL.md").write_text(
+            (body or self.BODY).format(name=name), encoding="utf-8"
+        )
+
+    def test_a_workflow_in_the_skills_tier_is_graded_like_a_gallery_one(self):
+        """The manual-only flag is the workflow check with no skill
+        analogue, so it is the one that says which check set ran."""
+
+        self._write_workflow(
+            "nomanualflow", "skills/workflows",
+            self.BODY.replace("disable-model-invocation: true\n", ""),
+        )
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("must declare 'disable-model-invocation: true'", result.stdout)
+        self.assertIn("nomanualflow", result.stdout)
+
+    def test_one_name_in_both_homes_is_refused(self):
+        self._write_workflow("bothflow", "skills/workflows")
+        self._write_workflow("bothflow", "example-workflows")
+
+        result = self._run()
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn(
+            "workflow name 'bothflow' is also at skills/workflows/bothflow/SKILL.md",
+            result.stdout.replace("\\", "/"),
+        )
+
+    def test_the_same_name_in_one_home_alone_is_no_finding(self):
+        """The can-fail control: the collision, not the name, is the defect."""
+
+        self._write_workflow("bothflow", "example-workflows")
+
+        result = self._run()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("is also at", result.stdout)

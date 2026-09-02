@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2218,
+  "count": 2233,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -78,6 +78,8 @@
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_name_reader_is_that_host_s_own_path_template",
+   "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_both_homes_are_discovered_in_the_resolver_s_order",
+   "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_the_package_loop_leaves_the_workflow_home_alone",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
    "test_command_surface.CurrentCommandSurfaceTest.test_every_command_named_by_a_skill_is_routed",
    "test_command_surface.CurrentCommandSurfaceTest.test_help_usage_and_summary_name_one_exact_surface",
@@ -779,8 +781,10 @@
    "test_rings.ReservationAndShadowTests.test_a_reserved_ring_name_refuses_loudly_rather_than_never_running",
    "test_rings.ReservationAndShadowTests.test_the_library_keeps_its_own_reserved_names",
    "test_rings.RingOrderTests.test_a_bare_packs_ancestor_directory_is_not_a_root",
+   "test_rings.RingOrderTests.test_a_reusable_workflow_shadows_a_gallery_name",
    "test_rings.RingOrderTests.test_a_workflow_reads_workflows_in_a_ring_and_example_workflows_in_lib",
    "test_rings.RingOrderTests.test_lib_skills_expand_one_sublayer",
+   "test_rings.RingOrderTests.test_lib_workflows_search_the_skills_tier_before_the_gallery",
    "test_rings.RingOrderTests.test_missing_home_roots_do_not_break_resolution",
    "test_rings.RingOrderTests.test_the_home_ring_is_never_read_as_a_project_ring",
    "test_rings.RingOrderTests.test_the_search_order_is_project_home_imports_then_lib",
@@ -1060,6 +1064,14 @@
    "test_ticket_frames.FrameCloseTest.test_land_stays_the_callable_command_and_frame_close_says_so",
    "test_ticket_frames.FrameJournalTest.test_a_journal_append_outlives_the_frames_nominal_expiry",
    "test_ticket_frames.FrameJournalTest.test_a_wave_appends_through_the_result_channel_under_the_frames_identity",
+   "test_ticket_frames.FrameLawOwnerTest.test_every_body_still_returns_the_close_it_owes",
+   "test_ticket_frames.FrameLawOwnerTest.test_no_body_restates_the_journal_command",
+   "test_ticket_frames.FrameLawOwnerTest.test_putting_the_paragraph_back_into_a_copy_fails_the_check",
+   "test_ticket_frames.FrameLawTest.test_a_called_frame_is_handed_the_law_too",
+   "test_ticket_frames.FrameLawTest.test_a_named_workflow_resolves_to_the_body_the_driver_reads",
+   "test_ticket_frames.FrameLawTest.test_an_improvised_frame_names_no_workflow_path",
+   "test_ticket_frames.FrameLawTest.test_an_unresolvable_workflow_is_refused_before_the_run_exists",
+   "test_ticket_frames.FrameLawTest.test_the_open_prints_the_three_law_lines_the_driver_owes",
    "test_ticket_frames.FrameShapeLineTest.test_a_called_frame_is_already_a_wave_of_its_callers_plan",
    "test_ticket_frames.FrameShapeLineTest.test_a_lawful_line_of_every_construct_opens_the_frame",
    "test_ticket_frames.FrameShapeLineTest.test_a_plan_the_work_outgrew_prints_and_never_refuses",
@@ -2040,6 +2052,9 @@
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_skill_missing_role_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_none_role_is_error",
    "tests.test_validator_cases.availability_and_packages.TestSyntheticPackageBoundaryInputs.test_workflow_declaring_planner_role_is_valid",
+   "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_a_workflow_in_the_skills_tier_is_graded_like_a_gallery_one",
+   "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_one_name_in_both_homes_is_refused",
+   "tests.test_validator_cases.availability_and_packages.TestWorkflowLibraryHomes.test_the_same_name_in_one_home_alone_is_no_finding",
    "tests.test_validator_cases.contracts_and_names.TestEnvelopeCheck.test_bound_unit_leading_with_the_envelope_passes",
    "tests.test_validator_cases.contracts_and_names.TestEnvelopeCheck.test_bound_unit_return_riding_the_work_item_carrier_passes",
    "tests.test_validator_cases.contracts_and_names.TestEnvelopeCheck.test_bound_unit_return_without_envelope_is_error",
@@ -2221,7 +2236,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "01872bf75eea2ad29dce56b3607dffb0ec14c1617b4273928d5265b4584b25f8"
+  "sha256": "e4eb3571a88bd5042eb7566cd72b4530fabff10fcce5bf2658fedbb02f6a473c"
  },
  "mutation_owners": [
   {

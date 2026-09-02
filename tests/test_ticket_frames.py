@@ -24,7 +24,9 @@ from pathlib import Path
 from unittest import mock
 
 from tests._repo_root import ROOT
-from scripts import orchflows, orchflows_scaffold, state_root, tickets
+from scripts import (
+    orchflows, orchflows_scaffold, state_root, tickets, tickets_frame,
+)
 from scripts.tickets_mint import DO_EXECUTOR
 from scripts.tickets_format import (
     _parse_frontmatter, _sections, _set_frontmatter_field, ticket_defects,
@@ -613,6 +615,106 @@ class ResumeTest(FrameSinkTest):
         )
 
 
+class FrameLawTest(FrameSinkTest):
+    """What `frame-open` prints for the driver it just opened a journal for.
+
+    The three law lines and the workflow body's path are the two things a
+    driver cannot derive: the first because a paraphrase of a rule reads
+    exactly like the rule, the second because a name resolves through four
+    rings and only one of them is the library.
+    """
+
+    def test_the_open_prints_the_three_law_lines_the_driver_owes(self):
+        opened = self.frame()
+
+        self.assertEqual(
+            [
+                "Before each call, re-read this frame's `## Report` and its "
+                "children's states.",
+                "After each call, append the decision with `tickets.py result "
+                "<run> <frame> --by <frame>`; keep every returned `artifact:` "
+                "and `findings:` line verbatim and hand the line itself to the "
+                "next goal file.",
+                "Close with `tickets.py frame-close <run> <frame> --done "
+                "<command>` run outside the children; a close over two or more "
+                "`do` children needs a judging child or an `unjudged: <reason>` "
+                "line.",
+            ],
+            opened["law"],
+        )
+
+    def test_a_called_frame_is_handed_the_law_too(self):
+        """A workflow invoked under another is a driver of its own: the
+        session that reads its journal never saw the outer open."""
+
+        parent = self.frame()
+
+        child = self.frame("--parent", parent["id"])
+
+        self.assertEqual(list(tickets_frame.FRAME_LAW), child["law"])
+
+    def test_a_named_workflow_resolves_to_the_body_the_driver_reads(self):
+        opened = self.frame("--workflow", "super-research")
+
+        self.assertEqual(
+            str(ROOT / "example-workflows" / "super-research" / "SKILL.md"),
+            opened["workflow_path"],
+        )
+
+    def test_an_improvised_frame_names_no_workflow_path(self):
+        self.assertIsNone(self.frame()["workflow_path"])
+
+    def test_an_unresolvable_workflow_is_refused_before_the_run_exists(self):
+        refused = self.call(
+            "frame-open", self.RUN, "--goal-file", str(self.goal_file),
+            "--workflow", "no-such-workflow", expect_error=True,
+        )
+
+        self.assertIn("no-such-workflow", refused["error"])
+        for home in ("skills", "workflows", "example-workflows"):
+            self.assertIn(home, refused["error"])
+        self.assertFalse(self.run_dir().exists())
+
+
+class FrameLawOwnerTest(unittest.TestCase):
+    """The law has one owner, and the shipped bodies are not it.
+
+    Eight bodies each carried their own wording of the same three
+    sentences. The trunk prints them now, so a body that restates the
+    journal command is a second owner of a fact the first one already
+    spells differently.
+    """
+
+    def setUp(self):
+        self.bodies = {
+            path.parent.name: path.read_text(encoding="utf-8")
+            for path in sorted((ROOT / "example-workflows").glob("*/SKILL.md"))
+        }
+        self.assertEqual(8, len(self.bodies))
+
+    def test_no_body_restates_the_journal_command(self):
+        self.assertEqual([], sorted(_relaying(self.bodies)))
+
+    def test_putting_the_paragraph_back_into_a_copy_fails_the_check(self):
+        """The can-fail direction, on a copy: no body is touched."""
+
+        name = "drift-canary"
+        restored = dict(self.bodies)
+        restored[name] = self.bodies[name] + tickets_frame.FRAME_LAW[1]
+
+        self.assertEqual({name}, _relaying(restored))
+
+    def test_every_body_still_returns_the_close_it_owes(self):
+        """The one frame command a body keeps: its `done` is the workflow's
+        own, so the law's third line cannot state it for anybody."""
+
+        for name, body in self.bodies.items():
+            with self.subTest(workflow=name):
+                self.assertIn(
+                    "Return: `tickets.py frame-close <run> <frame> --done", body,
+                )
+
+
 class SavedWorkflowShapeTest(unittest.TestCase):
     """Every shipped workflow's root `frame-open` states a plan.
 
@@ -690,6 +792,20 @@ class ShapeGrammarOwnerTest(unittest.TestCase):
             ["prose:judge"],
             _adrift(prose.replace("`judge` are", "judge are"), SHAPE_GRAMMAR),
         )
+
+
+def _relaying(bodies: dict) -> set:
+    """The workflows whose prose restates a line the trunk now prints.
+
+    The anchor is the journal command itself -- a spelling no body has a
+    reason to carry once `frame-open` hands it over -- not a sentence,
+    which every body worded differently anyway.
+    """
+
+    return {
+        name for name, body in bodies.items()
+        if "tickets.py result <run> <frame> --by" in " ".join(body.split())
+    }
 
 
 def _planless(bodies: dict, flag: str = "--workflow") -> set:

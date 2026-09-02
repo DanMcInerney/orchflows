@@ -12,6 +12,7 @@ from tests.test_validator_cases.support import _IsolatedTree
 from tests.test_validator_cases.availability_and_packages import (
     TestASkippedCheckSaysSo,
     TestSyntheticPackageBoundaryInputs,
+    TestWorkflowLibraryHomes,
 )
 from tests.test_validator_cases.contracts_and_names import (
     TestEnvelopeCheck,

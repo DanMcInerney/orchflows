@@ -165,7 +165,13 @@ NAME_ONLY = "`orch-mimic`"
 RULE_MD = "# A rule\n\n{body}\n"
 SKILL_MD = (
     "---\nname: {name}\ndescription: a synthetic skill standing in for a "
-    "tier the cross-tier check reads\nrole: worker\n---\n"
+    "tier the cross-tier check reads\nrole: worker\n"
+    # The workflows tier is also the library's reusable-workflow home,
+    # so a body there owes the manual-invocation flag; these cases are
+    # about a clause with two owners and pay it rather than change tier
+    # -- kernel, the other one, forbids the skill-to-skill citation
+    # they turn on.
+    "disable-model-invocation: true\n---\n"
     "Require: one ticket.\nNever: guess.\nReturn: the ticket.\n{body}\n"
 )
 

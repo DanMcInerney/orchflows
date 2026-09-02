@@ -15,10 +15,6 @@ acquisition's lane cut is [the charter's](../references/benchmaker-research.md).
 
     tickets.py frame-open <run> --goal-file <benchmark-goal> --workflow benchmaker
 
-Re-read the frame's `## Report` and its children before each call, and
-append every decision back with `tickets.py result <run> <frame> --by
-<frame>`. Keep each returned `artifact:` and `findings:` line verbatim: the
-next call is handed the line, never a paraphrase of it.
 
 Three making calls, each on the one before it. **Acquire**, `do` with
 `--pack orch-research-pack`: one converged synthesis about `target` and its
