@@ -21,8 +21,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-# This file sits two levels under the repository root
-# (`reader/tests/_repo_root.py`), so two `.parent`s from its own resolved
-# location is the fact every site under `reader/tests/` needs, at
-# whatever depth it lives.
+# This file sits in `reader/tests/`, two directories under the repository
+# root, so three `.parent`s from its own resolved path -- one to leave the
+# file, two to leave the directories -- is the fact every site under
+# `reader/tests/` needs, at whatever depth it lives.
 ROOT = Path(__file__).resolve().parent.parent.parent

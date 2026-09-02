@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-# This file sits one level under the repository root (`tests/_repo_root.py`),
-# so one `.parent` from its own resolved location is the fact every other
-# site under `tests/` needs.
+# This file sits in `tests/`, one directory under the repository root, so
+# two `.parent`s from its own resolved path -- one to leave the file, one
+# to leave `tests/` -- is the fact every other site under `tests/` needs.
 ROOT = Path(__file__).resolve().parent.parent
