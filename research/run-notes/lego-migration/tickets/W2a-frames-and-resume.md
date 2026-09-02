@@ -22,7 +22,7 @@ newest first, nothing resident.
   `frame: true` marker W1's shapes already… if W1 did not add one, add
   it with its own T0 record — coordinate by reading W1's landed diff
   first; you branch from W1's tip)
-- design: `.orchflows/lego-design-2026-08-31.md` §Frames + amendments
+- design: `research/lego-design-2026-08-31.md` §Frames + amendments
   A1 (the journal is the driver's working memory — resume and the
   frame docs both say waves BEGIN by re-reading it) and A2
 - frames carry no lease and no pack (design A7); land's not-isolated

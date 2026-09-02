@@ -30,7 +30,7 @@ days. ``--since``/``--until`` bound a continuous range and compose with
 (no covered file: everything) -- this default applies only when literally
 no flag was given, never as a fallback for one flag with no match.
 
-What it does, in order (design: ``.orchflows/self-improve-design-2026-09-01.md``
+What it does, in order (design: ``research/self-improve-design-2026-09-01.md``
 Move 1):
 
 1. Slice ``friction/*.jsonl`` and ``events/*.jsonl`` by the window and the

@@ -1,4 +1,4 @@
-Implement M1 of `.orchflows/self-improve-design-2026-09-01.md` (in your
+Implement M1 of `research/self-improve-design-2026-09-01.md` (in your
 worktree; its "Move 1" section is normative, including the amended CLI):
 the deterministic harvest door.
 

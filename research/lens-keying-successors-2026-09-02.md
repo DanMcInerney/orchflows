@@ -1,7 +1,7 @@
 # Lens keying successors
 
 Frozen root for the run that closes what run 20260902T024320Z's two judges
-reported (findings files under `.orchflows/reviews/20260902T024320Z-B1.6-*`
+reported (findings files under `research/run-notes/reviews/20260902T024320Z-B1.6-*`
 and `-B1.7-*`) and the three friction entries its children filed. Every fact
 this document asserts about the tree is carried as the command that derived
 it, with the count that command returned at freeze (tip 346a7bae); an

@@ -30,7 +30,7 @@ budget).
   TICKETS.md, ARCHITECTURE.md, DESIGN.md — and NOTHING under scripts/,
   installer/, reader/, skills/, example-workflows/ (W4a's and earlier
   waves' territory)
-- the design + amendments: `.orchflows/lego-design-2026-08-31.md` —
+- the design + amendments: `research/lego-design-2026-08-31.md` —
   A1..A7 are the load-bearing sentences; carry their substance, not
   their wording (near-dup ratchet has zero headroom)
 - you branch from the W3 merge tip; run validate EARLY once for the
