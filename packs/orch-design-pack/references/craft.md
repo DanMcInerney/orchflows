@@ -108,6 +108,9 @@ Identify the render and its covered view, breakpoint, and state matrix. Record
 fresh captures, exercised interactions, console and accessibility readings,
 relevant build output, and uncovered states.
 
+Weigh in listed order, except that the accessibility floor is a bar rather
+than a dimension the others trade against.
+
 ## Stages
 
 - Enumerate view identities before editing: view, breakpoint and state

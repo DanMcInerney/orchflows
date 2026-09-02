@@ -176,5 +176,73 @@ class CraftLensKeyTest(unittest.TestCase):
                 )
 
 
+class BlockingLawOwnershipTest(unittest.TestCase):
+    """What `blocking` means is library law with one owner; how findings
+    weigh against each other is each craft's own.
+
+    The two halves were one paragraph in `orch-code-pack`'s `### git`
+    entry, which left the four other packs' judges with a field to fill
+    and nothing to read for it. The law is now `rules/verification.md`
+    §10 and no craft restates it.
+    """
+
+    # Anchors, not sentences: each is a backticked field value or a
+    # phrase the clause cannot drop without dropping the fact. A reword
+    # that keeps the law keeps these; a deletion or a second copy is what
+    # goes red.
+    LAW_ANCHORS = ("`blocking: true`", "`blocking: false`", "never repaired")
+    # Either half of the weighting vocabulary the five crafts use: an
+    # explicit precedence ("outranks") or a deferral to the criteria list
+    # ("listed order").
+    WEIGHT_ANCHOR = re.compile(r"outranks|listed order")
+
+    def packs(self):
+        return sorted(path.parent.name for path in (ROOT / "packs").glob("*/SKILL.md"))
+
+    def lens_entry(self, pack: str, kind: str) -> str:
+        craft = read(f"packs/{pack}/references/craft.md")
+        lens = re.search(r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", craft)
+        self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
+        entry = re.search(
+            r"(?ms)^### %s\s*$(.*?)(?=^### |\Z)" % re.escape(kind), lens.group(1)
+        )
+        self.assertIsNotNone(entry, f"{pack} craft has no `### {kind}` entry")
+        return entry.group(1)
+
+    def test_the_rule_owns_the_law_and_no_craft_restates_it(self):
+        rule = " ".join(read("rules/verification.md").split())
+        clause = re.search(r"(?s)\b10\. (.*?)(?=\s\d{1,2}\. |\Z)", rule)
+        self.assertIsNotNone(clause, "rules/verification.md carries no clause 10")
+        for anchor in self.LAW_ANCHORS:
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, clause.group(1))
+        self.assertEqual(5, len(self.packs()))
+        for pack in self.packs():
+            with self.subTest(pack=pack):
+                self.assertNotIn(
+                    "blocking", read(f"packs/{pack}/references/craft.md")
+                )
+
+    def test_the_judge_points_at_the_clause_that_carries_the_law(self):
+        body = " ".join(read("skills/kernel/orch-judge/SKILL.md").split())
+        self.assertIn("`rules/verification.md` §10", body)
+
+    def test_every_deliverable_lens_entry_weighs_its_findings_once(self):
+        """The kind comes from the pack's own adapter, so the entry this
+        reads is the one the launch prompt names -- never a list of kinds
+        copied here, which is the fact that goes stale."""
+
+        from scripts.tickets_adapters import adapter_spec
+
+        for pack in self.packs():
+            with self.subTest(pack=pack):
+                entry = self.lens_entry(pack, adapter_spec(pack).artifact_kind)
+                self.assertEqual(
+                    1,
+                    len(self.WEIGHT_ANCHOR.findall(entry)),
+                    "one weighting sentence per deliverable entry",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -82,6 +82,8 @@ Identify the evidence packet. Record resolving sources for load-bearing
 claims, contradiction and upstream-independence readings, calibrated
 confidence, uncertainty, dead ends, and unanswered parts of Goal.
 
+Weigh in listed order, and a claim with no source at all is read first.
+
 - Date every claim; undated evidence ages silently.
 - Quantify: a magnitude with a unit beats a directional adjective;
   mark what resists quantification as such.
