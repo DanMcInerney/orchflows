@@ -91,6 +91,9 @@ with output digests, the fresh reproduction reading for every load-bearing
 number, spent degrees of freedom, robustness readings, and unanswered parts
 of Goal.
 
+Weigh in listed order: nothing below reproduction holds while the numbers
+themselves fail to reproduce.
+
 - Numbers are artifacts: a load-bearing number is materialized by its
   pipeline into the workspace, never hand-copied from output to prose.
 - A point value claims too much: every load-bearing number carries its

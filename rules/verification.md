@@ -46,3 +46,10 @@ places this evidence law in the ticket lifecycle.
    nothing but hand-edited state to read. A critique's findings and a
    repair's result live in the ordinary `## Report` and the joined
    disposition instead.
+10. A finding is `blocking: true` on two grounds only: it shows a frozen
+    completion criterion false, or it is a correctness finding at the fixed
+    identity. Every other finding is `blocking: false` — reported in the
+    review, never repaired in the run that reported it, and carried out as
+    successor scope instead. Which findings a lens can raise, and how they
+    weigh against each other, stay the pack craft's; what the field means
+    does not vary by domain.
