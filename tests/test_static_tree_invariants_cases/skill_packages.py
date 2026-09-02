@@ -10,6 +10,11 @@ SKILL_TIERS = ("kernel", "workflows")
 ROLE_TABLE = {
     "orch-judge": "planner",
     "orch-do": "worker",
+    # `skills/workflows/` is a skills tier too, so a workflow body needs a
+    # role decision here like any other. It is the role the body would run
+    # at if it were ever dispatched; no host surface binds it, because a
+    # workflow is driven in place (installer.packages.without_role).
+    "bakeoff": "planner",
 }
 
 

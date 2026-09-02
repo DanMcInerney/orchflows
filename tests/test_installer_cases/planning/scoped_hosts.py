@@ -484,20 +484,27 @@ class TestScopedHostConfiguration(unittest.TestCase):
             adapter_names = {dest.parent.name for dest, _ in plan.claude_adapters}
             prompt_names = {dest.stem for dest, _ in plan.codex_prompts}
             by_name_names = {dest.parent.name for dest, _ in plan.by_name}
-            lib_comps = (home / ".orchflows" / "lib" / "example-workflows").resolve()
+            lib_home = (home / ".orchflows" / "lib").resolve()
             for directory, _frontmatter, _ in templates:
                 name = directory.name
+                # The library keeps workflows in two homes, so the body's
+                # path comes from the directory it was discovered in; a
+                # single spelled home would grade one of them and skip the
+                # other while reading as though it swept both.
+                lib_body = (
+                    lib_home / directory.relative_to(install.REPO_ROOT) / "SKILL.md"
+                ).resolve()
                 self.assertIn(name, adapter_names)
                 self.assertIn(name, prompt_names)
                 self.assertIn(name, by_name_names)
                 # Both surfaces name the one body: the adapter to invoke it,
                 # the pointer to read it.
                 adapter = next(c for d, c in plan.claude_adapters if d.parent.name == name)
-                self.assertIn(str(lib_comps / name / "SKILL.md"), adapter)
+                self.assertIn(str(lib_body), adapter)
                 self.assertIn("disable-model-invocation: true", adapter)
                 self.assertNotIn("--set ", adapter)
                 pointer = next(c for d, c in plan.by_name if d.parent.name == name)
-                self.assertIn(str(lib_comps / name / "SKILL.md"), pointer)
+                self.assertIn(str(lib_body), pointer)
                 self.assertIn("invoked by name only", pointer)
 
     def test_user_plan_writes_flat_by_name_index_for_every_package(self):
