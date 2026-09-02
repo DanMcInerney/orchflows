@@ -675,7 +675,7 @@ class TypedArtifactGrammarTest(unittest.TestCase):
 
     def test_each_registered_adapter_names_one_line_kind(self):
         from scripts.tickets_adapters import ADAPTER_REGISTRY
-        from scripts.tickets_dispatch_launch import ARTIFACT_LINE_FORMS
+        from scripts.tickets_dispatch_launch_lines import ARTIFACT_LINE_FORMS
 
         for adapter in ADAPTER_REGISTRY.values():
             self.assertIn(adapter.artifact_kind, ARTIFACT_LINE_FORMS)

@@ -113,10 +113,6 @@
    "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_carries_every_fact_a_child_cannot_derive",
    "test_dispatch_launch.DispatchLaunchTest.test_the_prompt_names_the_identities_every_record_is_filed_under",
    "test_dispatch_launch.DispatchLaunchTest.test_the_removed_carriage_selectors_are_ordinary_unknown_arguments",
-   "test_dispatch_launch.IdentityLineTest.test_no_skill_path_drops_only_the_file_clause",
-   "test_dispatch_launch.IdentityLineTest.test_the_first_line_names_the_skill_tool_and_the_verbatim_argument",
-   "test_dispatch_launch.IdentityLineTest.test_the_first_line_tells_a_fork_already_inside_to_work_in_place",
-   "test_dispatch_launch.IdentityLineTest.test_the_old_apply_wording_is_gone",
    "test_dispatch_launch.LandTest.test_a_land_with_no_predicate_and_no_status_refuses_before_integrating",
    "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
    "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
@@ -134,14 +130,18 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
-   "test_dispatch_launch.LensKeyPromptTest.test_a_judge_is_sent_to_the_kind_on_its_artifact_line",
-   "test_dispatch_launch.LensKeyPromptTest.test_a_judge_over_two_kinds_is_refused_at_the_mint",
-   "test_dispatch_launch.LensKeyPromptTest.test_a_making_do_is_sent_to_its_adapters_own_kind",
-   "test_dispatch_launch.LensKeyPromptTest.test_a_planning_do_is_sent_to_the_kind_it_was_minted_to_make",
-   "test_dispatch_launch.LensKeyPromptTest.test_no_craft_carries_no_lens_sentence",
-   "test_dispatch_launch.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
-   "test_dispatch_launch.ReturnLineConditionalTest.test_a_content_pack_do_launch_commits_without_a_merge_sentence",
-   "test_dispatch_launch.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
+   "test_dispatch_launch_lines.IdentityLineTest.test_no_skill_path_drops_only_the_file_clause",
+   "test_dispatch_launch_lines.IdentityLineTest.test_the_first_line_names_the_skill_tool_and_the_verbatim_argument",
+   "test_dispatch_launch_lines.IdentityLineTest.test_the_first_line_tells_a_fork_already_inside_to_work_in_place",
+   "test_dispatch_launch_lines.IdentityLineTest.test_the_old_apply_wording_is_gone",
+   "test_dispatch_launch_lines.LensKeyPromptTest.test_a_judge_is_sent_to_the_kind_on_its_artifact_line",
+   "test_dispatch_launch_lines.LensKeyPromptTest.test_a_judge_over_two_kinds_is_refused_at_the_mint",
+   "test_dispatch_launch_lines.LensKeyPromptTest.test_a_making_do_is_sent_to_its_adapters_own_kind",
+   "test_dispatch_launch_lines.LensKeyPromptTest.test_a_planning_do_is_sent_to_the_kind_it_was_minted_to_make",
+   "test_dispatch_launch_lines.LensKeyPromptTest.test_no_craft_carries_no_lens_sentence",
+   "test_dispatch_launch_lines.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
+   "test_dispatch_launch_lines.ReturnLineConditionalTest.test_a_content_pack_do_launch_commits_without_a_merge_sentence",
+   "test_dispatch_launch_lines.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
    "test_dispatch_launch_record.DispatchCarriageTest.test_dispatch_emits_codepage_independent_canonical_ascii",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_after_retirement",
    "test_dispatch_launch_record.DispatchLaunchRecordTest.test_a_committed_launch_replays_before_current_resolution",
@@ -2159,7 +2159,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a305502d25aa750344d59b3b44c33d941e6c94ee6e736d77ea3cc0b43c14273b"
+  "sha256": "347d242ecaf6e790fad2f7d1dfa504d38e77427e8c2dbb7748abdd51f14e4dcd"
  },
  "mutation_owners": [
   {
@@ -2321,7 +2321,7 @@
    ]
   },
   {
-   "module": "tests.test_dispatch_launch",
+   "module": "tests.test_dispatch_launch_lines",
    "owner": "LensKeyPromptTest.minted",
    "restoration": "selected-module-boundary",
    "seams": [
@@ -2329,7 +2329,7 @@
    ]
   },
   {
-   "module": "tests.test_dispatch_launch",
+   "module": "tests.test_dispatch_launch_lines",
    "owner": "LensKeyPromptTest.setUp",
    "restoration": "selected-module-boundary",
    "seams": [
