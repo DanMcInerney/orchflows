@@ -1,0 +1,141 @@
+{
+ "run": "20260902T024320Z",
+ "ticket": "B1.6",
+ "branch": "claude/orchestrator-subagent-analysis-758331",
+ "fixed_artifact": "git:b7a5f5924de09cca004ec2ec88a6318ce740677c",
+ "baseline": "8e6430859ce926e32ce6bc5bb76a4a73a2256f46 (the outline's stated floor; the frozen root itself landed at b4affffd)",
+ "scope": "The joined tip of five units U1-U5 against research/lens-keying-2026-09-02.md as it stands in the tree at that tip (read whole; 142 lines), and the `## Report` of tickets B1.1-B1.5 of this run. Judged through packs/orch-code-pack/references/craft.md `## Lens` > `### git`, in its stated weight order: Correctness, Contract fidelity, Diff, Shape.",
+ "schema_note": "No contracts/*.md and no scripts/tickets_shapes.py names a canonical findings-record shape; the seven per-finding fields here -- id, seam, blocking, summary, evidence, cause, remedy -- are kept identical to .orchflows/reviews/20260901T223620Z-B1.7-seam-findings.json so the two read side by side. `blocking` follows this pack's craft verbatim: true only where a frozen completion criterion is shown false, or a correctness finding stands at the fixed identity; contract fidelity with no criterion failing, scope and shape are false -- reported, never repaired in the same run. Every finding below is blocking:false, and that is a reading of the craft's rule rather than a softening of it: the run's own `## Acceptance for the whole` names three criteria and all three were observed true, live, at this identity.",
+ "acceptance_as_observed": [
+  {
+   "criterion": "`python tools/run_required.py --no-cache` green at the joined tip",
+   "observed": "exit 0. Each of the five rows 0: tools/validate.py, tools/run_tests.py, tools/run_serial_compat.py, install.py --dry-run, git diff --check. Trailer 'exit 0  tree 9a26fbf70d3e'. A separate re-run of tools/validate.py alone: exit 0, 16 WARN, 0 ERROR, 15 of them cross-tier near-duplicates and 0 craft-section near-duplicates. B1.2 and B1.4 both measured the base at 17 WARN / 16 cross-tier, so the count fell by one and neither ratchet moved: WARNING_CEILING (0), CROSS_TIER_WARNING_CEILING (29) and CRAFT_BUDGET (130) are byte-unchanged in `git diff 8e643085 b7a5f592`."
+  },
+  {
+   "criterion": "a `judge` minted with `--artifacts root:<a live root_generation>` is accepted and its launch prompt names `### root`",
+   "observed": "Taken live in a sandbox sink, not inferred from a unit test. A parentless `tickets.py do` under orch-code-pack (exit 0) stamped root:B1:1:sha256:24be3308188734073482f821a423673831b00ed366e25eaee67719a00baff7b0. `tickets.py judge --artifacts <that value>` exit 0; the minted ticket's `## Context` carries `- artifact: root:B1:1:sha256:24be3308...`; its launch prompt carries, on its own line, \"You judge `root` artifacts: the craft's `## Lens` entry `### root` is your criteria.\" The same for the run's live cut_generation -> lens_key `cut`, prompt names `### cut`. Beyond the criterion: the adapter default renders \"You make a `git`: ... `### git` ...\" and `do --makes root` renders \"You make a `root`: ... `### root` ...\", so all three lens_key resolution paths were exercised end to end at this identity."
+  },
+  {
+   "criterion": "every pack's craft passes `validate_craft_sections` with the four headings and its Lens keys",
+   "observed": "Checked directly as well as through validate.py's exit 0. All five crafts carry exactly `## Vocabulary`, `## Workspace`, `## Spec fields`, `## Lens`, `## Stages`, and `## Lens` carries exactly `### root`, `### cut`, then the adapter's kind: code git, content doc, data git, design git, research evidence. Two mutants at this tip confirm the check is not decorative -- demoting the research craft's `### cut` to `####` makes validate.py exit 1 with \"`## Lens` carries no `### cut` entry\", and renaming the data craft's `### git` to `### evidence` raises BOTH the extra-kind and the missing-kind ERROR."
+  }
+ ],
+ "concurrences": [
+  {
+   "claim": "B1.3's accepted deviation: the data pack keys `### git`, not the outline's original `### evidence`.",
+   "verified": "Correct, and the tree enforces it rather than merely tolerating it. Renaming the data craft's entry to `### evidence` -- exactly what the outline first said -- is refused by validate.py with two ERRORs naming the adapter's `git`. The kind is read from scripts/tickets_adapters.py ADAPTER_REGISTRY in both the validator (tools/validate_support/names.py `_adapter_kind`) and the test (tests/test_verification_model.py CraftLensKeyTest, via `adapter_spec(pack).artifact_kind`), so no second table of kinds exists to go stale. The outline was corrected at 9fe4bbc6 and the tip's copy now reads \"`git` for code, data and design\", so no deviation remains open at this identity."
+  },
+  {
+   "claim": "Text moved not rewritten in the crafts (B1.2 for the exemplar, B1.3 for the other four).",
+   "verified": "Re-derived independently for all five. With `#`-prefixed lines and blank lines stripped and the remainder sorted, the line set at 8e643085 and at b7a5f592 is identical for every craft -- not one non-heading line changed in any of the five. Only headings moved."
+  },
+  {
+   "claim": "U2's and U3's overlapping tests: the join kept U2's.",
+   "verified": "Confirmed, and U2's are the stronger pair. tests/test_packs.py's test_every_pack_resolves_a_distinct_root_lens_entry reads `### root` and adds an assertNotIn on a newline followed by `## Outline`; U3's transitional `## Outline` fallback -- which its own comment said to delete once U2 landed -- is gone rather than left behind. tests/test_cell_linter_cases/warning_ratchets.py plants under `## Lens`, the one section name that exists on both sides of the migration, and its own assertGreater is green at this tip, so the plant still bites: the vacuity U3 warned about, where a plant under a heading one pack retired pairs with nothing and goes quiet, did not happen."
+  },
+  {
+   "claim": "The seams the ticket names agree.",
+   "verified": "U2's validator x U3's four crafts: validate.py exit 0, 0 ERROR. U1's `_artifact_lines` x U5's `--makes` in scripts/tickets_mint.py: both live in the merged file and both fire -- an unknown `root:` identity is refused naming the run's real values (U1), a judge over two kinds is refused naming each (U5), `--makes` on a judge and `--makes git` are both refused (U5). U4's vocabulary entry x U2's contract wording: docs/vocabulary.md defers the roster to the signature (\"the signature's craft-section table names the mandatory ones\") and the two describe the same keying -- but they now share one clause verbatim, which is finding F3."
+  },
+  {
+   "claim": "Join integrity across the five merges.",
+   "verified": "For each unit commit, every file it touched was compared blob-to-blob against the tip. The only files that differ are the ones two or more units share: scripts/tickets_mint.py (U1+U5), tests/pins.json (U2+U5), tests/serial_compat_manifest.json (all five), tests/test_verification_model.py (U2+U3+U4), and tests/test_packs.py plus warning_ratchets.py (U2+U3). All three contributions to test_verification_model.py survive at the tip: U2's moved Evidence-anchor test now keyed doc/git/evidence, U3's CraftLensKeyTest, and U4's assertNotIn on `packs.py cells` plus the respelled judge pin. The manifest carries every new identity, including LensKeyPromptTest's two selected-module-boundary rulings that the join's regeneration dropped and 67cd36cf restored."
+  },
+  {
+   "claim": "No check weakened to reach green.",
+   "verified": "Every removed assertion in the tests diff is a re-keying with a same-or-stronger replacement: tests/test_orchflows_cli.py gained the `### <kind>` loop and a retired-heading assertNotIn on top of the section loop it already had; tests/test_validator_cases/corpus_and_surfaces.py went from 2 cases to 7, including one that proves the adapter -- not a constant -- decides the kind. No ceiling, budget or ratchet constant changed value. tools/check_source_sizes.py exit 0 with warnings=38, the figure B1.5 measured at the base."
+  },
+  {
+   "claim": "Nothing edited outside the outline's scope.",
+   "verified": "`git diff --stat 8e643085 b7a5f592 -- example-workflows/ reader/ scripts/tickets_grade.py` is empty, so all three of the outline's out-of-scope clauses hold, and `packs.py cells` is not retired -- scripts/packs.py resolve and cells both exit 0 at this tip. Six files outside the units' enumerated lists were touched and each is accounted for in a unit's report: contracts/dispatch.md, contracts/shapes.json, contracts/work-item.md and scripts/tickets_shapes.py (U5 -- adding a named frontmatter field forces the generated table and a T0 supersession record), docs/custom-workflow-authoring.md and tests/test_packs.py (U2 -- surfaces the migration made stale). None is another unit's territory and none is on the out-of-scope list."
+  }
+ ],
+ "findings": [
+  {
+   "id": "F1",
+   "seam": "the retired section names outside packs/ -- scripts/tickets_registry.py's refusal remedy, and reader/docs/workflows.md's orch-do line",
+   "blocking": false,
+   "summary": "Two live prose surfaces still send a reader to craft sections this revision retired. One of them is a refusal message, which is a public seam: a caller holding `orch-outline`, `orch-spec`, `orch-slice` or `orch-decompose` is told the remedy is \"a planning `do` reading the pack craft's Outline and Spec fields sections\", and after this revision no craft has an `## Outline`.",
+   "evidence": "scripts/tickets_registry.py:40 (the comment) and :45-47 (`_PLANNING_DO_REMEDY`, the string `executor_successor` and `executor_refusal` both return) still read \"the pack craft's Outline and Spec fields sections\"; the identical literal is copied into tests/test_registry_census.py:171-173 and asserted with assertEqual, so the check passes while the fact it pins is false. reader/docs/workflows.md:22 reads \"produce one artifact through the stamped pack's craft, or plan through its Outline and Spec fields sections\". A git grep for the four retired headings and for \"Outline and Spec fields\" over tracked files returns exactly these two live surfaces plus historical records (.orchflows/lego-design-2026-08-31.md, an earlier review's quotation) and the validator's own CRAFT_RETIRED_SECTIONS machinery. B1.2 and B1.3 both flagged the tickets_registry.py half and correctly left it alone as outside their edit surface; the reader/ half is named by no unit's report.",
+   "cause": "The retired-heading check the run added is scoped to craft files: tools/validate_support/names.py `validate_craft_sections` iterates packages and reads `references/craft.md`, so a retired section name written in prose anywhere else is invisible to it. The migration's surface census was therefore the union of five hand-written file lists, and a fact that lives only in prose has no mechanical owner to notice when it goes stale.",
+   "remedy": "Smallest change, and it is small: re-key `_PLANNING_DO_REMEDY` to name the entries that now hold that content -- \"a planning `do` reading the pack craft's `## Lens` `### root` or `### cut` entry and its `## Spec fields`\" -- and move the identical literal in tests/test_registry_census.py:171-173 in the same commit, since the test copies the sentence rather than reading an anchor; then reword reader/docs/workflows.md:22 the same way. That is three edits and closes both sites. Extinguishing the class properly is successor scope and needs care: a blunt tree-wide grep for the four retired names would fire on the T0 supersession records and design documents that must keep quoting them, so the check wants a corpus that excludes historical records -- the shape tools/validate_support/names.py NAME_CHECKED_FILES already has."
+  },
+  {
+   "id": "F2",
+   "seam": "the `blocking` field -- one owner, and it is a domain pack's craft (the ticket's named open item)",
+   "blocking": false,
+   "summary": "The outline says each `## Lens` entry states which findings are `blocking: true`. Only orch-code-pack's `### git` carries that paragraph. The four other deliverable entries do not, and neither does any contract, rule or skill body -- so a judge stamped with any pack but this one is told to mark findings `blocking` and has nothing anywhere to read for what the word means.",
+   "evidence": "A git grep for `blocking` over packs/, contracts/, rules/, skills/ and docs/ returns exactly two lines, both packs/orch-code-pack/references/craft.md:81 and :84. The same grep at 8e643085 returns the same two lines, so this is pre-existing and was neither introduced nor widened by the migration -- what changed is only which heading the paragraph sits under. rules/verification.md, which owns the critique/repair boundary, says nothing about the field. skills/kernel/orch-judge/SKILL.md instructs \"Write the findings to one JSON file\" without defining it, and this very ticket's Goal says \"`blocking` per the craft\".",
+   "cause": "The paragraph fuses two facts of different tiers. \"A finding is blocking:true when it shows a frozen completion criterion false, or is a correctness finding at the fixed identity; contract fidelity with no criterion failing, scope and shape are blocking:false, reported never repaired in the same run\" is library law about a review record's schema and about run boundaries -- true in every domain. \"Weigh in this order -- a shape finding never outranks a correctness finding\" is code taste, and its four counterparts differ per domain. Because the two are one paragraph, the only ways to give the four other packs the first half are to copy it four times or to leave them with nothing, and U3's Goal (text moved not rewritten, under a word budget) correctly forbade the copy.",
+   "remedy": "Split the paragraph at the tier line rather than fanning it out. Move the library half to the one cross-cutting owner -- rules/verification.md, which already owns what a critique returns and what a repair may touch -- and leave in each craft's deliverable Lens entry only the domain's own weighting sentence. That is one new owner plus one short clause per craft, against four copies of a paragraph, and it is the version that keeps one fact one owner. Successor scope: it is new prose in five files under word budgets, it fails none of this run's three acceptance criteria, and the craft forbids repairing a non-blocking finding in the run that reported it."
+  },
+  {
+   "id": "F3",
+   "seam": "contracts/pack-signature.md x docs/vocabulary.md -- the Lens binding stated twice, verbatim",
+   "blocking": false,
+   "summary": "The signature's `Lens` table row and the vocabulary's `craft section` entry now carry the same 15-word clause word for word. The vocabulary entry already points at the signature for the roster; for this one fact it stopped pointing and copied.",
+   "evidence": "contracts/pack-signature.md:35 reads \"| Lens | one `###` entry per artifact kind the domain produces: what a well-formed artifact of that kind carries, what proves it, and which findings block | yes |\". docs/vocabulary.md:85-86 reads \"...one `###` entry per kind the domain produces -- the library-owned `root` and `cut`, then the pack adapter's own -- each stating what a well-formed artifact of that kind carries, what proves it, and which findings block.\" A git grep for \"what proves it\" outside research/ returns these two and nothing else in either tier. The base vocabulary entry (8e643085:docs/vocabulary.md:80-87) restated no section binding at all -- it named which verb acts under which section, which the new entry also does and which is the pre-existing pattern -- so the copied binding clause is new with this revision. The cross-tier near-duplicate detector did not fire on the pair: the tip is at 15 such WARNs against the base's 16, i.e. the ratchet moved the right way and this pair simply scores under the 0.55 threshold, being embedded in longer sentences.",
+   "cause": "Both U2 and U4 wrote their sentence from the same source line -- the outline's \"what a well-formed artifact of the kind carries ..., what proves it ..., and which findings are `blocking: true`\" -- and neither could see the other's file, because the units were cut to be independent and the seam between them is prose, which no check compares below the similarity threshold.",
+   "remedy": "One deletion. Drop the \"each stating what a well-formed artifact of that kind carries, what proves it, and which findings block\" apposition from docs/vocabulary.md and let the sentence stop after \"then the pack adapter's own\" -- the entry already says \"the signature (below) owns the roster\", and the binding belongs with the roster. The vocabulary keeps what is genuinely its own: the term, the shape of the key, and which entry each call kind reads."
+  },
+  {
+   "id": "F4",
+   "seam": "scripts/tickets_assignment.py `lens_key` -- artifact lines outrank `makes` with no executor gate",
+   "blocking": false,
+   "summary": "`lens_key` decides a `do`'s entry the same way it decides a judge's: if the ticket's Context carries any `- artifact:` line, that line's kind wins and `makes` is never read. A planning `do` minted `--makes root` whose Context also cited its predecessor's identity would be sent to `### git`. No supported path builds that ticket today, so nothing is wrong at this fixed identity -- but the precedence is one flag away from being wrong.",
+   "evidence": "scripts/tickets_assignment.py:295-302: `kinds` is collected from the Context lines first and the `if kinds:` return fires before `dequote(loaded.get(MAKES_FIELD)) or artifact_kind(...)` is reached; nothing in the function reads the executor. Called directly with {'makes':'root','pack':'orch-code-pack'} and a Context carrying `- artifact: git:b7a5f592...`, it returns `git`; with the same loaded ticket and no artifact line it returns `root`. Reachability, checked rather than assumed, and it is why this is not blocking: scripts/tickets_mint.py:401 refuses `--artifacts` on a `do` (\"--artifacts belongs to judge\"), so a `do` ticket leaves the mint with no artifact line; adding one afterwards fails admission -- I appended `- artifact: git:b7a5f592...` to a minted `do`'s `## Context` in a sandbox sink and `dispatch_assignment` refused with \"dispatch admission grade failed\"; and `tickets.py new`, which does take free-text `--context`, has no `--makes` flag, so `makes` is absent there and the fallback reaches the adapter anyway. The function's own docstring shows the intent is judge-only: \"A judge is handed finished artifacts, so the typed identities on its Context name the kind it checks.\"",
+   "cause": "The docstring states a rule about judges and the code states a rule about tickets. The discriminator that would make them the same rule already exists two files away and is already read in this very prompt path -- `_files_findings(assignment)`, which U5 factored out of scripts/tickets_dispatch_launch.py precisely so the judging discriminator is read once -- but `lens_key` runs in tickets_assignment.py, before that value is available, so it inferred the executor from the data instead of asking.",
+   "remedy": "Gate the first branch on the executor rather than on the data: read EXECUTOR_REGISTRY[_executor_of(loaded)]['files_findings'] (tickets_assignment.py already imports `_executor_of`) and take the Context artifact lines only for a judge, falling through to `makes` then the adapter otherwise. One condition, and it makes the code say what the docstring already says. Worth doing before, not after, anything adds `--makes` to `tickets.py new` or lets a planning `do` cite a predecessor identity -- which rules/topology.md's successor clause (\"cites it in the successor root's Context\") points squarely at."
+  },
+  {
+   "id": "F5",
+   "seam": "tools/validate_support/common.py CRAFT_OPTIONAL_SECTIONS -- a constant with no reader, beside a roster that is not closed",
+   "blocking": false,
+   "summary": "The `###` keys under `## Lens` are now a closed set -- a missing key and an extra key are both ERRORs. The `##` roster one level up is not: mandatory-present and retired-absent are checked, nothing else, so a craft may carry any novel `## X` and pass. The constant that names the permitted optional section, CRAFT_OPTIONAL_SECTIONS, is defined and exported and read by nothing.",
+   "evidence": "A tree-wide grep for CRAFT_OPTIONAL_SECTIONS returns exactly two lines, both in tools/validate_support/common.py -- the definition at :81 and the `__all__` entry at :238. The same grep at 8e643085 returns the same two lines, so the constant was already dead and U2 edited its value (from (\"Shape\",\"Stages\") to (\"Stages\",)) without giving it a reader. tools/validate_support/names.py:158-198 shows the asymmetry directly: two loops over CRAFT_MANDATORY_SECTIONS and CRAFT_RETIRED_SECTIONS for `##`, then both a missing-key and an extra-key loop for `###`.",
+   "cause": "The migration closed the level it was adding and left the level it inherited. Closing `##` was never part of any unit's Goal, and the retired-section check covers the only four names that could plausibly reappear, so the gap has no current victim -- but it does leave a constant standing as if it were law.",
+   "remedy": "Either use it or delete it, and using it is barely larger: a third loop reporting the found headings minus mandatory, optional and retired gives the `##` roster the same closure the `###` keys have and gives the constant its reader, in about four lines. Deleting the constant and its `__all__` entry is the smaller change and is honest too. What is not acceptable is leaving both -- a named constant that no code consults reads, to the next author, as a rule that is being enforced."
+  },
+  {
+   "id": "F6",
+   "seam": "scripts/tickets_dispatch_launch.py -- 576 to 604 lines, grown while already past the one-read band",
+   "blocking": false,
+   "summary": "U5 added the lens sentence and the factored `_files_findings` to a module that was already 76 lines past the craft's one-read band. The craft's answer to that band is to grow sideways at a seam, not to add girth.",
+   "evidence": "604 physical lines at the tip against 576 at 8e643085. tools/check_source_sizes.py exits 0 with warnings=38, identical to the figure B1.5 measured at the base, and names this module: \"WARN scripts\\tickets_dispatch_launch.py: 604 physical lines (presumption 500)\". So no ratchet regressed and no module newly crossed -- this is the presumption, which is warn-only, not the hard cap it used to be. tests/test_dispatch_launch.py is 938 lines, which B1.5 recorded and explicitly declined to split as outside Goal.",
+   "cause": "The unit boundary was drawn around a behavior (the prompt names the kind), and the behavior's natural home is the prompt composer, which was already oversized before this run began. Nothing in the ticket set priced the module against its bound, and the craft's cut rule that would have -- \"a Goal ordering growth into a named file prices that file against the standards owner's bounds at cut time\" -- is a rule for the cut, so by the time U5 read it the price was already paid.",
+   "remedy": "Successor scope, and there is a seam ready for it: the prompt is assembled from independent line groups (`_craft_lines`, `_return_lines`, `_files_findings` and their siblings) that share only the assignment dict. Moving the line-group builders to a `tickets_dispatch_launch_lines.py` beside the composer is a sideways move at an existing boundary, not a shave, and would take both this module and its 938-line test file back under the band together."
+  }
+ ],
+ "not_done_and_why": [
+  "No file under judgment was edited. The craft forbids the judge editing the artifact, and every finding above is blocking:false, which the craft says is reported and never repaired in the same run. The mutants I ran against tracked files were applied to take a can-fail reading and restored with `git checkout --`; `git status --porcelain` was empty after each and is empty now.",
+  "The full unscoped `python -m unittest discover -s tests` was not run. tools/run_required.py --no-cache is this repository's stated gate row and it is green; AGENTS.md keeps exhaustive discovery scheduled/manual, and its own note says green here stays provisional until the .github/workflows/checks.yml matrix agrees. That matrix has not run on this tip.",
+  "install.py --dry-run was not run separately; it is one of run_required's five rows and exited 0 there with 319 planned entries.",
+  "No successor ticket was minted and no friction was logged: nothing in this review hit the two-attempt, missing-input, surprising-output or contract-gap thresholds. The only surprise was a Windows path-length failure building a throwaway clone under the session scratchpad, which I abandoned in favour of mutate-and-restore rather than working around."
+ ],
+ "untouchables": [
+  "packs/*/references/craft.md, contracts/, skills/kernel/*/SKILL.md, docs/, scripts/, tools/, tests/ -- read, and mutated transiently for can-fail readings only, each restored byte-clean before the next step.",
+  "The real ticket sink. Every live mint, refusal and prompt render in this review ran against a sandbox ORCHFLOWS_STATE_HOME under the session scratchpad. The one git worktree and branch that sandbox created (wt/20990101T000000Z/B1) were removed with `git worktree remove --force` and `git branch -D`, both exit 0, and `git worktree list` no longer names it."
+ ],
+ "commands_run_by_this_review": [
+  "tools/run_required.py --no-cache -> 0 (five rows, each 0; tree 9a26fbf70d3e)",
+  "tools/validate.py -> 0 (16 WARN, 0 ERROR, 15 cross-tier, 0 craft-section)",
+  "tools/check_source_sizes.py -> 0 (warnings=38)",
+  "scripts/packs.py resolve orch-code-pack -> 0; scripts/packs.py cells <digest> -> 0",
+  "scripts/tickets.py do <sandbox run> --pack orch-code-pack --isolation required -> 0",
+  "scripts/tickets.py judge ... --artifacts root:<live root_generation> -> 0",
+  "scripts/tickets.py judge ... --artifacts cut:<live cut_generation> -> mint accepted, then exit 7 'workspace establish refused' (isolation none with three sharers -- the shared-workspace guard, unrelated to the artifact kind; the ticket and its prompt were rendered from the minted ticket and name `### cut`)",
+  "scripts/tickets.py do ... --makes root -> 0 (frontmatter `makes: root`)",
+  "scripts/tickets.py judge ... --artifacts git:... --artifacts evidence:... -> 1 (two-kind refusal)",
+  "scripts/tickets.py judge ... --artifacts root:B9:1:sha256:000... -> 1 (unknown identity refusal)",
+  "scripts/tickets.py judge ... --makes root -> 1; scripts/tickets.py do ... --makes git -> 1",
+  "python -m unittest tests.test_verification_model tests.test_packs -> 0 (29 tests) at the tip, and 1 failure under each of the two craft mutants",
+  "python -m unittest tests.test_dispatch_launch.LensKeyPromptTest tests.test_ticket_callables.GenerationArtifactTest -> 0 (10 tests) at the tip, and 3 / 1 / 1 failures under the three code mutants",
+  "git worktree remove --force <sandbox worktree> -> 0; git branch -D wt/20990101T000000Z/B1 -> 0"
+ ],
+ "checked_and_clean": [
+  "The outline's three out-of-scope clauses: example-workflows/, reader/ and scripts/tickets_grade.py are byte-unchanged between 8e643085 and b7a5f592, and `packs.py cells` is not retired.",
+  "TypedArtifactGrammarTest's invariant survives: ARTIFACT_KINDS is still the adapters' set alone and the two library kinds live in the separate JUDGE_KINDS, so the launch's ARTIFACT_LINE_FORMS never claims a kind no adapter emits.",
+  "Every pin in tests/test_verification_model.py names a property that exists at this tip, and four of them were shown to bite by mutation rather than by passing.",
+  "The judge prompt's return instruction still names the pack adapter's own form (`artifact: git:<full-commit-id>`) even when the judged kind is `root`. That is correct and not a finding: the line is the judge's own return identity -- it commits its findings file in a git workspace -- not a restatement of what it judged."
+ ]
+}
