@@ -224,7 +224,7 @@ class TestInstallReceipt(unittest.TestCase):
             {"model": "claude-fable-5-1", "effort": "high"}, profiles["orch-planner"]["claude"]
         )
         self.assertEqual(
-            {"model": "claude-sonnet-5", "effort": "xhigh"}, profiles["orch-worker"]["claude"]
+            {"model": "claude-opus-5", "effort": "high"}, profiles["orch-worker"]["claude"]
         )
 
     def test_reinstall_removes_receipt_owned_hyphenated_codex_agent(self):
