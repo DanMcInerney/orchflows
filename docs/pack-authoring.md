@@ -18,25 +18,26 @@ what each step feeds the next.
    [contracts/pack-signature.md](../contracts/pack-signature.md)'s
    craft-section table defines. Every other section is expressed in
    those semantics.
-3. Evidence third — `## Evidence`: the artifact identities, observations,
-   captures, sources, or executable checks appropriate to the domain. These
-   describe what can demonstrate Goal without prescribing a ticket's proof
-   methods.
-4. Vocabulary fourth — `## Vocabulary` and, where the domain has taste
-   beyond the shared principles, `## Shape` — from the debts step 3
+3. Evidence third, inside `## Lens`'s deliverable entry — the entry keyed
+   by the artifact kind the adapter emits. The artifact identities,
+   observations, captures, sources, or executable checks appropriate to the
+   domain. These describe what can demonstrate Goal without prescribing a
+   ticket's proof methods.
+4. Vocabulary fourth — `## Vocabulary`, and the domain's taste beyond the
+   shared principles in that same deliverable entry — from the debts step 3
    created. Check each term against the T0 contracts and
    [docs/vocabulary.md](vocabulary.md) before keeping it — a
    collision with a pinned field name is permanent.
-5. Slicing fifth — `## Slicing`: how a spec cuts and what every ticket
-   carries.
-6. Lens sixth — `## Lens`, one finding class per bullet — the checking
-   verb reads its criteria there. Then the three cells machinery
+5. Cutting fifth — `## Lens`'s `### cut` entry: how a spec cuts and what
+   every ticket carries.
+6. Criteria sixth — the deliverable entry's finding classes, one per
+   bullet, and which of them block. Then the three cells machinery
    branches on: adapter from the registry, stages (with `## Stages` for
    their narrative when it earns one), assembly.
 7. Spec fields last — `## Spec fields` fall out of the sections above.
-   Then `## Outline`, written against the binding the craft-section
-   table states for it. Then the description, in the packs' shared
-   idiom, ending in its "Stamp when …" sentence.
+   Then `## Lens`'s `### root` entry, written against the binding the
+   craft-section table states for it. Then the description, in the packs'
+   shared idiom, ending in its "Stamp when …" sentence.
 
 The finished pack is one craft document behind four cells, and the
 signature's craft-section table is the one table of what the document

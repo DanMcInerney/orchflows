@@ -123,43 +123,101 @@ class TestCraftSections(_IsolatedTree):
     green while the machinery pointed at a section that was not there.
     """
 
-    MANDATORY = (
-        "Vocabulary", "Workspace", "Spec fields", "Outline",
-        "Slicing", "Evidence", "Lens",
-    )
+    MANDATORY = ("Vocabulary", "Workspace", "Spec fields", "Lens")
+    # `adapter | git` below, so `git` is the pack's own artifact kind
+    # beside the two the library owns.
+    LENS_KINDS = ("root", "cut", "git")
 
-    def _write_pack(self, name: str, omit: str = ""):
+    def _write_pack(self, name: str, omit: str = "", adapter: str = "git",
+                    kinds=None, extra: str = ""):
         pack_dir = self.tmp_path / "packs" / name
         (pack_dir / "references").mkdir(parents=True)
         (pack_dir / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: a synthetic pack\n---\n\n"
             "| cell | binding |\n| --- | --- |\n"
-            "| adapter | git |\n"
+            f"| adapter | {adapter} |\n"
             "| stages | [stage] |\n"
             "| assembly | none |\n"
             "| craft | [references/craft.md](references/craft.md) |\n",
             encoding="utf-8",
         )
-        craft = "# Craft\n\n" + "".join(
-            "## %s\n\ncontent.\n\n" % section
-            for section in self.MANDATORY
-            if section != omit
-        )
+        craft = "# Craft\n\n"
+        for section in self.MANDATORY:
+            if section == omit:
+                continue
+            craft += "## %s\n\ncontent.\n\n" % section
+            if section != "Lens":
+                continue
+            for kind in self.LENS_KINDS if kinds is None else kinds:
+                craft += "### %s\n\ncriteria.\n\n" % kind
+        craft += extra
         (pack_dir / "references" / "craft.md").write_text(craft, encoding="utf-8")
 
     def test_a_craft_without_a_mandatory_heading_is_an_error(self):
-        for omit in ("Lens", "Slicing"):
+        for omit in ("Lens", "Workspace"):
             with self.subTest(omit=omit):
                 self._write_pack("orch-synth-%s-pack" % omit.lower(), omit=omit)
         result = self._run()
         self.assertEqual(1, result.returncode, result.stdout)
         self.assertIn("no `## Lens` heading", result.stdout)
-        self.assertIn("no `## Slicing` heading", result.stdout)
+        self.assertIn("no `## Workspace` heading", result.stdout)
 
     def test_a_craft_with_every_mandatory_heading_is_clean(self):
         self._write_pack("orch-synth-pack")
         result = self._run()
         self.assertNotIn("craft carries no", result.stdout)
+        self.assertNotIn("`## Lens` carries", result.stdout)
+
+    def test_a_retired_heading_is_an_error(self):
+        """The four sections `## Lens`'s entries absorbed are refused, not
+        merely unread: a craft keeping one owns the fact twice, and the
+        copy beside the entry is the one no verb is pointed at."""
+
+        self._write_pack(
+            "orch-synth-retired-pack",
+            extra="## Outline\n\nthe old root taste.\n\n"
+                  "## Shape\n\nthe old taste.\n\n",
+        )
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("retired `## Outline` heading", result.stdout)
+        self.assertIn("retired `## Shape` heading", result.stdout)
+
+    def test_a_lens_missing_a_library_kind_is_an_error(self):
+        self._write_pack("orch-synth-nocut-pack", kinds=("root", "git"))
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("no `### cut` entry", result.stdout)
+
+    def test_a_lens_missing_the_adapter_kind_is_an_error(self):
+        self._write_pack("orch-synth-nokind-pack", kinds=("root", "cut"))
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("no `### git` entry", result.stdout)
+
+    def test_a_lens_key_the_adapter_never_produces_is_an_error(self):
+        """The kind comes from the registry the runtime branches on, so a
+        `doc` entry under a `git` adapter is criteria for an artifact this
+        pack cannot emit -- and reads correct in the prose alone."""
+
+        self._write_pack(
+            "orch-synth-extra-pack", kinds=("root", "cut", "git", "doc"),
+        )
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("`### doc` entry for an artifact kind", result.stdout)
+
+    def test_the_adapter_decides_which_kind_the_lens_must_carry(self):
+        """Same craft shape, a different registered adapter: the entry the
+        `git` pack must carry is the one the `document-tree` pack must not.
+        A hard-coded kind here would pass both."""
+
+        self._write_pack(
+            "orch-synth-doc-pack", adapter="document-tree",
+            kinds=("root", "cut", "doc"),
+        )
+        result = self._run()
+        self.assertNotIn("`## Lens` carries", result.stdout)
 
 
 class TestWordBudgetAndLinks(_IsolatedTree):

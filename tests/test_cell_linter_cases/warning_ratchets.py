@@ -32,20 +32,15 @@ def ceiling_breach(count, ceiling=None, kind=NEAR):
 
 class WarningCeilingTest(unittest.TestCase):
     # One clause packs/orch-code-pack/references/craft.md's `## Lens`
-    # already owns, restated in a third pack's same-named section with a
-    # single noun changed. This is what a regression here looks like: not
-    # a new kind of finding, one more copy of a clause that has an owner.
-    # The clause carries no span MANDATED_FORM_RES strips, so the plant is
-    # the pack's own content and the ratio is measured over all of it.
-    # `## Lens` and not `## Slicing`: Lens keying
-    # (`research/lens-keying-2026-09-02.md`) folds Slicing into
-    # `## Lens` › `### cut`, and `validate_cell_duplication` only ever
-    # compares same-named `##` sections, so a plant under a heading one
-    # side has retired would pair with nothing and report nothing.
-    REGRESSION = (
-        "\n- Correctness: does the artifact satisfy the spec's acceptance,\n"
-        "  including its failure paths, not only the happy path?\n"
-    )
+    # already owns -- its `### cut` entry -- restated in a third pack's
+    # same-named section with a single noun changed. This is what a
+    # regression here looks like: not a new kind of finding, one more copy
+    # of a clause that has an owner. The clause carries no span
+    # MANDATED_FORM_RES strips, so the plant is the pack's own content and
+    # the ratio is measured over all of it. The linter compares `##`
+    # sections, so the plant goes under the `##` heading the owner's entry
+    # sits beneath, not under the `###` key.
+    REGRESSION = "\n- Dependency edges only where one lane's seam is another's input.\n"
 
     def _clone_beside_the_tree(self):
         temporary = tempfile.TemporaryDirectory()

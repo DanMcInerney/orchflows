@@ -46,10 +46,17 @@ _CRAFT_SECTIONS = (
     ("Vocabulary", "Define this domain's terms once, here."),
     ("Workspace", "Identities, isolation, candidate diffs, conflict handling."),
     ("Spec fields", "What a spec must carry before decomposition accepts it."),
-    ("Outline", "What a well-formed frozen root carries in this domain."),
-    ("Slicing", "How a spec cuts into work items here."),
-    ("Evidence", "Evidence methods and identities a checker may challenge."),
-    ("Lens", "This domain's review criteria."),
+    ("Lens", "One `###` entry per artifact kind; criteria for each."),
+)
+
+# `## Lens`'s `###` entries, keyed by artifact kind. `root` and `cut` are
+# library-owned; the third is the kind the pack's adapter emits, and the
+# skeleton's `git` goes with the `adapter | git` row `_PACK` writes.
+_CRAFT_LENS_ENTRIES = (
+    ("root", "What a well-formed frozen root carries in this domain."),
+    ("cut", "How a spec cuts into work items here."),
+    ("git", "What a finished deliverable must satisfy, what proves it, "
+            "and which findings block."),
 )
 
 _PACK = """---
@@ -96,6 +103,10 @@ def _craft(name: str) -> str:
     body = [f"# {name} craft", ""]
     for heading, prompt in _CRAFT_SECTIONS:
         body.extend([f"## {heading}", "", prompt, ""])
+        if heading != "Lens":
+            continue
+        for kind, entry in _CRAFT_LENS_ENTRIES:
+            body.extend([f"### {kind}", "", entry, ""])
     return "\n".join(body)
 
 
@@ -136,4 +147,10 @@ def sections() -> Dict[str, str]:
     return dict(_CRAFT_SECTIONS)
 
 
-__all__ = ("AUTHORING_DOC", "files_for", "sections", "write")
+def lens_entries() -> Dict[str, str]:
+    """The `## Lens` artifact-kind anchors it writes, likewise."""
+
+    return dict(_CRAFT_LENS_ENTRIES)
+
+
+__all__ = ("AUTHORING_DOC", "files_for", "lens_entries", "sections", "write")
