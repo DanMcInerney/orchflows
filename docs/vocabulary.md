@@ -82,8 +82,7 @@ invented for this library.
   table names the mandatory ones; every callable reads the whole document.
   `## Lens` is keyed by artifact kind: one `###` entry per kind the domain
   produces — the library-owned `root` and `cut`, then the pack adapter's
-  own — each stating what a well-formed artifact of that kind carries,
-  what proves it, and which findings block. The kind a call is for names
+  own; the signature owns what an entry states. The kind a call is for names
   its entry: a making `orch-do` makes toward the adapter's, a planning one
   toward `### root` or `### cut`, and `orch-judge` checks against the
   entry its typed artifact lines name. Those are the two entry points the

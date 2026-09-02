@@ -36,14 +36,14 @@ EXECUTOR_REGISTRY = {
 }
 
 # `orch-outline` and `orch-slice` both retired toward this living remedy: a
-# planning `do` -- goal a frozen root or a call plan -- reading the pack
-# craft's Outline and Spec fields sections in `do`'s stead. Their own
+# planning `do` -- goal a frozen root or a cut -- making toward the pack
+# craft's `## Lens` entry for that kind in `do`'s stead. Their own
 # predecessor intake verbs (`orch-spec`, `orch-decompose`) point at the same
 # remedy rather than at a retired name that itself refuses, so no refusal
 # chains through a name with no binding left to offer.
 _PLANNING_DO_REMEDY = (
-    "a planning `do` reading the pack craft's Outline and Spec fields "
-    "sections"
+    "a planning `do` making a `root` or `cut` toward the pack craft's "
+    "`## Lens` entry for that kind"
 )
 
 # A superseded verb and the successor that replaced it, per
