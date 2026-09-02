@@ -24,7 +24,7 @@ criteria no verb will ever read. Both are read out of the pack's own typed
 
 from __future__ import annotations
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 PACK_CELL_ROW_RE = __dep_common.PACK_CELL_ROW_RE
 Path = __dep_common.Path
 ROOT = __dep_common.ROOT
@@ -39,7 +39,7 @@ SHEET_REQUIRED_SECTIONS = __dep_common.SHEET_REQUIRED_SECTIONS
 SKIPPED = __dep_common.SKIPPED
 re = __dep_common.re
 
-from tools.validate_support.packages import (
+from .packages import (
     DESCRIPTION_BUDGET, _read_source, parse_frontmatter, rel,
 )
 
@@ -47,7 +47,15 @@ from tools.validate_support.packages import (
 # than respelled: a sheet's Lens entries are keyed by exactly the kind the
 # dispatch hands the child, and two spellings of that mapping is how a
 # validator comes to pass a sheet no child can read.
-from scripts.tickets_adapters import ADAPTER_REGISTRY
+#
+# An install ships this package under `lib/` so `orchflows check` can run
+# these checks over a ring, and the scripts it reads sit flat in `bin/`
+# with no `scripts` package above them. The paired import is the tree's
+# own idiom for that layout: one module, reached under either name.
+try:
+    from scripts.tickets_adapters import ADAPTER_REGISTRY
+except ImportError:  # pragma: no cover - direct/installed flat script path
+    from tickets_adapters import ADAPTER_REGISTRY
 
 SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 LENS_ENTRY_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
@@ -95,19 +103,41 @@ def declared_packs(value: str):
     return [item.strip().strip("'\"") for item in raw.split(",") if item.strip()]
 
 
-def pack_lens_kinds(root: Path, packs):
+def _pack_manifest(pack_roots, name: str):
+    """The first packs directory carrying ``name``'s manifest, or ``None``."""
+
+    for root in pack_roots:
+        manifest = Path(root) / name / "SKILL.md"
+        if manifest.is_file():
+            return manifest
+    return None
+
+
+def default_pack_roots():
+    """Where a library sheet's `packs:` names resolve: this library's own."""
+
+    return [ROOT / "packs"]
+
+
+def pack_lens_kinds(pack_roots, packs):
     """``(kinds, unresolved)`` for the packs a sheet names.
 
     ``kinds`` is every artifact kind the named packs' adapters emit, which
     is the closed set of `###` keys the sheet's `## Lens` may use; a pack
     that does not resolve, or whose adapter is unregistered, lands in
     ``unresolved`` instead of silently widening that set.
+
+    ``pack_roots`` is the packs directories to look in, nearest first. The
+    library has one; a ring's sheet almost always names a *library* pack,
+    so a caller grading a ring passes every packs directory that resolves
+    from there and a stamp that can be taken is not reported as one that
+    cannot.
     """
 
     kinds, unresolved = set(), []
     for name in packs:
-        manifest = root / "packs" / name / "SKILL.md"
-        if not manifest.is_file():
+        manifest = _pack_manifest(pack_roots, name)
+        if manifest is None:
             unresolved.append(name)
             continue
         cells = dict(PACK_CELL_ROW_RE.findall(_read_source(manifest)))
@@ -161,12 +191,14 @@ def validate_sheet_sections(body: str, sheet: dict, diag) -> None:
             diag.error(file_label, f"section '## {heading}' is not a sheet section")
 
 
-def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag) -> None:
+def validate_sheet_lens(body: str, fm: dict, sheet: dict, diag, pack_roots=None) -> None:
     """Every `###` entry is keyed by a kind one named pack actually emits."""
 
     file_label = rel(sheet["manifest"])
     packs = declared_packs(fm.get("packs"))
-    kinds, unresolved = pack_lens_kinds(ROOT, packs)
+    kinds, unresolved = pack_lens_kinds(
+        default_pack_roots() if pack_roots is None else pack_roots, packs,
+    )
     for name in unresolved:
         diag.error(
             file_label,
@@ -211,8 +243,8 @@ def validate_sheet_contents(sheet: dict, diag) -> None:
             )
 
 
-def validate_sheets(diag) -> None:
-    """Grade every sheet in this library, or say the check found none."""
+def validate_sheets(diag, pack_roots=None) -> None:
+    """Grade every sheet under this root, or say the check found none."""
 
     root = sheet_root()
     if not root.is_dir():
@@ -225,13 +257,14 @@ def validate_sheets(diag) -> None:
             continue
         validate_sheet_frontmatter(fm, sheet, diag)
         validate_sheet_sections(body, sheet, diag)
-        validate_sheet_lens(body, fm, sheet, diag)
+        validate_sheet_lens(body, fm, sheet, diag, pack_roots)
         validate_sheet_budget(body, sheet, diag)
         validate_sheet_contents(sheet, diag)
 
 
 __all__ = (
-    "SHEET_BUDGET", "declared_packs", "discover_sheets", "pack_lens_kinds",
+    "SHEET_BUDGET", "declared_packs", "default_pack_roots", "discover_sheets",
+    "pack_lens_kinds",
     "sheet_root", "validate_sheet_budget", "validate_sheet_contents",
     "validate_sheet_frontmatter", "validate_sheet_lens",
     "validate_sheet_sections", "validate_sheets",

@@ -8,8 +8,9 @@ fact deleted from its owner leaves every link pointing at nothing.
 
 Anchors, not sentences (`packs/orch-code-pack/references/craft.md`): each
 fact is read inside a stable anchor -- a `##` heading, a numbered clause of a
-rules file -- and every case is shown failing against an in-memory copy with
-the fact dropped and the anchor left standing. Nothing here mutates the tree.
+rules file, a kernel body's Require/Never/Return anatomy -- and every case is
+shown failing against an in-memory copy with the fact dropped and the anchor
+left standing. Nothing here mutates the tree.
 """
 
 from __future__ import annotations
@@ -43,6 +44,24 @@ def section(text: str, heading: str) -> str:
     rest = text[start + len(heading):]
     end = rest.find("\n## ")
     return rest if end < 0 else rest[:end]
+
+
+# The ordered labels `tools/validate.py` requires of every skill body.
+ANATOMY = ("Require:", "Never:", "Return:")
+
+
+def primitive_body(text: str) -> str:
+    """A kernel skill's body, and only while its anatomy stands.
+
+    A primitive carries no headings, so the anchor for one is the shape the
+    validator already enforces -- the ordered `Require:`, `Never:` and
+    `Return:` labels -- which survives every rewording of the prose between
+    them. A mutation that took the anatomy would be a different failure.
+    """
+
+    body = text.split("---", 2)[-1]
+    standing = all(re.search(rf"^{label}", body, re.MULTILINE) for label in ANATOMY)
+    return body if standing else ""
 
 
 def clause(text: str, number: int) -> str:
@@ -119,6 +138,20 @@ CASES = {
         ("**Why sheets and applied skills.**",
          "pass the perfect-model test from the other side"),
     ),
+    "the maker's kernel binds it to every stamped sheet and to its method": (
+        "skills/kernel/orch-do/SKILL.md", ("anatomy", None),
+        ("Read whole each sheet the prompt hands you, at the digest it names",
+         "relaxes none of them",
+         "An applied skill the prompt names supplies the method only",
+         "nothing in it loosens the Require, Never or Return here"),
+    ),
+    "the judge's kernel checks every sheet and reports a loosening": (
+        "skills/kernel/orch-judge/SKILL.md", ("anatomy", None),
+        ("Every sheet the ticket stamps is checked beside that entry",
+         "file that loosening as a `sheet-defect` finding",
+         "Where the ticket pins an applied skill, judge by it as method",
+         "the Require, Never and Return stated here still govern this review"),
+    ),
     "design states why there are three dependency classes": (
         "DESIGN.md", ("section", "## Why custom items live in rings"),
         ("**Why three dependency classes.**", "one environment\n  per item"),
@@ -128,7 +161,11 @@ CASES = {
 
 def anchored(text: str, anchor):
     kind, key = anchor
-    return section(text, key) if kind == "section" else clause(text, key)
+    if kind == "section":
+        return section(text, key)
+    if kind == "anatomy":
+        return primitive_body(text)
+    return clause(text, key)
 
 
 def drop(text: str, fact: str):

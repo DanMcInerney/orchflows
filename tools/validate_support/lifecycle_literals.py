@@ -13,13 +13,13 @@ every other reader imports.
 
 from __future__ import annotations
 
-from tools.validate_support import common as __dep_common
+from . import common as __dep_common
 ast = __dep_common.ast
 Path = __dep_common.Path
 ROOT = __dep_common.ROOT
 SKIPPED = __dep_common.SKIPPED
 
-from tools.validate_support import packages as __dep_packages
+from . import packages as __dep_packages
 Diagnostics = __dep_packages.Diagnostics
 
 # Each literal's declared owner: the module whose own module-level
