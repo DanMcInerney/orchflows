@@ -36,7 +36,7 @@ class TestWorkflowSkills(unittest.TestCase):
 
     WORKFLOWS = (
         "benchmaker", "browser-game", "drift-canary", "evolve", "renovate",
-        "self-improve", "skill-tournament", "super-research",
+        "self-improve", "skill-tournament", "super-research", "tiktok-video",
     )
 
     def test_every_workflow_directory_holds_exactly_one_body(self):

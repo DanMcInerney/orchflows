@@ -22,6 +22,7 @@ EXPECTED_WORKFLOWS = {
     "self-improve",
     "skill-tournament",
     "super-research",
+    "tiktok-video",
 }
 
 

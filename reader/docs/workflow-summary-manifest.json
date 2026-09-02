@@ -122,6 +122,23 @@
         {"source": "resolve", "target": "apply", "kind": "sequence"},
         {"source": "apply", "target": "evidence", "kind": "sequence"}
       ]
+    },
+    "tiktok-video": {
+      "nodes": [
+        {"id": "brief", "label": "Research the cited brief"},
+        {"id": "scripts", "label": "Write three hook variants"},
+        {"id": "script-judge", "label": "Judge and rank the scripts"},
+        {"id": "render", "label": "Render every passing script"},
+        {"id": "render-judge", "label": "Judge captures against the rules"}
+      ],
+      "edges": [
+        {"source": "brief", "target": "scripts", "kind": "sequence"},
+        {"source": "scripts", "target": "script-judge", "kind": "sequence"},
+        {"source": "script-judge", "target": "scripts", "kind": "loop"},
+        {"source": "script-judge", "target": "render", "kind": "sequence"},
+        {"source": "render", "target": "render-judge", "kind": "sequence"},
+        {"source": "render-judge", "target": "render", "kind": "loop"}
+      ]
     }
   }
 }
