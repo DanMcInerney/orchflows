@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2139,
+  "count": 2143,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -117,6 +117,7 @@
    "test_dispatch_launch.IdentityLineTest.test_the_first_line_names_the_skill_tool_and_the_verbatim_argument",
    "test_dispatch_launch.IdentityLineTest.test_the_first_line_tells_a_fork_already_inside_to_work_in_place",
    "test_dispatch_launch.IdentityLineTest.test_the_old_apply_wording_is_gone",
+   "test_dispatch_launch.LandTest.test_a_land_with_no_predicate_and_no_status_refuses_before_integrating",
    "test_dispatch_launch.LandTest.test_a_suspended_join_keeps_the_tree_its_handoff_resumes_in",
    "test_dispatch_launch.LandTest.test_land_imports_an_outcome_handed_to_it_on_standard_input",
    "test_dispatch_launch.LandTest.test_land_imports_the_outcome_it_is_handed",
@@ -961,7 +962,9 @@
    "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_an_intact_identity_is_left_exactly_alone",
    "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_the_run_is_writable_again_and_the_repair_replays",
    "test_staleness_and_remedies.TestRepairingAnUnreadableRunIdentity.test_the_stores_own_refusal_names_this_command",
+   "test_staleness_and_remedies.TestTheClosingNoteIsNotDeduplicated.test_a_deeper_heading_is_not_reserved_and_still_closes",
    "test_staleness_and_remedies.TestTheClosingNoteIsNotDeduplicated.test_a_note_repeating_a_streamed_line_still_closes",
+   "test_staleness_and_remedies.TestTheClosingNoteIsNotDeduplicated.test_a_reserved_heading_is_refused_by_line_number_and_by_rule",
    "test_staleness_and_remedies.TestTheClosingNoteIsNotDeduplicated.test_an_empty_note_is_the_one_thing_the_close_still_refuses",
    "test_staleness_and_remedies.TestTheClosingNoteIsNotDeduplicated.test_the_typed_evidence_flags_are_ordinary_unknown_arguments",
    "test_staleness_and_remedies.TestTheCompareAndSwapIsScopedToTheGrade.test_a_read_dependency_moving_refuses",
@@ -1018,6 +1021,7 @@
    "test_ticket_done_predicate.LandDonePredicateTest.test_the_two_grade_paths_refuse_to_be_used_together_or_neither",
    "test_ticket_done_predicate.LandDonePredicateTest.test_two_rounds_with_no_delta_close_the_ticket_stalled",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy",
+   "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_a_land_refused_for_want_of_a_grade_leaves_no_merge_commit",
    "test_ticket_done_predicate.LandIntegratesTheCandidateTest.test_the_candidates_commits_reach_the_tree_the_run_stands_in",
    "test_ticket_frames.FrameCloseTest.test_a_close_over_two_unjudged_do_children_is_refused_by_name",
    "test_ticket_frames.FrameCloseTest.test_a_frame_that_sealed_its_gate_at_open_evaluates_that_one",
@@ -2142,7 +2146,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1d17447a4b638457d429a98269aa35657468f0b4070f4d61e94a39640440307d"
+  "sha256": "6cd297d5e45cafe9e920499ebf4f9de008571a1c1c4f34f0adcdec1efb08d707"
  },
  "mutation_owners": [
   {
@@ -2277,6 +2281,14 @@
     "environment",
     "monkeypatch",
     "threads"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LandTest.test_a_land_with_no_predicate_and_no_status_refuses_before_integrating",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

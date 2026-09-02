@@ -797,6 +797,28 @@ class LandTest(unittest.TestCase):
         self.assertIn("unsafe run id", refusal["error"])
         self.assertEqual(before, self.ticket_path().read_text(encoding="utf-8"))
 
+    def test_a_land_with_no_predicate_and_no_status_refuses_before_integrating(self):
+        """The grade question reads the ticket's own frontmatter, never the
+        merged tree, so it is asked first: this call once merged the
+        candidate into the run's checkout and then refused itself."""
+
+        self.commit_outcome()
+        entered = []
+
+        def integrate(*arguments):
+            entered.append(arguments)
+            return {"step": "workspace-integrate", "outcome": "absent"}
+
+        with mock.patch.object(
+            tickets._tickets_land_module, "_integrate_workspace",
+            side_effect=integrate,
+        ):
+            refusal = self.land(status=None)
+
+        self.assertIn("carries no done predicate", refusal["error"])
+        self.assertIn("--status", refusal["error"])
+        self.assertFalse(entered, "the candidate was integrated before the refusal")
+
     def test_land_relays_a_join_refusal_unchanged(self):
         refusal = self.land()
 

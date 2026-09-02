@@ -446,6 +446,27 @@ class LandIntegratesTheCandidateTest(unittest.TestCase):
         self.assertEqual("merged", step["outcome"])
         self.assertTrue((self.main / "delivered.txt").is_file())
 
+    def test_a_land_refused_for_want_of_a_grade_leaves_no_merge_commit(self):
+        """The seam the ordering is about: a refused call must not have
+        moved the checkout the run is driven from."""
+
+        self.stand_up()
+        (self.candidate / "delivered.txt").write_text("done\n", encoding="utf-8")
+        for arguments in (
+            ("config", "user.email", "fixture@example.invalid"),
+            ("config", "user.name", "fixture"),
+            ("add", "delivered.txt"), ("commit", "--quiet", "-m", "deliver"),
+        ):
+            self.git(*arguments, cwd=self.candidate)
+        self.close()
+        before = self.git("rev-list", "--count", "HEAD")
+
+        refusal = self.land()
+
+        self.assertIn("carries no done predicate", refusal["error"])
+        self.assertEqual(before, self.git("rev-list", "--count", "HEAD"))
+        self.assertFalse((self.main / "delivered.txt").is_file())
+
     def test_a_conflicted_merge_refuses_naming_the_files_and_the_remedy(self):
         self.stand_up()
         (self.candidate / "seed.txt").write_text("candidate\n", encoding="utf-8")
