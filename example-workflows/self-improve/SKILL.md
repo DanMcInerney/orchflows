@@ -55,8 +55,6 @@ Frame law: the first callable, mine's or deliver's, opens it.
 
     tickets.py frame-open <run> --goal-file <frame-goal> --workflow self-improve
 
-Reread `## Report` before deciding, log each `result`; keep
-`artifact:` or `findings:` word for word. Close with `frame-close`.
 With two or more do-children the judge reads the seam: the delivered
 change equals the top proposal, nothing edited outside its scope,
 the covered line present with a sane watermark. A single-child cycle

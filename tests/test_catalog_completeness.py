@@ -30,6 +30,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import install
+from installer import packages
 from installer.hosts import host_item_path, load_host_adapters
 from scripts.tickets_registry import CALLABLE_EXECUTORS
 
@@ -206,6 +207,78 @@ class CatalogCompletenessTests(unittest.TestCase):
             with self.subTest(host=host, item=item):
                 path = host_item_path(host, item, Path("root"), adapters, name="orch-do")
                 self.assertEqual("orch-do", name_reader(host, item, adapters)(path))
+
+
+class WorkflowHomeDiscoveryTests(unittest.TestCase):
+    """Both library workflow homes mint the same name surfaces.
+
+    A reusable, domain-blind workflow ships in `skills/workflows` and a
+    domain-bearing one in `example-workflows`. Only the workflow loop
+    forces `disable-model-invocation: true` onto what it mints, so a
+    workflow the package loop claimed instead would reach Codex and Grok
+    as a model-invocable name -- and a workflow both loops claimed would
+    have one path written twice, from two plan entries that disagree.
+
+    `registered_names` above already requires every discovered workflow in
+    every host catalog; what this fixes is which directories are
+    discovered, which the empty shipped `skills/workflows/` cannot show.
+    """
+
+    BODY = "\n".join((
+        "---",
+        "name: {name}",
+        "description: a synthetic workflow",
+        "disable-model-invocation: true",
+        "role: planner",
+        "---",
+        "Require: a goal.",
+        "Never: improvise.",
+        "Return: the frame's close.",
+        "",
+    ))
+
+    def _tree(self, tmp: str) -> Path:
+        root = Path(tmp)
+        for home, name in (
+            ("skills/workflows", "reusable-flow"),
+            ("example-workflows", "gallery-flow"),
+        ):
+            directory = root / home / name
+            directory.mkdir(parents=True)
+            (directory / "SKILL.md").write_text(
+                self.BODY.format(name=name), encoding="utf-8"
+            )
+        kernel = root / "skills" / "kernel" / "orch-do"
+        kernel.mkdir(parents=True)
+        (kernel / "SKILL.md").write_text(
+            self.BODY.format(name="orch-do"), encoding="utf-8"
+        )
+        return root
+
+    def test_both_homes_are_discovered_in_the_resolver_s_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._tree(tmp)
+
+            found = [
+                directory.name
+                for directory, _fm, _body in install.discover_workflow_skills(root)
+            ]
+
+            self.assertEqual(["reusable-flow", "gallery-flow"], found)
+
+    def test_the_package_loop_leaves_the_workflow_home_alone(self):
+        """One name, one loop: the package loop mints no manual-only flag,
+        so a workflow it also claimed would install as a model-invocable
+        name beside its own stub."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._tree(tmp)
+
+            claimed = [
+                path.parent.name for path in packages.discover_packages(root)
+            ]
+
+            self.assertEqual(["orch-do"], claimed)
 
 
 if __name__ == "__main__":

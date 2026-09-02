@@ -13,10 +13,6 @@ the candidate workspace, which is the campaign call's alone.
 
     tickets.py frame-open <run> --goal-file <campaign-goal> --bound <bound> --workflow evolve
 
-The frame's `## Report` is the campaign ledger. Re-read it and every child's
-state from the sink before each generation, then append that generation's
-decision with `tickets.py result <run> <frame> --by <frame>`. Keep every
-returned `artifact:` and `findings:` line verbatim.
 
 **Design the evaluation** only where `evaluation` is `none` — a supplied
 frozen identity is already the campaign's, and every call below reads that

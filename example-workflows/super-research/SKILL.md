@@ -12,9 +12,6 @@ Open the frame, its goal the answered question:
 
     tickets.py frame-open <run> --goal-file <question-goal> --workflow super-research
 
-The frame's `## Report` is your working memory: re-read it and its
-children before every wave, then append the wave's decision with
-`tickets.py result <run> <frame> --by <frame>`.
 
 **Acquisition — one call per named source, launched together.**
 

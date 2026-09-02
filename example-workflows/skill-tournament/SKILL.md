@@ -18,8 +18,6 @@ own frame under this one, and the ticket tree is the call tree.
 
     tickets.py frame-open <run> --goal-file <tournament-goal> --bound <bound> --workflow skill-tournament
 
-Re-read this frame's `## Report` and its children before each half, and
-append the decision with `tickets.py result <run> <frame> --by <frame>`.
 
 **Build the benchmark.** Invoke `benchmaker` with `target=skill`, the
 skill's declared observable outcome as `outcome`, `sources`, `rigor`, `pack`

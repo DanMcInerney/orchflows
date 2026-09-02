@@ -9,7 +9,8 @@ configurable search path:
     imports   ~/.orchflows/imports/<bundle>/.orchflows/{skills,packs,workflows,sheets}/<name>,
               bundle by bundle in the order ~/.orchflows/imports.lock records
     lib       the installed library: skills/<sublayer>/<name>, packs/<name>,
-              example-workflows/<name>, sheets/<name>
+              skills/workflows/<name> then example-workflows/<name>,
+              sheets/<name>
 
 Nearest ring wins.  A non-reserved name found in more than one ring resolves
 to the nearest hit and carries a one-line shadow notice naming both paths --
@@ -50,9 +51,18 @@ RING_DIRS = {
     "skill": "skills", "pack": "packs", "workflow": "workflows",
     "sheet": "sheets",
 }
+# Every library directory a kind resolves through, in search order -- the
+# one place that says where the installed library keeps a kind. A workflow
+# has two homes: a reusable, domain-blind one ships inside the skills tier
+# (`skills/workflows`) and a domain-bearing one in the gallery
+# (`example-workflows`). The nearer of the two wins for a name in both,
+# which is a shadow nobody authored on purpose, so `tools/validate.py`
+# refuses that collision at the library rather than letting it resolve.
 LIB_DIRS = {
-    "skill": "skills", "pack": "packs", "workflow": "example-workflows",
-    "sheet": "sheets",
+    "skill": ("skills",),
+    "pack": ("packs",),
+    "workflow": ("skills/workflows", "example-workflows"),
+    "sheet": ("sheets",),
 }
 MANIFESTS = {
     "skill": "SKILL.md", "pack": "SKILL.md", "workflow": "SKILL.md",
@@ -175,14 +185,25 @@ def _home_root(value, kind: str) -> Path:
 
 
 def _lib_roots(kind: str, root: Path) -> List[Path]:
-    base = root if root.name == LIB_DIRS[kind] else root / LIB_DIRS[kind]
-    if kind != "skill":
-        return [base]
-    try:
-        sublayers = sorted(path for path in base.iterdir() if path.is_dir())
-    except OSError:
-        return [base]
-    return sublayers or [base]
+    """Every library directory this kind searches, in ``LIB_DIRS`` order.
+
+    ``root`` names the library, or -- for a caller holding one directory
+    of it verbatim -- that directory itself, which is why each entry is
+    compared against the root's own name before being joined to it.
+    """
+
+    roots: List[Path] = []
+    for relative in LIB_DIRS[kind]:
+        base = root if root.name == relative.rsplit("/", 1)[-1] else root / relative
+        if kind != "skill":
+            roots.append(base)
+            continue
+        try:
+            sublayers = sorted(path for path in base.iterdir() if path.is_dir())
+        except OSError:
+            sublayers = []
+        roots.extend(sublayers or [base])
+    return roots
 
 
 def imports_lock_path(home: Optional[Path] = None) -> Path:

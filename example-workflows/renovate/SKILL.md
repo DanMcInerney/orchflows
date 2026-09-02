@@ -11,9 +11,6 @@ carries.
 
     tickets.py frame-open <run> --goal-file <renovation-goal> --workflow renovate
 
-Re-read the frame's `## Report` and its children before each call, then
-append the decision with `tickets.py result <run> <frame> --by <frame>`.
-Keep every returned `artifact:` and `findings:` line verbatim.
 
 **Audit**, read-only, its typed artifact line the workspace tip:
 

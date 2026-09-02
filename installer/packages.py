@@ -5,8 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from scripts.rings import LIB_DIRS
+
 from .foundation import HOST_ADAPTERS_DIR, PROFILE_ROLES, REPO_ROOT
 from .hosts import GROK_EFFORTS, GROK_MODEL_CENSUS, load_host_adapters, load_role_profiles
+
+# Where the library keeps workflows, in the resolver's order.
+# ``scripts/rings.py`` owns the fact; the installer reads it so a workflow
+# home the runtime resolves through is a home the install mints names for.
+WORKFLOW_LIB_DIRS = tuple(LIB_DIRS["workflow"])
 
 # --- frontmatter parsing (adapters / prompts only need this much) ------
 
@@ -60,24 +67,40 @@ def frontmatter_field(frontmatter: str, key: str):
     return None
 
 
-def discover_packages():
-    """Every skill/pack package: ``skills/<sublayer>/orch-*`` and ``packs/orch-*``."""
+def discover_packages(root: Path = REPO_ROOT):
+    """Every skill/pack package: ``skills/<sublayer>/orch-*`` and ``packs/orch-*``.
+
+    A skills sublayer that is one of the library's workflow homes is not
+    walked here. ``discover_workflow_skills`` claims it, and a name minted
+    by both would have one path written from two plan entries -- with the
+    manual-invocation flag on only one of them."""
 
     packages = []
-    skills_root = REPO_ROOT / "skills"
+    skills_root = root / "skills"
     if skills_root.is_dir():
         for sublayer in sorted(p for p in skills_root.iterdir() if p.is_dir()):
+            if _relative(sublayer, root) in WORKFLOW_LIB_DIRS:
+                continue
             for pkg in sorted(p for p in sublayer.iterdir() if p.is_dir()):
                 skill_md = pkg / "SKILL.md"
                 if skill_md.is_file():
                     packages.append(skill_md)
-    packs_root = REPO_ROOT / "packs"
+    packs_root = root / "packs"
     if packs_root.is_dir():
         for pkg in sorted(p for p in packs_root.iterdir() if p.is_dir()):
             skill_md = pkg / "SKILL.md"
             if skill_md.is_file():
                 packages.append(skill_md)
     return packages
+
+
+def _relative(path: Path, root: Path) -> str:
+    """``path`` under ``root`` in ``LIB_DIRS`` spelling, or ``""``."""
+
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:  # pragma: no cover - a path outside the library
+        return ""
 
 
 SHEET_MANIFEST_FILE = "SHEET.md"
@@ -123,8 +146,15 @@ MANUAL_ONLY = "disable-model-invocation: true"
 
 
 def discover_workflow_skills(root: Path = REPO_ROOT):
-    """Every invocable workflow: a directory ``example-workflows/<name>/``
-    whose ``SKILL.md`` is a workflow skill -- prose that calls callables.
+    """Every invocable workflow: a directory under one of the library's
+    workflow homes whose ``SKILL.md`` is a workflow skill -- prose that
+    calls callables.
+
+    Both homes, in ``WORKFLOW_LIB_DIRS`` order: a reusable, domain-blind
+    workflow ships inside the skills tier and a domain-bearing one in the
+    gallery, and the two mint the same name surfaces because they are the
+    same kind of thing to invoke. ``tools/validate.py`` refuses one name in
+    both, so the order decides nothing a reader has to know.
 
     Returns ``(directory, frontmatter, body)`` per workflow. A directory
     without that file, or one without frontmatter or a ``name``, is library
@@ -132,20 +162,23 @@ def discover_workflow_skills(root: Path = REPO_ROOT):
     installed lib copy. ``example-workflows/references/`` is exactly that."""
 
     workflows = []
-    comps_root = root / "example-workflows"
-    if not comps_root.is_dir():
-        return workflows
-    for directory in sorted(p for p in comps_root.iterdir() if p.is_dir()):
-        manifest = directory / WORKFLOW_SKILL_FILE
-        if not manifest.is_file():
+    for relative in WORKFLOW_LIB_DIRS:
+        comps_root = root / relative
+        if not comps_root.is_dir():
             continue
-        try:
-            frontmatter, body = split_frontmatter(manifest.read_text(encoding="utf-8"))
-        except ValueError:
-            continue
-        if not frontmatter_field(frontmatter, "name"):
-            continue
-        workflows.append((directory, frontmatter, body))
+        for directory in sorted(p for p in comps_root.iterdir() if p.is_dir()):
+            manifest = directory / WORKFLOW_SKILL_FILE
+            if not manifest.is_file():
+                continue
+            try:
+                frontmatter, body = split_frontmatter(
+                    manifest.read_text(encoding="utf-8")
+                )
+            except ValueError:
+                continue
+            if not frontmatter_field(frontmatter, "name"):
+                continue
+            workflows.append((directory, frontmatter, body))
     return workflows
 
 

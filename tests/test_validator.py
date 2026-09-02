@@ -13,6 +13,7 @@ from tests.test_validator_cases.availability_and_packages import (
     TestASkippedCheckSaysSo,
     TestSheetAnatomy,
     TestSyntheticPackageBoundaryInputs,
+    TestWorkflowLibraryHomes,
 )
 from tests.test_validator_cases.contracts_and_names import (
     TestEnvelopeCheck,
