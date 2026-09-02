@@ -29,7 +29,7 @@ from scripts import state_root
 from scripts import tickets
 from scripts.tickets_format import parse_canonical_json
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 INTERPRETER = sys.executable
 PROVENANCE_KEYS = {"sink_convention", "ts", "project", "run", "ticket", "host", "session"}
 

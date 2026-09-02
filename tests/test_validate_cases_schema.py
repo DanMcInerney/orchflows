@@ -17,12 +17,11 @@ import json
 import re
 import sys
 import unittest
-from pathlib import Path
 
 if __name__ == "test_validate_cases_schema":
     sys.modules["tests.test_validate_cases_schema"] = sys.modules[__name__]
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT as REPO_ROOT  # noqa: E402
 TOOL_DIR = REPO_ROOT / "benchmarks" / "benchmaker" / "tools"
 if str(TOOL_DIR) not in sys.path:
     sys.path.insert(0, str(TOOL_DIR))

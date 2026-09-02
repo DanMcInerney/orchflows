@@ -24,7 +24,7 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 SCRIPTS = ROOT / "scripts"
 
 # The probe reports; it never asserts. Every verdict is made below, so a

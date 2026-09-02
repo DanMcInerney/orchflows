@@ -3,6 +3,11 @@
 import sys
 from pathlib import Path
 
+# S1 exception: computed locally, not imported from tests._repo_root.
+# This is the file that arms the guard `tests` package import a bare
+# `unittest discover -s tests` run never triggers on its own -- so the
+# walk here must not itself depend on `tests` (or any of its
+# submodules, tests._repo_root included) already being importable.
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

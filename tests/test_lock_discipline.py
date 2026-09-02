@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 
 from scripts import tickets as tickets_mod  # noqa: E402
 from scripts import tickets_attempts  # noqa: E402

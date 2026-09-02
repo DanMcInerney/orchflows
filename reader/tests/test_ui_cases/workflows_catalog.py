@@ -11,7 +11,7 @@ from pathlib import Path
 from reader.scripts import ui_workflows_catalog as catalog
 
 
-ROOT = Path(__file__).resolve().parents[3]
+from reader.tests._repo_root import ROOT
 SUMMARY = ROOT / "reader" / "docs" / "workflow-summary-manifest.json"
 
 

@@ -12,7 +12,7 @@ from unittest import mock
 
 from tools import suite_check
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+from tests._repo_root import ROOT as REPO_ROOT
 
 
 class TestHashAndSnapshot(unittest.TestCase):

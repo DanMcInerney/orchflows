@@ -34,7 +34,7 @@ from scripts import tickets_dispatch_launch as launch
 from scripts import workspace_git
 from scripts.tickets_format import canonical_json, parse_canonical_json
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 HOSTS = ROOT / "hosts"
 
 

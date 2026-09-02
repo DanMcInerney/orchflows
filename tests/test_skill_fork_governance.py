@@ -64,7 +64,7 @@ from installer.packages import (
     split_frontmatter,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 #: What each property is doing there, keyed by the words carrying it. A
 #: future editor shortening the clause has to drop one of these to do it,

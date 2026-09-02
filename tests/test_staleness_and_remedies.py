@@ -35,7 +35,7 @@ from scripts.tickets_format import (
 from scripts.tickets_lifecycle import _snapshot_matches
 from scripts.tickets_markdown import quote_filed_body, unquote_filed_body
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 SCRIPTS = ROOT / "scripts"
 
 

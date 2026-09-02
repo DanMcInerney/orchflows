@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+from tests._repo_root import ROOT
 # friction.py imports its resolver as `scripts.state_root` in-repo, falling
 # back to a flat `state_root` beside it once installed. Neither name is
 # importable from `tests/` alone, so put the repository root on the path

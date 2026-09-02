@@ -55,7 +55,7 @@ import scripts.tickets as tickets_mod
 import scripts.tickets_assignment as tickets_assignment
 import scripts.tickets_dispatch_launch as launch_module
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 __all__ = (
     "AdapterRegistryTest", "PackPinTest", "SemanticTicketContractTest",

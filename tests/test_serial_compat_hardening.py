@@ -12,7 +12,7 @@ from pathlib import Path
 from tools import run_serial_compat
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
 
 

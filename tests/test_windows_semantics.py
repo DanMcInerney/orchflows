@@ -16,6 +16,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+# S1 exception: computed locally, not imported from tests._repo_root.
+# This file forces `import tests` below so the guard installs even
+# under a bare `unittest discover -s tests` run -- so this walk must
+# not itself depend on `tests` already being importable.
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

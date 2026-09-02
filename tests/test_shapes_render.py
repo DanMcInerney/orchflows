@@ -8,7 +8,7 @@ import unittest
 from tools import render_shapes
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 
 class ShapeRenderTest(unittest.TestCase):

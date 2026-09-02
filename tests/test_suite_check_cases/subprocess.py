@@ -13,7 +13,7 @@ from pathlib import Path
 
 from scripts import state_root
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+from tests._repo_root import ROOT as REPO_ROOT
 
 
 class TestHarnessSubprocess(unittest.TestCase):

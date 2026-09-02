@@ -18,9 +18,8 @@ import re
 import subprocess
 import sys
 import unittest
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 RUNNER = ROOT / "tools" / "run_super_research_tests.py"
 
 RAN_PATTERN = re.compile(r"Ran (\d+) tests?")

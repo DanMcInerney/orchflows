@@ -14,7 +14,7 @@ from reader.scripts import ui_workflows_identity as identity
 from reader.scripts import ui_workflows_sources as sources
 
 
-ROOT = Path(__file__).resolve().parents[3]
+from reader.tests._repo_root import ROOT
 NOT_FOUND = {"error": {"code": "not_found", "message": "resource not found"}}
 UNREADABLE = {
     "error": {

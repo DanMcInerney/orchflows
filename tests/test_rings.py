@@ -13,7 +13,7 @@ from unittest.mock import patch
 from scripts import rings, rings_trust, state_root
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 
 @contextlib.contextmanager
