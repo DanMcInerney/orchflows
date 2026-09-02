@@ -78,7 +78,7 @@ class LaunchResolutionTest(unittest.TestCase):
 
     def test_the_effort_is_the_one_this_host_spells_however_it_spells_it(self):
         for host, role, expected in (
-            ("claude", "worker", "xhigh"), ("codex", "planner", "ultra"),
+            ("claude", "worker", "high"), ("codex", "planner", "ultra"),
             ("grok", "worker", "high"),
         ):
             with self.subTest(host=host, role=role):
@@ -481,7 +481,7 @@ class DispatchLaunchTest(unittest.TestCase):
         result = self.dispatch(run="planned")
 
         self.assertEqual("orch-planner", result["launch"]["agent"])
-        self.assertEqual("claude-opus-5", result["launch"]["model"])
+        self.assertEqual("claude-fable-5-1", result["launch"]["model"])
 
     def test_an_unknown_host_refuses_before_the_attempt_is_opened(self):
         before = self.ticket_path().read_text(encoding="utf-8")
