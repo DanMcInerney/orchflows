@@ -14,6 +14,11 @@ SKILL_TIERS = ("kernel", "workflows")
 ROLE_TABLE = {
     "orch-judge": "planner",
     "orch-do": "worker",
+    # A reusable workflow's `None` is its role decision: `validate_role`
+    # refuses a role in a workflow home, because a workflow's prose is
+    # driven in the orchestrator's own context and never forks, so there
+    # is no role for a host surface to bind.
+    "bakeoff": None,
     "checkpointed-build": None,
 }
 

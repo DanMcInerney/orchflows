@@ -255,9 +255,13 @@ def _build_user_plan(
 
     # Workflows are invocable by name, so they get the same name surfaces as
     # skills: a by-name pointer, a Claude adapter stub, a Codex prompt, and
-    # — for curated entry points — a Codex redirect stub. What differs from a
-    # skill is one thing: every workflow surface is manual-invocation-only,
-    # so the Claude adapter's frontmatter is forced rather than inherited.
+    # — for curated entry points — a Codex redirect stub. Two things differ
+    # from a skill, and both are about who runs the body: every workflow
+    # surface is manual-invocation-only, so the Claude adapter's frontmatter
+    # is forced rather than inherited, and no surface binds a role, because
+    # a workflow declares none -- `tools/validate_support/packages.py`'s
+    # `validate_role` refuses one in a workflow home, so there is no field
+    # here for a host's fork binding to read.
     for workflow_dir, frontmatter, body in discover_workflow_skills():
         name = workflow_dir.name
         description = frontmatter_field(frontmatter, "description") or ""
@@ -296,7 +300,9 @@ def _build_user_plan(
             grok_skills.append(
                 (
                     item_path("grok", "skill", _grok_skills_dir().parent, name=name),
-                    grok_skill_text(frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE),
+                    grok_skill_text(
+                        frontmatter, lib_workflow_dir / WORKFLOW_SKILL_FILE
+                    ),
                 )
             )
 

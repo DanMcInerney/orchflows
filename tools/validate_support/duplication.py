@@ -277,10 +277,85 @@ LICENSED_COPIES = (
 )
 
 
+def _workflow_home_prefixes():
+    """Every library workflow home, as a label prefix.
+
+    ``scripts/rings.py`` owns where a workflow lives and
+    ``structure.workflow_roots`` is where this validator reads that list,
+    so a home the resolver knows is a home this pairing rule knows.
+    Imported on first use, like ``_doclint``: an isolated fixture carrying
+    no ``scripts/`` still runs every other check.
+    """
+
+    from .structure import workflow_roots
+
+    return tuple(f"{rel(root)}/".replace("\\", "/") for root in workflow_roots())
+
+
+# The one owner of an idiom's wording: composition.md 13 makes a control-flow
+# sentence that recurs across workflows this file's to word, and tells every
+# body to quote it from there rather than reword it. A quote is therefore a
+# copy the library ordered.
+IDIOM_OWNER = "docs/custom-workflow-authoring.md"
+#: How much of an idiom a shared fragment must carry before it licenses a
+#: pair -- long enough that no ordinary sentence reaches it by accident.
+IDIOM_FRAGMENT_MIN_WORDS = 6
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _idiom_fragments():
+    """Every clause of every idiom the owner words, flattened.
+
+    Read from the owner's ``## Idioms`` section rather than listed here:
+    an idiom added or reworded there is licensed by the same act that
+    words it, and a list of copies kept beside the owner would be the
+    second wording this check exists to find.
+    """
+
+    path = ROOT / IDIOM_OWNER
+    if not path.is_file():
+        return ()
+    section = _read_source(path).partition("\n## Idioms\n")[2].partition("\n## ")[0]
+    fragments = []
+    for bullet in section.split("\n- **")[1:]:
+        wording = bullet.partition("**")[2].lstrip(" —-")
+        for clause in cell_clauses(wording):
+            flat = _flat(clause)
+            if len(flat.split()) >= IDIOM_FRAGMENT_MIN_WORDS:
+                fragments.append(flat)
+    return tuple(fragments)
+
+
+def _licensed_idiom_quote(labels: set, left_clause: str, right_clause: str) -> bool:
+    """Whether this pair is a workflow body quoting an idiom at its owner.
+
+    The two sides are the owner and a workflow body, and both carry the
+    same fragment of one idiom: that is the quote composition.md 13
+    ordered, and reporting it would ask the body to reword the one
+    sentence that must never be reworded. Any other pair -- two bodies, or
+    a body against some other clause of the owner -- is still the finding.
+    """
+
+    if IDIOM_OWNER not in labels or len(labels) != 2:
+        return False
+    other = (labels - {IDIOM_OWNER}).pop()
+    if not other.startswith(_workflow_home_prefixes()):
+        return False
+    left, right = _flat(left_clause), _flat(right_clause)
+    return any(
+        fragment in left and fragment in right for fragment in _idiom_fragments()
+    )
+
+
 def _licensed(left_label: str, left_clause: str, right_label: str, right_clause: str) -> bool:
     """Whether this pair is a copy the library licensed, for this clause."""
 
     labels = {left_label.replace("\\", "/"), right_label.replace("\\", "/")}
+    if _licensed_idiom_quote(labels, left_clause, right_clause):
+        return True
     if "Never: introduce" in left_clause and "Never: introduce" in right_clause:
         return all(
             (ROOT / label).is_file()
