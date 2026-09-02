@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2122,
+  "count": 2127,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -995,6 +995,11 @@
    "test_ticket_callables.CallablePromptTest.test_a_judge_prints_the_findings_line_beside_its_artifact_line",
    "test_ticket_callables.CallablePromptTest.test_an_untyped_artifact_is_refused_before_anything_is_written",
    "test_ticket_callables.CallableSinkWorktreeIsolationTest.test_worktrees_root_stays_inside_the_sinks_own_tempdir",
+   "test_ticket_callables.GenerationArtifactTest.test_a_live_cut_generation_is_accepted_and_carried_into_context",
+   "test_ticket_callables.GenerationArtifactTest.test_a_live_root_generation_is_accepted_and_carried_into_context",
+   "test_ticket_callables.GenerationArtifactTest.test_an_unknown_root_identity_is_refused_with_the_runs_known_values",
+   "test_ticket_callables.GenerationArtifactTest.test_the_three_adapter_kinds_are_admitted_unchanged",
+   "test_ticket_callables.GenerationArtifactTest.test_the_untyped_refusal_expects_all_five_kinds",
    "test_ticket_callables.RepairRoundAdmissionTest.test_a_runtime_callables_repair_round_admits_and_dispatches",
    "test_ticket_callables.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
@@ -2125,7 +2130,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "e22d744c0d91b8cec79033c3c2d4b0cbb09060330c64a9cacefaf0ec627580af"
+  "sha256": "0dbc72c0f4d2ddccf99cf82d7f82dfd8ff78ff60a7d6db0231331d7a3be5d15b"
  },
  "mutation_owners": [
   {
