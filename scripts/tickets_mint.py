@@ -30,6 +30,7 @@ if __package__:
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_bound import parse_bound
     from .tickets_format import (
+        ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
         next_mint_id,
@@ -48,6 +49,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_admission import ADMISSION_PENDING
     from tickets_bound import parse_bound
     from tickets_format import (
+        ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
         _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
         next_mint_id,
@@ -64,7 +66,8 @@ else:  # pragma: no cover - direct/installed flat script path
 
 DO_USAGE = (
     "do <run> --pack P --goal-file F [--details-file D] [--parent ID] "
-    "[--done <canonical-json>] [--isolation required|none] [--bound B] "
+    "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
+    "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
 )
 JUDGE_USAGE = (
@@ -86,7 +89,6 @@ ARTIFACT_KINDS = frozenset(
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
 PARENT_CLAUSE = "- parent: "
-ARTIFACT_CLAUSE = "- artifact: "
 
 
 def _dispatch_facade():
@@ -219,7 +221,7 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 
 
 def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
-            done, isolation, bound, artifacts):
+            done, isolation, bound, artifacts, makes=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
     pinned, refusal = pinned_pack_digest(pack)
@@ -232,7 +234,7 @@ def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
         "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": isolation, "bound": bound,
-        "done": done,
+        "done": done, MAKES_FIELD: makes,
     }
     sections = [("Goal", goal), ("Context", _context(parent, artifacts))]
     if details:
@@ -285,6 +287,7 @@ def _cmd_callable(rest, *, judge: bool):
     details_file = _extract_flag(args, "--details-file")
     parent = _extract_flag(args, "--parent")
     done = _extract_flag(args, "--done")
+    makes = _extract_flag(args, "--makes")
     isolation = _extract_flag(args, "--isolation")
     bound = _extract_flag(args, "--bound") or NEW_DEFAULT_BOUND
     host = _extract_flag(args, "--host")
@@ -303,6 +306,15 @@ def _cmd_callable(rest, *, judge: bool):
             return invalid
     if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
         return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
+    # A judge is handed finished artifacts and names their kind on its
+    # Context; only a `do` chooses what it makes, and only when the pack's
+    # adapter does not already say.
+    if makes is not None:
+        if judge:
+            return {"error": f"--makes belongs to do. usage: {JUDGE_USAGE}"}
+        makes = makes.strip()
+        if makes not in PLANNING_KINDS:
+            return {"error": f"--makes '{makes}' is not one of {list(PLANNING_KINDS)}"}
     if done is not None:
         defects = done_defects(done)
         if defects:
@@ -322,6 +334,16 @@ def _cmd_callable(rest, *, judge: bool):
         lines, failure = _artifact_lines(artifacts)
         if failure is not None:
             return failure
+        # One judge, one kind: the kind selects the craft's `## Lens` entry
+        # the judge reads its criteria from, and a call handed two kinds
+        # has no one entry to be judged against. Two calls, not one.
+        kinds = sorted({line.split(":", 1)[0] for line in lines})
+        if len(kinds) > 1:
+            return {"error": (
+                "judge reads one artifact kind, and --artifacts names "
+                + ", ".join(f"'{kind}'" for kind in kinds)
+                + f"; mint one judge per kind. usage: {JUDGE_USAGE}"
+            )}
     elif artifacts:
         return {"error": f"--artifacts belongs to judge. usage: {DO_USAGE}"}
     run_dir, failure = _run_dir(run)
@@ -336,7 +358,7 @@ def _cmd_callable(rest, *, judge: bool):
             executor=JUDGE_EXECUTOR if judge else DO_EXECUTOR,
             pack=pack, goal=goal.strip(), details=(details or "").strip() or None,
             parent=parent, done=done, isolation=isolation, bound=bound,
-            artifacts=lines,
+            artifacts=lines, makes=makes,
         )
     if failure is not None:
         return failure

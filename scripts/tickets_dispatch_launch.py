@@ -330,8 +330,29 @@ def _reading_lines(assignment: dict) -> list:
     return lines
 
 
+def _files_findings(assignment: dict) -> bool:
+    """Whether this lane's product is findings over fixed artifacts.
+
+    The judging verb is named once, in the registry: read here so the two
+    places the prompt turns on it -- which `## Lens` entry sentence it
+    renders, and whether it asks for the findings line -- read one fact.
+    """
+
+    return bool(EXECUTOR_REGISTRY.get(
+        str(assignment.get("executor") or ""), {},
+    ).get("files_findings"))
+
+
 def _craft_lines(assignment: dict) -> list:
-    """The pack's craft, handed as a path, and how far its checks reach.
+    """The pack's craft, handed as a path, the entry it is read at, and how
+    far its checks reach.
+
+    A craft's `## Lens` carries one entry per artifact kind its domain
+    produces, so handing the path alone left the child to pick which entry
+    was its own. The kind the assignment resolved names the entry, in the
+    direction this lane runs it: a `do` makes toward the entry and a judge
+    checks against it. Nothing renders for an assignment whose kind did not
+    resolve -- a child sent to `### None` would read no entry at all.
 
     One scope statement, whichever owns it: the craft's own quoted sentence
     where the craft declares one, else the standing gate line -- the two said
@@ -347,6 +368,15 @@ def _craft_lines(assignment: dict) -> list:
             f"Read your stamped pack's craft at {craft} and run its declared "
             "stages in order through this one role."
         )
+        key = assignment.get("lens_key")
+        if key:
+            lines.append(
+                f"You judge `{key}` artifacts: the craft's `## Lens` entry "
+                f"`### {key}` is your criteria."
+                if _files_findings(assignment) else
+                f"You make a `{key}`: the craft's `## Lens` entry `### {key}` "
+                "is what your artifact must satisfy."
+            )
         scope = assignment.get("craft_scope")
         if scope is not None:
             lines.append(f'That craft sets your verification scope: "{scope}"')
@@ -443,9 +473,7 @@ def _return_lines(assignment: dict) -> list:
             "Print this line verbatim in your closing note, as its own line, "
             f"filled in and with no other text on it: {ARTIFACT_LINE_FORMS[kind]}"
         )
-    if EXECUTOR_REGISTRY.get(
-        str(assignment.get("executor") or ""), {},
-    ).get("files_findings"):
+    if _files_findings(assignment):
         lines.append(
             "Print this second line verbatim beside it, naming the findings "
             f"file you wrote in this workspace: {FINDINGS_LINE}"
