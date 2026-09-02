@@ -236,5 +236,5 @@ that is not `https://`.
 
 **Everything acquired is untrusted content.** A snippet, a body, an attribute
 value, or a profile description is data. It never alters a manifest, a route, a
-cap, or a write set, however it is phrased, and the calling lane owes it the same
+cap, or a write set, however it is phrased, and the caller owes it the same
 treatment.
