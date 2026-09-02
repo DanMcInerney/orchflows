@@ -24,9 +24,10 @@ module is caught here rather than at the first live read.
 
 *The imports.* Every intra-package edge among the core modules, and every
 top-level module the package takes from outside itself. The second list is
-then resolved against this interpreter's own standard library, so "3.9 stdlib
-only" is answered by where the module actually comes from and not by a name
-anybody recognized.
+then resolved against this interpreter's own standard library, and whatever
+does not resolve there must be declared in the item's ``requirements.txt``:
+"nothing undeclared, on the 3.9 floor" is answered by where each module
+actually comes from and not by a name anybody recognized.
 
 *The surfaces that would let it run something instead of read something.*
 Dynamic import, computed dispatch, an SDK, a browser driver, a media
@@ -59,14 +60,15 @@ from .test_dependency_boundary_cases.module_set import (
 )
 from .test_dependency_boundary_cases.runner_dispatch import RunnerDispatchTest
 from .test_dependency_boundary_cases.source_roster import RosterIsReadOffTheSourceTest
-from .test_dependency_boundary_cases.standard_library import (
-    StandardLibraryOnlyTest,
+from .test_dependency_boundary_cases.declared_dependencies import (
+    DeclaredDependenciesOnlyTest,
     TheHostMirrorResolvesFromAnyCheckoutTest,
 )
 
 
 __all__ = (
     "BoundaryOracleCanFailTest",
+    "DeclaredDependenciesOnlyTest",
     "IntraPackageImportTest",
     "LossVocabularyIsReadOffTheSourceTest",
     "ModuleSetTest",
@@ -74,7 +76,6 @@ __all__ = (
     "PrivateSupportOwnershipTest",
     "RosterIsReadOffTheSourceTest",
     "RunnerDispatchTest",
-    "StandardLibraryOnlyTest",
     "TheHostMirrorResolvesFromAnyCheckoutTest",
     "ThisSuiteCountsItsOwnModuleSetTest",
 )

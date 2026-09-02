@@ -174,22 +174,18 @@ DYNAMIC_IMPORT_MODULES = (
 COMPUTED_NAMES = ("eval", "exec", "compile", "__import__", "globals", "locals", "vars")
 ATTRIBUTE_NAMES = ("getattr", "setattr", "delattr")
 
-# The spec's non-goals, by the name each would be imported under. Checked
-# against imports rather than against text: `adapters/__init__.py` says "asked
-# for fewer requests" in a warning, and a scan that read prose would call that
-# an HTTP client.
+# The spec's non-goals, by the name each would be imported under: a browser
+# driver, a media downloader, or a platform SDK is a surface that runs
+# something or signs in, and the package reads. Checked against imports
+# rather than against text: `adapters/__init__.py` says "asked for fewer
+# requests" in a warning, and a scan that read prose would call that an HTTP
+# client. Plain HTTP clients and HTML parsers left this list on 2026-09-02
+# with the stdlib-only bar: they are ordinary dependencies an item declares.
 THIRD_PARTY_SURFACES = (
     "selenium",
     "playwright",
     "pyppeteer",
     "webdriver",
-    "requests",
-    "httpx",
-    "aiohttp",
-    "urllib3",
-    "bs4",
-    "lxml",
-    "html5lib",
     "yt_dlp",
     "youtube_dl",
     "googleapiclient",
@@ -198,6 +194,14 @@ THIRD_PARTY_SURFACES = (
     "instaloader",
     "snscrape",
 )
+
+# The item's own dependency declaration, pip's format, beside its manifest.
+# Absent means "nothing declared", and every import outside the standard
+# library is then undeclared. A distribution's import name is not always its
+# requirement name (`beautifulsoup4` imports as `bs4`); `IMPORT_NAMES` maps
+# the ones this item adopts, and a name missing from it fails the check.
+DECLARED_REQUIREMENTS = TESTS_DIR.parent / "requirements.txt"
+IMPORT_NAMES = {}
 
 # Strings that could become a command rather than a url.
 SHELL_SPELLINGS = ("sh -c", "/bin/", "cmd.exe", "powershell", "javascript:", "data:")
@@ -371,13 +375,31 @@ def branch_targets(path, function_name):
     return tuple(rows)
 
 
+def declared_import_names():
+    """Every import name the item's ``requirements.txt`` accounts for."""
+
+    if not DECLARED_REQUIREMENTS.is_file():
+        return set()
+    names = set()
+    for raw in DECLARED_REQUIREMENTS.read_text(encoding="utf-8-sig").splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        requirement = line.split(";", 1)[0]
+        for separator in ("==", ">=", "<=", "~=", "!=", ">", "<", "[", " "):
+            requirement = requirement.split(separator, 1)[0]
+        distribution = requirement.strip().lower().replace("-", "_").replace(".", "_")
+        names.add(IMPORT_NAMES.get(distribution, distribution))
+    return names
+
+
 def outside_the_standard_library(names):
     """Every name this interpreter does not answer out of its own stdlib.
 
     Resolved rather than recognized. A third-party module answers from
     site-packages and a missing one answers not at all; both are outside, and
-    the pair is what "standard library only" means on the 3.9 floor this suite
-    runs on.
+    each must then be declared in the item's ``requirements.txt`` on the 3.9
+    floor this suite runs on.
     """
 
     outside = []

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """The ring commands, and the one question a returning driver asks.
 
-Six ring verbs over ``scripts/rings.py``'s one resolution order, plus
+Seven ring verbs over ``scripts/rings.py``'s one resolution order, plus
 ``resume``:
 
-    orchflows sync [--project]         make a ring whole and render its adapters
+    orchflows sync [--project]         make a ring whole, render its adapters,
+                                       build every declared item environment
     orchflows add <git-url>@<pin>      pin one external bundle
     orchflows new {skill|pack|workflow} <name>
     orchflows list [--kind K]          every item resolvable from here
+    orchflows env <kind> <name>        the interpreter an item's scripts run through
     orchflows trust [--once] <bundle>  allow one project ring's content
     orchflows untrust <bundle>         withdraw both halves of that grant
     orchflows resume [--now <iso>]     this project's open workflow frames
@@ -29,12 +31,13 @@ from pathlib import Path
 
 if __package__:
     from . import (
-        console, orchflows_adapters, orchflows_home, orchflows_scaffold,
-        rings, rings_trust, state_root,
+        console, orchflows_adapters, orchflows_envs, orchflows_home,
+        orchflows_scaffold, rings, rings_trust, state_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
     import console
     import orchflows_adapters
+    import orchflows_envs
     import orchflows_home
     import orchflows_scaffold
     import rings
@@ -138,6 +141,7 @@ def cmd_sync(args) -> int:
         detail = f" ({record['detail']})" if record.get("detail") else ""
         print(f"import {record['name']} @ {record['pin']}: {record['action']}{detail}")
     _report(orchflows_adapters.write("home"))
+    _report_envs()
     return 0
 
 
@@ -156,6 +160,7 @@ def _sync_project() -> int:
     project = bundle.parent
     print(f"project ring: {bundle}")
     _report(orchflows_adapters.write("project", project=project, start=project))
+    _report_envs()
     return 0
 
 
@@ -164,6 +169,30 @@ def _report(result: dict) -> None:
         print(f"adapter {path}")
     for path in result["removed"]:
         print(f"removed {path}")
+
+
+def _report_envs() -> None:
+    """Build every declared item environment resolvable from here, and say so.
+
+    Both ``sync`` forms end here: an environment is machine-local under the
+    home ring whichever ring declared it, and the inventory is the same
+    resolver a launch reads, so what is built is what can run.
+    """
+
+    for outcome in orchflows_envs.sync(rings.inventory()):
+        if outcome["action"] == "skipped":
+            print(f"env {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
+        else:
+            print(
+                f"env {outcome['kind']} '{outcome['name']}': "
+                f"{outcome['action']} {outcome['interpreter']}"
+            )
+
+
+def cmd_env(args) -> int:
+    record = orchflows_envs.resolve_interpreter(args.kind, args.name)
+    print(record["interpreter"])
+    return 0
 
 
 def cmd_add(args) -> int:
@@ -258,6 +287,12 @@ def _parser() -> argparse.ArgumentParser:
     created.add_argument("kind", choices=rings.KINDS)
     created.add_argument("name")
     created.set_defaults(handler=cmd_new)
+    environment = subparsers.add_parser(
+        "env", help="the interpreter an item's scripts run through", allow_abbrev=False,
+    )
+    environment.add_argument("kind", choices=rings.KINDS)
+    environment.add_argument("name")
+    environment.set_defaults(handler=cmd_env)
     trusted = subparsers.add_parser("trust", help="allow one project bundle", allow_abbrev=False)
     trusted.add_argument("--once", action="store_true", help="allow one use, record nothing standing")
     trusted.add_argument("bundle")

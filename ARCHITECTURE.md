@@ -1,8 +1,8 @@
 # Architecture
 
 Ceiling: 925 whitespace-delimited words. Terms are
-[the vocabulary](docs/vocabulary.md)'s. Raised from 850 for the ring
-family's five owner modules.
+[the vocabulary](docs/vocabulary.md)'s; raised from 850 for the ring
+family's owner modules.
 
 ## Four tiers
 
@@ -31,7 +31,8 @@ family's five owner modules.
   library terms; `documentation.md` documentation design and the
   reading order; each remaining file its named subject.
 - [`scripts/`](scripts/) owns repository automation. Programs use Python
-  3.9+, Windows and POSIX, then no network. An unprefixed family module is
+  3.9+, its standard library alone (the library's floor, not a ring
+  item's), Windows and POSIX, then no network. An unprefixed family module is
   the public command and import facade; same-family helpers own internal concerns.
   `tickets_format.py` owns syntax, closed parsers, the pack registry;
   `tickets_markdown.py` semantic payload parsing and byte preservation;
@@ -58,8 +59,9 @@ family's five owner modules.
   it and spell no root of their own. `rings_trust.py` owns the never-portable
   trust ledger. `orchflows.py` is the ring and resume command surface over
   `orchflows_home.py` (home layout, the committed/regenerable line, pins),
-  `orchflows_scaffold.py` (`new` skeletons) and `orchflows_adapters.py`
-  (generated inert host adapters).
+  `orchflows_scaffold.py` (`new` skeletons), `orchflows_adapters.py`
+  (generated inert host adapters) and `orchflows_envs.py` (per-item
+  declared environments).
 - [`tools/validate.py`](tools/validate.py) owns mechanical library-text
   admission; [`tools/check_source_sizes.py`](tools/check_source_sizes.py)
   the warn-only executable-source size report.
@@ -83,7 +85,7 @@ family's five owner modules.
   `~/.orchflows/runtime`, and the planning/application/uninstall modules the
   immutable frontend at `~/.orchflows/ui`. User installation is the sole scope,
   creating or reusing both; replacement is staged and
-  probed before an owned prior generation moves. A script module shared with the
+  probed before an owned generation moves. A script module shared with the
   reader is carried in two layouts and must be listed for both — flat `bin/`
   through `installer/inventory.py`, the reader package through
   `installer/planning_support.py` — or the reader fails at first import.
@@ -97,13 +99,13 @@ family's five owner modules.
   build. Its browser dependency direction is `shell -> catalog -> feature ->
   shared`, with one named reuse edge: the Now view renders the Workflows-owned
   [`SummaryFlow`](reader/web/src/features/workflows/view/SummaryFlow.tsx)
-  flowchart and stylesheet rather than paralleling it.
+  flowchart and stylesheet.
 - [`DESIGN.md`](DESIGN.md) owns non-normative rationale; [`README.md`](README.md)
   is the human entry surface, not an owner of agent law.
 
 ## Runtime routing pins
 
-Helper membership derives from code, not inventoried here. Two
+Helper membership derives from code. Two
 non-derivable facts: `scripts/cutcheck.py` owns cut-defect
 detection over issued ticket sets; `scripts/tickets.py` owns
 the public ticket facade, the one root,
@@ -111,7 +113,7 @@ immutable run identity (`opened_at`, installed version, source commit),
 immutable terminal timing (`terminal_at`, terminal ticket, `elapsed_ms`).
 Its `dispatch` owns one launch and its `land` one return, each a single
 transaction over the granular operations, which stay public for recovery.
-`tickets.py help` is operator-only: it answers usage requests.
+`tickets.py help` is operator-only.
 
 The reader family keeps one closed boundary: `reader/scripts/ui_api.py` owns
 route assembly, query validation, shared JSON ETags and closed failures,
@@ -129,8 +131,7 @@ readiness facts and causal explanations.
   [`scripts/state_root.py`](scripts/state_root.py). Research evidence lives in
   the sink's `research/` tree.
 - `.orch/` holds tracked `canary/` fixtures and legacy generated `bin/`
-  scripts named by project receipts; cleanup stays receipt-driven through
-  uninstall.
+  scripts named by project receipts, cleaned up through uninstall.
 
 ## Dependency direction
 
@@ -142,5 +143,5 @@ Packs depend on contracts and may name callable skills. Generic skills
 never name a pack or domain. A workflow calls skills and
 scripts; no skill depends on a workflow. A lower layer
 may link the law or contract binding it; a rule never depends on
-package internals for its meaning. Shared packages never name project packages;
+package internals. Shared packages never name project packages;
 project packages may name visible ones.
