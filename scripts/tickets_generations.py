@@ -23,7 +23,8 @@ GENERATION_RE = re.compile(r"^(root|cut):([A-Za-z0-9][A-Za-z0-9._-]*):(\d+):sha2
 # child works against.
 ASSIGNMENT_SYSTEM_FIELDS = (
     "bound", "done", "independence", "isolation", MAKES_FIELD, "pack",
-    "pack_digest", "profile",
+    "pack_digest", "profile", "sheet_digests", "sheets", "skill",
+    "skill_digest",
 )
 
 

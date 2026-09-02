@@ -124,7 +124,24 @@ def binding_findings(ticket_id: str, data: dict) -> list:
             "pack-digest-unbound", "pack_digest",
             "a pinned pack digest without a stamped pack names nothing",
         ))
+    findings.extend(stamped_item_findings(data))
     return findings
+
+
+def stamped_item_findings(data: dict) -> list:
+    """Re-verify the sheets and applied skill pinned beside the pack.
+
+    The same door, one module over: `scripts/tickets_pins.py` resolves and
+    hashes those two kinds and states the refusal, and this is the one place
+    a sealed ticket is graded against it -- `draft-validate`, `seal`, and
+    admission all reach the check through `binding_findings` above.
+    """
+
+    if __package__:
+        from .tickets_pins import pinned_findings
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_pins import pinned_findings
+    return pinned_findings(data, finding)
 
 
 def landing_round_parent(ticket_id: str, siblings) -> str | None:
@@ -358,5 +375,5 @@ __all__ = (
     "grade_admission", "is_receipt",
     "landing_round_parent",
     "pinned_digest_finding", "post_seal_parent", "refresh_admissions",
-    "sealed_parent_target",
+    "sealed_parent_target", "stamped_item_findings",
 )

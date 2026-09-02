@@ -38,7 +38,8 @@ if __package__:
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue import (
-        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _issue_ticket, pinned_pack_digest,
+        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _issue_ticket, pinned_items,
+        pinned_pack_digest,
     )
     from .tickets_issue_render import _render_ticket
     from .tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -57,7 +58,8 @@ else:  # pragma: no cover - direct/installed flat script path
     )
     from tickets_generations import assignment_digest
     from tickets_issue import (
-        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _issue_ticket, pinned_pack_digest,
+        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _issue_ticket, pinned_items,
+        pinned_pack_digest,
     )
     from tickets_issue_render import _render_ticket
     from tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -67,6 +69,7 @@ else:  # pragma: no cover - direct/installed flat script path
 
 DO_USAGE = (
     "do <run> --pack P --goal-file F [--details-file D] [--parent ID] "
+    "[--sheet S] [--sheet ...] [--skill S] "
     "[--done <canonical-json>] [--makes " + "|".join(PLANNING_KINDS) + "] "
     "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
@@ -74,6 +77,7 @@ DO_USAGE = (
 JUDGE_USAGE = (
     "judge <run> --pack P --goal-file F --artifacts <typed-line> "
     "[--artifacts ...] [--details-file D] [--parent ID] "
+    "[--sheet S] [--sheet ...] [--skill S] "
     "[--isolation required|none] [--bound B] "
     "[--workspace <source-tree-to-cut-from>] [--host H]"
 )
@@ -338,16 +342,19 @@ def _mint(run: str, run_dir, parent, fields: dict, sections: list):
 
 
 def _minted(run: str, run_dir, *, executor, pack, goal, details, parent,
-            done, isolation, bound, artifacts, makes=None):
+            done, isolation, bound, artifacts, makes=None, sheets=(), skill=None):
     """`(ticket_id, refusal)` -- one callable's fields, minted through `_mint`."""
 
     pinned, refusal = pinned_pack_digest(pack)
     if refusal is not None:
         return None, refusal
+    stamped, refusal = pinned_items(sheets, skill)
+    if refusal is not None:
+        return None, refusal
     fields = {
         "run": run, "status": ADMISSION_PENDING,
         "admission": ADMISSION_PENDING, "executor": executor,
-        "pack": pack, "pack_digest": pinned,
+        "pack": pack, "pack_digest": pinned, **stamped,
         "independence": MINT_INDEPENDENCE,
         "parent": parent or None,
         "isolation": isolation, "bound": bound,
@@ -410,6 +417,8 @@ def _cmd_callable(rest, *, judge: bool):
     host = _extract_flag(args, "--host")
     workspace = _extract_flag(args, "--workspace")
     artifacts = _extract_all(args, "--artifacts")
+    sheets = _extract_all(args, "--sheet")
+    skill = _extract_flag(args, "--skill")
     stray = next((arg for arg in args if arg.startswith("-")), None)
     if stray is not None:
         return {"error": f"{'judge' if judge else 'do'} does not accept {stray}. usage: {usage}"}
@@ -482,7 +491,7 @@ def _cmd_callable(rest, *, judge: bool):
             executor=JUDGE_EXECUTOR if judge else DO_EXECUTOR,
             pack=pack, goal=goal.strip(), details=(details or "").strip() or None,
             parent=parent, done=done, isolation=isolation, bound=bound,
-            artifacts=lines, makes=makes,
+            artifacts=lines, makes=makes, sheets=sheets, skill=skill,
         )
     if failure is not None:
         return failure

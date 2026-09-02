@@ -43,6 +43,10 @@ ticket already spells their identities `root:<id>:<n>:sha256:<digest>` and
 `cut:<id>:<n>:sha256:<digest>`. A making verb makes toward the entry its
 artifact kind names; a checking verb reads the same entry as its criteria.
 
+A sheet ([sheet.md](sheet.md)) is extra craft one ticket stamps beside a
+pack, and its `## Lens` entries carry these same keys and add to the craft's
+without loosening them.
+
 One fact, one owner: the retired `Outline`, `Slicing`, `Evidence` and `Shape`
 sections are those entries' content, not sections beside them — a root's
 taste under `### root`, a cut's under `### cut`, and the deliverable's
