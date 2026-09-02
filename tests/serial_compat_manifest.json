@@ -2293,7 +2293,7 @@
   {
    "module": "tests.test_dispatch_launch",
    "owner": "LensKeyPromptTest.minted",
-   "restoration": "unclassified",
+   "restoration": "selected-module-boundary",
    "seams": [
     "monkeypatch"
    ]
@@ -2301,7 +2301,7 @@
   {
    "module": "tests.test_dispatch_launch",
    "owner": "LensKeyPromptTest.setUp",
-   "restoration": "unclassified",
+   "restoration": "selected-module-boundary",
    "seams": [
     "environment",
     "threads"
