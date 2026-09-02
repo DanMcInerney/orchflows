@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The ring commands, and the one question a returning driver asks.
 
-Seven ring verbs over ``scripts/rings.py``'s one resolution order, plus
+Eight ring verbs over ``scripts/rings.py``'s one resolution order, plus
 ``resume``:
 
     orchflows sync [--project]         make a ring whole, render its adapters,
@@ -9,6 +9,7 @@ Seven ring verbs over ``scripts/rings.py``'s one resolution order, plus
     orchflows add <git-url>@<pin>      pin one external bundle
     orchflows new {skill|pack|workflow} <name>
     orchflows list [--kind K]          every item resolvable from here
+    orchflows check [<ring-dir>]       grade a ring's items, exit 1 on a refusal
     orchflows env <kind> <name>        the interpreter an item's scripts run through
     orchflows trust [--once] <bundle>  allow one project ring's content
     orchflows untrust <bundle>         withdraw both halves of that grant
@@ -31,12 +32,13 @@ from pathlib import Path
 
 if __package__:
     from . import (
-        console, orchflows_adapters, orchflows_envs, orchflows_home,
-        orchflows_scaffold, rings, rings_trust, state_root,
+        console, orchflows_adapters, orchflows_check, orchflows_envs,
+        orchflows_home, orchflows_scaffold, rings, rings_trust, state_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
     import console
     import orchflows_adapters
+    import orchflows_check
     import orchflows_envs
     import orchflows_home
     import orchflows_scaffold
@@ -87,6 +89,32 @@ def cmd_list(args) -> int:
     for notice in notices:
         print(notice)
     return 0
+
+
+def cmd_check(args) -> int:
+    """Grade one ring with the library compiler's own item checks.
+
+    The findings print in the compiler's format -- ``ERROR|WARN <file>:
+    <message>``, one per line, relative to the ring -- because they are the
+    compiler's findings; ``scripts/orchflows_check.py`` says which checks a
+    ring gets and why. The two counted lines above them answer the question
+    a clean report otherwise leaves open: which ring, and how much of it
+    was actually looked at.
+    """
+
+    ring = orchflows_check.ring_at(args.ring)
+    if not ring.is_dir():
+        print(
+            f"error: no ring at {ring}; run orchflows sync to make one",
+            file=sys.stderr,
+        )
+        return 1
+    diag, counted = orchflows_check.check(ring)
+    print(f"ring: {ring}")
+    print(", ".join(f"{kind} {counted[kind]}" for kind in rings.KINDS))
+    for line in diag.lines():
+        print(line)
+    return 1 if diag.has_errors else 0
 
 
 def cmd_resume(args) -> int:
@@ -287,6 +315,14 @@ def _parser() -> argparse.ArgumentParser:
     created.add_argument("kind", choices=rings.KINDS)
     created.add_argument("name")
     created.set_defaults(handler=cmd_new)
+    checked = subparsers.add_parser(
+        "check", help="grade a ring's items", allow_abbrev=False,
+    )
+    checked.add_argument(
+        "ring", nargs="?", metavar="<ring-dir>",
+        help="the ring to grade; default this project's, else the home ring",
+    )
+    checked.set_defaults(handler=cmd_check)
     environment = subparsers.add_parser(
         "env", help="the interpreter an item's scripts run through", allow_abbrev=False,
     )

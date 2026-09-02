@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2274,
+  "count": 2282,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -542,6 +542,7 @@
    "test_installer.TestScriptNames.test_build_plan_installs_every_managed_script_with_matching_content",
    "test_installer.TestScriptNames.test_build_plan_ships_doclint_the_documentation_oracle",
    "test_installer.TestScriptNames.test_every_bare_script_a_template_stub_names_is_shipped",
+   "test_installer.TestScriptNames.test_orchflows_check_grades_a_ring_from_the_installed_layout",
    "test_installer.TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
    "test_installer.TestSourceCommit.test_a_dry_run_says_why_it_could_not_resolve_a_source_commit",
    "test_installer.TestSourceCommit.test_a_mutating_install_without_an_accepted_identity_changes_nothing",
@@ -674,6 +675,13 @@
    "test_orchflows_cli.AddTests.test_a_reference_without_a_pin_is_refused",
    "test_orchflows_cli.AddTests.test_a_tag_is_a_pin_and_the_import_resolves_through_the_ring",
    "test_orchflows_cli.AddTests.test_sync_restores_a_deleted_import_from_the_lock",
+   "test_orchflows_cli.CheckTests.test_a_call_edge_that_resolves_to_nothing_is_refused",
+   "test_orchflows_cli.CheckTests.test_a_directory_holding_a_ring_is_read_as_that_ring",
+   "test_orchflows_cli.CheckTests.test_a_ring_that_is_not_there_is_named_rather_than_passed",
+   "test_orchflows_cli.CheckTests.test_a_scaffolded_home_ring_passes_every_item_check",
+   "test_orchflows_cli.CheckTests.test_a_sheet_carrying_a_pack_only_section_is_refused",
+   "test_orchflows_cli.CheckTests.test_a_workflow_body_over_the_tier_budget_is_refused",
+   "test_orchflows_cli.CheckTests.test_the_ring_defaults_to_this_project_then_the_home_ring",
    "test_orchflows_cli.ListTests.test_a_sheet_is_listed_like_every_other_ring_item",
    "test_orchflows_cli.ListTests.test_list_names_a_reserved_ring_item_rather_than_hiding_it",
    "test_orchflows_cli.ListTests.test_list_reports_ring_trust_and_shadow_through_the_one_resolver",
@@ -2277,7 +2285,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4372f4b79c228d4af11ba0b33375ba276d42db353a41ca15b49f981e05f13995"
+  "sha256": "d4d4088f0782f27be96235ec3bc2472864f5e5c0f5175bff351dfd52ee382554"
  },
  "mutation_owners": [
   {
@@ -3438,6 +3446,14 @@
   },
   {
    "module": "tests.test_installer_cases.planning.script_inventory",
+   "owner": "TestScriptNames.test_orchflows_check_grades_a_ring_from_the_installed_layout",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "environment"
+   ]
+  },
+  {
+   "module": "tests.test_installer_cases.planning.script_inventory",
    "owner": "TestScriptNames.test_the_installed_writers_resolve_their_sink_from_the_flat_layout",
    "restoration": "sharded-module-guard",
    "seams": [
@@ -4031,6 +4047,38 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests._check",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests._ring",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests.test_a_ring_that_is_not_there_is_named_rather_than_passed",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_orchflows_cli",
+   "owner": "CheckTests.test_the_ring_defaults_to_this_project_then_the_home_ring",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "monkeypatch"
    ]
   },
   {

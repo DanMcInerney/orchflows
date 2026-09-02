@@ -43,6 +43,30 @@ def _reader_payload_files() -> tuple[Path, ...]:
     )
 
 
+VALIDATOR_SUPPORT_DIR = "validate_support"
+
+
+def _validator_support_copies(lib_home: Path) -> list:
+    """`(source, destination)` for the check functions `orchflows check` runs.
+
+    `bin/orchflows_check.py` grades a ring with the library compiler's own
+    functions rather than a second copy of them, so those functions have to
+    be somewhere the installed tree can import. They land directly under
+    `lib/`, not under a `lib/tools/`: `tools/` is a checkout directory that
+    installs nowhere (`tools/validate.py`'s own documented-path check states
+    that fact), and the package's imports are relative, so it is the same
+    package under a second parent rather than a fork of one.
+    """
+
+    source = REPO_ROOT / "tools" / VALIDATOR_SUPPORT_DIR
+    if not source.is_dir():  # pragma: no cover - a checkout without tools/
+        return []
+    return [
+        (path, lib_home / VALIDATOR_SUPPORT_DIR / path.name)
+        for path in sorted(source.glob("*.py"))
+    ]
+
+
 def _script_source(name: str) -> Path:
     """Return the repository source for one installed bin script."""
 

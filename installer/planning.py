@@ -75,6 +75,7 @@ from .planning_support import (
     _frontend_plan,
     _reader_payload_files,
     _script_source,
+    _validator_support_copies,
 )
 from .hosts import host_item_path, load_host_adapters, preflight_instruction_target
 
@@ -165,6 +166,7 @@ def _build_user_plan(
     for path in _reader_payload_files():
         if path.is_file():
             lib_copies.append((path, lib_home / path.relative_to(REPO_ROOT)))
+    lib_copies.extend(_validator_support_copies(lib_home))
     frontend_home, frontend_identity, frontend_assets, frontend_action = _frontend_plan(
         _frontend_home, _frontend_manifest_identity
     )
