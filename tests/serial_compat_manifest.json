@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2274,
+  "count": 2277,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -78,6 +78,9 @@
    "test_catalog_completeness.CatalogCompletenessTests.test_every_registered_verb_ships_as_a_discoverable_package",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_check_fails_when_one_catalog_drops_one_name",
    "test_catalog_completeness.CatalogCompletenessTests.test_the_name_reader_is_that_host_s_own_path_template",
+   "test_catalog_completeness.RoleBearingWorkflowSurfaceTests.test_no_host_surface_binds_a_workflow_s_role",
+   "test_catalog_completeness.RoleBearingWorkflowSurfaceTests.test_the_population_is_real",
+   "test_catalog_completeness.RoleBearingWorkflowSurfaceTests.test_the_stripping_is_what_holds_those_surfaces_flat",
    "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_both_homes_are_discovered_in_the_resolver_s_order",
    "test_catalog_completeness.WorkflowHomeDiscoveryTests.test_the_package_loop_leaves_the_workflow_home_alone",
    "test_command_surface.CurrentCommandSurfaceTest.test_canonical_rules_name_only_current_ticket_commands",
@@ -2277,7 +2280,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "4372f4b79c228d4af11ba0b33375ba276d42db353a41ca15b49f981e05f13995"
+  "sha256": "e3f7faadba7d352883944f31ebd468bded30d5bf7109fbd16012eacbc47413a0"
  },
  "mutation_owners": [
   {
@@ -2340,6 +2343,15 @@
   {
    "module": "tests.test_catalog_completeness",
    "owner": "CatalogCompletenessTests._plan",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "environment",
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_catalog_completeness",
+   "owner": "RoleBearingWorkflowSurfaceTests._plan",
    "restoration": "selected-module-boundary",
    "seams": [
     "environment",

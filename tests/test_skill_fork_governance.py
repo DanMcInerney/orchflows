@@ -114,10 +114,12 @@ RESERVED_WORDINGS = {
 #: The tiers the contract sweep must span; a glob that stopped matching
 #: one would leave its contracts unswept while this module stayed green.
 #: `workflows` dropped out here when W2b (verbs-rename) retired
-#: `orch-outline`, its last skill; `skills/workflows/` still exists
-#: (kept by `.gitkeep`) for the tier itself to return to, but carries no
-#: contract to sweep until one does.
-TIERS = {"kernel"}
+#: `orch-outline`, its last skill, and returned when the first reusable
+#: workflow landed under `skills/workflows/`. A body there declares a role
+#: (the tier is a skills tier) and still never forks: no host surface binds
+#: that role (`installer.packages.without_role`), so the sweep below reads
+#: it for the body copy alone.
+TIERS = {"kernel", "workflows"}
 
 
 def contracts():

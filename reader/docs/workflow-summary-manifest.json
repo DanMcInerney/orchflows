@@ -1,6 +1,19 @@
 {
   "schema": "orchflows.workflow-summary.v1",
   "workflows": {
+    "bakeoff": {
+      "nodes": [
+        {"id": "label", "label": "Label the candidates"},
+        {"id": "candidates", "label": "Make every candidate at once"},
+        {"id": "score", "label": "Score the lines against a rubric"},
+        {"id": "winner", "label": "Unblind and name the winner"}
+      ],
+      "edges": [
+        {"source": "label", "target": "candidates", "kind": "sequence"},
+        {"source": "candidates", "target": "score", "kind": "sequence"},
+        {"source": "score", "target": "winner", "kind": "sequence"}
+      ]
+    },
     "browser-game": {
       "nodes": [
         {"id": "record", "label": "Establish the program record"},
