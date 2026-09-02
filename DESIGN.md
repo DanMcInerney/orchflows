@@ -334,6 +334,20 @@ library through a hand-written host shim.
   name resolves to whatever bytes are nearest. Pinning at issue and
   verifying at every later command makes the trust grant and the seal cite
   one digest: what was approved is what runs.
+- **Why three dependency classes.** One "dependencies" file would have to
+  answer three different questions with one lifetime. What an item's own
+  scripts import is orchflows' to install, once per item, in an environment
+  it can rebuild and prune. What an item needs on the machine — ffmpeg, a
+  browser, an API key — orchflows must not install: installing a system tool
+  is a decision about someone's machine, so `tools.txt` is declared and
+  checked and nothing more, and a variable is reported by name and never
+  printed. What the artifact needs — the game's three.js — is not a
+  dependency of orchflows at all; it belongs to the workspace's own manifest
+  and lockfile, installed by the child that is making the thing and
+  committed with it, or every run would reinstall the world into a directory
+  the user never asked for. Keeping them apart is what makes one environment
+  per item safe: two items pinning conflicting versions is not a conflict,
+  because they never share one.
 - **Generated adapters are inert on purpose.** Orchflows can gate what
   enters its own prompts and tickets. It cannot gate a host's native
   loading of a repository's committed `.claude/skills/`, where a skill
@@ -523,6 +537,21 @@ to own.
   quality removes. Frames are singular and session-bound, so displaying
   their age suffices; callables are dispatchable by anyone holding the
   sink, so the lease is the arbiter.
+- **Why sheets and applied skills.** Two verbs left two real gaps: craft one
+  assignment wants and no other, and a method one call runs. Both failed as
+  verbs — a third verb is a new entry point into the same pack — and both
+  fail as packs, since a house style or one client's report shape is not a
+  new domain. They pass the perfect-model test from the other side: a
+  perfect model still cannot know which style this caller wants or which
+  bytes a judge will be graded against, and the fix is data the caller
+  stamps, not procedure the model executes. So a sheet is craft pinned by
+  digest on one ticket and read by exactly that ticket's maker and judge,
+  and an applied skill is a method pinned the same way inside the kernel
+  contract that still owns Require, Never and Return. Both are stamped and
+  neither is called, which is why neither is a call edge and neither needed
+  a verb. The cost is one more thing a ticket can pin, and the mitigation is
+  that a sheet only tightens: where it loosens the craft, the craft wins and
+  the judge reports the sheet.
 - **Packs bind per call, not per run.** Callables never share a workspace —
   each adapter owns its own callable's world — so the one-pack-per-run law
   and the adapter-compatibility worry behind it both dissolve. One callable

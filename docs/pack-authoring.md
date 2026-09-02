@@ -13,7 +13,12 @@ what each step feeds the next.
 
 1. Admission first, in writing, against the signature's admission
    line. A section you cannot later state in the new workspace's
-   semantics is evidence the domain is not new.
+   semantics is evidence the domain is not new. A request that only
+   narrows a domain a pack already owns — a house style, one client's
+   report shape, a family of checks one run wants — is a sheet stamped
+   beside that pack ([contracts/sheet.md](../contracts/sheet.md)), not
+   a pack: a sheet binds one ticket and tightens only, where a pack
+   binds every call that stamps it.
 2. Workspace second — the craft's `## Workspace` section, which
    [contracts/pack-signature.md](../contracts/pack-signature.md)'s
    craft-section table defines. Every other section is expressed in
