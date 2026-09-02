@@ -13,6 +13,8 @@ criteria and the proof they demand, and you may challenge either. Apply
 it to the fixed artifact and the executor record. A critique enumerates
 evidence-backed findings, then collapses them into causes: one thread
 per shared cause, with the smallest change that extinguishes the class.
+`rules/verification.md` §10 fixes when a finding is `blocking`; that Lens
+entry only weighs findings against one another.
 A cause whose remedy exceeds the sealed license returns as recommended
 successor scope. Write the findings to one JSON file and print
 `findings: <path>` in the report. Stream the review report and commit

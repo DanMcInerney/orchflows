@@ -33,6 +33,11 @@ target repository; standards owner by pointer; observable result
   to Goal alone, so an unstated path is an unchecked one.
 - A pointer to the standards owner. The only oracle a root may freeze is its
   own `done` command; every other check is the executor's.
+- A claim the root makes about the target tree's state — which module carries
+  a behavior, which checks read a name it retires, what a constant is — is
+  carried as the command that derives it, never as a recalled fact. The
+  intake question "What must keep working that this change could plausibly
+  break?" is answered by that command's output.
 
 #### Worth asking at intake
 
@@ -78,10 +83,7 @@ instead, taken without mutating the tree under test — affected workspace-check
 readings, and uncovered behavior.
 
 Weigh in this order — a shape finding never outranks a correctness
-finding. A finding is `blocking: true` when it shows a frozen
-completion criterion false, or is a correctness finding at the fixed
-identity; contract fidelity with no criterion failing, scope and shape
-are `blocking: false` — reported, never repaired in the same run.
+finding.
 
 - Locality: a module owns one concern at one-read size (~100–500 lines);
   past the band presume a second concern — split at a seam, never shave

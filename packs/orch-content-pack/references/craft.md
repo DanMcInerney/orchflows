@@ -89,6 +89,8 @@ Identify the document revision. Record applicable render and structure
 observations, prose-lint output, claim-to-source support, reader fit against
 the audience and voice facts, and uncovered claims.
 
+Weigh in listed order.
+
 - Concrete before abstract: an abstraction is earned by the instance
   beneath it, and a named instance or number beats a category word.
 - The length budget is design pressure: cut weakest-first, into the

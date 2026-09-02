@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2139,
+  "count": 2142,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1157,6 +1157,9 @@
    "test_validator.TestStructuralAdmissionMutants.test_one_unrelated_shared_stem_does_not_carry_an_input",
    "test_validator.TestStructuralAdmissionMutants.test_pack_control_flow_is_rejected",
    "test_validator.TestStructuralAdmissionMutants.test_pin_rewrite_requires_a_discriminating_supersession_record",
+   "test_verification_model.BlockingLawOwnershipTest.test_every_deliverable_lens_entry_weighs_its_findings_once",
+   "test_verification_model.BlockingLawOwnershipTest.test_the_judge_points_at_the_clause_that_carries_the_law",
+   "test_verification_model.BlockingLawOwnershipTest.test_the_rule_owns_the_law_and_no_craft_restates_it",
    "test_verification_model.CraftLensKeyTest.test_craft_sections_are_the_migrated_set",
    "test_verification_model.CraftLensKeyTest.test_lens_keys_are_root_cut_then_the_adapter_artifact_kind",
    "test_verification_model.CritiqueContractTest.test_check_owns_blockers_and_verification",
@@ -2142,7 +2145,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "1d17447a4b638457d429a98269aa35657468f0b4070f4d61e94a39640440307d"
+  "sha256": "a43431bf45779a1822d3b10c2e821fdd5de03714858a963b68a3195f370e5bf5"
  },
  "mutation_owners": [
   {
