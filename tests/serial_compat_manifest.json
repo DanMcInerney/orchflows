@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2179,
+  "count": 2182,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1069,6 +1069,9 @@
    "test_ticket_frames.ResumeTest.test_the_shape_record_alone_is_not_a_wave_anybody_wrote",
    "test_ticket_frames.SavedWorkflowShapeTest.test_dropping_the_flag_from_a_copy_fails_the_check",
    "test_ticket_frames.SavedWorkflowShapeTest.test_every_root_frame_open_line_states_a_plan",
+   "test_ticket_frames.SavedWorkflowShapeTest.test_the_scaffolded_workflow_states_a_plan",
+   "test_ticket_frames.ShapeGrammarOwnerTest.test_a_construct_dropped_from_either_side_is_caught",
+   "test_ticket_frames.ShapeGrammarOwnerTest.test_the_prose_and_the_printed_notation_carry_the_same_anchors",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_attempt_state_does_not_move_assignment",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_closed_public_seam",
    "test_ticket_protocol.TicketProtocolTest.test_dispatch_v1_contract_owns_the_launch",
@@ -2182,7 +2185,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "843ebe0aa348eae1a2294237f7867ec4d8d63e4fafad093a0ece8101930b4ab7"
+  "sha256": "b8356cbc5f3c6dcd44024d433a24e76ff05095fcf434e3d6b2e698a9fa27cc8d"
  },
  "mutation_owners": [
   {
