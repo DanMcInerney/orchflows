@@ -111,8 +111,19 @@ def _carries_exception_comment(source_lines, lineno: int) -> bool:
 
 def offenders(root: Path, relative_paths):
     """Sites under ``root`` resolving to it that are neither an owner nor
-    carry an explanatory comment, as ``"<relative path>:<lineno>"``."""
+    carry an explanatory comment, as ``"<relative path>:<lineno>"``.
 
+    ``root`` is resolved before anything is compared against it, because the
+    site side of that comparison is resolved and a half-resolved comparison
+    silently finds nothing. A caller handing a path that is not already
+    canonical is the normal case, not the exotic one: a macOS temporary
+    directory is ``/var/...`` whose real path is ``/private/var/...``, and a
+    Windows CI runner's is an 8.3 short name (``RUNNER~1``) that expands.
+    Both made this module's own can-fail test pass vacuously on a developer
+    box and fail on two CI platforms.
+    """
+
+    root = root.resolve()
     found = []
     for relative in relative_paths:
         source = (root / relative).read_text(encoding="utf-8")
