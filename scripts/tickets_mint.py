@@ -23,17 +23,18 @@ sealed, here rather than by a caller.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 
 if __package__:
-    from .tickets_adapters import ADAPTER_REGISTRY
+    from .tickets_adapters import ADAPTER_REGISTRY, AdapterError, adapter_id
     from .tickets_admission import ADMISSION_PENDING
     from .tickets_bound import parse_bound
     from .tickets_format import (
         ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
-        _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
-        next_mint_id,
+        _parse_frontmatter, _read_utf8, _set_frontmatter_field, dequote,
+        done_defects, next_mint_id,
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue import (
@@ -45,14 +46,14 @@ if __package__:
         NO_SINK_ERROR, UTC_STAMP, _run_lock, _segment_error, _tickets_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
-    from tickets_adapters import ADAPTER_REGISTRY
+    from tickets_adapters import ADAPTER_REGISTRY, AdapterError, adapter_id
     from tickets_admission import ADMISSION_PENDING
     from tickets_bound import parse_bound
     from tickets_format import (
         ARTIFACT_CLAUSE, MAKES_FIELD, PLANNING_KINDS,
         REPORT_SECTION, _extract_all, _extract_flag,
-        _parse_frontmatter, _read_utf8, _set_frontmatter_field, done_defects,
-        next_mint_id,
+        _parse_frontmatter, _read_utf8, _set_frontmatter_field, dequote,
+        done_defects, next_mint_id,
     )
     from tickets_generations import assignment_digest
     from tickets_issue import (
@@ -99,6 +100,75 @@ JUDGE_KINDS = ARTIFACT_KINDS | frozenset(GENERATION_KINDS)
 # whose call this ticket is, in the section a reader of the ticket alone
 # would otherwise have to infer it from the id.
 PARENT_CLAUSE = "- parent: "
+# The adapter whose workspace *is* lanes -- "isolation is a run-scoped lane
+# directory" -- and so the one whose craft prices a lane at one
+# independently answerable sub-question. Selected off the pack's own
+# declared adapter rather than off a pack name, because machinery stays
+# domain-blind (tools/validate_support/structure.py's domain-blindness
+# check); a pack that adopts this adapter inherits the door with it.
+LANE_ADAPTER = "evidence-store"
+# The marker that adapter's craft root entry states the form of. The door
+# counts it; the craft is where the form is said, and nothing here restates
+# it.
+_SUBQUESTION_MARKER = "sub-questions"
+_HEADING_LINE = re.compile(r"^ {0,3}#{1,6}\s")
+_NUMBERED_ITEM = re.compile(r"^\s*\d+[.)]\s+\S")
+
+
+def subquestion_count(goal: str) -> int:
+    """How many sub-questions one goal declares.
+
+    The marker is the research craft's: a heading at any depth whose text
+    carries `sub-questions`, and under it a numbered list with one item per
+    sub-question. Every such section's items are counted, because a goal
+    that declares its coverage twice declares both halves of it.
+
+    Flat by choice: any numbered line inside the section counts, nesting
+    included. The craft states the one-item-per-sub-question form, so a
+    nested list is a goal off that form rather than a shape this has to
+    disambiguate -- and over-counting there refuses, which is the safe
+    direction.
+    """
+
+    count, inside = 0, False
+    for line in goal.splitlines():
+        if _HEADING_LINE.match(line):
+            inside = _SUBQUESTION_MARKER in line.lower()
+        elif inside and _NUMBERED_ITEM.match(line):
+            count += 1
+    return count
+
+
+def _one_lane(pack, parent, goal: str, goal_file):
+    """The refusal for a parentless lane-adapter `do` carrying several lanes.
+
+    A worker-lane `do` is one child answering one question. The research
+    craft's cut rule already priced a lane at one independently answerable
+    sub-question; run 20260902T140000Z-hn-workflows minted a single `do`
+    over five of them and got back one source called a full packet. The
+    door stands here, ahead of the run directory, so a refusal leaves the
+    sink exactly as it found it.
+
+    A pack that will not resolve passes: `pinned_pack_digest` owns that
+    refusal and names the pack, and two refusals for one cause would make
+    the caller fix the wrong thing first.
+    """
+
+    if parent:
+        return None
+    try:
+        if adapter_id(dequote(pack)) != LANE_ADAPTER:
+            return None
+    except AdapterError:
+        return None
+    lanes = subquestion_count(goal)
+    if lanes < 2:
+        return None
+    return {"error": (
+        f"goal file {goal_file}: {lanes} sub-questions are {lanes} lanes, "
+        "per the research craft's cut rule; open a frame with `--shape` and "
+        "mint one `do` per sub-question under it"
+    )}
 
 
 def _dispatch_facade():
@@ -372,6 +442,10 @@ def _cmd_callable(rest, *, judge: bool):
         return failure
     if not goal.strip():
         return {"error": f"goal file {goal_file} is empty; Goal is one observable end result"}
+    if not judge:
+        crowded = _one_lane(pack, parent, goal, goal_file)
+        if crowded is not None:
+            return crowded
     details = None
     if details_file is not None:
         details, failure = _read_utf8(details_file, "details file")
@@ -437,6 +511,7 @@ def _cmd_judge(rest):
 
 __all__ = (
     "ARTIFACT_KINDS", "MINT_INDEPENDENCE", "DO_EXECUTOR", "DO_USAGE",
-    "JUDGE_EXECUTOR", "JUDGE_USAGE", "_cmd_callable", "_cmd_do", "_cmd_judge",
-    "_launched", "_mint", "_run_dir", "_sealed_root",
+    "JUDGE_EXECUTOR", "JUDGE_USAGE", "LANE_ADAPTER", "_cmd_callable",
+    "_cmd_do", "_cmd_judge", "_launched", "_mint", "_run_dir", "_sealed_root",
+    "subquestion_count",
 )

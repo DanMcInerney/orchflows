@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2173,
+  "count": 2179,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1015,6 +1015,12 @@
    "test_ticket_callables.GenerationArtifactTest.test_the_three_adapter_kinds_are_admitted_unchanged",
    "test_ticket_callables.GenerationArtifactTest.test_the_untyped_refusal_expects_all_five_kinds",
    "test_ticket_callables.RepairRoundAdmissionTest.test_a_runtime_callables_repair_round_admits_and_dispatches",
+   "test_ticket_callables.ResearchLaneDoorTest.test_a_goal_declaring_no_sub_questions_is_minted_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_another_packs_parentless_do_takes_the_same_goal_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_one_sub_question_is_minted_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_the_count_moves_with_the_marker_and_with_the_items",
+   "test_ticket_callables.ResearchLaneDoorTest.test_the_same_goal_under_a_parent_is_minted_unchanged",
+   "test_ticket_callables.ResearchLaneDoorTest.test_two_sub_questions_are_refused_before_the_run_exists",
    "test_ticket_callables.TypedArtifactGrammarTest.test_each_registered_adapter_names_one_line_kind",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_loops_done_and_a_tickets_done_are_graded_by_one_owner",
    "test_ticket_done_predicate.DonePredicateGrammarTest.test_the_predicate_is_part_of_the_sealed_assignment",
@@ -2176,7 +2182,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0489858e439d2370a9871ffa40ffbdae330f092135fb6e07086e06d992a3d034"
+  "sha256": "843ebe0aa348eae1a2294237f7867ec4d8d63e4fafad093a0ece8101930b4ab7"
  },
  "mutation_owners": [
   {
