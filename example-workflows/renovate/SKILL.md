@@ -9,7 +9,7 @@ maintainer's lens, which stands in for the spec nobody wrote; `audit_bound`
 and `brief_bound`, the two budgets; and `pack`, the stamp every call here
 carries.
 
-    tickets.py frame-open <run> --goal-file <renovation-goal>
+    tickets.py frame-open <run> --goal-file <renovation-goal> --workflow renovate
 
 Re-read the frame's `## Report` and its children before each call, then
 append the decision with `tickets.py result <run> <frame> --by <frame>`.

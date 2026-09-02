@@ -458,7 +458,9 @@ class RepairRoundAdmissionTest(CallableSinkTest):
         ).isoformat().replace("+00:00", "Z")
 
     def test_a_runtime_callables_repair_round_admits_and_dispatches(self):
-        frame_id = self.callable("frame-open")["frame_open"]["id"]
+        frame_id = self.callable(
+            "frame-open", "--shape", "do > judge",
+        )["frame_open"]["id"]
         command = f'"{sys.executable}" -c "raise SystemExit(3)"'
         done = json.dumps({"form": "command", "value": command}, sort_keys=True)
 

@@ -113,6 +113,10 @@ class _FrameEventTestCase(_EventSinkTestCase):
         return answer
 
     def frame(self, *arguments) -> dict:
+        # A root frame states its wave plan at open; a case about `--workflow`
+        # supplies its own, so only the shapeless ones get the default.
+        if not {"--shape", "--workflow"} & set(arguments):
+            arguments = ("--shape", "outline > [do, do] > judge", *arguments)
         opened = self.call(
             "frame-open", self.RUN, "--goal-file", str(self.goal_file), *arguments,
         )
@@ -154,6 +158,22 @@ class FrameOpenEventTest(_FrameEventTestCase):
         entry = self.events()[0]
         self.assertIsNone(entry["workflow"])
         self.assertProvenance(entry, run=self.RUN, ticket=frame["id"])
+
+    def test_frame_open_carries_the_shape_it_opened_under(self):
+        """The wave plan is on the event, not only in the ticket: a harvest
+        reading one run's stream can say what it set out to do without
+        opening the sink's tickets."""
+
+        self.frame("--shape", "outline > [do, do] > judge")
+
+        self.assertEqual(
+            "outline > [do, do] > judge", self.events()[0]["shape"],
+        )
+
+    def test_a_workflow_frames_shape_names_the_body_that_is_its_plan(self):
+        self.frame("--workflow", "self-improve")
+
+        self.assertEqual("workflow:self-improve", self.events()[0]["shape"])
 
     def test_a_long_goal_first_line_is_truncated_to_200_chars(self):
         self.goal_file.write_text("x" * 260 + "\nsecond line\n", encoding="utf-8")

@@ -87,10 +87,11 @@ class ThinOrchestratorContractTests(unittest.TestCase):
             "`launch`",
             "`tickets.py do <run>",
             "`tickets.py land`",
-            # The UX contract's say-the-lane sentence; a seam-judge blocker
-            # (F1, run 20260901T021739Z) found it cut for budget with no
-            # anchor here to catch it.
-            "name the lane in one line before working",
+            # The UX contract's write-the-shape sentence, which replaced the
+            # say-the-lane one; a seam-judge blocker (F1, run
+            # 20260901T021739Z) found that one cut for budget with no anchor
+            # here to catch it.
+            "write the run's shape line before the first dispatch",
         ):
             self.assertIn(anchor, collapsed_host)
         authoring_pointer = "{{ORCH_LIB}}/docs/custom-workflow-authoring.md"
