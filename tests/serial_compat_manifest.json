@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2129,
+  "count": 2134,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -133,6 +133,11 @@
    "test_dispatch_launch.LaunchResolutionTest.test_the_effort_is_the_one_this_host_spells_however_it_spells_it",
    "test_dispatch_launch.LaunchResolutionTest.test_the_profile_override_decides_the_role_the_skill_declared",
    "test_dispatch_launch.LaunchResolutionTest.test_the_selected_host_is_the_flag_then_the_environment_then_claude",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_judge_is_sent_to_the_kind_on_its_artifact_line",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_judge_over_two_kinds_is_refused_at_the_mint",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_making_do_is_sent_to_its_adapters_own_kind",
+   "test_dispatch_launch.LensKeyPromptTest.test_a_planning_do_is_sent_to_the_kind_it_was_minted_to_make",
+   "test_dispatch_launch.LensKeyPromptTest.test_no_craft_carries_no_lens_sentence",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_code_pack_do_launch_still_commits",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_content_pack_do_launch_commits_without_a_merge_sentence",
    "test_dispatch_launch.ReturnLineConditionalTest.test_a_research_pack_do_launch_carries_no_commit_clause",
@@ -2132,7 +2137,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "167e473213edb56d7359236ccc5209f687372b2496d8b02a47dc61057058b6f2"
+  "sha256": "212008878605e93009f55eda5b44915a44f8c5cfd11c6d4dfc7427d085c1c5da"
  },
  "mutation_owners": [
   {
@@ -2283,6 +2288,23 @@
    "restoration": "selected-module-boundary",
    "seams": [
     "environment"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LensKeyPromptTest.minted",
+   "restoration": "unclassified",
+   "seams": [
+    "monkeypatch"
+   ]
+  },
+  {
+   "module": "tests.test_dispatch_launch",
+   "owner": "LensKeyPromptTest.setUp",
+   "restoration": "unclassified",
+   "seams": [
+    "environment",
+    "threads"
    ]
   },
   {

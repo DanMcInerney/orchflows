@@ -80,7 +80,8 @@ verbatim and hand-adds nothing; a caller who lost it replays the same
 The prompt names, once each, what a child cannot derive: the applied skill's
 resolved file, the ticket's absolute path inside the established workspace,
 that workspace and the instruction to run from inside it, this host's
-verified interpreter, the resolved pack craft, the review lane's root ticket
+verified interpreter, the resolved pack craft, the artifact kind and its Lens
+entry, the review lane's root ticket
 path, the assigned name, the lease deadline, the filled filing and closing
 commands, the craft's verification scope, what a report is expected to carry,
 and that every check runs to completion in the turn it starts with an

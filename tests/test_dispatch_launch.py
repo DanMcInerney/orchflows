@@ -803,5 +803,136 @@ class LandTest(unittest.TestCase):
         self.assertEqual("outcome-record-mismatch", refusal["code"])
 
 
+class LensKeyPromptTest(unittest.TestCase):
+    """U5: the prompt names the artifact kind and the `## Lens` entry it picks.
+
+    A craft's `## Lens` carries one entry per artifact kind its domain
+    produces, so the path alone left the child to choose which entry was its
+    own. Each case fires through the mint that resolves the kind -- the
+    adapter's for a making `do`, `--makes` for a planning one, the typed
+    Context identity for a judge -- because the sentence is only worth its
+    line if the resolution behind it is right.
+    """
+
+    RUN = "lensrun"
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.environment = mock.patch.dict(
+            os.environ,
+            {
+                state_root.ENV_VAR: self.temporary.name,
+                "ORCHFLOWS_WORKTREES_HOME": str(
+                    Path(self.temporary.name) / "worktrees"
+                ),
+                launch.HOST_ENV_VAR: "",
+            },
+        )
+        self.environment.start()
+        self.candidate = git_checkout(Path(self.temporary.name) / "candidate")
+        self.goal_file = Path(self.temporary.name) / "goal.md"
+        self.goal_file.write_text("Deliver the behavior.\n", encoding="utf-8")
+
+    def tearDown(self):
+        self.environment.stop()
+        self.temporary.cleanup()
+
+    def _establish(self, run, ticket_id, _workspace):
+        """`workspace.py establish` for a Git candidate: the recorded tree
+        plus the branch and baseline a launch refuses to proceed without."""
+
+        path = Path(self.temporary.name) / "tickets" / run / f"{ticket_id}.md"
+        record_established_workspace(path, self.candidate, strict=False)
+        text = path.read_text(encoding="utf-8")
+        for field, value in (
+            ("workspace_branch", f"candidate/{ticket_id}"),
+            ("workspace_baseline", "0" * 40),
+        ):
+            text = tickets._set_frontmatter_field(text, field, value)
+        path.write_text(text, encoding="utf-8")
+        return {"establish": {"workspace_path": str(self.candidate)}}
+
+    def minted(self, verb, *extra):
+        facade = tickets._tickets_dispatch_facade_module
+        with mock.patch.object(
+            facade, "_workspace_establish", side_effect=self._establish,
+        ), mock.patch.object(
+            facade, "_workspace_prepare", return_value={"outcome": "skipped"},
+        ):
+            return tickets._dispatch([
+                verb, self.RUN, "--pack", "orch-code-pack",
+                "--goal-file", str(self.goal_file), "--isolation", "required",
+                "--workspace", str(self.candidate), *extra,
+            ])
+
+    def prompt(self, answer: dict) -> str:
+        self.assertNotIn("error", answer, answer)
+        return answer[next(iter(answer))]["launch"]["prompt"]
+
+    def test_a_making_do_is_sent_to_its_adapters_own_kind(self):
+        prompt = self.prompt(self.minted("do"))
+
+        self.assertIn("You make a `git`:", prompt)
+        self.assertIn("`## Lens` entry `### git`", prompt)
+        self.assertIn("is what your artifact must satisfy.", prompt)
+
+    def test_a_planning_do_is_sent_to_the_kind_it_was_minted_to_make(self):
+        """`--makes` is the one product no adapter names: the code pack's
+        adapter would have answered `git` for this same ticket."""
+
+        answer = self.minted("do", "--makes", "root")
+        prompt = self.prompt(answer)
+
+        data = tickets._parse_frontmatter(
+            (Path(self.temporary.name) / "tickets" / self.RUN
+             / f"{answer['do']['id']}.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual("root", data["makes"])
+        self.assertIn("You make a `root`:", prompt)
+        self.assertIn("`## Lens` entry `### root`", prompt)
+        self.assertNotIn("### git", prompt)
+
+    def test_a_judge_is_sent_to_the_kind_on_its_artifact_line(self):
+        """The judge's kind is the artifact's, never the stamped pack's: this
+        one is stamped for code and handed an evidence identity."""
+
+        prompt = self.prompt(self.minted(
+            "judge", "--artifacts", "evidence:store-1",
+        ))
+
+        self.assertIn("You judge `evidence` artifacts:", prompt)
+        self.assertIn("`## Lens` entry `### evidence`", prompt)
+        self.assertIn("is your criteria.", prompt)
+        self.assertNotIn("### git", prompt)
+
+    def test_a_judge_over_two_kinds_is_refused_at_the_mint(self):
+        """No one entry is its criteria, so there is no launch to compose."""
+
+        refusal = self.minted(
+            "judge", "--artifacts", "git:0123456789abcdef",
+            "--artifacts", "evidence:store-1",
+        )
+
+        self.assertIn("error", refusal)
+        for kind in ("'evidence'", "'git'"):
+            self.assertIn(kind, refusal["error"])
+        self.assertEqual(
+            [], list((Path(self.temporary.name) / "tickets").glob("*/*.md")),
+        )
+
+    def test_no_craft_carries_no_lens_sentence(self):
+        """The sentence answers to the craft it points into: an assignment
+        that resolved no craft file has no entry to send anyone to."""
+
+        facts = dict(ReturnLineConditionalTest().assignment(
+            pack="orch-code-pack", artifact_kind="git", commits_in_place=True,
+            git_candidate=True, workspace_line=None,
+        ))
+        facts["lens_key"] = "git"
+
+        self.assertIsNone(facts["craft"])
+        self.assertNotIn("## Lens", launch.launch_prompt(facts))
+
+
 if __name__ == "__main__":
     unittest.main()
