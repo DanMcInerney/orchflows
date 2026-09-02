@@ -130,6 +130,19 @@ def _historical_contract_text(path, digest: str):
     return None
 
 
+def _committed_pins() -> dict:
+    """The pin digests HEAD carries, empty when it carries no pins file."""
+
+    data = _git("show", f"HEAD:{PINS_FILE.relative_to(ROOT).as_posix()}")
+    if data is None:
+        return {}
+    try:
+        committed = json.loads(data.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+    return committed if isinstance(committed, dict) else {}
+
+
 def validate_pin_supersessions(diag: Diagnostics) -> None:
     """Refuse a T0 shape re-pin without a record citing the old pin."""
 
@@ -140,20 +153,31 @@ def validate_pin_supersessions(diag: Diagnostics) -> None:
     except json.JSONDecodeError:
         return
     current = compute_pins()
+    committed = _committed_pins()
     corpus = "\n".join(_read_source(path) for path in sorted(CONTRACTS_DIR.glob("*.md")))
     for name, old_digest in recorded.items():
         path = CONTRACTS_DIR / name
         if name not in current or current[name] == old_digest or not path.is_file():
             continue
+        cited = old_digest
         before = _historical_contract_text(path, old_digest)
+        if before is None and committed.get(name, old_digest) != old_digest:
+            # A second `--pin` inside one change: the first rewrote the
+            # working-tree pins to a digest no commit carries, so there is
+            # neither a `before` text to compare nor a digest any reader
+            # could look up. HEAD's pin is that reader's `before`, and the
+            # record cites it -- which also makes the first record still
+            # good, so `--pin` is idempotent inside one change.
+            cited = committed[name]
+            before = _historical_contract_text(path, cited)
         if before is not None and _t0_shape(before) == _t0_shape(_read_source(path)):
             continue
-        record = rf"(?im)^.*T0\s+supersess\w*.*sha256:{re.escape(old_digest)}.*$"
+        record = rf"(?im)^.*T0\s+supersess\w*.*sha256:{re.escape(cited)}.*$"
         if not re.search(record, corpus):
             diag.error(
                 rel(path),
                 "named-field or enum change requires an explicit T0 supersession "
-                f"record citing sha256:{old_digest} before pins are rewritten",
+                f"record citing sha256:{cited} before pins are rewritten",
             )
 
 

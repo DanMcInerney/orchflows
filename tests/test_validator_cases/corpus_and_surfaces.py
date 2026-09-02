@@ -183,6 +183,30 @@ class TestCraftSections(_IsolatedTree):
         self.assertIn("retired `## Outline` heading", result.stdout)
         self.assertIn("retired `## Shape` heading", result.stdout)
 
+    def test_a_heading_outside_the_roster_is_an_error(self):
+        """The `##` roster closes both ways, as the `###` keys already do:
+        a section the signature table never named is content no verb is
+        pointed at, and reads correct in the prose alone."""
+
+        self._write_pack(
+            "orch-synth-novel-pack",
+            extra="## Notes\n\nasides the verbs never read.\n\n",
+        )
+        result = self._run()
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("unrecognized `## Notes` heading", result.stdout)
+
+    def test_the_optional_stages_heading_is_clean(self):
+        """`Stages` is the one section the table marks optional, so the
+        roster loop reads it rather than the mandatory list alone."""
+
+        self._write_pack(
+            "orch-synth-stages-pack",
+            extra="## Stages\n\nthe narrative behind the cell.\n\n",
+        )
+        result = self._run()
+        self.assertNotIn("craft carries", result.stdout)
+
     def test_a_lens_missing_a_library_kind_is_an_error(self):
         self._write_pack("orch-synth-nocut-pack", kinds=("root", "git"))
         result = self._run()

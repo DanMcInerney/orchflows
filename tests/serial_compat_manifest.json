@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2143,
+  "count": 2153,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -588,6 +588,10 @@
    "test_isolate.TestIsolateCopiesFromSink.test_the_sink_is_read_and_never_written",
    "test_isolate.TestIsolateCopiesFromSink.test_the_snapshot_keeps_the_sinks_own_layout",
    "test_isolate.TestIsolateCopiesFromSink.test_the_source_names_no_state_path_of_its_own",
+   "test_lens_key.LensKeyTest.test_a_judge_is_keyed_by_the_one_kind_on_its_context",
+   "test_lens_key.LensKeyTest.test_a_judge_over_two_kinds_gets_no_key",
+   "test_lens_key.LensKeyTest.test_a_making_do_citing_a_predecessor_keeps_its_adapter_kind",
+   "test_lens_key.LensKeyTest.test_a_planning_do_citing_a_predecessor_keeps_its_makes_kind",
    "test_lifecycle_render.LifecycleTableTest.test_a_hand_edit_fails_closed",
    "test_lifecycle_render.LifecycleTableTest.test_dispatch_rows_expose_attempt_and_record_state",
    "test_lifecycle_render.LifecycleTableTest.test_each_generated_row_names_its_code_identity",
@@ -1766,6 +1770,10 @@
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_write_call_count_is_not_asserted",
    "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_a_changed_clause_still_moves_the_pin",
    "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_crlf_and_lf_pin_the_same_contract",
+   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_a_prose_only_change_needs_no_record_after_a_first_pin",
+   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_one_record_citing_the_committed_pin_covers_both_pins",
+   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_the_requirement_still_bites_and_names_the_committed_digest",
+   "tests.test_validate_cases.pin_repin.RepinWithoutACommittedPinsFileTest.test_the_recorded_digest_stays_the_cited_one",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_each_contract_states_its_sink_path",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_no_contract_composes_a_run_state_path_from_the_repository",
    "tests.test_validate_cases.sink_contracts.TestWorkItemLocationInvariant.test_the_clause_names_the_resolver_rather_than_restating_the_root",
@@ -1979,11 +1987,13 @@
    "tests.test_validator_cases.contracts_and_names.TestNameResolution.test_the_two_role_names_are_allowed",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_craft_with_every_mandatory_heading_is_clean",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_craft_without_a_mandatory_heading_is_an_error",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_heading_outside_the_roster_is_an_error",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_lens_key_the_adapter_never_produces_is_an_error",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_lens_missing_a_library_kind_is_an_error",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_lens_missing_the_adapter_kind_is_an_error",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_a_retired_heading_is_an_error",
    "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_the_adapter_decides_which_kind_the_lens_must_carry",
+   "tests.test_validator_cases.corpus_and_surfaces.TestCraftSections.test_the_optional_stages_heading_is_clean",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_a_doc_restating_a_rule_is_reported",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_a_template_stub_restating_a_rule_is_reported",
    "tests.test_validator_cases.corpus_and_surfaces.TestDuplicationCorpus.test_two_skills_carrying_one_clause_are_reported_against_each_other",
@@ -2146,7 +2156,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "6cd297d5e45cafe9e920499ebf4f9de008571a1c1c4f34f0adcdec1efb08d707"
+  "sha256": "c3f69cb335f62ce068d97fa0c7826b22202196d2dd8d5a9449fb2fbc5321a4f2"
  },
  "mutation_owners": [
   {
@@ -4882,6 +4892,14 @@
   },
   {
    "module": "tests.test_validate_cases.contract_pins",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.pin_repin",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [
