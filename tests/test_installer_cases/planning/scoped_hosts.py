@@ -114,7 +114,7 @@ class HostAdapterRenderingTest(unittest.TestCase):
 
         self.assertIn("host records beside this file", profiles)
         self.assertNotIn("| Profile |", profiles)
-        for binding in ("gpt-5.6-sol", "claude-opus-5", "grok-4.6"):
+        for binding in ("gpt-5.6-sol", "claude-fable-5-1", "grok-4.6"):
             self.assertNotIn(binding, profiles)
         self.assertIn("../hosts/", authoring)
         self.assertNotIn("A Claude adapter keeps", authoring)

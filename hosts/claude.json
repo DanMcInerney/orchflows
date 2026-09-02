@@ -29,7 +29,7 @@
   "role_profiles": {
     "planner": {
       "name": "orch-planner",
-      "binding": {"model": "claude-opus-5", "effort": "max"}
+      "binding": {"model": "claude-fable-5-1", "effort": "high"}
     },
     "worker": {
       "name": "orch-worker",

@@ -221,7 +221,7 @@ class TestInstallReceipt(unittest.TestCase):
         profiles = install.load_role_profiles()
 
         self.assertEqual(
-            {"model": "claude-opus-5", "effort": "max"}, profiles["orch-planner"]["claude"]
+            {"model": "claude-fable-5-1", "effort": "high"}, profiles["orch-planner"]["claude"]
         )
         self.assertEqual(
             {"model": "claude-sonnet-5", "effort": "xhigh"}, profiles["orch-worker"]["claude"]

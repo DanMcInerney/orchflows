@@ -55,8 +55,8 @@
     "role_profiles": {
       "planner": {
         "binding": {
-          "effort": "max",
-          "model": "claude-opus-5"
+          "effort": "high",
+          "model": "claude-fable-5-1"
         },
         "name": "orch-planner"
       },
@@ -71,5 +71,5 @@
     "schema_version": 1
   },
   "source": "hosts/claude.json",
-  "source_sha256": "f31741b17a0f11a95be07b5baed62b873b925a28c8d57073f39e77175f056b17"
+  "source_sha256": "952610d4a9c691fc92af329326be49cfefdf163761688eac11deb116b463d352"
 }

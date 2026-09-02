@@ -481,7 +481,7 @@ class DispatchLaunchTest(unittest.TestCase):
         result = self.dispatch(run="planned")
 
         self.assertEqual("orch-planner", result["launch"]["agent"])
-        self.assertEqual("claude-opus-5", result["launch"]["model"])
+        self.assertEqual("claude-fable-5-1", result["launch"]["model"])
 
     def test_an_unknown_host_refuses_before_the_attempt_is_opened(self):
         before = self.ticket_path().read_text(encoding="utf-8")
