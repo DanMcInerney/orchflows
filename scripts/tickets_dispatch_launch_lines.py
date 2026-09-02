@@ -27,7 +27,7 @@ else:  # pragma: no cover - direct/installed flat script path
     from tickets_format import REPORT_SECTION
     from tickets_registry import EXECUTOR_REGISTRY
 
-SHELL_SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_./:\=-]+$")
+SHELL_SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_./:\\=-]+$")
 
 
 def _command(*arguments) -> str:
