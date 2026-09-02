@@ -41,7 +41,7 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
 
 
 def support():
-    """`(names, packages, sheets, structure)`, from this checkout or the install.
+    """`(names, packages, sheets, structure, tooling)`, from checkout or install.
 
     One package under two parents. `scripts/rings.py` already owns which
     library this process reads -- a checkout, else the installed `lib/` --
@@ -56,10 +56,10 @@ def support():
     if library not in sys.path:
         sys.path.insert(0, library)
     try:
-        from tools.validate_support import names, packages, sheets, structure
+        from tools.validate_support import names, packages, sheets, structure, tooling
     except ImportError:  # pragma: no cover - direct/installed flat script path
-        from validate_support import names, packages, sheets, structure
-    return names, packages, sheets, structure
+        from validate_support import names, packages, sheets, structure, tooling
+    return names, packages, sheets, structure, tooling
 
 
 def ring_at(argument=None) -> Path:
@@ -155,14 +155,16 @@ def _package(directory: Path, manifest: Path, kind: str) -> dict:
     }
 
 
-def _grade(ring: Path, diag, names, packages, sheets, structure) -> dict:
+def _grade(ring: Path, diag, names, packages, sheets, structure, tooling) -> dict:
     """Run every check over the ring, and return what each kind counted."""
 
     counted = {}
     graded = []
+    declaring = []
     for kind in rings.KINDS:
         found = items(ring, kind)
         counted[kind] = len(found)
+        declaring.extend(directory for directory, _manifest in found)
         if kind == "sheet":
             continue  # a sheet has no body and its own checks below
         for directory, manifest in found:
@@ -188,6 +190,11 @@ def _grade(ring: Path, diag, names, packages, sheets, structure) -> dict:
     structure.validate_templates(diag, roots=[ring / rings.RING_DIRS["workflow"]])
     sheets.validate_sheets(diag, pack_roots=_roots(ring, "pack"))
     structure.validate_call_graph(graded, diag, known=resolvable_names(ring))
+    # A `tools.txt` is a declaration `orchflows sync` reads before a run; a
+    # line its parser cannot read is a tool nobody is told is missing. The
+    # ring keeps no tiers, so the directories walked above are handed over
+    # rather than rediscovered.
+    tooling.validate_tools_declarations(diag, item_dirs=declaring)
     return counted
 
 
@@ -200,14 +207,14 @@ def check(ring: Path):
     carries is relative to the ring the reader asked about.
     """
 
-    names, packages, sheets, structure = support()
-    modules = (names, packages, sheets, structure)
+    names, packages, sheets, structure, tooling = support()
+    modules = (names, packages, sheets, structure, tooling)
     diag = packages.Diagnostics()
     saved = [module.ROOT for module in modules]
     for module in modules:
         module.ROOT = ring
     try:
-        counted = _grade(ring, diag, names, packages, sheets, structure)
+        counted = _grade(ring, diag, names, packages, sheets, structure, tooling)
     finally:
         for module, root in zip(modules, saved):
             module.ROOT = root

@@ -5,7 +5,7 @@ Eight ring verbs over ``scripts/rings.py``'s one resolution order, plus
 ``resume``:
 
     orchflows sync [--project]         make a ring whole, render its adapters,
-                                       build every declared item environment
+                                       settle every item's declared dependencies
     orchflows add <git-url>@<pin>      pin one external bundle
     orchflows new {skill|pack|sheet|workflow} <name>
     orchflows new bundle [<name>]      the manifest of the ring at hand
@@ -34,7 +34,8 @@ from pathlib import Path
 if __package__:
     from . import (
         console, orchflows_adapters, orchflows_check, orchflows_envs,
-        orchflows_home, orchflows_scaffold, rings, rings_trust, state_root,
+        orchflows_home, orchflows_node, orchflows_scaffold, orchflows_tools,
+        rings, rings_trust, state_root,
     )
 else:  # pragma: no cover - direct/installed flat script path
     import console
@@ -42,7 +43,9 @@ else:  # pragma: no cover - direct/installed flat script path
     import orchflows_check
     import orchflows_envs
     import orchflows_home
+    import orchflows_node
     import orchflows_scaffold
+    import orchflows_tools
     import rings
     import rings_trust
     import state_root
@@ -174,7 +177,7 @@ def cmd_sync(args) -> int:
         detail = f" ({record['detail']})" if record.get("detail") else ""
         print(f"import {record['name']} @ {record['pin']}: {record['action']}{detail}")
     _report(orchflows_adapters.write("home"))
-    _report_envs()
+    _report_dependencies()
     return 0
 
 
@@ -193,7 +196,8 @@ def _sync_project() -> int:
     project = bundle.parent
     print(f"project ring: {bundle}")
     _report(orchflows_adapters.write("project", project=project, start=project))
-    _report_envs()
+    print(f"wrote {orchflows_home.ensure_project_ignores(project)}")
+    _report_dependencies()
     return 0
 
 
@@ -204,21 +208,40 @@ def _report(result: dict) -> None:
         print(f"removed {path}")
 
 
-def _report_envs() -> None:
-    """Build every declared item environment resolvable from here, and say so.
+def _report_dependencies() -> None:
+    """Settle every declared dependency resolvable from here, and say so.
 
-    Both ``sync`` forms end here: an environment is machine-local under the
-    home ring whichever ring declared it, and the inventory is the same
-    resolver a launch reads, so what is built is what can run.
+    Both ``sync`` forms end here, over one inventory: the same resolver a
+    launch reads, so what is built is what can run. The three classes in
+    their order -- the Python environments this ring owns, the orphans it no
+    longer owns, the tooling it can only check, the Node trees it installs --
+    each with the item that declared it in front of the line.
     """
 
-    for outcome in orchflows_envs.sync(rings.inventory()):
+    records = rings.inventory()
+    for outcome in orchflows_envs.sync(records):
         if outcome["action"] == "skipped":
             print(f"env {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
         else:
             print(
                 f"env {outcome['kind']} '{outcome['name']}': "
                 f"{outcome['action']} {outcome['interpreter']}"
+            )
+    for outcome in orchflows_envs.prune(records):
+        print(f"env {outcome['kind']} '{outcome['name']}': pruned {outcome['env']}")
+    for report in orchflows_tools.check_inventory(records):
+        where = (
+            "" if report["line"] is None
+            else f" ({orchflows_tools.TOOLS_NAME} line {report['line']})"
+        )
+        print(f"tools {report['kind']} '{report['name']}': {report['detail']}{where}")
+    for outcome in orchflows_node.sync(records):
+        if outcome["action"] == "skipped":
+            print(f"node {outcome['kind']} '{outcome['name']}': skipped; {outcome['detail']}")
+        else:
+            print(
+                f"node {outcome['kind']} '{outcome['name']}': "
+                f"{outcome['action']} {outcome['modules']}"
             )
 
 
