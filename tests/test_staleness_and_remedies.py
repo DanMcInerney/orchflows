@@ -749,6 +749,9 @@ class TestTheClosingNoteIsNotDeduplicated(SealedRunTest):
         self.assertIn("line 3", refused["error"])
         self.assertIn("## ", refused["error"])
         self.assertIn("may not begin", refused["error"])
+        # the half the two children needed: which headings ARE allowed (the
+        # join judge's surviving mutant deleted exactly this clause)
+        self.assertIn("'###' and deeper are fine", refused["error"])
 
     def test_a_deeper_heading_is_not_reserved_and_still_closes(self):
         self.accept()
