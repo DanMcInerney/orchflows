@@ -449,5 +449,5 @@ and the dropped **both**, and `audit_lines` renders the drops for a report. A
 term matches whole tokens only, under a stemmer that strips plurals and
 inflections and nothing else, so `valuation` never matches `e-valuation` and
 `shares` meets `share` by name. A score never reads engagement, a parent's
-counts, or another platform: those are the calling lane's decisions, made in
+counts, or another platform: those are the caller's decisions, made in
 the open. Nothing here drops a record on its own.

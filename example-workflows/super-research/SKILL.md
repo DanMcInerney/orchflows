@@ -10,7 +10,7 @@ this run's own reads, and a hard per-step item cap.
 
 Open the frame first, its goal the answered question:
 
-    tickets.py frame-open <run> --goal-file <question-goal>
+    tickets.py frame-open <run> --goal-file <question-goal> --workflow super-research
 
 The frame's `## Report` is your working memory, not a courtesy. Begin every
 wave by re-reading the frame and its children from the sink, then append
@@ -23,9 +23,13 @@ each source the question names, one line:
       --goal-file <source-goal> --bound "<= 40 tool calls"
 
 Each source goal names exactly one source, the window, the frozen `as_of`
-and the cap, and directs the child to acquire by invoking the
-`super-research` skill by name; that skill's own Require, Preparation and
-Never sections bind the child and are not restated here. Time-bounding is
+and the cap, and directs the child to enter the `super-research` skill by
+name, forwarding its own launch prompt verbatim, at the `SKILL.md` path
+`orchflows list --kind skill` resolves — the goal carries that path, so no
+child searches for it, and a body that opens a frame is this workflow's
+adapter sharing the name, never the skill. That skill's own Require,
+Preparation, Never and Return bind the child and are not restated here; its
+Return is what fills the `artifact: evidence:` line. Time-bounding is
 declared per operation, not per source — that skill's own `WINDOW_REACH`
 table is the authority — so a windowed call whose operation cannot bound
 time at its origin comes back carrying `window_not_honored`.
