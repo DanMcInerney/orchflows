@@ -25,7 +25,7 @@ never become defaults: an empirical gap becomes a declared experiment, a
 `kind: user-only` gap one verbatim question for the root to relay, and
 neither blocks the other.
 
-    tickets.py frame-open <run> --goal-file <program-goal>
+    tickets.py frame-open <run> --goal-file <program-goal> --workflow browser-game
 
 Re-read the frame's `## Report` and its children before each call, append
 the decision with `tickets.py result <run> <frame> --by <frame>`, and keep
@@ -61,14 +61,14 @@ trigger identity stays `inactive`.
 **Checkpoint**, one `judge --pack orch-content-pack` over both artifact
 lines: exactly one disposition — `advance`, `revise`, `experiment`,
 `user-decision-required` or `stop` — bound to its governing requirement, the
-fixed record revision and the evidence identity. Its findings validate
+fixed record revision and evidence identity. Its findings validate
 against the
 [checkpoint contract](../references/browser-game-checkpoint.schema.json).
 Only where that disposition is lawful does one further
 `do --pack orch-content-pack` materialize the
 [pack-separated successor plan](../references/browser-game-program-record.schema.json#/$defs/successorPlanRevision),
 each ordered entry preserving its artifact identity, artifact kind, matching
-pack, proposed run/root identities, dependencies and `planned`/`opened`
+pack, run/root identities, dependencies and `planned`/`opened`
 status.
 
 Never: invent a stack, cohort, support promise, budget, fallback, provider

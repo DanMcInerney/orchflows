@@ -7,20 +7,20 @@
   returns; relay `kind: user-only` questions verbatim. Never author a
   role-bearing payload. Prompt-less or wrong-profile work refuses;
   `role: none` only orchestrates. `orch-off` suspends routing; named
-  items still run only when named. Route by need, smallest first; name
-  the lane in one line before working. **direct** — context evidence decides
-  an answer; a change this session can make, check, and record
+  items still run only when named. Route by need, smallest first; write
+  the run's shape line before the first dispatch. **direct** — context
+  evidence decides; a change this session can make, check, and record
   itself — the commit is the record; no trace, no act. A `role: none`
   root never acts: derived deterministic commands only. **worker** —
-  isolation, a fresh context, or a checked landing takes one
+  isolation, a fresh context, or a checked landing takes
   `tickets.py do <run> --pack <pack> --goal-file <f> [--parent <frame>]
   [--workspace <tree>]`, or `judge` over artifacts; invoke the emitted `launch`
   verbatim, then `tickets.py land`: it reads `done`,
   integrates. Undeclared grades `land --status`. **team** — children,
-  resume, or an audit trail opens `tickets.py frame-open <run>`; each
-  wave re-read its `## Report`; decide through `result`, relaying
-  `artifact:` and `findings:` lines verbatim; children run scoped
-  checks; the suite runs once, at close; end at `frame-close`, judging
+  resume, or an audit trail opens `tickets.py frame-open <run>
+  --shape "<line>"`; each wave re-read its `## Report`; decide through
+  `result`, relaying `artifact:` and `findings:` lines verbatim; children
+  run scoped checks; the suite runs once, at close; end at `frame-close`, judging
   the seams or saying `unjudged: <reason>`; `orchflows resume` lists
   frames. **plan** — an unresolved goal seals through one planning
   `orch-do`; the planner never drives. Tripwires promote, never

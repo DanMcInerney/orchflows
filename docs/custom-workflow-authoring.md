@@ -114,7 +114,12 @@ it. A frame is pack-less and lease-less: it is a journal, not
 craft-governed work, and its driver is the session you are already talking
 to. Write the calls in whatever order, parallelism, branching or bounded
 repetition the job needs — that prose *is* the control flow, and there is no
-engine under it to keep in step.
+engine under it to keep in step. That prose is also the frame's shape, so a
+saved workflow's root `frame-open` names `--workflow <name>` instead of
+`--shape "<line>"`: the body a reader can already open is the wave plan, and
+restating it on the command line would be the same plan in two places. Only
+a driver improvising the waves writes the line itself
+([vocabulary](vocabulary.md)'s **routing shape** owns its grammar).
 
 Two obligations your body has to state for its driver, both defined
 elsewhere: the **typed artifact line**

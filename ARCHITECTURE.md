@@ -42,7 +42,8 @@ family's five owner modules.
   `tickets_join.py` reserved outcome import and outcome-fenced lifecycle joins;
   `tickets_emission.py` emission grading; `tickets_issue_render.py`
   issuance markdown; `tickets_mint.py` and `tickets_frame.py` the callable
-  and frame minting commands;
+  and frame minting commands; `tickets_shape.py` the shape-line grammar a
+  frame states its wave plan in;
   `tickets_dispatch_launch.py` the host binding,
   `tickets_dispatch_launch_lines.py` the prompt's lines. `cutcheck.py`
   owns structural graph validation.
