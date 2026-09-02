@@ -470,7 +470,7 @@ The mapping that decides where a file goes:
 | `sys.path` order | nearest first: project, home, imports, lib |
 | names you must not shadow | the `orch-` floor |
 | a tool's own venv | `~/.orchflows/envs/<kind>/<name>/` and the item's `node_modules/` |
-| `~/.local/state` | `~/.orchflows/state` (runs, tickets, friction) |
+| `~/.local/state` | the state sink (`rules/visibility.md` §6): runs, tickets, friction |
 | console-script entry points | host adapters, written by `orchflows sync` |
 | running your library's tests | `orchflows check` |
 

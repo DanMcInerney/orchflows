@@ -76,9 +76,13 @@ SKIPPED_DIRECTORIES = frozenset({"benchmarks"})
 SKIPPED_PAIRS = frozenset({("tests", "fixtures")})
 SKIPPED_FILES = frozenset({"REVIEW-2026-08-06.md"})
 
-# A run-state directory reference, and not the installed library root:
-# `~/.orchflows/` shares the first five characters and is not a mention.
-ORCH_MENTION = re.compile(r"\.orch\b")
+# A run-state directory reference, and not a longer name that merely opens
+# with the same five characters. Two such names exist and neither is state:
+# `~/.orchflows/` is the installed library root, and `.orch-notes/` is the
+# git-ignored scratch directory `scripts/workspace_git.py` names. So the
+# character after the path must end the name rather than continue it --
+# `\b` alone matched `.orch-notes/`, since a hyphen closes a word.
+ORCH_MENTION = re.compile(r"\.orch(?![\w-])")
 
 
 def doc(relpath):
