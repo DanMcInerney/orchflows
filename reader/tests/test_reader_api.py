@@ -7,7 +7,7 @@ import unittest
 from reader.scripts.ui_api import PUBLIC_API_SCHEMA, PUBLIC_API_VERSION, create_application
 
 
-ROOT = Path(__file__).resolve().parents[2]
+from reader.tests._repo_root import ROOT
 
 
 class ReaderApiContractTest(unittest.TestCase):

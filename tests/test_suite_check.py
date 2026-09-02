@@ -9,9 +9,8 @@ from collecting the same tests twice.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT as REPO_ROOT
 sys.path.insert(0, str(REPO_ROOT))
 
 from tests.test_suite_check_cases.audit import (

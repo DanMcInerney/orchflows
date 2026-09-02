@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
 from installer.packages import (
     MANUAL_ONLY,
@@ -15,7 +14,7 @@ from installer.packages import (
 from scripts import tickets
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 COMPOSITION = ROOT / "example-workflows" / "browser-game"
 LEGACY_INPUTS = (
     "29DF4D680E47A8162AE94BBD7C9BCD1FA9A2DFC3E7EE4D26025933B2C5D79653",

@@ -17,7 +17,7 @@ from tests.test_workspace_cases.common import (
 )
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 FIXTURE = ROOT / "tests" / "fixtures" / "multi_pack_run.json"
 
 

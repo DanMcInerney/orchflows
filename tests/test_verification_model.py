@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import re
 import unittest
-from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 # `SPEC_POLICY_REQUIREMENTS`/`SPEC_POLICY_INVERSIONS` and the semantic-root
 # policy tests they drove (once here) pinned `orch-outline`'s "Semantic root
@@ -63,17 +62,17 @@ class CritiqueContractTest(unittest.TestCase):
     def test_check_owns_blockers_and_verification(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
         normalized_check = " ".join(check.split())
-        self.assertIn("A critique enumerates evidence-backed findings", check)
-        self.assertIn("one thread per shared cause", check)
-        self.assertIn("extinguishes the class", check)
+        self.assertIn("A critique enumerates evidence-backed findings", normalized_check)
+        self.assertIn("one thread per shared cause", normalized_check)
+        self.assertIn("extinguishes the class", normalized_check)
         self.assertIn("Write the findings to one JSON file", normalized_check)
-        self.assertIn("print `findings: <path>` in the report", check)
+        self.assertIn("print `findings: <path>` in the report", normalized_check)
 
     def test_critique_is_read_only_and_keeps_costly_fix_sentence(self):
         check = read("skills/kernel/orch-judge/SKILL.md")
         normalized_check = " ".join(check.split())
-        self.assertIn("Never: edit the artifact", check)
-        self.assertIn("mix a review stage with another kind", check)
+        self.assertIn("Never: edit the artifact", normalized_check)
+        self.assertIn("mix a review stage with another kind", normalized_check)
         self.assertIn("`## Lens` owns the review criteria", normalized_check)
 
     def test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model(self):

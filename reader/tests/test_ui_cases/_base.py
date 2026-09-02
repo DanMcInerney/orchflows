@@ -27,7 +27,7 @@ PAYLOAD = "<script>alert(1)</script>"
 # with a scheme or with a protocol-relative `//`.
 REMOTE_ASSET_RE = re.compile(r"""(?:src|href)\s*=\s*["']?\s*(?:https?:)?//""", re.IGNORECASE)
 
-ROOT = Path(__file__).resolve().parents[3]
+from reader.tests._repo_root import ROOT  # noqa: E402
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

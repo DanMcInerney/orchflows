@@ -20,6 +20,7 @@ from unittest import mock
 
 from tests._candidate_checkout import git_checkout, record_established_workspace
 from tests import _retired_commands as retired_commands
+from tests._repo_root import ROOT
 from scripts import state_root
 from scripts import tickets
 from scripts.tickets_assignment import workspace_establishment_finding
@@ -435,7 +436,7 @@ class DispatchCarriageTest(unittest.TestCase):
             )
 
     def test_dispatch_emits_codepage_independent_canonical_ascii(self):
-        script = Path(__file__).resolve().parents[1] / "scripts" / "tickets.py"
+        script = ROOT / "scripts" / "tickets.py"
         completed = subprocess.run(
             [
                 sys.executable, str(script), "dispatch", "run", "T",

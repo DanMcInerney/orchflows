@@ -1,10 +1,9 @@
 """Structural contract for the reader's isolation from the library tree."""
 
-from pathlib import Path
 import unittest
 
 
-ROOT = Path(__file__).resolve().parents[2]
+from reader.tests._repo_root import ROOT
 READER = ROOT / "reader"
 
 

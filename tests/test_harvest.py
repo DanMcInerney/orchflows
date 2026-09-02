@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 # harvest.py imports its resolvers as `scripts.state_root` / `scripts.console`
 # / `scripts.harvest_cluster` in-repo; neither name is importable from
 # `tests/` alone, so put the repository root on the path first.

@@ -13,7 +13,7 @@ from tools.validate_support.packages import Diagnostics
 import tools.validate as validate
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 
 # BGW-TRACE[test:traceability|PJ-21]
 # BGW-TRACE[test:program-record|PJ-03,PJ-07]

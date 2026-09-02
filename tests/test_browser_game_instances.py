@@ -5,12 +5,11 @@ from __future__ import annotations
 import copy
 import json
 import unittest
-from pathlib import Path
 
 from scripts import browser_game_validate
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 REFERENCES = ROOT / "example-workflows" / "references"
 
 # BGW-TRACE[test:instance-validation|PJ-05,PJ-06,PJ-09,PJ-10,PJ-22,PJ-24,PJ-25,PJ-28]

@@ -3,9 +3,8 @@ import json
 import subprocess
 import sys
 import unittest
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

@@ -7,14 +7,13 @@ import json
 import re
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from pathlib import Path
 
 from scripts import tickets
 from scripts.tickets_commands import SUBCOMMAND_SUMMARY, SUBCOMMAND_USAGE
 
 from tests._retired_commands import RETIRED_COMMAND_NAMES
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 SKILLS = ROOT / "skills"
 RULES = ROOT / "rules"
 NAMED_COMMAND = re.compile(r"tickets\.py\s+([a-z][a-z-]*)")

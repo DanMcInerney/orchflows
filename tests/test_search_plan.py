@@ -1,6 +1,5 @@
 """Public-seam checks for deterministic search planning."""
 
-from pathlib import Path
 from collections import Counter
 import copy
 import hashlib
@@ -19,7 +18,7 @@ import unittest
 sys.modules.setdefault("tests.test_search_plan", sys.modules[__name__])
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT  # noqa: E402
 # Both campaigns are workflow skills: one `SKILL.md` whose prose opens a
 # frame and writes the callable calls that used to be stubs. The text graded
 # below is that whole body, because the law that was spread across a

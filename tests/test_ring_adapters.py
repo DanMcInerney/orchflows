@@ -12,7 +12,7 @@ from unittest.mock import patch
 from scripts import orchflows_adapters, rings, state_root
 
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests._repo_root import ROOT
 SUPER_RESEARCH = ROOT / ".claude" / "skills" / "super-research" / "SKILL.md"
 AGENTS_SUPER_RESEARCH = ROOT / ".agents" / "skills" / "super-research" / "SKILL.md"
 # No preprocessing construct may reach a generated adapter body: `@` includes

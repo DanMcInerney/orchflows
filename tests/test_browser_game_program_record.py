@@ -7,10 +7,9 @@ explicit identity wherever a material record or field is still unresolved.
 
 import json
 import unittest
-from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 SCHEMA_PATH = ROOT / "example-workflows" / "references" / "browser-game-program-record.schema.json"
 
 

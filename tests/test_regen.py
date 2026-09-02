@@ -25,7 +25,7 @@ from tools import regen, serial_manifest
 from tools import validate
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 RUNNER = ROOT / "tools" / "run_serial_compat.py"
 
 ONE_CASE = (

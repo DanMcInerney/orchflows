@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+from tests._repo_root import ROOT
 # migrate_state.py imports its siblings as `scripts.x` in-repo, falling back
 # to a flat `x` beside it once installed. Neither name is importable from
 # `tests/` alone, so put the repository root on the path before the module

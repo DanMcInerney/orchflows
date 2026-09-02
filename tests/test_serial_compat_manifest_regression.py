@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 import unittest
-from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent.parent
+from tests._repo_root import ROOT
 MANIFEST = ROOT / "tests" / "serial_compat_manifest.json"
 
 

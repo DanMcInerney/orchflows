@@ -12,6 +12,14 @@ from reader.scripts import ui, ui_assets, ui_discovery
 from reader.tests.test_ui_cases import _base as fixture
 
 
+# S1 exception: this suite's own subject is root/asset resolution
+# (ui.default_root(), ui_assets.resolve_asset_root()). Below,
+# test_checkout_script_resolves_reader_distribution feeds this walk's
+# output as both the input path and (via the expected value) the
+# pass/fail oracle for the module under test's own independent walk --
+# sharing that computation with reader.tests._repo_root would let a
+# bug in the shared owner move both sides together instead of failing
+# the one test whose job is to catch exactly that.
 ROOT = Path(__file__).resolve().parents[3]
 SINK_ENV_VAR = state_root.ENV_VAR
 UI_PY = ROOT / "reader" / "scripts" / "ui.py"

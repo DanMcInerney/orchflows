@@ -8,12 +8,11 @@ from __future__ import annotations
 import importlib
 import re
 import unittest
-from pathlib import Path
 
 # No sys.path guard: this module is reached only through
 # ``tests.test_run_tests``, so the repository root is already importable,
 # and mutating the path here would make the module an import-path seam owner.
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+from tests._repo_root import ROOT as REPO_ROOT
 CHECKS_YML = REPO_ROOT / ".github" / "workflows" / "checks.yml"
 AGENTS_MD = REPO_ROOT / "AGENTS.md"
 
