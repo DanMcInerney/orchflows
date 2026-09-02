@@ -77,7 +77,7 @@ class LaunchResolutionTest(unittest.TestCase):
 
     def test_the_effort_is_the_one_this_host_spells_however_it_spells_it(self):
         for host, role, expected in (
-            ("claude", "worker", "xhigh"), ("codex", "planner", "ultra"),
+            ("claude", "worker", "high"), ("codex", "planner", "ultra"),
             ("grok", "worker", "high"),
         ):
             with self.subTest(host=host, role=role):

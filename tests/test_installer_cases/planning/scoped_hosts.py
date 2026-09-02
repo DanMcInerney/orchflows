@@ -97,7 +97,7 @@ class HostAdapterRenderingTest(unittest.TestCase):
             rendered_profiles = install.load_role_profiles(adapters)
         expected_worker_bindings = {
             "codex": {"model": "gpt-5.6-luna", "model_reasoning_effort": "xhigh"},
-            "claude": {"model": "claude-sonnet-5", "effort": "xhigh"},
+            "claude": {"model": "claude-opus-5", "effort": "high"},
             "grok": {"model": "grok-4.6", "effort": "high"},
         }
         for host, binding in expected_worker_bindings.items():
@@ -114,7 +114,7 @@ class HostAdapterRenderingTest(unittest.TestCase):
 
         self.assertIn("host records beside this file", profiles)
         self.assertNotIn("| Profile |", profiles)
-        for binding in ("gpt-5.6-sol", "claude-opus-5", "grok-4.6"):
+        for binding in ("gpt-5.6-sol", "claude-fable-5-1", "grok-4.6"):
             self.assertNotIn(binding, profiles)
         self.assertIn("../hosts/", authoring)
         self.assertNotIn("A Claude adapter keeps", authoring)
@@ -339,8 +339,8 @@ class TestScopedHostConfiguration(unittest.TestCase):
                 self.assertEqual(home / ".claude" / "agents", dest.parent)
                 self.assertIn("name: orch-", content)
                 if "name: orch-worker" in content:
-                    self.assertIn("model: claude-sonnet-5", content)
-                    self.assertIn("effort: xhigh", content)
+                    self.assertIn("model: claude-opus-5", content)
+                    self.assertIn("effort: high", content)
             for dest, content in plan.codex_agents:
                 self.assertEqual(home / ".codex" / "agents", dest.parent)
                 parsed = install.tomllib.loads(content)
