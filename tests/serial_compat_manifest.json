@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2127,
+  "count": 2129,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1152,6 +1152,8 @@
    "test_validator.TestStructuralAdmissionMutants.test_one_unrelated_shared_stem_does_not_carry_an_input",
    "test_validator.TestStructuralAdmissionMutants.test_pack_control_flow_is_rejected",
    "test_validator.TestStructuralAdmissionMutants.test_pin_rewrite_requires_a_discriminating_supersession_record",
+   "test_verification_model.CraftLensKeyTest.test_craft_sections_are_the_migrated_set",
+   "test_verification_model.CraftLensKeyTest.test_lens_keys_are_root_cut_then_the_adapter_artifact_kind",
    "test_verification_model.CritiqueContractTest.test_check_owns_blockers_and_verification",
    "test_verification_model.CritiqueContractTest.test_critique_is_read_only_and_keeps_costly_fix_sentence",
    "test_verification_model.CritiqueContractTest.test_live_ticket_review_surfaces_drop_stale_authority_and_oracle_model",
@@ -2130,7 +2132,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "0dbc72c0f4d2ddccf99cf82d7f82dfd8ff78ff60a7d6db0231331d7a3be5d15b"
+  "sha256": "167e473213edb56d7359236ccc5209f687372b2496d8b02a47dc61057058b6f2"
  },
  "mutation_owners": [
   {

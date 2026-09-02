@@ -333,10 +333,18 @@ class PackResolutionTests(unittest.TestCase):
             resolved = packs.resolve_pack(name, canonical_root=PACKS)
             self.assertIn("references/craft.md", resolved["cells"]["craft"])
             text = (PACKS / name / "references" / "craft.md").read_text(encoding="utf-8")
-            match = re.search(r"(?ms)^## Outline\s*$(.*?)(?=^## |\Z)", text)
-            self.assertIsNotNone(match, f"{name} craft carries no ## Outline section")
+            # What this test owns is distinctness, not shape: the heading
+            # the root-outline prose lives under is
+            # `validate_craft_sections`' fact. Lens keying
+            # (`research/lens-keying-2026-09-02.md`) moves it from
+            # `## Outline` to `## Lens` › `### root`; the fallback is
+            # transitional and deletable once every craft has migrated.
+            match = re.search(r"(?ms)^### root\s*$(.*?)(?=^#{2,3} |\Z)", text)
+            if match is None:
+                match = re.search(r"(?ms)^## Outline\s*$(.*?)(?=^## |\Z)", text)
+            self.assertIsNotNone(match, f"{name} craft carries no root-outline section")
             bodies[name] = match.group(1).strip()
-            self.assertTrue(bodies[name], f"{name} ## Outline section is empty")
+            self.assertTrue(bodies[name], f"{name} root-outline section is empty")
         self.assertEqual(5, len(bodies))
         self.assertEqual(len(bodies), len(set(bodies.values())))
 
