@@ -4,12 +4,12 @@
 Search order -- one fixed root-relative path per ring and per kind, never a
 configurable search path:
 
-    project   <repo>/.orchflows/{skills,packs,workflows}/<name>
-    home      ~/.orchflows/{skills,packs,workflows}/<name>
-    imports   ~/.orchflows/imports/<bundle>/.orchflows/{skills,packs,workflows}/<name>,
+    project   <repo>/.orchflows/{skills,packs,workflows,sheets}/<name>
+    home      ~/.orchflows/{skills,packs,workflows,sheets}/<name>
+    imports   ~/.orchflows/imports/<bundle>/.orchflows/{skills,packs,workflows,sheets}/<name>,
               bundle by bundle in the order ~/.orchflows/imports.lock records
     lib       the installed library: skills/<sublayer>/<name>, packs/<name>,
-              example-workflows/<name>
+              example-workflows/<name>, sheets/<name>
 
 Nearest ring wins.  A non-reserved name found in more than one ring resolves
 to the nearest hit and carries a one-line shadow notice naming both paths --
@@ -19,6 +19,8 @@ rather than shadowing a library name or, worse, never running.
 
 A skill lives at `<name>/SKILL.md`, a pack at `<name>/SKILL.md`, and a
 workflow — a skill whose prose calls callables — at `<name>/SKILL.md` too.
+A sheet lives at `<name>/SHEET.md`: extra craft a ticket stamps beside its
+pack, which is why it is resolved here and never invoked.
 Home roots are honoured when they exist and never required to;
 `orchflows sync` creates them.
 
@@ -42,11 +44,20 @@ except ImportError:  # pragma: no cover - direct/installed flat script path
     import state_root
 
 
-KINDS = ("skill", "pack", "workflow")
+KINDS = ("skill", "pack", "workflow", "sheet")
 RINGS = ("project", "home", "imports", "lib")
-RING_DIRS = {"skill": "skills", "pack": "packs", "workflow": "workflows"}
-LIB_DIRS = {"skill": "skills", "pack": "packs", "workflow": "example-workflows"}
-MANIFESTS = {"skill": "SKILL.md", "pack": "SKILL.md", "workflow": "SKILL.md"}
+RING_DIRS = {
+    "skill": "skills", "pack": "packs", "workflow": "workflows",
+    "sheet": "sheets",
+}
+LIB_DIRS = {
+    "skill": "skills", "pack": "packs", "workflow": "example-workflows",
+    "sheet": "sheets",
+}
+MANIFESTS = {
+    "skill": "SKILL.md", "pack": "SKILL.md", "workflow": "SKILL.md",
+    "sheet": "SHEET.md",
+}
 RESERVED_PREFIX = "orch-"
 BUNDLE_DIR = ".orchflows"
 IMPORTS_DIR = "imports"

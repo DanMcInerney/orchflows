@@ -72,6 +72,22 @@ def pinned_pack_digest(pack):
         return None, {"error": f"pack '{name}' cannot be pinned: {error.detail}"}
 
 
+def pinned_items(sheets, skill):
+    """``(fields, refusal)`` for the ring items stamped beside the pack.
+
+    Issue time again, and for the pack's reason above: this module is where
+    a ticket's pins are taken, and `scripts/tickets_pins.py` is where the
+    two new kinds are resolved, hashed, and refused -- so both minting
+    commands take one pin the same way.
+    """
+
+    if __package__:
+        from .tickets_pins import pin_fields
+    else:  # pragma: no cover - direct/installed flat script path
+        from tickets_pins import pin_fields
+    return pin_fields(sheets, skill)
+
+
 def _invalidate_assignment(text):
     data = _parse_frontmatter(text)
     root_generation = str(data.get("root_generation") or "")
@@ -183,6 +199,11 @@ def _project_file_ticket(
         if pinned
         else _remove_frontmatter_field(text, "pack_digest")
     )
+    # The stamped sheets and applied skill are *not* re-pinned here. This
+    # projection is read-only -- `lint --file` grades the exact bytes a
+    # person wrote -- so rewriting the author's pin would replace the thing
+    # being graded, and the doors in `tickets_admission` already refuse a
+    # pin that names nothing or has drifted.
     return (ticket_id, text), None
 
 
@@ -239,5 +260,5 @@ __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
     "_cmd_new", "_frontmatter_list", "_issue_defects",
     "_issue_ticket", "_project_file_ticket", "_render_ticket",
-    "pinned_pack_digest",
+    "pinned_items", "pinned_pack_digest",
 )

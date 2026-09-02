@@ -122,7 +122,18 @@ def files_for(kind: str, name: str) -> List[Tuple[str, str]]:
             ("SKILL.md", _PACK.format(name=name)),
             ("references/craft.md", _craft(name)),
         ]
-    return [("SKILL.md", _WORKFLOW.format(name=name))]
+    if kind == "workflow":
+        return [("SKILL.md", _WORKFLOW.format(name=name))]
+    # Every kind is named, and an unnamed one refuses. The tail used to
+    # fall through to the workflow skeleton, so a kind added to
+    # `rings.KINDS` before its skeleton existed would have written a
+    # `SKILL.md` under a kind whose manifest is not that -- a wrong item
+    # written silently, which is the one outcome a scaffold must not have.
+    raise rings.RingError(
+        "kind-unscaffolded",
+        f"'orchflows new {kind}' has no skeleton yet; author the item by "
+        f"hand against {AUTHORING_DOC}",
+    )
 
 
 def write(directory: Path, kind: str, name: str) -> List[Path]:
