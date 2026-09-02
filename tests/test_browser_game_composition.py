@@ -64,12 +64,16 @@ class BrowserGameCompositionTests(unittest.TestCase):
         self.assertIn("browser-game", discovered)
 
         _, text, _ = self._workflow()
+        # Full command lines, as `tickets.py <subcommand> --help` prints them:
+        # the run is a positional, so an abbreviated `do --pack ...` is not a
+        # call anyone can run.
         for call in (
-            "tickets.py frame-open",
-            "do --pack orch-content-pack",
-            "do --pack orch-research-pack",
-            "judge --pack orch-content-pack",
-            "tickets.py frame-close",
+            "tickets.py frame-open <run> --goal-file",
+            "tickets.py do <run> --pack orch-content-pack --parent <frame>",
+            "tickets.py do <run> --pack orch-research-pack --parent <frame>",
+            "tickets.py judge <run> --pack orch-content-pack --parent <frame>",
+            "--artifacts doc:",
+            "tickets.py frame-close <run> <frame> --done",
         ):
             self.assertIn(call, text)
         # The template era is gone: no stub files, no instantiation route.
