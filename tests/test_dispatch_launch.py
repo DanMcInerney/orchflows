@@ -243,11 +243,10 @@ class ReturnLineConditionalTest(unittest.TestCase):
         ))
 
         self.assertIn(
-            "Commit your work inside this candidate before you close", prompt,
+            "Commit your work in the tree you are standing in before you close",
+            prompt,
         )
-        self.assertNotIn(
-            "the landing merges the candidate, not your working tree.", prompt,
-        )
+        self.assertNotIn("candidate", prompt)
         self.assertNotIn("Your stamped pack commits nothing", prompt)
         self.assertIn(
             "artifact: doc:<path>@sha256:<digest-of-the-document-bytes>", prompt,
