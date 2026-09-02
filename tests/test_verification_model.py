@@ -101,5 +101,54 @@ class CritiqueContractTest(unittest.TestCase):
                 self.assertNotIn(phrase, joined)
 
 
+class CraftLensKeyTest(unittest.TestCase):
+    """`## Lens` is keyed by artifact kind
+    (`research/lens-keying-2026-09-02.md`).
+
+    The four non-exemplar packs only: `orch-code-pack` is the exemplar
+    migrated beside the contract, validator and scaffold that read this
+    shape, and `validate_craft_sections` is where every pack including
+    that one answers for it. Pinning the code craft here too would give
+    one fact two owners and make this file red for a change it does not
+    own.
+    """
+
+    PACKS = (
+        "orch-content-pack",
+        "orch-data-pack",
+        "orch-design-pack",
+        "orch-research-pack",
+    )
+
+    def craft(self, pack: str) -> str:
+        return read(f"packs/{pack}/references/craft.md")
+
+    def test_craft_sections_are_the_migrated_set(self):
+        for pack in self.PACKS:
+            with self.subTest(pack=pack):
+                headings = re.findall(r"(?m)^## (.+?)\s*$", self.craft(pack))
+                self.assertEqual(
+                    ["Vocabulary", "Workspace", "Spec fields", "Lens", "Stages"],
+                    headings,
+                )
+
+    def test_lens_keys_are_root_cut_then_the_adapter_artifact_kind(self):
+        # The kind comes from the adapter the pack declares, never from a
+        # list written out here: a hand-copied kind is exactly the fact
+        # that went stale between the design outline and this tree.
+        from scripts.tickets_adapters import adapter_spec
+
+        for pack in self.PACKS:
+            with self.subTest(pack=pack):
+                lens = re.search(
+                    r"(?ms)^## Lens\s*$(.*?)(?=^## |\Z)", self.craft(pack),
+                )
+                self.assertIsNotNone(lens, f"{pack} craft has no ## Lens section")
+                keys = re.findall(r"(?m)^### (.+?)\s*$", lens.group(1))
+                self.assertEqual(
+                    ["root", "cut", adapter_spec(pack).artifact_kind], keys,
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

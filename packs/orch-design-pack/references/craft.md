@@ -44,9 +44,11 @@ repository; render/capture/diff commands; views by breakpoint/state;
 language; accessibility bar; golden identities (none greenfield);
 standards owner pointer
 
-## Outline
+## Lens
 
-### What a frozen design root carries
+### root
+
+#### What a frozen design root carries
 
 - A closed breakpoint set, plus the states each view is required to render
   rather than have assumed for it.
@@ -56,20 +58,20 @@ standards owner pointer
 - An accessibility floor with the command deciding it, and either golden
   identities or their deliberate absence on greenfield.
 
-### Worth asking at intake
+#### Worth asking at intake
 
 - Which views are in, at which breakpoints, in which states?
 - What settles "right" here — an approved baseline, a token scale, or a judge?
 - Which design-language dimensions get scored, and in what attention order?
 - Does anything already rendered count as approved, or does this start empty?
 
-### Exemplar policy
+#### Exemplar policy
 
 Hand over one capture, or one live view identity, together with the dimensions
 it stands for. An image with nothing attached settles nothing later, when two
 readers take it two ways.
 
-## Slicing
+### cut
 
 Token-first view tickets: the token set alone opens the first frontier.
 Every view's capture samples rendered values against the tokens, so each
@@ -87,13 +89,7 @@ stays unproven.
   capture and diff commands, its accessibility bar and design
   language, and the standards owner pointer.
 
-## Evidence
-
-Identify the render and its covered view, breakpoint, and state matrix. Record
-fresh captures, exercised interactions, console and accessibility readings,
-relevant build output, and uncovered states.
-
-## Lens
+### git
 
 - Design language: every view holds the spec's design language on
   each scored dimension, at every breakpoint.
@@ -107,6 +103,10 @@ relevant build output, and uncovered states.
   without color, and keyboard reach matches pointer reach.
 - Consistency: one decision resolves one way on every view;
   cross-view drift is the finding class only this lens sees.
+
+Identify the render and its covered view, breakpoint, and state matrix. Record
+fresh captures, exercised interactions, console and accessibility readings,
+relevant build output, and uncovered states.
 
 ## Stages
 
