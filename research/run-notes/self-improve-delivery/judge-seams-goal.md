@@ -1,7 +1,7 @@
 Judge the SEAMS of the self-improve delivery (run 20260901T132749Z) at
 the merged tip of branch `claude/self-improve-workflow-design-c2009b`
 in C:\Users\danhm\tools\orchflows-public\.claude\worktrees\self-improve-workflow-design-c2009b.
-Design doc `.orchflows/self-improve-design-2026-09-01.md` is the
+Design doc `research/self-improve-design-2026-09-01.md` is the
 normative spec. Three workers landed independently (B1.1 harvest door,
 B1.2 event stream, B1.3 workflow body + law repoints) plus one repair
 commit; per-child oracles already ran at each land — do NOT re-run

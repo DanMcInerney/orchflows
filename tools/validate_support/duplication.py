@@ -47,7 +47,7 @@ CELL_DUPLICATION_ALLOWLIST = (
             "scripts/tickets_assignment.py's _craft_scope() reads a pack's "
             "own verification-scope sentence out of its `## Stages` (or "
             "`## Lens`) section by the literal anchor \"gate's row\", so "
-            "the one-suite law (.orchflows/routing-design-2026-08-31.md "
+            "the one-suite law (research/routing-design-2026-08-31.md "
             "\"The one-suite law\") reaches every pack the same way: "
             "children run their own narrow affected checks, and the full "
             "required suite is the closing `done`'s alone. Every pack "

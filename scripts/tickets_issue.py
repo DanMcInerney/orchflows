@@ -92,6 +92,68 @@ def pinned_items(sheets, skill, pack=None):
     return pin_fields(sheets, skill, pack=pack)
 
 
+def _applied_skill_refusal(skill, executor):
+    """Why this `--skill` may not be the method of this verb, or None.
+
+    Two refusals, both taken before anything is minted, because both are
+    facts about the flag rather than about the ticket it would become.
+
+    The reserved prefix is `scripts/rings.py`'s mechanical floor, said one
+    door earlier. That floor refuses an `orch-` name in a *ring*, and a
+    kernel verb resolves from the library, so nothing downstream would have
+    stopped `--skill orch-do`: the child would have been told to enter its
+    own contract as its method, reading the verb twice and the method never.
+
+    The role is `rules/roles.md` clause 4's. The launch binding -- agent,
+    model, effort -- is chosen off the verb's own declared role, so a
+    planner-role skill applied on a `do` would be entered by a worker agent
+    under a prompt written for the other role. The verb's requirement is
+    read off the kernel skill's own frontmatter rather than tabled here,
+    which is what keeps the pair from drifting into two spellings.
+
+    Resolution here is untrusted on purpose. `pin_fields` resolves the same
+    name a moment later and is the caller that *acts* on the item, so it is
+    the one that spends the user's grant; a use-once token consumed twice
+    in one mint would refuse the second read of the skill it had just
+    admitted. This end reads one frontmatter field to decide whether the
+    flag is even applicable, which is the same "report, do not act" case
+    `rings.resolve`'s `trust` switch exists for.
+    """
+
+    name = dequote(skill)
+    if not name:
+        return None
+    if __package__:
+        from . import rings
+        from .tickets_dispatch_launch import declared_role, manifest_role
+    else:  # pragma: no cover - direct/installed flat script path
+        import rings
+        from tickets_dispatch_launch import declared_role, manifest_role
+    if name.startswith(rings.RESERVED_PREFIX):
+        return {"error": (
+            f"--skill '{name}' takes the reserved '{rings.RESERVED_PREFIX}' "
+            "prefix. The library's own verbs and packs are what a ticket "
+            "stamps as its executor and its pack; an applied skill is the "
+            "method that runs inside one, and no kernel verb is a method of "
+            "itself. Name a ring skill outside "
+            f"'{rings.RESERVED_PREFIX}*'."
+        )}
+    try:
+        record = rings.resolve("skill", name, trust=False)
+    except rings.RingError as error:
+        return {"error": f"skill '{name}' cannot be applied: {error.detail}"}
+    required = declared_role(executor)
+    role = manifest_role(record["path"])
+    if role != required:
+        return {"error": (
+            f"skill '{name}' at {record['path']} declares role "
+            f"'{role or 'none'}', and {executor} launches a {required}: an "
+            f"applied skill is the method one {required} runs, so it declares "
+            f"`role: {required}` or it is not applicable on this verb."
+        )}
+    return None
+
+
 def _invalidate_assignment(text):
     data = _parse_frontmatter(text)
     root_generation = str(data.get("root_generation") or "")
@@ -262,7 +324,7 @@ def _issue_ticket(run: str, ticket_id: str, text: str, *, _lock_held: bool = Fal
 
 __all__ = (
     "INDEPENDENCE_VALUES", "ISOLATION_VALUES", "NEW_DEFAULT_BOUND", "NEW_USAGE",
-    "_cmd_new", "_frontmatter_list", "_issue_defects",
+    "_applied_skill_refusal", "_cmd_new", "_frontmatter_list", "_issue_defects",
     "_issue_ticket", "_project_file_ticket", "_render_ticket",
     "pinned_items", "pinned_pack_digest",
 )

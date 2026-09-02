@@ -24,8 +24,9 @@ from pathlib import Path
 if __package__:
     from . import state_root
     from .tickets_dispatch_launch_lines import (
-        _command, _craft_lines, _friction_lines, _identity_line, _lane_lines,
-        _reading_lines, _return_lines, _sheet_lines,
+        _command, _contract_lines, _craft_lines, _friction_lines,
+        _identity_line, _lane_lines, _reading_lines, _return_lines,
+        _sheet_lines,
     )
     from .tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from .tickets_format import (
@@ -35,8 +36,9 @@ if __package__:
 else:  # pragma: no cover - direct/installed flat script path
     import state_root
     from tickets_dispatch_launch_lines import (
-        _command, _craft_lines, _friction_lines, _identity_line, _lane_lines,
-        _reading_lines, _return_lines, _sheet_lines,
+        _command, _contract_lines, _craft_lines, _friction_lines,
+        _identity_line, _lane_lines, _reading_lines, _return_lines,
+        _sheet_lines,
     )
     from tickets_dispatch_schema import OUTCOME_RECORD_ID, classification
     from tickets_format import (
@@ -58,26 +60,36 @@ EFFORT_SUFFIX = "_effort"
 EFFORT_KEY = "effort"
 
 
-def declared_role(executor: str):
-    """The `role:` the applied skill declares, or None.
+def manifest_role(path):
+    """The `role:` one skill manifest declares, or None.
 
     Read off the skill's own frontmatter rather than a table here: the skill
     is the owner of what it is, and a second census in this family would go
-    stale the first time a skill changed its declaration.
+    stale the first time a skill changed its declaration. Split out from
+    `declared_role` because the mint asks the same question of a *ring*
+    skill -- one a caller applies through `--skill`, which the search below
+    does not reach -- and two regexes reading one frontmatter field is how
+    the two answers come to disagree.
     """
+
+    text, failure = _read_utf8(path, "executor role declaration")
+    if failure is not None:
+        return None
+    match = ROLE_RE.search(text)
+    return None if match is None else match.group(1)
+
+
+def declared_role(executor: str):
+    """The `role:` the library's own skill of that name declares, or None."""
 
     here = Path(__file__).resolve()
     roots = (here.parent.parent, here.parent.parent / "lib")
     groups = ("kernel", "workflows")
     for root in roots:
         for group in groups:
-            path = root / "skills" / group / executor / "SKILL.md"
-            text, failure = _read_utf8(path, "executor role declaration")
-            if failure is not None:
-                continue
-            match = ROLE_RE.search(text)
-            if match is not None:
-                return match.group(1)
+            role = manifest_role(root / "skills" / group / executor / "SKILL.md")
+            if role is not None:
+                return role
     return None
 
 
@@ -277,6 +289,7 @@ def launch_prompt(assignment: dict) -> str:
     ]
     lines = [
         _identity_line(assignment),
+        *_contract_lines(assignment),
         *_lane_lines(assignment),
         *_reading_lines(assignment),
         f"Work in {assignment['workspace']}: change into that directory first "
@@ -369,6 +382,7 @@ __all__ = (
     "ARTIFACT_LINE_FORMS", "DEFAULT_HOST", "FINDINGS_LINE",
     "HOST_ENV_VAR", "PROFILE_ROLES",
     "ROLE_PROFILES", "binding_failure", "declared_role", "host_names",
-    "hosts_dir", "launch_prompt", "launch_spec", "precheck", "resolve_host",
+    "hosts_dir", "launch_prompt", "launch_spec", "manifest_role", "precheck",
+    "resolve_host",
     "resolved_role_profile", "selected_host",
 )

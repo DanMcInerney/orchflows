@@ -38,8 +38,8 @@ if __package__:
     )
     from .tickets_generations import assignment_digest
     from .tickets_issue import (
-        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _issue_ticket, pinned_items,
-        pinned_pack_digest,
+        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _applied_skill_refusal,
+        _issue_ticket, pinned_items, pinned_pack_digest,
     )
     from .tickets_issue_render import _render_ticket
     from .tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -58,8 +58,8 @@ else:  # pragma: no cover - direct/installed flat script path
     )
     from tickets_generations import assignment_digest
     from tickets_issue import (
-        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _issue_ticket, pinned_items,
-        pinned_pack_digest,
+        ISOLATION_VALUES, NEW_DEFAULT_BOUND, _applied_skill_refusal,
+        _issue_ticket, pinned_items, pinned_pack_digest,
     )
     from tickets_issue_render import _render_ticket
     from tickets_seal import _cmd_draft_validate, _cmd_seal
@@ -432,6 +432,11 @@ def _cmd_callable(rest, *, judge: bool):
             return invalid
     if isolation is not None and isolation.strip() not in ISOLATION_VALUES:
         return {"error": f"--isolation '{isolation}' is not one of {list(ISOLATION_VALUES)}"}
+    refusal = _applied_skill_refusal(
+        skill, JUDGE_EXECUTOR if judge else DO_EXECUTOR,
+    )
+    if refusal is not None:
+        return refusal
     # A judge is handed finished artifacts and names their kind on its
     # Context; only a `do` chooses what it makes, and only when the pack's
     # adapter does not already say.

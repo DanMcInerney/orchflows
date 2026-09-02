@@ -1,6 +1,6 @@
 # Lego migration — execution spec (hand-run, no orchflows)
 
-2026-08-31. Executes `.orchflows/lego-design-2026-08-31.md` (with
+2026-08-31. Executes `research/lego-design-2026-08-31.md` (with
 amendments A1–A7) to its minimal landable form. Like stage 1: no
 orchflows runs — the driver hand-dispatches subagents from these
 tickets, one worktree per parallel worker, gate-green at every wave

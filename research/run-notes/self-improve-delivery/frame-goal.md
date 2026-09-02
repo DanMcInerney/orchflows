@@ -1,4 +1,4 @@
-Deliver the self-improve redesign — `.orchflows/self-improve-design-2026-09-01.md`
+Deliver the self-improve redesign — `research/self-improve-design-2026-09-01.md`
 (committed on this branch, normative for every child) — onto branch
 `claude/self-improve-workflow-design-c2009b` of orchflows-public.
 

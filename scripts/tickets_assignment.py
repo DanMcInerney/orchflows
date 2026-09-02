@@ -60,6 +60,10 @@ ASSIGNMENT_SECTIONS = (("goal", "Goal"), ("context", "Context"))
 # unit's checks reach, and the gate's row is the anchor that says so.
 CRAFT_SCOPE_SECTIONS = ("Stages", "Lens")
 CRAFT_SCOPE_ANCHOR = "gate's row"
+# The installer's flat name surface (`installer/planning.py`): one
+# deterministic path per canonical name, which is the spelling a launch
+# hands a child for the kernel contract its applied skill is a method of.
+BY_NAME_DIR = "by-name"
 
 
 def _attempt_workspace(data: dict):
@@ -225,6 +229,73 @@ def _skill_path(executor):
         return str(rings.resolve("skill", name)["path"])
     except rings.RingError:
         return None
+
+
+def _kernel_contract(executor):
+    """Where the child reads the verb its applied skill is the method of.
+
+    The flat `by-name/<verb>/SKILL.md` the installer mints
+    (`installer/planning.py`) is the one spelling of a canonical name that
+    holds on every host, which is why it is what the prompt hands over. It
+    exists only in an install, so a source checkout -- and every test that
+    runs from one -- falls back to the same resolver `_skill_path` uses:
+    the same contract, one hop earlier, rather than a path naming nothing.
+    """
+
+    name = dequote(executor)
+    if not name:
+        return None
+    try:
+        minted = rings.lib_root() / BY_NAME_DIR / name / rings.MANIFESTS["skill"]
+    except (OSError, RuntimeError):  # pragma: no cover - no resolvable library
+        return _skill_path(name)
+    return str(minted) if minted.is_file() else _skill_path(name)
+
+
+def _applied_skill(loaded: dict):
+    """The `{name, path, environment}` of the ticket's applied skill, or None.
+
+    The name is the sealed pin's (`scripts/tickets_pins.py`); resolving it
+    again here is what turns it back into a path and a dependency
+    declaration, and the pin is what says the bytes behind that path are
+    still the ones the ticket stamped -- the door has already refused drift
+    by the time a launch is composed.
+
+    Untrusted for the reason `tickets_issue._applied_skill_refusal` is:
+    the mint spent the user's grant on this name, and a use-once token
+    respent here would refuse a dispatch of the very ticket that grant
+    admitted.
+    """
+
+    name = dequote(loaded.get("skill"))
+    if not name:
+        return None
+    try:
+        record = rings.resolve("skill", name, trust=False)
+    except rings.RingError:
+        return {"name": name, "path": None, "environment": False}
+    return {
+        "name": name,
+        "path": str(record["path"]),
+        "environment": _declares_environment(record["dir"]),
+    }
+
+
+def _declares_environment(item_dir) -> bool:
+    """Whether this item carries its own `requirements.txt` (PR #170).
+
+    Deferred like every optional sibling import in this module: the flat
+    installed layout initializes these in an order neither may depend on.
+    """
+
+    try:
+        if __package__:
+            from . import orchflows_envs
+        else:  # pragma: no cover - the flat installed layout
+            import orchflows_envs
+    except ImportError:  # pragma: no cover - a partial install
+        return False
+    return orchflows_envs.requirements_of(item_dir) is not None
 
 
 def _sheets(loaded: dict) -> list:
@@ -398,7 +469,10 @@ def dispatch_assignment(rest, *, attempt=None):
     role, _profile = resolved_role_profile(executor, loaded.get("profile"))
     pack = loaded.get("pack")
     craft, scope, workspace_line = _craft(pack)
+    applied = _applied_skill(loaded)
     return {"assignment": {
+        "applied_skill": None if applied is None else applied["name"],
+        "applied_skill_environment": bool(applied and applied["environment"]),
         "artifact_kind": artifact_kind(pack),
         "assigned_name": assigned_name,
         "assignment_seal": None if attempt is None else attempt["assignment_seal"],
@@ -411,13 +485,16 @@ def dispatch_assignment(rest, *, attempt=None):
         "executor_script": _executor_script(executor),
         "git_candidate": git_candidate(pack),
         "id": loaded["id"],
+        "kernel_contract": None if applied is None else _kernel_contract(executor),
         "lease_expires_at": None if attempt is None else attempt["lease_expires_at"],
         "lens_key": lens_key(loaded, sections),
         "pack": pack,
         "role": role,
         "run": str(loaded.get("run") or run),
         "sheets": _sheets(loaded),
-        "skill_path": _skill_path(executor),
+        "skill_path": (
+            applied["path"] if applied is not None else _skill_path(executor)
+        ),
         "ticket_path": str(ticket_path),
         "workspace": workspace,
         "workspace_line": workspace_line,
@@ -425,7 +502,7 @@ def dispatch_assignment(rest, *, attempt=None):
 
 
 __all__ = (
-    "ASSIGNMENT_SECTIONS",
+    "ASSIGNMENT_SECTIONS", "BY_NAME_DIR",
     "_claim_is_stale", "artifact_kind", "commits_in_place", "dispatch_assignment",
     "git_candidate", "lens_key", "workspace_establishment_finding",
 )
