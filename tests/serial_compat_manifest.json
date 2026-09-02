@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2145,
+  "count": 2149,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1766,6 +1766,10 @@
    "tests.test_tickets_cases.run_state_terminal.TerminalNoteTest.test_the_write_call_count_is_not_asserted",
    "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_a_changed_clause_still_moves_the_pin",
    "tests.test_validate_cases.contract_pins.ContractPinIsNewlineInsensitiveTest.test_crlf_and_lf_pin_the_same_contract",
+   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_a_prose_only_change_needs_no_record_after_a_first_pin",
+   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_one_record_citing_the_committed_pin_covers_both_pins",
+   "tests.test_validate_cases.pin_repin.RepinAgainstTheCommittedPinTest.test_the_requirement_still_bites_and_names_the_committed_digest",
+   "tests.test_validate_cases.pin_repin.RepinWithoutACommittedPinsFileTest.test_the_recorded_digest_stays_the_cited_one",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_each_contract_states_its_sink_path",
    "tests.test_validate_cases.sink_contracts.TestContractsNameTheSink.test_no_contract_composes_a_run_state_path_from_the_repository",
    "tests.test_validate_cases.sink_contracts.TestWorkItemLocationInvariant.test_the_clause_names_the_resolver_rather_than_restating_the_root",
@@ -2148,7 +2152,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "a8092ccf19f8ac44f5b86eea9ed2535ec982f80b0f17391855eee6d7292d41e5"
+  "sha256": "a1fe8271b39151497a63d494790e9f08995532df09c3cb3857f5bbd696f4b44e"
  },
  "mutation_owners": [
   {
@@ -4876,6 +4880,14 @@
   },
   {
    "module": "tests.test_validate_cases.contract_pins",
+   "owner": "<module>",
+   "restoration": "sharded-module-guard",
+   "seams": [
+    "import-path"
+   ]
+  },
+  {
+   "module": "tests.test_validate_cases.pin_repin",
    "owner": "<module>",
    "restoration": "sharded-module-guard",
    "seams": [
