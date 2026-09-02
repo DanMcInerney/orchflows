@@ -1,6 +1,6 @@
 {
  "discovery": {
-  "count": 2252,
+  "count": 2259,
   "identities": [
    "test_affected_tests.TestDiscoveryCache.test_a_new_commit_is_a_new_key_and_is_discovered_again",
    "test_affected_tests.TestDiscoveryCache.test_a_tree_that_cannot_answer_for_a_commit_falls_back_and_says_so",
@@ -1298,6 +1298,13 @@
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_temporary_directory_cleanup_of_the_directory_it_moved_into",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_message_names_the_tree_the_cwd_and_the_way_out",
    "test_windows_semantics.TestTheGuardRefusesDeletingTheCwd.test_the_refusal_is_not_an_oserror",
+   "test_workflow_ladder_law.IdiomsTest.test_a_padded_idiom_fails_the_ceiling_check",
+   "test_workflow_ladder_law.IdiomsTest.test_each_idiom_is_one_sentence_inside_its_ceiling",
+   "test_workflow_ladder_law.IdiomsTest.test_every_idiom_is_worded_once_under_the_heading",
+   "test_workflow_ladder_law.IdiomsTest.test_the_recurrence_rule_is_linked_rather_than_restated",
+   "test_workflow_ladder_law.LadderFactsTest.test_dropping_any_fact_fails_the_check_with_the_anchor_standing",
+   "test_workflow_ladder_law.LadderFactsTest.test_each_fact_is_carried_by_its_owner",
+   "test_workflow_ladder_law.RetiredWordingTest.test_no_owner_still_carries_the_replaced_wording",
    "test_workspace.WorkspaceTest.test_actual_mutations_include_every_changed_and_new_path",
    "test_workspace.WorkspaceTest.test_establishment_dispatches_on_the_registered_workspace_strategy",
    "test_workspace.WorkspaceTest.test_workspace_does_not_import_scope_authority",
@@ -2255,7 +2262,7 @@
    "tests.test_workspace_cases.start_cases.TestTheStampPreservesTheTicketsByteDomain.test_only_the_two_stamped_lines_differ_from_the_prior_bytes",
    "tests.test_workspace_cases.start_cases.TestTicketsPayloadIsGradedNotItsExitStatus.test_an_error_payload_returned_at_exit_zero_is_a_failure"
   ],
-  "sha256": "6c4f21aabd1df5b675bed0dce3832aa823d91f0500c7801913d1ad82db16a704"
+  "sha256": "b9fe7bf8e4231988a594244f85f797afdbb2e2903fd4ad683dbb6b3055f7aabe"
  },
  "mutation_owners": [
   {
@@ -5296,6 +5303,14 @@
    "restoration": "sharded-module-guard",
    "seams": [
     "cwd"
+   ]
+  },
+  {
+   "module": "tests.test_workflow_ladder_law",
+   "owner": "clause",
+   "restoration": "selected-module-boundary",
+   "seams": [
+    "threads"
    ]
   },
   {

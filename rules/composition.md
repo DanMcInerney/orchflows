@@ -52,3 +52,20 @@
     record a Return field is contracted to carry — disagreement,
     rationale, and contradiction are recorded as found — and is named
     in the result's `## Report`.
+12. A sheet and an applied skill are stamped by the caller on one ticket
+    and read only by that ticket's maker and its judge, each at the digest
+    the ticket pins. A sheet is extra craft that only tightens the stamped
+    pack's ([contracts/sheet.md](../contracts/sheet.md)); an applied skill
+    is the method inside the kernel contract the ticket's `executor` names,
+    which still binds Require, Never and Return. Neither is a call edge:
+    nothing invokes them.
+13. Recurrence. A step that holds at least one callable and recurs across
+    two or more workflows, or whose run deserves its own journal, is a
+    reusable workflow invoked by name; a step with no callable of its own
+    is a sentence in the calling prose; a recurring sentence's wording is
+    an idiom, worded once in
+    [custom workflow authoring](../docs/custom-workflow-authoring.md) and
+    quoted from there.
+14. Placement. An item lives in the innermost ring that contains every
+    caller: one project, the project ring; two, the home ring; other
+    people, a bundle they import.
